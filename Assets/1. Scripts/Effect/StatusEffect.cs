@@ -6,17 +6,29 @@ public abstract class StatusEffect
 
     public int Duration { get; protected set; }
 
-    /// 상태이상이 부여될 때
-    public virtual void OnApply(Character owner) { }
+    protected Character owner;
 
-    /// 턴 시작
-    public virtual void OnTurnStart(Character owner) { }
+    protected Character source;
 
-    /// 턴 종료
-    public virtual void OnTurnEnd(Character owner) { }
+    public virtual void Initialize(
+        Character owner,
+        Character source)
+    {
+        this.owner = owner;
+        this.source = source;
+    }
 
-    /// 제거될 때
-    public virtual void OnRemove(Character owner) { }
+    public virtual void OnApply() { }
+
+    public virtual void OnTurnStart() { }
+
+    public virtual void OnTurnEnd() { }
+
+    public virtual void OnRemove() { }
+
+    public virtual void Merge(StatusEffect other)
+    {
+    }
 
     public void DecreaseDuration()
     {

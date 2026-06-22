@@ -7,7 +7,7 @@ public class Burn : StatusEffect
         Duration = 3;
     }
 
-    public override void OnTurnEnd(Character owner)
+    public override void OnTurnEnd()
     {
         owner.TakeDamage(Stack * 2);
     }

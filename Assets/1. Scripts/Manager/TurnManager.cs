@@ -26,13 +26,13 @@ public class TurnManager
     /// 현재 턴 시작
     public void StartTurn()
     {
-        _battleContext._battleEvent.RaiseTurnStarted(CurrentTurn);
+        _battleContext._battleEvent.RaiseTurnStart(CurrentTurn);
     }
 
     /// 현재 턴 종료
     public void EndTurn()
     {
-        _battleContext._battleEvent.RaiseTurnEnded(CurrentTurn);
+        _battleContext._battleEvent.RaiseTurnEnd(CurrentTurn);
         CurrentTurn++;
     }
 

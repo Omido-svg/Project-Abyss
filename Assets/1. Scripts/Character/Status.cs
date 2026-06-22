@@ -9,13 +9,14 @@ public class BaseStatus
     public int defenseLevel;
 
     // 흐트러짐
-    public int maxStagger;
+    public int maxStagger = 100;
 
     // 위세
-    public int maxPrestige;
+    public int maxPrestige = 100;
 
     // 정신력
-    public int maxMentality;
+    public int maxMentality = 45;
+    public int minMentality = -45;
 
     // 치명타
     public float criticalChance;
@@ -37,6 +38,21 @@ public class BaseStatus
     // 명중 / 회피
     public float accuracy;
     public float dodgeChance;
+    
+    public BaseStatus(
+        int maxHP,
+        int attackLevel,
+        int defenseLevel)
+    {
+        this.maxHP = maxHP;
+        this.attackLevel = attackLevel;
+        this.defenseLevel = defenseLevel;
+
+        maxStagger = 100;
+        maxPrestige = 100;
+        maxMentality = 45;
+        minMentality = -45;
+    }
 }
 
 // 전투 중 계속 변경되는 값
@@ -53,4 +69,12 @@ public class RuntimeStatus
 
     // 현재 정신력
     public int currentMentality;
+    
+    public RuntimeStatus(BaseStatus baseStatus)
+    {
+        currentHP = baseStatus.maxHP;
+        currentStagger = baseStatus.maxStagger;
+        currentPrestige = 0;
+        currentMentality = 0;
+    }
 }

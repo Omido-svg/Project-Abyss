@@ -39,7 +39,7 @@ public class DamageManager
 
         damage += attacker.BaseStatus.attackLevel;
 
-        damage += skill.Power;
+        damage += skill.BasePower;
 
         damage -= defender.BaseStatus.defenseLevel;
 

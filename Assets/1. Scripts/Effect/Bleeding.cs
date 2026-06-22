@@ -2,20 +2,29 @@ public class Bleeding : StatusEffect
 {
     public Bleeding(int stack)
     {
-        Name = "Bleeding";
+        Name = "출혈";
 
         Stack = stack;
 
         Duration = 999;
     }
 
-    public override void OnTurnEnd(Character owner)
+    public override void OnTurnEnd()
     {
         owner.TakeDamage(Stack);
 
         Stack--;
 
         if (Stack <= 0)
-            Duration = 0;
+        {
+            owner.RemoveStatus(this);
+        }
+    }
+
+    public override void Merge(StatusEffect other)
+    {
+        Bleeding bleeding = (Bleeding)other;
+
+        Stack += bleeding.Stack;
     }
 }

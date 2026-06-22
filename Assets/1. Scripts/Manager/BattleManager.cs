@@ -10,27 +10,19 @@ public class BattleManager : MonoBehaviour
     private ActionManager actionManager;
     private ClashManager clashManager;
     private DamageManager damageManager;
-    private StatusManager statusManager;
 
 
     // Battle Context
-    BattleContext _battleContext;
-    
-    // Battel Event
-    BattleEvent _battleEvent;
+    public BattleContext _battleContext;
 
     //----------------------------
 
     private void Awake()
     {
         _battleContext = new BattleContext();
-        _battleEvent = new BattleEvent();
-
-        _battleContext._battleEvent = _battleEvent;
 
         turnManager = new TurnManager(_battleContext);
         damageManager = new DamageManager(_battleContext);
-        statusManager = new StatusManager(_battleContext);
         clashManager = new ClashManager(_battleContext, damageManager);
         actionManager = new ActionManager(_battleContext);
     }
@@ -43,15 +35,28 @@ public class BattleManager : MonoBehaviour
     {
         _battleContext.Player = player;
         _battleContext.Enemies = enemies;
+        
+        player.Initialize(_battleContext._battleEvent);
+
+        foreach (Character enemy in enemies)
+        {
+            enemy.Initialize(_battleContext._battleEvent);
+        }
+        
+        _battleContext.AllCharacters.Clear();
+
+        _battleContext.AllCharacters.Add(player);
+
+        _battleContext.AllCharacters.AddRange(enemies);
 
         turnManager.StartBattle();
-
+        
         BattleLoop();
     }
 
     //----------------------------------------------------
 
-    private void BattleLoop()
+    private void BattleLoop() // 차후 수정
     {
         while (true)
         {
@@ -68,23 +73,19 @@ public class BattleManager : MonoBehaviour
 
     private void RunTurn()
     {
-        // Turn Start
         turnManager.StartTurn();
 
-        // Status
-        statusManager.ProcessTurnStart();
+        foreach (Character c in _battleContext.AllCharacters)
+            c.TurnStart();
 
-        // Action
         actionManager.Clear();
         actionManager.CreateActions();
 
-        // Clash
         clashManager.Resolve(actionManager.BuildQueue());
 
-        // Status End
-        statusManager.ProcessTurnEnd();
+        foreach (Character c in _battleContext.AllCharacters)
+            c.TurnEnd();
 
-        // Turn End
         turnManager.EndTurn();
     }
 

@@ -39,8 +39,8 @@ public class ClashManager
 
     private void ResolveClash(BattleAction attacker, BattleAction defender)
     {
-        int attackerPower = attacker.Skill.Roll(attacker.Owner);
-        int defenderPower = defender.Skill.Roll(defender.Owner);
+        int attackerPower = attacker.Skill.Roll();
+        int defenderPower = defender.Skill.Roll();
 
         if (attackerPower > defenderPower)
         {
