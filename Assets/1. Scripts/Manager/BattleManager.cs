@@ -5,15 +5,27 @@ using System.Collections.Generic;
 // Battle -> Turn -> Action -> Clash -> Damage -> Status
 public class BattleManager : MonoBehaviour
 {
+    // 디버깅용 플레이어 및 적 놓기
+    [SerializeField] Character _player;
+    [SerializeField] List<Character> _enemies;
+    public Character SelectedCharacter { get; set; }
+    
+    
+    
     // Managers
-    private TurnManager turnManager;
+    public TurnManager turnManager;
+    
     private ActionManager actionManager;
+    public ActionManager ActionManager => actionManager;
+    
     private ClashManager clashManager;
+    
     private DamageManager damageManager;
 
 
     // Battle Context
-    public BattleContext _battleContext;
+    private BattleContext _battleContext;
+    public BattleContext BattleContext => _battleContext;
 
     //----------------------------
 
@@ -25,6 +37,7 @@ public class BattleManager : MonoBehaviour
         damageManager = new DamageManager(_battleContext);
         clashManager = new ClashManager(_battleContext, damageManager);
         actionManager = new ActionManager(_battleContext);
+        StartBattle(_player, _enemies);
     }
 
     //----------------------------------------------------
@@ -51,7 +64,7 @@ public class BattleManager : MonoBehaviour
 
         turnManager.StartBattle();
         
-        BattleLoop();
+        // BattleLoop(); 차후 시작 
     }
 
     //----------------------------------------------------

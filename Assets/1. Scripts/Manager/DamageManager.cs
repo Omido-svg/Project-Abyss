@@ -6,7 +6,7 @@ public class DamageManager
         this._battleContext = _battleContext;
     }
     
-    /// 일반 공격(기습, 평타)
+    // 일반 공격(기습, 평타)
     public void ApplyDamage(BattleAction action)
     {
         Character attacker = action.Owner;
