@@ -33,22 +33,29 @@ public class StatusPopup : MonoBehaviour
         mainCamera = Camera.main;
         cameraController = FindFirstObjectByType<CameraController>();
 
-        popupRoot.SetActive(false);
+        if (popupRoot != null)
+            popupRoot.SetActive(false);
     }
 
     //--------------------------------------------------
 
     private void Update()
     {
+        if (popupRoot == null)
+            return;
+
         HandleInput();
 
         if (!popupRoot.activeSelf)
             return;
 
-        popupRoot.transform.LookAt(
-            popupRoot.transform.position +
-            mainCamera.transform.rotation * Vector3.forward,
-            mainCamera.transform.rotation * Vector3.up);
+        if (mainCamera != null)
+        {
+            popupRoot.transform.LookAt(
+                popupRoot.transform.position +
+                mainCamera.transform.rotation * Vector3.forward,
+                mainCamera.transform.rotation * Vector3.up);
+        }
 
         Refresh();
     }
@@ -57,7 +64,6 @@ public class StatusPopup : MonoBehaviour
 
     private void HandleInput()
     {
-        // 좌클릭
         if (Input.GetMouseButtonDown(0))
         {
             if (IsMouseOverThisCharacter())
@@ -66,13 +72,11 @@ public class StatusPopup : MonoBehaviour
             }
         }
 
-        // 우클릭
         if (Input.GetMouseButtonDown(1))
         {
             Deselect();
         }
 
-        // Space → Player 선택
         if (Input.GetKeyDown(KeyCode.Space))
         {
             SelectPlayer();
@@ -83,6 +87,9 @@ public class StatusPopup : MonoBehaviour
 
     private bool IsMouseOverThisCharacter()
     {
+        if (mainCamera == null)
+            return false;
+
         Ray ray = mainCamera.ScreenPointToRay(Input.mousePosition);
 
         if (Physics.Raycast(ray, out RaycastHit hit))
@@ -97,22 +104,23 @@ public class StatusPopup : MonoBehaviour
 
     private void Select()
     {
+        // 기존 선택 해제
         if (currentSelected != null && currentSelected != this)
         {
             currentSelected.Deselect();
         }
 
         currentSelected = this;
-
         isSelected = true;
 
-        // ★ BattleManager에 현재 선택된 캐릭터 저장
+        // BattleManager 동기화
         if (battleManager != null)
         {
             battleManager.SelectedCharacter = character;
         }
 
-        popupRoot.SetActive(true);
+        if (popupRoot != null)
+            popupRoot.SetActive(true);
 
         Refresh();
 
@@ -130,14 +138,15 @@ public class StatusPopup : MonoBehaviour
 
         isSelected = false;
 
-        // ★ 현재 선택된 캐릭터였다면 해제
+        // BattleManager 해제
         if (battleManager != null &&
             battleManager.SelectedCharacter == character)
         {
             battleManager.SelectedCharacter = null;
         }
 
-        popupRoot.SetActive(false);
+        if (popupRoot != null)
+            popupRoot.SetActive(false);
 
         outline?.DisableOutline();
 
@@ -151,14 +160,15 @@ public class StatusPopup : MonoBehaviour
 
     private void SelectPlayer()
     {
-        if (battleManager == null)
+        if (battleManager == null ||
+            battleManager.BattleContext == null)
             return;
 
         Character player = battleManager.BattleContext.Player;
 
         if (player == null)
         {
-            Debug.Log("Player 찾지 못함");
+            Debug.Log("Player not found");
             return;
         }
 
@@ -174,6 +184,10 @@ public class StatusPopup : MonoBehaviour
 
     private void Refresh()
     {
+        if (character == null ||
+            statusText == null)
+            return;
+
         BaseStatus b = character.BaseStatus;
         RuntimeStatus r = character.RuntimeStatus;
 
@@ -181,7 +195,6 @@ public class StatusPopup : MonoBehaviour
             $"<b>{character.CharacterName}</b>\n\n" +
 
             $"<color=#FF4B4B><b>HP</b></color> : {r.currentHP}/{b.maxHP}\n" +
-
             $"<color=#FF9A3C><b>ATK</b></color> : {b.attackLevel}\n" +
             $"<color=#4FA3FF><b>DEF</b></color> : {b.defenseLevel}\n\n" +
 

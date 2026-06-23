@@ -2527,7 +2527,6 @@ GameObject:
   m_Component:
   - component: {fileID: 1531111097}
   - component: {fileID: 1531111098}
-  - component: {fileID: 1531111099}
   m_Layer: 0
   m_Name: BattleUIManager
   m_TagString: Untagged
@@ -2564,21 +2563,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   battleManager: {fileID: 1453355684}
   text: {fileID: 1824034224}
---- !u!114 &1531111099
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1531111095}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 950e7639e3f4acf4f96d599f6d673e3f, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  battleManager: {fileID: 0}
-  selectedOwner: {fileID: 0}
-  selectedTarget: {fileID: 0}
 --- !u!1 &1747701450
 GameObject:
   m_ObjectHideFlags: 0
