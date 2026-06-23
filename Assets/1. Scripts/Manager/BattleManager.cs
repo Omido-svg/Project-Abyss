@@ -10,6 +10,8 @@ public class BattleManager : MonoBehaviour
 
     // UI에서 현재 선택된 캐릭터
     public Character SelectedCharacter { get; set; }
+    
+    
 
     //----------------------------------------------------
     // Managers
@@ -41,6 +43,8 @@ public class BattleManager : MonoBehaviour
         battleContext.AllCharacters.Clear();
         battleContext.AllCharacters.Add(player);
         battleContext.AllCharacters.AddRange(enemies);
+        
+        Utils.PrintList(battleContext.AllCharacters);
 
         // BattleEvent 연결
         player.Initialize(battleContext._battleEvent);
