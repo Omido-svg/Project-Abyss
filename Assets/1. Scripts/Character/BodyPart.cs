@@ -14,9 +14,7 @@ public class BodyPart
     public bool IsBroken;
     public float PartMaxHP;
     public float PartHP;
-    public Skill SelectedSkill;
-    public Character SelectedTarget;
-    public BodyPart SelectedTargetPart;
+    public Skill CurrentSkill;
     
     public BodyPart(PartsType type, int speed, float currentHP)
     {

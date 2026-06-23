@@ -1,76 +1,148 @@
 using System.Collections.Generic;
 
+public class ClashPair
+{
+    // 속도가 더 빠른 Action
+    public BattleAction First;
+
+    // 합이 없으면 null
+    public BattleAction Second;
+
+    public bool IsClash => Second != null;
+
+    public ClashPair(BattleAction first, BattleAction second = null)
+    {
+        First = first;
+        Second = second;
+    }
+}
+
 public class ActionManager
 {
-    BattleContext _battleContext;
+    private readonly BattleContext battleContext;
 
-    public ActionManager(BattleContext _battleContext)
+    // 이번 턴 생성된 모든 Action
+    private readonly List<BattleAction> actions = new();
+
+    // 이번 턴 생성된 ClashPair
+    private readonly List<ClashPair> clashPairs = new();
+
+    public IReadOnlyList<BattleAction> Actions => actions;
+    public IReadOnlyList<ClashPair> ClashPairs => clashPairs;
+
+    //----------------------------------------------------
+
+    public ActionManager(BattleContext battleContext)
     {
-        this._battleContext = _battleContext;
+        this.battleContext = battleContext;
     }
-    
-    private readonly List<BattleAction> actionQueue = new();
 
-    public IReadOnlyList<BattleAction> Actions => actionQueue;
+    //----------------------------------------------------
 
-    /// 이번 턴 행동 초기화
     public void Clear()
     {
-        actionQueue.Clear();
+        actions.Clear();
+        clashPairs.Clear();
     }
 
-    /// 행동 추가
+    //----------------------------------------------------
+
     public void AddAction(BattleAction action)
     {
-        actionQueue.Add(action);
+        actions.Add(action);
     }
 
-    /// 속도순 정렬
-    public void SortBySpeed()
+    //----------------------------------------------------
+
+    /// 이번 턴 실행목록 생성
+    public void BuildTurnActions()
     {
-        actionQueue.Sort((a, b) => b.Speed.CompareTo(a.Speed));
+        CalculateSpeed();
+
+        SortBySpeed();
+
+        MatchClashes();
     }
 
-    /// 실행할 행동 반환
-    public Queue<BattleAction> BuildQueue()
-    {
-        return new Queue<BattleAction>(actionQueue);
-    }
-    
-    public void CreateActions()
-    {
-        List<Character> characters = _battleContext.AllCharacters;
-        
-        actionQueue.Clear();
+    //----------------------------------------------------
 
-        foreach (Character character in characters)
+    private void CalculateSpeed()
+    {
+        foreach (BattleAction action in actions)
         {
-            if (character.IsDead)
+            action.CalculateSpeed();
+        }
+    }
+
+    //----------------------------------------------------
+
+    private void SortBySpeed()
+    {
+        actions.Sort((a, b) => b.Speed.CompareTo(a.Speed));
+    }
+
+    //----------------------------------------------------
+
+    private void MatchClashes()
+    {
+        clashPairs.Clear();
+
+        HashSet<BattleAction> matched = new();
+
+        foreach (BattleAction action in actions)
+        {
+            if (matched.Contains(action))
                 continue;
 
-            foreach (BodyPart part in character.BodyParts)
+            BattleAction opponent = FindFastestOpponent(action, matched);
+
+            if (opponent != null)
             {
-                // 행동하지 않는 부위
-                if (part.SelectedSkill == null)
-                    continue;
+                clashPairs.Add(new ClashPair(action, opponent));
 
-                BattleAction action = new BattleAction()
-                {
-                    Owner = character,
-                    Target = part.SelectedTarget,
+                matched.Add(action);
+                matched.Add(opponent);
+            }
+            else
+            {
+                clashPairs.Add(new ClashPair(action));
 
-                    OwnerPart = part,
-                    TargetPart = part.SelectedTargetPart,
+                matched.Add(action);
+            }
+        }
+    }
 
-                    Skill = part.SelectedSkill,
+    //----------------------------------------------------
 
-                    Speed = part.CurrentSpeed
-                };
+    private BattleAction FindFastestOpponent(
+        BattleAction action,
+        HashSet<BattleAction> matched)
+    {
+        foreach (BattleAction other in actions)
+        {
+            if (matched.Contains(other))
+                continue;
 
-                actionQueue.Add(action);
+            if (other == action)
+                continue;
+
+            // 서로를 공격하는가?
+            if (other.Owner == action.Target &&
+                other.Target == action.Owner)
+            {
+                return other;
             }
         }
 
-        SortBySpeed();
+        return null;
+    }
+
+    //----------------------------------------------------
+
+    public Queue<ClashPair> BuildQueue()
+    {
+        BuildTurnActions();
+
+        return new Queue<ClashPair>(clashPairs);
     }
 }

@@ -11,7 +11,7 @@ public class OlafDuelSkill : Skill
         Resolver = new CoinResolver(owner, 3);
     }
 
-    public override void Execute(Character target)
+    public override void Execute(BattleAction action)
     {
         // 실제 효과는 합 승리 시 BattleEvent에서 처리
     }

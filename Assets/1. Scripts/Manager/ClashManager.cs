@@ -3,56 +3,83 @@ using System.Collections.Generic;
 public class ClashManager
 {
     private readonly DamageManager damageManager;
-    BattleContext _battleContext; // 아직 사용은 안하는데 이벤트 발생용으로 필요할수도
+    private readonly BattleContext battleContext;
 
-    public ClashManager(BattleContext _battleContext, DamageManager damageManager)
+    public ClashManager(
+        BattleContext battleContext,
+        DamageManager damageManager)
     {
-        this._battleContext = _battleContext;
+        this.battleContext = battleContext;
         this.damageManager = damageManager;
     }
 
-    public void Resolve(Queue<BattleAction> actions)
+    //------------------------------------------------
+
+    public void Resolve(Queue<ClashPair> clashQueue)
     {
-        foreach (BattleAction action in actions)
+        while (clashQueue.Count > 0)
         {
-            if (action.IsResolved)
-                continue;
+            ClashPair pair = clashQueue.Dequeue();
 
-            // 합이 존재
-            if (action.ClashTarget != null)
+            battleContext._battleEvent.RaiseActionStart(pair.First);
+
+            if (pair.IsClash)
             {
-                ResolveClash(action, action.ClashTarget);
+                battleContext._battleEvent.RaiseActionStart(pair.Second);
 
-                action.IsResolved = true;
-                action.ClashTarget.IsResolved = true;
+                ResolveClash(pair.First, pair.Second);
+
+                battleContext._battleEvent.RaiseActionEnd(pair.Second);
             }
             else
             {
-                ResolveOneSide(action);
-
-                action.IsResolved = true;
+                ResolveOneSide(pair.First);
             }
+
+            battleContext._battleEvent.RaiseActionEnd(pair.First);
         }
     }
 
     //------------------------------------------------
 
-    private void ResolveClash(BattleAction attacker, BattleAction defender)
+    private void ResolveClash(
+        BattleAction first,
+        BattleAction second)
     {
-        int attackerPower = attacker.Skill.Roll();
-        int defenderPower = defender.Skill.Roll();
+        battleContext._battleEvent.RaiseClashStart(
+            first.Owner,
+            second.Owner);
 
-        if (attackerPower > defenderPower)
+        int firstPower = first.Skill.Roll();
+        int secondPower = second.Skill.Roll();
+
+        if (firstPower > secondPower)
         {
-            damageManager.ApplyDamage(attacker, defender);
+            battleContext._battleEvent.RaiseClashWin(
+                first.Owner,
+                second.Owner);
+
+            battleContext._battleEvent.RaiseClashLose(
+                second.Owner,
+                first.Owner);
+
+            damageManager.ApplyDamage(first);
         }
-        else if (attackerPower < defenderPower)
+        else if (firstPower < secondPower)
         {
-            damageManager.ApplyDamage(defender, attacker);
+            battleContext._battleEvent.RaiseClashWin(
+                second.Owner,
+                first.Owner);
+
+            battleContext._battleEvent.RaiseClashLose(
+                first.Owner,
+                second.Owner);
+
+            damageManager.ApplyDamage(second);
         }
         else
         {
-            // 무승부
+            // TODO : 무승부 처리
         }
     }
 
@@ -60,6 +87,6 @@ public class ClashManager
 
     private void ResolveOneSide(BattleAction action)
     {
-        damageManager.ApplyDamage(action, null);
+        damageManager.ApplyDamage(action);
     }
 }

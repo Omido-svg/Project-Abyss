@@ -15,4 +15,5 @@ public abstract class RandomResolver
 
     // UI에서 보여줄 문자열
     public abstract string GetResultText();
+    
 }

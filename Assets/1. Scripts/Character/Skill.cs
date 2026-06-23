@@ -38,5 +38,5 @@ public abstract class Skill
 
 
     // 출혈 부여, 버프, 부위 파괴, 광기 증가 같은 부가 효과 처리스킬 효과
-    public abstract void Execute(Character target);
+    public abstract void Execute(BattleAction action);
 }

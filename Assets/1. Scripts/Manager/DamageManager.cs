@@ -1,52 +1,45 @@
 public class DamageManager
 {
-    BattleContext _battleContext;
-    public DamageManager(BattleContext _battleContext)
+    private readonly BattleContext battleContext;
+
+    public DamageManager(BattleContext battleContext)
     {
-        this._battleContext = _battleContext;
+        this.battleContext = battleContext;
     }
+
+    //------------------------------------------------
     
-    // 일반 공격(기습, 평타)
+    // 합, 일반공격 알아서 처리
     public void ApplyDamage(BattleAction action)
     {
-        Character attacker = action.Owner;
-        Character target = action.Target;
+        float damage = CalculateDamage(action);
 
-        float damage = CalculateDamage(attacker, target, action.Skill);
-
-        target.TakeDamage((int)damage);
-    }
-
-    /// 합 승리 후 공격
-    public void ApplyDamage(BattleAction winner, BattleAction loser)
-    {
-        Character attacker = winner.Owner;
-        Character target = loser.Owner;
-
-        float damage = CalculateDamage(attacker, target, winner.Skill);
-
-        target.TakeDamage((int)damage);
+        action.Target.TakeDamage(
+            action.TargetPart,
+            (int)damage);
     }
 
     //------------------------------------------------
 
-    private float CalculateDamage(
-        Character attacker,
-        Character defender,
-        Skill skill)
+    private float CalculateDamage(BattleAction action)
     {
-        float damage = 0;
+        float damage = 0f;
 
-        damage += attacker.BaseStatus.attackLevel;
+        // 공격자의 공격력
+        damage += action.Owner.BaseStatus.attackLevel;
 
-        damage += skill.BasePower;
+        // 스킬 위력
+        damage += action.Skill.BasePower;
 
-        damage -= defender.BaseStatus.defenseLevel;
+        // 방어자의 방어력
+        damage -= action.Target.BaseStatus.defenseLevel;
 
-        damage *= attacker.BaseStatus.damageMultiplier;
+        // 공격자의 최종 피해 증가
+        damage *= action.Owner.BaseStatus.damageMultiplier;
 
-        if (damage < 1)
-            damage = 1;
+        // 최소 데미지 보정
+        if (damage < 1f)
+            damage = 1f;
 
         return damage;
     }

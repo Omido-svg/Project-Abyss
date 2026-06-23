@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class NormalEnemy : Character
+public class NormalEnemy : Enemy
 {
     private List<BodyPart> bodyParts = new()
     {
@@ -16,7 +16,6 @@ public class NormalEnemy : Character
     {
         base.Initialize(battleEvent);
 
-        // 일반 몬스터는 패시브가 없다고 가정
         passive = null;
     }
 
@@ -33,13 +32,79 @@ public class NormalEnemy : Character
 
         RuntimeStatus = new RuntimeStatus(BaseStatus);
 
-        SkillSet = new SkillSet()
+        SkillPool = new List<Skill>()
         {
-            NormalAttack = new EnemyNormalAttack(),
-            DuelSkill = new EnemyDuelSkill(),
-            AmbushSkill = null,
-            PrestigeSkill = null
+            new EnemyNormalAttack(),
+            new EnemyDuelSkill()
         };
+    }
+
+    //--------------------------------
+
+    public override BattleAction DecideAction(BattleContext context)
+    {
+        Character target = context.Player;
+
+        //--------------------------------
+        // 사용할 부위
+        //--------------------------------
+
+        BodyPart ownerPart = BodyParts[0];
+
+        //--------------------------------
+        // 사용할 스킬
+        //--------------------------------
+
+        Skill skill =
+            SkillPool[Random.Range(0, SkillPool.Count)];
+
+        //--------------------------------
+        // 가장 점수가 높은 부위 찾기
+        //--------------------------------
+
+        BodyPart bestPart = null;
+        float bestScore = float.MinValue;
+
+        foreach (BodyPart part in target.BodyParts)
+        {
+            float score = CalculateTargetScore(part);
+
+            if (score > bestScore)
+            {
+                bestScore = score;
+                bestPart = part;
+            }
+        }
+
+        //--------------------------------
+
+        return new BattleAction()
+        {
+            Owner = this,
+            Target = target,
+
+            OwnerPart = ownerPart,
+            TargetPart = bestPart,
+
+            Skill = skill
+        };
+    }
+    
+    private float CalculateTargetScore(BodyPart part)
+    {
+        float score = 0;
+
+        // 부숴진 부위는 마무리하기 좋음
+        if (part.IsBroken)
+            score += 100;
+
+        // HP가 적을수록 우선
+        score += part.PartMaxHP - part.PartHP;
+
+        // 속도가 빠른 부위를 먼저 부수고 싶음
+        score += part.CurrentSpeed * 3;
+
+        return score;
     }
 
     //--------------------------------

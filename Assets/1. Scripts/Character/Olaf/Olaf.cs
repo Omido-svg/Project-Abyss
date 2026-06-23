@@ -27,13 +27,13 @@ public class Olaf : Character
 
         BaseStatus = new BaseStatus(100, 1, 1);
         RuntimeStatus = new RuntimeStatus(BaseStatus);
-
-        SkillSet = new SkillSet
+        
+        SkillPool = new List<Skill>()
         {
-            NormalAttack = new OlafNormalAttack(),
-            DuelSkill = new OlafDuelSkill(),
-            AmbushSkill = new OlafAmbushSkill(),
-            PrestigeSkill = new OlafPrestigeSkill()
+            new OlafNormalAttack(),
+            new OlafDuelSkill(),
+            new OlafAmbushSkill(),
+            new OlafPrestigeSkill()
         };
     }
 

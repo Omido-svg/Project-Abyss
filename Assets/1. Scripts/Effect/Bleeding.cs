@@ -11,7 +11,8 @@ public class Bleeding : StatusEffect
 
     public override void OnTurnEnd()
     {
-        owner.TakeDamage(Stack);
+        BodyPart part = GetRandomAlivePart();
+        owner.TakeDamage(part, Stack);
 
         Stack--;
 
@@ -24,7 +25,6 @@ public class Bleeding : StatusEffect
     public override void Merge(StatusEffect other)
     {
         Bleeding bleeding = (Bleeding)other;
-
         Stack += bleeding.Stack;
     }
 }

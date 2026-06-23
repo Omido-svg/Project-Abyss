@@ -1,137 +1,108 @@
 using UnityEngine;
 using System.Collections.Generic;
 
-// 매니저들의 총괄 매니저
-// Battle -> Turn -> Action -> Clash -> Damage -> Status
+// Battle -> Turn -> Action -> Clash -> Damage
 public class BattleManager : MonoBehaviour
 {
-    // 디버깅용 플레이어 및 적 놓기
-    [SerializeField] Character _player;
-    [SerializeField] List<Character> _enemies;
+    [Header("Debug")]
+    [SerializeField] private Character player;
+    [SerializeField] private List<Character> enemies = new();
+
+    // UI에서 현재 선택된 캐릭터
     public Character SelectedCharacter { get; set; }
-    
-    
-    
+
+    //----------------------------------------------------
     // Managers
-    public TurnManager turnManager;
-    
-    private ActionManager actionManager;
-    public ActionManager ActionManager => actionManager;
-    
+    //----------------------------------------------------
+
+    public TurnManager TurnManager { get; private set; }
+    public ActionManager ActionManager { get; private set; }
+
     private ClashManager clashManager;
-    
     private DamageManager damageManager;
+    private AIManager aIManager;
 
-
+    //----------------------------------------------------
     // Battle Context
-    private BattleContext _battleContext;
-    public BattleContext BattleContext => _battleContext;
+    //----------------------------------------------------
 
-    //----------------------------
+    private BattleContext battleContext;
+    public BattleContext BattleContext => battleContext;
+
+    //----------------------------------------------------
 
     private void Awake()
     {
-        _battleContext = new BattleContext();
+        battleContext = new BattleContext();
 
-        turnManager = new TurnManager(_battleContext);
-        damageManager = new DamageManager(_battleContext);
-        clashManager = new ClashManager(_battleContext, damageManager);
-        actionManager = new ActionManager(_battleContext);
-        StartBattle(_player, _enemies);
-    }
+        battleContext.Player = player;
+        battleContext.Enemies = enemies;
 
-    //----------------------------------------------------
+        battleContext.AllCharacters.Clear();
+        battleContext.AllCharacters.Add(player);
+        battleContext.AllCharacters.AddRange(enemies);
 
-    public void StartBattle(
-        Character player,
-        List<Character> enemies)
-    {
-        _battleContext.Player = player;
-        _battleContext.Enemies = enemies;
-        
-        player.Initialize(_battleContext._battleEvent);
+        // BattleEvent 연결
+        player.Initialize(battleContext._battleEvent);
 
         foreach (Character enemy in enemies)
         {
-            enemy.Initialize(_battleContext._battleEvent);
+            enemy.Initialize(battleContext._battleEvent);
         }
-        
-        _battleContext.AllCharacters.Clear();
 
-        _battleContext.AllCharacters.Add(player);
+        damageManager = new DamageManager(battleContext);
+        clashManager = new ClashManager(battleContext, damageManager);
+        ActionManager = new ActionManager(battleContext);
+        TurnManager = new TurnManager(
+            battleContext,
+            ActionManager,
+            aIManager,
+            clashManager);
 
-        _battleContext.AllCharacters.AddRange(enemies);
-
-        turnManager.StartBattle();
-        
-        // BattleLoop(); 차후 시작 
+        SelectedCharacter = player;
     }
 
     //----------------------------------------------------
 
-    private void BattleLoop() // 차후 수정
+    public void StartBattle()
     {
-        while (true)
+        TurnManager.StartBattle();
+    }
+
+    //----------------------------------------------------
+
+    public void NextTurn()
+    {
+        if (CheckBattleEnd())
         {
-            RunTurn();
-            
-            if (CheckBattleEnd())
-                break;
-        }   
+            EndBattle();
+            return;
+        }
 
-        EndBattle();
-    }
-
-    //----------------------------------------------------
-
-    private void RunTurn()
-    {
-        turnManager.StartTurn();
-
-        foreach (Character c in _battleContext.AllCharacters)
-            c.TurnStart();
-
-        actionManager.Clear();
-        actionManager.CreateActions();
-
-        clashManager.Resolve(actionManager.BuildQueue());
-
-        foreach (Character c in _battleContext.AllCharacters)
-            c.TurnEnd();
-
-        turnManager.EndTurn();
+        TurnManager.NextTurn();
     }
 
     //----------------------------------------------------
 
     private bool CheckBattleEnd()
     {
-        bool playerDead = true;
+        if (battleContext.Player.IsDead)
+            return true;
 
-        if (!_battleContext.Player.IsDead)
+        foreach (Character enemy in battleContext.Enemies)
         {
-            playerDead = false;
+            if (!enemy.IsDead)
+                return false;
         }
 
-        bool enemyDead = true;
-
-        foreach (Character c in _battleContext.Enemies)
-        {
-            if (!c.IsDead)
-            {
-                enemyDead = false;
-                break;
-            }
-        }
-
-        return playerDead || enemyDead;
+        return true;
     }
 
     //----------------------------------------------------
 
     private void EndBattle()
     {
-        turnManager.EndBattle();
+        TurnManager.EndBattle();
         Debug.Log("Battle End");
     }
 }

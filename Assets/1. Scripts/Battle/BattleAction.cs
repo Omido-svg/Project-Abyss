@@ -10,7 +10,8 @@ public class BattleAction
 
     public int Speed;
 
-    public bool IsResolved;
-
-    public BattleAction ClashTarget;
+    public void CalculateSpeed()
+    {
+        Speed = OwnerPart.CurrentSpeed;
+    }
 }

@@ -11,12 +11,14 @@ public class OlafPrestigeSkill : Skill
         Resolver = new CoinResolver(owner, 5);
     }
 
-    public override void Execute(Character target)
+    public override void Execute(BattleAction action)
     {
-        target.TakeDamage(Roll());
+        action.Target.TakeDamage(
+            action.TargetPart,
+            Roll());
 
         // 출혈 폭발
-        // 광기 스택 초기화
+        // 광기 초기화
         // 부위 파괴
     }
 }

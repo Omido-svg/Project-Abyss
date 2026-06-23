@@ -9,6 +9,10 @@ public class Burn : StatusEffect
 
     public override void OnTurnEnd()
     {
-        owner.TakeDamage(Stack * 2);
+        BodyPart part = GetRandomAlivePart();
+
+        owner.TakeDamage(
+            part,
+            Stack * 2);
     }
 }

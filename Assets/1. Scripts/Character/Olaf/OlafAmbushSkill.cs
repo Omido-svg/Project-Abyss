@@ -11,9 +11,11 @@ public class OlafAmbushSkill : Skill
         Resolver = new CoinResolver(owner, 2);
     }
 
-    public override void Execute(Character target)
+    public override void Execute(BattleAction action)
     {
-        target.TakeDamage(Roll());
+        action.Target.TakeDamage(
+            action.TargetPart,
+            Roll());
 
         // 자신의 랜덤 부위 하나 파괴
     }

@@ -10,9 +10,11 @@ public class OlafNormalAttack : Skill
         Resolver = new CoinResolver(owner, 1);
     }
 
-    public override void Execute(Character target)
+    public override void Execute(BattleAction action)
     {
-        target.TakeDamage(Roll());
-        target.AddStatus(new Bleeding(1), owner);
+        action.Target.TakeDamage(
+            action.TargetPart,
+            Roll());
+        action.Target.AddStatus(new Bleeding(1), owner);
     }
 }

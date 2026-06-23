@@ -1,3 +1,6 @@
+using System.Collections.Generic;
+using UnityEngine;
+
 public abstract class StatusEffect
 {
     public string Name { get; protected set; }
@@ -28,6 +31,20 @@ public abstract class StatusEffect
 
     public virtual void Merge(StatusEffect other)
     {
+    }
+    
+    protected BodyPart GetRandomAlivePart()
+    {
+        List<BodyPart> candidates = new();
+
+        foreach (BodyPart part in owner.BodyParts)
+        {
+            if (part.PartHP > 0)
+                candidates.Add(part);
+        }
+
+        return candidates[
+            Random.Range(0, candidates.Count)];
     }
 
     public void DecreaseDuration()

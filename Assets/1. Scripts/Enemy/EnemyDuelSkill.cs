@@ -11,7 +11,7 @@ public class EnemyDuelSkill : Skill
         Resolver = new DiceResolver(owner, 2, 6);
     }
 
-    public override void Execute(Character target)
+    public override void Execute(BattleAction action)
     {
         // 추가 효과 없음
     }

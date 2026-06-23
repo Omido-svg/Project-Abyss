@@ -27,7 +27,7 @@ public class DebugBattleUI : MonoBehaviour
         StringBuilder sb = new();
 
         sb.AppendLine("========== Battle ==========");
-        sb.AppendLine($"Turn : {battleManager.turnManager.CurrentTurn}");
+        sb.AppendLine($"Turn : {battleManager.TurnManager.CurrentTurn}");
         sb.AppendLine();
 
         //---------------- Player ----------------
@@ -141,24 +141,20 @@ public class DebugBattleUI : MonoBehaviour
 
             sb.AppendLine();
 
-            if (part.SelectedSkill != null)
+            if (part.CurrentSkill != null)
             {
                 sb.AppendLine(
-                    $"    Skill  : {part.SelectedSkill.SkillName}");
+                    $"    Skill  : {part.CurrentSkill.SkillName}");
+                sb.AppendLine("[Actions]");
 
-                if (part.SelectedTarget != null)
+                foreach (BattleAction action in battleManager.ActionManager.Actions)
                 {
                     sb.AppendLine(
-                        $"    Target : {part.SelectedTarget.CharacterName}");
-                }
-
-                if (part.SelectedTargetPart != null)
-                {
-                    sb.AppendLine(
-                        $"    Part   : {part.SelectedTargetPart.type}");
+                        $"{action.Owner.CharacterName} ({action.OwnerPart.type})"
+                        + $" -> {action.Target.CharacterName} ({action.TargetPart.type})"
+                        + $" / {action.Skill.SkillName}");
                 }
             }
-
             sb.AppendLine();
         }
     }
