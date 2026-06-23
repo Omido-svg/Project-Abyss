@@ -2272,6 +2272,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b23d90337d582234fb09b41f67dd8d11, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  data: {fileID: 11400000, guid: fa44a93d52182de409a55d85f797298c, type: 2}
 --- !u!114 &1068877089
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2712,6 +2713,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b23d90337d582234fb09b41f67dd8d11, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  data: {fileID: 11400000, guid: fa44a93d52182de409a55d85f797298c, type: 2}
 --- !u!114 &1174378450
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3016,6 +3018,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b23d90337d582234fb09b41f67dd8d11, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  data: {fileID: 11400000, guid: fa44a93d52182de409a55d85f797298c, type: 2}
 --- !u!114 &1244269862
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3461,6 +3464,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b23d90337d582234fb09b41f67dd8d11, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  data: {fileID: 11400000, guid: fa44a93d52182de409a55d85f797298c, type: 2}
 --- !u!114 &1478351542
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -5581,7 +5585,19 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 2031257139}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 1453355684}
+        m_TargetAssemblyTypeName: BattleManager, Assembly-CSharp
+        m_MethodName: StartBattle
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!114 &2031257139
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -5893,6 +5909,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b26ae18e92120cf45b2cd8f9c87133bf, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  data: {fileID: 11400000, guid: e9bc03b760a7e094eb95540f97744572, type: 2}
 --- !u!114 &2094296669
 MonoBehaviour:
   m_ObjectHideFlags: 0

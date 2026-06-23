@@ -1,5 +1,5 @@
 // 캐릭터1의 기본 스탯 (레벨업, 장비, 증강 등에 의해 변경)
-public class BaseStatus
+public class CurrentStatus
 {
     // 체력
     public int maxHP;
@@ -9,14 +9,14 @@ public class BaseStatus
     public int defenseLevel;
 
     // 흐트러짐
-    public int maxStagger = 100;
+    public int maxStagger;
 
     // 위세
-    public int maxPrestige = 100;
+    public int maxPrestige;
 
     // 정신력
-    public int maxMentality = 45;
-    public int minMentality = -45;
+    public int maxMentality;
+    public int minMentality;
 
     // 치명타
     public float criticalChance;
@@ -38,42 +38,93 @@ public class BaseStatus
     // 명중 / 회피
     public float accuracy;
     public float dodgeChance;
-    
-    public BaseStatus(
-        int maxHP,
-        int attackLevel,
-        int defenseLevel)
-    {
-        this.maxHP = maxHP;
-        this.attackLevel = attackLevel;
-        this.defenseLevel = defenseLevel;
 
-        maxStagger = 100;
-        maxPrestige = 100;
-        maxMentality = 45;
-        minMentality = -45;
+    //----------------------------------------
+    // 기본 생성자
+    //----------------------------------------
+
+    public CurrentStatus()
+    {
+
+    }
+
+    //----------------------------------------
+    // CharacterData로부터 생성
+    //----------------------------------------
+
+    public CurrentStatus(CharacterData data)
+    {
+        maxHP = data.maxHP;
+
+        attackLevel = data.attackLevel;
+        defenseLevel = data.defenseLevel;
+
+        maxStagger = data.maxStagger;
+        maxPrestige = data.maxPrestige;
+
+        maxMentality = data.maxMentality;
+        minMentality = data.minMentality;
+
+        criticalChance = data.criticalChance;
+        criticalDamage = data.criticalDamage;
+
+        damageMultiplier = data.damageMultiplier;
+
+        damageReduction = data.damageReduction;
+        defensePenetration = data.defensePenetration;
+
+        statusChance = data.statusChance;
+        statusResistance = data.statusResistance;
+
+        accuracy = data.accuracy;
+        dodgeChance = data.dodgeChance;
+    }
+
+    //----------------------------------------
+    // 복사 생성자
+    //----------------------------------------
+
+    public CurrentStatus(CurrentStatus other)
+    {
+        maxHP = other.maxHP;
+
+        attackLevel = other.attackLevel;
+        defenseLevel = other.defenseLevel;
+
+        maxStagger = other.maxStagger;
+        maxPrestige = other.maxPrestige;
+
+        maxMentality = other.maxMentality;
+        minMentality = other.minMentality;
+
+        criticalChance = other.criticalChance;
+        criticalDamage = other.criticalDamage;
+
+        damageMultiplier = other.damageMultiplier;
+
+        damageReduction = other.damageReduction;
+        defensePenetration = other.defensePenetration;
+
+        statusChance = other.statusChance;
+        statusResistance = other.statusResistance;
+
+        accuracy = other.accuracy;
+        dodgeChance = other.dodgeChance;
     }
 }
 
-// 전투 중 계속 변경되는 값
+// 실제 인게임에서 변할 수 있는 스테이터스
 public class RuntimeStatus
 {
-    // 현재 체력
     public int currentHP;
-
-    // 현재 흐트러짐
     public int currentStagger;
-
-    // 현재 위세 게이지
     public int currentPrestige;
-
-    // 현재 정신력
     public int currentMentality;
-    
-    public RuntimeStatus(BaseStatus baseStatus)
+
+    public RuntimeStatus(CurrentStatus data)
     {
-        currentHP = baseStatus.maxHP;
-        currentStagger = baseStatus.maxStagger;
+        currentHP = data.maxHP;
+        currentStagger = data.maxStagger;
         currentPrestige = 0;
         currentMentality = 0;
     }

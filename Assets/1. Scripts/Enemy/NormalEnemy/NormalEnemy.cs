@@ -3,7 +3,7 @@ using UnityEngine;
 
 public class NormalEnemy : Enemy
 {
-    private List<BodyPart> bodyParts = new()
+    private readonly List<BodyPart> bodyParts = new()
     {
         new BodyPart(PartsType.Body, 6, 20)
     };
@@ -23,15 +23,6 @@ public class NormalEnemy : Enemy
 
     private void Awake()
     {
-        CharacterName = "Normal Enemy";
-
-        BaseStatus = new BaseStatus(
-            maxHP: 50,
-            attackLevel: 1,
-            defenseLevel: 1);
-
-        RuntimeStatus = new RuntimeStatus(BaseStatus);
-
         SkillPool = new List<Skill>()
         {
             new EnemyNormalAttack(),
@@ -59,7 +50,7 @@ public class NormalEnemy : Enemy
             SkillPool[Random.Range(0, SkillPool.Count)];
 
         //--------------------------------
-        // 가장 점수가 높은 부위 찾기
+        // 가장 점수가 높은 부위 선택
         //--------------------------------
 
         BodyPart bestPart = null;
@@ -89,20 +80,22 @@ public class NormalEnemy : Enemy
             Skill = skill
         };
     }
-    
+
+    //--------------------------------
+
     private float CalculateTargetScore(BodyPart part)
     {
-        float score = 0;
+        float score = 0f;
 
-        // 부숴진 부위는 마무리하기 좋음
+        // 이미 부숴진 부위는 대미지가 더 잘 들어간다면 높은 우선순위
         if (part.IsBroken)
-            score += 100;
+            score += 100f;
 
-        // HP가 적을수록 우선
+        // HP가 적을수록 마무리하기 쉬움
         score += part.PartMaxHP - part.PartHP;
 
-        // 속도가 빠른 부위를 먼저 부수고 싶음
-        score += part.CurrentSpeed * 3;
+        // 속도가 빠른 부위를 우선 제거
+        score += part.CurrentSpeed * 3f;
 
         return score;
     }
@@ -113,6 +106,6 @@ public class NormalEnemy : Enemy
     {
         base.Die();
 
-        Debug.Log($"{CharacterName} 사망");
+        Debug.Log($"{Data.CharacterName} 사망");
     }
 }

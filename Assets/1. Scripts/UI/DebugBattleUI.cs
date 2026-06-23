@@ -34,7 +34,7 @@ public class DebugBattleUI : MonoBehaviour
 
         if (context.Player != null)
         {
-            sb.AppendLine($"Player : {context.Player.CharacterName}");
+            sb.AppendLine($"Player : {context.Player.Data.CharacterName}");
         }
 
         //---------------- Enemy ----------------
@@ -49,7 +49,7 @@ public class DebugBattleUI : MonoBehaviour
         {
             for (int i = 0; i < context.Enemies.Count; i++)
             {
-                sb.Append(context.Enemies[i].CharacterName);
+                sb.Append(context.Enemies[i].Data.CharacterName);
 
                 if (i != context.Enemies.Count - 1)
                     sb.Append(", ");
@@ -75,35 +75,36 @@ public class DebugBattleUI : MonoBehaviour
 
     //--------------------------------------------------
 
+
     private void AppendCharacter(
         StringBuilder sb,
         Character character)
     {
-        BaseStatus b = character.BaseStatus;
+        CurrentStatus c = character.CurrentStatus;
         RuntimeStatus r = character.RuntimeStatus;
 
-        sb.AppendLine(character.CharacterName);
+        sb.AppendLine(character.Data.CharacterName);
         sb.AppendLine();
 
         //---------------- Status ----------------
 
         sb.AppendLine(
-            $"HP        : {r.currentHP}/{b.maxHP}");
+            $"HP        : {r.currentHP}/{c.maxHP}");
 
         sb.AppendLine(
-            $"ATK       : {b.attackLevel}");
+            $"ATK       : {c.attackLevel}");
 
         sb.AppendLine(
-            $"DEF       : {b.defenseLevel}");
+            $"DEF       : {c.defenseLevel}");
 
         sb.AppendLine(
             $"Mental    : {r.currentMentality}");
 
         sb.AppendLine(
-            $"Stagger   : {r.currentStagger}/{b.maxStagger}");
+            $"Stagger   : {r.currentStagger}/{c.maxStagger}");
 
         sb.AppendLine(
-            $"Prestige  : {r.currentPrestige}/{b.maxPrestige}");
+            $"Prestige  : {r.currentPrestige}/{c.maxPrestige}");
 
         sb.AppendLine();
 
@@ -137,25 +138,41 @@ public class DebugBattleUI : MonoBehaviour
             if (part.IsBroken)
                 sb.Append(" (Broken)");
             else
-                sb.Append($" HP : {part.PartHP}");
+                sb.Append($" HP : {part.PartHP}/{part.PartMaxHP}");
 
             sb.AppendLine();
 
             if (part.CurrentSkill != null)
             {
                 sb.AppendLine(
-                    $"    Skill  : {part.CurrentSkill.SkillName}");
-                sb.AppendLine("[Actions]");
-
-                foreach (BattleAction action in battleManager.ActionManager.Actions)
-                {
-                    sb.AppendLine(
-                        $"{action.Owner.CharacterName} ({action.OwnerPart.type})"
-                        + $" -> {action.Target.CharacterName} ({action.TargetPart.type})"
-                        + $" / {action.Skill.SkillName}");
-                }
+                    $"    Skill : {part.CurrentSkill.SkillName}");
             }
+
             sb.AppendLine();
         }
+
+        //---------------- Actions ----------------
+
+        sb.AppendLine("[Actions]");
+
+        bool hasAction = false;
+
+        foreach (BattleAction action in battleManager.ActionManager.Actions)
+        {
+            if (action.Owner != character)
+                continue;
+
+            hasAction = true;
+
+            sb.AppendLine(
+                $"{action.Owner.Data.CharacterName} ({action.OwnerPart.type})"
+                + $" -> {action.Target.Data.CharacterName} ({action.TargetPart.type})"
+                + $" / {action.Skill.SkillName}");
+        }
+
+        if (!hasAction)
+            sb.AppendLine("None");
+
+        sb.AppendLine();
     }
 }

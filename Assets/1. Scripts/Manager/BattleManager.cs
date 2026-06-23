@@ -44,8 +44,6 @@ public class BattleManager : MonoBehaviour
         battleContext.AllCharacters.Add(player);
         battleContext.AllCharacters.AddRange(enemies);
         
-        Utils.PrintList(battleContext.AllCharacters);
-
         // BattleEvent 연결
         player.Initialize(battleContext._battleEvent);
 
@@ -57,6 +55,7 @@ public class BattleManager : MonoBehaviour
         damageManager = new DamageManager(battleContext);
         clashManager = new ClashManager(battleContext, damageManager);
         ActionManager = new ActionManager(battleContext);
+        aIManager = new AIManager(battleContext, ActionManager);
         TurnManager = new TurnManager(
             battleContext,
             ActionManager,
@@ -64,6 +63,8 @@ public class BattleManager : MonoBehaviour
             clashManager);
 
         SelectedCharacter = player;
+        
+        Utils.PrintList(BattleContext.AllCharacters);
     }
 
     //----------------------------------------------------

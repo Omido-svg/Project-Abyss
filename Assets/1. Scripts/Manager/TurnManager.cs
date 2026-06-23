@@ -1,4 +1,5 @@
 using System;
+using UnityEngine;
 
 public class TurnManager
 {
@@ -57,6 +58,9 @@ public class TurnManager
 
         // AI 행동 생성
         aiManager.DecideEnemyActions();
+        
+        Debug.Log("AI 행동 생성 완료");
+        Utils.PrintActions((System.Collections.Generic.List<BattleAction>)actionManager.Actions);
 
         // 플레이어는 UI에서 BattleAction을 생성
     }

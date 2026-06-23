@@ -17,7 +17,7 @@ public class BattleUIManager : MonoBehaviour
         selectedOwner = owner;
         selectedOwnerPart = part;
 
-        Debug.Log($"Owner : {owner.CharacterName} / {part.type}");
+        Debug.Log($"Owner : {owner.Data.CharacterName} / {part.type}");
     }
 
     //------------------------------------------------
@@ -55,8 +55,8 @@ public class BattleUIManager : MonoBehaviour
         battleManager.ActionManager.AddAction(action);
 
         Debug.Log(
-            $"{action.Owner.CharacterName} [{action.OwnerPart.type}] -> " +
-            $"{action.Target.CharacterName} [{action.TargetPart.type}]");
+            $"{action.Owner.Data.CharacterName} [{action.OwnerPart.type}] -> " +
+            $"{action.Target.Data.CharacterName} [{action.TargetPart.type}]");
 
         ClearSelection();
     }

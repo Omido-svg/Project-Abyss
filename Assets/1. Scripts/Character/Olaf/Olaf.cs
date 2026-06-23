@@ -4,30 +4,23 @@ using UnityEngine;
 public class Olaf : Character
 {
     public int MadnessStack { get; private set; }
-    
-    private List<BodyPart> bodyParts = new()
+
+    //------------------------------------------------
+
+    private readonly List<BodyPart> bodyParts = new()
     {
         new BodyPart(PartsType.HEAD, 7, 20),
         new BodyPart(PartsType.Body, 6, 20),
         new BodyPart(PartsType.HANDS, 5, 20),
         new BodyPart(PartsType.LEGS, 4, 20)
     };
-    public override IReadOnlyList<BodyPart> BodyParts => bodyParts;
-    
-    public override void Initialize(BattleEvent battleEvent)
-    {
-        base.Initialize(battleEvent);
 
-        passive = new OlafPassive(this, battleEvent);
-    }
+    public override IReadOnlyList<BodyPart> BodyParts => bodyParts;
+
+    //------------------------------------------------
 
     private void Awake()
     {
-        CharacterName = "Olaf";
-
-        BaseStatus = new BaseStatus(100, 1, 1);
-        RuntimeStatus = new RuntimeStatus(BaseStatus);
-        
         SkillPool = new List<Skill>()
         {
             new OlafNormalAttack(),
@@ -36,6 +29,17 @@ public class Olaf : Character
             new OlafPrestigeSkill()
         };
     }
+
+    //------------------------------------------------
+    // 상태 초기화
+    public override void Initialize(BattleEvent battleEvent)
+    {
+        base.Initialize(battleEvent);
+
+        passive = new OlafPassive(this, battleEvent);
+    }
+
+    //------------------------------------------------
 
     public void AddMadness(int amount)
     {
@@ -47,9 +51,12 @@ public class Olaf : Character
         MadnessStack = 0;
     }
 
+    //------------------------------------------------
+
     public override void Die()
     {
         base.Die();
-        Debug.Log("올라프 사망");
+
+        Debug.Log($"{Data.CharacterName} 사망");
     }
 }
