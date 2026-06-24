@@ -4,18 +4,16 @@ public class OlafPrestigeSkill : Skill
     {
         SkillName = "불사의 광란";
 
-        SkillType = SkillType.PRESTIGE;
-
         BasePower = 20;
 
-        Resolver = new CoinResolver(owner, 5);
+        Resolver = new CoinResolver(5);
     }
 
     public override void Execute(BattleAction action)
     {
         action.Target.TakeDamage(
             action.TargetPart,
-            Roll());
+            action.RollPower());
 
         // 출혈 폭발
         // 광기 초기화

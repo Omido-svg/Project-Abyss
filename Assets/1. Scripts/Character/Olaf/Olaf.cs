@@ -9,10 +9,10 @@ public class Olaf : Character
 
     private readonly List<BodyPart> bodyParts = new()
     {
-        new BodyPart(PartsType.HEAD, 7, 20),
-        new BodyPart(PartsType.Body, 6, 20),
-        new BodyPart(PartsType.HANDS, 5, 20),
-        new BodyPart(PartsType.LEGS, 4, 20)
+        new BodyPart(PartType.HEAD, 6, 10, 20),
+        new BodyPart(PartType.LEFT_HAND, 4, 8, 20),
+        new BodyPart(PartType.RIGHT_HAND, 4, 8, 20),
+        new BodyPart(PartType.LEGS, 3, 7, 20)
     };
 
     public override IReadOnlyList<BodyPart> BodyParts => bodyParts;

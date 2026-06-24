@@ -58,9 +58,7 @@ public class ActionManager
     public void BuildTurnActions()
     {
         CalculateSpeed();
-
         SortBySpeed();
-
         MatchClashes();
     }
 

@@ -1,49 +1,76 @@
+using UnityEngine;
+
 public class DamageManager
 {
     private readonly BattleContext battleContext;
+    private readonly MomentumManager momentumManager;
 
-    public DamageManager(BattleContext battleContext)
+    public DamageManager(
+        BattleContext battleContext,
+        MomentumManager momentumManager)
     {
         this.battleContext = battleContext;
+        this.momentumManager = momentumManager;
     }
 
     //------------------------------------------------
-    
-    // 합, 일반공격 알아서 처리
+
     public void ApplyDamage(BattleAction action)
     {
-        float damage = CalculateDamage(action);
+        int damage;
+        
+        if (action.IsPreparation)
+            damage = action.RollPower();
+        else
+            damage = CalculateDamage(action);
 
         action.Target.TakeDamage(
             action.TargetPart,
-            (int)damage);
+            damage);
     }
 
     //------------------------------------------------
 
-    private float CalculateDamage(BattleAction action)
+    private int CalculateDamage(BattleAction action)
     {
-        float damage = 0f;
+        // 1. 스킬 위력
+        float damage = action.RollPower();
 
-        // 공격자의 공격력
-        damage += action.Owner.CurrentStatus.attackLevel;
-
-        // 스킬 위력
-        damage += action.Skill.BasePower;
-
-        // 방어자의 방어력
-        damage -= action.Target.CurrentStatus.defenseLevel;
-
-        // 공격자의 최종 피해 증가
+        // 2. 최종 피해 증가
         damage *= action.Owner.CurrentStatus.damageMultiplier;
 
-        // 피해 감소
-        damage *= (1f - action.Target.CurrentStatus.damageReduction);
+        // 3. 기세 배율
+        damage *= momentumManager.GetDamageMultiplier(action.Owner);
 
-        // 최소 데미지 보정
+        // 4. 방어도(Block)
+        RuntimeStatus runtime = action.Target.RuntimeStatus;
+
+        float ignore =
+            Mathf.Clamp01(
+                action.Owner.CurrentStatus.defensePenetration);
+
+        // 방어도를 무시하고 바로 들어가는 피해
+        float ignoreDamage = damage * ignore;
+
+        // Block으로 막을 수 있는 피해
+        float blockableDamage = damage - ignoreDamage;
+
+        // 실제 막은 피해
+        float blocked =
+            Mathf.Min(runtime.currentBlock, blockableDamage);
+
+        runtime.currentBlock -= Mathf.RoundToInt(blocked);
+
+        // 최종 피해
+        damage =
+            ignoreDamage +
+            (blockableDamage - blocked);
+
+        //--------------------------------
+
         if (damage < 1f)
             damage = 1f;
 
-        return damage;
+        return Mathf.RoundToInt(damage);
     }
 }

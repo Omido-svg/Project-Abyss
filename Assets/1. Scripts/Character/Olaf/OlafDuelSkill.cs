@@ -4,11 +4,9 @@ public class OlafDuelSkill : Skill
     {
         SkillName = "광전사의 결투";
 
-        SkillType = SkillType.DUEL;
-
         BasePower = 8;
 
-        Resolver = new CoinResolver(owner, 3);
+        Resolver = new CoinResolver(3);
     }
 
     public override void Execute(BattleAction action)

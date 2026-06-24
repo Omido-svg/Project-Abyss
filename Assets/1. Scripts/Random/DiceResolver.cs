@@ -1,31 +1,20 @@
 public class DiceResolver : RandomResolver
 {
-    private int diceCount;
-    private int diceMax;
+    private int min;
+    private int max;
 
-    public DiceResolver(Character owner,
-                        int diceCount,
-                        int diceMax)
-        : base(owner)
+    public override int MinValue => min;
+
+    public override int MaxValue => max;
+
+    public DiceResolver(int min, int max)
     {
-        this.diceCount = diceCount;
-        this.diceMax = diceMax;
+        this.min = min;
+        this.max = max;
     }
 
     public override int Roll()
     {
-        int sum = 0;
-
-        for(int i = 0; i < diceCount; i++)
-        {
-            sum += UnityEngine.Random.Range(1, diceMax + 1);
-        }
-
-        return sum;
-    }
-
-    public override string GetResultText()
-    {
-        return "주사위";
+        return UnityEngine.Random.Range(min, max + 1);
     }
 }

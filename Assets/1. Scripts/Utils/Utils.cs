@@ -47,11 +47,7 @@ public static class Utils
             if (current != null && runtime != null)
             {
                 sb.AppendLine($"    HP        : {runtime.currentHP}/{current.maxHP}");
-                sb.AppendLine($"    ATK       : {current.attackLevel}");
-                sb.AppendLine($"    DEF       : {current.defenseLevel}");
-                sb.AppendLine($"    Stagger   : {runtime.currentStagger}/{current.maxStagger}");
                 sb.AppendLine($"    Prestige  : {runtime.currentPrestige}/{current.maxPrestige}");
-                sb.AppendLine($"    Mentality : {runtime.currentMentality}");
             }
             else
             {
@@ -64,7 +60,7 @@ public static class Utils
 
             foreach (BodyPart part in c.BodyParts)
             {
-                sb.Append($"      - {part.type}");
+                sb.Append($"      - {part.Type}");
 
                 if (part.IsBroken)
                 {
@@ -121,10 +117,10 @@ public static class Utils
                 action.Target != null ? action.Target.Data.CharacterName : "NULL";
 
             string ownerPart =
-                action.OwnerPart != null ? action.OwnerPart.type.ToString() : "None";
+                action.OwnerPart != null ? action.OwnerPart.Type.ToString() : "None";
 
             string targetPart =
-                action.TargetPart != null ? action.TargetPart.type.ToString() : "None";
+                action.TargetPart != null ? action.TargetPart.Type.ToString() : "None";
 
             string skill =
                 action.Skill != null ? action.Skill.SkillName : "None";

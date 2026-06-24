@@ -7,6 +7,7 @@ public class TurnManager
     private readonly ActionManager actionManager;
     private readonly AIManager aiManager;
     private readonly ClashManager clashManager;
+    private readonly SpeedManager speedManager;
 
     //--------------------------------
 
@@ -14,12 +15,14 @@ public class TurnManager
         BattleContext battleContext,
         ActionManager actionManager,
         AIManager aiManager,
-        ClashManager clashManager)
+        ClashManager clashManager,
+        SpeedManager speedManager)
     {
         this.battleContext = battleContext;
         this.actionManager = actionManager;
         this.aiManager = aiManager;
         this.clashManager = clashManager;
+        this.speedManager = speedManager;
     }
 
     //--------------------------------
@@ -45,6 +48,7 @@ public class TurnManager
     public void StartTurn()
     {
         battleContext._battleEvent.RaiseTurnStart(CurrentTurn);
+        speedManager.RollAllSpeed();
 
         // 모든 캐릭터 턴 시작 처리
         foreach (Character c in battleContext.AllCharacters)

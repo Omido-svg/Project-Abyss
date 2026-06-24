@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 public abstract class Character : MonoBehaviour
@@ -6,6 +7,7 @@ public abstract class Character : MonoBehaviour
     [Header("Data")]
     [SerializeField] private CharacterData data;
     public CharacterData Data => data;
+    public int CurrentHP => (int)BodyParts.Sum(x => x.PartHP);
 
     //------------------------------------------------
     // Status
@@ -38,9 +40,8 @@ public abstract class Character : MonoBehaviour
     public virtual void Initialize(BattleEvent battleEvent)
     {
         this.battleEvent = battleEvent;
-
+        RuntimeStatus.currentHP = CurrentHP;
         RecalculateStatus();
-
         RuntimeStatus = new RuntimeStatus(CurrentStatus);
     }
 
@@ -78,21 +79,28 @@ public abstract class Character : MonoBehaviour
         BodyPart part,
         int damage)
     {
-        RuntimeStatus.currentHP -= Mathf.CeilToInt(damage * 0.3f);
+        bool hitBrokenPart = part.IsBroken;
 
-        part.PartHP -= damage;
+        RuntimeStatus.currentHP -= damage;
 
-        if (part.PartHP <= 0 && !part.IsBroken)
+        if (!hitBrokenPart)
         {
-            part.IsBroken = true;
+            part.PartHP -= damage;
 
-            battleEvent?.RaiseBodyPartDestroyed(this, part);
+            if (part.PartHP <= 0 && !part.IsBroken)
+            {
+                part.IsBroken = true;
+
+                battleEvent?.RaiseBodyPartDestroyed(this, part);
+            }
         }
 
         battleEvent?.RaiseDamageTaken(this, damage);
 
-        if (RuntimeStatus.currentHP <= 0)
+        if (RuntimeStatus.currentHP <= 0 || IsAllBodyPartsBroken())
+        {
             Die();
+        }
     }
 
     //------------------------------------------------
@@ -117,7 +125,18 @@ public abstract class Character : MonoBehaviour
     }
 
     //------------------------------------------------
+    
+    public bool IsAllBodyPartsBroken()
+    {
+        foreach (var part in BodyParts)
+        {
+            if (!part.IsBroken)
+                return false;
+        }
 
+        return true;
+    }
+    
     public virtual void Die()
     {
         IsDead = true;
@@ -204,4 +223,6 @@ public abstract class Character : MonoBehaviour
             index++;
         }
     }
+    
+
 }

@@ -2,9 +2,11 @@ public class CoinResolver : RandomResolver
 {
     private int coinCount;
 
-    public CoinResolver(Character owner,
-                        int coinCount)
-        : base(owner)
+    public override int MinValue => 0;
+
+    public override int MaxValue => coinCount;
+
+    public CoinResolver(int coinCount)
     {
         this.coinCount = coinCount;
     }
@@ -13,18 +15,12 @@ public class CoinResolver : RandomResolver
     {
         int sum = 0;
 
-        for(int i = 0; i < coinCount; i++)
+        for (int i = 0; i < coinCount; i++)
         {
-            bool head = UnityEngine.Random.value > 0.5f;
-
-            sum += head ? 2 : 0;
+            if (UnityEngine.Random.value >= 0.5f)
+                sum++;
         }
 
         return sum;
-    }
-
-    public override string GetResultText()
-    {
-        return "코인";
     }
 }

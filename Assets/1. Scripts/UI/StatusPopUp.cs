@@ -193,13 +193,7 @@ public class StatusPopup : MonoBehaviour
 
         statusText.text =
             $"<b>{character.Data.CharacterName}</b>\n\n" +
-
             $"<color=#FF4B4B><b>HP</b></color> : {r.currentHP}/{c.maxHP}\n" +
-            $"<color=#FF9A3C><b>ATK</b></color> : {c.attackLevel}\n" +
-            $"<color=#4FA3FF><b>DEF</b></color> : {c.defenseLevel}\n\n" +
-
-            $"<color=#FFD84D><b>Stagger</b></color> : {r.currentStagger}/{c.maxStagger}\n" +
-            $"<color=#C084FF><b>Prestige</b></color> : {r.currentPrestige}/{c.maxPrestige}\n" +
-            $"<color=#4FE3FF><b>Mentality</b></color> : {r.currentMentality}";
+            $"<color=#C084FF><b>Prestige</b></color> : {r.currentPrestige}/{c.maxPrestige}\n";
     }
 }

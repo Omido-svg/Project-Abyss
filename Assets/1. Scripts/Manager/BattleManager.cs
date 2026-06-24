@@ -1,7 +1,8 @@
 using UnityEngine;
 using System.Collections.Generic;
+using UnityEngine.XR.WindowsMR.Input;
 
-// Battle -> Turn -> Action -> Clash -> Damage
+// Battle -> Turn -> Action -> Speed -> Clash -> Moment -> Damage 순으로 처리
 public class BattleManager : MonoBehaviour
 {
     [Header("Debug")]
@@ -19,10 +20,11 @@ public class BattleManager : MonoBehaviour
 
     public TurnManager TurnManager { get; private set; }
     public ActionManager ActionManager { get; private set; }
-
     private ClashManager clashManager;
     private DamageManager damageManager;
     private AIManager aIManager;
+    private MomentumManager momentumManager;
+    private SpeedManager speedManager;
 
     //----------------------------------------------------
     // Battle Context
@@ -51,16 +53,20 @@ public class BattleManager : MonoBehaviour
         {
             enemy.Initialize(battleContext._battleEvent);
         }
-
-        damageManager = new DamageManager(battleContext);
-        clashManager = new ClashManager(battleContext, damageManager);
+        
+        
+        momentumManager = new MomentumManager(battleContext);
+        speedManager = new SpeedManager(battleContext);
+        damageManager = new DamageManager(battleContext,momentumManager);
+        clashManager = new ClashManager(battleContext, damageManager, momentumManager);
         ActionManager = new ActionManager(battleContext);
         aIManager = new AIManager(battleContext, ActionManager);
         TurnManager = new TurnManager(
             battleContext,
             ActionManager,
             aIManager,
-            clashManager);
+            clashManager,
+            speedManager);
 
         SelectedCharacter = player;
         

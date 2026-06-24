@@ -92,18 +92,6 @@ public class DebugBattleUI : MonoBehaviour
             $"HP        : {r.currentHP}/{c.maxHP}");
 
         sb.AppendLine(
-            $"ATK       : {c.attackLevel}");
-
-        sb.AppendLine(
-            $"DEF       : {c.defenseLevel}");
-
-        sb.AppendLine(
-            $"Mental    : {r.currentMentality}");
-
-        sb.AppendLine(
-            $"Stagger   : {r.currentStagger}/{c.maxStagger}");
-
-        sb.AppendLine(
             $"Prestige  : {r.currentPrestige}/{c.maxPrestige}");
 
         sb.AppendLine();
@@ -133,7 +121,7 @@ public class DebugBattleUI : MonoBehaviour
 
         foreach (BodyPart part in character.BodyParts)
         {
-            sb.Append($"- {part.type}");
+            sb.Append($"- {part.Type}");
 
             if (part.IsBroken)
                 sb.Append(" (Broken)");
@@ -165,8 +153,8 @@ public class DebugBattleUI : MonoBehaviour
             hasAction = true;
 
             sb.AppendLine(
-                $"{action.Owner.Data.CharacterName} ({action.OwnerPart.type})"
-                + $" -> {action.Target.Data.CharacterName} ({action.TargetPart.type})"
+                $"{action.Owner.Data.CharacterName} ({action.OwnerPart.Type})"
+                + $" -> {action.Target.Data.CharacterName} ({action.TargetPart.Type})"
                 + $" / {action.Skill.SkillName}");
         }
 

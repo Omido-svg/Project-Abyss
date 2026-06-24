@@ -3,14 +3,19 @@ using System.Collections.Generic;
 public class ClashManager
 {
     private readonly DamageManager damageManager;
+    private readonly MomentumManager momentumManager;
     private readonly BattleContext battleContext;
+
+    //------------------------------------------------
 
     public ClashManager(
         BattleContext battleContext,
-        DamageManager damageManager)
+        DamageManager damageManager,
+        MomentumManager momentumManager)
     {
         this.battleContext = battleContext;
         this.damageManager = damageManager;
+        this.momentumManager = momentumManager;
     }
 
     //------------------------------------------------
@@ -50,8 +55,31 @@ public class ClashManager
             first.Owner,
             second.Owner);
 
-        int firstPower = first.Skill.Roll();
-        int secondPower = second.Skill.Roll();
+        //--------------------------------
+        // 합 판정값
+        //--------------------------------
+
+        int firstPower =
+            first.Skill.RollPower() +
+            (first.Speed - second.Speed);
+
+        int secondPower =
+            second.Skill.RollPower() +
+            (second.Speed - first.Speed);
+
+        //--------------------------------
+        // 동률이면 속도 제외하고 다시 굴림
+        //--------------------------------
+
+        while (firstPower == secondPower)
+        {
+            firstPower = first.Skill.RollPower();
+            secondPower = second.Skill.RollPower();
+        }
+
+        //--------------------------------
+        // 승패
+        //--------------------------------
 
         if (firstPower > secondPower)
         {
@@ -63,9 +91,18 @@ public class ClashManager
                 second.Owner,
                 first.Owner);
 
+            int gap = firstPower - secondPower;
+
+            // 기세 이동
+            momentumManager.ApplyClashResult(
+                first.Owner,
+                second.Owner,
+                gap);
+
+            // 데미지는 순수 위력
             damageManager.ApplyDamage(first);
         }
-        else if (firstPower < secondPower)
+        else
         {
             battleContext._battleEvent.RaiseClashWin(
                 second.Owner,
@@ -75,11 +112,14 @@ public class ClashManager
                 first.Owner,
                 second.Owner);
 
+            int gap = secondPower - firstPower;
+
+            momentumManager.ApplyClashResult(
+                second.Owner,
+                first.Owner,
+                gap);       
+
             damageManager.ApplyDamage(second);
-        }
-        else
-        {
-            // TODO : 무승부 처리
         }
     }
 
@@ -87,6 +127,7 @@ public class ClashManager
 
     private void ResolveOneSide(BattleAction action)
     {
+        // 도사림 등 합이 없는 행동
         damageManager.ApplyDamage(action);
     }
 }
