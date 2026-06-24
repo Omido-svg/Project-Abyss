@@ -1,9 +1,6 @@
 // 캐릭터1의 기본 스탯 (레벨업, 장비, 증강 등에 의해 변경)
 public class CurrentStatus
 {
-    // HP
-    public int maxHP;
-
     // 위세
     public int maxPrestige;
 
@@ -15,8 +12,6 @@ public class CurrentStatus
 
     public CurrentStatus(CharacterData data)
     {
-        maxHP = data.maxHP;
-
         maxPrestige = data.maxPrestige;
 
         damageMultiplier = data.damageMultiplier;
@@ -25,8 +20,6 @@ public class CurrentStatus
 
     public CurrentStatus(CurrentStatus other)
     {
-        maxHP = other.maxHP;
-
         maxPrestige = other.maxPrestige;
 
         damageMultiplier = other.damageMultiplier;

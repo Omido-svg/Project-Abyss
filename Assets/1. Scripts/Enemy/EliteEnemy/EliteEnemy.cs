@@ -34,46 +34,6 @@ class EliteEnemy : Enemy
         };
     }
 
-    //--------------------------------
-
-    public override BattleAction DecideAction(BattleContext context)
-    {
-        Character target = context.Player;
-
-        // 사용할 부위
-        BodyPart ownerPart = BodyParts[0];
-
-        // 사용할 스킬
-        Skill skill =
-            SkillPool[Random.Range(0, SkillPool.Count)];
-
-        // 가장 점수가 높은 부위 선택
-        BodyPart bestPart = null;
-        float bestScore = float.MinValue;
-
-        foreach (BodyPart part in target.BodyParts)
-        {
-            float score = CalculateTargetScore(part);
-
-            if (score > bestScore)
-            {
-                bestScore = score;
-                bestPart = part;
-            }
-        }
-
-        return new BattleAction()
-        {
-            Owner = this,
-            Target = target,
-
-            OwnerPart = ownerPart,
-            TargetPart = bestPart,
-
-            Skill = skill
-        };
-    }
-
     public override void Die()
     {
         base.Die();

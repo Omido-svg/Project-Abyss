@@ -2,7 +2,7 @@ public class OlafPrestigeSkill : Skill
 {
     public OlafPrestigeSkill()
     {
-        SkillName = "불사의 광란";
+        SkillName = "불사의 광란(위세)";
 
         BasePower = 20;
 

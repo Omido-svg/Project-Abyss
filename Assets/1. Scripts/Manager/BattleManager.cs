@@ -22,9 +22,10 @@ public class BattleManager : MonoBehaviour
     public ActionManager ActionManager { get; private set; }
     private ClashManager clashManager;
     private DamageManager damageManager;
-    private AIManager aIManager;
-    private MomentumManager momentumManager;
-    private SpeedManager speedManager;
+    private AIManager AIManager;
+    private MomentumManager MomentumManager;
+    private SpeedManager SpeedManager;
+    private ActionResolver ActionResolver;
 
     //----------------------------------------------------
     // Battle Context
@@ -55,18 +56,20 @@ public class BattleManager : MonoBehaviour
         }
         
         
-        momentumManager = new MomentumManager(battleContext);
-        speedManager = new SpeedManager(battleContext);
-        damageManager = new DamageManager(battleContext,momentumManager);
-        clashManager = new ClashManager(battleContext, damageManager, momentumManager);
+        MomentumManager = new MomentumManager(battleContext);
+        SpeedManager = new SpeedManager(battleContext);
+        damageManager = new DamageManager(battleContext, MomentumManager);
+        clashManager = new ClashManager(battleContext, damageManager, MomentumManager);
+        ActionResolver = new ActionResolver(battleContext, clashManager);
         ActionManager = new ActionManager(battleContext);
-        aIManager = new AIManager(battleContext, ActionManager);
+        AIManager = new AIManager(battleContext, ActionManager);
         TurnManager = new TurnManager(
             battleContext,
             ActionManager,
-            aIManager,
+            AIManager,
             clashManager,
-            speedManager);
+            SpeedManager,
+            ActionResolver);
 
         SelectedCharacter = player;
         
@@ -78,6 +81,8 @@ public class BattleManager : MonoBehaviour
     public void StartBattle()
     {
         TurnManager.StartBattle();
+        Utils.PrintList(BattleContext.AllCharacters);
+        Utils.PrintActions((List<BattleAction>)ActionManager.Actions);
     }
 
     //----------------------------------------------------

@@ -40,9 +40,15 @@ public abstract class Character : MonoBehaviour
     public virtual void Initialize(BattleEvent battleEvent)
     {
         this.battleEvent = battleEvent;
-        RuntimeStatus.currentHP = CurrentHP;
+
+        // 1. 스탯 계산
         RecalculateStatus();
+
+        // 2. Runtime 생성
         RuntimeStatus = new RuntimeStatus(CurrentStatus);
+
+        // 3. 실제 현재 체력 설정
+        RuntimeStatus.currentHP = CurrentHP;
     }
 
     //------------------------------------------------
@@ -104,27 +110,6 @@ public abstract class Character : MonoBehaviour
     }
 
     //------------------------------------------------
-
-    public virtual void Heal(int amount)
-    {
-        RuntimeStatus.currentHP += amount;
-
-        RuntimeStatus.currentHP =
-            Mathf.Min(
-                RuntimeStatus.currentHP,
-                CurrentStatus.maxHP);
-    }
-
-    //------------------------------------------------
-
-    public virtual void UseSkill(
-        Skill skill,
-        Character target)
-    {
-
-    }
-
-    //------------------------------------------------
     
     public bool IsAllBodyPartsBroken()
     {
@@ -142,13 +127,6 @@ public abstract class Character : MonoBehaviour
         IsDead = true;
 
         battleEvent?.RaiseCharacterDeath(this);
-    }
-
-    //------------------------------------------------
-
-    public virtual bool CanAct()
-    {
-        return true;
     }
 
     //------------------------------------------------
@@ -174,55 +152,4 @@ public abstract class Character : MonoBehaviour
 
         battleEvent?.RaiseStatusRemoved(this, effect);
     }
-
-    //------------------------------------------------
-
-    public void RecoverBrokenParts(int count)
-    {
-        foreach (BodyPart part in BodyParts)
-        {
-            if (!part.IsBroken)
-                continue;
-
-            part.Recover();
-
-            count--;
-
-            if (count <= 0)
-                break;
-        }
-    }
-
-    //------------------------------------------------
-    // 턴 시작 시 사용할 스킬 배정
-    //------------------------------------------------
-
-    public virtual void AssignSkills()
-    {
-        List<Skill> temp = new(SkillPool);
-
-        Utils.Shuffle(temp);
-
-        int index = 0;
-
-        foreach (BodyPart part in BodyParts)
-        {
-            if (part.IsBroken)
-            {
-                part.CurrentSkill = null;
-                continue;
-            }
-
-            if (index >= temp.Count)
-            {
-                part.CurrentSkill = null;
-                continue;
-            }
-
-            part.CurrentSkill = temp[index];
-            index++;
-        }
-    }
-    
-
 }

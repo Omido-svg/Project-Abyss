@@ -89,7 +89,7 @@ public class DebugBattleUI : MonoBehaviour
         //---------------- Status ----------------
 
         sb.AppendLine(
-            $"HP        : {r.currentHP}/{c.maxHP}");
+            $"HP        : {r.currentHP}/{character.CurrentHP}");
 
         sb.AppendLine(
             $"Prestige  : {r.currentPrestige}/{c.maxPrestige}");

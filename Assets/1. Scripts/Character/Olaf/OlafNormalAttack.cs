@@ -2,7 +2,7 @@ public class OlafNormalAttack : Skill
 {
     public OlafNormalAttack()
     {
-        SkillName = "피의 일격";
+        SkillName = "피의 일격(일반공격)";
 
         BasePower = 5;
 

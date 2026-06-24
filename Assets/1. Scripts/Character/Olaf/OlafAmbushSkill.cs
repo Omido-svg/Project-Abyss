@@ -2,7 +2,7 @@ public class OlafAmbushSkill : Skill
 {
     public OlafAmbushSkill()
     {
-        SkillName = "광기의 난도질";
+        SkillName = "광기의 난도질(도사림)";
 
         BasePower = 12;
 

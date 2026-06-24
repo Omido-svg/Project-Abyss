@@ -2,10 +2,7 @@ using System.Collections.Generic;
 
 public class ClashPair
 {
-    // 속도가 더 빠른 Action
     public BattleAction First;
-
-    // 합이 없으면 null
     public BattleAction Second;
 
     public bool IsClash => Second != null;
@@ -17,27 +14,29 @@ public class ClashPair
     }
 }
 
+public class ActionExecutionQueue
+{
+    public Queue<BattleAction> PrestigeQueue = new();
+    public Queue<BattleAction> AmbushQueue = new();
+    public Queue<ClashPair> ClashQueue = new();
+}
+
 public class ActionManager
 {
     private readonly BattleContext battleContext;
 
-    // 이번 턴 생성된 모든 Action
     private readonly List<BattleAction> actions = new();
-
-    // 이번 턴 생성된 ClashPair
     private readonly List<ClashPair> clashPairs = new();
 
     public IReadOnlyList<BattleAction> Actions => actions;
     public IReadOnlyList<ClashPair> ClashPairs => clashPairs;
-
-    //----------------------------------------------------
 
     public ActionManager(BattleContext battleContext)
     {
         this.battleContext = battleContext;
     }
 
-    //----------------------------------------------------
+    //------------------------------------------------
 
     public void Clear()
     {
@@ -45,24 +44,50 @@ public class ActionManager
         clashPairs.Clear();
     }
 
-    //----------------------------------------------------
+    //------------------------------------------------
 
     public void AddAction(BattleAction action)
     {
         actions.Add(action);
     }
 
-    //----------------------------------------------------
+    //------------------------------------------------
 
-    /// 이번 턴 실행목록 생성
-    public void BuildTurnActions()
+    public ActionExecutionQueue BuildExecutionQueue()
     {
         CalculateSpeed();
         SortBySpeed();
-        MatchClashes();
+        BuildClashes();
+
+        ActionExecutionQueue queue = new();
+
+        // 위세
+        foreach (BattleAction action in actions)
+        {
+            if (action.Phase == ActionPhase.PRETURN)
+                queue.PrestigeQueue.Enqueue(action);
+        }
+
+        // 도사림
+        foreach (BattleAction action in actions)
+        {
+            if (action.Phase == ActionPhase.FORESIGHT)
+                queue.AmbushQueue.Enqueue(action);
+        }
+
+        // 합
+        foreach (ClashPair pair in clashPairs)
+        {
+            if (pair.First.Phase == ActionPhase.COMBAT)
+            {
+                queue.ClashQueue.Enqueue(pair);
+            }
+        }
+
+        return queue;
     }
 
-    //----------------------------------------------------
+    //------------------------------------------------
 
     private void CalculateSpeed()
     {
@@ -72,16 +97,16 @@ public class ActionManager
         }
     }
 
-    //----------------------------------------------------
+    //------------------------------------------------
 
     private void SortBySpeed()
     {
         actions.Sort((a, b) => b.Speed.CompareTo(a.Speed));
     }
 
-    //----------------------------------------------------
+    //------------------------------------------------
 
-    private void MatchClashes()
+    private void BuildClashes()
     {
         clashPairs.Clear();
 
@@ -92,7 +117,11 @@ public class ActionManager
             if (matched.Contains(action))
                 continue;
 
-            BattleAction opponent = FindFastestOpponent(action, matched);
+            // 위세 / 도사림은 Clash 대상 아님
+            if (action.Phase != ActionPhase.COMBAT)
+                continue;
+
+            BattleAction opponent = FindOpponent(action, matched);
 
             if (opponent != null)
             {
@@ -110,9 +139,9 @@ public class ActionManager
         }
     }
 
-    //----------------------------------------------------
+    //------------------------------------------------
 
-    private BattleAction FindFastestOpponent(
+    private BattleAction FindOpponent(
         BattleAction action,
         HashSet<BattleAction> matched)
     {
@@ -124,7 +153,9 @@ public class ActionManager
             if (other == action)
                 continue;
 
-            // 서로를 공격하는가?
+            if (other.Phase != ActionPhase.COMBAT)
+                continue;
+
             if (other.Owner == action.Target &&
                 other.Target == action.Owner)
             {
@@ -133,14 +164,5 @@ public class ActionManager
         }
 
         return null;
-    }
-
-    //----------------------------------------------------
-
-    public Queue<ClashPair> BuildQueue()
-    {
-        BuildTurnActions();
-
-        return new Queue<ClashPair>(clashPairs);
     }
 }

@@ -4,16 +4,6 @@ using UnityEngine;
 
 public static class Utils
 {
-    public static void Shuffle(List<Skill> skills)
-    {
-        for (int i = skills.Count - 1; i > 0; i--)
-        {
-            int j = Random.Range(0, i + 1);
-
-            (skills[i], skills[j]) = (skills[j], skills[i]);
-        }
-    }
-    
     public static void PrintList(List<Character> list)
     {
         if (list == null)
@@ -24,62 +14,69 @@ public static class Utils
 
         StringBuilder sb = new StringBuilder();
 
-        sb.AppendLine("========================================");
+        sb.AppendLine("========================================================");
         sb.AppendLine($" Character List ({list.Count})");
-        sb.AppendLine("========================================");
+        sb.AppendLine("========================================================");
 
-        for (int i = 0; i < list.Count; i++)
+        foreach (Character c in list)
         {
-            Character c = list[i];
-
             if (c == null)
             {
-                sb.AppendLine($"[{i}] NULL");
-                sb.AppendLine("----------------------------------------");
+                sb.AppendLine("NULL Character");
+                sb.AppendLine("--------------------------------------------------------");
                 continue;
             }
 
             CurrentStatus current = c.CurrentStatus;
             RuntimeStatus runtime = c.RuntimeStatus;
 
-            sb.AppendLine($"[{i}] {c.Data.CharacterName}");
+            sb.AppendLine($"[{c.Data.CharacterName}]");
 
             if (current != null && runtime != null)
             {
-                sb.AppendLine($"    HP        : {runtime.currentHP}/{current.maxHP}");
-                sb.AppendLine($"    Prestige  : {runtime.currentPrestige}/{current.maxPrestige}");
+                sb.AppendLine($"  HP        : {runtime.currentHP}");
+                sb.AppendLine($"  Block     : {runtime.currentBlock}");
+                sb.AppendLine($"  Prestige  : {runtime.currentPrestige}/{current.maxPrestige}");
             }
             else
             {
-                sb.AppendLine("    Status Not Initialized");
+                sb.AppendLine("  Status Not Initialized");
             }
 
-            sb.AppendLine($"    Dead      : {c.IsDead}");
+            sb.AppendLine($"  Dead : {c.IsDead}");
 
-            sb.AppendLine("    BodyParts");
+            sb.AppendLine();
+            sb.AppendLine("  Body Parts");
 
             foreach (BodyPart part in c.BodyParts)
             {
-                sb.Append($"      - {part.Type}");
+                sb.Append($"    [{part.Type}] ");
 
                 if (part.IsBroken)
                 {
-                    sb.Append(" (Broken)");
+                    sb.Append("BROKEN");
                 }
                 else
                 {
-                    sb.Append($" HP : {part.PartHP}/{part.PartMaxHP}");
+                    sb.Append($"HP {part.PartHP}/{part.PartMaxHP}");
                 }
+
+                sb.Append($" | SPD {part.CurrentSpeed}");
 
                 if (part.CurrentSkill != null)
                 {
-                    sb.Append($" | Skill : {part.CurrentSkill.SkillName}");
+                    sb.Append($" | {part.CurrentSkill.SkillName}");
+                    sb.Append($" ({part.CurrentSkill.ActionType})");
+                }
+                else
+                {
+                    sb.Append(" | No Skill");
                 }
 
                 sb.AppendLine();
             }
 
-            sb.AppendLine("----------------------------------------");
+            sb.AppendLine("--------------------------------------------------------");
         }
 
         Debug.Log(sb.ToString());

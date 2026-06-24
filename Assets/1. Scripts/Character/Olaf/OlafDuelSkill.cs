@@ -2,7 +2,7 @@ public class OlafDuelSkill : Skill
 {
     public OlafDuelSkill()
     {
-        SkillName = "광전사의 결투";
+        SkillName = "광전사의 결투(결투)";
 
         BasePower = 8;
 

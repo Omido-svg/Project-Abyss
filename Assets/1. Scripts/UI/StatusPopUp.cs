@@ -193,7 +193,7 @@ public class StatusPopup : MonoBehaviour
 
         statusText.text =
             $"<b>{character.Data.CharacterName}</b>\n\n" +
-            $"<color=#FF4B4B><b>HP</b></color> : {r.currentHP}/{c.maxHP}\n" +
+            $"<color=#FF4B4B><b>HP</b></color> : {r.currentHP}/{character.CurrentHP}\n" +
             $"<color=#C084FF><b>Prestige</b></color> : {r.currentPrestige}/{c.maxPrestige}\n";
     }
 }

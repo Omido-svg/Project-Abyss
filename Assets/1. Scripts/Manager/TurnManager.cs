@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 public class TurnManager
@@ -8,6 +9,7 @@ public class TurnManager
     private readonly AIManager aiManager;
     private readonly ClashManager clashManager;
     private readonly SpeedManager speedManager;
+    private readonly ActionResolver actionResolver;
 
     //--------------------------------
 
@@ -16,13 +18,15 @@ public class TurnManager
         ActionManager actionManager,
         AIManager aiManager,
         ClashManager clashManager,
-        SpeedManager speedManager)
+        SpeedManager speedManager,
+        ActionResolver actionResolver)
     {
         this.battleContext = battleContext;
         this.actionManager = actionManager;
         this.aiManager = aiManager;
         this.clashManager = clashManager;
         this.speedManager = speedManager;
+        this.actionResolver = actionResolver;
     }
 
     //--------------------------------
@@ -33,7 +37,7 @@ public class TurnManager
 
     //--------------------------------
 
-    /// 전투 시작
+    // 전투 시작
     public void StartBattle()
     {
         CurrentTurn = 1;
@@ -48,42 +52,31 @@ public class TurnManager
     public void StartTurn()
     {
         battleContext._battleEvent.RaiseTurnStart(CurrentTurn);
-        speedManager.RollAllSpeed();
 
-        // 모든 캐릭터 턴 시작 처리
         foreach (Character c in battleContext.AllCharacters)
         {
             c.TurnStart();
-            c.AssignSkills();
         }
 
-        // 이전 턴 행동 제거
+        speedManager.RollAllSpeed();
+
         actionManager.Clear();
 
-        // AI 행동 생성
         aiManager.DecideEnemyActions();
-        
-        Debug.Log("AI 행동 생성 완료");
-        Utils.PrintActions((System.Collections.Generic.List<BattleAction>)actionManager.Actions);
 
-        // 플레이어는 UI에서 BattleAction을 생성
+        // 플레이어 UI 입력 대기
     }
 
-    //--------------------------------
 
-    /// 플레이어 입력 완료 후 호출
+    // 플레이어 입력 완료 후 호출
     public void ResolveTurn()
     {
-        actionManager.BuildTurnActions();
-
-        clashManager.Resolve(actionManager.BuildQueue());
-
+        ActionExecutionQueue executionQueue = actionManager.BuildExecutionQueue();
+        actionResolver.Resolve(executionQueue);
         EndTurn();
     }
 
-    //--------------------------------
-
-    /// 현재 턴 종료
+    // 현재 턴 종료
     public void EndTurn()
     {
         foreach (Character c in battleContext.AllCharacters)
@@ -96,15 +89,11 @@ public class TurnManager
         CurrentTurn++;
     }
 
-    //--------------------------------
-
     /// 다음 턴
     public void NextTurn()
     {
         StartTurn();
     }
-
-    //--------------------------------
 
     /// 전투 종료
     public void EndBattle()

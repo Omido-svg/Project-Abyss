@@ -24,6 +24,8 @@ public class BattleAction
 
     // 최종 데미지
     public float Damage;
+    
+    public ActionPhase Phase;
 
     public ActionType ActionType => Skill.ActionType;
 

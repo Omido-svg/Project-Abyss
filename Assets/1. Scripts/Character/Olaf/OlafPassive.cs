@@ -6,7 +6,7 @@ public class OlafPassive : Passive
     {
         Initialize(owner, battleEvent);
 
-        passiveName = "광기";
+        passiveName = "광기(패시브)";
 
         Register();
     }
@@ -44,7 +44,5 @@ public class OlafPassive : Passive
     {
         if (killer != owner) return;
         
-        // 부위 회복
-        owner.RecoverBrokenParts(1);
     }
 }
