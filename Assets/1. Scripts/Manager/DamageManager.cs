@@ -17,51 +17,54 @@ public class DamageManager
 
     public void ApplyDamage(BattleAction action)
     {
+        if (action.RolledPower == 0)
+            action.RolledPower = action.RollPower();
+
         int damage;
-        
+
         if (action.IsPreparation)
-            damage = action.RollPower();
+            damage = action.RolledPower;
         else
             damage = CalculateDamage(action);
 
+        bool overwhelm =
+            momentumManager.IsOverwhelm(action.Owner);
+
         action.Target.TakeDamage(
             action.TargetPart,
-            damage);
+            damage,
+            overwhelm);
     }
 
     //------------------------------------------------
 
     private int CalculateDamage(BattleAction action)
     {
-        // 1. 스킬 위력
-        float damage = action.RollPower();
+        // 이미 굴려진 위력 사용
+        float damage = action.RolledPower;
 
-        // 2. 최종 피해 증가
+        // 최종 피해 증가
         damage *= action.Owner.CurrentStatus.damageMultiplier;
 
-        // 3. 기세 배율
+        // 기세 배율
         damage *= momentumManager.GetDamageMultiplier(action.Owner);
 
-        // 4. 방어도(Block)
+        // 방어도(Block)
         RuntimeStatus runtime = action.Target.RuntimeStatus;
 
         float ignore =
             Mathf.Clamp01(
                 action.Owner.CurrentStatus.defensePenetration);
 
-        // 방어도를 무시하고 바로 들어가는 피해
         float ignoreDamage = damage * ignore;
 
-        // Block으로 막을 수 있는 피해
         float blockableDamage = damage - ignoreDamage;
 
-        // 실제 막은 피해
         float blocked =
-            Mathf.Min(runtime.currentBlock, blockableDamage);
+            Mathf.Min(runtime.currentDefensePenetration, blockableDamage);
 
-        runtime.currentBlock -= Mathf.RoundToInt(blocked);
+        runtime.currentDefensePenetration -= Mathf.RoundToInt(blocked);
 
-        // 최종 피해
         damage =
             ignoreDamage +
             (blockableDamage - blocked);

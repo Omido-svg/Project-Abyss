@@ -50,23 +50,14 @@ public class AIManager
 
     public void DecideEnemyActions()
     {
-        foreach (Character character in battleContext.Enemies)
+        foreach (Enemy enemy in battleContext.Enemies)
         {
-            if (character.IsDead)
-                continue;
+            List<BattleAction> actions = enemy.DecideActions(battleContext);
 
-            if (character is not Enemy enemy)
-                continue;
-
-            BattleAction action =
-                enemy.DecideAction(battleContext);
-
-            if (action == null)
-                continue;
-
-            actionManager.AddAction(action);
-
-            RegisterTarget(action.TargetPart);
+            foreach (BattleAction action in actions)
+            {
+                actionManager.AddAction(action);
+            }
         }
     }
 }

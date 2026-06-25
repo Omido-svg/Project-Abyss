@@ -4,6 +4,15 @@ using UnityEngine;
 
 public static class Utils
 {
+    public static void Shuffle<T>(List<T> list)
+    {
+        for (int i = 0; i < list.Count; i++)
+        {
+            int rand = Random.Range(i, list.Count);
+            (list[i], list[rand]) = (list[rand], list[i]);
+        }
+    }
+    
     public static void PrintList(List<Character> list)
     {
         if (list == null)
@@ -35,7 +44,7 @@ public static class Utils
             if (current != null && runtime != null)
             {
                 sb.AppendLine($"  HP        : {runtime.currentHP}");
-                sb.AppendLine($"  Block     : {runtime.currentBlock}");
+                sb.AppendLine($"  Block     : {runtime.currentDefensePenetration}");
                 sb.AppendLine($"  Prestige  : {runtime.currentPrestige}/{current.maxPrestige}");
             }
             else

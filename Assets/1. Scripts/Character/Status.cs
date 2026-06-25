@@ -1,14 +1,14 @@
-// 캐릭터1의 기본 스탯 (레벨업, 장비, 증강 등에 의해 변경)
 public class CurrentStatus
 {
     // 위세
-    public int maxPrestige;
+    public int maxPrestige = 100;
 
     // 데미지
     public float damageMultiplier = 1f;
-    public float defensePenetration;
+    
+    // 방어도
+    public float defensePenetration = 1;
 
-    public CurrentStatus() { }
 
     public CurrentStatus(CharacterData data)
     {
@@ -16,14 +16,6 @@ public class CurrentStatus
 
         damageMultiplier = data.damageMultiplier;
         defensePenetration = data.defensePenetration;
-    }
-
-    public CurrentStatus(CurrentStatus other)
-    {
-        maxPrestige = other.maxPrestige;
-
-        damageMultiplier = other.damageMultiplier;
-        defensePenetration = other.defensePenetration;
     }
 }
 
@@ -34,15 +26,15 @@ public class RuntimeStatus
     public int currentHP;
     
     // 방어도
-    public int currentBlock;
+    public int currentDefensePenetration;
 
     // 위세
     public int currentPrestige;
-
+    
     //--------------------------------
     public RuntimeStatus(CurrentStatus status)
     {
-        currentBlock = 0;
+        currentDefensePenetration = 0;
         currentPrestige = 0;
     }
 }

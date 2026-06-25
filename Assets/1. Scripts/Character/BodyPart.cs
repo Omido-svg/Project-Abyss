@@ -47,8 +47,6 @@ public class BodyPart
         PartHP = hp;
     }
 
-    //--------------------------------
-
     public void RollSpeed()
     {
         if (IsBroken)
@@ -59,8 +57,6 @@ public class BodyPart
 
         CurrentSpeed = Random.Range(MinSpeed, MaxSpeed + 1);
     }
-
-    //--------------------------------
 
     public void Recover()
     {

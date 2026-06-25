@@ -3,10 +3,6 @@ using UnityEngine;
 
 public class Olaf : Character
 {
-    public int MadnessStack { get; private set; }
-
-    //------------------------------------------------
-
     private readonly List<BodyPart> bodyParts = new()
     {
         new BodyPart(PartType.HEAD, 6, 10, 20),
@@ -16,6 +12,7 @@ public class Olaf : Character
     };
 
     public override IReadOnlyList<BodyPart> BodyParts => bodyParts;
+    public OlafPassive Passive => (OlafPassive)passive;
 
     //------------------------------------------------
 
@@ -28,6 +25,7 @@ public class Olaf : Character
             new OlafAmbushSkill(),
             new OlafPrestigeSkill()
         };
+        
     }
 
     //------------------------------------------------
@@ -35,28 +33,14 @@ public class Olaf : Character
     public override void Initialize(BattleEvent battleEvent)
     {
         base.Initialize(battleEvent);
-
         passive = new OlafPassive(this, battleEvent);
     }
-
-    //------------------------------------------------
-
-    public void AddMadness(int amount)
-    {
-        MadnessStack = Mathf.Min(MadnessStack + amount, 5);
-    }
-
-    public void ResetMadness()
-    {
-        MadnessStack = 0;
-    }
-
     //------------------------------------------------
 
     public override void Die()
     {
         base.Die();
-
         Debug.Log($"{Data.CharacterName} 사망");
     }
+
 }

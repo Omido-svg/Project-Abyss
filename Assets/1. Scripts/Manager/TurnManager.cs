@@ -10,6 +10,7 @@ public class TurnManager
     private readonly ClashManager clashManager;
     private readonly SpeedManager speedManager;
     private readonly ActionResolver actionResolver;
+    private readonly MomentumManager momentumManager;
 
     //--------------------------------
 
@@ -19,7 +20,8 @@ public class TurnManager
         AIManager aiManager,
         ClashManager clashManager,
         SpeedManager speedManager,
-        ActionResolver actionResolver)
+        ActionResolver actionResolver,
+        MomentumManager momentumManager)
     {
         this.battleContext = battleContext;
         this.actionManager = actionManager;
@@ -27,6 +29,7 @@ public class TurnManager
         this.clashManager = clashManager;
         this.speedManager = speedManager;
         this.actionResolver = actionResolver;
+        this.momentumManager = momentumManager;
     }
 
     //--------------------------------
@@ -48,7 +51,7 @@ public class TurnManager
 
     //--------------------------------
 
-    /// 현재 턴 시작
+    // 현재 턴 시작
     public void StartTurn()
     {
         battleContext._battleEvent.RaiseTurnStart(CurrentTurn);
@@ -83,19 +86,19 @@ public class TurnManager
         {
             c.TurnEnd();
         }
-
+        
+        momentumManager.DecayMomentum();
         battleContext._battleEvent.RaiseTurnEnd(CurrentTurn);
-
         CurrentTurn++;
     }
 
-    /// 다음 턴
+    // 다음 턴
     public void NextTurn()
     {
         StartTurn();
     }
 
-    /// 전투 종료
+    // 전투 종료
     public void EndBattle()
     {
         IsBattleRunning = false;

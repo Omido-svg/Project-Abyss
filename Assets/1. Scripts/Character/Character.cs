@@ -8,10 +8,9 @@ public abstract class Character : MonoBehaviour
     [SerializeField] private CharacterData data;
     public CharacterData Data => data;
     public int CurrentHP => (int)BodyParts.Sum(x => x.PartHP);
-
-    //------------------------------------------------
-    // Status
-    //------------------------------------------------
+    
+    // 캐릭터 별로 부위를 다르게 설정
+    public abstract IReadOnlyList<BodyPart> BodyParts { get; }
 
     // 아이템, 증강, 패시브 등이 모두 적용된 현재 스탯
     public CurrentStatus CurrentStatus { get; protected set; }
@@ -19,15 +18,11 @@ public abstract class Character : MonoBehaviour
     // 전투 중 계속 변하는 값
     public RuntimeStatus RuntimeStatus { get; protected set; }
 
-    //------------------------------------------------
-
     public List<Skill> SkillPool { get; protected set; } = new();
 
     protected Passive passive;
 
     public bool IsDead { get; protected set; }
-
-    public abstract IReadOnlyList<BodyPart> BodyParts { get; }
 
     protected readonly List<StatusEffect> statusEffects = new();
 
@@ -51,10 +46,7 @@ public abstract class Character : MonoBehaviour
         RuntimeStatus.currentHP = CurrentHP;
     }
 
-    //------------------------------------------------
     // 스탯 재계산
-    //------------------------------------------------
-
     public virtual void RecalculateStatus()
     {
         // CharacterData 복사
@@ -79,25 +71,26 @@ public abstract class Character : MonoBehaviour
 
     }
 
-    //------------------------------------------------
-
     public virtual void TakeDamage(
         BodyPart part,
-        int damage)
+        int damage,
+        bool forceBreak = false)
     {
         bool hitBrokenPart = part.IsBroken;
 
+        // 전체 체력 감소
         RuntimeStatus.currentHP -= damage;
 
+        // 멀쩡한 부위였다면 부위 HP 감소
         if (!hitBrokenPart)
         {
             part.PartHP -= damage;
+            part.PartHP = Mathf.Max(0, part.PartHP);
 
-            if (part.PartHP <= 0 && !part.IsBroken)
+            // 부위 파괴
+            if ((part.PartHP <= 0 || forceBreak) && !part.IsBroken)
             {
-                part.IsBroken = true;
-
-                battleEvent?.RaiseBodyPartDestroyed(this, part);
+                ForceBreakPart(part);
             }
         }
 
@@ -151,5 +144,36 @@ public abstract class Character : MonoBehaviour
         statusEffects.Remove(effect);
 
         battleEvent?.RaiseStatusRemoved(this, effect);
+    }
+    
+    public void ForceBreakPart(BodyPart part)
+    {
+        if(part.IsBroken)
+            return;
+
+        part.PartHP = 0;
+        part.IsBroken = true;
+
+        battleEvent?.RaiseBodyPartDestroyed(this, part);
+    }
+    
+    public void AddPrestige(int amount)
+    {
+        RuntimeStatus.currentPrestige =
+            Mathf.Min(
+                RuntimeStatus.currentPrestige + amount,
+                CurrentStatus.maxPrestige);
+    }
+    
+    public int ModifyRoll(BattleAction action, int roll)
+    {
+        int value = roll;
+
+        foreach (StatusEffect effect in statusEffects)
+        {
+            value = effect.ModifyRoll(action, value);
+        }
+
+        return value;
     }
 }

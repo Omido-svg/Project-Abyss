@@ -1,6 +1,8 @@
+using UnityEngine;
+
 public class OlafPassive : Passive
 {
-    private int madnessStack;
+    private int MadnessStack;
 
     public OlafPassive(Character owner, BattleEvent battleEvent)
     {
@@ -37,12 +39,22 @@ public class OlafPassive : Passive
     {
         if (target != owner) return;
 
-        madnessStack++;
+        MadnessStack++;
     }
 
     private void OnKill(Character killer, Character victim)
     {
         if (killer != owner) return;
         
+    }
+    
+    public void AddMadness(int amount)
+    {
+       MadnessStack += Mathf.Min(MadnessStack + amount, 5);
+    }
+
+    public void ResetMadness()
+    {
+        MadnessStack = 0;
     }
 }

@@ -69,10 +69,12 @@ public class BattleManager : MonoBehaviour
             AIManager,
             clashManager,
             SpeedManager,
-            ActionResolver);
+            ActionResolver,
+            MomentumManager);
 
         SelectedCharacter = player;
         
+        // 디버깅용
         Utils.PrintList(BattleContext.AllCharacters);
     }
 
@@ -81,6 +83,8 @@ public class BattleManager : MonoBehaviour
     public void StartBattle()
     {
         TurnManager.StartBattle();
+        
+        // 디버깅용 출력
         Utils.PrintList(BattleContext.AllCharacters);
         Utils.PrintActions((List<BattleAction>)ActionManager.Actions);
     }

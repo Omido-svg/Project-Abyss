@@ -1,3 +1,5 @@
+using UnityEngine;
+
 public abstract class Passive
 {
     protected Character owner;

@@ -56,4 +56,14 @@ public abstract class StatusEffect
     {
         return Duration <= 0;
     }
+    
+    public virtual int ModifyRoll(BattleAction action, int roll)
+    {
+        return roll;
+    }
+    
+    protected void RemoveStatus()
+    {
+        owner.RemoveStatus(this);
+    }
 }

@@ -18,16 +18,11 @@ public class BattleAction
 
     // 이번 턴 속도
     public int Speed;
-
-    // 합에서 사용할 위력
-    public float Power;
-
-    // 최종 데미지
-    public float Damage;
     
     public ActionPhase Phase;
 
     public ActionType ActionType => Skill.ActionType;
+
 
     public void CalculateSpeed()
     {
@@ -46,9 +41,13 @@ public class BattleAction
     public bool IsPrestige =>
         ActionType == ActionType.Prestige;
         
+    public int RolledPower; // 굴린 위력
+        
     // 위력 계산
     public int RollPower()
     {
-        return Skill.BasePower + Skill.Resolver.Roll();
+        int roll = Skill.Resolver.Roll();
+        roll = Owner.ModifyRoll(this, roll);
+        return Skill.BasePower + roll;
     }
 }

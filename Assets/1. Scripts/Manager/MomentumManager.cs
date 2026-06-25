@@ -21,7 +21,14 @@ public class MomentumManager
     //--------------------------------
 
     // 최대 기세
-    public float MaxMomentum = 100f;
+    public float MaxMomentum = 50f;
+    public float AdvantageThreshold = 30f;
+    public float OverwhelmThreshold = 50f;
+    
+    // 발악
+    public float LastStandThreshold = 30f;
+    // 발악 보너스
+    public int LastStandBonus = 5;
 
     // 턴 종료 시 복귀량
     public float Decay = 20f;
@@ -30,20 +37,23 @@ public class MomentumManager
     // +면 플레이어 우세
     // -면 적 우세
     public float CurrentMomentum { get; private set; }
-    public float OverwhelmThreshold = 30f;
     
-    public MomentumState CurrentState
+    public MomentumState GetState(Character owner)
     {
-        get
-        {
-            if(CurrentMomentum > OverwhelmThreshold)
-                return MomentumState.Advantage;
+        bool isPlayer = owner == battleContext.Player;
 
-            if(CurrentMomentum < -OverwhelmThreshold)
-                return MomentumState.Overwhelm;
+        float momentum =
+            isPlayer ?
+            CurrentMomentum :
+            -CurrentMomentum;
 
-            return MomentumState.Balance;
-        }
+        if (momentum >= OverwhelmThreshold)
+            return MomentumState.Overwhelm;
+
+        if (momentum >= AdvantageThreshold)
+            return MomentumState.Advantage;
+
+        return MomentumState.Balance;
     }
 
     //--------------------------------
@@ -111,25 +121,16 @@ public class MomentumManager
 
     public float GetDamageMultiplier(Character attacker)
     {
-        bool isPlayer = attacker is not Enemy;
+        switch (GetState(attacker))
+        {
+            case MomentumState.Balance:
+                return 0.4f;
 
-        if(isPlayer)
-        {
-            switch(CurrentState)
-            {
-                case MomentumState.Balance: return 0.4f;
-                case MomentumState.Advantage: return 1.0f;
-                case MomentumState.Overwhelm: return 2.0f;
-            }
-        }
-        else
-        {
-            switch(CurrentState)
-            {
-                case MomentumState.Balance: return 0.4f;
-                case MomentumState.Advantage: return 0.4f;
-                case MomentumState.Overwhelm: return 2.0f;
-            }
+            case MomentumState.Advantage:
+                return 1.0f;
+
+            case MomentumState.Overwhelm:
+                return 2.0f;
         }
 
         return 1f;
@@ -146,15 +147,17 @@ public class MomentumManager
         return CurrentMomentum <= -MaxMomentum;
     }
     
-    public void ApplyClashResult(
+    public bool ApplyClashResult(
         Character winner,
         Character loser,
         int clashGap)
     {
-        // 이긴 만큼 기세 이동
+        MomentumState before = GetState(winner);
+
+        // 기세 이동
         CurrentMomentum += clashGap;
 
-        // 승자가 적이면 반대 방향
+        // 적이 이겼으면 반대 방향
         if (winner != battleContext.Player)
             CurrentMomentum -= clashGap;
 
@@ -162,5 +165,39 @@ public class MomentumManager
             CurrentMomentum,
             -MaxMomentum,
             MaxMomentum);
+
+        MomentumState after = GetState(winner);
+
+        // 이번 합으로 처음 Overwhelm에 진입했는가?
+        return before != MomentumState.Overwhelm &&
+            after == MomentumState.Overwhelm;
+    }
+    
+    public bool IsOverwhelm(Character owner)
+    {
+        return GetState(owner) == MomentumState.Overwhelm;
+    }
+    
+    public bool IsLastStand(Character owner)
+    {
+        bool isPlayer = owner == battleContext.Player;
+
+        if (isPlayer)
+            return CurrentMomentum <= -LastStandThreshold;
+
+        return CurrentMomentum >= LastStandThreshold;
+    }
+    
+    public int ApplyLastStand(Character owner, int power)
+    {
+        if (IsLastStand(owner))
+            return power + LastStandBonus;
+
+        return power;
+    }
+    
+    public int CalculatePrestigeGain(int gap)
+    {
+        return Mathf.Clamp(gap, 0, 10); // 예: cap 필수
     }
 }

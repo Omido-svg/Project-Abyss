@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using UnityEngine;
 
 public class ClashManager
 {
@@ -6,7 +7,12 @@ public class ClashManager
     private readonly MomentumManager momentumManager;
     private readonly BattleContext battleContext;
 
-    //------------------------------------------------
+    //--------------------------------
+
+    // 디버깅용
+    private const int SpeedWeight = 1;
+
+    //--------------------------------
 
     public ClashManager(
         BattleContext battleContext,
@@ -18,7 +24,7 @@ public class ClashManager
         this.momentumManager = momentumManager;
     }
 
-    //------------------------------------------------
+    //--------------------------------
 
     public void Resolve(Queue<ClashPair> clashQueue)
     {
@@ -45,7 +51,7 @@ public class ClashManager
         }
     }
 
-    //------------------------------------------------
+    //--------------------------------
 
     private void ResolveClash(
         BattleAction first,
@@ -55,79 +61,114 @@ public class ClashManager
             first.Owner,
             second.Owner);
 
-        //--------------------------------
+        // 위력 굴림 (한 번만)
+        first.RolledPower =
+            momentumManager.ApplyLastStand(
+                first.Owner,
+                first.RollPower());
+
+        second.RolledPower =
+            momentumManager.ApplyLastStand(
+                second.Owner,
+                second.RollPower());
+
         // 합 판정값
-        //--------------------------------
+        int firstClash =
+            first.RolledPower +
+            (first.Speed - second.Speed) * SpeedWeight;
 
-        int firstPower =
-            first.Skill.RollPower() +
-            (first.Speed - second.Speed);
+        int secondClash =
+            second.RolledPower +
+            (second.Speed - first.Speed) * SpeedWeight;
 
-        int secondPower =
-            second.Skill.RollPower() +
-            (second.Speed - first.Speed);
-
-        //--------------------------------
-        // 동률이면 속도 제외하고 다시 굴림
-        //--------------------------------
-
-        while (firstPower == secondPower)
+        // 동점이면 속도 제외 후 재굴림
+        while (firstClash == secondClash)
         {
-            firstPower = first.Skill.RollPower();
-            secondPower = second.Skill.RollPower();
+            first.RolledPower =
+                momentumManager.ApplyLastStand(
+                    first.Owner,
+                    first.RollPower());
+
+            second.RolledPower =
+                momentumManager.ApplyLastStand(
+                    second.Owner,
+                    second.RollPower());
+
+            firstClash = first.RolledPower;
+            secondClash = second.RolledPower;
         }
 
-        //--------------------------------
-        // 승패
-        //--------------------------------
+        // 승자 / 패자 결정
+        BattleAction winner;
+        BattleAction loser;
 
-        if (firstPower > secondPower)
+        int winnerClash;
+        int loserClash;
+
+        if (firstClash > secondClash)
         {
-            battleContext._battleEvent.RaiseClashWin(
-                first.Owner,
-                second.Owner);
+            winner = first;
+            loser = second;
 
-            battleContext._battleEvent.RaiseClashLose(
-                second.Owner,
-                first.Owner);
-
-            int gap = firstPower - secondPower;
-
-            // 기세 이동
-            momentumManager.ApplyClashResult(
-                first.Owner,
-                second.Owner,
-                gap);
-
-            // 데미지는 순수 위력
-            damageManager.ApplyDamage(first);
+            winnerClash = firstClash;
+            loserClash = secondClash;
         }
         else
         {
-            battleContext._battleEvent.RaiseClashWin(
-                second.Owner,
-                first.Owner);
+            winner = second;
+            loser = first;
 
-            battleContext._battleEvent.RaiseClashLose(
-                first.Owner,
-                second.Owner);
-
-            int gap = secondPower - firstPower;
-
-            momentumManager.ApplyClashResult(
-                second.Owner,
-                first.Owner,
-                gap);       
-
-            damageManager.ApplyDamage(second);
+            winnerClash = secondClash;
+            loserClash = firstClash;
         }
+
+        // 이벤트
+        battleContext._battleEvent.RaiseClashWin(
+            winner.Owner,
+            loser.Owner);
+
+        battleContext._battleEvent.RaiseClashLose(
+            loser.Owner,
+            winner.Owner);
+
+        int gap = winnerClash - loserClash;
+
+        // 이전 상태
+        bool wasOverwhelm = momentumManager.IsOverwhelm(winner.Owner);
+
+        // 기세 이동
+        momentumManager.ApplyClashResult(
+            winner.Owner,
+            loser.Owner,
+            gap);
+        
+        int prestigeGain = momentumManager.CalculatePrestigeGain(gap);
+        winner.Owner.AddPrestige(prestigeGain);
+
+        // Overwhelm 최초 진입
+        bool enteredOverwhelm =
+            !wasOverwhelm &&
+            momentumManager.IsOverwhelm(winner.Owner);
+            
+        if (enteredOverwhelm)
+        {
+            winner.Owner.RuntimeStatus.currentPrestige =
+                winner.Owner.CurrentStatus.maxPrestige;
+        }
+
+        // 데미지
+        damageManager.ApplyDamage(winner);
     }
 
-    //------------------------------------------------
+    //--------------------------------
 
     private void ResolveOneSide(BattleAction action)
     {
-        // 도사림 등 합이 없는 행동
+        action.RolledPower = action.RollPower();
+
+        action.Skill.Execute(action);
+        
         damageManager.ApplyDamage(action);
     }
+
 }
