@@ -19,7 +19,7 @@ public class StatusPopup : MonoBehaviour
 
     //--------------------------------------------------
 
-    private void Awake()
+    private void Start()
     {
         if (character == null)
             character = GetComponent<Character>();
@@ -191,9 +191,47 @@ public class StatusPopup : MonoBehaviour
         CurrentStatus c = character.CurrentStatus;
         RuntimeStatus r = character.RuntimeStatus;
 
-        statusText.text =
-            $"<b>{character.Data.CharacterName}</b>\n\n" +
-            $"<color=#FF4B4B><b>HP</b></color> : {r.currentHP}/{character.CurrentHP}\n" +
-            $"<color=#C084FF><b>Prestige</b></color> : {r.currentPrestige}/{c.maxPrestige}\n";
+        System.Text.StringBuilder sb = new System.Text.StringBuilder();
+
+        sb.AppendLine($"<b>{character.Data.CharacterName}</b>");
+        sb.AppendLine();
+
+        //--------------------------------
+        // 전체 상태
+        //--------------------------------
+        sb.AppendLine($"<color=#FF4B4B><b>HP</b></color> : {r.currentHP}/{character.CurrentHP}");
+        sb.AppendLine($"<color=#C084FF><b>Prestige</b></color> : {r.currentPrestige}/{c.maxPrestige}");
+        sb.AppendLine();
+
+        //--------------------------------
+        // Body Parts 정보
+        //--------------------------------
+        sb.AppendLine("<b>Body Parts</b>");
+
+        foreach (BodyPart part in character.BodyParts)
+        {
+            sb.Append($"- {part.Type} ");
+
+            if (part.IsBroken)
+            {
+                sb.Append("[BROKEN]");
+            }
+            else
+            {
+                sb.Append(
+                    $"HP {part.PartHP}/{part.PartMaxHP} | " +
+                    $"SPD {part.CurrentSpeed}"
+                );
+
+                if (part.CurrentSkill != null)
+                {
+                    sb.Append($" | SKILL {part.CurrentSkill.SkillName}");
+                }
+            }
+
+            sb.AppendLine();
+        }
+
+        statusText.text = sb.ToString();
     }
 }

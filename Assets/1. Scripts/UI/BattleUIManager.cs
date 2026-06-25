@@ -14,6 +14,18 @@ public class BattleUIManager : MonoBehaviour
 
     public void SelectOwnerPart(Character owner, BodyPart part)
     {
+        if (owner == null || part == null)
+        {
+            Debug.LogError("SelectOwnerPart: null reference");
+            return;
+        }
+
+        if (owner.Data == null)
+        {
+            Debug.LogError("owner.Data is NULL");
+            return;
+        }
+
         selectedOwner = owner;
         selectedOwnerPart = part;
 
@@ -49,8 +61,6 @@ public class BattleUIManager : MonoBehaviour
         action.TargetPart = selectedTargetPart;
 
         action.Skill = selectedOwnerPart.CurrentSkill;
-
-        action.Speed = selectedOwnerPart.CurrentSpeed;
 
         battleManager.ActionManager.AddAction(action);
 

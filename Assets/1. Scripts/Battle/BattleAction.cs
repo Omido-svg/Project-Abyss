@@ -16,18 +16,12 @@ public class BattleAction
 
     public Skill Skill;
 
-    // 이번 턴 속도
-    public int Speed;
-    
     public ActionPhase Phase;
 
     public ActionType ActionType => Skill.ActionType;
 
-
-    public void CalculateSpeed()
-    {
-        Speed = OwnerPart.CurrentSpeed;
-    }
+    // 항상 현재 부위 속도를 반환
+    public int Speed => OwnerPart.CurrentSpeed;
 
     public bool IsNormalAttack =>
         ActionType == ActionType.NormalAttack;
@@ -40,10 +34,9 @@ public class BattleAction
 
     public bool IsPrestige =>
         ActionType == ActionType.Prestige;
-        
-    public int RolledPower; // 굴린 위력
-        
-    // 위력 계산
+
+    public int RolledPower;
+
     public int RollPower()
     {
         int roll = Skill.Resolver.Roll();

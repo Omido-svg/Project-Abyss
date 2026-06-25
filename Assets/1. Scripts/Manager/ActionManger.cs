@@ -55,7 +55,6 @@ public class ActionManager
 
     public ActionExecutionQueue BuildExecutionQueue()
     {
-        CalculateSpeed();
         SortBySpeed();
         BuildClashes();
 
@@ -85,16 +84,6 @@ public class ActionManager
         }
 
         return queue;
-    }
-
-    //------------------------------------------------
-
-    private void CalculateSpeed()
-    {
-        foreach (BattleAction action in actions)
-        {
-            action.CalculateSpeed();
-        }
     }
 
     //------------------------------------------------

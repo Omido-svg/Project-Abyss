@@ -135,8 +135,18 @@ public static class Utils
             sb.AppendLine($"  {ownerName} ({ownerPart})");
             sb.AppendLine($"      ↓");
             sb.AppendLine($"  {targetName} ({targetPart})");
-            sb.AppendLine($"  Skill : {skill}");
-            sb.AppendLine($"  Speed : {action.Speed}");
+
+            sb.AppendLine($"  Skill     : {skill}");
+            sb.AppendLine($"  Type      : {action.ActionType}");
+            sb.AppendLine($"  Phase     : {action.Phase}");
+
+            sb.AppendLine($"  Speed     : {action.Speed}");
+
+            string rolledPower =
+                action.RolledPower == 0 ? "-" : action.RolledPower.ToString();
+
+            sb.AppendLine($"  RolledPow : {rolledPower}");
+
             sb.AppendLine("----------------------------------------");
         }
 

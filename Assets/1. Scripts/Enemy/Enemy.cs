@@ -24,8 +24,9 @@ public abstract class Enemy : Character
                 break;
 
             Skill skill = usableSkills[skillIndex++];
+            ownerPart.CurrentSkill = skill;
             BodyPart targetPart = SelectTargetPart(target);
-
+            
             actions.Add(new BattleAction()
             {
                 Owner = this,

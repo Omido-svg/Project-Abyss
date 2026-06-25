@@ -3,21 +3,23 @@ using UnityEngine;
 
 public class Olaf : Character
 {
-    private readonly List<BodyPart> bodyParts = new()
-    {
-        new BodyPart(PartType.HEAD, 6, 10, 20),
-        new BodyPart(PartType.LEFT_HAND, 4, 8, 20),
-        new BodyPart(PartType.RIGHT_HAND, 4, 8, 20),
-        new BodyPart(PartType.LEGS, 3, 7, 20)
-    };
-
+    private List<BodyPart> bodyParts = new();
     public override IReadOnlyList<BodyPart> BodyParts => bodyParts;
-    public OlafPassive Passive => (OlafPassive)passive;
-
+    public OlafPassive Passive => passive as OlafPassive;
+    
     //------------------------------------------------
-
-    private void Awake()
+    // 상태 초기화
+    public override void Initialize(BattleEvent battleEvent)
     {
+        base.Initialize(battleEvent);
+        
+        bodyParts.Clear();
+
+        bodyParts.Add(new BodyPart(PartType.HEAD, 6, 10, 20));
+        bodyParts.Add(new BodyPart(PartType.LEFT_HAND, 4, 8, 20));
+        bodyParts.Add(new BodyPart(PartType.RIGHT_HAND, 4, 8, 20));
+        bodyParts.Add(new BodyPart(PartType.LEGS, 3, 7, 20));
+
         SkillPool = new List<Skill>()
         {
             new OlafNormalAttack(),
@@ -26,13 +28,6 @@ public class Olaf : Character
             new OlafPrestigeSkill()
         };
         
-    }
-
-    //------------------------------------------------
-    // 상태 초기화
-    public override void Initialize(BattleEvent battleEvent)
-    {
-        base.Initialize(battleEvent);
         passive = new OlafPassive(this, battleEvent);
     }
     //------------------------------------------------

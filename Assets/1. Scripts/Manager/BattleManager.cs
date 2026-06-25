@@ -8,6 +8,9 @@ public class BattleManager : MonoBehaviour
     [Header("Debug")]
     [SerializeField] private Character player;
     [SerializeField] private List<Character> enemies = new();
+    [Header("Button")]
+    [SerializeField] private List<BodyPartButton> parts = new();
+    
 
     // UI에서 현재 선택된 캐릭터
     public Character SelectedCharacter { get; set; }
@@ -55,6 +58,18 @@ public class BattleManager : MonoBehaviour
             enemy.Initialize(battleContext._battleEvent);
         }
         
+        // ------------------------------------------
+        for (int i = 0; i < parts.Count; i++)
+            parts[i].Bind(player, player.BodyParts[i]);
+            
+        Debug.Log($"Buttons : {parts.Count}");
+        Debug.Log($"BodyParts : {player.BodyParts.Count}");
+
+        for (int i = 0; i < player.BodyParts.Count; i++)
+        {
+            Debug.Log(player.BodyParts[i].Type);
+        }    
+        // --------------------------------------------
         
         MomentumManager = new MomentumManager(battleContext);
         SpeedManager = new SpeedManager(battleContext);

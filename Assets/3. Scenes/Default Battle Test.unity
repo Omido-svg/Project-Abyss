@@ -1085,7 +1085,7 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 1603813231}
+      - m_Target: {fileID: 478031303}
         m_TargetAssemblyTypeName: BodyPartButton, Assembly-CSharp
         m_MethodName: OnClick
         m_Mode: 1
@@ -1147,7 +1147,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0dabe4f21c417e64f870aed41bc5db5f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  owner: {fileID: 2094296668}
 --- !u!1 &488980321
 GameObject:
   m_ObjectHideFlags: 0
@@ -2318,7 +2317,7 @@ GameObject:
   - component: {fileID: 1091805359}
   - component: {fileID: 1091805358}
   m_Layer: 5
-  m_Name: BodyPart1
+  m_Name: EN1
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -2356,7 +2355,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0dabe4f21c417e64f870aed41bc5db5f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  owner: {fileID: 1478351541}
 --- !u!114 &1091805359
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2829,7 +2827,7 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 1603813231}
+      - m_Target: {fileID: 1213347054}
         m_TargetAssemblyTypeName: BodyPartButton, Assembly-CSharp
         m_MethodName: OnClick
         m_Mode: 1
@@ -2891,7 +2889,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0dabe4f21c417e64f870aed41bc5db5f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  owner: {fileID: 2094296668}
 --- !u!1 &1244269855
 GameObject:
   m_ObjectHideFlags: 0
@@ -3323,6 +3320,11 @@ MonoBehaviour:
   - {fileID: 1174378449}
   - {fileID: 1068877088}
   - {fileID: 1478351541}
+  parts:
+  - {fileID: 1632426706}
+  - {fileID: 1213347054}
+  - {fileID: 478031303}
+  - {fileID: 1603813231}
 --- !u!4 &1453355685
 Transform:
   m_ObjectHideFlags: 0
@@ -3556,7 +3558,7 @@ GameObject:
   - component: {fileID: 1582033876}
   - component: {fileID: 1582033875}
   m_Layer: 5
-  m_Name: BodyPart2
+  m_Name: EN2
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -3594,7 +3596,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0dabe4f21c417e64f870aed41bc5db5f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  owner: {fileID: 1068877088}
 --- !u!114 &1582033876
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3835,7 +3836,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0dabe4f21c417e64f870aed41bc5db5f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  owner: {fileID: 2094296668}
 --- !u!1 &1632426701
 GameObject:
   m_ObjectHideFlags: 0
@@ -3982,7 +3982,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0dabe4f21c417e64f870aed41bc5db5f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  owner: {fileID: 2094296668}
 --- !u!1 &1665027744
 GameObject:
   m_ObjectHideFlags: 0
@@ -4835,7 +4834,7 @@ GameObject:
   - component: {fileID: 1854957848}
   - component: {fileID: 1854957847}
   m_Layer: 5
-  m_Name: BodyPart4
+  m_Name: EN4
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -4873,7 +4872,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0dabe4f21c417e64f870aed41bc5db5f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  owner: {fileID: 1244269861}
 --- !u!114 &1854957848
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -5650,7 +5648,7 @@ GameObject:
   - component: {fileID: 2090521074}
   - component: {fileID: 2090521073}
   m_Layer: 5
-  m_Name: BodyPart3
+  m_Name: EN3
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -5688,7 +5686,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0dabe4f21c417e64f870aed41bc5db5f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  owner: {fileID: 1174378449}
 --- !u!114 &2090521074
 MonoBehaviour:
   m_ObjectHideFlags: 0
