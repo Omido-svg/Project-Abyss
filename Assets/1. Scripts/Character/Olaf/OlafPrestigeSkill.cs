@@ -1,5 +1,6 @@
 public class OlafPrestigeSkill : Skill
 {
+    public override ActionType ActionType => ActionType.Prestige;
     public OlafPrestigeSkill()
     {
         SkillName = "불사의 광란(위세)";

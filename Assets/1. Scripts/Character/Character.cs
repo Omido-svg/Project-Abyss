@@ -18,8 +18,6 @@ public abstract class Character : MonoBehaviour
     // 전투 중 계속 변하는 값
     public RuntimeStatus RuntimeStatus { get; protected set; }
 
-    public List<Skill> SkillPool { get; protected set; } = new();
-
     protected Passive passive;
 
     public bool IsDead { get; protected set; }
@@ -76,6 +74,9 @@ public abstract class Character : MonoBehaviour
         int damage,
         bool forceBreak = false)
     {
+        if (IsDead)
+            return;
+        
         bool hitBrokenPart = part.IsBroken;
 
         // 전체 체력 감소

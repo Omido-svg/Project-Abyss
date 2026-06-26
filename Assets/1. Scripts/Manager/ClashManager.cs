@@ -7,12 +7,7 @@ public class ClashManager
     private readonly MomentumManager momentumManager;
     private readonly BattleContext battleContext;
 
-    //--------------------------------
-
-    // 디버깅용
     private const int SpeedWeight = 1;
-
-    //--------------------------------
 
     public ClashManager(
         BattleContext battleContext,
@@ -23,8 +18,6 @@ public class ClashManager
         this.damageManager = damageManager;
         this.momentumManager = momentumManager;
     }
-
-    //--------------------------------
 
     public void Resolve(Queue<ClashPair> clashQueue)
     {
@@ -51,124 +44,95 @@ public class ClashManager
         }
     }
 
-    //--------------------------------
-
-    private void ResolveClash(
-        BattleAction first,
-        BattleAction second)
+    // =====================================================
+    // Clash
+    // =====================================================
+    private void ResolveClash(BattleAction first, BattleAction second)
     {
-        battleContext._battleEvent.RaiseClashStart(
+        battleContext._battleEvent.RaiseClashStart(first.Owner, second.Owner);
+
+        first.RolledPower = momentumManager.ApplyLastStand(
             first.Owner,
-            second.Owner);
+            first.RollPower());
 
-        // 위력 굴림 (한 번만)
-        first.RolledPower =
-            momentumManager.ApplyLastStand(
-                first.Owner,
-                first.RollPower());
+        second.RolledPower = momentumManager.ApplyLastStand(
+            second.Owner,
+            second.RollPower());
 
-        second.RolledPower =
-            momentumManager.ApplyLastStand(
-                second.Owner,
-                second.RollPower());
+        int firstClash = first.RolledPower + (first.Speed - second.Speed) * SpeedWeight;
+        int secondClash = second.RolledPower + (second.Speed - first.Speed) * SpeedWeight;
 
-        // 합 판정값
-        int firstClash =
-            first.RolledPower +
-            (first.Speed - second.Speed) * SpeedWeight;
-
-        int secondClash =
-            second.RolledPower +
-            (second.Speed - first.Speed) * SpeedWeight;
-
-        // 동점이면 속도 제외 후 재굴림
         while (firstClash == secondClash)
         {
-            first.RolledPower =
-                momentumManager.ApplyLastStand(
-                    first.Owner,
-                    first.RollPower());
-
-            second.RolledPower =
-                momentumManager.ApplyLastStand(
-                    second.Owner,
-                    second.RollPower());
+            first.RolledPower = momentumManager.ApplyLastStand(first.Owner, first.RollPower());
+            second.RolledPower = momentumManager.ApplyLastStand(second.Owner, second.RollPower());
 
             firstClash = first.RolledPower;
             secondClash = second.RolledPower;
         }
 
-        // 승자 / 패자 결정
-        BattleAction winner;
-        BattleAction loser;
+        bool firstWin = firstClash > secondClash;
 
-        int winnerClash;
-        int loserClash;
+        BattleAction winner = firstWin ? first : second;
+        BattleAction loser  = firstWin ? second : first;
 
-        if (firstClash > secondClash)
-        {
-            winner = first;
-            loser = second;
+        int winnerClash = firstWin ? firstClash : secondClash;
+        int loserClash  = firstWin ? secondClash : firstClash;
 
-            winnerClash = firstClash;
-            loserClash = secondClash;
-        }
-        else
-        {
-            winner = second;
-            loser = first;
-
-            winnerClash = secondClash;
-            loserClash = firstClash;
-        }
-
-        // 이벤트
-        battleContext._battleEvent.RaiseClashWin(
-            winner.Owner,
-            loser.Owner);
-
-        battleContext._battleEvent.RaiseClashLose(
-            loser.Owner,
-            winner.Owner);
+        battleContext._battleEvent.RaiseClashWin(winner.Owner, loser.Owner);
+        battleContext._battleEvent.RaiseClashLose(loser.Owner, winner.Owner);
 
         int gap = winnerClash - loserClash;
 
-        // 이전 상태
         bool wasOverwhelm = momentumManager.IsOverwhelm(winner.Owner);
 
-        // 기세 이동
-        momentumManager.ApplyClashResult(
-            winner.Owner,
-            loser.Owner,
-            gap);
-        
+        momentumManager.ApplyClashResult(winner.Owner, loser.Owner, gap);
+
         int prestigeGain = momentumManager.CalculatePrestigeGain(gap);
         winner.Owner.AddPrestige(prestigeGain);
 
-        // Overwhelm 최초 진입
-        bool enteredOverwhelm =
-            !wasOverwhelm &&
-            momentumManager.IsOverwhelm(winner.Owner);
-            
-        if (enteredOverwhelm)
+        if (!wasOverwhelm && momentumManager.IsOverwhelm(winner.Owner))
         {
             winner.Owner.RuntimeStatus.currentPrestige =
                 winner.Owner.CurrentStatus.maxPrestige;
         }
 
-        // 데미지
-        damageManager.ApplyDamage(winner);
+        int damage = damageManager.ApplyDamage(winner);
+
+        // =====================================================
+        // LOG (완전 통합)
+        // =====================================================
+        battleContext.battleManager.BattleLogger.Add(
+            BattleLogEntry.Create(winner)
+                .SetClash(winnerClash, loserClash)
+                .SetDamage(damage)
+                .SetPrestige(prestigeGain)
+                .Build(battleContext.battleManager.BattleLogger)
+        );
+
+        battleContext.battleManager.BattleLogger.Add(
+            BattleLogEntry.Create(loser)
+                .SetClash(loserClash, winnerClash)
+                .Build(battleContext.battleManager.BattleLogger)
+        );
     }
 
-    //--------------------------------
+    // =====================================================
+    // OneSide
+    // =====================================================
+        private void ResolveOneSide(BattleAction action)
+        {
+            action.RolledPower = action.RollPower();
+            action.Skill.Execute(action);
 
-    private void ResolveOneSide(BattleAction action)
-    {
-        action.RolledPower = action.RollPower();
+            int damage = damageManager.ApplyDamage(action);
 
-        action.Skill.Execute(action);
-        
-        damageManager.ApplyDamage(action);
-    }
+            battleContext.battleManager.BattleLogger.Add(
+                BattleLogEntry.Create(action)
+                    .SetDamage(damage)
+                    .Build(battleContext.battleManager.BattleLogger)
+            );
 
+            battleContext._battleEvent.RaiseActionEnd(action);
+        }
 }

@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -9,24 +10,20 @@ public abstract class Enemy : Character
 
         Character target = context.Player;
 
-        // 1. 이번 턴 사용 가능한 스킬 리스트 생성
-        List<Skill> usableSkills = BuildUsableSkillList();
-
-        int skillIndex = 0;
-
         foreach (BodyPart ownerPart in BodyParts)
         {
             if (ownerPart.IsBroken)
                 continue;
 
-            // 스킬 부족하면 종료
-            if (skillIndex >= usableSkills.Count)
-                break;
+            Skill skill = SelectSkillForPart(ownerPart);
 
-            Skill skill = usableSkills[skillIndex++];
+            if (skill == null)
+                continue;
+
             ownerPart.CurrentSkill = skill;
+
             BodyPart targetPart = SelectTargetPart(target);
-            
+
             actions.Add(new BattleAction()
             {
                 Owner = this,
@@ -43,30 +40,30 @@ public abstract class Enemy : Character
         return actions;
     }
 
-    // 핵심: 스킬 풀 필터링
-    protected List<Skill> BuildUsableSkillList()
+    //--------------------------------------------------
+
+
+    // 해당 부위가 사용할 수 있는 스킬 선택
+    protected Skill SelectSkillForPart(BodyPart part)
     {
-        List<Skill> result = new();
+        List<Skill> candidates = new();
 
-        foreach (Skill skill in SkillPool)
+        foreach (Skill skill in part.AvailableSkills)
         {
-            if (skill == null)
-                continue;
-
-            // 위세 스킬 제한
             if (!IsSkillUsable(skill))
                 continue;
 
-            result.Add(skill);
+            candidates.Add(skill);
         }
 
-        // 랜덤 섞기
-        Utils.Shuffle(result);
+        if (candidates.Count == 0)
+            return null;
 
-        return result;
+        return candidates[UnityEngine.Random.Range(0, candidates.Count)];
     }
 
-    // 스킬 사용 조건
+    //--------------------------------------------------
+    // 위세 사용 가능 여부
     protected bool IsSkillUsable(Skill skill)
     {
         if (skill.ActionType == ActionType.Prestige)
@@ -77,7 +74,8 @@ public abstract class Enemy : Character
         return true;
     }
 
-    // 타겟 선택
+    //--------------------------------------------------
+    // 공격 대상 부위 선택
     protected BodyPart SelectTargetPart(Character target)
     {
         List<BodyPart> broken = new();
@@ -92,26 +90,28 @@ public abstract class Enemy : Character
         }
 
         if (broken.Count == 0)
-            return alive[Random.Range(0, alive.Count)];
+            return alive[UnityEngine.Random.Range(0, alive.Count)];
 
-        if (Random.value < 0.7f && broken.Count > 0)
-            return broken[Random.Range(0, broken.Count)];
+        if (UnityEngine.Random.value < 0.7f && broken.Count > 0)
+            return broken[UnityEngine.Random.Range(0, broken.Count)];
 
-        return alive.Count > 0
-            ? alive[Random.Range(0, alive.Count)]
-            : broken[Random.Range(0, broken.Count)];
+        if (alive.Count > 0)
+            return alive[UnityEngine.Random.Range(0, alive.Count)];
+
+        return broken[UnityEngine.Random.Range(0, broken.Count)];
     }
 
-    // Phase
+    //--------------------------------------------------
+    // ActionPhase 결정
     protected ActionPhase CalculateActionPhase(Skill skill)
     {
         return skill.ActionType switch
         {
-            ActionType.Prestige => ActionPhase.PRETURN,
-            ActionType.Preparation => ActionPhase.FORESIGHT,
+            ActionType.Prestige     => ActionPhase.PRETURN,
+            ActionType.Preparation  => ActionPhase.FORESIGHT,
             ActionType.NormalAttack => ActionPhase.COMBAT,
-            ActionType.Duel => ActionPhase.COMBAT,
-            _ => ActionPhase.COMBAT
+            ActionType.Duel         => ActionPhase.COMBAT,
+            _                       => ActionPhase.COMBAT
         };
     }
 }

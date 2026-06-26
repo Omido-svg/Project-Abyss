@@ -15,7 +15,7 @@ public class DamageManager
 
     //------------------------------------------------
 
-    public void ApplyDamage(BattleAction action)
+    public int ApplyDamage(BattleAction action)
     {
         if (action.RolledPower == 0)
             action.RolledPower = action.RollPower();
@@ -34,6 +34,8 @@ public class DamageManager
             action.TargetPart,
             damage,
             overwhelm);
+            
+        return damage;
     }
 
     //------------------------------------------------

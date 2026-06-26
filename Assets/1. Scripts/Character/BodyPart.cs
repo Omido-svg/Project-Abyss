@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 public enum PartType
@@ -24,7 +25,11 @@ public class BodyPart
     public float PartMaxHP;
     public float PartHP;
 
+    // 현재 장착(선택)된 스킬
     public Skill CurrentSkill;
+
+    // 이 부위가 사용할 수 있는 스킬
+    public List<Skill> AvailableSkills { get; }
 
     //--------------------------------
 
@@ -32,7 +37,8 @@ public class BodyPart
         PartType type,
         int minSpeed,
         int maxSpeed,
-        float hp)
+        float hp,
+        IEnumerable<Skill> availableSkills = null)
     {
         Type = type;
 
@@ -45,7 +51,13 @@ public class BodyPart
 
         PartMaxHP = hp;
         PartHP = hp;
+
+        AvailableSkills = availableSkills != null
+            ? new List<Skill>(availableSkills)
+            : new List<Skill>();
     }
+
+    //--------------------------------
 
     public void RollSpeed()
     {
@@ -58,30 +70,36 @@ public class BodyPart
         CurrentSpeed = Random.Range(MinSpeed, MaxSpeed + 1);
     }
 
+    //--------------------------------
+
     public void Recover()
     {
         IsBroken = false;
         PartHP = PartMaxHP;
     }
-    
+
+    //--------------------------------
+
     public bool CanUseSkill(Skill skill)
     {
-        switch (Type)
-        {
-            case PartType.LEFT_HAND:
-            case PartType.RIGHT_HAND:
-                return skill.ActionType == ActionType.NormalAttack ||
-                    skill.ActionType == ActionType.Duel;
-                    
-            case PartType.HEAD:
-                return skill.ActionType == ActionType.NormalAttack ||
-                    skill.ActionType == ActionType.Duel ||
-                    skill.ActionType == ActionType.Preparation;
+        return AvailableSkills.Contains(skill);
+    }
 
-            case PartType.LEGS:
-                return skill.ActionType == ActionType.Preparation;
-        }
+    //--------------------------------
 
-        return false;
+    public void AddSkill(Skill skill)
+    {
+        if (skill == null)
+            return;
+
+        if (!AvailableSkills.Contains(skill))
+            AvailableSkills.Add(skill);
+    }
+
+    //--------------------------------
+
+    public void RemoveSkill(Skill skill)
+    {
+        AvailableSkills.Remove(skill);
     }
 }

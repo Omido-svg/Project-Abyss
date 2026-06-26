@@ -1,8 +1,8 @@
-public class EnemyNormalAttack : Skill
+public class EnemyNormalAttack : NormalSkill
 {
     public EnemyNormalAttack()
     {
-        SkillName = "물어뜯기";
+        SkillName = "물어뜯기(일반공격)";
 
         BasePower = 5;
 

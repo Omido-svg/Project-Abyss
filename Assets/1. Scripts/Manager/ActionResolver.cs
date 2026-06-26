@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using UnityEngine;
 
 public class ActionResolver
 {
@@ -20,7 +21,7 @@ public class ActionResolver
         ResolveQueue(executionQueue.PrestigeQueue);
 
         ResolveQueue(executionQueue.AmbushQueue);
-
+        
         clashManager.Resolve(executionQueue.ClashQueue);
     }
 
@@ -32,10 +33,14 @@ public class ActionResolver
         while (queue.Count > 0)
         {
             BattleAction action = queue.Dequeue();
-
+            
             battleContext._battleEvent.RaiseActionStart(action);
 
             // 스킬 실행
+            if (action.Skill == null) {
+                Debug.Log("스킬이 NULL임");
+                continue;
+            }
             action.Skill.Execute(action);
 
             battleContext._battleEvent.RaiseActionEnd(action);

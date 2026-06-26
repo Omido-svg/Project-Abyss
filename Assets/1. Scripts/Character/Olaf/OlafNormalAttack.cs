@@ -1,4 +1,4 @@
-public class OlafNormalAttack : Skill
+public class OlafNormalAttack : NormalSkill
 {
     public OlafNormalAttack()
     {

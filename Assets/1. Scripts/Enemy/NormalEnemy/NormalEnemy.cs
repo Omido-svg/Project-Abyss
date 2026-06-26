@@ -5,7 +5,16 @@ public class NormalEnemy : Enemy
 {
     private readonly List<BodyPart> bodyParts = new()
     {
-        new BodyPart(PartType.HEAD, 4, 8, 50)
+        new BodyPart(
+            PartType.HEAD,
+            4,
+            8,
+            50,
+            new Skill[]
+            {
+                new EnemyNormalAttack(),
+                new EnemyDuelSkill()
+            })
     };
 
     public override IReadOnlyList<BodyPart> BodyParts => bodyParts;
@@ -17,17 +26,6 @@ public class NormalEnemy : Enemy
         base.Initialize(battleEvent);
 
         passive = null;
-    }
-
-    //--------------------------------
-
-    private void Awake()
-    {
-        SkillPool = new List<Skill>()
-        {
-            new EnemyNormalAttack(),
-            new EnemyDuelSkill()
-        };
     }
 
     //--------------------------------

@@ -59,7 +59,12 @@ public class BattleUIManager : MonoBehaviour
 
         action.OwnerPart = selectedOwnerPart;
         action.TargetPart = selectedTargetPart;
-
+        
+        if(selectedOwnerPart.CurrentSkill == null)
+        {
+            Debug.Log("UI딴에서 Skill 이 NULL임");
+        }
+        
         action.Skill = selectedOwnerPart.CurrentSkill;
 
         battleManager.ActionManager.AddAction(action);

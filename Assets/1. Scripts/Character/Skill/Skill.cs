@@ -6,8 +6,8 @@ public abstract class Skill
     public string SkillName { get; protected set; }
 
     // 평타 / 결투 / 도사림 / 위세
-    public ActionType ActionType { get; protected set; }
-
+    public virtual ActionType ActionType { get; }
+    
     // 위력
     // 스킬 기본 위력
     public int BasePower { get; protected set; }

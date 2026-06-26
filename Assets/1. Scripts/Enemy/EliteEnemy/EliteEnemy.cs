@@ -27,11 +27,7 @@ class EliteEnemy : Enemy
 
     private void Awake()
     {
-        SkillPool = new List<Skill>()
-        {
-            new EnemyNormalAttack(),
-            new EnemyDuelSkill()
-        };
+
     }
 
     public override void Die()

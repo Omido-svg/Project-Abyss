@@ -7,7 +7,9 @@ public class BattleContext
     public List<Character> Enemies = new();
 
     public BattleEvent _battleEvent = new();
-
+    
+    public BattleManager battleManager;
+    
     public List<Character> AllCharacters
     {
         get

@@ -8,8 +8,10 @@ public class BattleManager : MonoBehaviour
     [Header("Debug")]
     [SerializeField] private Character player;
     [SerializeField] private List<Character> enemies = new();
-    [Header("Button")]
-    [SerializeField] private List<BodyPartButton> parts = new();
+    [Header("Player Button")]
+    [SerializeField] private List<BodyPartButton> Playerparts = new();
+    [Header("Enemies Button")]
+    [SerializeField] private List<BodyPartButton> Enemiesparts = new();
     
 
     // UI에서 현재 선택된 캐릭터
@@ -29,6 +31,8 @@ public class BattleManager : MonoBehaviour
     private MomentumManager MomentumManager;
     private SpeedManager SpeedManager;
     private ActionResolver ActionResolver;
+    
+    public BattleLogger BattleLogger { get; private set; }
 
     //----------------------------------------------------
     // Battle Context
@@ -42,6 +46,7 @@ public class BattleManager : MonoBehaviour
     private void Awake()
     {
         battleContext = new BattleContext();
+        battleContext.battleManager = this;
 
         battleContext.Player = player;
         battleContext.Enemies = enemies;
@@ -52,6 +57,9 @@ public class BattleManager : MonoBehaviour
         
         // BattleEvent 연결
         player.Initialize(battleContext._battleEvent);
+        
+        // 플레이어의 스킬을 간단하게 임의로 지정해주는 메서드 (디버깅용)
+        AssignSkills(player);
 
         foreach (Character enemy in enemies)
         {
@@ -59,16 +67,10 @@ public class BattleManager : MonoBehaviour
         }
         
         // ------------------------------------------
-        for (int i = 0; i < parts.Count; i++)
-            parts[i].Bind(player, player.BodyParts[i]);
-            
-        Debug.Log($"Buttons : {parts.Count}");
-        Debug.Log($"BodyParts : {player.BodyParts.Count}");
-
-        for (int i = 0; i < player.BodyParts.Count; i++)
-        {
-            Debug.Log(player.BodyParts[i].Type);
-        }    
+        for (int i = 0; i < Playerparts.Count; i++)
+            Playerparts[i].Bind(player, player.BodyParts[i]);
+        for (int i = 0; i < Enemiesparts.Count; i++)
+            Enemiesparts[i].Bind(enemies[i], enemies[i].BodyParts[0]);
         // --------------------------------------------
         
         MomentumManager = new MomentumManager(battleContext);
@@ -86,11 +88,17 @@ public class BattleManager : MonoBehaviour
             SpeedManager,
             ActionResolver,
             MomentumManager);
+            
+        BattleLogger = new BattleLogger();
 
         SelectedCharacter = player;
         
         // 디버깅용
         Utils.PrintList(BattleContext.AllCharacters);
+        Debug.Log("Start Battle");
+        
+        
+        StartBattle();
     }
 
     //----------------------------------------------------
@@ -100,7 +108,6 @@ public class BattleManager : MonoBehaviour
         TurnManager.StartBattle();
         
         // 디버깅용 출력
-        Utils.PrintList(BattleContext.AllCharacters);
         Utils.PrintActions((List<BattleAction>)ActionManager.Actions);
     }
 
@@ -108,6 +115,8 @@ public class BattleManager : MonoBehaviour
 
     public void NextTurn()
     {
+        TurnManager.ResolveTurn();
+        
         if (CheckBattleEnd())
         {
             EndBattle();
@@ -139,5 +148,21 @@ public class BattleManager : MonoBehaviour
     {
         TurnManager.EndBattle();
         Debug.Log("Battle End");
+    }
+    
+    // 디버깅용 스킬 할당 메서드
+    private void AssignSkills(Character character)
+    {
+        foreach (BodyPart part in character.BodyParts)
+        {
+            if (part.AvailableSkills.Count == 0)
+            {
+                Debug.LogWarning($"{character.Data.CharacterName} : {part.Type}에 등록된 스킬이 없습니다.");
+                continue;
+            }
+
+            part.CurrentSkill =
+                part.AvailableSkills[Random.Range(0, part.AvailableSkills.Count)];
+        }
     }
 }

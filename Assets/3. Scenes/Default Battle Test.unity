@@ -2271,7 +2271,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b23d90337d582234fb09b41f67dd8d11, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  data: {fileID: 11400000, guid: fa44a93d52182de409a55d85f797298c, type: 2}
+  data: {fileID: 11400000, guid: 15b65a39a7f305a4187f5ffeb15cbfb0, type: 2}
 --- !u!114 &1068877089
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2711,7 +2711,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b23d90337d582234fb09b41f67dd8d11, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  data: {fileID: 11400000, guid: fa44a93d52182de409a55d85f797298c, type: 2}
+  data: {fileID: 11400000, guid: 56feff8428bac514a8e49f36158f3ed7, type: 2}
 --- !u!114 &1174378450
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3015,7 +3015,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b23d90337d582234fb09b41f67dd8d11, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  data: {fileID: 11400000, guid: fa44a93d52182de409a55d85f797298c, type: 2}
+  data: {fileID: 11400000, guid: 90a4820980ad3f641a004944af763fc1, type: 2}
 --- !u!114 &1244269862
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3320,11 +3320,16 @@ MonoBehaviour:
   - {fileID: 1174378449}
   - {fileID: 1068877088}
   - {fileID: 1478351541}
-  parts:
+  Playerparts:
   - {fileID: 1632426706}
   - {fileID: 1213347054}
   - {fileID: 478031303}
   - {fileID: 1603813231}
+  Enemiesparts:
+  - {fileID: 1091805358}
+  - {fileID: 1582033875}
+  - {fileID: 2090521073}
+  - {fileID: 1854957847}
 --- !u!4 &1453355685
 Transform:
   m_ObjectHideFlags: 0
@@ -5586,7 +5591,7 @@ MonoBehaviour:
       m_Calls:
       - m_Target: {fileID: 1453355684}
         m_TargetAssemblyTypeName: BattleManager, Assembly-CSharp
-        m_MethodName: StartBattle
+        m_MethodName: NextTurn
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}

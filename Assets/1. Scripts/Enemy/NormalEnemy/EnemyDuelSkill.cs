@@ -1,8 +1,8 @@
-public class EnemyDuelSkill : Skill
+public class EnemyDuelSkill : DuelSkill
 {
     public EnemyDuelSkill()
     {
-        SkillName = "난폭한 공격";
+        SkillName = "난폭한 공격(결투)";
 
         BasePower = 8;
 
