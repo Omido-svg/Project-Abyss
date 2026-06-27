@@ -1,68 +1,112 @@
 using System.Collections.Generic;
+using System.Text;
 using UnityEngine;
 
 public class BattleLogger
 {
     private readonly List<BattleLogEntry> logs = new();
 
-    // =========================================
-    // LOG CONTROL
-    // =========================================
-
     public void Clear()
     {
         logs.Clear();
     }
 
-    public void Add(BattleLogEntry entry)
-    {
-        if (entry == null)
-        {
-            Debug.LogWarning("BattleLogEntry is NULL");
-            return;
-        }
+    public IReadOnlyList<BattleLogEntry> Logs => logs;
 
-        logs.Add(entry);
+    //----------------------------------------
+    // 일반 행동
+    //----------------------------------------
+
+    public void LogAction(
+        BattleAction action,
+        BattleLogType type)
+    {
+        logs.Add(
+
+            BattleLogEntry.Create(action)
+                .SetType(type)
+                .Build()
+
+        );
     }
 
-    // =========================================
-    // PRINT
-    // =========================================
+    //----------------------------------------
+    // 데미지
+    //----------------------------------------
 
-    public void PrintTurn()
+    public void LogDamage(
+        BattleAction action,
+        int damage,
+        int beforeHP,
+        int afterHP)
     {
-        if (logs.Count == 0)
-        {
-            Debug.Log("==================================");
-            Debug.Log("TURN RESULT (EMPTY)");
-            Debug.Log("==================================");
-            return;
-        }
+        logs.Add(
 
-        Debug.Log("==================================");
-        Debug.Log("TURN RESULT");
-        Debug.Log("==================================");
+            BattleLogEntry.Create(action)
+                .SetType(BattleLogType.Normal)
+                .SetDamage(damage, beforeHP, afterHP)
+                .SetBroken(action.TargetPart.IsBroken)
+                .SetDead(action.Target.IsDead)
+                .Build()
+
+        );
+    }
+
+    //----------------------------------------
+    // 합
+    //----------------------------------------
+
+    public void LogClash(
+        BattleAction winner,
+        BattleAction loser,
+        int winnerPower,
+        int loserPower,
+        int damage,
+        int prestigeGain,
+        int beforeHP,
+        int afterHP)
+    {
+        logs.Add(
+
+            BattleLogEntry.Create(winner)
+                .SetClash(winnerPower, loserPower)
+                .SetDamage(damage, beforeHP, afterHP)
+                .SetPrestige(prestigeGain)
+                .SetBroken(winner.TargetPart.IsBroken)
+                .SetDead(winner.Target.IsDead)
+                .Build()
+
+        );
+
+        logs.Add(
+
+            BattleLogEntry.Create(loser)
+                .SetClash(loserPower, winnerPower)
+                .Build()
+
+        );
+    }
+
+    //----------------------------------------
+
+    public void PrintTurn(int turn)
+    {
+        StringBuilder sb = new();
+
+        sb.AppendLine("==================================");
+        sb.AppendLine($"TURN {turn} RESULT");
+        sb.AppendLine("==================================");
 
         foreach (BattleLogEntry log in logs)
         {
-            if (log == null)
-                continue;
-
-            Debug.Log(log.ToString());
+            sb.AppendLine(log.ToString());
+            sb.AppendLine("----------------------------------");
         }
 
-        Debug.Log("==================================");
+        sb.AppendLine("==================================");
 
-        // 🔥 턴 출력 후 초기화 (중요)
-        Clear();
-    }
+        Debug.Log(sb.ToString());
 
-    // =========================================
-    // DEBUG / EXTENSION
-    // =========================================
-
-    public IReadOnlyList<BattleLogEntry> GetLogs()
-    {
-        return logs;
+        logs.Clear();
     }
 }

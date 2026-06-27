@@ -27,21 +27,32 @@ public class ActionResolver
 
     //------------------------------------------------
 
-    private void ResolveQueue(
-        Queue<BattleAction> queue)
+    private void ResolveQueue(Queue<BattleAction> queue)
     {
         while (queue.Count > 0)
         {
             BattleAction action = queue.Dequeue();
-            
+
             battleContext._battleEvent.RaiseActionStart(action);
 
-            // 스킬 실행
-            if (action.Skill == null) {
-                Debug.Log("스킬이 NULL임");
+            if (action.Skill == null)
+            {
+                Debug.LogWarning("Skill is NULL");
                 continue;
             }
+
             action.Skill.Execute(action);
+
+            BattleLogType type = action.ActionType switch
+            {
+                ActionType.Preparation => BattleLogType.Preparation,
+                ActionType.Prestige    => BattleLogType.Prestige,
+                _                      => BattleLogType.Normal
+            };
+
+            battleContext.battleManager.BattleLogger.LogAction(
+                action,
+                type);
 
             battleContext._battleEvent.RaiseActionEnd(action);
         }

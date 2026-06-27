@@ -86,8 +86,9 @@ public class TurnManager
     // 현재 턴 종료
     public void EndTurn()
     {
-        battleContext.battleManager.BattleLogger.PrintTurn();
-        
+        // 턴 결과 출력
+        battleContext.battleManager.BattleLogger.PrintTurn(CurrentTurn);
+
         foreach (Character c in battleContext.AllCharacters)
         {
             c.TurnEnd();
@@ -95,12 +96,10 @@ public class TurnManager
 
         momentumManager.DecayMomentum();
 
-        // 모든 처리가 끝난 뒤 출력
-        battleContext.battleManager.BattleLogger.PrintTurn();
-
         battleContext._battleEvent.RaiseTurnEnd(CurrentTurn);
 
         CurrentTurn++;
+        battleContext.battleManager.BattleLogger.Clear();
     }
 
     // 다음 턴

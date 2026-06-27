@@ -97,23 +97,27 @@ public class ClashManager
                 winner.Owner.CurrentStatus.maxPrestige;
         }
 
+        int beforeHP = (int)winner.TargetPart.PartHP;
+
         int damage = damageManager.ApplyDamage(winner);
 
-        // =====================================================
-        // LOG (완전 통합)
-        // =====================================================
-        battleContext.battleManager.BattleLogger.Add(
-            BattleLogEntry.Create(winner)
-                .SetClash(winnerClash, loserClash)
-                .SetDamage(damage)
-                .SetPrestige(prestigeGain)
-                .Build(battleContext.battleManager.BattleLogger)
-        );
+        int afterHP = (int)winner.TargetPart.PartHP;
 
-        battleContext.battleManager.BattleLogger.Add(
-            BattleLogEntry.Create(loser)
-                .SetClash(loserClash, winnerClash)
-                .Build(battleContext.battleManager.BattleLogger)
+        battleContext.battleManager.BattleLogger.LogClash(
+
+            winner,
+            loser,
+
+            winnerClash,
+            loserClash,
+
+            damage,
+
+            prestigeGain,
+
+            beforeHP,
+            afterHP
+
         );
     }
 
@@ -125,14 +129,16 @@ public class ClashManager
             action.RolledPower = action.RollPower();
             action.Skill.Execute(action);
 
+            int beforeHP = (int)action.TargetPart.PartHP;
+
             int damage = damageManager.ApplyDamage(action);
 
-            battleContext.battleManager.BattleLogger.Add(
-                BattleLogEntry.Create(action)
-                    .SetDamage(damage)
-                    .Build(battleContext.battleManager.BattleLogger)
-            );
+            int afterHP = (int)action.TargetPart.PartHP;
 
-            battleContext._battleEvent.RaiseActionEnd(action);
+            battleContext.battleManager.BattleLogger.LogDamage(
+                action,
+                damage,
+                beforeHP,
+                afterHP);
         }
 }
