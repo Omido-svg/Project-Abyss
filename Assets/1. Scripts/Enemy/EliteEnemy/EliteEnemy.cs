@@ -6,10 +6,10 @@ class EliteEnemy : Enemy
 {
     private readonly List<BodyPart> bodyParts = new()
     {
-        new BodyPart(PartType.HEAD, 4, 8, 50),
-        new BodyPart(PartType.LEFT_HAND, 4, 8, 50),
-        new BodyPart(PartType.RIGHT_HAND, 4, 8, 50),
-        new BodyPart(PartType.LEGS, 4, 8, 50),
+        new BodyPart(PartType.HEAD, 50),
+        new BodyPart(PartType.LEFT_HAND, 50),
+        new BodyPart(PartType.RIGHT_HAND, 50),
+        new BodyPart(PartType.LEGS, 50)
     };
 
     public override IReadOnlyList<BodyPart> BodyParts => bodyParts;

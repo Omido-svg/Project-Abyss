@@ -17,4 +17,8 @@ public class CharacterData : ScriptableObject
 
     // 방어도
     public float defensePenetration = 0f;
+    
+    [Header("Speed")]
+    public int minSpeed = 3;
+    public int maxSpeed = 8;
 }

@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
+using UnityEngine;
 
 public class SpeedManager
 {
@@ -21,12 +22,31 @@ public class SpeedManager
 
     private void RollCharacterSpeed(Character character)
     {
+        List<int> speeds = new();
+
         foreach (BodyPart part in character.BodyParts)
         {
             if (part.IsBroken)
                 continue;
 
-            part.RollSpeed();
+            speeds.Add(Random.Range(
+                character.CurrentStatus.minSpeed,
+                character.CurrentStatus.maxSpeed + 1));
+        }
+
+        speeds.Sort((a, b) => b.CompareTo(a));
+
+        int index = 0;
+
+        foreach (BodyPart part in character.BodyParts)
+        {
+            if (part.IsBroken)
+            {
+                part.CurrentSpeed = 0;
+                continue;
+            }
+
+            part.CurrentSpeed = speeds[index++];
         }
     }
 }

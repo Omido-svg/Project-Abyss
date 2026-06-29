@@ -7,24 +7,36 @@ public abstract class Character : MonoBehaviour
     [Header("Data")]
     [SerializeField] private CharacterData data;
     public CharacterData Data => data;
-    public int CurrentHP => (int)BodyParts.Sum(x => x.PartHP);
-    
-    // 캐릭터 별로 부위를 다르게 설정
+
+    public int CurrentHP => RuntimeStatus.currentHP;
+
+    //--------------------------------
+    // Body Parts
+    //--------------------------------
+
     public abstract IReadOnlyList<BodyPart> BodyParts { get; }
 
-    // 아이템, 증강, 패시브 등이 모두 적용된 현재 스탯
+    //--------------------------------
+    // Status
+    //--------------------------------
+
     public CurrentStatus CurrentStatus { get; protected set; }
 
-    // 전투 중 계속 변하는 값
     public RuntimeStatus RuntimeStatus { get; protected set; }
 
     protected Passive passive;
 
     public bool IsDead { get; protected set; }
 
+    //--------------------------------
+    // 캐릭터 디버프
+    //--------------------------------
+
     protected readonly List<StatusEffect> statusEffects = new();
 
     public IReadOnlyList<StatusEffect> StatusEffects => statusEffects;
+
+    //--------------------------------
 
     protected BattleEvent battleEvent;
 
@@ -34,40 +46,38 @@ public abstract class Character : MonoBehaviour
     {
         this.battleEvent = battleEvent;
 
-        // 1. 스탯 계산
         RecalculateStatus();
 
-        // 2. Runtime 생성
         RuntimeStatus = new RuntimeStatus(CurrentStatus);
 
-        // 3. 실제 현재 체력 설정
-        RuntimeStatus.currentHP = CurrentHP;
+        RuntimeStatus.currentHP = BodyParts.Sum(x => (int)x.PartHP);
     }
 
-    // 스탯 재계산
+    //------------------------------------------------
+
     public virtual void RecalculateStatus()
     {
-        // CharacterData 복사
         CurrentStatus = new CurrentStatus(Data);
 
         // TODO
-        // 장비 적용
-        // 증강 적용
-        // 패시브 적용
-        // 영구 버프 적용
+        // 장비
+        // 패시브
+        // 영구버프
     }
 
     //------------------------------------------------
 
     public virtual void TurnStart()
     {
-        
     }
 
     public virtual void TurnEnd()
     {
-
     }
+
+    //------------------------------------------------
+    // Damage
+    //------------------------------------------------
 
     public virtual void TakeDamage(
         BodyPart part,
@@ -76,59 +86,160 @@ public abstract class Character : MonoBehaviour
     {
         if (IsDead)
             return;
-        
-        bool hitBrokenPart = part.IsBroken;
 
-        // 전체 체력 감소
-        RuntimeStatus.currentHP -= damage;
+        RuntimeStatus.currentHP =
+            Mathf.Max(RuntimeStatus.currentHP - damage, 0);
 
-        // 멀쩡한 부위였다면 부위 HP 감소
-        if (!hitBrokenPart)
+        //--------------------------------
+        // 이미 파괴된 부위
+        //--------------------------------
+
+        if (part.IsBroken)
         {
-            part.PartHP -= damage;
-            part.PartHP = Mathf.Max(0, part.PartHP);
+            battleEvent?.RaiseDamageTaken(this, damage);
 
-            // 부위 파괴
-            if ((part.PartHP <= 0 || forceBreak) && !part.IsBroken)
-            {
-                ForceBreakPart(part);
-            }
+            if (CanDie())
+                Die();
+
+            return;
+        }
+
+        //--------------------------------
+
+        float beforeHP = part.PartHP;
+
+        part.Damage(damage);
+
+        //--------------------------------
+        // Disabled 진입
+        //--------------------------------
+
+        if (beforeHP > 0 && part.IsDisabled)
+        {
+            OnBodyPartDisabled(part);
+        }
+
+        //--------------------------------
+        // 강제 파괴
+        //--------------------------------
+
+        if (forceBreak)
+        {
+            BreakPart(part);
         }
 
         battleEvent?.RaiseDamageTaken(this, damage);
 
-        if (RuntimeStatus.currentHP <= 0 || IsAllBodyPartsBroken())
-        {
+        if (CanDie())
             Die();
-        }
     }
 
     //------------------------------------------------
-    
-    public bool IsAllBodyPartsBroken()
-    {
-        foreach (var part in BodyParts)
-        {
-            if (!part.IsBroken)
-                return false;
-        }
 
-        return true;
+    public virtual void TakeTrueDamage(
+        int damage,
+        StatusEffect sourceEffect)
+    {
+        if (IsDead)
+            return;
+
+        RuntimeStatus.currentHP =
+            Mathf.Max(RuntimeStatus.currentHP - damage, 0);
+
+        if (CanDie())
+            Die();
     }
-    
+
+    //------------------------------------------------
+
+    protected virtual bool CanDie()
+    {
+        return RuntimeStatus.currentHP <= 0;
+    }
+
+    //------------------------------------------------
+
     public virtual void Die()
     {
+        if (IsDead)
+            return;
+
         IsDead = true;
 
         battleEvent?.RaiseCharacterDeath(this);
     }
 
     //------------------------------------------------
+    // Disabled
+    //------------------------------------------------
+
+    protected virtual void OnBodyPartDisabled(BodyPart part)
+    {
+        StatusEffect effect = CreateDisabledDebuff(part);
+
+        if (effect == null)
+            return;
+
+        part.AddStatus(effect, this);
+    }
+
+    protected virtual StatusEffect CreateDisabledDebuff(
+        BodyPart part)
+    {
+        return null;
+    }
+
+    //------------------------------------------------
+    // Break
+    //------------------------------------------------
+
+    public void BreakPart(BodyPart part)
+    {
+        if (part.IsBroken)
+            return;
+
+        part.Break();
+
+        //--------------------------------
+        // 부위 디버프 → 캐릭터 디버프로 전이
+        //--------------------------------
+
+        foreach (var effect in part.StatusEffects.ToArray())
+        {
+            part.RemoveStatus(effect);
+
+            OnBodyPartBroken(part, effect);
+        }
+
+        battleEvent?.RaiseBodyPartDestroyed(this, part);
+    }
+
+    //------------------------------------------------
+
+    protected virtual void OnBodyPartBroken(
+        BodyPart part,
+        StatusEffect disabledDebuff)
+    {
+        // 기본 구현 :
+        // Disabled 디버프를 캐릭터 디버프로 승격
+
+        if (disabledDebuff != null)
+        {
+            AddStatus(disabledDebuff, this);
+        }
+    }
+
+    //------------------------------------------------
+    // Character Status
+    //------------------------------------------------
 
     public void AddStatus(
         StatusEffect effect,
         Character source)
     {
+        if (effect == null)
+            return;
+
         effect.Initialize(this, source);
 
         effect.OnApply();
@@ -138,26 +249,20 @@ public abstract class Character : MonoBehaviour
         battleEvent?.RaiseStatusApplied(this, effect);
     }
 
-    //------------------------------------------------
-
     public void RemoveStatus(StatusEffect effect)
     {
+        if (effect == null)
+            return;
+
+        effect.OnRemove();
+
         statusEffects.Remove(effect);
 
         battleEvent?.RaiseStatusRemoved(this, effect);
     }
-    
-    public void ForceBreakPart(BodyPart part)
-    {
-        if(part.IsBroken)
-            return;
 
-        part.PartHP = 0;
-        part.IsBroken = true;
+    //------------------------------------------------
 
-        battleEvent?.RaiseBodyPartDestroyed(this, part);
-    }
-    
     public void AddPrestige(int amount)
     {
         RuntimeStatus.currentPrestige =
@@ -165,12 +270,29 @@ public abstract class Character : MonoBehaviour
                 RuntimeStatus.currentPrestige + amount,
                 CurrentStatus.maxPrestige);
     }
-    
-    public int ModifyRoll(BattleAction action, int roll)
+
+    //------------------------------------------------
+
+    public int ModifyRoll(
+        BattleAction action,
+        int roll)
     {
         int value = roll;
 
-        foreach (StatusEffect effect in statusEffects)
+        //--------------------------------
+        // 캐릭터 디버프
+        //--------------------------------
+
+        foreach (var effect in statusEffects)
+        {
+            value = effect.ModifyRoll(action, value);
+        }
+
+        //--------------------------------
+        // 현재 사용 부위 디버프
+        //--------------------------------
+
+        foreach (var effect in action.OwnerPart.StatusEffects)
         {
             value = effect.ModifyRoll(action, value);
         }

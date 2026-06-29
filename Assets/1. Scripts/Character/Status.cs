@@ -2,6 +2,10 @@ public class CurrentStatus
 {
     // 위세
     public int maxPrestige = 100;
+    
+    // 속도
+    public int minSpeed;
+    public int maxSpeed;
 
     // 데미지
     public float damageMultiplier = 1f;
@@ -16,6 +20,9 @@ public class CurrentStatus
 
         damageMultiplier = data.damageMultiplier;
         defensePenetration = data.defensePenetration;
+
+        minSpeed = data.minSpeed;
+        maxSpeed = data.maxSpeed;
     }
 }
 

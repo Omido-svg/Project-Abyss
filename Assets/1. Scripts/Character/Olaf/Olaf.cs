@@ -20,8 +20,6 @@ public class Olaf : Character
         bodyParts.Add(
             new BodyPart(
                 PartType.HEAD,
-                6,
-                10,
                 20,
                 new Skill[]
                 {
@@ -33,8 +31,6 @@ public class Olaf : Character
         bodyParts.Add(
             new BodyPart(
                 PartType.LEFT_HAND,
-                4,
-                8,
                 20,
                 new Skill[]
                 {
@@ -45,8 +41,6 @@ public class Olaf : Character
         bodyParts.Add(
             new BodyPart(
                 PartType.RIGHT_HAND,
-                4,
-                8,
                 20,
                 new Skill[]
                 {
@@ -57,8 +51,6 @@ public class Olaf : Character
         bodyParts.Add(
             new BodyPart(
                 PartType.LEGS,
-                3,
-                7,
                 20,
                 new Skill[]
                 {

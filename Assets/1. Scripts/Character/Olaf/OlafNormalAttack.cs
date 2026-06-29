@@ -11,9 +11,10 @@ public class OlafNormalAttack : NormalSkill
 
     public override void Execute(BattleAction action)
     {
-        action.Target.TakeDamage(
-            action.TargetPart,
-            action.RollPower());
-        action.Target.AddStatus(new Bleeding(1), owner);
+        // 데미지는 DamageManager에서 처리
+
+        action.TargetPart.AddStatus(
+            new Bleeding(),
+            action.Owner);
     }
 }

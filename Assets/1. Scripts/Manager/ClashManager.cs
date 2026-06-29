@@ -79,8 +79,8 @@ public class ClashManager
         int winnerClash = firstWin ? firstClash : secondClash;
         int loserClash  = firstWin ? secondClash : firstClash;
 
-        battleContext._battleEvent.RaiseClashWin(winner.Owner, loser.Owner);
-        battleContext._battleEvent.RaiseClashLose(loser.Owner, winner.Owner);
+        battleContext._battleEvent.RaiseClashWin(first, second);
+        battleContext._battleEvent.RaiseClashLose(second, first);
 
         int gap = winnerClash - loserClash;
 

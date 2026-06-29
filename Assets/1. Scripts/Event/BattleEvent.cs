@@ -41,22 +41,22 @@ public class BattleEvent
     //-----------------------------------
 
     public event Action<Character, Character> OnClashStart;
-    public event Action<Character, Character> OnClashWin;
-    public event Action<Character, Character> OnClashLose;
+    public event Action<BattleAction, BattleAction> OnClashWin;
+    public event Action<BattleAction, BattleAction> OnClashLose;
 
     public void RaiseClashStart(Character attacker, Character defender)
     {
         OnClashStart?.Invoke(attacker, defender);
     }
 
-    public void RaiseClashWin(Character winner, Character loser)
+    public void RaiseClashWin(BattleAction winnerAction, BattleAction loserAction)
     {
-        OnClashWin?.Invoke(winner, loser);
+        OnClashWin?.Invoke(winnerAction, loserAction);
     }
 
-    public void RaiseClashLose(Character loser, Character winner)
+    public void RaiseClashLose(BattleAction loserAction, BattleAction winnerAction)
     {
-        OnClashLose?.Invoke(loser, winner);
+        OnClashLose?.Invoke(loserAction, winnerAction);
     }
 
     //-----------------------------------

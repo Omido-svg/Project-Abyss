@@ -7,8 +7,6 @@ public class NormalEnemy : Enemy
     {
         new BodyPart(
             PartType.HEAD,
-            4,
-            8,
             50,
             new Skill[]
             {

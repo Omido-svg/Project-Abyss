@@ -27,12 +27,14 @@ public class OlafPassive : Passive
         battleEvent.OnKill -= OnKill;
     }
 
-    private void OnClashWin(Character winner, Character loser)
+    private void OnClashWin(
+        BattleAction winnerAction,
+        BattleAction loserAction)
     {
-        if (winner != owner) return;
-        
-        // 출혈 부여
-        loser.AddStatus(new Bleeding(3), owner);
+        if (winnerAction.Owner != owner)
+            return;
+
+        loserAction.TargetPart.AddStatus(new Bleeding(), owner);
     }
 
     private void OnBodyDestroyed(Character target, BodyPart part)
