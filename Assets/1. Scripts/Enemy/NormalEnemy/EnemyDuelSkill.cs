@@ -4,7 +4,7 @@ public class EnemyDuelSkill : DuelSkill
     {
         SkillName = "난폭한 공격(결투)";
 
-        BasePower = 8;
+        BasePower = 2;
 
         Resolver = new DiceResolver(2, 6);
     }

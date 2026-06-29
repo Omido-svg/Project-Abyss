@@ -199,7 +199,7 @@ public class StatusPopup : MonoBehaviour
         //--------------------------------
         // 전체 상태
         //--------------------------------
-        sb.AppendLine($"<color=#FF4B4B><b>HP</b></color> : {r.currentHP}/{character.CurrentHP}");
+        sb.AppendLine($"<color=#FF4B4B><b>HP</b></color> : {character.CurrentHP}");
         sb.AppendLine($"<color=#C084FF><b>Prestige</b></color> : {r.currentPrestige}/{c.maxPrestige}");
         sb.AppendLine();
 

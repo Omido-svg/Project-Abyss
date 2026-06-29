@@ -178,10 +178,16 @@ public class MomentumManager
         int shift = CalculateMomentumShift(clashGap);
 
         if (winner == battleContext.Player)
+        {
             CurrentMomentum += shift;
+            Debug.Log($"{shift} 만큼 플레이어가 기세를 밀어냄");
+        }
         else
+        {
             CurrentMomentum -= shift;
-
+            Debug.Log($"{shift} 만큼 적들이 기세를 밀어냄");
+        }
+            
         CurrentMomentum =
             Mathf.Clamp(
                 CurrentMomentum,

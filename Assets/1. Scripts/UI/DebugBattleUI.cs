@@ -17,7 +17,7 @@ public class DebugBattleUI : MonoBehaviour
         if (context == null)
             return;
 
-        // Refresh(context);
+        Refresh(context);
     }
 
     //--------------------------------------------------

@@ -33,6 +33,9 @@ public class ActionResolver
         {
             BattleAction action = queue.Dequeue();
 
+            if (action.Owner.IsDead || action.Target.IsDead)
+                continue;
+
             battleContext._battleEvent.RaiseActionStart(action);
 
             if (action.Skill == null)

@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
@@ -87,51 +88,41 @@ public abstract class Character : MonoBehaviour
         if (IsDead)
             return;
 
-        RuntimeStatus.currentHP =
-            Mathf.Max(RuntimeStatus.currentHP - damage, 0);
-
-        //--------------------------------
-        // 이미 파괴된 부위
-        //--------------------------------
-
-        if (part.IsBroken)
-        {
-            battleEvent?.RaiseDamageTaken(this, damage);
-
-            if (CanDie())
-                Die();
-
-            return;
-        }
-
-        //--------------------------------
-
+        // 1. 부위 처리
         float beforeHP = part.PartHP;
-
         part.Damage(damage);
 
-        //--------------------------------
-        // Disabled 진입
-        //--------------------------------
-
+        // 2. Disabled 진입
         if (beforeHP > 0 && part.IsDisabled)
         {
             OnBodyPartDisabled(part);
         }
 
-        //--------------------------------
-        // 강제 파괴
-        //--------------------------------
-
-        if (forceBreak)
+        // 3. Break 처리 (Disabled 이후 체크)
+        if (forceBreak || part.PartHP <= 0)
         {
             BreakPart(part);
         }
 
-        battleEvent?.RaiseDamageTaken(this, damage);
+        // 4. HP 재계산 (단 하나의 진실)
+        RecalculateRuntimeHP();
 
+        // 5. 사망 판정
         if (CanDie())
             Die();
+
+        battleEvent?.RaiseDamageTaken(this, damage);
+    }
+    
+    private void RecalculateRuntimeHP()
+    {
+        RuntimeStatus.currentHP =
+            BodyParts.Sum(p => p.PartHP <= 0 ? 0 : (int)p.PartHP);
+    }
+    
+    public void ForceRecalculateHP()
+    {
+        RuntimeStatus.currentHP = (int)BodyParts.Sum(p => p.PartHP);
     }
 
     //------------------------------------------------

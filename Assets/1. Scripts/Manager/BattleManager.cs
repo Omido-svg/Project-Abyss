@@ -28,7 +28,7 @@ public class BattleManager : MonoBehaviour
     private ClashManager clashManager;
     private DamageManager damageManager;
     private AIManager AIManager;
-    private MomentumManager MomentumManager;
+    public MomentumManager MomentumManager { get; private set; }
     private SpeedManager SpeedManager;
     private ActionResolver ActionResolver;
     
@@ -57,6 +57,7 @@ public class BattleManager : MonoBehaviour
         
         // BattleEvent 연결
         player.Initialize(battleContext._battleEvent);
+        player.ForceRecalculateHP();
         
         // 플레이어의 스킬을 간단하게 임의로 지정해주는 메서드 (디버깅용)
         AssignSkills(player);
@@ -96,7 +97,6 @@ public class BattleManager : MonoBehaviour
         // 디버깅용
         Utils.PrintList(BattleContext.AllCharacters);
         Debug.Log("Start Battle");
-        
         
         StartBattle();
     }

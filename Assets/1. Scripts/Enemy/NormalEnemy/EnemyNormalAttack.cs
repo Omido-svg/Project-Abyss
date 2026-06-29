@@ -6,7 +6,7 @@ public class EnemyNormalAttack : NormalSkill
 
         BasePower = 5;
 
-        Resolver = new DiceResolver(1, 6);
+        Resolver = new DiceResolver(1, 2);
     }
 
     public override void Execute(BattleAction action)

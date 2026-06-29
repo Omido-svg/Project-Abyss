@@ -19,7 +19,10 @@ class EliteEnemy : Enemy
     public override void Initialize(BattleEvent battleEvent)
     {
         base.Initialize(battleEvent);
-
+        
+        foreach(BodyPart part in bodyParts)
+            part.Initialize(this);
+        
         passive = null;
     }
 

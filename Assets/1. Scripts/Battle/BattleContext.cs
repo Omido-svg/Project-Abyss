@@ -9,7 +9,8 @@ public class BattleContext
     public BattleEvent _battleEvent = new();
     
     public BattleManager battleManager;
-    
+    public int finalPower;
+
     public List<Character> AllCharacters
     {
         get

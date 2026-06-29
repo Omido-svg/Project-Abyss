@@ -20,7 +20,7 @@ public class Olaf : Character
         bodyParts.Add(
             new BodyPart(
                 PartType.HEAD,
-                20,
+                40,
                 new Skill[]
                 {
                     new OlafNormalAttack(),
@@ -31,7 +31,7 @@ public class Olaf : Character
         bodyParts.Add(
             new BodyPart(
                 PartType.LEFT_HAND,
-                20,
+                30,
                 new Skill[]
                 {
                     new OlafNormalAttack(),
@@ -41,7 +41,7 @@ public class Olaf : Character
         bodyParts.Add(
             new BodyPart(
                 PartType.RIGHT_HAND,
-                20,
+                30,
                 new Skill[]
                 {
                     new OlafNormalAttack(),
@@ -51,13 +51,16 @@ public class Olaf : Character
         bodyParts.Add(
             new BodyPart(
                 PartType.LEGS,
-                20,
+                50,
                 new Skill[]
                 {
                     new OlafAmbushSkill()
                 }));
 
         passive = new OlafPassive(this, battleEvent);
+        
+        foreach(BodyPart part in bodyParts)
+            part.Initialize(this);
     }
 
     //------------------------------------------------

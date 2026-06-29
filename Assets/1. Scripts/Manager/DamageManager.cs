@@ -21,10 +21,15 @@ public class DamageManager
             action.RolledPower = action.RollPower();
 
         int damage = CalculateDamage(action);
+        
+        // 디버깅
+        Debug.Log($"{action.Owner}의 {action.OwnerPart.Type}가 {action.Target}의 {action.TargetPart.Type} 부위에 {damage}만큼의 피해를 줌");
 
         bool overwhelm =
             momentumManager.IsOverwhelm(action.Owner);
-
+            
+        action.finalPower = damage;
+        
         action.Target.TakeDamage(
             action.TargetPart,
             damage,

@@ -6,9 +6,6 @@ public class CharacterData : ScriptableObject
     [Header("Character")]
     public string CharacterName;
 
-    // HP
-    public int maxHP = 100;
-
     // 위세
     public int maxPrestige = 100;
 

@@ -34,9 +34,11 @@ public class BattleAction
 
     public bool IsPrestige =>
         ActionType == ActionType.Prestige;
-
+        
+    public int finalPower;
+    
     public int RolledPower;
-
+    
     public int RollPower()
     {
         int roll = Skill.Resolver.Roll();

@@ -52,20 +52,23 @@ public class BattleUIManager : MonoBehaviour
 
     private void CreateAction()
     {
-        BattleAction action = new BattleAction();
-
-        action.Owner = selectedOwner;
-        action.Target = selectedTarget;
-
-        action.OwnerPart = selectedOwnerPart;
-        action.TargetPart = selectedTargetPart;
-        
-        if(selectedOwnerPart.CurrentSkill == null)
+        if (selectedOwnerPart.CurrentSkill == null)
         {
-            Debug.Log("UI딴에서 Skill 이 NULL임");
+            Debug.LogError("UI딴에서 Skill 이 NULL임");
+            return; // ← 이거 중요 (이 상태로 Action 만들면 터짐)
         }
-        
-        action.Skill = selectedOwnerPart.CurrentSkill;
+
+        BattleAction action = new BattleAction
+        {
+            Owner = selectedOwner,
+            Target = selectedTarget,
+            OwnerPart = selectedOwnerPart,
+            TargetPart = selectedTargetPart,
+            Skill = selectedOwnerPart.CurrentSkill,
+
+            // 🔥 핵심 수정
+            Phase = CalculatePhase(selectedOwnerPart.CurrentSkill.ActionType)
+        };
 
         battleManager.ActionManager.AddAction(action);
 
@@ -85,5 +88,25 @@ public class BattleUIManager : MonoBehaviour
 
         selectedTarget = null;
         selectedTargetPart = null;
+    }
+    
+    private ActionPhase CalculatePhase(ActionType type)
+    {
+        switch (type)
+        {
+            case ActionType.Duel:
+            case ActionType.NormalAttack:
+                return ActionPhase.COMBAT;
+
+            case ActionType.Preparation:
+                return ActionPhase.FORESIGHT;
+
+            case ActionType.Prestige:
+                return ActionPhase.PRETURN;
+
+            default:
+                Debug.LogWarning($"Unknown ActionType: {type}");
+                return ActionPhase.COMBAT; // 안전 fallback
+        }
     }
 }

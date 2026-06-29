@@ -57,7 +57,7 @@ public class BattleLogEntry
         sb.AppendLine($"Type  : {Action.ActionType}");
 
         sb.AppendLine($"Speed : {Action.Speed}");
-        sb.AppendLine($"Power : {Action.RolledPower}");
+        sb.AppendLine($"Power : {Action.finalPower}");
 
         if (Type == BattleLogType.Clash)
         {

@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 
 public class ClashPair
 {
@@ -52,32 +53,53 @@ public class ActionManager
     }
 
     //------------------------------------------------
+    // 핵심 수정: 안정적인 Execution Pipeline
+    //------------------------------------------------
 
     public ActionExecutionQueue BuildExecutionQueue()
     {
-        SortBySpeed();
-        BuildClashes();
+        clashPairs.Clear();
+
+        // 1. Phase 기준 그룹화 (핵심)
+        var groupedByPhase = actions
+            .GroupBy(a => a.Phase)
+            .ToDictionary(g => g.Key, g => g.ToList());
 
         ActionExecutionQueue queue = new();
 
-        // 위세
-        foreach (BattleAction action in actions)
+        //------------------------------------------------
+        // 2. PRETURN (위세)
+        //------------------------------------------------
+        if (groupedByPhase.TryGetValue(ActionPhase.PRETURN, out var preturnActions))
         {
-            if (action.Phase == ActionPhase.PRETURN)
+            foreach (var action in SortBySpeed(preturnActions))
+            {
                 queue.PrestigeQueue.Enqueue(action);
+            }
         }
 
-        // 도사림
-        foreach (BattleAction action in actions)
+        //------------------------------------------------
+        // 3. FORESIGHT (도사림)
+        //------------------------------------------------
+        if (groupedByPhase.TryGetValue(ActionPhase.FORESIGHT, out var foresightActions))
         {
-            if (action.Phase == ActionPhase.FORESIGHT)
+            foreach (var action in SortBySpeed(foresightActions))
+            {
                 queue.AmbushQueue.Enqueue(action);
+            }
         }
 
-        // 합
-        foreach (ClashPair pair in clashPairs)
+        //------------------------------------------------
+        // 4. COMBAT (Clash 포함)
+        //------------------------------------------------
+        if (groupedByPhase.TryGetValue(ActionPhase.COMBAT, out var combatActions))
         {
-            if (pair.First.Phase == ActionPhase.COMBAT)
+            // Speed 정렬된 COMBAT 리스트
+            var sortedCombat = SortBySpeed(combatActions);
+
+            BuildClashes(sortedCombat);
+
+            foreach (var pair in clashPairs)
             {
                 queue.ClashQueue.Enqueue(pair);
             }
@@ -87,42 +109,42 @@ public class ActionManager
     }
 
     //------------------------------------------------
+    // Speed 정렬 (재사용용)
+    //------------------------------------------------
 
-    private void SortBySpeed()
+    private List<BattleAction> SortBySpeed(List<BattleAction> list)
     {
-        actions.Sort((a, b) => b.Speed.CompareTo(a.Speed));
+        return list
+            .OrderByDescending(a => a.Speed)
+            .ToList();
     }
 
     //------------------------------------------------
+    // Clash 생성 (COMBAT 전용)
+    //------------------------------------------------
 
-    private void BuildClashes()
+    private void BuildClashes(List<BattleAction> combatActions)
     {
         clashPairs.Clear();
 
         HashSet<BattleAction> matched = new();
 
-        foreach (BattleAction action in actions)
+        foreach (var action in combatActions)
         {
             if (matched.Contains(action))
                 continue;
 
-            // 위세 / 도사림은 Clash 대상 아님
-            if (action.Phase != ActionPhase.COMBAT)
-                continue;
-
-            BattleAction opponent = FindOpponent(action, matched);
+            var opponent = FindOpponent(action, combatActions, matched);
 
             if (opponent != null)
             {
                 clashPairs.Add(new ClashPair(action, opponent));
-
                 matched.Add(action);
                 matched.Add(opponent);
             }
             else
             {
                 clashPairs.Add(new ClashPair(action));
-
                 matched.Add(action);
             }
         }
@@ -132,17 +154,15 @@ public class ActionManager
 
     private BattleAction FindOpponent(
         BattleAction action,
+        List<BattleAction> combatActions,
         HashSet<BattleAction> matched)
     {
-        foreach (BattleAction other in actions)
+        foreach (var other in combatActions)
         {
             if (matched.Contains(other))
                 continue;
 
             if (other == action)
-                continue;
-
-            if (other.Phase != ActionPhase.COMBAT)
                 continue;
 
             if (other.Owner == action.Target &&
