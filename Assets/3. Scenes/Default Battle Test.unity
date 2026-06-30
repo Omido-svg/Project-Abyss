@@ -353,8 +353,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: part 1
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
-  m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 673275fc03fb0244e9cb00df02f38e56, type: 2}
+  m_sharedMaterial: {fileID: 8694838190884598287, guid: 673275fc03fb0244e9cb00df02f38e56, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -378,13 +378,13 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 24
-  m_fontSizeBase: 24
+  m_fontSize: 31.05
+  m_fontSizeBase: 14
   m_fontWeight: 400
-  m_enableAutoSizing: 0
+  m_enableAutoSizing: 1
   m_fontSizeMin: 18
   m_fontSizeMax: 72
-  m_fontStyle: 0
+  m_fontStyle: 1
   m_HorizontalAlignment: 2
   m_VerticalAlignment: 512
   m_textAlignment: 65535
@@ -601,8 +601,8 @@ Canvas:
   m_Enabled: 1
   serializedVersion: 3
   m_RenderMode: 0
-  m_Camera: {fileID: 0}
-  m_PlaneDistance: 100
+  m_Camera: {fileID: 1747701452}
+  m_PlaneDistance: 10
   m_PixelPerfect: 0
   m_ReceivesEvents: 1
   m_OverrideSorting: 0
@@ -631,6 +631,7 @@ RectTransform:
   - {fileID: 92950977}
   - {fileID: 2031257137}
   - {fileID: 1805580444}
+  - {fileID: 1289930840}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
@@ -1148,6 +1149,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0dabe4f21c417e64f870aed41bc5db5f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  uiManager: {fileID: 605390726}
+  battleManager: {fileID: 0}
+  buttonText: {fileID: 1971725357}
 --- !u!1 &488980321
 GameObject:
   m_ObjectHideFlags: 0
@@ -2038,8 +2042,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: EN2
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
-  m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 673275fc03fb0244e9cb00df02f38e56, type: 2}
+  m_sharedMaterial: {fileID: 8694838190884598287, guid: 673275fc03fb0244e9cb00df02f38e56, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -2063,13 +2067,13 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 24
-  m_fontSizeBase: 24
+  m_fontSize: 46.85
+  m_fontSizeBase: 14
   m_fontWeight: 400
-  m_enableAutoSizing: 0
+  m_enableAutoSizing: 1
   m_fontSizeMin: 18
   m_fontSizeMax: 72
-  m_fontStyle: 0
+  m_fontStyle: 1
   m_HorizontalAlignment: 2
   m_VerticalAlignment: 512
   m_textAlignment: 65535
@@ -2440,6 +2444,10 @@ MonoBehaviour:
   statusText: {fileID: 623961084}
   outline: {fileID: 1068877090}
   battleManager: {fileID: 1453355684}
+  selectPlayerKey: 32
+  mouseButtonSelect: 0
+  mouseButtonDeselect: 1
+  focusOffset: {x: 0, y: 2, z: 0}
 --- !u!114 &1068877090
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2506,6 +2514,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0dabe4f21c417e64f870aed41bc5db5f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  uiManager: {fileID: 605390726}
+  battleManager: {fileID: 0}
+  buttonText: {fileID: 1806438817}
 --- !u!114 &1091805359
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2880,6 +2891,10 @@ MonoBehaviour:
   statusText: {fileID: 88524752}
   outline: {fileID: 1174378451}
   battleManager: {fileID: 1453355684}
+  selectPlayerKey: 32
+  mouseButtonSelect: 0
+  mouseButtonDeselect: 1
+  focusOffset: {x: 0, y: 2, z: 0}
 --- !u!114 &1174378451
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3040,6 +3055,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0dabe4f21c417e64f870aed41bc5db5f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  uiManager: {fileID: 605390726}
+  battleManager: {fileID: 0}
+  buttonText: {fileID: 1445933611}
 --- !u!1 &1244269855
 GameObject:
   m_ObjectHideFlags: 0
@@ -3184,6 +3202,10 @@ MonoBehaviour:
   statusText: {fileID: 1151835880}
   outline: {fileID: 1244269863}
   battleManager: {fileID: 1453355684}
+  selectPlayerKey: 32
+  mouseButtonSelect: 0
+  mouseButtonDeselect: 1
+  focusOffset: {x: 0, y: 2, z: 0}
 --- !u!114 &1244269863
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3198,6 +3220,75 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   targetRenderer: {fileID: 1244269857}
   outlineMaterial: {fileID: 2100000, guid: 17e6f1d8373960a449484235a8751434, type: 2}
+--- !u!1 &1289930839
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1289930840}
+  - component: {fileID: 1289930842}
+  - component: {fileID: 1289930843}
+  m_Layer: 5
+  m_Name: TargetArrowUIObject
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!224 &1289930840
+RectTransform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1289930839}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 253689329}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_AnchorMin: {x: 0.5, y: 0.5}
+  m_AnchorMax: {x: 0.5, y: 0.5}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: 100, y: 100}
+  m_Pivot: {x: 0.5, y: 0.5}
+--- !u!222 &1289930842
+CanvasRenderer:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1289930839}
+  m_CullTransparentMesh: 1
+--- !u!114 &1289930843
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1289930839}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 33c98caffbc161a4fa9b59a3e9a873ec, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  battleManager: {fileID: 1453355684}
+  canvas: {fileID: 253689328}
+  arrowRoot: {fileID: 1289930840}
+  showPlayerArrows: 1
+  showEnemySideOnClash: 1
+  playerArrowColor: {r: 0, g: 1, b: 1, a: 1}
+  enemyClashArrowColor: {r: 1, g: 0, b: 0, a: 1}
+  lineThickness: 5
+  startPadding: 25
+  endPadding: 25
+  arrowHeadLength: 28
+  arrowHeadAngle: 35
 --- !u!1 &1377005057
 GameObject:
   m_ObjectHideFlags: 0
@@ -3434,8 +3525,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: part 2
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
-  m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 673275fc03fb0244e9cb00df02f38e56, type: 2}
+  m_sharedMaterial: {fileID: 8694838190884598287, guid: 673275fc03fb0244e9cb00df02f38e56, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -3459,13 +3550,13 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 24
-  m_fontSizeBase: 24
+  m_fontSize: 31.05
+  m_fontSizeBase: 14
   m_fontWeight: 400
-  m_enableAutoSizing: 0
+  m_enableAutoSizing: 1
   m_fontSizeMin: 18
   m_fontSizeMax: 72
-  m_fontStyle: 0
+  m_fontStyle: 1
   m_HorizontalAlignment: 2
   m_VerticalAlignment: 512
   m_textAlignment: 65535
@@ -3546,12 +3637,12 @@ MonoBehaviour:
   - {fileID: 1174378449}
   - {fileID: 1068877088}
   - {fileID: 1478351541}
-  Playerparts:
+  playerButtons:
   - {fileID: 1632426706}
   - {fileID: 1213347054}
   - {fileID: 478031303}
   - {fileID: 1603813231}
-  Enemiesparts:
+  enemyButtons:
   - {fileID: 1091805358}
   - {fileID: 1582033875}
   - {fileID: 2090521073}
@@ -3715,6 +3806,10 @@ MonoBehaviour:
   statusText: {fileID: 602221191}
   outline: {fileID: 1478351543}
   battleManager: {fileID: 1453355684}
+  selectPlayerKey: 32
+  mouseButtonSelect: 0
+  mouseButtonDeselect: 1
+  focusOffset: {x: 0, y: 2, z: 0}
 --- !u!114 &1478351543
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3775,6 +3870,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   battleManager: {fileID: 1453355684}
   text: {fileID: 1824034224}
+  showSelectedCharacter: 0
+  showAllActionSlots: 0
+  showBodyPartSkills: 0
+  showStatusEffects: 1
 --- !u!1 &1582033873
 GameObject:
   m_ObjectHideFlags: 0
@@ -3827,6 +3926,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0dabe4f21c417e64f870aed41bc5db5f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  uiManager: {fileID: 605390726}
+  battleManager: {fileID: 0}
+  buttonText: {fileID: 872342652}
 --- !u!114 &1582033876
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -4067,6 +4169,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0dabe4f21c417e64f870aed41bc5db5f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  uiManager: {fileID: 605390726}
+  battleManager: {fileID: 0}
+  buttonText: {fileID: 1793331189}
 --- !u!1 &1632426701
 GameObject:
   m_ObjectHideFlags: 0
@@ -4213,6 +4318,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0dabe4f21c417e64f870aed41bc5db5f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  uiManager: {fileID: 605390726}
+  battleManager: {fileID: 0}
+  buttonText: {fileID: 204596918}
 --- !u!1 &1665027744
 GameObject:
   m_ObjectHideFlags: 0
@@ -4564,8 +4672,8 @@ MonoBehaviour:
 
 '
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
-  m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 673275fc03fb0244e9cb00df02f38e56, type: 2}
+  m_sharedMaterial: {fileID: 8694838190884598287, guid: 673275fc03fb0244e9cb00df02f38e56, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -4589,13 +4697,13 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 24
-  m_fontSizeBase: 24
+  m_fontSize: 31.05
+  m_fontSizeBase: 14
   m_fontWeight: 400
-  m_enableAutoSizing: 0
+  m_enableAutoSizing: 1
   m_fontSizeMin: 18
   m_fontSizeMax: 72
-  m_fontStyle: 0
+  m_fontStyle: 1
   m_HorizontalAlignment: 2
   m_VerticalAlignment: 512
   m_textAlignment: 65535
@@ -4806,8 +4914,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: EN1
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
-  m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 673275fc03fb0244e9cb00df02f38e56, type: 2}
+  m_sharedMaterial: {fileID: 8694838190884598287, guid: 673275fc03fb0244e9cb00df02f38e56, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -4831,13 +4939,13 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 24
-  m_fontSizeBase: 24
+  m_fontSize: 46.85
+  m_fontSizeBase: 14
   m_fontWeight: 400
-  m_enableAutoSizing: 0
+  m_enableAutoSizing: 1
   m_fontSizeMin: 18
   m_fontSizeMax: 72
-  m_fontStyle: 0
+  m_fontStyle: 1
   m_HorizontalAlignment: 2
   m_VerticalAlignment: 512
   m_textAlignment: 65535
@@ -5080,8 +5188,8 @@ MonoBehaviour:
 
 '
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
-  m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 673275fc03fb0244e9cb00df02f38e56, type: 2}
+  m_sharedMaterial: {fileID: 8694838190884598287, guid: 673275fc03fb0244e9cb00df02f38e56, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -5105,13 +5213,13 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 24
-  m_fontSizeBase: 24
+  m_fontSize: 46.85
+  m_fontSizeBase: 14
   m_fontWeight: 400
-  m_enableAutoSizing: 0
+  m_enableAutoSizing: 1
   m_fontSizeMin: 18
   m_fontSizeMax: 72
-  m_fontStyle: 0
+  m_fontStyle: 1
   m_HorizontalAlignment: 2
   m_VerticalAlignment: 512
   m_textAlignment: 65535
@@ -5209,6 +5317,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0dabe4f21c417e64f870aed41bc5db5f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  uiManager: {fileID: 605390726}
+  battleManager: {fileID: 0}
+  buttonText: {fileID: 1994860953}
 --- !u!114 &1854957848
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -5547,8 +5658,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: part 3
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
-  m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 673275fc03fb0244e9cb00df02f38e56, type: 2}
+  m_sharedMaterial: {fileID: 8694838190884598287, guid: 673275fc03fb0244e9cb00df02f38e56, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -5572,13 +5683,13 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 24
-  m_fontSizeBase: 24
+  m_fontSize: 31.05
+  m_fontSizeBase: 14
   m_fontWeight: 400
-  m_enableAutoSizing: 0
+  m_enableAutoSizing: 1
   m_fontSizeMin: 18
   m_fontSizeMax: 72
-  m_fontStyle: 0
+  m_fontStyle: 1
   m_HorizontalAlignment: 2
   m_VerticalAlignment: 512
   m_textAlignment: 65535
@@ -5721,8 +5832,8 @@ MonoBehaviour:
 
 '
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
-  m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 673275fc03fb0244e9cb00df02f38e56, type: 2}
+  m_sharedMaterial: {fileID: 8694838190884598287, guid: 673275fc03fb0244e9cb00df02f38e56, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -5746,13 +5857,13 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 24
-  m_fontSizeBase: 24
+  m_fontSize: 46.85
+  m_fontSizeBase: 14
   m_fontWeight: 400
-  m_enableAutoSizing: 0
+  m_enableAutoSizing: 1
   m_fontSizeMin: 18
   m_fontSizeMax: 72
-  m_fontStyle: 0
+  m_fontStyle: 1
   m_HorizontalAlignment: 2
   m_VerticalAlignment: 512
   m_textAlignment: 65535
@@ -6095,6 +6206,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0dabe4f21c417e64f870aed41bc5db5f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  uiManager: {fileID: 605390726}
+  battleManager: {fileID: 0}
+  buttonText: {fileID: 1842025270}
 --- !u!114 &2090521074
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -6333,6 +6447,10 @@ MonoBehaviour:
   statusText: {fileID: 835575120}
   outline: {fileID: 2094296670}
   battleManager: {fileID: 1453355684}
+  selectPlayerKey: 32
+  mouseButtonSelect: 0
+  mouseButtonDeselect: 1
+  focusOffset: {x: 0, y: 2, z: 0}
 --- !u!114 &2094296670
 MonoBehaviour:
   m_ObjectHideFlags: 0

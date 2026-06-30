@@ -14,25 +14,20 @@ public class BattleLogEntry
 
     public BattleLogType Type;
 
-    // 결과
     public bool IsWinner;
 
-    // 수치
     public int MyPower;
     public int EnemyPower;
 
     public int Damage;
     public int PrestigeGain;
 
-    // HP
     public int TargetHPBefore;
     public int TargetHPAfter;
 
-    // 상태
     public bool TargetPartBroken;
     public bool TargetDead;
 
-    // 기타
     public string Message;
 
     //--------------------------------
@@ -50,14 +45,19 @@ public class BattleLogEntry
 
         sb.AppendLine("====================================");
 
-        sb.AppendLine($"{Action.Owner.Data.CharacterName} ({Action.OwnerPart.Type})");
-        sb.AppendLine($" -> {Action.Target.Data.CharacterName} ({Action.TargetPart.Type})");
+        sb.AppendLine(
+            $"{GetCharacterName(Action?.Owner)} " +
+            $"({GetPartName(Action?.OwnerPart)})");
 
-        sb.AppendLine($"Skill : {Action.Skill.SkillName}");
-        sb.AppendLine($"Type  : {Action.ActionType}");
+        sb.AppendLine(
+            $" -> {GetCharacterName(Action?.Target)} " +
+            $"({GetPartName(Action?.TargetPart)})");
 
-        sb.AppendLine($"Speed : {Action.Speed}");
-        sb.AppendLine($"Power : {Action.finalPower}");
+        sb.AppendLine($"Skill : {GetSkillName(Action?.Skill)}");
+        sb.AppendLine($"Type  : {GetActionType()}");
+
+        sb.AppendLine($"Speed : {GetSpeed()}");
+        sb.AppendLine($"Power : {GetPower()}");
 
         if (Type == BattleLogType.Clash)
         {
@@ -84,5 +84,67 @@ public class BattleLogEntry
             sb.AppendLine(Message);
 
         return sb.ToString();
+    }
+
+    //--------------------------------
+
+    private string GetCharacterName(Character character)
+    {
+        if (character == null)
+            return "NULL";
+
+        if (character.Data == null)
+            return character.name;
+
+        return character.Data.CharacterName;
+    }
+
+    private string GetPartName(BodyPart part)
+    {
+        if (part == null)
+            return "NULL";
+
+        return part.Type.ToString();
+    }
+
+    private string GetSkillName(Skill skill)
+    {
+        if (skill == null)
+            return "NULL";
+
+        return skill.SkillName;
+    }
+
+    private string GetActionType()
+    {
+        if (Action == null)
+            return "NULL";
+
+        if (Action.Skill == null)
+            return "NULL";
+
+        return Action.ActionType.ToString();
+    }
+
+    private int GetSpeed()
+    {
+        if (Action == null)
+            return 0;
+
+        return Action.Speed;
+    }
+
+    private int GetPower()
+    {
+        if (Action == null)
+            return 0;
+
+        if (Action.finalPower != 0)
+            return Action.finalPower;
+
+        if (Action.HasRolled)
+            return Action.RolledPower;
+
+        return 0;
     }
 }

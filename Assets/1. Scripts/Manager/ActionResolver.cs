@@ -31,62 +31,95 @@ public class ActionResolver
     {
         while (queue.Count > 0)
         {
-            BattleAction action = queue.Dequeue();
+            ActionSlot slot = queue.Dequeue();
 
-            //------------------------------------
-            // 방어
-            //------------------------------------
-
-            if (action == null)
+            if (!IsValidSlot(slot))
                 continue;
 
-            if (action.Owner == null || action.Target == null)
-                continue;
-
-            if (action.Skill == null)
-            {
-                Debug.LogWarning("Skill NULL");
-                continue;
-            }
-
-            if (action.Owner.IsDead)
-                continue;
-
-            if (action.Target.IsDead)
-                continue;
-
-            //------------------------------------
-            // Action Start
-            //------------------------------------
+            BattleAction action = CreateBattleAction(slot);
 
             battleContext._battleEvent.RaiseActionStart(action);
 
-            //------------------------------------
-            // 실행
-            //------------------------------------
-
             action.Skill.Execute(action);
-
-            //------------------------------------
-            // 로그
-            //------------------------------------
 
             BattleLogType type = action.Phase switch
             {
-                ActionPhase.PRETURN  => BattleLogType.Prestige,
+                ActionPhase.PRETURN => BattleLogType.Prestige,
                 ActionPhase.FORESIGHT => BattleLogType.Preparation,
-                _                     => BattleLogType.Normal
+                _ => BattleLogType.Normal
             };
 
-            battleContext.battleManager.BattleLogger.LogAction(
-                action,
-                type);
+            //--------------------------------
+            // 직접 피해 로그가 있으면 Damage 로그
+            //--------------------------------
 
-            //------------------------------------
-            // Action End
-            //------------------------------------
+            if (action.HasDamageLog)
+            {
+                battleContext.battleManager.BattleLogger.LogDamage(
+                    action,
+                    type,
+                    action.LoggedDamage,
+                    action.LoggedBeforeHP,
+                    action.LoggedAfterHP);
+            }
+            else
+            {
+                battleContext.battleManager.BattleLogger.LogAction(
+                    action,
+                    type);
+            }
 
             battleContext._battleEvent.RaiseActionEnd(action);
         }
+    }
+
+    //------------------------------------------------
+
+    private bool IsValidSlot(ActionSlot slot)
+    {
+        if (slot == null)
+            return false;
+
+        if (slot.Owner == null)
+            return false;
+
+        if (slot.TargetCharacter == null)
+            return false;
+
+        if (slot.Part == null)
+            return false;
+
+        if (slot.TargetPart == null)
+            return false;
+
+        if (slot.Skill == null)
+        {
+            Debug.LogWarning("Skill NULL");
+            return false;
+        }
+
+        if (slot.Owner.IsDead)
+            return false;
+
+        if (slot.TargetCharacter.IsDead)
+            return false;
+
+        if (slot.Part.IsBroken)
+            return false;
+
+        if (slot.TargetPart.IsBroken)
+            return false;
+
+        return true;
+    }
+
+    //------------------------------------------------
+
+    private BattleAction CreateBattleAction(ActionSlot slot)
+    {
+        return new BattleAction
+        {
+            Slot = slot
+        };
     }
 }

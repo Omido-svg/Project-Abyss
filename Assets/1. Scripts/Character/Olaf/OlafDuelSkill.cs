@@ -11,6 +11,19 @@ public class OlafDuelSkill : DuelSkill
 
     public override void Execute(BattleAction action)
     {
-        // 실제 효과는 합 승리 시 BattleEvent에서 처리
+        if (action == null)
+            return;
+
+        if (action.Target == null)
+            return;
+
+        // 결투 자체 데미지는 DamageManager에서 처리
+        // 합 승리 시 위세 획득도 ClashManager / MomentumManager에서 처리
+
+        // 결투 성공 후 추가 효과를 넣고 싶으면 여기
+        // 예: 출혈 1 추가
+        action.Target.AddStatus(
+            new Bleeding(1),
+            action.Owner);
     }
 }

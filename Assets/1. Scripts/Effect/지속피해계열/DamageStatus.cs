@@ -13,6 +13,9 @@ public abstract class DamageStatus : StatusEffect
 
     public override void OnTurnEnd()
     {
+        if (owner == null)
+            return;
+
         owner.TakeTrueDamage(Damage, this);
 
         DecreaseDuration();

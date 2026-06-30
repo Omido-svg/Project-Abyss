@@ -5,7 +5,6 @@ public class TurnManager
     private readonly BattleContext battleContext;
     private readonly ActionManager actionManager;
     private readonly AIManager aiManager;
-    private readonly ClashManager clashManager;
     private readonly SpeedManager speedManager;
     private readonly ActionResolver actionResolver;
     private readonly MomentumManager momentumManager;
@@ -17,7 +16,6 @@ public class TurnManager
         BattleContext battleContext,
         ActionManager actionManager,
         AIManager aiManager,
-        ClashManager clashManager,
         SpeedManager speedManager,
         ActionResolver actionResolver,
         MomentumManager momentumManager,
@@ -26,7 +24,6 @@ public class TurnManager
         this.battleContext = battleContext;
         this.actionManager = actionManager;
         this.aiManager = aiManager;
-        this.clashManager = clashManager;
         this.speedManager = speedManager;
         this.actionResolver = actionResolver;
         this.momentumManager = momentumManager;
@@ -46,6 +43,8 @@ public class TurnManager
         CurrentTurn = 1;
         IsBattleRunning = true;
 
+        momentumManager.Reset();
+
         StartTurn();
     }
 
@@ -53,28 +52,59 @@ public class TurnManager
 
     public void StartTurn()
     {
-        battleContext.battleManager.BattleLogger.Clear();
+        if (!IsBattleRunning)
+            return;
 
-        battleContext._battleEvent.RaiseTurnStart(CurrentTurn);
-
-        foreach (Character c in battleContext.AllCharacters)
-        {
-            c.TurnStart();
-        }
-
-        speedManager.RollAllSpeed();
+        Debug.Log($"===== TURN {CurrentTurn} START =====");
 
         //--------------------------------
-        // Slot 초기화
+        // 이전 턴 슬롯 제거
         //--------------------------------
 
         actionManager.Clear();
 
         //--------------------------------
-        // AI 행동 생성
+        // 로그 초기화
+        //--------------------------------
+
+        battleContext.battleManager.BattleLogger.Clear();
+
+        //--------------------------------
+        // Turn Start 이벤트
+        //--------------------------------
+
+        battleContext._battleEvent.RaiseTurnStart(CurrentTurn);
+
+        //--------------------------------
+        // 캐릭터 턴 시작 처리
+        //--------------------------------
+
+        foreach (Character character in battleContext.AllCharacters)
+        {
+            if (character == null)
+                continue;
+
+            if (character.IsDead)
+                continue;
+
+            character.TurnStart();
+        }
+
+        //--------------------------------
+        // 이번 턴 속도 굴림
+        //--------------------------------
+
+        speedManager.RollAllSpeed();
+
+        speedManager.PrintSpeeds();
+
+        //--------------------------------
+        // AI 행동 슬롯 생성
         //--------------------------------
 
         aiManager.DecideEnemyActions();
+        
+        actionManager.PrintSlots("AFTER AI SLOT CREATE");
 
         //--------------------------------
         // 플레이어 입력 대기
@@ -85,14 +115,17 @@ public class TurnManager
 
     public void ResolveTurn()
     {
-        Debug.Log($"===== TURN {CurrentTurn} =====");
+        if (!IsBattleRunning)
+            return;
+
+        Debug.Log($"===== TURN {CurrentTurn} RESOLVE =====");
 
         //--------------------------------
         // Slot -> Queue
         //--------------------------------
 
         ActionExecutionQueue queue =
-            clashBuilder.BuildQueue((System.Collections.Generic.List<ActionSlot>)actionManager.Slots);
+            clashBuilder.BuildQueue(actionManager.Slots);
 
         //--------------------------------
         // Queue 실행
@@ -100,6 +133,8 @@ public class TurnManager
 
         actionResolver.Resolve(queue);
 
+        //--------------------------------
+        // 턴 종료
         //--------------------------------
 
         EndTurn();
@@ -109,16 +144,24 @@ public class TurnManager
 
     private void EndTurn()
     {
-        battleContext.battleManager.BattleLogger.PrintTurn(CurrentTurn);
+        Debug.Log($"===== TURN {CurrentTurn} END =====");
 
-        foreach (Character c in battleContext.AllCharacters)
+        foreach (Character character in battleContext.AllCharacters)
         {
-            c.TurnEnd();
+            if (character == null)
+                continue;
+
+            if (character.IsDead)
+                continue;
+
+            character.TurnEnd();
         }
 
         momentumManager.DecayMomentum();
 
         battleContext._battleEvent.RaiseTurnEnd(CurrentTurn);
+
+        battleContext.battleManager.BattleLogger.PrintTurn(CurrentTurn);
 
         CurrentTurn++;
     }

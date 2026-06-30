@@ -1,4 +1,6 @@
 using System.Collections.Generic;
+using System.Text;
+using UnityEngine;
 
 public class ClashPair
 {
@@ -23,29 +25,16 @@ public class ActionExecutionQueue
     public Queue<ClashPair> ClashQueue = new();
 }
 
-
 public class ActionManager
 {
-    private readonly BattleContext battleContext;
-
-    // BattleAction이 아니라 ActionSlot을 저장
     private readonly List<ActionSlot> slots = new();
 
     public IReadOnlyList<ActionSlot> Slots => slots;
-
-    public ActionManager(BattleContext battleContext)
-    {
-        this.battleContext = battleContext;
-    }
-
-    //------------------------------------------------
 
     public void Clear()
     {
         slots.Clear();
     }
-
-    //------------------------------------------------
 
     public void AddSlot(ActionSlot slot)
     {
@@ -53,20 +42,50 @@ public class ActionManager
             return;
 
         slots.Add(slot);
+
+        Debug.Log(
+            "[ActionManager AddSlot]\n" +
+            FormatSlot(slot));
     }
 
-    //------------------------------------------------
+    public void AddOrReplaceSlot(ActionSlot slot)
+    {
+        if (slot == null)
+            return;
+
+        ActionSlot oldSlot = FindSlot(slot.Owner, slot.Part);
+
+        if (oldSlot != null)
+        {
+            slots.Remove(oldSlot);
+
+            Debug.Log(
+                "[ActionManager ReplaceSlot - Old]\n" +
+                FormatSlot(oldSlot));
+        }
+
+        slots.Add(slot);
+
+        Debug.Log(
+            "[ActionManager AddOrReplaceSlot - New]\n" +
+            FormatSlot(slot));
+    }
 
     public void RemoveSlot(ActionSlot slot)
     {
-        slots.Remove(slot);
-    }
+        if (slot == null)
+            return;
 
-    //------------------------------------------------
+        slots.Remove(slot);
+
+        Debug.Log(
+            "[ActionManager RemoveSlot]\n" +
+            FormatSlot(slot));
+    }
 
     public ActionSlot FindSlot(Character owner, BodyPart part)
     {
-        foreach (var slot in slots)
+        foreach (ActionSlot slot in slots)
         {
             if (slot.Owner == owner &&
                 slot.Part == part)
@@ -78,37 +97,91 @@ public class ActionManager
         return null;
     }
 
-    //------------------------------------------------
-
-    public List<ActionSlot> GetCombatSlots()
+    public int CountSlots(Character owner)
     {
-        List<ActionSlot> result = new();
+        int count = 0;
 
-        foreach (var slot in slots)
+        foreach (ActionSlot slot in slots)
         {
-            if (slot.Phase == ActionPhase.COMBAT)
-                result.Add(slot);
+            if (slot.Owner == owner)
+                count++;
         }
+
+        return count;
+    }
+
+    public List<ActionSlot> GetAllSlots()
+    {
+        List<ActionSlot> result = new(slots);
 
         result.Sort((a, b) => b.Speed.CompareTo(a.Speed));
 
         return result;
     }
 
-    //------------------------------------------------
-
-    public List<ActionSlot> GetPhaseSlots(ActionPhase phase)
+    public void PrintSlots(string title = "ACTION MANAGER SLOTS")
     {
-        List<ActionSlot> result = new();
+        StringBuilder sb = new();
 
-        foreach (var slot in slots)
+        sb.AppendLine($"========== {title} ==========");
+        sb.AppendLine($"Count : {slots.Count}");
+        sb.AppendLine();
+
+        for (int i = 0; i < slots.Count; i++)
         {
-            if (slot.Phase == phase)
-                result.Add(slot);
+            sb.AppendLine($"[{i}]");
+            sb.AppendLine(FormatSlot(slots[i]));
+            sb.AppendLine("--------------------------------");
         }
 
-        result.Sort((a, b) => b.Speed.CompareTo(a.Speed));
+        sb.AppendLine("================================");
 
-        return result;
+        Debug.Log(sb.ToString());
+    }
+
+    private string FormatSlot(ActionSlot slot)
+    {
+        if (slot == null)
+            return "NULL SLOT";
+
+        string ownerName =
+            slot.Owner == null
+                ? "NULL"
+                : slot.Owner.Data.CharacterName;
+
+        string partName =
+            slot.Part == null
+                ? "NULL"
+                : slot.Part.Type.ToString();
+
+        string skillName =
+            slot.Skill == null
+                ? "NULL"
+                : slot.Skill.SkillName;
+
+        string targetName =
+            slot.TargetCharacter == null
+                ? "NULL"
+                : slot.TargetCharacter.Data.CharacterName;
+
+        string targetPartName =
+            slot.TargetPart == null
+                ? "NULL"
+                : slot.TargetPart.Type.ToString();
+
+        string targetSlotName =
+            slot.TargetSlot == null
+                ? "NULL"
+                : $"{slot.TargetSlot.Owner.Data.CharacterName} {slot.TargetSlot.Part.Type}";
+
+        return
+            $"Owner      : {ownerName}\n" +
+            $"Part       : {partName}\n" +
+            $"Skill      : {skillName}\n" +
+            $"Target     : {targetName}\n" +
+            $"TargetPart : {targetPartName}\n" +
+            $"Speed      : {slot.Speed}\n" +
+            $"Phase      : {slot.Phase}\n" +
+            $"TargetSlot : {targetSlotName}";
     }
 }

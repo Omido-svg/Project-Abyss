@@ -3,21 +3,15 @@ using System.Collections.Generic;
 public class AIManager
 {
     private readonly BattleContext battleContext;
-
-    // AI도 ActionBuffer에 넣는다.
-    private readonly ActionBuffer actionBuffer;
-
-    //--------------------------------
+    private readonly ActionManager actionManager;
 
     public AIManager(
         BattleContext battleContext,
-        ActionBuffer actionBuffer)
+        ActionManager actionManager)
     {
         this.battleContext = battleContext;
-        this.actionBuffer = actionBuffer;
+        this.actionManager = actionManager;
     }
-
-    //--------------------------------
 
     public void DecideEnemyActions()
     {
@@ -27,7 +21,7 @@ public class AIManager
 
             foreach (ActionSlot slot in slots)
             {
-                actionBuffer.Add(slot);
+                actionManager.AddOrReplaceSlot(slot);
             }
         }
     }

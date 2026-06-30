@@ -3,9 +3,9 @@ using UnityEngine;
 public enum MomentumState
 {
     LastStand,      // -100 ~ -70
-    Disadvantage,   // -70 ~ -30
+    Disadvantage,   // -69 ~ -31
     Balance,        // -30 ~ +30
-    Advantage,      // +30 ~ +70
+    Advantage,      // +31 ~ +69
     Overwhelm       // +70 ~ +100
 }
 
@@ -27,6 +27,9 @@ public class MomentumManager
 
     public const int LastStandBonus = 5;
 
+    private const int LowDecayAmount = 5;
+    private const int HighDecayAmount = 12;
+
     //------------------------------------------------
 
     public int CurrentMomentum { get; private set; }
@@ -44,18 +47,21 @@ public class MomentumManager
 
     public MomentumState GetState(Character owner)
     {
+        if (owner == null)
+            return MomentumState.Balance;
+
         int value =
-            owner == battleContext.Player
+            IsPlayerSide(owner)
                 ? CurrentMomentum
                 : -CurrentMomentum;
 
         if (value <= -70)
             return MomentumState.LastStand;
 
-        if (value <= -30)
+        if (value < -30)
             return MomentumState.Disadvantage;
 
-        if (value < 30)
+        if (value <= 30)
             return MomentumState.Balance;
 
         if (value < 70)
@@ -66,11 +72,22 @@ public class MomentumManager
 
     //------------------------------------------------
 
-    public bool IsLastStand(Character c)
-        => GetState(c) == MomentumState.LastStand;
+    private bool IsPlayerSide(Character character)
+    {
+        return character == battleContext.Player;
+    }
 
-    public bool IsOverwhelm(Character c)
-        => GetState(c) == MomentumState.Overwhelm;
+    //------------------------------------------------
+
+    public bool IsLastStand(Character character)
+    {
+        return GetState(character) == MomentumState.LastStand;
+    }
+
+    public bool IsOverwhelm(Character character)
+    {
+        return GetState(character) == MomentumState.Overwhelm;
+    }
 
     //------------------------------------------------
     // 데미지
@@ -94,9 +111,10 @@ public class MomentumManager
 
             case MomentumState.Overwhelm:
                 return 2.0f;
-        }
 
-        return 1f;
+            default:
+                return 1.0f;
+        }
     }
 
     //------------------------------------------------
@@ -106,10 +124,10 @@ public class MomentumManager
         switch (GetState(target))
         {
             case MomentumState.LastStand:
-                return 2f;
+                return 2.0f;
 
             case MomentumState.Disadvantage:
-                return 1f;
+                return 1.0f;
 
             case MomentumState.Balance:
                 return 0.4f;
@@ -119,9 +137,10 @@ public class MomentumManager
 
             case MomentumState.Overwhelm:
                 return 0.4f;
-        }
 
-        return 1f;
+            default:
+                return 1.0f;
+        }
     }
 
     //------------------------------------------------
@@ -130,26 +149,34 @@ public class MomentumManager
 
     public void DecayMomentum()
     {
-        int decay = GetDecay();
+        int decayAmount = GetDecayAmount();
 
         if (CurrentMomentum > 0)
-            CurrentMomentum = Mathf.Max(0, CurrentMomentum + decay);
-
+        {
+            CurrentMomentum =
+                Mathf.Max(
+                    0,
+                    CurrentMomentum - decayAmount);
+        }
         else if (CurrentMomentum < 0)
-            CurrentMomentum = Mathf.Min(0, CurrentMomentum - decay);
+        {
+            CurrentMomentum =
+                Mathf.Min(
+                    0,
+                    CurrentMomentum + decayAmount);
+        }
     }
 
-    private int GetDecay()
+    //------------------------------------------------
+
+    private int GetDecayAmount()
     {
         int abs = Mathf.Abs(CurrentMomentum);
 
-        if (abs >= 70)
-            return -12;
-
         if (abs >= 30)
-            return -12;
+            return HighDecayAmount;
 
-        return -5;
+        return LowDecayAmount;
     }
 
     //------------------------------------------------
@@ -170,36 +197,50 @@ public class MomentumManager
 
     public bool ApplyClashResult(
         Character winner,
-        Character loser,
         int clashGap)
     {
-        MomentumState before = GetState(winner);
+        if (winner == null)
+            return false;
 
-        int shift = CalculateMomentumShift(clashGap);
+        MomentumState before =
+            GetState(winner);
 
-        if (winner == battleContext.Player)
+        int shift =
+            CalculateMomentumShift(clashGap);
+
+        if (shift <= 0)
+            return false;
+
+        if (IsPlayerSide(winner))
         {
             CurrentMomentum += shift;
-            Debug.Log($"{shift} 만큼 플레이어가 기세를 밀어냄");
+
+            Debug.Log(
+                $"{shift} 만큼 플레이어가 기세를 밀어냄");
         }
         else
         {
             CurrentMomentum -= shift;
-            Debug.Log($"{shift} 만큼 적들이 기세를 밀어냄");
+
+            Debug.Log(
+                $"{shift} 만큼 적들이 기세를 밀어냄");
         }
-            
+
         CurrentMomentum =
             Mathf.Clamp(
                 CurrentMomentum,
                 MinMomentum,
                 MaxMomentum);
 
-        MomentumState after = GetState(winner);
+        MomentumState after =
+            GetState(winner);
 
         return before != MomentumState.Overwhelm &&
                after == MomentumState.Overwhelm;
     }
 
+    //------------------------------------------------
+    // 합 차이에 따른 기세 이동량
     //------------------------------------------------
 
     public int CalculateMomentumShift(int gap)
@@ -217,7 +258,7 @@ public class MomentumManager
     }
 
     //------------------------------------------------
-    // 위세 획득
+    // 합 차이에 따른 위세 획득량
     //------------------------------------------------
 
     public int CalculatePrestigeGain(int gap)

@@ -16,7 +16,7 @@ public class BattleLogger
     }
 
     //------------------------------------------------
-    // PRETURN / FORESIGHT
+    // PRETURN / FORESIGHT / 단순 행동 로그
     //------------------------------------------------
 
     public void LogAction(
@@ -24,11 +24,9 @@ public class BattleLogger
         BattleLogType type)
     {
         logs.Add(
-
             BattleLogEntry.Create(action)
                 .SetType(type)
                 .Build()
-
         );
     }
 
@@ -43,14 +41,16 @@ public class BattleLogger
         int afterHP)
     {
         logs.Add(
-
             BattleLogEntry.Create(action)
                 .SetType(BattleLogType.Normal)
                 .SetDamage(damage, beforeHP, afterHP)
-                .SetBroken(action.TargetPart.IsBroken)
-                .SetDead(action.Target.IsDead)
+                .SetBroken(action != null &&
+                           action.TargetPart != null &&
+                           action.TargetPart.IsBroken)
+                .SetDead(action != null &&
+                         action.Target != null &&
+                         action.Target.IsDead)
                 .Build()
-
         );
     }
 
@@ -60,24 +60,27 @@ public class BattleLogger
 
     public void LogDamage(
         BattleAction action,
+        BattleLogType type,
         int damage,
         int beforeHP,
         int afterHP)
     {
         logs.Add(
-
             BattleLogEntry.Create(action)
-                .SetType(BattleLogType.Normal)
+                .SetType(type)
                 .SetDamage(damage, beforeHP, afterHP)
-                .SetBroken(action.TargetPart.IsBroken)
-                .SetDead(action.Target.IsDead)
+                .SetBroken(action != null &&
+                        action.TargetPart != null &&
+                        action.TargetPart.IsBroken)
+                .SetDead(action != null &&
+                        action.Target != null &&
+                        action.Target.IsDead)
                 .Build()
-
         );
     }
 
     //------------------------------------------------
-    // 합 결과 (승/패 각각 한 번씩 호출)
+    // 합 결과
     //------------------------------------------------
 
     public void LogClashResult(
@@ -91,17 +94,22 @@ public class BattleLogger
         int afterHP = 0)
     {
         BattleLogBuilder builder =
-
             BattleLogEntry.Create(action)
-                .SetClash(myPower, enemyPower);
+                .SetType(BattleLogType.Clash)
+                .SetClash(myPower, enemyPower)
+                .SetWinner(isWinner);
 
         if (isWinner)
         {
             builder
                 .SetDamage(damage, beforeHP, afterHP)
                 .SetPrestige(prestigeGain)
-                .SetBroken(action.TargetPart.IsBroken)
-                .SetDead(action.Target.IsDead);
+                .SetBroken(action != null &&
+                           action.TargetPart != null &&
+                           action.TargetPart.IsBroken)
+                .SetDead(action != null &&
+                         action.Target != null &&
+                         action.Target.IsDead);
         }
 
         logs.Add(builder.Build());
@@ -119,6 +127,9 @@ public class BattleLogger
 
         foreach (BattleLogEntry log in logs)
         {
+            if (log == null)
+                continue;
+
             sb.AppendLine(log.ToString());
             sb.AppendLine("----------------------------------");
         }

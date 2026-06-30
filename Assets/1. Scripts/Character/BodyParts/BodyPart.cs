@@ -9,80 +9,129 @@ public enum PartType
     LEGS
 }
 
+public enum BodyPartState
+{
+    Normal,
+    Weakened,
+    Broken
+}
+
 public class BodyPart
 {
-    //--------------------------------
-    // Owner
-    //--------------------------------
+    public PartType Type { get; private set; }
+
+    public float MaxPartHP { get; private set; }
+    public float PartHP { get; set; }
+
+    public BodyPartState State { get; set; } = BodyPartState.Normal;
 
     public Character Owner { get; private set; }
+
+    private readonly List<Skill> availableSkills = new();
+    public IReadOnlyList<Skill> AvailableSkills => availableSkills;
+
+    public Skill CurrentSkill { get; set; }
+
+    private readonly List<StatusEffect> statusEffects = new();
+    public IReadOnlyList<StatusEffect> StatusEffects => statusEffects;
+
+    public bool IsBroken => State == BodyPartState.Broken;
+    public bool IsWeakened => State == BodyPartState.Weakened;
+    public bool IsUsable => State != BodyPartState.Broken;
+
+    //------------------------------------------------
+    // 생성자
+    //------------------------------------------------
+
+    public BodyPart(
+        PartType type,
+        float maxPartHP,
+        Skill[] skills)
+    {
+        Type = type;
+
+        MaxPartHP = maxPartHP;
+        PartHP = maxPartHP;
+
+        State = BodyPartState.Normal;
+
+        if (skills != null)
+        {
+            availableSkills.AddRange(skills);
+        }
+
+        if (availableSkills.Count > 0)
+        {
+            CurrentSkill = availableSkills[0];
+        }
+    }
+
+    //------------------------------------------------
+    // 초기화
+    //------------------------------------------------
 
     public void Initialize(Character owner)
     {
         Owner = owner;
+
+        PartHP = MaxPartHP;
+        State = BodyPartState.Normal;
+
+        statusEffects.Clear();
+
+        if (availableSkills.Count > 0 && CurrentSkill == null)
+        {
+            CurrentSkill = availableSkills[0];
+        }
     }
 
-    //--------------------------------
-    // 기본 정보
-    //--------------------------------
+    //------------------------------------------------
+    // 약화
+    //------------------------------------------------
 
-    public PartType Type;
-
-    public int CurrentSpeed;
-
-    //--------------------------------
-    // 체력
-    //--------------------------------
-
-    public float PartMaxHP;
-    public float PartHP;
-
-    //--------------------------------
-    // 상태
-    //--------------------------------
-
-    public bool IsBroken { get; private set; }
-
-    public bool IsDisabled => PartHP <= 0 && !IsBroken;
-
-    //--------------------------------
-    // 스킬
-    //--------------------------------
-
-    public Skill CurrentSkill;
-
-    public List<Skill> AvailableSkills { get; }
-
-    //--------------------------------
-    // 부위 상태이상
-    //--------------------------------
-
-    public List<StatusEffect> StatusEffects { get; } = new();
-
-    //--------------------------------
-
-    public BodyPart(
-        PartType type,
-        float hp,
-        IEnumerable<Skill> availableSkills = null)
+    public void Weaken()
     {
-        Type = type;
+        if (State == BodyPartState.Broken)
+            return;
 
-        PartMaxHP = hp;
-        PartHP = hp;
+        State = BodyPartState.Weakened;
+        PartHP = 1f;
 
-        CurrentSpeed = 0;
-
-        IsBroken = false;
-
-        AvailableSkills = availableSkills != null
-            ? new List<Skill>(availableSkills)
-            : new List<Skill>();
+        Debug.Log($"{OwnerName()}의 {Type} 부위 약화");
     }
 
-    //--------------------------------
-    // 상태이상
-    //--------------------------------
+    //------------------------------------------------
+    // 파괴
+    //------------------------------------------------
+
+    public void Break()
+    {
+        if (State == BodyPartState.Broken)
+            return;
+
+        State = BodyPartState.Broken;
+        PartHP = 0f;
+
+        Debug.Log($"{OwnerName()}의 {Type} 부위 파괴");
+    }
+
+    //------------------------------------------------
+    // 회복
+    //------------------------------------------------
+
+    public void Recover()
+    {
+        State = BodyPartState.Normal;
+        PartHP = MaxPartHP;
+
+        ClearStatusEffects();
+
+        Debug.Log($"{OwnerName()}의 {Type} 부위 회복");
+    }
+
+    //------------------------------------------------
+    // 부위 상태이상
+    //------------------------------------------------
 
     public void AddStatus(
         StatusEffect effect,
@@ -91,13 +140,26 @@ public class BodyPart
         if (effect == null)
             return;
 
-        effect.Initialize(Owner, source);
+        if (Owner == null)
+        {
+            Debug.LogWarning($"{Type} 부위에 Owner가 없습니다.");
+            return;
+        }
 
-        effect.SetOwnerPart(this);
+        foreach (StatusEffect existing in statusEffects)
+        {
+            if (existing.GetType() == effect.GetType())
+            {
+                existing.Merge(effect);
+                return;
+            }
+        }
+
+        effect.Initialize(Owner, source, this);
 
         effect.OnApply();
 
-        StatusEffects.Add(effect);
+        statusEffects.Add(effect);
     }
 
     public void RemoveStatus(StatusEffect effect)
@@ -105,91 +167,32 @@ public class BodyPart
         if (effect == null)
             return;
 
+        if (!statusEffects.Contains(effect))
+            return;
+
         effect.OnRemove();
 
-        StatusEffects.Remove(effect);
+        statusEffects.Remove(effect);
     }
 
-    public void ClearStatus()
+    public void ClearStatusEffects()
     {
-        foreach (var effect in StatusEffects)
-            effect.OnRemove();
-
-        StatusEffects.Clear();
+        foreach (StatusEffect effect in statusEffects.ToArray())
+        {
+            RemoveStatus(effect);
+        }
     }
 
-    //--------------------------------
-    // HP
-    //--------------------------------
+    //------------------------------------------------
 
-    public void Heal(float amount)
+    private string OwnerName()
     {
-        if (IsBroken)
-            return;
+        if (Owner == null)
+            return "NULL";
 
-        PartHP = Mathf.Min(PartHP + amount, PartMaxHP);
-    }
+        if (Owner.Data == null)
+            return Owner.name;
 
-    public void Damage(float amount)
-    {
-        if (IsBroken)
-            return;
-
-        PartHP = Mathf.Max(0, PartHP - amount);
-    }
-
-    //--------------------------------
-    // 파괴
-    //--------------------------------
-
-    public void Break()
-    {
-        if (IsBroken)
-            return;
-
-        IsBroken = true;
-        PartHP = 0;
-        CurrentSkill = null;
-    }
-
-    //--------------------------------
-    // 복구
-    //--------------------------------
-
-    public void Recover(float amount)
-    {
-        if (IsBroken)
-            return;
-
-        PartHP = Mathf.Min(PartHP + amount, PartMaxHP);
-    }
-
-    //--------------------------------
-    // 스킬
-    //--------------------------------
-
-    public bool CanUseSkill(Skill skill)
-    {
-        if (IsBroken)
-            return false;
-
-        return AvailableSkills.Contains(skill);
-    }
-
-    public void AddSkill(Skill skill)
-    {
-        if (skill == null)
-            return;
-
-        if (!AvailableSkills.Contains(skill))
-            AvailableSkills.Add(skill);
-    }
-
-    public void RemoveSkill(Skill skill)
-    {
-        AvailableSkills.Remove(skill);
-
-        if (CurrentSkill == skill)
-            CurrentSkill = null;
+        return Owner.Data.CharacterName;
     }
 }

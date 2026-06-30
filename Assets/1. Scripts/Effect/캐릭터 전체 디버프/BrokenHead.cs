@@ -1,3 +1,5 @@
+using UnityEngine;
+
 public class BrokenHead : BrokenPartStatus
 {
     public BrokenHead()
@@ -10,6 +12,19 @@ public class BrokenHead : BrokenPartStatus
         BattleAction action,
         int roll)
     {
-        return roll - 1;
+        return Mathf.Max(0, roll - 1);
+    }
+
+    public override bool CanUseSkill(
+        BodyPart part,
+        Skill skill)
+    {
+        if (skill == null)
+            return false;
+
+        if (skill.ActionType == ActionType.Prestige)
+            return false;
+
+        return true;
     }
 }

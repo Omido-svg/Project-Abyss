@@ -27,8 +27,6 @@ public class BattleManager : MonoBehaviour
 
     public Character SelectedCharacter { get; set; }
 
-    public ActionBuffer ActionBuffer { get; private set; }
-
     //------------------------------------------
     // Managers
     //------------------------------------------
@@ -41,7 +39,7 @@ public class BattleManager : MonoBehaviour
 
     public BattleLogger BattleLogger { get; private set; }
 
-    private SpeedManager speedManager;
+    public SpeedManager SpeedManager { get; private set; }
     private DamageManager damageManager;
     private ClashManager clashManager;
     private ActionResolver actionResolver;
@@ -121,13 +119,11 @@ public class BattleManager : MonoBehaviour
 
     private void CreateManagers()
     {
-        ActionBuffer = new ActionBuffer();
-
         BattleLogger = new BattleLogger();
 
         MomentumManager = new MomentumManager(BattleContext);
 
-        speedManager = new SpeedManager(BattleContext);
+        SpeedManager = new SpeedManager(BattleContext);
 
         damageManager = new DamageManager(
             BattleContext,
@@ -142,20 +138,19 @@ public class BattleManager : MonoBehaviour
             BattleContext,
             clashManager);
 
-        ActionManager = new ActionManager(BattleContext);
+        ActionManager = new ActionManager();
 
         clashBuilder = new ClashBuilder();
 
         aiManager = new AIManager(
             BattleContext,
-            ActionBuffer);
+            ActionManager);
 
         TurnManager = new TurnManager(
             BattleContext,
             ActionManager,
             aiManager,
-            clashManager,
-            speedManager,
+            SpeedManager,
             actionResolver,
             MomentumManager,
             clashBuilder);
@@ -172,8 +167,21 @@ public class BattleManager : MonoBehaviour
 
     public void NextTurn()
     {
-        // UI Slot -> ActionManager
-        ActionBuffer.Commit(ActionManager);
+        int playerSlotCount =
+            ActionManager.CountSlots(BattleContext.Player);
+
+        if (playerSlotCount <= 0)
+        {
+            Debug.LogWarning(
+                "플레이어 ActionSlot이 하나도 없습니다. " +
+                "최소 하나 이상의 행동을 선택해야 턴을 진행할 수 있습니다.");
+
+            ActionManager.PrintSlots("NEXT TURN BLOCKED - CURRENT SLOTS");
+
+            return;
+        }
+
+        ActionManager.PrintSlots("BEFORE RESOLVE");
 
         TurnManager.ResolveTurn();
 

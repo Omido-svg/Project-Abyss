@@ -2,61 +2,72 @@ using UnityEngine;
 
 public class OlafPassive : Passive
 {
-    private int MadnessStack;
+    private int madness;
 
-    public OlafPassive(Character owner, BattleEvent battleEvent)
+    public int Madness => madness;
+
+    public int MaxMadness => 3;
+
+    public OlafPassive()
     {
-        Initialize(owner, battleEvent);
-
-        passiveName = "광기(패시브)";
-
-        Register();
+        PassiveName = "광전사의 광기";
     }
 
-    public override void Register()
+    protected override void OnRegister()
     {
         battleEvent.OnClashWin += OnClashWin;
-        battleEvent.OnBodyPartDestroyed += OnBodyDestroyed;
-        battleEvent.OnKill += OnKill;
+        battleEvent.OnDamageDealt += OnDamageDealt;
     }
 
-    public override void Unregister()
+    protected override void OnUnregister()
     {
         battleEvent.OnClashWin -= OnClashWin;
-        battleEvent.OnBodyPartDestroyed -= OnBodyDestroyed;
-        battleEvent.OnKill -= OnKill;
+        battleEvent.OnDamageDealt -= OnDamageDealt;
     }
 
     private void OnClashWin(
         BattleAction winnerAction,
         BattleAction loserAction)
     {
+        if (winnerAction == null)
+            return;
+
         if (winnerAction.Owner != owner)
             return;
 
-        loserAction.TargetPart.AddStatus(new Bleeding(), owner);
+        AddMadness(1);
     }
 
-    private void OnBodyDestroyed(Character target, BodyPart part)
+    private void OnDamageDealt(
+        Character attacker,
+        int damage)
     {
-        if (target != owner) return;
+        if (attacker != owner)
+            return;
 
-        MadnessStack++;
+        // 필요하면 피해를 줄 때마다 광기 증가
+        // AddMadness(1);
     }
 
-    private void OnKill(Character killer, Character victim)
-    {
-        if (killer != owner) return;
-        
-    }
-    
     public void AddMadness(int amount)
     {
-       MadnessStack += Mathf.Min(MadnessStack + amount, 5);
+        madness += amount;
+
+        if (madness > MaxMadness)
+            madness = MaxMadness;
+
+        Debug.Log($"{owner.Data.CharacterName} 광기 증가 : {madness}/{MaxMadness}");
     }
 
     public void ResetMadness()
     {
-        MadnessStack = 0;
+        madness = 0;
+
+        Debug.Log($"{owner.Data.CharacterName} 광기 초기화");
+    }
+
+    public bool IsMaxMadness()
+    {
+        return madness >= MaxMadness;
     }
 }

@@ -2,13 +2,10 @@
 // CreateDisabledDebuff 메서드를 통해서 리턴되는 객체를 다르게 하면됨
 public abstract class PartDisabledStatus : StatusEffect
 {
-    protected PartDisabledStatus(
-        BodyPart part,
-        string name)
+    protected PartDisabledStatus(string name)
     {
-        ownerPart = part;
         Name = name;
-        Duration = -1;     // 영구
+        Duration = -1; // 영구
     }
 
     public override void OnApply() { }

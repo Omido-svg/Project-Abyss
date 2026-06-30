@@ -77,7 +77,7 @@ public class BattleEvent
     }
 
     //-----------------------------------
-    // 상태이상
+    // 캐릭터 상태이상
     //-----------------------------------
 
     public event Action<Character, StatusEffect> OnStatusApplied;
@@ -94,11 +94,17 @@ public class BattleEvent
     }
 
     //-----------------------------------
-    // 부위
+    // 부위 상태
     //-----------------------------------
 
+    public event Action<Character, BodyPart> OnBodyPartWeakened;
     public event Action<Character, BodyPart> OnBodyPartDestroyed;
     public event Action<Character, BodyPart> OnBodyPartRecovered;
+
+    public void RaiseBodyPartWeakened(Character target, BodyPart part)
+    {
+        OnBodyPartWeakened?.Invoke(target, part);
+    }
 
     public void RaiseBodyPartDestroyed(Character target, BodyPart part)
     {
@@ -108,6 +114,29 @@ public class BattleEvent
     public void RaiseBodyPartRecovered(Character target, BodyPart part)
     {
         OnBodyPartRecovered?.Invoke(target, part);
+    }
+
+    //-----------------------------------
+    // 부위 상태이상
+    //-----------------------------------
+
+    public event Action<Character, BodyPart, StatusEffect> OnBodyPartStatusApplied;
+    public event Action<Character, BodyPart, StatusEffect> OnBodyPartStatusRemoved;
+
+    public void RaiseBodyPartStatusApplied(
+        Character target,
+        BodyPart part,
+        StatusEffect effect)
+    {
+        OnBodyPartStatusApplied?.Invoke(target, part, effect);
+    }
+
+    public void RaiseBodyPartStatusRemoved(
+        Character target,
+        BodyPart part,
+        StatusEffect effect)
+    {
+        OnBodyPartStatusRemoved?.Invoke(target, part, effect);
     }
 
     //-----------------------------------

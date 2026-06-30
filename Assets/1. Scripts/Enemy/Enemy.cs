@@ -32,7 +32,7 @@ public abstract class Enemy : Character
                 TargetCharacter = target,
                 TargetPart = targetPart,
 
-                Speed = part.CurrentSpeed,   // 또는 part.Speed
+                Speed = context.battleManager.SpeedManager.GetSpeed(part),
 
                 Phase = CalculateActionPhase(skill)
             };
@@ -58,11 +58,20 @@ public abstract class Enemy : Character
 
     protected Skill SelectSkillForPart(BodyPart part)
     {
+        if (part == null)
+            return null;
+
+        if (!part.IsUsable)
+            return null;
+
         List<Skill> candidates = new();
 
         foreach (Skill skill in part.AvailableSkills)
         {
-            if (!IsSkillUsable(skill))
+            if (skill == null)
+                continue;
+
+            if (!IsSkillUsable(part, skill))
                 continue;
 
             candidates.Add(skill);
@@ -76,12 +85,27 @@ public abstract class Enemy : Character
 
     //--------------------------------------------------
 
-    protected bool IsSkillUsable(Skill skill)
+    protected bool IsSkillUsable(
+        BodyPart part,
+        Skill skill)
     {
+        if (part == null)
+            return false;
+
+        if (skill == null)
+            return false;
+
+        if (part.IsBroken)
+            return false;
+
         if (skill.ActionType == ActionType.Prestige)
         {
-            return RuntimeStatus.currentPrestige >= CurrentStatus.maxPrestige;
+            if (RuntimeStatus.currentPrestige < CurrentStatus.maxPrestige)
+                return false;
         }
+
+        if (!CanUseSkill(part, skill))
+            return false;
 
         return true;
     }

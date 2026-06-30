@@ -11,10 +11,17 @@ public class OlafNormalAttack : NormalSkill
 
     public override void Execute(BattleAction action)
     {
-        // 데미지는 DamageManager에서 처리
+        if (action == null)
+            return;
 
-        action.TargetPart.AddStatus(
-            new Bleeding(),
+        if (action.Target == null)
+            return;
+
+        // 데미지는 DamageManager에서 처리
+        // 출혈은 캐릭터 상태이상으로 부여
+
+        action.Target.AddStatus(
+            new Bleeding(1),
             action.Owner);
     }
 }

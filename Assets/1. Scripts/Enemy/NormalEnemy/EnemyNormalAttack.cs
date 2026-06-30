@@ -11,6 +11,16 @@ public class EnemyNormalAttack : NormalSkill
 
     public override void Execute(BattleAction action)
     {
-        // 추가 효과 없음
+        if (action == null)
+            return;
+
+        if (action.Target == null)
+            return;
+
+        // 일반공격 기본 데미지는 DamageManager에서 처리
+        // 추가 효과: 낮은 출혈
+        action.Target.AddStatus(
+            new Bleeding(1),
+            action.Owner);
     }
 }

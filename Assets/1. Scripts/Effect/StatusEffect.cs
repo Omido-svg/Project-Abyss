@@ -17,10 +17,7 @@ public abstract class StatusEffect
     // 적용 대상
     //--------------------------------
 
-    // 디버프를 가진 캐릭터
     protected Character owner;
-
-    // 디버프를 건 캐릭터
     protected Character source;
 
     // null이면 캐릭터 디버프
@@ -29,7 +26,12 @@ public abstract class StatusEffect
 
     //--------------------------------
 
+    public Character Owner => owner;
+    public Character Source => source;
+    public BodyPart OwnerPart => ownerPart;
+
     public bool IsPartEffect => ownerPart != null;
+    public bool IsCharacterEffect => ownerPart == null;
 
     //--------------------------------
 
@@ -41,11 +43,6 @@ public abstract class StatusEffect
         this.owner = owner;
         this.source = source;
         this.ownerPart = ownerPart;
-    }
-    
-    public void SetOwnerPart(BodyPart part)
-    {
-        this.ownerPart = part;
     }
 
     //--------------------------------
@@ -84,6 +81,13 @@ public abstract class StatusEffect
         return damage;
     }
 
+    public virtual float ModifyDamageTaken(
+        BattleAction action,
+        float damage)
+    {
+        return damage;
+    }
+
     //--------------------------------
     // Speed
     //--------------------------------
@@ -106,28 +110,40 @@ public abstract class StatusEffect
         return true;
     }
 
+    public virtual bool CanAct()
+    {
+        return true;
+    }
+
     //--------------------------------
     // Utility
     //--------------------------------
 
     protected bool IsMyPart(BodyPart part)
     {
-        return ownerPart != null && part == ownerPart;
+        return ownerPart != null &&
+               part == ownerPart;
     }
 
     protected bool IsMyAction(BattleAction action)
     {
         return action != null &&
-            ownerPart != null &&
-            action.OwnerPart == ownerPart;
+               ownerPart != null &&
+               action.OwnerPart == ownerPart;
     }
 
     protected BodyPart GetRandomAlivePart()
     {
+        if (owner == null)
+            return null;
+
         List<BodyPart> candidates = new();
 
         foreach (BodyPart part in owner.BodyParts)
         {
+            if (part == null)
+                continue;
+
             if (!part.IsBroken && part.PartHP > 0)
                 candidates.Add(part);
         }
@@ -145,12 +161,13 @@ public abstract class StatusEffect
 
     public void DecreaseDuration()
     {
-        Duration--;
+        if (Duration > 0)
+            Duration--;
     }
 
     public bool IsExpired()
     {
-        return Duration <= 0;
+        return Duration == 0;
     }
 
     //--------------------------------
@@ -159,18 +176,15 @@ public abstract class StatusEffect
 
     protected void RemoveStatus()
     {
-        owner.RemoveStatus(this);
-    }
-    
-    public virtual bool CanAct()
-    {
-        return true;
-    }
+        if (ownerPart != null)
+        {
+            ownerPart.RemoveStatus(this);
+            return;
+        }
 
-    public virtual float ModifyDamageTaken(
-        BattleAction action,
-        float damage)
-    {
-        return damage;
+        if (owner != null)
+        {
+            owner.RemoveStatus(this);
+        }
     }
 }

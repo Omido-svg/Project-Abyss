@@ -11,6 +11,16 @@ public class EnemyDuelSkill : DuelSkill
 
     public override void Execute(BattleAction action)
     {
-        // 추가 효과 없음
+        if (action == null)
+            return;
+
+        if (action.Target == null)
+            return;
+
+        // 결투 기본 데미지는 DamageManager에서 처리
+        // 추가 효과: 출혈 1스택
+        action.Target.AddStatus(
+            new Bleeding(1),
+            action.Owner);
     }
 }

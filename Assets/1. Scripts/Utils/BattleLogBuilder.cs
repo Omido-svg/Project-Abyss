@@ -4,8 +4,10 @@ public class BattleLogBuilder
 
     public BattleLogBuilder(BattleAction action)
     {
-        entry = new BattleLogEntry();
-        entry.Action = action;
+        entry = new BattleLogEntry
+        {
+            Action = action
+        };
     }
 
     //--------------------------------
@@ -27,8 +29,14 @@ public class BattleLogBuilder
         entry.MyPower = myPower;
         entry.EnemyPower = enemyPower;
 
-        entry.IsWinner = myPower > enemyPower;
+        return this;
+    }
 
+    //--------------------------------
+
+    public BattleLogBuilder SetWinner(bool isWinner)
+    {
+        entry.IsWinner = isWinner;
         return this;
     }
 
