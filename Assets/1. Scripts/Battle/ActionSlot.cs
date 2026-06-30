@@ -1,10 +1,18 @@
 public class ActionSlot
 {
-    public BattleAction Action;
+    public Character Owner;
 
-    public ActionSlot TargetSlot;
+    public BodyPart Part;
+
+    public Skill Skill;
+
+    public Character TargetCharacter;
+
+    public BodyPart TargetPart;
 
     public int Speed;
 
-    public bool Visited;
+    public ActionPhase Phase;
+
+    public ActionSlot TargetSlot;
 }

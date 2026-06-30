@@ -3,47 +3,18 @@ using System.Collections.Generic;
 public class AIManager
 {
     private readonly BattleContext battleContext;
-    private readonly ActionManager actionManager;
 
-    // 이번 턴 부위별 타겟팅 횟수
-    private readonly Dictionary<BodyPart, int> targetCounter
-        = new();
+    // AI도 ActionBuffer에 넣는다.
+    private readonly ActionBuffer actionBuffer;
 
     //--------------------------------
 
     public AIManager(
         BattleContext battleContext,
-        ActionManager actionManager)
+        ActionBuffer actionBuffer)
     {
         this.battleContext = battleContext;
-        this.actionManager = actionManager;
-    }
-
-    //--------------------------------
-
-    public void BeginTurn()
-    {
-        targetCounter.Clear();
-    }
-
-    //--------------------------------
-
-    public int GetTargetCount(BodyPart part)
-    {
-        if (!targetCounter.ContainsKey(part))
-            return 0;
-
-        return targetCounter[part];
-    }
-
-    //--------------------------------
-
-    public void RegisterTarget(BodyPart part)
-    {
-        if (!targetCounter.ContainsKey(part))
-            targetCounter.Add(part, 0);
-
-        targetCounter[part]++;
+        this.actionBuffer = actionBuffer;
     }
 
     //--------------------------------
@@ -52,11 +23,11 @@ public class AIManager
     {
         foreach (Enemy enemy in battleContext.Enemies)
         {
-            List<BattleAction> actions = enemy.DecideActions(battleContext);
+            List<ActionSlot> slots = enemy.DecideSlots(battleContext);
 
-            foreach (BattleAction action in actions)
+            foreach (ActionSlot slot in slots)
             {
-                actionManager.AddAction(action);
+                actionBuffer.Add(slot);
             }
         }
     }

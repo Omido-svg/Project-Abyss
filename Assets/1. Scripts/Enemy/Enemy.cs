@@ -1,49 +1,61 @@
-using System;
 using System.Collections.Generic;
 using UnityEngine;
 
 public abstract class Enemy : Character
 {
-    public virtual List<BattleAction> DecideActions(BattleContext context)
+    //--------------------------------------------------
+    // AI 행동 결정
+    //--------------------------------------------------
+
+    public List<ActionSlot> DecideSlots(BattleContext context)
     {
-        List<BattleAction> actions = new();
+        List<ActionSlot> result = new();
 
-        Character target = context.Player;
+        Character target = ChooseTarget(context);
 
-        foreach (BodyPart ownerPart in BodyParts)
+        foreach (BodyPart part in BodyParts)
         {
-            if (ownerPart.IsBroken)
-                continue;
-
-            Skill skill = SelectSkillForPart(ownerPart);
+            Skill skill = SelectSkillForPart(part);
 
             if (skill == null)
                 continue;
 
-            ownerPart.CurrentSkill = skill;
-
             BodyPart targetPart = SelectTargetPart(target);
 
-            actions.Add(new BattleAction()
+            ActionSlot slot = new ActionSlot
             {
                 Owner = this,
-                Target = target,
-
-                OwnerPart = ownerPart,
-                TargetPart = targetPart,
+                Part = part,
 
                 Skill = skill,
+
+                TargetCharacter = target,
+                TargetPart = targetPart,
+
+                Speed = part.CurrentSpeed,   // 또는 part.Speed
+
                 Phase = CalculateActionPhase(skill)
-            });
+            };
+
+            result.Add(slot);
         }
 
-        return actions;
+        return result;
     }
 
     //--------------------------------------------------
+    // 공격 대상 선택
+    //--------------------------------------------------
 
+    protected virtual Character ChooseTarget(BattleContext context)
+    {
+        return context.Player;
+    }
 
-    // 해당 부위가 사용할 수 있는 스킬 선택
+    //--------------------------------------------------
+    // 사용할 스킬 선택
+    //--------------------------------------------------
+
     protected Skill SelectSkillForPart(BodyPart part)
     {
         List<Skill> candidates = new();
@@ -59,11 +71,11 @@ public abstract class Enemy : Character
         if (candidates.Count == 0)
             return null;
 
-        return candidates[UnityEngine.Random.Range(0, candidates.Count)];
+        return candidates[Random.Range(0, candidates.Count)];
     }
 
     //--------------------------------------------------
-    // 위세 사용 가능 여부
+
     protected bool IsSkillUsable(Skill skill)
     {
         if (skill.ActionType == ActionType.Prestige)
@@ -75,7 +87,9 @@ public abstract class Enemy : Character
     }
 
     //--------------------------------------------------
-    // 공격 대상 부위 선택
+    // 공격 부위 선택
+    //--------------------------------------------------
+
     protected BodyPart SelectTargetPart(Character target)
     {
         List<BodyPart> broken = new();
@@ -90,19 +104,21 @@ public abstract class Enemy : Character
         }
 
         if (broken.Count == 0)
-            return alive[UnityEngine.Random.Range(0, alive.Count)];
+            return alive[Random.Range(0, alive.Count)];
 
-        if (UnityEngine.Random.value < 0.7f && broken.Count > 0)
-            return broken[UnityEngine.Random.Range(0, broken.Count)];
+        if (Random.value < 0.7f)
+            return broken[Random.Range(0, broken.Count)];
 
         if (alive.Count > 0)
-            return alive[UnityEngine.Random.Range(0, alive.Count)];
+            return alive[Random.Range(0, alive.Count)];
 
-        return broken[UnityEngine.Random.Range(0, broken.Count)];
+        return broken[Random.Range(0, broken.Count)];
     }
 
     //--------------------------------------------------
-    // ActionPhase 결정
+    // ActionPhase 계산
+    //--------------------------------------------------
+
     protected ActionPhase CalculateActionPhase(Skill skill)
     {
         return skill.ActionType switch

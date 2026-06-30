@@ -79,8 +79,8 @@ public class ClashManager
         int winnerClash = firstWin ? firstClash : secondClash;
         int loserClash  = firstWin ? secondClash : firstClash;
 
-        battleContext._battleEvent.RaiseClashWin(first, second);
-        battleContext._battleEvent.RaiseClashLose(second, first);
+        battleContext._battleEvent.RaiseClashWin(winner, loser);
+        battleContext._battleEvent.RaiseClashLose(loser, winner);
 
         int gap = winnerClash - loserClash;
 
@@ -103,42 +103,43 @@ public class ClashManager
 
         int afterHP = (int)winner.TargetPart.PartHP;
 
-        battleContext.battleManager.BattleLogger.LogClash(
-
+        // 승자 로그
+        battleContext.battleManager.BattleLogger.LogClashResult(
             winner,
-            loser,
-
+            true,
             winnerClash,
             loserClash,
-
             damage,
-
             prestigeGain,
-
             beforeHP,
-            afterHP
+            afterHP);
 
-        );
+        // 패자 로그
+        battleContext.battleManager.BattleLogger.LogClashResult(
+            loser,
+            false,
+            loserClash,
+            winnerClash);
     }
 
     // =====================================================
     // OneSide
     // =====================================================
-        private void ResolveOneSide(BattleAction action)
-        {
-            action.RolledPower = action.RollPower();
-            action.Skill.Execute(action);
+    private void ResolveOneSide(BattleAction action)
+    {
+        action.RolledPower = action.RollPower();
+        action.Skill.Execute(action);
 
-            int beforeHP = (int)action.TargetPart.PartHP;
+        int beforeHP = (int)action.TargetPart.PartHP;
 
-            int damage = damageManager.ApplyDamage(action);
+        int damage = damageManager.ApplyDamage(action);
 
-            int afterHP = (int)action.TargetPart.PartHP;
+        int afterHP = (int)action.TargetPart.PartHP;
 
-            battleContext.battleManager.BattleLogger.LogDamage(
-                action,
-                damage,
-                beforeHP,
-                afterHP);
-        }
+        battleContext.battleManager.BattleLogger.LogOneSide(
+            action,
+            damage,
+            beforeHP,
+            afterHP);
+    }
 }

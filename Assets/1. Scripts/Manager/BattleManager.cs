@@ -1,129 +1,182 @@
 using UnityEngine;
 using System.Collections.Generic;
-using UnityEngine.XR.WindowsMR.Input;
 
-// Battle -> Turn -> Action -> Speed -> Clash -> Moment -> Damage 순으로 처리
+// Battle
+//  └ Turn
+//      └ Slot
+//          └ Queue
+//              └ Resolver
+//                  └ Clash
+//                      └ Damage
+
 public class BattleManager : MonoBehaviour
 {
     [Header("Debug")]
     [SerializeField] private Character player;
+
     [SerializeField] private List<Character> enemies = new();
-    [Header("Player Button")]
-    [SerializeField] private List<BodyPartButton> Playerparts = new();
-    [Header("Enemies Button")]
-    [SerializeField] private List<BodyPartButton> Enemiesparts = new();
-    
-    public ActionBuffer ActionBuffer { get; private set; }
-    
 
-    // UI에서 현재 선택된 캐릭터
+    [Header("Buttons")]
+    [SerializeField] private List<BodyPartButton> playerButtons = new();
+
+    [SerializeField] private List<BodyPartButton> enemyButtons = new();
+
+    //------------------------------------------
+
+    public BattleContext BattleContext { get; private set; }
+
     public Character SelectedCharacter { get; set; }
-    
-    
 
-    //----------------------------------------------------
+    public ActionBuffer ActionBuffer { get; private set; }
+
+    //------------------------------------------
     // Managers
-    //----------------------------------------------------
+    //------------------------------------------
 
     public TurnManager TurnManager { get; private set; }
+
     public ActionManager ActionManager { get; private set; }
-    private ClashManager clashManager;
-    private DamageManager damageManager;
-    private AIManager AIManager;
+
     public MomentumManager MomentumManager { get; private set; }
-    private SpeedManager SpeedManager;
-    private ActionResolver ActionResolver;
-    
+
     public BattleLogger BattleLogger { get; private set; }
 
-    //----------------------------------------------------
-    // Battle Context
-    //----------------------------------------------------
+    private SpeedManager speedManager;
+    private DamageManager damageManager;
+    private ClashManager clashManager;
+    private ActionResolver actionResolver;
+    private ClashBuilder clashBuilder;
+    private AIManager aiManager;
 
-    private BattleContext battleContext;
-    public BattleContext BattleContext => battleContext;
-
-    //----------------------------------------------------
+    //------------------------------------------
 
     private void Awake()
     {
-        battleContext = new BattleContext();
-        battleContext.battleManager = this;
+        InitializeContext();
+        InitializeCharacters();
+        BindButtons();
+        CreateManagers();
+        SelectedCharacter = player;
+        Debug.Log("===== Battle Start =====");
+        StartBattle();
+    }
 
-        battleContext.Player = player;
-        battleContext.Enemies = enemies;
+    //------------------------------------------------
 
-        battleContext.AllCharacters.Clear();
-        battleContext.AllCharacters.Add(player);
-        battleContext.AllCharacters.AddRange(enemies);
-        
-        // BattleEvent 연결
-        player.Initialize(battleContext._battleEvent);
+    private void InitializeContext()
+    {
+        BattleContext = new BattleContext();
+
+        BattleContext.battleManager = this;
+
+        BattleContext.Player = player;
+
+        BattleContext.Enemies = enemies;
+
+        BattleContext.AllCharacters.Clear();
+
+        BattleContext.AllCharacters.Add(player);
+
+        BattleContext.AllCharacters.AddRange(enemies);
+    }
+
+    //------------------------------------------------
+
+    private void InitializeCharacters()
+    {
+        player.Initialize(BattleContext._battleEvent);
+
         player.ForceRecalculateHP();
-        
-        // 플레이어의 스킬을 간단하게 임의로 지정해주는 메서드 (디버깅용)
+
         AssignSkills(player);
 
         foreach (Character enemy in enemies)
         {
-            enemy.Initialize(battleContext._battleEvent);
-        }
-        
-        // ------------------------------------------
-        for (int i = 0; i < Playerparts.Count; i++)
-            Playerparts[i].Bind(player, player.BodyParts[i]);
-        for (int i = 0; i < Enemiesparts.Count; i++)
-            Enemiesparts[i].Bind(enemies[i], enemies[i].BodyParts[0]);
-        // --------------------------------------------
-        
-        MomentumManager = new MomentumManager(battleContext);
-        SpeedManager = new SpeedManager(battleContext);
-        damageManager = new DamageManager(battleContext, MomentumManager);
-        clashManager = new ClashManager(battleContext, damageManager, MomentumManager);
-        ActionResolver = new ActionResolver(battleContext, clashManager);
-        ActionManager = new ActionManager(battleContext);
-        AIManager = new AIManager(battleContext, ActionManager);
-        TurnManager = new TurnManager(
-            battleContext,
-            ActionManager,
-            AIManager,
-            clashManager,
-            SpeedManager,
-            ActionResolver,
-            MomentumManager);
-            
-        ActionBuffer = new ActionBuffer();
-            
-        BattleLogger = new BattleLogger();
+            enemy.Initialize(BattleContext._battleEvent);
 
-        SelectedCharacter = player;
-        
-        // 디버깅용
-        Utils.PrintList(BattleContext.AllCharacters);
-        Debug.Log("Start Battle");
-        
-        StartBattle();
+            AssignSkills(enemy);
+        }
     }
 
-    //----------------------------------------------------
+    //------------------------------------------------
+
+    private void BindButtons()
+    {
+        for (int i = 0; i < playerButtons.Count; i++)
+        {
+            playerButtons[i].Bind(
+                player,
+                player.BodyParts[i]);
+        }
+
+        for (int i = 0; i < enemyButtons.Count; i++)
+        {
+            enemyButtons[i].Bind(
+                enemies[i],
+                enemies[i].BodyParts[0]);
+        }
+    }
+
+    //------------------------------------------------
+
+    private void CreateManagers()
+    {
+        ActionBuffer = new ActionBuffer();
+
+        BattleLogger = new BattleLogger();
+
+        MomentumManager = new MomentumManager(BattleContext);
+
+        speedManager = new SpeedManager(BattleContext);
+
+        damageManager = new DamageManager(
+            BattleContext,
+            MomentumManager);
+
+        clashManager = new ClashManager(
+            BattleContext,
+            damageManager,
+            MomentumManager);
+
+        actionResolver = new ActionResolver(
+            BattleContext,
+            clashManager);
+
+        ActionManager = new ActionManager(BattleContext);
+
+        clashBuilder = new ClashBuilder();
+
+        aiManager = new AIManager(
+            BattleContext,
+            ActionBuffer);
+
+        TurnManager = new TurnManager(
+            BattleContext,
+            ActionManager,
+            aiManager,
+            clashManager,
+            speedManager,
+            actionResolver,
+            MomentumManager,
+            clashBuilder);
+    }
+
+    //------------------------------------------------
 
     public void StartBattle()
     {
         TurnManager.StartBattle();
-        
-        // 디버깅용 출력
-        Utils.PrintActions((List<BattleAction>)ActionManager.Actions);
     }
 
-    //----------------------------------------------------
+    //------------------------------------------------
 
     public void NextTurn()
     {
-        // 행동 확정
+        // UI Slot -> ActionManager
         ActionBuffer.Commit(ActionManager);
-        
+
         TurnManager.ResolveTurn();
-        
+
         if (CheckBattleEnd())
         {
             EndBattle();
@@ -133,14 +186,14 @@ public class BattleManager : MonoBehaviour
         TurnManager.NextTurn();
     }
 
-    //----------------------------------------------------
+    //------------------------------------------------
 
     private bool CheckBattleEnd()
     {
-        if (battleContext.Player.IsDead)
+        if (BattleContext.Player.IsDead)
             return true;
 
-        foreach (Character enemy in battleContext.Enemies)
+        foreach (Character enemy in BattleContext.Enemies)
         {
             if (!enemy.IsDead)
                 return false;
@@ -149,27 +202,27 @@ public class BattleManager : MonoBehaviour
         return true;
     }
 
-    //----------------------------------------------------
+    //------------------------------------------------
 
     private void EndBattle()
     {
         TurnManager.EndBattle();
-        Debug.Log("Battle End");
+
+        Debug.Log("===== Battle End =====");
     }
-    
-    // 디버깅용 스킬 할당 메서드
+
+    //------------------------------------------------
+
     private void AssignSkills(Character character)
     {
         foreach (BodyPart part in character.BodyParts)
         {
             if (part.AvailableSkills.Count == 0)
-            {
-                Debug.LogWarning($"{character.Data.CharacterName} : {part.Type}에 등록된 스킬이 없습니다.");
                 continue;
-            }
 
             part.CurrentSkill =
-                part.AvailableSkills[Random.Range(0, part.AvailableSkills.Count)];
+                part.AvailableSkills[
+                    Random.Range(0, part.AvailableSkills.Count)];
         }
     }
 }

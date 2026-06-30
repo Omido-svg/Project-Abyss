@@ -2,32 +2,56 @@ using System.Collections.Generic;
 
 public class ActionBuffer
 {
-    private List<BattleAction> buffer = new();
+    private readonly List<ActionSlot> buffer = new();
 
-    public IReadOnlyList<BattleAction> Actions => buffer;
+    public IReadOnlyList<ActionSlot> Slots => buffer;
 
-    public void Add(BattleAction action)
+    //--------------------------------------------
+
+    public void Add(ActionSlot slot)
     {
-        buffer.Add(action);
+        if (slot == null)
+            return;
+
+        buffer.Remove(slot);
+        buffer.Add(slot);
     }
 
-    public void Remove(BattleAction action)
+    //--------------------------------------------
+
+    public void Remove(ActionSlot slot)
     {
-        buffer.Remove(action);
+        buffer.Remove(slot);
     }
+
+    //--------------------------------------------
 
     public void Clear()
     {
         buffer.Clear();
     }
 
+    //--------------------------------------------
+
     public void Commit(ActionManager manager)
     {
-        foreach (var action in buffer)
+        foreach (ActionSlot slot in buffer)
         {
-            manager.AddAction(action);
+            manager.AddSlot(slot);
         }
 
         Clear();
+    }
+    
+    public ActionSlot FindSlot(Character owner, BodyPart part)
+    {
+        foreach (var slot in buffer)
+        {
+            if (slot.Owner == owner &&
+                slot.Part == part)
+                return slot;
+        }
+
+        return null;
     }
 }

@@ -75,7 +75,6 @@ public class DebugBattleUI : MonoBehaviour
 
     //--------------------------------------------------
 
-
     private void AppendCharacter(
         StringBuilder sb,
         Character character)
@@ -130,37 +129,98 @@ public class DebugBattleUI : MonoBehaviour
 
             sb.AppendLine();
 
-            if (part.CurrentSkill != null)
+            //----------------------------------
+            // 현재 선택된 ActionSlot 출력
+            //----------------------------------
+            ActionSlot slot = null;
+
+            foreach (var s in battleManager.ActionManager.Slots)
             {
-                sb.AppendLine(
-                    $"    Skill : {part.CurrentSkill.SkillName}");
+                if (s.Owner == character &&
+                    s.Part == part)
+                {
+                    slot = s;
+                    break;
+                }
+            }
+
+            if (slot != null)
+            {
+                sb.AppendLine($"    Skill : {slot.Skill.SkillName}");
+                sb.AppendLine($"    Speed : {slot.Speed}");
+                sb.AppendLine($"    Phase : {slot.Phase}");
+
+                if (slot.TargetCharacter != null)
+                {
+                    sb.AppendLine(
+                        $"    Target : {slot.TargetCharacter.Data.CharacterName}");
+
+                    sb.AppendLine(
+                        $"    TargetPart : {slot.TargetPart.Type}");
+                }
+
+                if (slot.TargetSlot != null)
+                {
+                    sb.AppendLine(
+                        $"    Clash With : {slot.TargetSlot.Owner.Data.CharacterName}");
+                }
+                else
+                {
+                    sb.AppendLine("    Clash With : None");
+                }
+            }
+            else
+            {
+                sb.AppendLine("    Skill : None");
             }
 
             sb.AppendLine();
         }
 
-        //---------------- Actions ----------------
+        //---------------- Action Slots ----------------
 
-        sb.AppendLine("[Actions]");
+        sb.AppendLine("[Action Slots]");
 
-        bool hasAction = false;
+        bool hasSlot = false;
 
-        foreach (BattleAction action in battleManager.ActionManager.Actions)
+        foreach (ActionSlot slot in battleManager.ActionManager.Slots)
         {
-            if (action.Owner != character)
+            if (slot.Owner != character)
                 continue;
 
-            hasAction = true;
+            hasSlot = true;
+
+            string target =
+                slot.TargetCharacter == null
+                    ? "None"
+                    : slot.TargetCharacter.Data.CharacterName;
+
+            string targetPart =
+                slot.TargetPart == null
+                    ? "None"
+                    : slot.TargetPart.Type.ToString();
 
             sb.AppendLine(
-                $"{action.Owner.Data.CharacterName} ({action.OwnerPart.Type})"
-                + $" -> {action.Target.Data.CharacterName} ({action.TargetPart.Type})"
-                + $" / {action.Skill.SkillName}");
+                $"{slot.Part.Type} -> {target} ({targetPart})");
+
+            sb.AppendLine(
+                $"    Skill : {slot.Skill.SkillName}");
+
+            sb.AppendLine(
+                $"    Speed : {slot.Speed}");
+
+            sb.AppendLine(
+                $"    Phase : {slot.Phase}");
+
+            sb.AppendLine(
+                $"    TargetSlot : {(slot.TargetSlot == null ? "None" : slot.TargetSlot.Owner.Data.CharacterName)}");
+
+            sb.AppendLine();
         }
 
-        if (!hasAction)
+        if (!hasSlot)
+        {
             sb.AppendLine("None");
-
-        sb.AppendLine();
+        }
     }
 }

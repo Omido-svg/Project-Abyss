@@ -21,41 +21,70 @@ public class ActionResolver
         ResolveQueue(executionQueue.PrestigeQueue);
 
         ResolveQueue(executionQueue.AmbushQueue);
-        
+
         clashManager.Resolve(executionQueue.ClashQueue);
     }
 
     //------------------------------------------------
 
-    private void ResolveQueue(Queue<BattleAction> queue)
+    private void ResolveQueue(Queue<ActionSlot> queue)
     {
         while (queue.Count > 0)
         {
             BattleAction action = queue.Dequeue();
 
-            if (action.Owner.IsDead || action.Target.IsDead)
+            //------------------------------------
+            // 방어
+            //------------------------------------
+
+            if (action == null)
                 continue;
 
-            battleContext._battleEvent.RaiseActionStart(action);
+            if (action.Owner == null || action.Target == null)
+                continue;
 
             if (action.Skill == null)
             {
-                Debug.LogWarning("Skill is NULL");
+                Debug.LogWarning("Skill NULL");
                 continue;
             }
 
+            if (action.Owner.IsDead)
+                continue;
+
+            if (action.Target.IsDead)
+                continue;
+
+            //------------------------------------
+            // Action Start
+            //------------------------------------
+
+            battleContext._battleEvent.RaiseActionStart(action);
+
+            //------------------------------------
+            // 실행
+            //------------------------------------
+
             action.Skill.Execute(action);
 
-            BattleLogType type = action.ActionType switch
+            //------------------------------------
+            // 로그
+            //------------------------------------
+
+            BattleLogType type = action.Phase switch
             {
-                ActionType.Preparation => BattleLogType.Preparation,
-                ActionType.Prestige    => BattleLogType.Prestige,
-                _                      => BattleLogType.Normal
+                ActionPhase.PRETURN  => BattleLogType.Prestige,
+                ActionPhase.FORESIGHT => BattleLogType.Preparation,
+                _                     => BattleLogType.Normal
             };
 
             battleContext.battleManager.BattleLogger.LogAction(
                 action,
                 type);
+
+            //------------------------------------
+            // Action End
+            //------------------------------------
 
             battleContext._battleEvent.RaiseActionEnd(action);
         }

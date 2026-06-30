@@ -16,6 +16,7 @@ public abstract class Character : MonoBehaviour
     //--------------------------------
 
     public abstract IReadOnlyList<BodyPart> BodyParts { get; }
+    public List<ActionSlot> ActionSlots;
 
     //--------------------------------
     // Status

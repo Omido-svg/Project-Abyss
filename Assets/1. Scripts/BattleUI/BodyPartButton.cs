@@ -8,11 +8,15 @@ public class BodyPartButton : MonoBehaviour
     private BattleUIManager uiManager;
     private BattleManager battleManager;
 
+    //------------------------------------
+
     private void Awake()
     {
         uiManager = FindFirstObjectByType<BattleUIManager>();
         battleManager = FindFirstObjectByType<BattleManager>();
     }
+
+    //------------------------------------
 
     public void Bind(Character owner, BodyPart part)
     {
@@ -20,22 +24,23 @@ public class BodyPartButton : MonoBehaviour
         this.bodyPart = part;
     }
 
+    //------------------------------------
+
     public void OnClick()
     {
         if (uiManager == null || battleManager == null)
             return;
 
         if (owner == null || bodyPart == null)
-        {
-            Debug.LogError("[BodyPartButton] Not bound properly");
             return;
+
+        if (owner == battleManager.BattleContext.Player)
+        {
+            uiManager.SelectOwnerSlot(owner, bodyPart);
         }
-
-        Character player = battleManager.BattleContext.Player;
-
-        if (owner == player)
-            uiManager.SelectOwnerPart(owner, bodyPart);
         else
-            uiManager.SelectTargetPart(owner, bodyPart);
+        {
+            uiManager.SelectTargetSlot(owner, bodyPart);
+        }
     }
 }

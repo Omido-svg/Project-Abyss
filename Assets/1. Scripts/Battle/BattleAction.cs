@@ -17,11 +17,12 @@ public class BattleAction
     public Skill Skill;
 
     public ActionPhase Phase;
+    
+    public ActionSlot Slot;
 
     public ActionType ActionType => Skill.ActionType;
 
-    // 항상 현재 부위 속도를 반환
-    public int Speed => OwnerPart.CurrentSpeed;
+    public int Speed;
 
     public bool IsNormalAttack =>
         ActionType == ActionType.NormalAttack;
