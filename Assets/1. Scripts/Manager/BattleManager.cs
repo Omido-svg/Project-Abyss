@@ -13,6 +13,8 @@ public class BattleManager : MonoBehaviour
     [Header("Enemies Button")]
     [SerializeField] private List<BodyPartButton> Enemiesparts = new();
     
+    public ActionBuffer ActionBuffer { get; private set; }
+    
 
     // UI에서 현재 선택된 캐릭터
     public Character SelectedCharacter { get; set; }
@@ -90,6 +92,8 @@ public class BattleManager : MonoBehaviour
             ActionResolver,
             MomentumManager);
             
+        ActionBuffer = new ActionBuffer();
+            
         BattleLogger = new BattleLogger();
 
         SelectedCharacter = player;
@@ -115,6 +119,9 @@ public class BattleManager : MonoBehaviour
 
     public void NextTurn()
     {
+        // 행동 확정
+        ActionBuffer.Commit(ActionManager);
+        
         TurnManager.ResolveTurn();
         
         if (CheckBattleEnd())
