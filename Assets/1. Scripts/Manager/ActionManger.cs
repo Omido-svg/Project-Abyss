@@ -82,6 +82,39 @@ public class ActionManager
             "[ActionManager RemoveSlot]\n" +
             FormatSlot(slot));
     }
+    
+    public void RemoveSlotsByOwner(Character owner)
+    {
+        if (owner == null)
+            return;
+
+        for (int i = slots.Count - 1; i >= 0; i--)
+        {
+            ActionSlot slot = slots[i];
+
+            if (slot == null)
+            {
+                slots.RemoveAt(i);
+                continue;
+            }
+
+            if (slot.Owner == owner)
+                slots.RemoveAt(i);
+        }
+
+        // 남아 있는 슬롯의 TargetSlot이 삭제된 슬롯을 가리킬 수 있으므로 초기화
+        foreach (ActionSlot slot in slots)
+        {
+            if (slot == null)
+                continue;
+
+            if (slot.TargetSlot == null)
+                continue;
+
+            if (slot.TargetSlot.Owner == owner)
+                slot.TargetSlot = null;
+        }
+    }
 
     public ActionSlot FindSlot(Character owner, BodyPart part)
     {

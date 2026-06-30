@@ -7,110 +7,36 @@ public class ClashBuilder
     {
         ActionExecutionQueue queue = new();
 
-        if (slots == null)
-            return queue;
-
-        //------------------------------------
-        // Slot 연결
-        //------------------------------------
-
-        LinkTargetSlots(slots);
-
-        //------------------------------------
-        // PRETURN
-        //------------------------------------
+        ClearTargetSlots(slots);
 
         List<ActionSlot> prestigeSlots =
             GetPhaseSlots(slots, ActionPhase.PRETURN);
 
-        foreach (ActionSlot slot in prestigeSlots)
-        {
-            if (!IsValidSlot(slot))
-                continue;
-
-            queue.PrestigeQueue.Enqueue(slot);
-        }
-
-        //------------------------------------
-        // FORESIGHT
-        //------------------------------------
-
         List<ActionSlot> ambushSlots =
             GetPhaseSlots(slots, ActionPhase.FORESIGHT);
-
-        foreach (ActionSlot slot in ambushSlots)
-        {
-            if (!IsValidSlot(slot))
-                continue;
-
-            queue.AmbushQueue.Enqueue(slot);
-        }
-
-        //------------------------------------
-        // COMBAT
-        //------------------------------------
 
         List<ActionSlot> combatSlots =
             GetPhaseSlots(slots, ActionPhase.COMBAT);
 
-        HashSet<ActionSlot> visited = new();
+        foreach (ActionSlot slot in prestigeSlots)
+            queue.PrestigeQueue.Enqueue(slot);
 
-        foreach (ActionSlot slot in combatSlots)
-        {
-            if (!IsValidSlot(slot))
-                continue;
+        foreach (ActionSlot slot in ambushSlots)
+            queue.AmbushQueue.Enqueue(slot);
 
-            if (visited.Contains(slot))
-                continue;
-
-            //------------------------------------
-            // 상대 슬롯이 없음 = 일방 공격
-            //------------------------------------
-
-            if (slot.TargetSlot == null)
-            {
-                queue.ClashQueue.Enqueue(
-                    new ClashPair(slot));
-
-                visited.Add(slot);
-                continue;
-            }
-
-            //------------------------------------
-            // 서로 바라봄 = 합
-            //------------------------------------
-
-            if (slot.TargetSlot.TargetSlot == slot)
-            {
-                queue.ClashQueue.Enqueue(
-                    new ClashPair(slot, slot.TargetSlot));
-
-                visited.Add(slot);
-                visited.Add(slot.TargetSlot);
-                continue;
-            }
-
-            //------------------------------------
-            // 나는 상대를 때리지만 상대는 다른 곳을 봄 = 일방 공격
-            //------------------------------------
-
-            queue.ClashQueue.Enqueue(
-                new ClashPair(slot));
-
-            visited.Add(slot);
-        }
+        queue.ClashQueue =
+            BuildClashQueue(combatSlots);
 
         PrintSlots(slots);
 
         return queue;
     }
-
-    //------------------------------------
-    // TargetSlot 연결
-    //------------------------------------
-
-    private void LinkTargetSlots(IReadOnlyList<ActionSlot> slots)
+    
+    private void ClearTargetSlots(IReadOnlyList<ActionSlot> slots)
     {
+        if (slots == null)
+            return;
+
         foreach (ActionSlot slot in slots)
         {
             if (slot == null)
@@ -118,36 +44,149 @@ public class ClashBuilder
 
             slot.TargetSlot = null;
         }
+    }
+    
+    private Queue<ClashPair> BuildClashQueue(
+        List<ActionSlot> combatSlots)
+    {
+        Queue<ClashPair> result = new();
 
-        foreach (ActionSlot slot in slots)
+        combatSlots.Sort((a, b) => b.Speed.CompareTo(a.Speed));
+
+        HashSet<ActionSlot> used = new();
+
+        foreach (ActionSlot slot in combatSlots)
         {
-            if (!IsValidSlot(slot))
+            if (slot == null)
                 continue;
 
-            // 합은 COMBAT끼리만 발생
-            if (slot.Phase != ActionPhase.COMBAT)
+            if (used.Contains(slot))
                 continue;
 
-            foreach (ActionSlot other in slots)
+            ActionSlot targetSlot =
+                FindTargetActionSlot(slot, combatSlots);
+
+            if (targetSlot != null &&
+                !used.Contains(targetSlot) &&
+                CanEnterClash(slot) &&
+                CanEnterClash(targetSlot))
             {
-                if (!IsValidSlot(other))
-                    continue;
+                bool isMutual =
+                    IsExactMutual(slot, targetSlot);
 
-                if (other == slot)
-                    continue;
+                bool canSteal =
+                    CanStealClash(slot, targetSlot);
 
-                // 상대도 COMBAT이 아니면 합 대상이 아님
-                if (other.Phase != ActionPhase.COMBAT)
-                    continue;
-
-                if (other.Owner == slot.TargetCharacter &&
-                    other.Part == slot.TargetPart)
+                if (isMutual || canSteal)
                 {
-                    slot.TargetSlot = other;
-                    break;
+                    slot.TargetSlot = targetSlot;
+                    targetSlot.TargetSlot = slot;
+
+                    result.Enqueue(
+                        new ClashPair(slot, targetSlot));
+
+                    used.Add(slot);
+                    used.Add(targetSlot);
+
+                    continue;
                 }
             }
+
+            result.Enqueue(
+                new ClashPair(slot));
+
+            used.Add(slot);
         }
+
+        return result;
+    }
+    
+    private ActionSlot FindTargetActionSlot(
+        ActionSlot slot,
+        List<ActionSlot> slots)
+    {
+        foreach (ActionSlot other in slots)
+        {
+            if (other == null)
+                continue;
+
+            if (other == slot)
+                continue;
+
+            if (other.Owner != slot.TargetCharacter)
+                continue;
+
+            if (!IsSamePart(other.Part, slot.TargetPart))
+                continue;
+
+            return other;
+        }
+
+        return null;
+    }
+    
+    private bool CanEnterClash(ActionSlot slot)
+    {
+        if (slot == null)
+            return false;
+
+        if (slot.Owner == null ||
+            slot.Part == null ||
+            slot.TargetCharacter == null ||
+            slot.TargetPart == null)
+            return false;
+
+        if (slot.Phase != ActionPhase.COMBAT)
+            return false;
+
+        if (slot.Skill == null)
+            return false;
+
+        if (!slot.Skill.CanClash)
+            return false;
+
+        return true;
+    }
+    
+    private bool IsExactMutual(
+        ActionSlot a,
+        ActionSlot b)
+    {
+        if (a == null || b == null)
+            return false;
+
+        return
+            b.TargetCharacter == a.Owner &&
+            IsSamePart(b.TargetPart, a.Part);
+    }
+    
+    private bool CanStealClash(
+        ActionSlot attacker,
+        ActionSlot targetSlot)
+    {
+        if (attacker == null || targetSlot == null)
+            return false;
+
+        if (targetSlot.TargetCharacter != attacker.Owner)
+            return false;
+
+        if (attacker.Speed <= targetSlot.Speed)
+            return false;
+
+        return true;
+    }
+    
+    private bool IsSamePart(
+        BodyPart a,
+        BodyPart b)
+    {
+        if (a == null || b == null)
+            return false;
+
+        if (a == b)
+            return true;
+
+        return a.Type == b.Type;
     }
 
     //------------------------------------
@@ -172,45 +211,6 @@ public class ClashBuilder
         result.Sort((a, b) => b.Speed.CompareTo(a.Speed));
 
         return result;
-    }
-
-    //------------------------------------
-    // Slot 검증
-    //------------------------------------
-
-    private bool IsValidSlot(ActionSlot slot)
-    {
-        if (slot == null)
-            return false;
-
-        if (slot.Owner == null)
-            return false;
-
-        if (slot.Part == null)
-            return false;
-
-        if (slot.Skill == null)
-            return false;
-
-        if (slot.TargetCharacter == null)
-            return false;
-
-        if (slot.TargetPart == null)
-            return false;
-
-        if (slot.Owner.IsDead)
-            return false;
-
-        if (slot.TargetCharacter.IsDead)
-            return false;
-
-        if (slot.Part.IsBroken)
-            return false;
-
-        if (slot.TargetPart.IsBroken)
-            return false;
-
-        return true;
     }
 
     //------------------------------------
@@ -253,7 +253,7 @@ public class ClashBuilder
                 $"Phase : {slot.Phase} / " +
                 $"TargetSlot = {targetSlotText}";
 
-            if (IsMutualClash(slot))
+            if (IsConfirmedClash(slot))
             {
                 log += " / Clash = YES";
             }
@@ -262,7 +262,7 @@ public class ClashBuilder
         }
     }
     
-    private bool IsMutualClash(ActionSlot slot)
+    private bool IsConfirmedClash(ActionSlot slot)
     {
         if (slot == null)
             return false;

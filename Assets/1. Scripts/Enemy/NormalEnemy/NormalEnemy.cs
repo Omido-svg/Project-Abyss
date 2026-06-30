@@ -25,7 +25,6 @@ public class NormalEnemy : Enemy
                 {
                     new EnemyNormalAttack(),
                     new EnemyDuelSkill(),
-                    new EnemyPreparationSkill(),
                     new EnemyPrestigeSkill()
                 }));
 

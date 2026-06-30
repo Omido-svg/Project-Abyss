@@ -3,6 +3,7 @@ using UnityEngine;
 public class BattleUIManager : MonoBehaviour
 {
     [SerializeField] private BattleManager battleManager;
+
     private BattleInputMode inputMode = BattleInputMode.SelectOwner;
 
     //---------------------------------------
@@ -17,22 +18,51 @@ public class BattleUIManager : MonoBehaviour
 
     //---------------------------------------
 
+    private void Awake()
+    {
+        if (battleManager == null)
+            battleManager = FindFirstObjectByType<BattleManager>();
+    }
+
     private void Start()
     {
-        if (battleManager != null &&
-            battleManager.BattleContext != null)
-        {
-            battleManager.BattleContext._battleEvent.OnTurnStart += HandleTurnStart;
-        }
+        SubscribeTurnStart();
     }
 
     private void OnDestroy()
     {
-        if (battleManager != null &&
-            battleManager.BattleContext != null)
-        {
-            battleManager.BattleContext._battleEvent.OnTurnStart -= HandleTurnStart;
-        }
+        UnsubscribeTurnStart();
+    }
+
+    //---------------------------------------
+
+    private void SubscribeTurnStart()
+    {
+        if (battleManager == null)
+            return;
+
+        if (battleManager.BattleContext == null)
+            return;
+
+        if (battleManager.BattleContext._battleEvent == null)
+            return;
+
+        battleManager.BattleContext._battleEvent.OnTurnStart -= HandleTurnStart;
+        battleManager.BattleContext._battleEvent.OnTurnStart += HandleTurnStart;
+    }
+
+    private void UnsubscribeTurnStart()
+    {
+        if (battleManager == null)
+            return;
+
+        if (battleManager.BattleContext == null)
+            return;
+
+        if (battleManager.BattleContext._battleEvent == null)
+            return;
+
+        battleManager.BattleContext._battleEvent.OnTurnStart -= HandleTurnStart;
     }
 
     //---------------------------------------
@@ -43,10 +73,10 @@ public class BattleUIManager : MonoBehaviour
     }
 
     //---------------------------------------
-    // 공격 부위 선택
+    // BodyPartButton에서 호출되는 함수
     //---------------------------------------
 
-    public void SelectOwnerSlot(Character owner, BodyPart part)
+    public void OnBodyPartClicked(Character owner, BodyPart part)
     {
         if (!IsManagerReady())
             return;
@@ -54,42 +84,84 @@ public class BattleUIManager : MonoBehaviour
         if (owner == null || part == null)
             return;
 
-        //---------------------------------------
-        // 현재는 플레이어만 직접 선택 가능
-        //---------------------------------------
+        if (inputMode == BattleInputMode.SelectOwner)
+        {
+            if (!IsPlayer(owner))
+            {
+                Debug.Log("먼저 플레이어의 행동 부위를 선택하세요.");
+                return;
+            }
+
+            bool success =
+                TrySelectOwnerSlot(owner, part);
+
+            if (success)
+                inputMode = BattleInputMode.SelectTarget;
+
+            return;
+        }
+
+        if (inputMode == BattleInputMode.SelectTarget)
+        {
+            if (IsPlayer(owner))
+            {
+                Debug.Log("대상으로는 적 부위를 선택하세요.");
+                return;
+            }
+
+            bool success =
+                TrySelectTargetSlot(owner, part);
+
+            if (success)
+                inputMode = BattleInputMode.SelectOwner;
+
+            return;
+        }
+    }
+
+    //---------------------------------------
+    // 행동 부위 선택
+    //---------------------------------------
+
+    public void SelectOwnerSlot(Character owner, BodyPart part)
+    {
+        TrySelectOwnerSlot(owner, part);
+    }
+
+    private bool TrySelectOwnerSlot(Character owner, BodyPart part)
+    {
+        if (!IsManagerReady())
+            return false;
+
+        if (owner == null || part == null)
+            return false;
 
         if (owner != battleManager.BattleContext.Player)
         {
             Debug.Log("플레이어의 부위만 행동 슬롯으로 선택할 수 있습니다.");
-            return;
+            return false;
         }
 
         if (owner.IsDead)
         {
-            Debug.Log($"{owner.Data.CharacterName}는 사망 상태입니다.");
-            return;
+            Debug.Log($"{GetCharacterName(owner)}는 사망 상태입니다.");
+            return false;
         }
 
         if (part.IsBroken)
         {
             Debug.Log($"[{part.Type}] 파괴된 부위는 행동할 수 없습니다.");
-            return;
+            return false;
         }
 
         if (part.CurrentSkill == null)
         {
             Debug.Log($"[{part.Type}] 선택된 스킬이 없습니다.");
-            return;
+            return false;
         }
 
         selectedOwner = owner;
         selectedOwnerPart = part;
-
-        //---------------------------------------
-        // 기존 슬롯 확인
-        // 여기서 삭제하지 않는다.
-        // 새 타겟을 고르면 AddOrReplaceSlot에서 교체된다.
-        //---------------------------------------
 
         ActionSlot oldSlot =
             battleManager.ActionManager.FindSlot(owner, part);
@@ -104,98 +176,82 @@ public class BattleUIManager : MonoBehaviour
         {
             Debug.Log(
                 $"[Owner Slot Selected] " +
-                $"{owner.Data.CharacterName} / {part.Type} / " +
+                $"{GetCharacterName(owner)} / {part.Type} / " +
                 $"Skill : {part.CurrentSkill.SkillName}");
         }
+
+        return true;
     }
 
     //---------------------------------------
     // 공격 대상 선택
     //---------------------------------------
-    
-    public void OnBodyPartClicked(Character owner, BodyPart part)
-    {
-        if (inputMode == BattleInputMode.SelectOwner)
-        {
-            if (!IsPlayer(owner))
-            {
-                Debug.Log("먼저 플레이어의 행동 부위를 선택하세요.");
-                return;
-            }
-
-            SelectOwnerSlot(owner, part);
-
-            inputMode = BattleInputMode.SelectTarget;
-            return;
-        }
-
-        if (inputMode == BattleInputMode.SelectTarget)
-        {
-            if (IsPlayer(owner))
-            {
-                Debug.Log("대상으로는 적 부위를 선택하세요.");
-                return;
-            }
-
-            SelectTargetSlot(owner, part);
-
-            inputMode = BattleInputMode.SelectOwner;
-        }
-    }
 
     public void SelectTargetSlot(Character target, BodyPart part)
     {
+        TrySelectTargetSlot(target, part);
+    }
+
+    private bool TrySelectTargetSlot(Character target, BodyPart part)
+    {
         if (!IsManagerReady())
-            return;
+            return false;
 
         if (target == null || part == null)
-            return;
+            return false;
 
         if (selectedOwner == null || selectedOwnerPart == null)
         {
             Debug.Log("먼저 공격 부위를 선택하세요.");
-            return;
+            return false;
         }
 
         if (target == selectedOwner)
         {
             Debug.Log("자기 자신은 공격할 수 없습니다.");
-            return;
+            return false;
         }
 
         if (target.IsDead)
         {
-            Debug.Log($"{target.Data.CharacterName}는 이미 사망했습니다.");
-            return;
+            Debug.Log($"{GetCharacterName(target)}는 이미 사망했습니다.");
+            return false;
         }
 
         if (part.IsBroken)
         {
             Debug.Log($"[{part.Type}] 파괴된 부위는 대상으로 지정할 수 없습니다.");
-            return;
+            return false;
         }
 
         selectedTarget = target;
         selectedTargetPart = part;
 
-        //---------------------------------------
-        // 타겟 선택 디버그 출력
-        //---------------------------------------
-
         Debug.Log(
             $"[Target Selected] " +
-            $"{selectedOwner.Data.CharacterName} {selectedOwnerPart.Type} " +
-            $"-> {target.Data.CharacterName} {part.Type}");
+            $"{GetCharacterName(selectedOwner)} {selectedOwnerPart.Type} " +
+            $"-> {GetCharacterName(target)} {part.Type}");
 
-        CreateSlot();
+        bool created =
+            CreateSlot();
+
+        if (!created)
+            return false;
+
+        ClearSelection();
+        RefreshAllBodyPartButtons();
+
+        return true;
     }
 
     //---------------------------------------
+    // ActionSlot 생성
+    //---------------------------------------
 
-    private void CreateSlot()
+    private bool CreateSlot()
     {
         if (!IsManagerReady())
-            return;
+            return false;
 
         if (selectedOwner == null ||
             selectedOwnerPart == null ||
@@ -203,25 +259,25 @@ public class BattleUIManager : MonoBehaviour
             selectedTargetPart == null)
         {
             Debug.LogWarning("ActionSlot 생성 실패 : 선택 정보가 부족합니다.");
-            return;
+            return false;
         }
 
         if (selectedOwner.IsDead || selectedTarget.IsDead)
         {
             Debug.LogWarning("ActionSlot 생성 실패 : 사망한 캐릭터가 포함되어 있습니다.");
-            return;
+            return false;
         }
 
         if (selectedOwnerPart.IsBroken)
         {
             Debug.LogWarning("ActionSlot 생성 실패 : 행동 부위가 파괴되어 있습니다.");
-            return;
+            return false;
         }
 
         if (selectedTargetPart.IsBroken)
         {
             Debug.LogWarning("ActionSlot 생성 실패 : 대상 부위가 파괴되어 있습니다.");
-            return;
+            return false;
         }
 
         Skill skill = selectedOwnerPart.CurrentSkill;
@@ -229,21 +285,13 @@ public class BattleUIManager : MonoBehaviour
         if (skill == null)
         {
             Debug.LogWarning("ActionSlot 생성 실패 : Skill이 없습니다.");
-            return;
+            return false;
         }
-
-        //---------------------------------------
-        // 기존 슬롯 확인
-        //---------------------------------------
 
         ActionSlot oldSlot =
             battleManager.ActionManager.FindSlot(
                 selectedOwner,
                 selectedOwnerPart);
-
-        //---------------------------------------
-        // 새 슬롯 생성
-        //---------------------------------------
 
         ActionSlot newSlot = new ActionSlot
         {
@@ -262,16 +310,7 @@ public class BattleUIManager : MonoBehaviour
             TargetSlot = null
         };
 
-        //---------------------------------------
-        // 한 부위당 하나의 슬롯만 유지
-        // 기존 슬롯이 있으면 교체됨
-        //---------------------------------------
-
         battleManager.ActionManager.AddOrReplaceSlot(newSlot);
-
-        //---------------------------------------
-        // 디버그 출력
-        //---------------------------------------
 
         if (oldSlot != null)
         {
@@ -289,9 +328,44 @@ public class BattleUIManager : MonoBehaviour
                 FormatSlot(newSlot));
         }
 
-        ClearSelection();
+        return true;
     }
 
+    //---------------------------------------
+    // Reset 버튼
+    //---------------------------------------
+
+    public void OnResetButtonClicked()
+    {
+        if (!IsManagerReady())
+            return;
+
+        battleManager.ResetPlayerActions();
+
+        ClearSelection();
+
+        ClearLines();
+
+        RefreshAllBodyPartButtons();
+
+        Debug.Log("[UI] Player selection reset.");
+    }
+
+    //---------------------------------------
+    // 턴 UI 초기화
+    //---------------------------------------
+
+    public void ResetTurn()
+    {
+        ClearSelection();
+
+        ClearLines();
+
+        RefreshAllBodyPartButtons();
+    }
+
+    //---------------------------------------
+    // Phase 계산
     //---------------------------------------
 
     private ActionPhase CalculatePhase(ActionType type)
@@ -308,6 +382,52 @@ public class BattleUIManager : MonoBehaviour
         };
     }
 
+    //---------------------------------------
+    // 선택 초기화
+    //---------------------------------------
+
+    private void ClearSelection()
+    {
+        selectedOwner = null;
+        selectedOwnerPart = null;
+
+        selectedTarget = null;
+        selectedTargetPart = null;
+
+        inputMode = BattleInputMode.SelectOwner;
+    }
+
+    //---------------------------------------
+    // 선 초기화
+    //---------------------------------------
+
+    private void ClearLines()
+    {
+        // TargetArrowUI는 LateUpdate에서 ActionManager 슬롯을 보고 자동 갱신하므로
+        // 여기서는 별도로 삭제할 필요 없음.
+    }
+
+    //---------------------------------------
+    // 버튼 갱신
+    //---------------------------------------
+
+    private void RefreshAllBodyPartButtons()
+    {
+        BodyPartButton[] buttons =
+            FindObjectsByType<BodyPartButton>(
+                FindObjectsSortMode.None);
+
+        foreach (BodyPartButton button in buttons)
+        {
+            if (button == null)
+                continue;
+
+            button.Refresh();
+        }
+    }
+
+    //---------------------------------------
+    // 상태 체크
     //---------------------------------------
 
     private bool IsManagerReady()
@@ -339,82 +459,15 @@ public class BattleUIManager : MonoBehaviour
         return true;
     }
 
-    //---------------------------------------
-
-    private string FormatSlot(ActionSlot slot)
+    public bool IsPlayer(Character character)
     {
-        if (slot == null)
-            return "NULL SLOT";
+        if (battleManager == null)
+            return false;
 
-        string ownerName =
-            slot.Owner == null
-                ? "NULL"
-                : slot.Owner.Data.CharacterName;
+        if (battleManager.BattleContext == null)
+            return false;
 
-        string partName =
-            slot.Part == null
-                ? "NULL"
-                : slot.Part.Type.ToString();
-
-        string skillName =
-            slot.Skill == null
-                ? "NULL"
-                : slot.Skill.SkillName;
-
-        string targetName =
-            slot.TargetCharacter == null
-                ? "NULL"
-                : slot.TargetCharacter.Data.CharacterName;
-
-        string targetPartName =
-            slot.TargetPart == null
-                ? "NULL"
-                : slot.TargetPart.Type.ToString();
-
-        string targetSlotName =
-            slot.TargetSlot == null
-                ? "NULL"
-                : $"{slot.TargetSlot.Owner.Data.CharacterName} {slot.TargetSlot.Part.Type}";
-
-        return
-            $"Owner      : {ownerName}\n" +
-            $"Part       : {partName}\n" +
-            $"Skill      : {skillName}\n" +
-            $"Target     : {targetName}\n" +
-            $"TargetPart : {targetPartName}\n" +
-            $"Speed      : {slot.Speed}\n" +
-            $"Phase      : {slot.Phase}\n" +
-            $"TargetSlot : {targetSlotName}";
-    }
-
-    //---------------------------------------
-
-    private void ClearSelection()
-    {
-        selectedOwner = null;
-        selectedOwnerPart = null;
-
-        selectedTarget = null;
-        selectedTargetPart = null;
-
-        inputMode = BattleInputMode.SelectOwner;
-    }
-
-    //---------------------------------------
-
-    private void ClearLines()
-    {
-        // TODO
-        // 나중에 UI 선 연결을 쓰면 여기서 삭제
-    }
-
-    //---------------------------------------
-
-    public void ResetTurn()
-    {
-        ClearSelection();
-
-        ClearLines();
+        return character == battleManager.BattleContext.Player;
     }
 
     //---------------------------------------
@@ -430,16 +483,62 @@ public class BattleUIManager : MonoBehaviour
     {
         SelectTargetSlot(target, part);
     }
-    
-    public bool IsPlayer(Character character)
+
+    //---------------------------------------
+    // Debug
+    //---------------------------------------
+
+    private string FormatSlot(ActionSlot slot)
     {
-        if (battleManager == null)
-            return false;
+        if (slot == null)
+            return "NULL SLOT";
 
-        if (battleManager.BattleContext == null)
-            return false;
+        string ownerName =
+            GetCharacterName(slot.Owner);
 
-        return character == battleManager.BattleContext.Player;
+        string partName =
+            slot.Part == null
+                ? "NULL"
+                : slot.Part.Type.ToString();
+
+        string skillName =
+            slot.Skill == null
+                ? "NULL"
+                : slot.Skill.SkillName;
+
+        string targetName =
+            GetCharacterName(slot.TargetCharacter);
+
+        string targetPartName =
+            slot.TargetPart == null
+                ? "NULL"
+                : slot.TargetPart.Type.ToString();
+
+        string targetSlotName =
+            slot.TargetSlot == null
+                ? "NULL"
+                : $"{GetCharacterName(slot.TargetSlot.Owner)} {slot.TargetSlot.Part.Type}";
+
+        return
+            $"Owner      : {ownerName}\n" +
+            $"Part       : {partName}\n" +
+            $"Skill      : {skillName}\n" +
+            $"Target     : {targetName}\n" +
+            $"TargetPart : {targetPartName}\n" +
+            $"Speed      : {slot.Speed}\n" +
+            $"Phase      : {slot.Phase}\n" +
+            $"TargetSlot : {targetSlotName}";
+    }
+
+    private string GetCharacterName(Character character)
+    {
+        if (character == null)
+            return "NULL";
+
+        if (character.Data == null)
+            return character.name;
+
+        return character.Data.CharacterName;
     }
 }
 

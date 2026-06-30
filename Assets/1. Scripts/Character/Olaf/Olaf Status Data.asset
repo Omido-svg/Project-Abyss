@@ -13,19 +13,8 @@ MonoBehaviour:
   m_Name: Olaf Status Data
   m_EditorClassIdentifier: 
   CharacterName: Olaf
-  maxHP: 100
-  attackLevel: 1
-  defenseLevel: 1
-  maxStagger: 100
   maxPrestige: 100
-  maxMentality: 45
-  minMentality: -45
-  criticalChance: 0.1
-  criticalDamage: 1.4
   damageMultiplier: 1
-  damageReduction: 0
   defensePenetration: 0
-  statusChance: 0
-  statusResistance: 0
-  accuracy: 100
-  dodgeChance: 0
+  minSpeed: 7
+  maxSpeed: 15

@@ -24,6 +24,11 @@ public class BodyPartButton : MonoBehaviour
         EnsureReferences();
     }
 
+    private void Start()
+    {
+        Refresh();
+    }
+
     private void EnsureReferences()
     {
         if (rectTransform == null)
@@ -37,7 +42,8 @@ public class BodyPartButton : MonoBehaviour
 
         if (buttonText != null)
         {
-            buttonText.overflowMode = TextOverflowModes.Overflow;
+            buttonText.richText = true;
+            buttonText.overflowMode = TMPro.TextOverflowModes.Overflow;
             buttonText.enableWordWrapping = false;
         }
 
@@ -86,14 +92,41 @@ public class BodyPartButton : MonoBehaviour
             return;
         }
 
+        buttonText.richText = true;
+
         string partName = bodyPart.Type.ToString();
+        string speedText = GetSpeedText();
         string skillName = GetDisplaySkillName();
         string stateText = GetStateText();
 
         buttonText.text =
             $"{partName}\n" +
+            $"{speedText}\n" +
             $"{skillName}\n" +
             $"{stateText}";
+    }
+    
+    private string GetSpeedText()
+    {
+        int speed = -1;
+
+        ActionSlot slot = GetCurrentSlot();
+
+        if (slot != null)
+        {
+            speed = slot.Speed;
+        }
+        else if (battleManager != null &&
+                battleManager.SpeedManager != null &&
+                bodyPart != null)
+        {
+            speed = battleManager.SpeedManager.GetSpeed(bodyPart);
+        }
+
+        if (speed < 0)
+            return "<color=#FFD700><b>SPD -</b></color>";
+
+        return $"<color=#FFD700><b>SPD {speed}</b></color>";
     }
 
     //--------------------------------------------------
@@ -138,9 +171,30 @@ public class BodyPartButton : MonoBehaviour
         if (battleManager.ActionManager == null)
             return null;
 
-        return battleManager.ActionManager.FindSlot(
-            owner,
-            bodyPart);
+        ActionSlot slot =
+            battleManager.ActionManager.FindSlot(
+                owner,
+                bodyPart);
+
+        if (slot != null)
+            return slot;
+
+        foreach (ActionSlot actionSlot in battleManager.ActionManager.Slots)
+        {
+            if (actionSlot == null)
+                continue;
+
+            if (actionSlot.Owner != owner)
+                continue;
+
+            if (actionSlot.Part == null || bodyPart == null)
+                continue;
+
+            if (actionSlot.Part.Type == bodyPart.Type)
+                return actionSlot;
+        }
+
+        return null;
     }
 
     //--------------------------------------------------

@@ -4,6 +4,23 @@ using UnityEngine.UI;
 
 public class TargetArrowUI : MonoBehaviour
 {
+    private class UIClashPair
+    {
+        public ActionSlot A;
+        public ActionSlot B;
+
+        public UIClashPair(ActionSlot a, ActionSlot b)
+        {
+            A = a;
+            B = b;
+        }
+
+        public bool Contains(ActionSlot slot)
+        {
+            return A == slot || B == slot;
+        }
+    }
+    
     [Header("References")]
     [SerializeField] private BattleManager battleManager;
     [SerializeField] private Canvas canvas;
@@ -13,10 +30,11 @@ public class TargetArrowUI : MonoBehaviour
     [SerializeField] private bool showPlayerArrows = true;
     [SerializeField] private bool showEnemyTargetArrows = true;
     [SerializeField] private bool showEnemySideOnClash = true;
-
+    
     [Header("Color")]
     [SerializeField] private Color playerArrowColor = Color.cyan;
     [SerializeField] private Color enemyClashArrowColor = Color.red;
+    [SerializeField] private Color preparationArrowColor = new Color(1f, 0.85f, 0f, 1f);
 
     [Header("Line")]
     [SerializeField] private float lineThickness = 5f;
@@ -52,74 +70,6 @@ public class TargetArrowUI : MonoBehaviour
         Refresh();
     }
     
-    private bool IsMutualClash(ActionSlot slot)
-    {
-        return FindOpposingClashSlot(slot) != null;
-    }
-
-    private ActionSlot FindOpposingClashSlot(ActionSlot slot)
-    {
-        if (slot == null)
-            return null;
-
-        if (battleManager == null)
-            return null;
-
-        if (battleManager.ActionManager == null)
-            return null;
-
-        if (slot.Owner == null ||
-            slot.Part == null ||
-            slot.TargetCharacter == null ||
-            slot.TargetPart == null)
-            return null;
-
-        if (slot.Phase != ActionPhase.COMBAT)
-            return null;
-
-        if (slot.Skill == null || !slot.Skill.CanClash)
-            return null;
-
-        foreach (ActionSlot other in battleManager.ActionManager.Slots)
-        {
-            if (other == null)
-                continue;
-
-            if (other == slot)
-                continue;
-
-            if (other.Owner == null ||
-                other.Part == null ||
-                other.TargetCharacter == null ||
-                other.TargetPart == null)
-                continue;
-
-            if (other.Phase != ActionPhase.COMBAT)
-                continue;
-
-            if (other.Skill == null || !other.Skill.CanClash)
-                continue;
-
-            // 내가 공격하는 대상의 행동 슬롯인가?
-            if (other.Owner != slot.TargetCharacter)
-                continue;
-
-            if (!IsSamePart(other.Part, slot.TargetPart))
-                continue;
-
-            // 그 대상이 다시 나의 같은 부위를 공격하는가?
-            if (other.TargetCharacter != slot.Owner)
-                continue;
-
-            if (!IsSamePart(other.TargetPart, slot.Part))
-                continue;
-
-            return other;
-        }
-
-        return null;
-    }
-
     private bool IsSamePart(BodyPart a, BodyPart b)
     {
         if (a == null || b == null)
@@ -129,6 +79,62 @@ public class TargetArrowUI : MonoBehaviour
             return true;
 
         return a.Type == b.Type;
+    }
+    
+    private bool IsPreparationSlot(ActionSlot slot)
+    {
+        if (slot == null)
+            return false;
+
+        if (slot.Phase == ActionPhase.FORESIGHT)
+            return true;
+
+        if (slot.Skill == null)
+            return false;
+
+        if (slot.Skill.ActionType == ActionType.Preparation)
+            return true;
+
+        if (!string.IsNullOrEmpty(slot.Skill.SkillName) &&
+            slot.Skill.SkillName.Contains("도사림"))
+            return true;
+
+        return false;
+    }
+    
+    private int DrawActionArrow(
+        int arrowIndex,
+        ActionSlot slot,
+        Color color)
+    {
+        if (slot == null)
+            return arrowIndex;
+
+        BodyPartButton fromButton =
+            FindButton(slot.Owner, slot.Part);
+
+        BodyPartButton toButton =
+            FindButton(slot.TargetCharacter, slot.TargetPart);
+
+        if (fromButton == null || toButton == null)
+            return arrowIndex;
+
+        Vector2 start =
+            GetLocalCenter(fromButton.RectTransform);
+
+        Vector2 end =
+            GetLocalCenter(toButton.RectTransform);
+
+        ArrowVisual arrow =
+            GetArrow(arrowIndex);
+
+        DrawArrow(
+            arrow,
+            start,
+            end,
+            color);
+
+        return arrowIndex + 1;
     }
 
     private void EnsureArrowRoot()
@@ -193,84 +199,378 @@ public class TargetArrowUI : MonoBehaviour
         IReadOnlyList<ActionSlot> slots =
             battleManager.ActionManager.Slots;
 
+        List<UIClashPair> clashPairs =
+            BuildUIClashPairs(slots, player);
+
+        HashSet<ActionSlot> clashSlots = new();
+
+        foreach (UIClashPair pair in clashPairs)
+        {
+            if (pair == null)
+                continue;
+
+            if (pair.A != null)
+                clashSlots.Add(pair.A);
+
+            if (pair.B != null)
+                clashSlots.Add(pair.B);
+        }
+
         int usedArrowCount = 0;
 
-        HashSet<ActionSlot> alreadyDrawnEnemyClashSlots =
-            new HashSet<ActionSlot>();
-
-        // 1. 플레이어 화살표 먼저 그림
+        // 1. 합이 아닌 일반 플레이어 화살표
+        // 단, 도사림은 여기서 제외하고 나중에 노란색으로 따로 그림
         foreach (ActionSlot slot in slots)
         {
+            if (clashSlots.Contains(slot))
+                continue;
+
+            if (IsPreparationSlot(slot))
+                continue;
+
             if (!IsDrawablePlayerSlot(slot, player))
                 continue;
 
-            BodyPartButton playerButton =
-                FindButton(slot.Owner, slot.Part);
-
-            BodyPartButton targetButton =
-                FindButton(slot.TargetCharacter, slot.TargetPart);
-
-            if (playerButton == null || targetButton == null)
-                continue;
-
-            bool isClash =
-                IsMutualClash(slot);
-
-            if (isClash)
-            {
-                usedArrowCount =
-                    DrawClashArrows(
-                        usedArrowCount,
-                        slot,
-                        playerButton,
-                        targetButton);
-
-                ActionSlot opposingSlot =
-                    FindOpposingClashSlot(slot);
-
-                if (opposingSlot != null)
-                    alreadyDrawnEnemyClashSlots.Add(opposingSlot);
-            }
-            else
-            {
-                usedArrowCount =
-                    DrawNormalPlayerArrow(
-                        usedArrowCount,
-                        playerButton,
-                        targetButton);
-            }
+            usedArrowCount =
+                DrawActionArrow(
+                    usedArrowCount,
+                    slot,
+                    playerArrowColor);
         }
 
-        // 2. 적이 플레이어를 타겟팅하는 빨간 화살표 그림
+        // 2. 합이 아닌 일반 적 화살표
+        // 단, 도사림은 여기서 제외하고 나중에 노란색으로 따로 그림
         foreach (ActionSlot slot in slots)
         {
+            if (clashSlots.Contains(slot))
+                continue;
+
+            if (IsPreparationSlot(slot))
+                continue;
+
             if (!IsDrawableEnemySlot(slot, player))
                 continue;
 
-            // 이미 합 화살표로 그린 적 슬롯이면 중복으로 그리지 않음
-            if (alreadyDrawnEnemyClashSlots.Contains(slot))
+            usedArrowCount =
+                DrawActionArrow(
+                    usedArrowCount,
+                    slot,
+                    enemyClashArrowColor);
+        }
+
+        // 3. 도사림 / Preparation / FORESIGHT 화살표
+        // 합 이전에 실행되는 행동이므로 노란색으로 표시
+        foreach (ActionSlot slot in slots)
+        {
+            if (!IsPreparationSlot(slot))
                 continue;
 
-            BodyPartButton enemyButton =
-                FindButton(slot.Owner, slot.Part);
+            bool drawable =
+                IsDrawablePlayerSlot(slot, player) ||
+                IsDrawableEnemySlot(slot, player);
 
-            BodyPartButton playerTargetButton =
-                FindButton(slot.TargetCharacter, slot.TargetPart);
-
-            if (enemyButton == null || playerTargetButton == null)
+            if (!drawable)
                 continue;
 
             usedArrowCount =
-                DrawNormalEnemyArrow(
+                DrawActionArrow(
                     usedArrowCount,
-                    enemyButton,
-                    playerTargetButton);
+                    slot,
+                    preparationArrowColor);
+        }
+
+        // 4. 합 화살표는 마지막에 그림
+        foreach (UIClashPair pair in clashPairs)
+        {
+            if (pair == null)
+                continue;
+
+            bool involvesPlayer =
+                pair.A.Owner == player ||
+                pair.B.Owner == player;
+
+            if (!involvesPlayer)
+                continue;
+
+            usedArrowCount =
+                DrawUIClashPair(
+                    usedArrowCount,
+                    pair,
+                    player);
         }
 
         for (int i = usedArrowCount; i < arrows.Count; i++)
         {
             arrows[i].SetActive(false);
         }
+    }
+    
+    private List<UIClashPair> BuildUIClashPairs(
+        IReadOnlyList<ActionSlot> slots,
+        Character player)
+    {
+        List<UIClashPair> result = new();
+
+        if (slots == null || player == null)
+            return result;
+
+        List<ActionSlot> playerSlots = new();
+
+        foreach (ActionSlot slot in slots)
+        {
+            if (!CanEnterClash(slot))
+                continue;
+
+            if (slot.Owner != player)
+                continue;
+
+            playerSlots.Add(slot);
+        }
+
+        HashSet<ActionSlot> usedPlayerSlots = new();
+        HashSet<ActionSlot> usedEnemySlots = new();
+
+        // 1단계: AI가 노린 부위로 그대로 맞대응한 경우를 최우선 처리
+        foreach (ActionSlot playerSlot in playerSlots)
+        {
+            if (usedPlayerSlots.Contains(playerSlot))
+                continue;
+
+            ActionSlot enemySlot =
+                FindEnemySlotSelectedByPlayer(
+                    playerSlot,
+                    slots,
+                    player);
+
+            if (enemySlot == null)
+                continue;
+
+            if (usedEnemySlots.Contains(enemySlot))
+                continue;
+
+            if (!CanEnterClash(enemySlot))
+                continue;
+
+            if (!IsExactMutual(playerSlot, enemySlot))
+                continue;
+
+            result.Add(
+                new UIClashPair(
+                    playerSlot,
+                    enemySlot));
+
+            usedPlayerSlots.Add(playerSlot);
+            usedEnemySlots.Add(enemySlot);
+        }
+
+        // 2단계: 남은 플레이어 슬롯 중 속도가 높은 슬롯이 합을 뺏음
+        playerSlots.Sort((a, b) => b.Speed.CompareTo(a.Speed));
+
+        foreach (ActionSlot playerSlot in playerSlots)
+        {
+            if (usedPlayerSlots.Contains(playerSlot))
+                continue;
+
+            ActionSlot enemySlot =
+                FindEnemySlotSelectedByPlayer(
+                    playerSlot,
+                    slots,
+                    player);
+
+            if (enemySlot == null)
+                continue;
+
+            if (usedEnemySlots.Contains(enemySlot))
+                continue;
+
+            if (!CanEnterClash(enemySlot))
+                continue;
+
+            if (!CanPlayerStealClash(playerSlot, enemySlot))
+                continue;
+
+            result.Add(
+                new UIClashPair(
+                    playerSlot,
+                    enemySlot));
+
+            usedPlayerSlots.Add(playerSlot);
+            usedEnemySlots.Add(enemySlot);
+        }
+
+        return result;
+    }
+    
+    private ActionSlot FindEnemySlotSelectedByPlayer(
+        ActionSlot playerSlot,
+        IReadOnlyList<ActionSlot> slots,
+        Character player)
+    {
+        if (playerSlot == null)
+            return null;
+
+        if (slots == null)
+            return null;
+
+        if (playerSlot.Owner != player)
+            return null;
+
+        foreach (ActionSlot enemySlot in slots)
+        {
+            if (enemySlot == null)
+                continue;
+
+            if (enemySlot == playerSlot)
+                continue;
+
+            if (enemySlot.Owner == null ||
+                enemySlot.Part == null)
+                continue;
+
+            // 적 슬롯만 찾음
+            if (enemySlot.Owner == player)
+                continue;
+
+            // 플레이어가 클릭한 적 캐릭터인가?
+            if (enemySlot.Owner != playerSlot.TargetCharacter)
+                continue;
+
+            // 플레이어가 클릭한 적 부위인가?
+            if (!IsSamePart(enemySlot.Part, playerSlot.TargetPart))
+                continue;
+
+            return enemySlot;
+        }
+
+        return null;
+    }
+    
+    private bool CanEnterClash(ActionSlot slot)
+    {
+        if (slot == null)
+            return false;
+
+        if (slot.Owner == null ||
+            slot.Part == null ||
+            slot.TargetCharacter == null ||
+            slot.TargetPart == null)
+            return false;
+
+        if (slot.Phase != ActionPhase.COMBAT)
+            return false;
+
+        if (slot.Skill == null)
+            return false;
+
+        if (!slot.Skill.CanClash)
+            return false;
+
+        return true;
+    }
+    
+    private bool IsExactMutual(
+        ActionSlot playerSlot,
+        ActionSlot enemySlot)
+    {
+        if (playerSlot == null || enemySlot == null)
+            return false;
+
+        return
+            enemySlot.TargetCharacter == playerSlot.Owner &&
+            IsSamePart(enemySlot.TargetPart, playerSlot.Part);
+    }
+    
+    private bool CanPlayerStealClash(
+        ActionSlot playerSlot,
+        ActionSlot enemySlot)
+    {
+        if (playerSlot == null || enemySlot == null)
+            return false;
+
+        if (playerSlot.Speed <= enemySlot.Speed)
+            return false;
+
+        return true;
+    }
+    
+    private int DrawUIClashPair(
+        int arrowIndex,
+        UIClashPair pair,
+        Character player)
+    {
+        ActionSlot playerSlot =
+            pair.A.Owner == player ? pair.A : pair.B;
+
+        ActionSlot enemySlot =
+            pair.A.Owner == player ? pair.B : pair.A;
+
+        BodyPartButton playerButton =
+            FindButton(playerSlot.Owner, playerSlot.Part);
+
+        BodyPartButton enemyButton =
+            FindButton(enemySlot.Owner, enemySlot.Part);
+
+        if (playerButton == null || enemyButton == null)
+            return arrowIndex;
+
+        Vector2 playerStart =
+            GetLocalCenter(playerButton.RectTransform);
+
+        Vector2 enemyStart =
+            GetLocalCenter(enemyButton.RectTransform);
+
+        Vector2 center =
+            (playerStart + enemyStart) * 0.5f;
+
+        Vector2 playerDir =
+            center - playerStart;
+
+        Vector2 enemyDir =
+            center - enemyStart;
+
+        if (playerDir.sqrMagnitude <= 0.01f ||
+            enemyDir.sqrMagnitude <= 0.01f)
+        {
+            return arrowIndex;
+        }
+
+        playerDir.Normalize();
+        enemyDir.Normalize();
+
+        float clashGap = 18f;
+
+        Vector2 playerEnd =
+            center - playerDir * clashGap;
+
+        Vector2 enemyEnd =
+            center - enemyDir * clashGap;
+
+        ArrowVisual playerArrow =
+            GetArrow(arrowIndex);
+
+        DrawArrowToPoint(
+            playerArrow,
+            playerStart,
+            playerEnd,
+            playerArrowColor);
+
+        arrowIndex++;
+
+        if (showEnemySideOnClash)
+        {
+            ArrowVisual enemyArrow =
+                GetArrow(arrowIndex);
+
+            DrawArrowToPoint(
+                enemyArrow,
+                enemyStart,
+                enemyEnd,
+                enemyClashArrowColor);
+
+            arrowIndex++;
+        }
+
+        return arrowIndex;
     }
     
     private bool IsDrawableEnemySlot(
@@ -370,72 +670,6 @@ public class TargetArrowUI : MonoBehaviour
             playerArrowColor);
 
         return arrowIndex + 1;
-    }
-
-    private int DrawClashArrows(
-        int arrowIndex,
-        ActionSlot playerSlot,
-        BodyPartButton playerButton,
-        BodyPartButton targetButton)
-    {
-        ActionSlot enemySlot =
-            FindOpposingClashSlot(playerSlot);
-
-        if (enemySlot == null)
-        {
-            return DrawNormalPlayerArrow(
-                arrowIndex,
-                playerButton,
-                targetButton);
-        }
-
-        BodyPartButton enemyButton =
-            FindButton(enemySlot.Owner, enemySlot.Part);
-
-        if (enemyButton == null)
-        {
-            return DrawNormalPlayerArrow(
-                arrowIndex,
-                playerButton,
-                targetButton);
-        }
-
-        Vector2 playerStart =
-            GetLocalCenter(playerButton.RectTransform);
-
-        Vector2 enemyStart =
-            GetLocalCenter(enemyButton.RectTransform);
-
-        // 두 버튼 중심 사이의 충돌점
-        Vector2 clashPoint =
-            (playerStart + enemyStart) * 0.5f;
-
-        ArrowVisual playerArrow =
-            GetArrow(arrowIndex);
-
-        DrawArrowToPoint(
-            playerArrow,
-            playerStart,
-            clashPoint,
-            playerArrowColor);
-
-        arrowIndex++;
-
-        if (showEnemySideOnClash)
-        {
-            ArrowVisual enemyArrow =
-                GetArrow(arrowIndex);
-
-            DrawArrowToPoint(
-                enemyArrow,
-                enemyStart,
-                clashPoint,
-                enemyClashArrowColor);
-
-            arrowIndex++;
-        }
-
-        return arrowIndex;
     }
 
     private BodyPartButton FindButton(
@@ -556,6 +790,9 @@ public class TargetArrowUI : MonoBehaviour
 
         arrow.SetActive(true);
         arrow.SetColor(color);
+        
+        if (arrow.root != null)
+            arrow.root.SetAsLastSibling();
 
         DrawSegment(
             arrow.body,

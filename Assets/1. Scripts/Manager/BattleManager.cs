@@ -209,6 +209,23 @@ public class BattleManager : MonoBehaviour
 
         return true;
     }
+    
+    public void ResetPlayerActions()
+    {
+        if (BattleContext == null)
+            return;
+
+        if (BattleContext.Player == null)
+            return;
+
+        if (ActionManager == null)
+            return;
+
+        ActionManager.RemoveSlotsByOwner(
+            BattleContext.Player);
+
+        Debug.Log("[BATTLE] Player actions reset.");
+    }
 
     //------------------------------------------------
 
