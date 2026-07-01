@@ -1,25 +1,19 @@
-using UnityEngine;
+using System.Collections;
 using System.Collections.Generic;
-
-// Battle
-//  └ Turn
-//      └ Slot
-//          └ Queue
-//              └ Resolver
-//                  └ Clash
-//                      └ Damage
+using UnityEngine;
 
 public class BattleManager : MonoBehaviour
 {
     [Header("Debug")]
     [SerializeField] private Character player;
-
     [SerializeField] private List<Character> enemies = new();
 
     [Header("Buttons")]
     [SerializeField] private List<BodyPartButton> playerButtons = new();
-
     [SerializeField] private List<BodyPartButton> enemyButtons = new();
+    
+    [Header("BattleUIManager")]
+    [SerializeField] private BattleUIManager battleUIManager;
 
     //------------------------------------------
 
@@ -32,14 +26,11 @@ public class BattleManager : MonoBehaviour
     //------------------------------------------
 
     public TurnManager TurnManager { get; private set; }
-
     public ActionManager ActionManager { get; private set; }
-
     public MomentumManager MomentumManager { get; private set; }
-
     public BattleLogger BattleLogger { get; private set; }
-
     public SpeedManager SpeedManager { get; private set; }
+
     private DamageManager damageManager;
     private ClashManager clashManager;
     private ActionResolver actionResolver;
@@ -52,9 +43,22 @@ public class BattleManager : MonoBehaviour
     {
         InitializeContext();
         InitializeCharacters();
-        BindButtons();
         CreateManagers();
+        BindButtons();
+
         SelectedCharacter = player;
+        
+        if (battleUIManager == null)
+            battleUIManager = FindFirstObjectByType<BattleUIManager>();
+
+        Debug.Log("===== Battle Ready =====");
+    }
+
+    private IEnumerator Start()
+    {
+        // BattleUIManager.Start()가 먼저 이벤트 구독할 시간을 줌
+        yield return null;
+
         Debug.Log("===== Battle Start =====");
         StartBattle();
     }
@@ -66,52 +70,35 @@ public class BattleManager : MonoBehaviour
         BattleContext = new BattleContext();
 
         BattleContext.battleManager = this;
-
         BattleContext.Player = player;
-
         BattleContext.Enemies = enemies;
 
         BattleContext.AllCharacters.Clear();
 
-        BattleContext.AllCharacters.Add(player);
+        if (player != null)
+            BattleContext.AllCharacters.Add(player);
 
-        BattleContext.AllCharacters.AddRange(enemies);
+        if (enemies != null)
+            BattleContext.AllCharacters.AddRange(enemies);
     }
 
     //------------------------------------------------
 
     private void InitializeCharacters()
     {
-        player.Initialize(BattleContext._battleEvent);
-
-        player.ForceRecalculateHP();
-
-        AssignSkills(player);
+        if (player != null)
+        {
+            player.Initialize(BattleContext._battleEvent);
+            player.ForceRecalculateHP();
+        }
 
         foreach (Character enemy in enemies)
         {
+            if (enemy == null)
+                continue;
+
             enemy.Initialize(BattleContext._battleEvent);
-
-            AssignSkills(enemy);
-        }
-    }
-
-    //------------------------------------------------
-
-    private void BindButtons()
-    {
-        for (int i = 0; i < playerButtons.Count; i++)
-        {
-            playerButtons[i].Bind(
-                player,
-                player.BodyParts[i]);
-        }
-
-        for (int i = 0; i < enemyButtons.Count; i++)
-        {
-            enemyButtons[i].Bind(
-                enemies[i],
-                enemies[i].BodyParts[0]);
+            enemy.ForceRecalculateHP();
         }
     }
 
@@ -158,8 +145,79 @@ public class BattleManager : MonoBehaviour
 
     //------------------------------------------------
 
+    private void BindButtons()
+    {
+        BindPlayerButtons();
+        BindEnemyButtons();
+    }
+
+    private void BindPlayerButtons()
+    {
+        if (player == null)
+            return;
+
+        if (player.BodyParts == null)
+            return;
+
+        int count =
+            Mathf.Min(
+                playerButtons.Count,
+                player.BodyParts.Count);
+
+        for (int i = 0; i < count; i++)
+        {
+            if (playerButtons[i] == null)
+                continue;
+
+            if (player.BodyParts[i] == null)
+                continue;
+
+            playerButtons[i].Bind(
+                player,
+                player.BodyParts[i]);
+        }
+    }
+
+    private void BindEnemyButtons()
+    {
+        if (enemies == null)
+            return;
+
+        int count =
+            Mathf.Min(
+                enemyButtons.Count,
+                enemies.Count);
+
+        for (int i = 0; i < count; i++)
+        {
+            Character enemy = enemies[i];
+
+            if (enemy == null)
+                continue;
+
+            if (enemy.BodyParts == null ||
+                enemy.BodyParts.Count == 0)
+                continue;
+
+            if (enemyButtons[i] == null)
+                continue;
+
+            enemyButtons[i].Bind(
+                enemy,
+                enemy.BodyParts[0]);
+        }
+    }
+
+    //------------------------------------------------
+
     public void StartBattle()
     {
+        if (TurnManager == null)
+        {
+            Debug.LogWarning("BattleManager : TurnManager가 없습니다.");
+            return;
+        }
+
         TurnManager.StartBattle();
     }
 
@@ -167,6 +225,13 @@ public class BattleManager : MonoBehaviour
 
     public void NextTurn()
     {
+        if (ActionManager == null ||
+            BattleContext == null ||
+            BattleContext.Player == null)
+        {
+            return;
+        }
+
         int playerSlotCount =
             ActionManager.CountSlots(BattleContext.Player);
 
@@ -185,6 +250,20 @@ public class BattleManager : MonoBehaviour
 
         TurnManager.ResolveTurn();
 
+        if (battleUIManager != null)
+            battleUIManager.RefreshAllBodyPartButtons();
+
+        if (CheckBattleEnd())
+        {
+            EndBattle();
+            return;
+        }
+
+        TurnManager.NextTurn();
+
+        if (battleUIManager != null)
+            battleUIManager.RefreshAllBodyPartButtons();
+
         if (CheckBattleEnd())
         {
             EndBattle();
@@ -196,20 +275,6 @@ public class BattleManager : MonoBehaviour
 
     //------------------------------------------------
 
-    private bool CheckBattleEnd()
-    {
-        if (BattleContext.Player.IsDead)
-            return true;
-
-        foreach (Character enemy in BattleContext.Enemies)
-        {
-            if (!enemy.IsDead)
-                return false;
-        }
-
-        return true;
-    }
-    
     public void ResetPlayerActions()
     {
         if (BattleContext == null)
@@ -229,25 +294,36 @@ public class BattleManager : MonoBehaviour
 
     //------------------------------------------------
 
-    private void EndBattle()
+    private bool CheckBattleEnd()
     {
-        TurnManager.EndBattle();
+        if (BattleContext == null)
+            return true;
 
-        Debug.Log("===== Battle End =====");
+        if (BattleContext.Player == null)
+            return true;
+
+        if (BattleContext.Player.IsDead)
+            return true;
+
+        foreach (Character enemy in BattleContext.Enemies)
+        {
+            if (enemy == null)
+                continue;
+
+            if (!enemy.IsDead)
+                return false;
+        }
+
+        return true;
     }
 
     //------------------------------------------------
 
-    private void AssignSkills(Character character)
+    private void EndBattle()
     {
-        foreach (BodyPart part in character.BodyParts)
-        {
-            if (part.AvailableSkills.Count == 0)
-                continue;
+        if (TurnManager != null)
+            TurnManager.EndBattle();
 
-            part.CurrentSkill =
-                part.AvailableSkills[
-                    Random.Range(0, part.AvailableSkills.Count)];
-        }
+        Debug.Log("===== Battle End =====");
     }
 }

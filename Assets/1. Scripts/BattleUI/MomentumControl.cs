@@ -4,33 +4,53 @@ using UnityEngine.UI;
 public class MomentumScrollbarUI : MonoBehaviour
 {
     [SerializeField] private BattleManager battleManager;
-    [SerializeField] private Slider scrollbar;
+    [SerializeField] private Slider momentumSlider;
 
-    [Header("Option")]
-    [SerializeField] private bool usePlayerPerspective = true;
+    [Header("Display")]
+    [SerializeField] private bool playerAdvantageIsRight = true;
 
-    //------------------------------------------------
+    [Header("Range")]
+    [SerializeField] private float minMomentum = -100f;
+    [SerializeField] private float maxMomentum = 100f;
+
+    private void Awake()
+    {
+        if (battleManager == null)
+            battleManager = FindFirstObjectByType<BattleManager>();
+
+        if (momentumSlider == null)
+            momentumSlider = GetComponent<Slider>();
+
+        if (momentumSlider != null)
+        {
+            momentumSlider.minValue = 0f;
+            momentumSlider.maxValue = 1f;
+        }
+    }
 
     private void Update()
     {
-        if (battleManager.MomentumManager == null || scrollbar == null)
+        if (battleManager == null)
             return;
 
-        float momentum = battleManager.MomentumManager.CurrentMomentum;
+        if (battleManager.MomentumManager == null)
+            return;
 
-        // 플레이어 기준 / 적 기준 반전
-        if (!usePlayerPerspective)
-            momentum *= -1f;
+        if (momentumSlider == null)
+            return;
 
-        scrollbar.value = Normalize(momentum);
-    }
+        float momentum =
+            battleManager.MomentumManager.CurrentMomentum;
 
-    //------------------------------------------------
+        float normalized =
+            Mathf.InverseLerp(
+                minMomentum,
+                maxMomentum,
+                momentum);
 
-    private float Normalize(float momentum)
-    {
-        // -100 ~ 100 → 0 ~ 1
-        return Mathf.Clamp01((momentum + 100f) / 200f);
+        if (!playerAdvantageIsRight)
+            normalized = 1f - normalized;
+
+        momentumSlider.value = normalized;
     }
 }
-

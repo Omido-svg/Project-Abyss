@@ -1,8 +1,11 @@
+using System.Linq;
 using UnityEngine;
+using UnityEngine.EventSystems;
 
 public class BattleUIManager : MonoBehaviour
 {
     [SerializeField] private BattleManager battleManager;
+    [SerializeField] private SkillSelectPanelUI skillSelectPanel;
 
     private BattleInputMode inputMode = BattleInputMode.SelectOwner;
 
@@ -22,11 +25,42 @@ public class BattleUIManager : MonoBehaviour
     {
         if (battleManager == null)
             battleManager = FindFirstObjectByType<BattleManager>();
+
+        if (skillSelectPanel == null)
+            skillSelectPanel = FindFirstObjectByType<SkillSelectPanelUI>();
     }
 
     private void Start()
     {
         SubscribeTurnStart();
+
+        if (skillSelectPanel != null)
+            skillSelectPanel.Hide();
+    }
+
+    private void Update()
+    {
+        if (!Input.GetMouseButtonDown(1))
+            return;
+
+        // 스킬 선택창이 떠 있는 상태에서는
+        // UI 위에서 우클릭해도 무조건 현재 선택 취소
+        if (inputMode == BattleInputMode.SelectSkill)
+        {
+            CancelCurrentSelection();
+            return;
+        }
+
+        // BodyPartButton 위에서 우클릭한 경우는
+        // BodyPartButton.OnPointerClick이 처리하게 둠
+        if (EventSystem.current != null &&
+            EventSystem.current.IsPointerOverGameObject())
+        {
+            return;
+        }
+
+        // 빈 공간 우클릭이면 현재 선택 취소
+        CancelCurrentSelection();
     }
 
     private void OnDestroy()
@@ -65,15 +99,13 @@ public class BattleUIManager : MonoBehaviour
         battleManager.BattleContext._battleEvent.OnTurnStart -= HandleTurnStart;
     }
 
-    //---------------------------------------
-
     private void HandleTurnStart(int turn)
     {
         ResetTurn();
     }
 
     //---------------------------------------
-    // BodyPartButton에서 호출되는 함수
+    // BodyPartButton 왼쪽 클릭
     //---------------------------------------
 
     public void OnBodyPartClicked(Character owner, BodyPart part)
@@ -113,10 +145,52 @@ public class BattleUIManager : MonoBehaviour
                 TrySelectTargetSlot(owner, part);
 
             if (success)
-                inputMode = BattleInputMode.SelectOwner;
+                inputMode = BattleInputMode.SelectSkill;
 
             return;
         }
+
+        if (inputMode == BattleInputMode.SelectSkill)
+        {
+            Debug.Log("먼저 왼쪽 스킬 패널에서 사용할 스킬을 선택하세요.");
+            return;
+        }
+    }
+
+    //---------------------------------------
+    // BodyPartButton 오른쪽 클릭
+    //---------------------------------------
+
+    public void OnBodyPartRightClicked(Character owner, BodyPart part)
+    {
+        if (!IsManagerReady())
+            return;
+
+        if (owner == null || part == null)
+        {
+            CancelCurrentSelection();
+            return;
+        }
+
+        // 플레이어 부위를 우클릭하면 해당 부위의 지정된 행동 슬롯 삭제
+        if (IsPlayer(owner))
+        {
+            ActionSlot oldSlot =
+                battleManager.ActionManager.FindSlot(owner, part);
+
+            if (oldSlot != null)
+            {
+                battleManager.ActionManager.RemoveSlot(owner, part);
+
+                Debug.Log(
+                    "[ActionSlot Canceled]\n" +
+                    $"{GetCharacterName(owner)} {part.Type}");
+
+                RefreshAllBodyPartButtons();
+            }
+        }
+
+        CancelCurrentSelection();
     }
 
     //---------------------------------------
@@ -136,7 +210,7 @@ public class BattleUIManager : MonoBehaviour
         if (owner == null || part == null)
             return false;
 
-        if (owner != battleManager.BattleContext.Player)
+        if (!IsPlayer(owner))
         {
             Debug.Log("플레이어의 부위만 행동 슬롯으로 선택할 수 있습니다.");
             return false;
@@ -154,14 +228,16 @@ public class BattleUIManager : MonoBehaviour
             return false;
         }
 
-        if (part.CurrentSkill == null)
+        if (!part.IsUsable)
         {
-            Debug.Log($"[{part.Type}] 선택된 스킬이 없습니다.");
+            Debug.Log($"[{part.Type}] 사용할 수 없는 부위입니다.");
             return false;
         }
 
         selectedOwner = owner;
         selectedOwnerPart = part;
+        
+        RefreshAllBodyPartButtons();
 
         ActionSlot oldSlot =
             battleManager.ActionManager.FindSlot(owner, part);
@@ -169,15 +245,14 @@ public class BattleUIManager : MonoBehaviour
         if (oldSlot != null)
         {
             Debug.Log(
-                "[기존 슬롯 선택됨 - 타겟 변경 가능]\n" +
+                "[기존 슬롯 선택됨 - 타겟/스킬 변경 가능]\n" +
                 FormatSlot(oldSlot));
         }
         else
         {
             Debug.Log(
                 $"[Owner Slot Selected] " +
-                $"{GetCharacterName(owner)} / {part.Type} / " +
-                $"Skill : {part.CurrentSkill.SkillName}");
+                $"{GetCharacterName(owner)} / {part.Type}");
         }
 
         return true;
@@ -226,29 +301,147 @@ public class BattleUIManager : MonoBehaviour
 
         selectedTarget = target;
         selectedTargetPart = part;
+        
+        RefreshAllBodyPartButtons();
 
         Debug.Log(
             $"[Target Selected] " +
             $"{GetCharacterName(selectedOwner)} {selectedOwnerPart.Type} " +
             $"-> {GetCharacterName(target)} {part.Type}");
 
-        bool created =
-            CreateSlot();
-
-        if (!created)
-            return false;
-
-        ClearSelection();
-        RefreshAllBodyPartButtons();
+        ShowSkillPanel();
 
         return true;
+    }
+
+    //---------------------------------------
+    // 스킬 패널
+    //---------------------------------------
+
+    private void ShowSkillPanel()
+    {
+        if (skillSelectPanel == null)
+        {
+            Debug.LogWarning("SkillSelectPanelUI가 연결되어 있지 않습니다.");
+            return;
+        }
+
+        if (selectedOwnerPart == null)
+            return;
+
+        skillSelectPanel.Show(
+            this,
+            selectedOwnerPart);
+    }
+
+    public void OnSkillSelectedFromPanel(Skill skill)
+    {
+        if (skill == null)
+            return;
+
+        if (!IsSkillSelectable(selectedOwnerPart, skill))
+        {
+            Debug.Log($"[{skill.SkillName}] 사용할 수 없는 스킬입니다.");
+            return;
+        }
+
+        bool created =
+            CreateSlot(skill);
+
+        if (!created)
+            return;
+
+        if (skillSelectPanel != null)
+            skillSelectPanel.Hide();
+
+        ClearSelection();
+
+        RefreshAllBodyPartButtons();
+    }
+
+    //---------------------------------------
+    // 스킬 찾기 / 사용 가능 여부
+    //---------------------------------------
+
+    public Skill FindSkillByActionType(
+        BodyPart part,
+        ActionType actionType)
+    {
+        if (part == null)
+            return null;
+
+        if (part.AvailableSkills == null)
+            return null;
+
+        foreach (Skill skill in part.AvailableSkills)
+        {
+            if (skill == null)
+                continue;
+
+            if (skill.ActionType == actionType)
+                return skill;
+        }
+
+        return null;
+    }
+
+    public bool IsSkillSelectable(
+        BodyPart part,
+        Skill skill)
+    {
+        if (!IsManagerReady())
+            return false;
+
+        if (selectedOwner == null)
+            return false;
+
+        if (part == null || skill == null)
+            return false;
+
+        if (part.IsBroken)
+            return false;
+
+        if (!part.IsUsable)
+            return false;
+
+        if (part.AvailableSkills == null)
+            return false;
+
+        if (!part.AvailableSkills.Contains(skill))
+            return false;
+
+        if (skill.ActionType == ActionType.Prestige)
+        {
+            // 1. 위세 게이지가 다 차야 함
+            if (!IsPrestigeReady(selectedOwner))
+                return false;
+
+            // 2. 이번 턴에 이미 다른 부위가 위세를 선택했으면 불가능
+            if (HasPrestigeSlotSelected(selectedOwner, part))
+                return false;
+        }
+
+        return true;
+    }
+
+    private bool IsPrestigeReady(Character character)
+    {
+        if (character == null)
+            return false;
+
+        if (character.CurrentStatus.maxPrestige <= 0)
+            return false;
+
+        return
+            character.RuntimeStatus.currentPrestige >=
+            character.CurrentStatus.maxPrestige;
     }
 
     //---------------------------------------
     // ActionSlot 생성
     //---------------------------------------
 
-    private bool CreateSlot()
+    private bool CreateSlot(Skill skill)
     {
         if (!IsManagerReady())
             return false;
@@ -280,12 +473,25 @@ public class BattleUIManager : MonoBehaviour
             return false;
         }
 
-        Skill skill = selectedOwnerPart.CurrentSkill;
-
         if (skill == null)
         {
             Debug.LogWarning("ActionSlot 생성 실패 : Skill이 없습니다.");
             return false;
+        }
+        
+        if (skill.ActionType == ActionType.Prestige)
+        {
+            if (!IsPrestigeReady(selectedOwner))
+            {
+                Debug.LogWarning("ActionSlot 생성 실패 : 위세 게이지가 부족합니다.");
+                return false;
+            }
+
+            if (HasPrestigeSlotSelected(selectedOwner, selectedOwnerPart))
+            {
+                Debug.LogWarning("ActionSlot 생성 실패 : 이번 턴에 이미 위세 스킬을 선택했습니다.");
+                return false;
+            }
         }
 
         ActionSlot oldSlot =
@@ -315,7 +521,7 @@ public class BattleUIManager : MonoBehaviour
         if (oldSlot != null)
         {
             Debug.Log(
-                "[ActionSlot Target Changed]\n" +
+                "[ActionSlot Changed]\n" +
                 "Before :\n" +
                 FormatSlot(oldSlot) +
                 "\nAfter :\n" +
@@ -342,6 +548,9 @@ public class BattleUIManager : MonoBehaviour
 
         battleManager.ResetPlayerActions();
 
+        if (skillSelectPanel != null)
+            skillSelectPanel.Hide();
+
         ClearSelection();
 
         ClearLines();
@@ -352,11 +561,33 @@ public class BattleUIManager : MonoBehaviour
     }
 
     //---------------------------------------
+    // 우클릭 취소
+    //---------------------------------------
+
+    private void CancelCurrentSelection()
+    {
+        if (inputMode == BattleInputMode.SelectOwner)
+            return;
+
+        if (skillSelectPanel != null)
+            skillSelectPanel.Hide();
+
+        ClearSelection();
+
+        RefreshAllBodyPartButtons();
+
+        Debug.Log("[UI] Current selection canceled.");
+    }
+
+    //---------------------------------------
     // 턴 UI 초기화
     //---------------------------------------
 
     public void ResetTurn()
     {
+        if (skillSelectPanel != null)
+            skillSelectPanel.Hide();
+
         ClearSelection();
 
         ClearLines();
@@ -403,18 +634,18 @@ public class BattleUIManager : MonoBehaviour
 
     private void ClearLines()
     {
-        // TargetArrowUI는 LateUpdate에서 ActionManager 슬롯을 보고 자동 갱신하므로
-        // 여기서는 별도로 삭제할 필요 없음.
+        // TargetArrowUI는 ActionManager 슬롯을 보고 LateUpdate에서 자동 갱신함.
     }
 
     //---------------------------------------
     // 버튼 갱신
     //---------------------------------------
 
-    private void RefreshAllBodyPartButtons()
+    public void RefreshAllBodyPartButtons()
     {
         BodyPartButton[] buttons =
             FindObjectsByType<BodyPartButton>(
+                FindObjectsInactive.Include,
                 FindObjectsSortMode.None);
 
         foreach (BodyPartButton button in buttons)
@@ -423,7 +654,121 @@ public class BattleUIManager : MonoBehaviour
                 continue;
 
             button.Refresh();
+
+            if (!button.gameObject.activeInHierarchy)
+                continue;
+
+            button.SetNormalColor();
         }
+
+        ApplyButtonHighlights(buttons);
+    }
+    
+    private void ApplyButtonHighlights(BodyPartButton[] buttons)
+    {
+        if (!IsManagerReady())
+            return;
+
+        Character player =
+            battleManager.BattleContext.Player;
+
+        if (player == null)
+            return;
+
+        foreach (ActionSlot slot in battleManager.ActionManager.Slots)
+        {
+            if (slot == null)
+                continue;
+
+            if (slot.Owner != player)
+                continue;
+
+            BodyPartButton ownerButton =
+                FindBodyPartButton(
+                    buttons,
+                    slot.Owner,
+                    slot.Part);
+
+            BodyPartButton targetButton =
+                FindBodyPartButton(
+                    buttons,
+                    slot.TargetCharacter,
+                    slot.TargetPart);
+
+            if (ownerButton != null &&
+                ownerButton.gameObject.activeInHierarchy)
+            {
+                ownerButton.SetOwnerSelectedColor();
+            }
+
+            if (targetButton != null &&
+                targetButton.gameObject.activeInHierarchy)
+            {
+                targetButton.SetTargetSelectedColor();
+            }
+        }
+
+        if (selectedOwner != null && selectedOwnerPart != null)
+        {
+            BodyPartButton selectedOwnerButton =
+                FindBodyPartButton(
+                    buttons,
+                    selectedOwner,
+                    selectedOwnerPart);
+
+            if (selectedOwnerButton != null &&
+                selectedOwnerButton.gameObject.activeInHierarchy)
+            {
+                selectedOwnerButton.SetOwnerSelectedColor();
+            }
+        }
+
+        if (selectedTarget != null && selectedTargetPart != null)
+        {
+            BodyPartButton selectedTargetButton =
+                FindBodyPartButton(
+                    buttons,
+                    selectedTarget,
+                    selectedTargetPart);
+
+            if (selectedTargetButton != null &&
+                selectedTargetButton.gameObject.activeInHierarchy)
+            {
+                selectedTargetButton.SetTargetSelectedColor();
+            }
+        }
+    }
+    
+    private BodyPartButton FindBodyPartButton(
+        BodyPartButton[] buttons,
+        Character owner,
+        BodyPart part)
+    {
+        if (buttons == null)
+            return null;
+
+        if (owner == null || part == null)
+            return null;
+
+        foreach (BodyPartButton button in buttons)
+        {
+            if (button == null)
+                continue;
+
+            if (button.Owner != owner)
+                continue;
+
+            if (button.BodyPart == part)
+                return button;
+
+            if (button.BodyPart != null &&
+                button.BodyPart.Type == part.Type)
+            {
+                return button;
+            }
+        }
+
+        return null;
     }
 
     //---------------------------------------
@@ -540,10 +885,60 @@ public class BattleUIManager : MonoBehaviour
 
         return character.Data.CharacterName;
     }
+    
+    private bool HasPrestigeSlotSelected(
+        Character owner,
+        BodyPart ignorePart = null)
+    {
+        if (owner == null)
+            return false;
+
+        if (battleManager == null ||
+            battleManager.ActionManager == null)
+            return false;
+
+        foreach (ActionSlot slot in battleManager.ActionManager.Slots)
+        {
+            if (slot == null)
+                continue;
+
+            if (slot.Owner != owner)
+                continue;
+
+            if (slot.Skill == null)
+                continue;
+
+            if (ignorePart != null &&
+                IsSamePart(slot.Part, ignorePart))
+            {
+                continue;
+            }
+
+            if (slot.Skill.ActionType == ActionType.Prestige)
+                return true;
+        }
+
+        return false;
+    }
+    
+    private bool IsSamePart(
+        BodyPart a,
+        BodyPart b)
+    {
+        if (a == null || b == null)
+            return false;
+
+        if (a == b)
+            return true;
+
+        return a.Type == b.Type;
+    }
+
 }
 
 public enum BattleInputMode
 {
     SelectOwner,
-    SelectTarget
+    SelectTarget,
+    SelectSkill
 }

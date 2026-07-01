@@ -598,29 +598,6 @@ public class TargetArrowUI : MonoBehaviour
 
         return true;
     }
-    
-    private int DrawNormalEnemyArrow(
-        int arrowIndex,
-        BodyPartButton fromButton,
-        BodyPartButton toButton)
-    {
-        Vector2 start =
-            GetLocalCenter(fromButton.RectTransform);
-
-        Vector2 end =
-            GetLocalCenter(toButton.RectTransform);
-
-        ArrowVisual arrow =
-            GetArrow(arrowIndex);
-
-        DrawArrow(
-            arrow,
-            start,
-            end,
-            enemyClashArrowColor);
-
-        return arrowIndex + 1;
-    }
 
     private bool IsDrawablePlayerSlot(
         ActionSlot slot,
@@ -647,29 +624,6 @@ public class TargetArrowUI : MonoBehaviour
             return false;
 
         return true;
-    }
-
-    private int DrawNormalPlayerArrow(
-        int arrowIndex,
-        BodyPartButton fromButton,
-        BodyPartButton toButton)
-    {
-        Vector2 start =
-            GetLocalCenter(fromButton.RectTransform);
-
-        Vector2 end =
-            GetLocalCenter(toButton.RectTransform);
-
-        ArrowVisual arrow =
-            GetArrow(arrowIndex);
-
-        DrawArrow(
-            arrow,
-            start,
-            end,
-            playerArrowColor);
-
-        return arrowIndex + 1;
     }
 
     private BodyPartButton FindButton(

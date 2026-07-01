@@ -222,15 +222,21 @@ public abstract class Enemy : Character
         if (slot.Skill == null)
             return float.MinValue;
 
-        if (slot.TargetPart == null)
+        if (slot.TargetCharacter == null ||
+            slot.TargetPart == null)
+            return float.MinValue;
+
+        if (slot.TargetCharacter.IsDead)
+            return float.MinValue;
+
+        if (slot.TargetPart.IsBroken)
             return float.MinValue;
 
         float score = 0f;
 
-        // 약간의 랜덤성
-        score += Random.Range(0f, 5f);
+        // 완전 고정 AI 방지용 랜덤성
+        score += Random.Range(0f, 25f);
 
-        // 스킬 타입별 기본 점수
         switch (slot.Skill.ActionType)
         {
             case ActionType.Prestige:
@@ -250,15 +256,17 @@ public abstract class Enemy : Character
                 break;
         }
 
-        // 합 가능한 스킬 선호
         if (slot.Skill.CanClash)
             score += 30f;
 
-        // 타겟 부위 상태 반영
+        // 타겟 부위 자체 가치
         score += ScoreTargetPart(slot.TargetPart);
 
-        // 자신의 속도가 높을수록 약간 선호
-        score += slot.Speed * 3f;
+        // 여러 적이 같은 플레이어 부위를 몰빵하지 않도록 감점
+        score += ScoreTargetSpread(context, slot);
+
+        // 속도는 너무 크게 주면 특정 슬롯만 계속 좋아지므로 약하게만 반영
+        score += slot.Speed * 1.5f;
 
         return score;
     }
@@ -267,25 +275,25 @@ public abstract class Enemy : Character
     // 타겟 부위 점수
     //--------------------------------------------------
 
-    protected virtual float ScoreTargetPart(BodyPart targetPart)
+   protected virtual float ScoreTargetPart(BodyPart targetPart)
     {
         if (targetPart == null)
             return -10000f;
 
+        if (targetPart.IsBroken)
+            return -10000f;
+
         float score = 0f;
 
-        // 기존 로직에서 부서진 부위를 70% 선호했으므로,
-        // 여기서는 부서진 부위에 높은 점수 부여
-        if (targetPart.IsBroken)
-            score += 70f;
-        else
+        // 살아있는 부위를 기본적으로 선호
+        score += 30f;
+
+        // 약화된 부위는 약간 선호
+        if (targetPart.IsWeakened)
             score += 20f;
 
-        // 약화된 부위는 공격 가치 높음
-        if (targetPart.IsWeakened)
-            score += 40f;
-
-        // HP가 낮은 부위를 마무리하려는 경향
+        // HP 낮은 부위 마무리 선호는 약하게만 준다
+        // 너무 크게 주면 계속 몰빵함
         if (targetPart.MaxPartHP > 0)
         {
             float hpRate =
@@ -294,10 +302,60 @@ public abstract class Enemy : Character
             float missingHpRate =
                 1f - hpRate;
 
-            score += missingHpRate * 50f;
+            score += missingHpRate * 15f;
         }
 
+        // 합 가능한 부위를 조금 더 선호
+        if (HasClashSkill(targetPart))
+            score += 25f;
+
         return score;
+    }
+    
+    protected virtual float ScoreTargetSpread(
+        BattleContext context,
+        ActionSlot candidate)
+    {
+        if (context == null ||
+            context.battleManager == null ||
+            context.battleManager.ActionManager == null)
+        {
+            return 0f;
+        }
+
+        if (candidate == null ||
+            candidate.TargetCharacter == null ||
+            candidate.TargetPart == null)
+        {
+            return 0f;
+        }
+
+        int sameTargetPartCount = 0;
+
+        foreach (ActionSlot existingSlot in context.battleManager.ActionManager.Slots)
+        {
+            if (existingSlot == null)
+                continue;
+
+            // 플레이어 슬롯은 AI 타겟 분산 계산에서 제외
+            if (existingSlot.Owner == context.Player)
+                continue;
+
+            if (existingSlot.TargetCharacter != candidate.TargetCharacter)
+                continue;
+
+            if (!IsSamePart(existingSlot.TargetPart, candidate.TargetPart))
+                continue;
+
+            sameTargetPartCount++;
+        }
+
+        // 아직 아무도 안 노린 부위면 보너스
+        if (sameTargetPartCount == 0)
+            return 80f;
+
+        // 이미 누가 노린 부위면 강한 감점
+        return -120f * sameTargetPartCount;
     }
 
     //--------------------------------------------------
@@ -309,8 +367,10 @@ public abstract class Enemy : Character
         if (targetPart == null)
             return false;
 
-        // 지금 네 기존 로직은 부서진 부위도 공격 가능하게 되어 있었음.
-        // 그래서 여기서는 broken도 허용함.
+        // 파괴된 부위는 더 이상 타겟팅하지 않음
+        if (targetPart.IsBroken)
+            return false;
+
         return true;
     }
 
@@ -384,5 +444,36 @@ public abstract class Enemy : Character
             ActionType.Duel         => ActionPhase.COMBAT,
             _                       => ActionPhase.COMBAT
         };
+    }
+    
+    protected bool HasClashSkill(BodyPart part)
+    {
+        if (part == null)
+            return false;
+
+        if (part.AvailableSkills == null)
+            return false;
+
+        foreach (Skill skill in part.AvailableSkills)
+        {
+            if (skill == null)
+                continue;
+
+            if (skill.CanClash)
+                return true;
+        }
+
+        return false;
+    }
+    
+    protected bool IsSamePart(BodyPart a, BodyPart b)
+    {
+        if (a == null || b == null)
+            return false;
+
+        if (a == b)
+            return true;
+
+        return a.Type == b.Type;
     }
 }

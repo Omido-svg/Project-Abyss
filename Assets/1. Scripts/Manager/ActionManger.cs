@@ -102,7 +102,6 @@ public class ActionManager
                 slots.RemoveAt(i);
         }
 
-        // 남아 있는 슬롯의 TargetSlot이 삭제된 슬롯을 가리킬 수 있으므로 초기화
         foreach (ActionSlot slot in slots)
         {
             if (slot == null)
@@ -141,6 +140,44 @@ public class ActionManager
         }
 
         return count;
+    }
+    
+    public void RemoveSlot(Character owner, BodyPart part)
+    {
+        if (owner == null || part == null)
+            return;
+
+        for (int i = slots.Count - 1; i >= 0; i--)
+        {
+            ActionSlot slot = slots[i];
+
+            if (slot == null)
+            {
+                slots.RemoveAt(i);
+                continue;
+            }
+
+            if (slot.Owner == owner &&
+                slot.Part == part)
+            {
+                slots.RemoveAt(i);
+            }
+        }
+
+        foreach (ActionSlot slot in slots)
+        {
+            if (slot == null)
+                continue;
+
+            if (slot.TargetSlot == null)
+                continue;
+
+            if (slot.TargetSlot.Owner == owner &&
+                slot.TargetSlot.Part == part)
+            {
+                slot.TargetSlot = null;
+            }
+        }
     }
 
     public List<ActionSlot> GetAllSlots()

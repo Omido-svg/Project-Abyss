@@ -29,7 +29,8 @@ public class Olaf : Character
                 {
                     new OlafNormalAttack(),
                     new OlafDuelSkill(),
-                    new OlafPreparationSkill()
+                    new OlafPreparationSkill(),
+                    new OlafPrestigeSkill()
                 }));
 
         bodyParts.Add(
@@ -39,7 +40,8 @@ public class Olaf : Character
                 new Skill[]
                 {
                     new OlafNormalAttack(),
-                    new OlafDuelSkill()
+                    new OlafDuelSkill(),
+                    new OlafPrestigeSkill()
                 }));
 
         bodyParts.Add(
@@ -49,7 +51,8 @@ public class Olaf : Character
                 new Skill[]
                 {
                     new OlafNormalAttack(),
-                    new OlafDuelSkill()
+                    new OlafDuelSkill(),
+                    new OlafPrestigeSkill()
                 }));
 
         bodyParts.Add(
@@ -58,7 +61,8 @@ public class Olaf : Character
                 50,
                 new Skill[]
                 {
-                    new OlafPreparationSkill()
+                    new OlafPreparationSkill(),
+                    new OlafPrestigeSkill()
                 }));
 
         //--------------------------------

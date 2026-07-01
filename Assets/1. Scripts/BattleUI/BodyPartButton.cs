@@ -1,12 +1,23 @@
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.EventSystems;
 
-public class BodyPartButton : MonoBehaviour
+public class BodyPartButton : MonoBehaviour, IPointerClickHandler
 {
     [SerializeField] private BattleUIManager uiManager;
     [SerializeField] private BattleManager battleManager;
     [SerializeField] private TMP_Text buttonText;
+    
+    [SerializeField] private Image buttonImage;
+    
+    [Header("Button Colors")]
+    [SerializeField] private Color ownerSelectedColor = new Color(0.25f, 0.65f, 1f, 1f);
+    [SerializeField] private Color targetSelectedColor = new Color(1f, 0.25f, 0.25f, 1f);
+    [SerializeField] private Color weakenedColor = new Color(1f, 0.85f, 0.1f, 1f);
+
+    private Color originalColor;
+    private bool originalColorSaved;
 
     private Character owner;
     private BodyPart bodyPart;
@@ -44,7 +55,6 @@ public class BodyPartButton : MonoBehaviour
         {
             buttonText.richText = true;
             buttonText.overflowMode = TMPro.TextOverflowModes.Overflow;
-            buttonText.enableWordWrapping = false;
         }
 
         if (battleManager == null)
@@ -52,6 +62,15 @@ public class BodyPartButton : MonoBehaviour
 
         if (uiManager == null)
             uiManager = FindFirstObjectByType<BattleUIManager>();
+            
+        if (buttonImage == null)
+            buttonImage = GetComponent<Image>();
+
+        if (buttonImage != null && !originalColorSaved)
+        {
+            originalColor = buttonImage.color;
+            originalColorSaved = true;
+        }
     }
 
     //--------------------------------------------------
@@ -83,27 +102,46 @@ public class BodyPartButton : MonoBehaviour
     {
         EnsureReferences();
 
-        if (buttonText == null)
-            return;
-
         if (owner == null || bodyPart == null)
         {
-            buttonText.text = "NULL";
+            if (buttonText != null)
+                buttonText.text = "NULL";
+
             return;
         }
+
+        // 캐릭터가 죽었거나 부위가 파괴되면 버튼 숨김
+        if (owner.IsDead || bodyPart.IsBroken)
+        {
+            gameObject.SetActive(false);
+            return;
+        }
+
+        if (!gameObject.activeSelf)
+            gameObject.SetActive(true);
+
+        if (buttonText == null)
+            return;
 
         buttonText.richText = true;
 
         string partName = bodyPart.Type.ToString();
         string speedText = GetSpeedText();
-        string skillName = GetDisplaySkillName();
-        string stateText = GetStateText();
+        string selectedSkillText = GetSelectedSkillText();
 
-        buttonText.text =
-            $"{partName}\n" +
-            $"{speedText}\n" +
-            $"{skillName}\n" +
-            $"{stateText}";
+        if (string.IsNullOrEmpty(selectedSkillText))
+        {
+            buttonText.text =
+                $"{partName}\n" +
+                $"{speedText}";
+        }
+        else
+        {
+            buttonText.text =
+                $"{partName}\n" +
+                $"{speedText}\n" +
+                $"{selectedSkillText}";
+        }
     }
     
     private string GetSpeedText()
@@ -130,35 +168,17 @@ public class BodyPartButton : MonoBehaviour
     }
 
     //--------------------------------------------------
-
-    private string GetDisplaySkillName()
+    private string GetSelectedSkillText()
     {
         ActionSlot slot = GetCurrentSlot();
 
-        if (slot != null && slot.Skill != null)
-            return slot.Skill.SkillName;
+        if (slot == null)
+            return "";
 
-        if (bodyPart.AvailableSkills != null &&
-            bodyPart.AvailableSkills.Count > 0 &&
-            bodyPart.AvailableSkills[0] != null)
-        {
-            return bodyPart.AvailableSkills[0].SkillName;
-        }
+        if (slot.Skill == null)
+            return "";
 
-        return "No Skill";
-    }
-
-    //--------------------------------------------------
-
-    private string GetStateText()
-    {
-        if (bodyPart.IsBroken)
-            return "[BROKEN]";
-
-        if (bodyPart.IsWeakened)
-            return "[WEAKENED]";
-
-        return $"HP {bodyPart.PartHP:0}/{bodyPart.MaxPartHP:0}";
+        return $"<color=#FFFFFF><b>{slot.Skill.SkillName}</b></color>";
     }
 
     //--------------------------------------------------
@@ -221,5 +241,59 @@ public class BodyPartButton : MonoBehaviour
         uiManager.OnBodyPartClicked(owner, bodyPart);
 
         Refresh();
+    }
+    
+    public void OnPointerClick(PointerEventData eventData)
+    {
+        EnsureReferences();
+
+        if (eventData.button != PointerEventData.InputButton.Right)
+            return;
+
+        if (uiManager == null)
+            return;
+
+        uiManager.OnBodyPartRightClicked(owner, bodyPart);
+    }
+    
+    public void SetNormalColor()
+    {
+        EnsureReferences();
+
+        if (buttonImage == null)
+            return;
+
+        if (bodyPart != null && bodyPart.IsWeakened)
+        {
+            buttonImage.color = weakenedColor;
+            return;
+        }
+
+        buttonImage.color = originalColor;
+    }
+
+    public void SetOwnerSelectedColor()
+    {
+        EnsureReferences();
+
+        if (buttonImage == null)
+            return;
+
+        buttonImage.color = ownerSelectedColor;
+    }
+
+    public void SetTargetSelectedColor()
+    {
+        EnsureReferences();
+
+        if (buttonImage == null)
+            return;
+
+        buttonImage.color = targetSelectedColor;
+    }
+    
+    public bool IsHiddenByBroken()
+    {
+        return bodyPart != null && bodyPart.IsBroken;
     }
 }
