@@ -4,6 +4,14 @@ using UnityEngine;
 public abstract class Enemy : Character
 {
     //--------------------------------------------------
+    // 기본 AI 정책
+    //--------------------------------------------------
+
+    protected virtual bool AllowPreparationSkillAI => false;
+
+    protected virtual bool RequireClashForCombatSkill => true;
+
+    //--------------------------------------------------
     // AI 행동 결정
     //--------------------------------------------------
 
@@ -23,30 +31,43 @@ public abstract class Enemy : Character
         if (BodyParts == null)
             return result;
 
-        Character target = ChooseTarget(context);
+        Character target =
+            ChooseTarget(context);
 
         if (target == null)
             return result;
 
-        bool prestigeSelectedThisTurn = false;
-
         foreach (BodyPart part in BodyParts)
         {
-            ActionSlot slot =
-                SelectBestSlotForPart(
-                    context,
-                    part,
-                    target,
-                    !prestigeSelectedThisTurn,
-                    out bool selectedPrestige);
-
-            if (slot == null)
+            if (part == null)
                 continue;
 
-            result.Add(slot);
+            if (!part.IsUsable)
+                continue;
 
-            if (selectedPrestige)
-                prestigeSelectedThisTurn = true;
+            int maxSlotCount =
+                GetMaxActionSlotsForPart(part);
+
+            if (maxSlotCount <= 0)
+                continue;
+
+            for (int actionIndex = 0;
+                 actionIndex < maxSlotCount;
+                 actionIndex++)
+            {
+                ActionSlot slot =
+                    SelectBestSlotForPart(
+                        context,
+                        part,
+                        target,
+                        actionIndex,
+                        result);
+
+                if (slot == null)
+                    continue;
+
+                result.Add(slot);
+            }
         }
 
         return result;
@@ -56,7 +77,8 @@ public abstract class Enemy : Character
     // 공격 대상 선택
     //--------------------------------------------------
 
-    protected virtual Character ChooseTarget(BattleContext context)
+    protected virtual Character ChooseTarget(
+        BattleContext context)
     {
         if (context == null)
             return null;
@@ -72,11 +94,9 @@ public abstract class Enemy : Character
         BattleContext context,
         BodyPart part,
         Character target,
-        bool allowPrestige,
-        out bool selectedPrestige)
+        int actionIndex,
+        List<ActionSlot> plannedSlots)
     {
-        selectedPrestige = false;
-
         if (context == null)
             return null;
 
@@ -103,24 +123,20 @@ public abstract class Enemy : Character
             part.AvailableSkills.Count == 0)
             return null;
 
-        List<ActionSlot> prestigeCandidates = new();
-        List<ActionSlot> normalCandidates = new();
+        List<ActionSlot> candidates = new();
 
         foreach (Skill skill in part.AvailableSkills)
         {
             if (skill == null)
                 continue;
 
-            if (!IsSkillUsable(part, skill))
-                continue;
-
-            if (skill.ActionType == ActionType.Prestige)
+            if (!IsSkillUsable(
+                    context,
+                    part,
+                    skill,
+                    plannedSlots))
             {
-                if (!allowPrestige)
-                    continue;
-
-                if (!IsPrestigeReady())
-                    continue;
+                continue;
             }
 
             foreach (BodyPart targetPart in target.BodyParts)
@@ -141,39 +157,27 @@ public abstract class Enemy : Character
                     TargetCharacter = target,
                     TargetPart = targetPart,
 
-                    Speed = context.battleManager.SpeedManager.GetSpeed(part),
+                    Speed =
+                        context.battleManager.SpeedManager.GetSpeed(part),
 
-                    Phase = CalculateActionPhase(skill)
+                    Phase = skill.DefaultPhase,
+
+                    TargetSlot = null,
+
+                    ActionIndex = actionIndex
                 };
 
-                if (skill.ActionType == ActionType.Prestige)
-                    prestigeCandidates.Add(slot);
-                else
-                    normalCandidates.Add(slot);
+                candidates.Add(slot);
             }
         }
 
-        // 1순위: 위세 게이지가 다 찼으면 Prestige 행동 중 최선 선택
-        if (allowPrestige &&
-            IsPrestigeReady() &&
-            prestigeCandidates.Count > 0)
-        {
-            selectedPrestige = true;
+        if (candidates.Count == 0)
+            return null;
 
-            return SelectHighestScoreSlot(
-                context,
-                prestigeCandidates);
-        }
-
-        // 2순위: 일반 전투 행동 중 최선 선택
-        if (normalCandidates.Count > 0)
-        {
-            return SelectHighestScoreSlot(
-                context,
-                normalCandidates);
-        }
-
-        return null;
+        return SelectHighestScoreSlot(
+            context,
+            candidates,
+            plannedSlots);
     }
 
     //--------------------------------------------------
@@ -182,11 +186,14 @@ public abstract class Enemy : Character
 
     protected ActionSlot SelectHighestScoreSlot(
         BattleContext context,
-        List<ActionSlot> candidates)
+        List<ActionSlot> candidates,
+        List<ActionSlot> plannedSlots)
     {
         if (candidates == null ||
             candidates.Count == 0)
+        {
             return null;
+        }
 
         ActionSlot bestSlot = null;
         float bestScore = float.MinValue;
@@ -196,7 +203,8 @@ public abstract class Enemy : Character
             float score =
                 ScoreSlot(
                     context,
-                    slot);
+                    slot,
+                    plannedSlots);
 
             if (score > bestScore)
             {
@@ -214,7 +222,8 @@ public abstract class Enemy : Character
 
     protected virtual float ScoreSlot(
         BattleContext context,
-        ActionSlot slot)
+        ActionSlot slot,
+        List<ActionSlot> plannedSlots)
     {
         if (slot == null)
             return float.MinValue;
@@ -234,8 +243,15 @@ public abstract class Enemy : Character
 
         float score = 0f;
 
+        //--------------------------------
         // 완전 고정 AI 방지용 랜덤성
+        //--------------------------------
+
         score += Random.Range(0f, 25f);
+
+        //--------------------------------
+        // 스킬 타입 가치
+        //--------------------------------
 
         switch (slot.Skill.ActionType)
         {
@@ -252,20 +268,52 @@ public abstract class Enemy : Character
                 break;
 
             case ActionType.Preparation:
-                score -= 10000f;
+                score += 40f;
                 break;
         }
+
+        //--------------------------------
+        // 합 가능 스킬 선호
+        //--------------------------------
 
         if (slot.Skill.CanClash)
             score += 30f;
 
+        //--------------------------------
+        // Phase 기반 가중치
+        //--------------------------------
+
+        if (slot.Phase == ActionPhase.COMBAT)
+            score += 15f;
+
+        if (slot.Phase == ActionPhase.FORESIGHT)
+            score += 10f;
+
+        if (slot.Phase == ActionPhase.PRETURN)
+            score += 5f;
+
+        //--------------------------------
         // 타겟 부위 자체 가치
-        score += ScoreTargetPart(slot.TargetPart);
+        //--------------------------------
 
+        score +=
+            ScoreTargetPart(
+                slot.TargetPart);
+
+        //--------------------------------
         // 여러 적이 같은 플레이어 부위를 몰빵하지 않도록 감점
-        score += ScoreTargetSpread(context, slot);
+        //--------------------------------
 
-        // 속도는 너무 크게 주면 특정 슬롯만 계속 좋아지므로 약하게만 반영
+        score +=
+            ScoreTargetSpread(
+                context,
+                slot,
+                plannedSlots);
+
+        //--------------------------------
+        // 속도는 약하게만 반영
+        //--------------------------------
+
         score += slot.Speed * 1.5f;
 
         return score;
@@ -275,7 +323,8 @@ public abstract class Enemy : Character
     // 타겟 부위 점수
     //--------------------------------------------------
 
-   protected virtual float ScoreTargetPart(BodyPart targetPart)
+    protected virtual float ScoreTargetPart(
+        BodyPart targetPart)
     {
         if (targetPart == null)
             return -10000f;
@@ -292,8 +341,7 @@ public abstract class Enemy : Character
         if (targetPart.IsWeakened)
             score += 20f;
 
-        // HP 낮은 부위 마무리 선호는 약하게만 준다
-        // 너무 크게 주면 계속 몰빵함
+        // HP 낮은 부위 마무리 선호는 약하게만
         if (targetPart.MaxPartHP > 0)
         {
             float hpRate =
@@ -311,18 +359,16 @@ public abstract class Enemy : Character
 
         return score;
     }
-    
+
+    //--------------------------------------------------
+    // 타겟 분산 점수
+    //--------------------------------------------------
+
     protected virtual float ScoreTargetSpread(
         BattleContext context,
-        ActionSlot candidate)
+        ActionSlot candidate,
+        List<ActionSlot> plannedSlots)
     {
-        if (context == null ||
-            context.battleManager == null ||
-            context.battleManager.ActionManager == null)
-        {
-            return 0f;
-        }
-
         if (candidate == null ||
             candidate.TargetCharacter == null ||
             candidate.TargetPart == null)
@@ -332,29 +378,65 @@ public abstract class Enemy : Character
 
         int sameTargetPartCount = 0;
 
-        foreach (ActionSlot existingSlot in context.battleManager.ActionManager.Slots)
+        //--------------------------------
+        // 이미 ActionManager에 들어간 슬롯 검사
+        //--------------------------------
+
+        if (context != null &&
+            context.battleManager != null &&
+            context.battleManager.ActionManager != null)
         {
-            if (existingSlot == null)
-                continue;
+            foreach (ActionSlot existingSlot in context.battleManager.ActionManager.Slots)
+            {
+                if (existingSlot == null)
+                    continue;
 
-            // 플레이어 슬롯은 AI 타겟 분산 계산에서 제외
-            if (existingSlot.Owner == context.Player)
-                continue;
+                // 플레이어 슬롯은 AI 타겟 분산 계산에서 제외
+                if (existingSlot.Owner == context.Player)
+                    continue;
 
-            if (existingSlot.TargetCharacter != candidate.TargetCharacter)
-                continue;
+                if (existingSlot.TargetCharacter != candidate.TargetCharacter)
+                    continue;
 
-            if (!IsSamePart(existingSlot.TargetPart, candidate.TargetPart))
-                continue;
+                if (!IsSamePart(
+                        existingSlot.TargetPart,
+                        candidate.TargetPart))
+                {
+                    continue;
+                }
 
-            sameTargetPartCount++;
+                sameTargetPartCount++;
+            }
         }
 
-        // 아직 아무도 안 노린 부위면 보너스
+        //--------------------------------
+        // 이번 DecideSlots에서 이미 계획한 슬롯 검사
+        //--------------------------------
+
+        if (plannedSlots != null)
+        {
+            foreach (ActionSlot plannedSlot in plannedSlots)
+            {
+                if (plannedSlot == null)
+                    continue;
+
+                if (plannedSlot.TargetCharacter != candidate.TargetCharacter)
+                    continue;
+
+                if (!IsSamePart(
+                        plannedSlot.TargetPart,
+                        candidate.TargetPart))
+                {
+                    continue;
+                }
+
+                sameTargetPartCount++;
+            }
+        }
+
         if (sameTargetPartCount == 0)
             return 80f;
 
-        // 이미 누가 노린 부위면 강한 감점
         return -120f * sameTargetPartCount;
     }
 
@@ -362,12 +444,12 @@ public abstract class Enemy : Character
     // 타겟 부위 선택 가능 여부
     //--------------------------------------------------
 
-    protected virtual bool IsTargetPartSelectable(BodyPart targetPart)
+    protected virtual bool IsTargetPartSelectable(
+        BodyPart targetPart)
     {
         if (targetPart == null)
             return false;
 
-        // 파괴된 부위는 더 이상 타겟팅하지 않음
         if (targetPart.IsBroken)
             return false;
 
@@ -379,8 +461,10 @@ public abstract class Enemy : Character
     //--------------------------------------------------
 
     protected virtual bool IsSkillUsable(
+        BattleContext context,
         BodyPart part,
-        Skill skill)
+        Skill skill,
+        List<ActionSlot> plannedSlots)
     {
         if (part == null)
             return false;
@@ -391,23 +475,68 @@ public abstract class Enemy : Character
         if (part.IsBroken)
             return false;
 
-        // 일반 Enemy는 도사림 / Preparation 사용 금지
-        if (skill.ActionType == ActionType.Preparation)
+        //--------------------------------
+        // AI 사용 가능 여부
+        //--------------------------------
+
+        if (!skill.CanAIUse(this, part, context))
             return false;
 
-        // Prestige는 위세 게이지가 다 찼을 때만 사용 가능
-        if (skill.ActionType == ActionType.Prestige)
+        //--------------------------------
+        // 기본 Enemy는 도사림 사용 금지
+        // 특수 Enemy는 AllowPreparationSkillAI override
+        //--------------------------------
+
+        if (!AllowPreparationSkillAI &&
+            skill.ActionType == ActionType.Preparation)
         {
-            if (!IsPrestigeReady())
-                return false;
+            return false;
         }
 
-        // Prestige가 아닌 일반 행동은 합 가능한 스킬만 허용
-        if (skill.ActionType != ActionType.Prestige)
+        //--------------------------------
+        // 자원 조건
+        // 기본 Prestige는 currentPrestige 확인
+        // 김삿갓 같은 특수 Prestige는 Skill override
+        //--------------------------------
+
+        if (!skill.CanUseByResource(this))
+            return false;
+
+        //--------------------------------
+        // Prestige 사용 횟수 정책
+        //--------------------------------
+
+        if (skill.ActionType == ActionType.Prestige)
         {
-            if (!skill.CanClash)
+            if (skill.PrestigeUsePolicy == PrestigeUsePolicy.None)
                 return false;
+
+            if (skill.PrestigeUsePolicy == PrestigeUsePolicy.OncePerTurn)
+            {
+                if (HasPrestigeSlotSelected(
+                        context,
+                        plannedSlots))
+                {
+                    return false;
+                }
+            }
         }
+
+        //--------------------------------
+        // 기본 Enemy는 COMBAT 비합 스킬 사용 제한
+        //--------------------------------
+
+        if (RequireClashForCombatSkill &&
+            skill.DefaultPhase == ActionPhase.COMBAT &&
+            skill.ActionType != ActionType.Prestige &&
+            !skill.CanClash)
+        {
+            return false;
+        }
+
+        //--------------------------------
+        // 캐릭터 / 상태이상 / 메커닉 사용 가능 여부
+        //--------------------------------
 
         if (!CanUseSkill(part, skill))
             return false;
@@ -416,37 +545,68 @@ public abstract class Enemy : Character
     }
 
     //--------------------------------------------------
-    // 위세 게이지 확인
+    // 위세 슬롯 이미 선택했는지 확인
     //--------------------------------------------------
 
-    protected bool IsPrestigeReady()
+    protected virtual bool HasPrestigeSlotSelected(
+        BattleContext context,
+        List<ActionSlot> plannedSlots)
     {
-        if (CurrentStatus.maxPrestige <= 0)
-            return false;
+        //--------------------------------
+        // 이번 AI 결정 중 이미 고른 슬롯
+        //--------------------------------
 
-        return RuntimeStatus.currentPrestige >= CurrentStatus.maxPrestige;
-    }
-
-    //--------------------------------------------------
-    // ActionPhase 계산
-    //--------------------------------------------------
-
-    protected ActionPhase CalculateActionPhase(Skill skill)
-    {
-        if (skill == null)
-            return ActionPhase.COMBAT;
-
-        return skill.ActionType switch
+        if (plannedSlots != null)
         {
-            ActionType.Prestige     => ActionPhase.PRETURN,
-            ActionType.Preparation  => ActionPhase.FORESIGHT,
-            ActionType.NormalAttack => ActionPhase.COMBAT,
-            ActionType.Duel         => ActionPhase.COMBAT,
-            _                       => ActionPhase.COMBAT
-        };
+            foreach (ActionSlot slot in plannedSlots)
+            {
+                if (slot == null)
+                    continue;
+
+                if (slot.Owner != this)
+                    continue;
+
+                if (slot.Skill == null)
+                    continue;
+
+                if (slot.Skill.ActionType == ActionType.Prestige)
+                    return true;
+            }
+        }
+
+        //--------------------------------
+        // 이미 ActionManager에 들어간 슬롯
+        //--------------------------------
+
+        if (context != null &&
+            context.battleManager != null &&
+            context.battleManager.ActionManager != null)
+        {
+            foreach (ActionSlot slot in context.battleManager.ActionManager.Slots)
+            {
+                if (slot == null)
+                    continue;
+
+                if (slot.Owner != this)
+                    continue;
+
+                if (slot.Skill == null)
+                    continue;
+
+                if (slot.Skill.ActionType == ActionType.Prestige)
+                    return true;
+            }
+        }
+
+        return false;
     }
-    
-    protected bool HasClashSkill(BodyPart part)
+
+    //--------------------------------------------------
+    // 합 가능 스킬 보유 여부
+    //--------------------------------------------------
+
+    protected bool HasClashSkill(
+        BodyPart part)
     {
         if (part == null)
             return false;
@@ -465,8 +625,14 @@ public abstract class Enemy : Character
 
         return false;
     }
-    
-    protected bool IsSamePart(BodyPart a, BodyPart b)
+
+    //--------------------------------------------------
+    // 같은 부위인지 확인
+    //--------------------------------------------------
+
+    protected bool IsSamePart(
+        BodyPart a,
+        BodyPart b)
     {
         if (a == null || b == null)
             return false;

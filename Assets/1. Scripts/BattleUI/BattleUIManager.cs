@@ -412,13 +412,14 @@ public class BattleUIManager : MonoBehaviour
 
         if (skill.ActionType == ActionType.Prestige)
         {
-            // 1. 위세 게이지가 다 차야 함
             if (!IsPrestigeReady(selectedOwner))
                 return false;
 
-            // 2. 이번 턴에 이미 다른 부위가 위세를 선택했으면 불가능
-            if (HasPrestigeSlotSelected(selectedOwner, part))
-                return false;
+            if (skill.PrestigeUsePolicy == PrestigeUsePolicy.OncePerTurn)
+            {
+                if (HasPrestigeSlotSelected(selectedOwner))
+                    return false;
+            }
         }
 
         return true;
@@ -511,7 +512,7 @@ public class BattleUIManager : MonoBehaviour
 
             Speed = battleManager.SpeedManager.GetSpeed(selectedOwnerPart),
 
-            Phase = CalculatePhase(skill.ActionType),
+            Phase = skill.DefaultPhase,
 
             TargetSlot = null
         };

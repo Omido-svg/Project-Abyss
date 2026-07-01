@@ -2,12 +2,14 @@ using UnityEngine;
 
 public class DamageManager
 {
+    private readonly BattleContext battleContext;
     private readonly MomentumManager momentumManager;
 
     public DamageManager(
         BattleContext battleContext,
         MomentumManager momentumManager)
     {
+        this.battleContext = battleContext;
         this.momentumManager = momentumManager;
     }
 
@@ -18,51 +20,88 @@ public class DamageManager
         if (!IsValidAction(action))
             return 0;
 
-        //------------------------------------
-        // 아직 위력 굴림이 안 되어 있으면 굴림
-        //------------------------------------
+        int rawDamage =
+            CalculateDamage(action);
 
-        if (!action.HasRolled)
+        DamageContext context = new DamageContext
         {
-            action.RolledPower = action.RollPower();
-            action.finalPower = action.RolledPower;
-            action.HasRolled = true;
-        }
-        else
+            Action = action,
+
+            Attacker = action.Owner,
+            Target = action.Target,
+
+            TargetPart = action.TargetPart,
+
+            RawDamage = rawDamage,
+            ModifiedDamage = rawDamage,
+            FinalDamage = rawDamage,
+
+            CanBreakPart = ShouldBreakPart(action)
+        };
+
+        //--------------------------------
+        // 공격자 쪽 데미지 보정
+        //--------------------------------
+
+        if (action.Owner.Mechanics != null)
         {
-            // 이미 굴린 값이 있는데 finalPower가 비어 있으면 보정
-            if (action.finalPower == 0)
-                action.finalPower = action.RolledPower;
+            foreach (CombatMechanic mechanic in action.Owner.Mechanics)
+            {
+                if (mechanic == null)
+                    continue;
+
+                context.ModifiedDamage =
+                    mechanic.ModifyDamageDealt(
+                        context,
+                        context.ModifiedDamage);
+            }
         }
 
-        //------------------------------------
-        // 데미지 계산
-        //------------------------------------
+        //--------------------------------
+        // 피격자 쪽 데미지 보정
+        //--------------------------------
 
-        int damage = CalculateDamage(action);
+        if (action.Target.Mechanics != null)
+        {
+            foreach (CombatMechanic mechanic in action.Target.Mechanics)
+            {
+                if (mechanic == null)
+                    continue;
 
-        Debug.Log(
-            $"{action.Owner.Data.CharacterName}의 {action.OwnerPart.Type}가 " +
-            $"{action.Target.Data.CharacterName}의 {action.TargetPart.Type} 부위에 " +
-            $"{damage}만큼의 피해를 줌");
+                context.ModifiedDamage =
+                    mechanic.ModifyDamageTaken(
+                        context,
+                        context.ModifiedDamage);
+            }
+        }
 
-        //------------------------------------
-        // 짓눌림 여부
-        //------------------------------------
+        context.FinalDamage =
+            Mathf.Max(0, context.ModifiedDamage);
 
-        bool canBreakPart =
-            momentumManager.IsOverwhelm(action.Owner);
+        //--------------------------------
+        // 최종 피해 적용
+        //--------------------------------
 
-        //------------------------------------
-        // 실제 피해 적용
-        //------------------------------------
+        if (context.FinalDamage > 0)
+        {
+            action.Target.TakeDamage(
+                action.TargetPart,
+                context.FinalDamage,
+                context.CanBreakPart);
+        }
 
-        action.Target.TakeDamage(
-            action.TargetPart,
-            damage,
-            canBreakPart);
+        //--------------------------------
+        // 데미지 처리 완료 이벤트
+        //--------------------------------
 
-        return damage;
+        if (battleContext != null &&
+            battleContext._battleEvent != null)
+        {
+            battleContext._battleEvent.RaiseDamageResolved(
+                context);
+        }
+
+        return context.FinalDamage;
     }
 
     //------------------------------------------------
@@ -106,16 +145,32 @@ public class DamageManager
 
     private int CalculateDamage(BattleAction action)
     {
+        if (action == null)
+            return 0;
+
+        float skillMultiplier =
+            GetSkillMultiplier(action);
+
+        // 도사림 / 위세처럼 스킬 Execute에서 직접 처리하는 스킬은
+        // DamageManager 자동 피해를 주지 않음
+        if (skillMultiplier <= 0f)
+            return 0;
+
         float damage = action.RolledPower;
 
         damage *= action.Owner.CurrentStatus.damageMultiplier;
 
-        // 기세 배율은 공격자 기준으로 한 번만 적용
-        damage *= momentumManager.GetDamageMultiplier(action.Owner);
+        if (momentumManager != null)
+        {
+            damage *= momentumManager.GetDamageMultiplier(
+                action.Owner);
+        }
 
-        damage *= GetSkillMultiplier(action);
+        damage *= skillMultiplier;
 
-        damage = ApplyDefense(action, damage);
+        damage = ApplyDefense(
+            action,
+            damage);
 
         damage = Mathf.Max(1f, damage);
 
@@ -128,6 +183,9 @@ public class DamageManager
 
     private float GetSkillMultiplier(BattleAction action)
     {
+        if (action == null)
+            return 0f;
+
         switch (action.ActionType)
         {
             case ActionType.Prestige:
@@ -148,6 +206,30 @@ public class DamageManager
     }
 
     //------------------------------------------------
+    // 부위 파괴 가능 여부
+    //------------------------------------------------
+
+    private bool ShouldBreakPart(BattleAction action)
+    {
+        if (action == null)
+            return false;
+
+        if (action.Skill == null)
+            return false;
+
+        if (action.ActionType == ActionType.Prestige)
+            return true;
+
+        if (momentumManager == null)
+            return false;
+
+        // 기본 전투 룰:
+        // 짓눌림 상태에서만 일반 피해가 약화 부위를 파괴 가능
+        return momentumManager.IsOverwhelm(
+            action.Owner);
+    }
+
+    //------------------------------------------------
     // 방어도
     //------------------------------------------------
 
@@ -155,7 +237,19 @@ public class DamageManager
         BattleAction action,
         float damage)
     {
-        RuntimeStatus runtime = action.Target.RuntimeStatus;
+        if (action == null)
+            return damage;
+
+        if (action.Target == null ||
+            action.Target.RuntimeStatus == null)
+            return damage;
+
+        if (action.Owner == null ||
+            action.Owner.CurrentStatus == null)
+            return damage;
+
+        RuntimeStatus runtime =
+            action.Target.RuntimeStatus;
 
         float ignore =
             Mathf.Clamp01(

@@ -9,21 +9,28 @@ public class OlafDuelSkill : DuelSkill
         Resolver = new CoinResolver(3);
     }
 
-    public override void Execute(BattleAction action)
+    public override int GetMomentumPushBonus(
+        BattleAction action)
     {
         if (action == null)
-            return;
+            return 0;
 
-        if (action.Target == null)
-            return;
+        if (action.Owner == null)
+            return 0;
 
-        // 결투 자체 데미지는 DamageManager에서 처리
-        // 합 승리 시 위세 획득도 ClashManager / MomentumManager에서 처리
+        OlafMadnessMechanic madness =
+            action.Owner.GetMechanic<OlafMadnessMechanic>();
 
-        // 결투 성공 후 추가 효과를 넣고 싶으면 여기
-        // 예: 출혈 1 추가
-        action.Target.AddStatus(
-            new Bleeding(1),
-            action.Owner);
+        if (madness == null)
+            return 0;
+
+        return madness.GetDuelPushBonus();
+    }
+
+    public override void Execute(BattleAction action)
+    {
+        // 결투 승리 / 패배 효과는 OlafMadnessMechanic에서 처리한다.
+        // - OnClashWin  : 출혈 부여 + 출혈 폭발 검사
+        // - OnClashLose : 광기 +2
     }
 }

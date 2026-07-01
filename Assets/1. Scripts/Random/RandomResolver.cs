@@ -1,21 +1,21 @@
 public abstract class RandomResolver
 {
-    // 최소값
     public abstract int MinValue { get; }
-
-    // 최대값
     public abstract int MaxValue { get; }
 
-    //--------------------------------
-
-    // 실제 굴림
-    public abstract int Roll();
-
-    //--------------------------------
-
-    // UI 표시용
-    public virtual string GetRangeText()
+    public virtual RollResult RollResult(Skill skill)
     {
-        return $"{MinValue} ~ {MaxValue}";
+        int raw = Roll();
+
+        return new RollResult
+        {
+            RawValue = raw,
+            ModifiedValue = raw,
+            FinalPower = skill.BasePower + raw,
+            IsMax = raw >= MaxValue,
+            IsCritical = raw >= MaxValue
+        };
     }
+
+    public abstract int Roll();
 }

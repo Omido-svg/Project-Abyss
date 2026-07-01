@@ -197,7 +197,8 @@ public class MomentumManager
 
     public bool ApplyClashResult(
         Character winner,
-        int clashGap)
+        int clashGap,
+        int bonusShift = 0)
     {
         if (winner == null)
             return false;
@@ -207,6 +208,8 @@ public class MomentumManager
 
         int shift =
             CalculateMomentumShift(clashGap);
+
+        shift += Mathf.Max(0, bonusShift);
 
         if (shift <= 0)
             return false;
@@ -236,7 +239,7 @@ public class MomentumManager
             GetState(winner);
 
         return before != MomentumState.Overwhelm &&
-               after == MomentumState.Overwhelm;
+            after == MomentumState.Overwhelm;
     }
 
     //------------------------------------------------

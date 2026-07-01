@@ -160,4 +160,19 @@ public class BattleEvent
     {
         OnKill?.Invoke(killer, victim);
     }
+    
+    
+    public event Action<ClashResultContext> OnClashResolved;
+
+    public void RaiseClashResolved(ClashResultContext context)
+    {
+        OnClashResolved?.Invoke(context);
+    }
+    
+    public event System.Action<DamageContext> OnDamageResolved;
+
+    public void RaiseDamageResolved(DamageContext context)
+    {
+        OnDamageResolved?.Invoke(context);
+    }
 }

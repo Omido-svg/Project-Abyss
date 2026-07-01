@@ -1,3 +1,5 @@
+using UnityEngine;
+
 public class EnemyPrestigeSkill : PrestigeSkill
 {
     public EnemyPrestigeSkill()
@@ -14,22 +16,39 @@ public class EnemyPrestigeSkill : PrestigeSkill
         if (action == null)
             return;
 
+        if (action.Owner == null)
+            return;
+
         if (action.Target == null)
             return;
 
         if (action.TargetPart == null)
             return;
 
+        bool wasDead =
+            action.Target.IsDead;
+
+        int beforePartHP =
+            Mathf.RoundToInt(
+                action.TargetPart.PartHP);
+
         //--------------------------------
-        // 위세 스킬은 특수 필살기라 직접 피해 처리
+        // 위세 직접 피해
         //--------------------------------
 
-        int damage = action.RollPower();
+        int damage =
+            GetRolledPower(action);
 
-        action.Target.TakeDamage(
-            action.TargetPart,
-            damage,
-            true);
+        if (damage > 0)
+        {
+            action.Target.TakeDamage(
+                action.TargetPart,
+                damage,
+                true);
+
+            Debug.Log(
+                $"{action.Owner.Data.CharacterName} 위세 피해 : {damage}");
+        }
 
         //--------------------------------
         // 추가 효과: 출혈 + 화상
@@ -43,13 +62,69 @@ public class EnemyPrestigeSkill : PrestigeSkill
             new Burn(1),
             action.Owner);
 
+        Debug.Log(
+            $"{action.Owner.Data.CharacterName} 위세 효과 : 출혈 2, 화상 1 부여");
+
         //--------------------------------
-        // 약화 부위라면 파괴 시도
+        // 약화 부위라면 파괴
         //--------------------------------
 
-        if (action.TargetPart.IsWeakened)
+        if (action.TargetPart.IsWeakened &&
+            !action.TargetPart.IsBroken)
         {
-            action.Target.BreakPart(action.TargetPart);
+            action.Target.ForceBreakPart(
+                action.TargetPart);
+
+            Debug.Log(
+                $"{action.Target.Data.CharacterName} {action.TargetPart.Type} 약화 부위 파괴");
         }
+
+        //--------------------------------
+        // 로그용 데미지 기록
+        //--------------------------------
+
+        int afterPartHP =
+            Mathf.RoundToInt(
+                action.TargetPart.PartHP);
+
+        action.SetDamageLog(
+            damage,
+            beforePartHP,
+            afterPartHP);
+
+        //--------------------------------
+        // 처치 이벤트
+        //--------------------------------
+
+        if (!wasDead && action.Target.IsDead)
+        {
+            battleEvent?.RaiseKill(
+                action.Owner,
+                action.Target);
+        }
+    }
+
+    private int GetRolledPower(
+        BattleAction action)
+    {
+        if (action == null)
+            return 0;
+
+        if (!action.HasRolled)
+        {
+            int power =
+                action.RollPower();
+
+            action.RolledPower = power;
+            action.finalPower = power;
+            action.HasRolled = true;
+
+            return power;
+        }
+
+        if (action.finalPower > 0)
+            return action.finalPower;
+
+        return action.RolledPower;
     }
 }

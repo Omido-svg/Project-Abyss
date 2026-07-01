@@ -8,13 +8,17 @@ public class EliteEnemy : Enemy
     public override IReadOnlyList<BodyPart> BodyParts => bodyParts;
 
     //--------------------------------
+    // EliteEnemy는 도사림 사용 허용
+    //--------------------------------
 
-    public override void Initialize(BattleEvent battleEvent)
+    protected override bool AllowPreparationSkillAI => true;
+
+    //--------------------------------
+    // 부위 구성
+    //--------------------------------
+
+    protected override void BuildBodyParts()
     {
-        //--------------------------------
-        // 1. 부위 먼저 생성
-        //--------------------------------
-
         bodyParts.Clear();
 
         bodyParts.Add(
@@ -57,18 +61,22 @@ public class EliteEnemy : Enemy
                 {
                     new ElitePreparationSkill()
                 }));
-
-        //--------------------------------
-        // 2. Character 기본 초기화
-        //--------------------------------
-
-        base.Initialize(battleEvent);
-
-        passive = new EliteEnemyPassive();
-        passive.Initialize(this, battleEvent);
-        passive.Register();
     }
 
+    //--------------------------------
+    // 메커닉 구성
+    //--------------------------------
+
+    protected override void BuildMechanics()
+    {
+        base.BuildMechanics();
+
+        AddMechanic(
+            new EliteEnemyMechanic());
+    }
+
+    //--------------------------------
+    // 약화 디버프
     //--------------------------------
 
     protected override StatusEffect CreateDisabledDebuff(
@@ -87,6 +95,8 @@ public class EliteEnemy : Enemy
         };
     }
 
+    //--------------------------------
+    // 파괴 디버프
     //--------------------------------
 
     protected override StatusEffect CreateBrokenPartStatus(
@@ -109,10 +119,10 @@ public class EliteEnemy : Enemy
 
     public override void Die()
     {
-        passive?.Unregister();
-
         base.Die();
 
-        Debug.Log($"{Data.CharacterName} 사망");
+        // CombatMechanic 해제는 Character 쪽에서
+        // 일괄 처리하는 구조로 가는 게 좋음.
+        // 여기서는 엘리트 전용 사망 연출이 필요할 때만 추가.
     }
 }

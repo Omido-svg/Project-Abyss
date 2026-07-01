@@ -18,6 +18,9 @@ public class ActionResolver
 
     public void Resolve(ActionExecutionQueue executionQueue)
     {
+        if (executionQueue == null)
+            return;
+
         ResolveQueue(executionQueue.PrestigeQueue);
 
         ResolveQueue(executionQueue.AmbushQueue);
@@ -29,6 +32,9 @@ public class ActionResolver
 
     private void ResolveQueue(Queue<ActionSlot> queue)
     {
+        if (queue == null)
+            return;
+
         while (queue.Count > 0)
         {
             ActionSlot slot = queue.Dequeue();
@@ -36,11 +42,17 @@ public class ActionResolver
             if (!IsValidSlot(slot))
                 continue;
 
-            BattleAction action = CreateBattleAction(slot);
+            BattleAction action =
+                CreateBattleAction(slot);
 
-            battleContext._battleEvent.RaiseActionStart(action);
+            battleContext._battleEvent.RaiseActionStart(
+                action);
 
-            action.Skill.Execute(action);
+            //--------------------------------
+            // 스킬 실행 + 자원 소모
+            //--------------------------------
+
+            ExecuteSkill(action);
 
             BattleLogType type = action.Phase switch
             {
@@ -69,8 +81,27 @@ public class ActionResolver
                     type);
             }
 
-            battleContext._battleEvent.RaiseActionEnd(action);
+            battleContext._battleEvent.RaiseActionEnd(
+                action);
         }
+    }
+
+    //------------------------------------------------
+    // 공통 스킬 실행
+    //------------------------------------------------
+
+    private void ExecuteSkill(BattleAction action)
+    {
+        if (action == null)
+            return;
+
+        if (action.Skill == null)
+            return;
+
+        action.Skill.Execute(action);
+
+        action.Skill.ConsumeResource(
+            action.Owner);
     }
 
     //------------------------------------------------

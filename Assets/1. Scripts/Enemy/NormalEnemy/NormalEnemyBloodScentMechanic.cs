@@ -1,19 +1,22 @@
 using UnityEngine;
 
-public class NormalEnemyPassive : Passive
+public class NormalEnemyBloodScentMechanic : CombatMechanic
 {
-    public NormalEnemyPassive()
-    {
-        PassiveName = "피 냄새";
-    }
+    public override string MechanicName => "피 냄새";
 
-    protected override void OnRegister()
+    public override void OnRegister()
     {
+        if (battleEvent == null)
+            return;
+
         battleEvent.OnClashWin += OnClashWin;
     }
 
-    protected override void OnUnregister()
+    public override void OnUnregister()
     {
+        if (battleEvent == null)
+            return;
+
         battleEvent.OnClashWin -= OnClashWin;
     }
 
@@ -34,7 +37,8 @@ public class NormalEnemyPassive : Passive
             return;
 
         //--------------------------------
-        // 일반몹 패시브: 합 승리 시 출혈 1 부여
+        // 일반몹 메커닉:
+        // 합 승리 시 대상에게 출혈 1 부여
         //--------------------------------
 
         winnerAction.Target.AddStatus(
@@ -42,6 +46,6 @@ public class NormalEnemyPassive : Passive
             owner);
 
         Debug.Log(
-            $"{owner.Data.CharacterName} 패시브 발동 : 피 냄새");
+            $"{owner.Data.CharacterName} 메커닉 발동 : {MechanicName}");
     }
 }

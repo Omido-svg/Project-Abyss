@@ -6,9 +6,9 @@ public class OlafPreparationSkill : PreparationSkill
     {
         SkillName = "광기의 난도질(도사림)";
 
-        BasePower = 12;
+        BasePower = 0;
 
-        Resolver = new CoinResolver(2);
+        Resolver = new CoinResolver(0);
     }
 
     public override void Execute(BattleAction action)
@@ -19,63 +19,67 @@ public class OlafPreparationSkill : PreparationSkill
         if (action.Owner == null)
             return;
 
-        if (action.Target == null)
+        BodyPart lowestPart =
+            FindLowestHpUsablePart(
+                action.Owner);
+
+        if (lowestPart == null)
+        {
+            Debug.Log("도사림 실패 : 파괴할 수 있는 부위가 없습니다.");
             return;
+        }
 
-        if (action.TargetPart == null)
-            return;
+        Debug.Log(
+            $"{action.Owner.Data.CharacterName} 도사림 : " +
+            $"{lowestPart.Type} 부위 파괴");
 
-        //--------------------------------
-        // 위력 굴림
-        //--------------------------------
+        action.Owner.ForceBreakPart(
+            lowestPart);
+    }
 
-        int power = action.RollPower();
+    private BodyPart FindLowestHpUsablePart(
+        Character owner)
+    {
+        if (owner == null)
+            return null;
 
-        action.RolledPower = power;
-        action.finalPower = power;
-        action.HasRolled = true;
+        BodyPart result = null;
 
-        //--------------------------------
-        // 대상 피해 기록
-        //--------------------------------
+        int aliveCount = 0;
 
-        int beforeHP =
-            Mathf.RoundToInt(action.TargetPart.PartHP);
+        foreach (BodyPart part in owner.BodyParts)
+        {
+            if (part == null)
+                continue;
 
-        action.Target.TakeDamage(
-            action.TargetPart,
-            power,
-            false);
+            if (part.IsBroken)
+                continue;
 
-        int afterHP =
-            Mathf.RoundToInt(action.TargetPart.PartHP);
+            aliveCount++;
+        }
 
-        action.SetDamageLog(
-            power,
-            beforeHP,
-            afterHP);
+        // 마지막 1부위만 남았을 때는 도사림으로 자살하지 않게 막음
+        if (aliveCount <= 1)
+            return null;
 
-        //--------------------------------
-        // 추가 효과
-        //--------------------------------
+        foreach (BodyPart part in owner.BodyParts)
+        {
+            if (part == null)
+                continue;
 
-        action.Target.AddStatus(
-            new Bleeding(2),
-            action.Owner);
+            if (part.IsBroken)
+                continue;
 
-        //--------------------------------
-        // 자신의 랜덤 부위 피해
-        //--------------------------------
+            if (result == null)
+            {
+                result = part;
+                continue;
+            }
 
-        BodyPart randomPart =
-            action.Owner.GetRandomUsablePart();
+            if (part.PartHP < result.PartHP)
+                result = part;
+        }
 
-        if (randomPart == null)
-            return;
-
-        action.Owner.TakeDamage(
-            randomPart,
-            5,
-            false);
+        return result;
     }
 }

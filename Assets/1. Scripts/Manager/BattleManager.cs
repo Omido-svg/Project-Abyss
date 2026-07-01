@@ -11,7 +11,7 @@ public class BattleManager : MonoBehaviour
     [Header("Buttons")]
     [SerializeField] private List<BodyPartButton> playerButtons = new();
     [SerializeField] private List<BodyPartButton> enemyButtons = new();
-    
+
     [Header("BattleUIManager")]
     [SerializeField] private BattleUIManager battleUIManager;
 
@@ -42,14 +42,17 @@ public class BattleManager : MonoBehaviour
     private void Awake()
     {
         InitializeContext();
-        InitializeCharacters();
+
+        if (battleUIManager == null)
+            battleUIManager = FindFirstObjectByType<BattleUIManager>();
+
         CreateManagers();
+
+        InitializeCharacters();
+
         BindButtons();
 
         SelectedCharacter = player;
-        
-        if (battleUIManager == null)
-            battleUIManager = FindFirstObjectByType<BattleUIManager>();
 
         Debug.Log("===== Battle Ready =====");
     }
@@ -79,26 +82,14 @@ public class BattleManager : MonoBehaviour
             BattleContext.AllCharacters.Add(player);
 
         if (enemies != null)
-            BattleContext.AllCharacters.AddRange(enemies);
-    }
-
-    //------------------------------------------------
-
-    private void InitializeCharacters()
-    {
-        if (player != null)
         {
-            player.Initialize(BattleContext._battleEvent);
-            player.ForceRecalculateHP();
-        }
+            foreach (Character enemy in enemies)
+            {
+                if (enemy == null)
+                    continue;
 
-        foreach (Character enemy in enemies)
-        {
-            if (enemy == null)
-                continue;
-
-            enemy.Initialize(BattleContext._battleEvent);
-            enemy.ForceRecalculateHP();
+                BattleContext.AllCharacters.Add(enemy);
+            }
         }
     }
 
@@ -108,9 +99,13 @@ public class BattleManager : MonoBehaviour
     {
         BattleLogger = new BattleLogger();
 
-        MomentumManager = new MomentumManager(BattleContext);
+        ActionManager = new ActionManager();
 
-        SpeedManager = new SpeedManager(BattleContext);
+        MomentumManager = new MomentumManager(
+            BattleContext);
+
+        SpeedManager = new SpeedManager(
+            BattleContext);
 
         damageManager = new DamageManager(
             BattleContext,
@@ -124,8 +119,6 @@ public class BattleManager : MonoBehaviour
         actionResolver = new ActionResolver(
             BattleContext,
             clashManager);
-
-        ActionManager = new ActionManager();
 
         clashBuilder = new ClashBuilder();
 
@@ -141,6 +134,29 @@ public class BattleManager : MonoBehaviour
             actionResolver,
             MomentumManager,
             clashBuilder);
+    }
+
+    //------------------------------------------------
+
+    private void InitializeCharacters()
+    {
+        if (player != null)
+        {
+            player.Initialize(BattleContext);
+            player.ForceRecalculateHP();
+        }
+
+        if (enemies == null)
+            return;
+
+        foreach (Character enemy in enemies)
+        {
+            if (enemy == null)
+                continue;
+
+            enemy.Initialize(BattleContext);
+            enemy.ForceRecalculateHP();
+        }
     }
 
     //------------------------------------------------
@@ -219,12 +235,18 @@ public class BattleManager : MonoBehaviour
         }
 
         TurnManager.StartBattle();
+
+        if (battleUIManager != null)
+            battleUIManager.RefreshAllBodyPartButtons();
     }
 
     //------------------------------------------------
 
     public void NextTurn()
     {
+        if (TurnManager == null)
+            return;
+
         if (ActionManager == null ||
             BattleContext == null ||
             BattleContext.Player == null)
@@ -233,7 +255,8 @@ public class BattleManager : MonoBehaviour
         }
 
         int playerSlotCount =
-            ActionManager.CountSlots(BattleContext.Player);
+            ActionManager.CountSlots(
+                BattleContext.Player);
 
         if (playerSlotCount <= 0)
         {
@@ -241,12 +264,14 @@ public class BattleManager : MonoBehaviour
                 "플레이어 ActionSlot이 하나도 없습니다. " +
                 "최소 하나 이상의 행동을 선택해야 턴을 진행할 수 있습니다.");
 
-            ActionManager.PrintSlots("NEXT TURN BLOCKED - CURRENT SLOTS");
+            ActionManager.PrintSlots(
+                "NEXT TURN BLOCKED - CURRENT SLOTS");
 
             return;
         }
 
-        ActionManager.PrintSlots("BEFORE RESOLVE");
+        ActionManager.PrintSlots(
+            "BEFORE RESOLVE");
 
         TurnManager.ResolveTurn();
 
@@ -269,8 +294,6 @@ public class BattleManager : MonoBehaviour
             EndBattle();
             return;
         }
-
-        TurnManager.NextTurn();
     }
 
     //------------------------------------------------
@@ -290,6 +313,9 @@ public class BattleManager : MonoBehaviour
             BattleContext.Player);
 
         Debug.Log("[BATTLE] Player actions reset.");
+
+        if (battleUIManager != null)
+            battleUIManager.RefreshAllBodyPartButtons();
     }
 
     //------------------------------------------------
@@ -303,6 +329,10 @@ public class BattleManager : MonoBehaviour
             return true;
 
         if (BattleContext.Player.IsDead)
+            return true;
+
+        if (BattleContext.Enemies == null ||
+            BattleContext.Enemies.Count == 0)
             return true;
 
         foreach (Character enemy in BattleContext.Enemies)
@@ -324,6 +354,30 @@ public class BattleManager : MonoBehaviour
         if (TurnManager != null)
             TurnManager.EndBattle();
 
+        CleanupCharacters();
+
+        if (battleUIManager != null)
+            battleUIManager.RefreshAllBodyPartButtons();
+
         Debug.Log("===== Battle End =====");
+    }
+
+    //------------------------------------------------
+
+    private void CleanupCharacters()
+    {
+        if (BattleContext == null ||
+            BattleContext.AllCharacters == null)
+        {
+            return;
+        }
+
+        foreach (Character character in BattleContext.AllCharacters)
+        {
+            if (character == null)
+                continue;
+
+            character.UnregisterMechanics();
+        }
     }
 }

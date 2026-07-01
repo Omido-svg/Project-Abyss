@@ -26,7 +26,13 @@ public abstract class Character : MonoBehaviour
 
     public RuntimeStatus RuntimeStatus { get; protected set; }
 
-    protected Passive passive;
+    protected BattleContext battleContext;
+
+    protected readonly List<CombatMechanic> mechanics = new();
+
+    public IReadOnlyList<CombatMechanic> Mechanics => mechanics;
+
+    public CombatResourceBank Resources { get; private set; }
 
     public bool IsDead { get; protected set; }
 
@@ -44,14 +50,31 @@ public abstract class Character : MonoBehaviour
 
     //------------------------------------------------
 
-    public virtual void Initialize(BattleEvent battleEvent)
+    public virtual void Initialize(BattleContext context)
     {
-        this.battleEvent = battleEvent;
+        if (context == null)
+        {
+            Debug.LogWarning($"{GetType().Name} Initialize 실패 : BattleContext가 null입니다.");
+            return;
+        }
+
+        battleContext = context;
+        battleEvent = context._battleEvent;
 
         IsDead = false;
 
+        Resources = new CombatResourceBank();
+
+        mechanics.Clear();
+
         //--------------------------------
-        // BodyPart 초기화
+        // 1. 캐릭터별 부위 생성
+        //--------------------------------
+
+        BuildBodyParts();
+
+        //--------------------------------
+        // 2. BodyPart / Skill 초기화
         //--------------------------------
 
         foreach (BodyPart part in BodyParts)
@@ -70,14 +93,84 @@ public abstract class Character : MonoBehaviour
             }
         }
 
+        //--------------------------------
+        // 3. 기본 스탯 계산
+        //--------------------------------
+
         RecalculateStatus();
 
         RuntimeStatus = new RuntimeStatus(CurrentStatus);
-
         RuntimeStatus.currentHP = CalculateInitialHP();
+
+        //--------------------------------
+        // 4. 캐릭터별 메커닉 생성
+        //--------------------------------
+
+        BuildMechanics();
+
+        //--------------------------------
+        // 5. 메커닉 초기화 / 등록
+        //--------------------------------
+
+        foreach (CombatMechanic mechanic in mechanics)
+        {
+            if (mechanic == null)
+                continue;
+
+            mechanic.Initialize(this, battleContext);
+            mechanic.Register();
+        }
+    }
+    
+    public virtual void UnregisterMechanics()
+    {
+        foreach (CombatMechanic mechanic in mechanics)
+        {
+            if (mechanic == null)
+                continue;
+
+            mechanic.Unregister();
+        }
+    }
+    protected abstract void BuildBodyParts();
+
+    protected virtual void BuildMechanics()
+    {
+    }
+    
+    protected void AddMechanic(CombatMechanic mechanic)
+    {
+        if (mechanic == null)
+            return;
+
+        mechanics.Add(mechanic);
     }
 
     //------------------------------------------------
+    
+    public virtual int GetMaxActionSlotsForPart(BodyPart part)
+    {
+        if (part == null)
+            return 0;
+
+        if (part.IsBroken)
+            return 0;
+
+        ActionSlotPolicyContext context =
+            new ActionSlotPolicyContext
+            {
+                Owner = this,
+                Part = part,
+                MaxSlots = 1
+            };
+
+        foreach (CombatMechanic mechanic in mechanics)
+        {
+            mechanic.ModifyActionSlotPolicy(context);
+        }
+
+        return Mathf.Max(0, context.MaxSlots);
+    }
     
     public T GetStatus<T>() where T : StatusEffect
     {
@@ -384,12 +477,17 @@ public abstract class Character : MonoBehaviour
 
     protected virtual bool CanDie()
     {
+        foreach (CombatMechanic mechanic in mechanics)
+        {
+            if (mechanic == null)
+                continue;
+
+            if (!mechanic.CanOwnerDie())
+                return false;
+        }
+
         if (RuntimeStatus.currentHP <= 0)
             return true;
-
-        //-----------------------------------
-        // 모든 부위가 파괴되어도 사망
-        //-----------------------------------
 
         bool allBroken = true;
 
@@ -661,6 +759,25 @@ public abstract class Character : MonoBehaviour
                 return false;
         }
 
+        return true;
+    }
+    
+    public T GetMechanic<T>() where T : CombatMechanic
+    {
+        foreach (CombatMechanic mechanic in mechanics)
+        {
+            if (mechanic is T result)
+                return result;
+        }
+
+        return null;
+    }
+    
+    public virtual bool CanAIUse(
+        Character owner,
+        BodyPart part,
+        BattleContext context)
+    {
         return true;
     }
 }

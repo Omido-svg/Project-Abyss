@@ -7,18 +7,18 @@ public class Olaf : Character
 
     public override IReadOnlyList<BodyPart> BodyParts => bodyParts;
 
-    public OlafPassive Passive => passive as OlafPassive;
+    public OlafMadnessMechanic MadnessMechanic =>
+        GetMechanic<OlafMadnessMechanic>();
+
+    public OlafImmortalFuryMechanic ImmortalFuryMechanic =>
+        GetMechanic<OlafImmortalFuryMechanic>();
 
     //------------------------------------------------
-    // 상태 초기화
+    // 부위 구성
     //------------------------------------------------
 
-    public override void Initialize(BattleEvent battleEvent)
+    protected override void BuildBodyParts()
     {
-        //--------------------------------
-        // 1. 부위 먼저 생성
-        //--------------------------------
-
         bodyParts.Clear();
 
         bodyParts.Add(
@@ -64,24 +64,20 @@ public class Olaf : Character
                     new OlafPreparationSkill(),
                     new OlafPrestigeSkill()
                 }));
-
-        //--------------------------------
-        // 2. Character 기본 초기화
-        // 여기서 BodyPart.Initialize(this),
-        // RuntimeStatus.currentHP 계산 등이 처리됨
-        //--------------------------------
-
-        base.Initialize(battleEvent);
-
-        //--------------------------------
-        // 3. 패시브 생성
-        //--------------------------------
-
-        passive = new OlafPassive();
-        passive.Initialize(this, battleEvent);
-        passive.Register();
     }
 
+    //------------------------------------------------
+    // 고유 메커닉 구성
+    //------------------------------------------------
+
+    protected override void BuildMechanics()
+    {
+        AddMechanic(new OlafMadnessMechanic());
+        AddMechanic(new OlafImmortalFuryMechanic());
+    }
+
+    //------------------------------------------------
+    // 약화 디버프
     //------------------------------------------------
 
     protected override StatusEffect CreateDisabledDebuff(
@@ -100,6 +96,8 @@ public class Olaf : Character
         };
     }
 
+    //------------------------------------------------
+    // 파괴 디버프
     //------------------------------------------------
 
     protected override StatusEffect CreateBrokenPartStatus(
@@ -124,6 +122,7 @@ public class Olaf : Character
     {
         base.Die();
 
-        Debug.Log($"{Data.CharacterName} 사망");
+        // base.Die()에서 이미 사망 로그를 찍고 있으므로
+        // 여기서는 올라프 전용 연출이 필요할 때만 추가.
     }
 }

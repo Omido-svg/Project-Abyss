@@ -1,3 +1,5 @@
+using UnityEngine;
+
 public class OlafNormalAttack : NormalSkill
 {
     public OlafNormalAttack()
@@ -14,14 +16,28 @@ public class OlafNormalAttack : NormalSkill
         if (action == null)
             return;
 
+        if (action.Owner == null)
+            return;
+
         if (action.Target == null)
             return;
 
-        // 데미지는 DamageManager에서 처리
-        // 출혈은 캐릭터 상태이상으로 부여
+        int bleedAmount = 1;
+
+        OlafMadnessMechanic madness =
+            action.Owner.GetMechanic<OlafMadnessMechanic>();
+
+        if (madness != null)
+        {
+            bleedAmount =
+                madness.GetNormalAttackBleedAmount();
+        }
 
         action.Target.AddStatus(
-            new Bleeding(1),
+            new Bleeding(bleedAmount),
             action.Owner);
+
+        Debug.Log(
+            $"{action.Owner.Data.CharacterName} 평타 효과 : 출혈 {bleedAmount} 부여");
     }
 }

@@ -6,6 +6,7 @@ public class ActionSlot
     public Skill Skill;
 
     public int Speed;
+    public int ActionIndex;
     public ActionPhase Phase;
 
     public Character TargetCharacter;
@@ -13,4 +14,12 @@ public class ActionSlot
 
     // 합 판정용
     public ActionSlot TargetSlot;
+}
+
+public class ActionSlotPolicyContext
+{
+    public Character Owner;
+    public BodyPart Part;
+
+    public int MaxSlots = 1;
 }

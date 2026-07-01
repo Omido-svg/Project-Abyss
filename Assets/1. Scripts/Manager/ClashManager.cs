@@ -175,6 +175,21 @@ public class ClashManager
 
         int winnerClash = firstWin ? firstClash : secondClash;
         int loserClash = firstWin ? secondClash : firstClash;
+        
+        ClashResultContext context = new ClashResultContext
+        {
+            WinnerAction = winner,
+            LoserAction = loser,
+            WinnerClashPower = winnerClash,
+            LoserClashPower = loserClash,
+            Gap = Mathf.Abs(winnerClash - loserClash)
+        };
+
+        battleContext._battleEvent.RaiseClashResolved(context);
+
+        //------------------------------------
+        // 합 승리 / 패배 이벤트
+        //------------------------------------
 
         battleContext._battleEvent.RaiseClashWin(
             winner,
@@ -194,14 +209,38 @@ public class ClashManager
         bool wasOverwhelm =
             momentumManager.IsOverwhelm(winner.Owner);
 
+        int momentumBonus = 0;
+
+        if (winner.Skill != null)
+        {
+            momentumBonus =
+                winner.Skill.GetMomentumPushBonus(
+                    winner);
+        }
+
         momentumManager.ApplyClashResult(
             winner.Owner,
-            rawPowerGap);
+            rawPowerGap,
+            momentumBonus);
 
-        int prestigeGain =
-            momentumManager.CalculatePrestigeGain(rawPowerGap);
+        int prestigeGain = 0;
 
-        winner.Owner.AddPrestige(prestigeGain);
+        if (winner.Skill != null && winner.Skill.GainPrestige)
+        {
+            prestigeGain =
+                momentumManager.CalculatePrestigeGain(
+                    rawPowerGap);
+
+            prestigeGain +=
+                winner.Skill.GetPrestigeGainBonus(
+                    winner);
+
+            if (prestigeGain > 0)
+            {
+                winner.Owner.AddPrestige(
+                    prestigeGain);
+            }
+        }
 
         if (!wasOverwhelm &&
             momentumManager.IsOverwhelm(winner.Owner))
@@ -214,7 +253,7 @@ public class ClashManager
         // 승자 스킬 실행
         //------------------------------------
 
-        winner.Skill.Execute(winner);
+        ExecuteSkill(winner);
 
         //------------------------------------
         // 피해 적용
@@ -294,7 +333,7 @@ public class ClashManager
         // 스킬 효과
         //------------------------------------
 
-        action.Skill.Execute(action);
+        ExecuteSkill(action);
 
         //------------------------------------
         // 피해 적용
@@ -319,6 +358,20 @@ public class ClashManager
             damage,
             beforeHP,
             afterHP);
+    }
+    
+    private void ExecuteSkill(BattleAction action)
+    {
+        if (action == null)
+            return;
+
+        if (action.Skill == null)
+            return;
+
+        action.Skill.Execute(action);
+
+        action.Skill.ConsumeResource(
+            action.Owner);
     }
     
     private void RollClashPower(BattleAction action)

@@ -1,5 +1,12 @@
 using UnityEngine;
 
+public enum PrestigeUsePolicy
+{
+    None,
+    OncePerTurn,
+    Unlimited
+}
+
 public abstract class Skill
 {
     //--------------------------------
@@ -21,10 +28,33 @@ public abstract class Skill
     public RandomResolver Resolver { get; protected set; }
 
     //--------------------------------
+    // 초기화용 참조
+    //--------------------------------
+
+    protected Character owner;
+    protected BattleEvent battleEvent;
+
+    //--------------------------------
+    // 실행 Phase
+    //--------------------------------
+
+    public virtual ActionPhase DefaultPhase
+    {
+        get
+        {
+            return ActionType switch
+            {
+                ActionType.Prestige => ActionPhase.PRETURN,
+                ActionType.Preparation => ActionPhase.FORESIGHT,
+                _ => ActionPhase.COMBAT
+            };
+        }
+    }
+
+    //--------------------------------
     // 전투 옵션
     //--------------------------------
 
-    // 기본적으로 평타/결투만 합 가능
     public virtual bool CanClash
     {
         get
@@ -34,7 +64,7 @@ public abstract class Skill
         }
     }
 
-    // 결투 승리 시 위세 획득
+    // 기본적으로 결투 스킬만 합 승리 시 위세 획득
     public virtual bool GainPrestige
     {
         get
@@ -45,6 +75,90 @@ public abstract class Skill
 
     // 방어도 무시 비율
     public virtual float IgnoreBlock => 0f;
+
+    //--------------------------------
+    // 위세 사용 정책
+    //--------------------------------
+
+    public virtual PrestigeUsePolicy PrestigeUsePolicy
+    {
+        get
+        {
+            if (this.ActionType == ActionType.Prestige)
+                return PrestigeUsePolicy.OncePerTurn;
+
+            return PrestigeUsePolicy.None;
+        }
+    }
+
+    //--------------------------------
+    // 자원 조건
+    //--------------------------------
+
+    public virtual bool CanUseByResource(Character owner)
+    {
+        if (owner == null)
+            return false;
+
+        // 위세 스킬이 아니면 별도 위세 자원 검사를 하지 않음
+        if (this.ActionType != ActionType.Prestige)
+            return true;
+
+        if (owner.CurrentStatus == null ||
+            owner.RuntimeStatus == null)
+            return false;
+
+        if (owner.CurrentStatus.maxPrestige <= 0)
+            return false;
+
+        return owner.RuntimeStatus.currentPrestige >=
+               owner.CurrentStatus.maxPrestige;
+    }
+    
+    public virtual void ConsumeResource(Character owner)
+    {
+        if (owner == null)
+            return;
+
+        if (this.ActionType != ActionType.Prestige)
+            return;
+
+        if (owner.RuntimeStatus == null)
+            return;
+
+        owner.RuntimeStatus.currentPrestige = 0;
+
+        Debug.Log(
+            $"{owner.Data.CharacterName} 위세 게이지 소모 : 0");
+    }
+
+    //--------------------------------
+    // AI 사용 가능 여부
+    //--------------------------------
+
+    public virtual bool CanAIUse(
+        Character owner,
+        BodyPart part,
+        BattleContext context)
+    {
+        return true;
+    }
+
+    //--------------------------------
+    // 합 승리 보너스 확장 지점
+    //--------------------------------
+
+    public virtual int GetMomentumPushBonus(
+        BattleAction action)
+    {
+        return 0;
+    }
+
+    public virtual int GetPrestigeGainBonus(
+        BattleAction action)
+    {
+        return 0;
+    }
 
     //--------------------------------
     // UI 표시용
@@ -73,11 +187,6 @@ public abstract class Skill
     }
 
     //--------------------------------
-
-    protected Character owner;
-    protected BattleEvent battleEvent;
-
-    //--------------------------------
     // 초기화
     //--------------------------------
 
@@ -89,16 +198,16 @@ public abstract class Skill
         this.battleEvent = battleEvent;
     }
 
-    public virtual void Register() { }
+    public virtual void Register()
+    {
+    }
 
-    public virtual void Unregister() { }
+    public virtual void Unregister()
+    {
+    }
 
     //--------------------------------
     // 순수 스킬 굴림
-    //--------------------------------
-    // 주의:
-    // 이 함수는 상태이상 보정 없는 순수 굴림만 담당.
-    // 실제 전투에서는 BattleAction.RollPower()를 사용하는 게 좋음.
     //--------------------------------
 
     public virtual int RollRawPower()

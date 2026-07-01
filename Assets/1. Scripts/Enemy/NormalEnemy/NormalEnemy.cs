@@ -8,13 +8,11 @@ public class NormalEnemy : Enemy
     public override IReadOnlyList<BodyPart> BodyParts => bodyParts;
 
     //--------------------------------
+    // 부위 구성
+    //--------------------------------
 
-    public override void Initialize(BattleEvent battleEvent)
+    protected override void BuildBodyParts()
     {
-        //--------------------------------
-        // 1. 부위 먼저 생성
-        //--------------------------------
-
         bodyParts.Clear();
 
         bodyParts.Add(
@@ -27,22 +25,22 @@ public class NormalEnemy : Enemy
                     new EnemyDuelSkill(),
                     new EnemyPrestigeSkill()
                 }));
-
-        //--------------------------------
-        // 2. Character 기본 초기화
-        //--------------------------------
-
-        base.Initialize(battleEvent);
-
-        //--------------------------------
-        // 3. 패시브 등록
-        //--------------------------------
-
-        passive = new NormalEnemyPassive();
-        passive.Initialize(this, battleEvent);
-        passive.Register();
     }
 
+    //--------------------------------
+    // 메커닉 구성
+    //--------------------------------
+
+    protected override void BuildMechanics()
+    {
+        base.BuildMechanics();
+
+        AddMechanic(
+            new NormalEnemyBloodScentMechanic());
+    }
+
+    //--------------------------------
+    // 약화 디버프
     //--------------------------------
 
     protected override StatusEffect CreateDisabledDebuff(
@@ -58,6 +56,8 @@ public class NormalEnemy : Enemy
         };
     }
 
+    //--------------------------------
+    // 파괴 디버프
     //--------------------------------
 
     protected override StatusEffect CreateBrokenPartStatus(
@@ -77,10 +77,9 @@ public class NormalEnemy : Enemy
 
     public override void Die()
     {
-        passive?.Unregister();
-
         base.Die();
 
-        Debug.Log($"{Data.CharacterName} 사망");
+        // base.Die()에서 이미 사망 로그를 찍고 있다면
+        // 여기서 중복 로그는 찍지 않는 게 좋다.
     }
 }
