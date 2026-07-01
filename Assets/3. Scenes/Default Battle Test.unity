@@ -777,6 +777,89 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 259301459}
   m_CullTransparentMesh: 1
+--- !u!1 &269561326
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 269561328}
+  - component: {fileID: 269561327}
+  m_Layer: 0
+  m_Name: DebugTuner
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &269561327
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 269561326}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 021ef66e9cf03514aa4ffc9875458f06, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  battleManager: {fileID: 1453355684}
+  battleUIManager: {fileID: 605390726}
+  liveApply: 1
+  refreshUIAfterApply: 1
+  overrideMomentum: 0
+  momentum: 0
+  overridePlayerPrestige: 0
+  playerCurrentPrestige: 0
+  playerMaxPrestige: 100
+  overridePlayerParts: 0
+  playerParts:
+  - partIndex: 0
+    currentHP: 0
+    maxHP: 0
+    isUsable: 0
+    isWeakened: 0
+    isBroken: 0
+  - partIndex: 0
+    currentHP: 0
+    maxHP: 0
+    isUsable: 0
+    isWeakened: 0
+    isBroken: 0
+  - partIndex: 0
+    currentHP: 0
+    maxHP: 0
+    isUsable: 0
+    isWeakened: 0
+    isBroken: 0
+  - partIndex: 0
+    currentHP: 0
+    maxHP: 0
+    isUsable: 0
+    isWeakened: 0
+    isBroken: 0
+  overrideEnemyParts: 0
+  enemies:
+  - enemyIndex: 0
+    parts: []
+--- !u!4 &269561328
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 269561326}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 163.10092, y: 348.42465, z: -2.9106445}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &310688763
 GameObject:
   m_ObjectHideFlags: 0
@@ -4776,7 +4859,7 @@ GameObject:
   - component: {fileID: 1531111097}
   - component: {fileID: 1531111098}
   m_Layer: 0
-  m_Name: DebugBattleUIManager
+  m_Name: DebugBattleUI
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -7991,3 +8074,4 @@ SceneRoots:
   - {fileID: 253689329}
   - {fileID: 901959364}
   - {fileID: 605390727}
+  - {fileID: 269561328}

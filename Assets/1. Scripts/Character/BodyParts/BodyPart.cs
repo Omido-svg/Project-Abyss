@@ -195,4 +195,33 @@ public class BodyPart
 
         return Owner.Data.CharacterName;
     }
+    
+    public void SetDebugState(
+        float currentHP,
+        float maxHP,
+        bool isWeakened,
+        bool isBroken)
+    {
+        MaxPartHP = Mathf.Max(1f, maxHP);
+        PartHP = Mathf.Clamp(currentHP, 0f, MaxPartHP);
+
+        if (isBroken || PartHP <= 0f)
+        {
+            State = BodyPartState.Broken;
+            PartHP = 0f;
+            return;
+        }
+
+        if (isWeakened)
+        {
+            State = BodyPartState.Weakened;
+
+            if (PartHP <= 0f)
+                PartHP = 1f;
+
+            return;
+        }
+
+        State = BodyPartState.Normal;
+    }
 }

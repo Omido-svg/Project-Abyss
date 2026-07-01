@@ -274,4 +274,11 @@ public class MomentumManager
 
         return 0;
     }
+    
+    public void SetMomentumForDebug(float value)
+    {
+        CurrentMomentum = (int)Mathf.Clamp(value, -100f, 100f);
+
+        Debug.Log($"[DEBUG TUNER] Momentum set : {CurrentMomentum}");
+    }
 }
