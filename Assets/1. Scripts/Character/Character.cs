@@ -9,7 +9,16 @@ public abstract class Character : MonoBehaviour
     [SerializeField] private CharacterData data;
     public CharacterData Data => data;
 
-    public int CurrentHP => RuntimeStatus.currentHP;
+    public int CurrentHP
+    {
+        get
+        {
+            if (RuntimeStatus == null)
+                return 0;
+
+            return RuntimeStatus.currentHP;
+        }
+    }
 
     //--------------------------------
     // Body Parts
@@ -49,7 +58,15 @@ public abstract class Character : MonoBehaviour
     protected BattleEvent battleEvent;
 
     //------------------------------------------------
+    
+    // 아이템과 증강들
+    [SerializeField] private List<CharacterItem> equippedItems = new();
+    [SerializeField] private List<CharacterAugment> equippedAugments = new();
 
+    public IReadOnlyList<CharacterItem> EquippedItems => equippedItems;
+    public IReadOnlyList<CharacterAugment> EquippedAugments => equippedAugments;
+
+    
     public virtual void Initialize(BattleContext context)
     {
         if (context == null)
@@ -68,13 +85,19 @@ public abstract class Character : MonoBehaviour
         mechanics.Clear();
 
         //--------------------------------
-        // 1. 캐릭터별 부위 생성
+        // 1. 기본 부위 / 기본 스킬 생성
         //--------------------------------
 
         BuildBodyParts();
 
         //--------------------------------
-        // 2. BodyPart / Skill 초기화
+        // 2. 아이템이 스킬 목록 수정
+        //--------------------------------
+
+        ApplyItemSkillModifiers();
+
+        //--------------------------------
+        // 3. 스킬 초기화
         //--------------------------------
 
         foreach (BodyPart part in BodyParts)
@@ -94,22 +117,40 @@ public abstract class Character : MonoBehaviour
         }
 
         //--------------------------------
-        // 3. 기본 스탯 계산
+        // 4. 기본 스탯 재계산
         //--------------------------------
 
         RecalculateStatus();
+
+        //--------------------------------
+        // 5. 아이템/증강 스탯 적용
+        //--------------------------------
+
+        ApplyBuildStatusModifiers();
+
+        //--------------------------------
+        // 6. 런타임 스탯 생성
+        //--------------------------------
 
         RuntimeStatus = new RuntimeStatus(CurrentStatus);
         RuntimeStatus.currentHP = CalculateInitialHP();
 
         //--------------------------------
-        // 4. 캐릭터별 메커닉 생성
+        // 7. 기본 메커닉 생성
         //--------------------------------
 
         BuildMechanics();
 
         //--------------------------------
-        // 5. 메커닉 초기화 / 등록
+        // 8. 아이템/증강 메커닉 생성
+        //--------------------------------
+
+        BuildItemAndAugmentMechanics();
+        
+        ApplyBodyPartModifiers();
+
+        //--------------------------------
+        // 9. 메커닉 초기화/등록
         //--------------------------------
 
         foreach (CombatMechanic mechanic in mechanics)
@@ -119,6 +160,92 @@ public abstract class Character : MonoBehaviour
 
             mechanic.Initialize(this, battleContext);
             mechanic.Register();
+        }
+    }
+    
+    private void ApplyItemSkillModifiers()
+    {
+        if (BodyParts == null)
+            return;
+
+        foreach (BodyPart part in BodyParts)
+        {
+            if (part == null)
+                continue;
+
+            List<Skill> skills =
+                new List<Skill>(part.AvailableSkills);
+
+            foreach (CharacterItem item in equippedItems)
+            {
+                if (item == null)
+                    continue;
+
+                item.ModifySkills(
+                    this,
+                    part,
+                    skills);
+            }
+
+            part.ReplaceSkills(
+                skills);
+        }
+    }
+    
+    private void ApplyBuildStatusModifiers()
+    {
+        if (CurrentStatus == null)
+            return;
+
+        foreach (CharacterItem item in equippedItems)
+        {
+            if (item == null)
+                continue;
+
+            item.ModifyStatus(
+                this,
+                CurrentStatus);
+        }
+
+        foreach (CharacterAugment augment in equippedAugments)
+        {
+            if (augment == null)
+                continue;
+
+            augment.ModifyStatus(
+                this,
+                CurrentStatus);
+        }
+    }
+    
+    private void BuildItemAndAugmentMechanics()
+    {
+        foreach (CharacterItem item in equippedItems)
+        {
+            if (item == null)
+                continue;
+
+            CombatMechanic mechanic =
+                item.CreateMechanic();
+
+            if (mechanic == null)
+                continue;
+
+            AddMechanic(mechanic);
+        }
+
+        foreach (CharacterAugment augment in equippedAugments)
+        {
+            if (augment == null)
+                continue;
+
+            CombatMechanic mechanic =
+                augment.CreateMechanic();
+
+            if (mechanic == null)
+                continue;
+
+            AddMechanic(mechanic);
         }
     }
     
@@ -258,6 +385,8 @@ public abstract class Character : MonoBehaviour
                 effect.OnTurnEnd();
             }
         }
+        
+        ClearBlock();
     }
 
     //------------------------------------------------
@@ -434,11 +563,8 @@ public abstract class Character : MonoBehaviour
 
     public void ForceRecalculateHP()
     {
-        //-----------------------------------
-        // 주의:
-        // 전투 중에는 가급적 호출하지 않는 것이 좋음.
-        // 약화/파괴 부위에 들어간 직접 피해 기록이 사라질 수 있음.
-        //-----------------------------------
+        if (RuntimeStatus == null)
+            return;
 
         RuntimeStatus.currentHP = CalculateInitialHP();
     }
@@ -689,10 +815,30 @@ public abstract class Character : MonoBehaviour
 
     public void AddPrestige(int amount)
     {
+        if (RuntimeStatus == null)
+            return;
+
+        if (CurrentStatus == null)
+            return;
+
+        if (amount <= 0)
+            return;
+
+        int finalAmount =
+            Mathf.RoundToInt(
+                amount * CurrentStatus.prestigeGainMultiplier);
+
+        finalAmount =
+            Mathf.Max(1, finalAmount);
+
         RuntimeStatus.currentPrestige =
             Mathf.Min(
-                RuntimeStatus.currentPrestige + amount,
+                RuntimeStatus.currentPrestige + finalAmount,
                 CurrentStatus.maxPrestige);
+
+        Debug.Log(
+            $"{Data.CharacterName} 위세 획득 : +{finalAmount} " +
+            $"({RuntimeStatus.currentPrestige}/{CurrentStatus.maxPrestige})");
     }
 
     //------------------------------------------------
@@ -707,8 +853,11 @@ public abstract class Character : MonoBehaviour
         // 캐릭터 디버프
         //--------------------------------
 
-        foreach (var effect in statusEffects)
+        foreach (StatusEffect effect in statusEffects)
         {
+            if (effect == null)
+                continue;
+
             value = effect.ModifyRoll(action, value);
         }
 
@@ -719,10 +868,25 @@ public abstract class Character : MonoBehaviour
         if (action != null &&
             action.OwnerPart != null)
         {
-            foreach (var effect in action.OwnerPart.StatusEffects)
+            foreach (StatusEffect effect in action.OwnerPart.StatusEffects)
             {
+                if (effect == null)
+                    continue;
+
                 value = effect.ModifyRoll(action, value);
             }
+        }
+
+        //--------------------------------
+        // 캐릭터 메커닉 / 아이템 / 증강
+        //--------------------------------
+
+        foreach (CombatMechanic mechanic in mechanics)
+        {
+            if (mechanic == null)
+                continue;
+
+            value = mechanic.ModifyRoll(action, value);
         }
 
         return value;
@@ -759,6 +923,18 @@ public abstract class Character : MonoBehaviour
                 return false;
         }
 
+        foreach (CombatMechanic mechanic in mechanics)
+        {
+            if (mechanic == null)
+                continue;
+
+            if (!mechanic.CanUseSkill(part, skill))
+                return false;
+        }
+
+        if (!skill.CanUseByResource(this))
+            return false;
+
         return true;
     }
     
@@ -779,5 +955,82 @@ public abstract class Character : MonoBehaviour
         BattleContext context)
     {
         return true;
+    }
+    
+    public void AddItem(CharacterItem item)
+    {
+        if (item == null)
+            return;
+
+        if (equippedItems.Contains(item))
+            return;
+
+        equippedItems.Add(item);
+    }
+
+    public void AddAugment(CharacterAugment augment)
+    {
+        if (augment == null)
+            return;
+
+        if (equippedAugments.Contains(augment))
+            return;
+
+        equippedAugments.Add(augment);
+    }
+    
+    private void ApplyBodyPartModifiers()
+    {
+        if (BodyParts == null)
+            return;
+
+        foreach (BodyPart part in BodyParts)
+        {
+            if (part == null)
+                continue;
+
+            foreach (CharacterAugment augment in equippedAugments)
+            {
+                if (augment == null)
+                    continue;
+
+                augment.ModifyBodyPart(
+                    this,
+                    part);
+            }
+
+            foreach (CharacterItem item in equippedItems)
+            {
+                if (item == null)
+                    continue;
+
+                item.ModifyBodyPart(
+                    this,
+                    part);
+            }
+        }
+    }
+    
+    public void AddBlock(int amount)
+    {
+        if (RuntimeStatus == null)
+            return;
+
+        if (amount <= 0)
+            return;
+
+        RuntimeStatus.currentBlock += amount;
+
+        Debug.Log(
+            $"{Data.CharacterName} 방어도 {amount} 획득 " +
+            $"현재 방어도 : {RuntimeStatus.currentBlock}");
+    }
+    
+    public void ClearBlock()
+    {
+        if (RuntimeStatus == null)
+            return;
+
+        RuntimeStatus.currentBlock = 0;
     }
 }

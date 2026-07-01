@@ -224,4 +224,63 @@ public class BodyPart
 
         State = BodyPartState.Normal;
     }
+    
+    public void ReplaceSkills(
+        IEnumerable<Skill> newSkills)
+    {
+        availableSkills.Clear();
+
+        if (newSkills != null)
+        {
+            foreach (Skill skill in newSkills)
+            {
+                if (skill == null)
+                    continue;
+
+                availableSkills.Add(skill);
+            }
+        }
+
+        if (availableSkills.Count > 0)
+        {
+            CurrentSkill = availableSkills[0];
+        }
+        else
+        {
+            CurrentSkill = null;
+        }
+    }
+    
+    public void IncreaseMaxHPPercent(
+        float percent,
+        bool healByIncreaseAmount = true)
+    {
+        if (percent <= 0f)
+            return;
+
+        float oldMaxHP = MaxPartHP;
+
+        float increase =
+            oldMaxHP * percent;
+
+        MaxPartHP =
+            Mathf.Max(1f, oldMaxHP + increase);
+
+        if (healByIncreaseAmount)
+        {
+            PartHP =
+                Mathf.Clamp(
+                    PartHP + increase,
+                    0f,
+                    MaxPartHP);
+        }
+        else
+        {
+            PartHP =
+                Mathf.Clamp(
+                    PartHP,
+                    0f,
+                    MaxPartHP);
+        }
+    }
 }

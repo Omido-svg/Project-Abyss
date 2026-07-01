@@ -816,35 +816,9 @@ MonoBehaviour:
   playerCurrentPrestige: 0
   playerMaxPrestige: 100
   overridePlayerParts: 0
-  playerParts:
-  - partIndex: 0
-    currentHP: 0
-    maxHP: 0
-    isUsable: 0
-    isWeakened: 0
-    isBroken: 0
-  - partIndex: 0
-    currentHP: 0
-    maxHP: 0
-    isUsable: 0
-    isWeakened: 0
-    isBroken: 0
-  - partIndex: 0
-    currentHP: 0
-    maxHP: 0
-    isUsable: 0
-    isWeakened: 0
-    isBroken: 0
-  - partIndex: 0
-    currentHP: 0
-    maxHP: 0
-    isUsable: 0
-    isWeakened: 0
-    isBroken: 0
+  playerParts: []
   overrideEnemyParts: 0
-  enemies:
-  - enemyIndex: 0
-    parts: []
+  enemies: []
 --- !u!4 &269561328
 Transform:
   m_ObjectHideFlags: 0

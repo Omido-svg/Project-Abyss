@@ -151,30 +151,45 @@ public class DamageManager
         float skillMultiplier =
             GetSkillMultiplier(action);
 
-        // 도사림 / 위세처럼 스킬 Execute에서 직접 처리하는 스킬은
-        // DamageManager 자동 피해를 주지 않음
         if (skillMultiplier <= 0f)
             return 0;
 
-        float damage = action.RolledPower;
+        float damage =
+            action.RolledPower;
+
+        //--------------------------------
+        // 공격력 보너스
+        //--------------------------------
+
+        damage += action.Owner.CurrentStatus.flatDamageBonus;
+
+        //--------------------------------
+        // 피해 배율
+        //--------------------------------
 
         damage *= action.Owner.CurrentStatus.damageMultiplier;
 
         if (momentumManager != null)
         {
-            damage *= momentumManager.GetDamageMultiplier(
-                action.Owner);
+            damage *=
+                momentumManager.GetDamageMultiplier(
+                    action.Owner);
         }
 
         damage *= skillMultiplier;
 
-        damage = ApplyDefense(
-            action,
-            damage);
+        //--------------------------------
+        // 방어력 / 방어도 / 방어무시율
+        //--------------------------------
 
-        damage = Mathf.Max(1f, damage);
+        damage =
+            ApplyDefense(
+                action,
+                damage);
 
-        return Mathf.RoundToInt(damage);
+        return Mathf.Max(
+            0,
+            Mathf.RoundToInt(damage));
     }
 
     //------------------------------------------------
@@ -240,36 +255,87 @@ public class DamageManager
         if (action == null)
             return damage;
 
+        if (damage <= 0f)
+            return 0f;
+
         if (action.Target == null ||
-            action.Target.RuntimeStatus == null)
+            action.Target.RuntimeStatus == null ||
+            action.Target.CurrentStatus == null)
+        {
             return damage;
+        }
 
         if (action.Owner == null ||
             action.Owner.CurrentStatus == null)
+        {
             return damage;
+        }
 
-        RuntimeStatus runtime =
+        CurrentStatus attackerStatus =
+            action.Owner.CurrentStatus;
+
+        CurrentStatus targetStatus =
+            action.Target.CurrentStatus;
+
+        RuntimeStatus targetRuntime =
             action.Target.RuntimeStatus;
 
-        float ignore =
-            Mathf.Clamp01(
-                action.Owner.CurrentStatus.defensePenetration);
+        //--------------------------------
+        // 1. 방어 무시율 계산
+        //--------------------------------
 
-        float ignoreDamage =
-            damage * ignore;
+        float penetrationRate =
+            Mathf.Clamp01(
+                attackerStatus.defensePenetrationRate);
+
+        if (action.Skill != null)
+        {
+            penetrationRate =
+                Mathf.Clamp01(
+                    penetrationRate + action.Skill.IgnoreBlock);
+        }
+
+        //--------------------------------
+        // 2. 방어를 무시하는 피해와
+        //    방어 가능한 피해로 분리
+        //--------------------------------
+
+        float piercingDamage =
+            damage * penetrationRate;
 
         float blockableDamage =
-            damage - ignoreDamage;
+            damage - piercingDamage;
 
-        float blocked =
+        //--------------------------------
+        // 3. 방어력 적용
+        // 방어력은 방어 가능한 피해만 감소시킴
+        //--------------------------------
+
+        float afterDefenseDamage =
+            Mathf.Max(
+                0f,
+                blockableDamage - targetStatus.defense);
+
+        //--------------------------------
+        // 4. 임시 방어도 / 보호막 적용
+        //--------------------------------
+
+        float blockedDamage =
             Mathf.Min(
-                runtime.currentDefensePenetration,
-                blockableDamage);
+                targetRuntime.currentBlock,
+                afterDefenseDamage);
 
-        runtime.currentDefensePenetration -=
-            Mathf.RoundToInt(blocked);
+        targetRuntime.currentBlock -=
+            Mathf.RoundToInt(blockedDamage);
 
-        return ignoreDamage +
-               (blockableDamage - blocked);
+        //--------------------------------
+        // 5. 최종 피해
+        //--------------------------------
+
+        float finalDamage =
+            piercingDamage +
+            (afterDefenseDamage - blockedDamage);
+
+        return Mathf.Max(0f, finalDamage);
     }
 }
