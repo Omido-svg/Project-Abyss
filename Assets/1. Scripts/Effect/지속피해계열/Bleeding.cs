@@ -11,6 +11,10 @@ public class Bleeding : DamageStatus
     {
         Name = "Bleeding";
         Stack = stack;
+        Duration = duration;
+
+        // 출혈 피해량 = 스택
+        Damage = Stack;
     }
 
     public override void Merge(StatusEffect other)
@@ -29,15 +33,38 @@ public class Bleeding : DamageStatus
 
     public override void OnTurnEnd()
     {
-        if (owner == null)
+        if (Owner == null)
             return;
 
-        // 매 턴 출혈 스택만큼 고정 피해
-        owner.TakeTrueDamage(Stack, this);
+        if (Owner.IsDead)
+            return;
 
-        DecreaseDuration();
+        if (Stack <= 0)
+            return;
 
-        if (IsExpired())
-            RemoveStatus();
+        //--------------------------------
+        // 부위 출혈
+        // 부위 HP를 깎고 약화까지 가능
+        // 파괴는 불가능
+        //--------------------------------
+
+        if (IsPartEffect)
+        {
+            Owner.TakeStatusPartDamage(
+                OwnerPart,
+                Stack,
+                this);
+
+            return;
+        }
+
+        //--------------------------------
+        // 캐릭터 출혈
+        // 부위가 없는 출혈이면 기존처럼 캐릭터 피해
+        //--------------------------------
+
+        Owner.TakeTrueDamage(
+            Stack,
+            this);
     }
 }

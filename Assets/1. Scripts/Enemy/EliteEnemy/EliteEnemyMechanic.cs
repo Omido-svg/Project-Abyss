@@ -61,7 +61,7 @@ public class EliteEnemyMechanic : CombatMechanic
         // 추가 압박 효과
         //--------------------------------
 
-        winnerAction.Target.AddStatus(
+        winnerAction.Target.AddPartStatus(loserAction.TargetPart,
             new Bleeding(1),
             owner);
 

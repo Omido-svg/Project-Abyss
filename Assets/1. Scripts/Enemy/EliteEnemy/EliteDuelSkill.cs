@@ -27,7 +27,8 @@ public class EliteDuelSkill : DuelSkill
         // 여기서는 추가 효과만 처리
         //--------------------------------
 
-        action.Target.AddStatus(
+        action.Target.AddPartStatus(
+            action.TargetPart,
             new Bleeding(2),
             action.Owner);
 

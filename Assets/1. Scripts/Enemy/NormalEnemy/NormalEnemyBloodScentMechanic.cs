@@ -41,7 +41,8 @@ public class NormalEnemyBloodScentMechanic : CombatMechanic
         // 합 승리 시 대상에게 출혈 1 부여
         //--------------------------------
 
-        winnerAction.Target.AddStatus(
+        winnerAction.Target.AddPartStatus(
+            loserAction.TargetPart,
             new Bleeding(1),
             owner);
 

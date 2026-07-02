@@ -45,7 +45,8 @@ public class OlafBloodyAxeMechanic : CombatMechanic
         if (context.FinalDamage <= 0)
             return;
 
-        context.Target.AddStatus(
+        context.Target.AddPartStatus(
+            context.Action.TargetPart,
             new Bleeding(1),
             owner);
 

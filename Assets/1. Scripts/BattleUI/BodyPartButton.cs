@@ -104,14 +104,17 @@ public class BodyPartButton : MonoBehaviour, IPointerClickHandler
 
         if (owner == null || bodyPart == null)
         {
-            if (buttonText != null)
-                buttonText.text = "NULL";
-
+            gameObject.SetActive(false);
             return;
         }
 
-        // 캐릭터가 죽었거나 부위가 파괴되면 버튼 숨김
-        if (owner.IsDead || bodyPart.IsBroken)
+        if (owner.IsDead)
+        {
+            gameObject.SetActive(false);
+            return;
+        }
+
+        if (bodyPart.IsBroken)
         {
             gameObject.SetActive(false);
             return;
@@ -125,46 +128,86 @@ public class BodyPartButton : MonoBehaviour, IPointerClickHandler
 
         buttonText.richText = true;
 
-        string partName = bodyPart.Type.ToString();
-        string speedText = GetSpeedText();
-        string selectedSkillText = GetSelectedSkillText();
+        buttonText.text =
+            $"{GetPartText()}\n" +
+            $"{GetHpText()}\n" +
+            $"{GetSpeedText()}";
+    }
+    
+    private string GetPartText()
+    {
+        if (bodyPart == null)
+            return "NULL";
 
-        if (string.IsNullOrEmpty(selectedSkillText))
-        {
-            buttonText.text =
-                $"{partName}\n" +
-                $"{speedText}";
-        }
-        else
-        {
-            buttonText.text =
-                $"{partName}\n" +
-                $"{speedText}\n" +
-                $"{selectedSkillText}";
-        }
+        string stateColor =
+            bodyPart.State switch
+            {
+                BodyPartState.Normal => "#86EFAC",
+                BodyPartState.Weakened => "#FACC15",
+                BodyPartState.Broken => "#F87171",
+                _ => "#FFFFFF"
+            };
+
+        return
+            $"<color={stateColor}><b>{bodyPart.Type} [{bodyPart.State}]</b></color>";
+    }
+    
+    private string GetHpText()
+    {
+        if (bodyPart == null)
+            return "HP -";
+
+        int currentHP =
+            Mathf.RoundToInt(bodyPart.PartHP);
+
+        int maxHP =
+            Mathf.RoundToInt(bodyPart.MaxPartHP);
+
+        string hpColor = GetHpColor();
+
+        return
+            $"<color={hpColor}>HP {currentHP}/{maxHP}</color>";
+    }
+    
+    private string GetHpColor()
+    {
+        if (bodyPart == null)
+            return "#FFFFFF";
+
+        if (bodyPart.IsBroken)
+            return "#F87171";
+
+        if (bodyPart.IsWeakened)
+            return "#FACC15";
+
+        if (bodyPart.MaxPartHP <= 0f)
+            return "#FFFFFF";
+
+        float ratio =
+            bodyPart.PartHP / bodyPart.MaxPartHP;
+
+        if (ratio <= 0.3f)
+            return "#FACC15";
+
+        return "#86EFAC";
     }
     
     private string GetSpeedText()
     {
-        int speed = -1;
+        if (bodyPart == null)
+            return "SPD -";
 
-        ActionSlot slot = GetCurrentSlot();
+        if (battleManager == null)
+            battleManager = FindFirstObjectByType<BattleManager>();
 
-        if (slot != null)
-        {
-            speed = slot.Speed;
-        }
-        else if (battleManager != null &&
-                battleManager.SpeedManager != null &&
-                bodyPart != null)
-        {
-            speed = battleManager.SpeedManager.GetSpeed(bodyPart);
-        }
+        if (battleManager == null ||
+            battleManager.SpeedManager == null)
+            return "SPD 0";
 
-        if (speed < 0)
-            return "<color=#FFD700><b>SPD -</b></color>";
+        int speed =
+            battleManager.SpeedManager.GetSpeed(bodyPart);
 
-        return $"<color=#FFD700><b>SPD {speed}</b></color>";
+        return $"SPD {speed}";
     }
 
     //--------------------------------------------------
@@ -239,8 +282,6 @@ public class BodyPartButton : MonoBehaviour, IPointerClickHandler
             $"[BUTTON CLICK] {owner.Data.CharacterName} / {bodyPart.Type}");
 
         uiManager.OnBodyPartClicked(owner, bodyPart);
-
-        Refresh();
     }
     
     public void OnPointerClick(PointerEventData eventData)

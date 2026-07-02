@@ -4,8 +4,7 @@ using UnityEngine;
 // - 공격력 +3
 // - 위세 획득량 +20%
 
-[CreateAssetMenu(
-    menuName = "Battle/Augment/Common/Battle Instinct")]
+[CreateAssetMenu(menuName = "Battle/Augment/Common/Battle Instinct")]
 public class BattleInstinctAugment : CharacterAugment
 {
     [SerializeField] private int bonusAttack = 3;

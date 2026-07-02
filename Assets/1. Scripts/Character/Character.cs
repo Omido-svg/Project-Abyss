@@ -187,8 +187,7 @@ public abstract class Character : MonoBehaviour
                     skills);
             }
 
-            part.ReplaceSkills(
-                skills);
+            part.ReplaceSkills(skills);
         }
     }
     
@@ -416,7 +415,6 @@ public abstract class Character : MonoBehaviour
 
         //-----------------------------------
         // 이미 파괴된 부위
-        // 피해는 전체 체력으로 직접 들어감
         //-----------------------------------
 
         if (targetPart.State == BodyPartState.Broken)
@@ -427,8 +425,8 @@ public abstract class Character : MonoBehaviour
 
         //-----------------------------------
         // 이미 약화된 부위
-        // 일반 공격이면 전체 체력 직접 피해
-        // canBreakPart라면 슬롯 파괴까지 발생
+        // 일반 공격이면 전체 체력 피해만
+        // 파괴 가능 공격이면 Broken 처리
         //-----------------------------------
 
         if (targetPart.State == BodyPartState.Weakened)
@@ -437,7 +435,7 @@ public abstract class Character : MonoBehaviour
 
             if (canBreakPart)
             {
-                BreakPart(targetPart);
+                TryBreakWeakenedPart(targetPart);
             }
 
             return;
@@ -445,18 +443,13 @@ public abstract class Character : MonoBehaviour
 
         //-----------------------------------
         // 정상 부위
+        // 체력이 0이 되면 Weakened까지만 감
+        // 여기서 바로 Broken으로 가지 않음
         //-----------------------------------
 
         if (targetPart.State == BodyPartState.Normal)
         {
             ApplyNormalPartDamage(targetPart, damage);
-
-            //-----------------------------------
-            // 중요:
-            // canBreakPart여도 정상 부위를 바로 파괴하지 않는다.
-            // 정상 부위는 먼저 Weakened까지 간다.
-            // 이미 약화된 부위를 canBreakPart로 때릴 때만 Broken 처리.
-            //-----------------------------------
         }
 
         CheckDead();
@@ -464,7 +457,7 @@ public abstract class Character : MonoBehaviour
 
     //------------------------------------------------
     // 일반 부위 피해
-    // 부위는 1에서 멈추고 Weakened 상태가 됨
+    // 부위는 0에서 멈추고 Weakened 상태가 됨
     //------------------------------------------------
 
     private void ApplyNormalPartDamage(
@@ -477,37 +470,21 @@ public abstract class Character : MonoBehaviour
         if (damage <= 0)
             return;
 
-        //-----------------------------------
-        // 전체 체력은 실제 피해량만큼 감소
-        //-----------------------------------
-
         ReduceCurrentHP(damage);
 
-        //-----------------------------------
-        // 부위 HP는 1까지만 감소
-        //-----------------------------------
+        float beforeHP = targetPart.PartHP;
 
-        float damageToWeaken =
-            Mathf.Max(0f, targetPart.PartHP - 1f);
+        targetPart.PartHP =
+            Mathf.Max(targetPart.PartHP - damage, 0f);
 
-        if (damage < damageToWeaken)
+        Debug.Log(
+            $"{Data.CharacterName}의 {targetPart.Type} 부위에 {damage} 피해 " +
+            $"HP : {beforeHP:0} -> {targetPart.PartHP:0}");
+
+        if (targetPart.PartHP <= 0f)
         {
-            targetPart.PartHP -= damage;
-
-            Debug.Log(
-                $"{Data.CharacterName}의 {targetPart.Type} 부위에 {damage} 피해 " +
-                $"HP : {targetPart.PartHP}");
-
-            return;
+            WeakenPart(targetPart);
         }
-
-        //-----------------------------------
-        // 1 이하로 내려가면 1에서 멈추고 약화
-        //-----------------------------------
-
-        targetPart.PartHP = 1f;
-
-        WeakenPart(targetPart);
     }
 
     //------------------------------------------------
@@ -524,7 +501,15 @@ public abstract class Character : MonoBehaviour
 
         part.Weaken();
 
+        Debug.LogWarning(
+            $"[WEAKEN] {Data.CharacterName} {part.Type} " +
+            $"State={part.State}, HP={part.PartHP}/{part.MaxPartHP}");
+
         battleEvent?.RaiseBodyPartWeakened(this, part);
+
+        //--------------------------------
+        // 부위 디버프 부여
+        //--------------------------------
 
         OnBodyPartDisabled(part);
     }
@@ -558,6 +543,46 @@ public abstract class Character : MonoBehaviour
                 RuntimeStatus.currentHP - damage,
                 0);
     }
+    
+    public void RecoverPart(BodyPart part)
+    {
+        if (part == null)
+            return;
+
+        if (!part.IsBroken && !part.IsWeakened)
+            return;
+
+        //--------------------------------
+        // 부위에 남은 디버프 제거
+        //--------------------------------
+
+        foreach (StatusEffect effect in part.StatusEffects.ToArray())
+        {
+            part.RemoveStatus(effect);
+
+            battleEvent?.RaiseBodyPartStatusRemoved(
+                this,
+                part,
+                effect);
+        }
+
+        //--------------------------------
+        // 중요:
+        // 캐릭터에 이전된 BrokenArm / BrokenHead / BrokenLegs
+        // 같은 파괴 후유증 디버프는 제거하지 않는다.
+        //--------------------------------
+
+        part.Recover();
+
+        battleEvent?.RaiseBodyPartRecovered(
+            this,
+            part);
+
+        ForceRecalculateHP();
+
+        Debug.Log(
+            $"{Data.CharacterName} {part.Type} 부위 회복");
+    }
 
     //------------------------------------------------
 
@@ -567,6 +592,68 @@ public abstract class Character : MonoBehaviour
             return;
 
         RuntimeStatus.currentHP = CalculateInitialHP();
+    }
+    
+    public bool TryBreakWeakenedPart(BodyPart part)
+    {
+        if (part == null)
+            return false;
+
+        if (part.IsBroken)
+            return false;
+
+        if (part.State != BodyPartState.Weakened)
+        {
+            Debug.Log(
+                $"{Data.CharacterName} {part.Type} 부위는 약화 상태가 아니므로 파괴할 수 없습니다.");
+
+            return false;
+        }
+
+        BreakPartInternal(part, false);
+        return true;
+    }
+    
+    private void BreakPartInternal(
+        BodyPart part,
+        bool force)
+    {
+        if (part == null)
+            return;
+
+        if (part.IsBroken)
+            return;
+
+        if (!force && part.State != BodyPartState.Weakened)
+            return;
+
+        Debug.LogWarning(
+            $"[BREAK BEFORE] {Data.CharacterName} {part.Type} " +
+            $"State={part.State}, HP={part.PartHP}/{part.MaxPartHP}");
+
+        RemoveActionSlotsOfPart(part);
+
+        int remainingPartHP =
+            Mathf.Max(0, Mathf.RoundToInt(part.PartHP));
+
+        if (remainingPartHP > 0)
+        {
+            ReduceCurrentHP(remainingPartHP);
+        }
+
+        part.Break();
+
+        Debug.LogWarning(
+            $"[BREAK AFTER] {Data.CharacterName} {part.Type} " +
+            $"State={part.State}, HP={part.PartHP}/{part.MaxPartHP}");
+
+        TransferPartStatusesToCharacter(part);
+
+        OnBodyPartBroken(part, null);
+
+        battleEvent?.RaiseBodyPartDestroyed(this, part);
+
+        CheckDead();
     }
 
     //------------------------------------------------
@@ -667,49 +754,28 @@ public abstract class Character : MonoBehaviour
     {
         return null;
     }
-
-    //------------------------------------------------
-    // Break
-    //------------------------------------------------
-
-    public void BreakPart(BodyPart part)
+    
+    private void RemoveActionSlotsOfPart(BodyPart part)
     {
         if (part == null)
             return;
 
-        if (part.IsBroken)
+        if (battleContext == null)
             return;
 
-        int remainingPartHP =
-            Mathf.Max(0, Mathf.RoundToInt(part.PartHP));
+        if (battleContext.battleManager == null)
+            return;
 
-        if (remainingPartHP > 0)
+        if (battleContext.battleManager.ActionManager == null)
+            return;
+
+        ActionManager actionManager =
+            battleContext.battleManager.ActionManager;
+
+        while (actionManager.FindSlot(this, part) != null)
         {
-            ReduceCurrentHP(remainingPartHP);
+            actionManager.RemoveSlot(this, part);
         }
-
-        part.Break();
-
-        //--------------------------------
-        // 부위 약화 디버프 제거
-        //--------------------------------
-
-        foreach (var effect in part.StatusEffects.ToArray())
-        {
-            part.RemoveStatus(effect);
-
-            battleEvent?.RaiseBodyPartStatusRemoved(this, part, effect);
-        }
-
-        //--------------------------------
-        // 캐릭터 파괴 디버프 새로 부여
-        //--------------------------------
-
-        OnBodyPartBroken(part, null);
-
-        battleEvent?.RaiseBodyPartDestroyed(this, part);
-
-        CheckDead();
     }
 
     //------------------------------------------------
@@ -725,7 +791,7 @@ public abstract class Character : MonoBehaviour
         if (part.IsBroken)
             return;
 
-        BreakPart(part);
+        BreakPartInternal(part, true);
     }
 
     //------------------------------------------------
@@ -1032,5 +1098,166 @@ public abstract class Character : MonoBehaviour
             return;
 
         RuntimeStatus.currentBlock = 0;
+    }
+    
+    public void AddPartStatus(
+        BodyPart part,
+        StatusEffect effect,
+        Character source)
+    {
+        if (effect == null)
+            return;
+
+        //--------------------------------
+        // 부위가 없거나 이미 파괴된 부위면
+        // 캐릭터 디버프로 처리
+        //--------------------------------
+
+        if (part == null || part.IsBroken)
+        {
+            AddStatus(effect, source);
+            return;
+        }
+
+        part.AddStatus(effect, source);
+
+        battleEvent?.RaiseBodyPartStatusApplied(
+            this,
+            part,
+            effect);
+    }
+    
+    public void RemovePartStatus(
+        BodyPart part,
+        StatusEffect effect)
+    {
+        if (part == null)
+            return;
+
+        if (effect == null)
+            return;
+
+        part.RemoveStatus(effect);
+
+        battleEvent?.RaiseBodyPartStatusRemoved(
+            this,
+            part,
+            effect);
+    }
+    
+    public T GetPartStatus<T>(BodyPart part) where T : StatusEffect
+    {
+        if (part == null)
+            return null;
+
+        foreach (StatusEffect effect in part.StatusEffects)
+        {
+            if (effect is T result)
+                return result;
+        }
+
+        return null;
+    }
+    
+    private void TransferPartStatusesToCharacter(
+        BodyPart part)
+    {
+        if (part == null)
+            return;
+
+        foreach (StatusEffect effect in part.StatusEffects.ToArray())
+        {
+            if (effect == null)
+                continue;
+
+            //--------------------------------
+            // 부위에서 제거
+            //--------------------------------
+
+            part.RemoveStatus(effect);
+
+            battleEvent?.RaiseBodyPartStatusRemoved(
+                this,
+                part,
+                effect);
+
+            //--------------------------------
+            // 캐릭터 디버프로 이전
+            //--------------------------------
+
+            AddStatus(
+                effect,
+                this);
+
+            Debug.Log(
+                $"{Data.CharacterName} {part.Type}의 {effect.Name} 디버프가 캐릭터로 이전됨");
+        }
+    }
+    
+    public void TakeStatusPartDamage(
+        BodyPart targetPart,
+        int damage,
+        StatusEffect sourceEffect)
+    {
+        if (IsDead)
+            return;
+
+        if (targetPart == null)
+            return;
+
+        if (damage <= 0)
+            return;
+
+        if (targetPart.IsBroken)
+            return;
+
+        //--------------------------------
+        // 이미 약화된 부위는
+        // 출혈/화상 같은 지속 피해로 파괴되지 않음
+        //--------------------------------
+
+        if (targetPart.IsWeakened)
+        {
+            Debug.Log(
+                $"{Data.CharacterName} {targetPart.Type} 부위는 이미 약화 상태입니다. " +
+                $"{sourceEffect?.Name} 피해로 파괴되지 않습니다.");
+
+            return;
+        }
+
+        //--------------------------------
+        // 초과 피해는 버림
+        // 출혈 20이어도 부위 HP가 4면 4만 적용
+        //--------------------------------
+
+        int actualDamage =
+            Mathf.Min(
+                damage,
+                Mathf.CeilToInt(targetPart.PartHP));
+
+        if (actualDamage <= 0)
+            return;
+
+        float beforePartHP =
+            targetPart.PartHP;
+
+        targetPart.PartHP =
+            Mathf.Max(
+                targetPart.PartHP - actualDamage,
+                0f);
+
+        ReduceCurrentHP(actualDamage);
+
+        Debug.Log(
+            $"{Data.CharacterName}의 {targetPart.Type} 부위에 " +
+            $"{sourceEffect?.Name} 피해 {actualDamage} " +
+            $"HP : {beforePartHP:0} -> {targetPart.PartHP:0}");
+
+        if (targetPart.PartHP <= 0f)
+        {
+            WeakenPart(targetPart);
+        }
+
+        CheckDead();
     }
 }

@@ -2,6 +2,8 @@ using UnityEngine;
 
 public class ElitePrestigeSkill : PrestigeSkill
 {
+    public override bool CanBreakPart => true;
+
     public ElitePrestigeSkill()
     {
         SkillName = "처형자의 일격(위세)";
@@ -32,8 +34,14 @@ public class ElitePrestigeSkill : PrestigeSkill
             Mathf.RoundToInt(
                 action.TargetPart.PartHP);
 
+        bool wasWeakenedBeforeDamage =
+            action.TargetPart.IsWeakened;
+
+        bool wasBrokenBeforeDamage =
+            action.TargetPart.IsBroken;
+
         //--------------------------------
-        // 위세 직접 피해
+        // 위세 피해
         //--------------------------------
 
         int damage =
@@ -44,33 +52,35 @@ public class ElitePrestigeSkill : PrestigeSkill
             action.Target.TakeDamage(
                 action.TargetPart,
                 damage,
-                true);
+                CanBreakPart);
 
             Debug.Log(
-                $"{action.Owner.Data.CharacterName} 위세 피해 : {damage}");
+                $"{action.Owner.Data.CharacterName} 위세 피해 : " +
+                $"{action.Target.Data.CharacterName} {action.TargetPart.Type}에 {damage}");
         }
 
         //--------------------------------
         // 추가 효과
         //--------------------------------
 
-        action.Target.AddStatus(
+        action.Target.AddPartStatus(
+            action.TargetPart,
             new Bleeding(3),
             action.Owner);
 
         Debug.Log(
-            $"{action.Owner.Data.CharacterName} 위세 효과 : 출혈 3 부여");
+            $"{action.Owner.Data.CharacterName} 위세 효과 : " +
+            $"{action.Target.Data.CharacterName} {action.TargetPart.Type}에 출혈 3 부여");
 
         //--------------------------------
-        // 약화된 부위라면 파괴
+        // 파괴 로그만 출력
+        // 실제 파괴는 TakeDamage 내부에서 처리
         //--------------------------------
 
-        if (action.TargetPart.IsWeakened &&
-            !action.TargetPart.IsBroken)
+        if (wasWeakenedBeforeDamage &&
+            !wasBrokenBeforeDamage &&
+            action.TargetPart.IsBroken)
         {
-            action.Target.ForceBreakPart(
-                action.TargetPart);
-
             Debug.Log(
                 $"{action.Target.Data.CharacterName} {action.TargetPart.Type} 약화 부위 파괴");
         }

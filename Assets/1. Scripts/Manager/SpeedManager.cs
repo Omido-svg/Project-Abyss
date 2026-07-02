@@ -189,9 +189,13 @@ public class SpeedManager
             int speed = GetSpeed(part);
 
             string state =
-                part.IsBroken
-                    ? "BROKEN"
-                    : "ACTIVE";
+                part.State switch
+                {
+                    BodyPartState.Normal => "NORMAL",
+                    BodyPartState.Weakened => "WEAKENED",
+                    BodyPartState.Broken => "BROKEN",
+                    _ => "UNKNOWN"
+                };
 
             sb.AppendLine(
                 $"  - Part : {part.Type,-10} | " +

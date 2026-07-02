@@ -27,11 +27,12 @@ public class EliteNormalAttack : NormalSkill
         // 여기서는 추가 효과만 처리
         //--------------------------------
 
-        action.Target.AddStatus(
+        action.Target.AddPartStatus(action.TargetPart,
             new Bleeding(1),
             action.Owner);
 
         Debug.Log(
-            $"{action.Owner.Data.CharacterName} 일반공격 효과 : 출혈 1 부여");
+            $"{action.Owner.Data.CharacterName} 일반공격 효과 : " +
+            $"{action.Target.Data.CharacterName} {action.TargetPart.Type}에 출혈 1 부여");
     }
 }

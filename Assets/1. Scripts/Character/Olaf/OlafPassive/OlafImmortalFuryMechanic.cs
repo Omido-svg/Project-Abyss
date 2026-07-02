@@ -38,7 +38,6 @@ public class OlafImmortalFuryMechanic : CombatMechanic
     //------------------------------------------------
     // 부위 파괴 감지
     //------------------------------------------------
-
     private void OnBodyPartDestroyed(
         Character target,
         BodyPart part)

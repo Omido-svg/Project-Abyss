@@ -77,6 +77,9 @@ public class BattleDebugTuner : MonoBehaviour
         if (!IsReady())
             return;
 
+        playerParts.Clear();
+        enemies.Clear();
+
         InitializePlayerPartList();
         InitializeEnemyPartList();
     }
@@ -88,16 +91,20 @@ public class BattleDebugTuner : MonoBehaviour
         if (player == null || player.BodyParts == null)
             return;
 
-        while (playerParts.Count < player.BodyParts.Count)
+        playerParts.Clear();
+
+        for (int i = 0; i < player.BodyParts.Count; i++)
         {
-            BodyPart part = player.BodyParts[playerParts.Count];
+            BodyPart part = player.BodyParts[i];
+
+            if (part == null)
+                continue;
 
             playerParts.Add(new PartTuningValue
             {
-                partIndex = playerParts.Count,
-                currentHP = (int)part.PartHP,
-                maxHP = (int)part.MaxPartHP,
-                isUsable = part.IsUsable,
+                partIndex = i,
+                currentHP = Mathf.RoundToInt(part.PartHP),
+                maxHP = Mathf.RoundToInt(part.MaxPartHP),
                 isWeakened = part.IsWeakened,
                 isBroken = part.IsBroken
             });
@@ -111,28 +118,32 @@ public class BattleDebugTuner : MonoBehaviour
         if (enemyList == null)
             return;
 
-        while (enemies.Count < enemyList.Count)
+        enemies.Clear();
+
+        for (int enemyIndex = 0; enemyIndex < enemyList.Count; enemyIndex++)
         {
-            Character enemy = enemyList[enemies.Count];
+            Character enemy = enemyList[enemyIndex];
 
             EnemyTuningValue enemyValue = new EnemyTuningValue
             {
-                enemyIndex = enemies.Count,
+                enemyIndex = enemyIndex,
                 parts = new List<PartTuningValue>()
             };
 
             if (enemy != null && enemy.BodyParts != null)
             {
-                for (int i = 0; i < enemy.BodyParts.Count; i++)
+                for (int partIndex = 0; partIndex < enemy.BodyParts.Count; partIndex++)
                 {
-                    BodyPart part = enemy.BodyParts[i];
+                    BodyPart part = enemy.BodyParts[partIndex];
+
+                    if (part == null)
+                        continue;
 
                     enemyValue.parts.Add(new PartTuningValue
                     {
-                        partIndex = i,
-                        currentHP =(int) part.PartHP,
-                        maxHP = (int)part.MaxPartHP,
-                        isUsable = part.IsUsable,
+                        partIndex = partIndex,
+                        currentHP = Mathf.RoundToInt(part.PartHP),
+                        maxHP = Mathf.RoundToInt(part.MaxPartHP),
                         isWeakened = part.IsWeakened,
                         isBroken = part.IsBroken
                     });
@@ -284,7 +295,6 @@ public class PartTuningValue
     public int currentHP = 50;
     public int maxHP = 50;
 
-    public bool isUsable = true;
     public bool isWeakened = false;
     public bool isBroken = false;
 }

@@ -169,58 +169,105 @@ public class BattleManager : MonoBehaviour
 
     private void BindPlayerButtons()
     {
-        if (player == null)
+        if (playerButtons == null)
             return;
 
-        if (player.BodyParts == null)
-            return;
+        int count = 0;
 
-        int count =
-            Mathf.Min(
-                playerButtons.Count,
-                player.BodyParts.Count);
+        if (player != null &&
+            player.BodyParts != null)
+        {
+            count =
+                Mathf.Min(
+                    playerButtons.Count,
+                    player.BodyParts.Count);
 
-        for (int i = 0; i < count; i++)
+            for (int i = 0; i < count; i++)
+            {
+                if (playerButtons[i] == null)
+                    continue;
+
+                if (player.BodyParts[i] == null)
+                    continue;
+
+                playerButtons[i].gameObject.SetActive(true);
+
+                playerButtons[i].Bind(
+                    player,
+                    player.BodyParts[i]);
+            }
+        }
+
+        //--------------------------------
+        // 남는 플레이어 버튼 숨김
+        //--------------------------------
+
+        for (int i = count; i < playerButtons.Count; i++)
         {
             if (playerButtons[i] == null)
                 continue;
 
-            if (player.BodyParts[i] == null)
-                continue;
-
-            playerButtons[i].Bind(
-                player,
-                player.BodyParts[i]);
+            playerButtons[i].Bind(null, null);
+            playerButtons[i].gameObject.SetActive(false);
         }
     }
 
     private void BindEnemyButtons()
     {
-        if (enemies == null)
+        if (enemyButtons == null)
             return;
 
-        int count =
-            Mathf.Min(
-                enemyButtons.Count,
-                enemies.Count);
+        int buttonIndex = 0;
 
-        for (int i = 0; i < count; i++)
+        if (enemies != null)
         {
-            Character enemy = enemies[i];
+            foreach (Character enemy in enemies)
+            {
+                if (enemy == null)
+                    continue;
 
-            if (enemy == null)
-                continue;
+                if (enemy.BodyParts == null)
+                    continue;
 
-            if (enemy.BodyParts == null ||
-                enemy.BodyParts.Count == 0)
-                continue;
+                foreach (BodyPart part in enemy.BodyParts)
+                {
+                    if (part == null)
+                        continue;
 
+                    if (buttonIndex >= enemyButtons.Count)
+                    {
+                        Debug.LogWarning(
+                            "Enemy BodyPartButton 수가 부족합니다. " +
+                            "적 부위를 전부 표시할 수 없습니다.");
+
+                        return;
+                    }
+
+                    BodyPartButton button =
+                        enemyButtons[buttonIndex];
+
+                    if (button != null)
+                    {
+                        button.gameObject.SetActive(true);
+                        button.Bind(enemy, part);
+                    }
+
+                    buttonIndex++;
+                }
+            }
+        }
+
+        //--------------------------------
+        // 남는 적 버튼은 숨김
+        //--------------------------------
+
+        for (int i = buttonIndex; i < enemyButtons.Count; i++)
+        {
             if (enemyButtons[i] == null)
                 continue;
 
-            enemyButtons[i].Bind(
-                enemy,
-                enemy.BodyParts[0]);
+            enemyButtons[i].Bind(null, null);
+            enemyButtons[i].gameObject.SetActive(false);
         }
     }
 

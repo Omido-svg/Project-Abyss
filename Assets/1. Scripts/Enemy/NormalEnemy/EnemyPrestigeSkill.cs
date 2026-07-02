@@ -54,11 +54,11 @@ public class EnemyPrestigeSkill : PrestigeSkill
         // 추가 효과: 출혈 + 화상
         //--------------------------------
 
-        action.Target.AddStatus(
+        action.Target.AddPartStatus(action.TargetPart,
             new Bleeding(2),
             action.Owner);
 
-        action.Target.AddStatus(
+        action.Target.AddPartStatus(action.TargetPart,
             new Burn(1),
             action.Owner);
 

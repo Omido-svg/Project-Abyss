@@ -33,6 +33,8 @@ public abstract class Skill
 
     protected Character owner;
     protected BattleEvent battleEvent;
+    
+    public virtual bool CanBreakPart => false;
 
     //--------------------------------
     // 실행 Phase

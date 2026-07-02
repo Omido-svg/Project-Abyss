@@ -3,6 +3,7 @@ using UnityEngine;
 public class OlafPrestigeSkill : PrestigeSkill
 {
     private const int BleedExplosionDamagePerStack = 5;
+    public override bool CanBreakPart => true;
 
     public OlafPrestigeSkill()
     {
@@ -60,7 +61,7 @@ public class OlafPrestigeSkill : PrestigeSkill
                 action.Target.TakeDamage(
                     action.TargetPart,
                     damage,
-                    true);
+                    CanBreakPart);
 
                 totalDamage += damage;
 
@@ -73,7 +74,7 @@ public class OlafPrestigeSkill : PrestigeSkill
             //--------------------------------
 
             Bleeding bleeding =
-                action.Target.GetStatus<Bleeding>();
+                action.Target.GetPartStatus<Bleeding>(action.TargetPart);
 
             if (bleeding != null)
             {
@@ -92,7 +93,8 @@ public class OlafPrestigeSkill : PrestigeSkill
                         $"{action.Target.Data.CharacterName} 출혈 폭발 피해 : {explosionDamage}");
                 }
 
-                action.Target.RemoveStatus(
+                action.Target.RemovePartStatus(
+                    action.TargetPart,
                     bleeding);
             }
 

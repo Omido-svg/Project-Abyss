@@ -95,9 +95,9 @@ public class BodyPart
             return;
 
         State = BodyPartState.Weakened;
-        PartHP = 1f;
+        PartHP = 0f;
 
-        Debug.Log($"{OwnerName()}의 {Type} 부위 약화");
+        Debug.Log($"{Owner.Data.CharacterName}의 {Type} 부위 약화");
     }
 
     //------------------------------------------------
@@ -124,9 +124,12 @@ public class BodyPart
         State = BodyPartState.Normal;
         PartHP = MaxPartHP;
 
-        ClearStatusEffects();
+        string ownerName =
+            Owner == null || Owner.Data == null
+                ? "NULL"
+                : Owner.Data.CharacterName;
 
-        Debug.Log($"{OwnerName()}의 {Type} 부위 회복");
+        Debug.Log($"{ownerName}의 {Type} 부위 회복");
     }
 
     //------------------------------------------------
@@ -203,26 +206,23 @@ public class BodyPart
         bool isBroken)
     {
         MaxPartHP = Mathf.Max(1f, maxHP);
-        PartHP = Mathf.Clamp(currentHP, 0f, MaxPartHP);
 
-        if (isBroken || PartHP <= 0f)
+        if (isBroken)
         {
             State = BodyPartState.Broken;
             PartHP = 0f;
             return;
         }
 
-        if (isWeakened)
+        if (isWeakened || currentHP <= 0f)
         {
             State = BodyPartState.Weakened;
-
-            if (PartHP <= 0f)
-                PartHP = 1f;
-
+            PartHP = 0f;
             return;
         }
 
         State = BodyPartState.Normal;
+        PartHP = Mathf.Clamp(currentHP, 1f, MaxPartHP);
     }
     
     public void ReplaceSkills(

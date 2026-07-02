@@ -230,9 +230,9 @@ public class StatusPopup : MonoBehaviour
         StringBuilder sb = new();
 
         AppendHeader(sb);
-        AppendCharacterStatus(sb);
-        AppendCharacterEffects(sb);
-        AppendBodyParts(sb);
+        AppendCompactCharacterStatus(sb);
+        AppendCompactEffects(sb);
+        AppendCompactBodyParts(sb);
 
         statusText.text = sb.ToString();
     }
@@ -248,238 +248,21 @@ public class StatusPopup : MonoBehaviour
                 ? character.name
                 : character.Data.CharacterName;
 
-        sb.AppendLine($"<b><size=120%>{characterName}</size></b>");
-
         if (character.IsDead)
         {
-            sb.AppendLine("<color=#FF4B4B><b>[DEAD]</b></color>");
-        }
-
-        sb.AppendLine();
-    }
-
-    //--------------------------------------------------
-    // Character Status
-    //--------------------------------------------------
-
-    private void AppendCharacterStatus(StringBuilder sb)
-    {
-        CurrentStatus c = character.CurrentStatus;
-        RuntimeStatus r = character.RuntimeStatus;
-
-        sb.AppendLine("<b>[ Character ]</b>");
-
-        sb.AppendLine(
-            $"<color=#FF4B4B><b>HP</b></color> : " +
-            $"{character.CurrentHP}");
-
-        if (r != null && c != null)
-        {
             sb.AppendLine(
-                $"<color=#C084FF><b>Prestige</b></color> : " +
-                $"{r.currentPrestige}/{c.maxPrestige}");
-
-            sb.AppendLine(
-                $"<color=#FFD966><b>Speed</b></color> : " +
-                $"{c.minSpeed} ~ {c.maxSpeed}");
-
-            sb.AppendLine(
-                $"<color=#A7F3D0><b>Damage Mult</b></color> : " +
-                $"{c.damageMultiplier:0.00}");
-        }
-
-        sb.AppendLine();
-    }
-
-    //--------------------------------------------------
-    // Character Effects
-    //--------------------------------------------------
-
-    private void AppendCharacterEffects(StringBuilder sb)
-    {
-        sb.AppendLine("<b>[ Character Status Effects ]</b>");
-
-        IReadOnlyList<StatusEffect> effects =
-            character.StatusEffects;
-
-        if (effects == null || effects.Count == 0)
-        {
-            sb.AppendLine("- None");
-            sb.AppendLine();
-            return;
-        }
-
-        foreach (StatusEffect effect in effects)
-        {
-            AppendEffectLine(sb, effect);
-        }
-
-        sb.AppendLine();
-    }
-
-    //--------------------------------------------------
-    // Body Parts
-    //--------------------------------------------------
-
-    private void AppendBodyParts(StringBuilder sb)
-    {
-        sb.AppendLine("<b>[ Body Parts ]</b>");
-
-        foreach (BodyPart part in character.BodyParts)
-        {
-            if (part == null)
-                continue;
-
-            AppendBodyPart(sb, part);
-            sb.AppendLine();
-        }
-    }
-
-    private void AppendBodyPart(
-        StringBuilder sb,
-        BodyPart part)
-    {
-        string stateColor = GetPartStateColor(part);
-
-        sb.AppendLine(
-            $"- <b>{part.Type}</b> " +
-            $"<color={stateColor}>[{part.State}]</color>");
-
-        sb.AppendLine(
-            $"  HP : {part.PartHP:0}/{part.MaxPartHP:0}");
-
-        int speed = GetPartSpeed(part);
-
-        sb.AppendLine(
-            $"  SPD : {speed}");
-
-        ActionSlot slot = GetCurrentSlot(part);
-
-        if (slot != null)
-        {
-            AppendSlotInfo(sb, slot);
+                $"<b><size=120%>{characterName}</size></b> " +
+                "<color=#FF4B4B><b>[DEAD]</b></color>");
         }
         else
         {
-            sb.AppendLine("  SLOT : None");
-        }
-
-        AppendAvailableSkills(sb, part);
-        AppendPartEffects(sb, part);
-    }
-
-    //--------------------------------------------------
-    // Slot Info
-    //--------------------------------------------------
-
-    private void AppendSlotInfo(
-        StringBuilder sb,
-        ActionSlot slot)
-    {
-        string skillName =
-            slot.Skill == null
-                ? "NULL"
-                : slot.Skill.SkillName;
-
-        string targetName =
-            slot.TargetCharacter == null ||
-            slot.TargetCharacter.Data == null
-                ? "NULL"
-                : slot.TargetCharacter.Data.CharacterName;
-
-        string targetPart =
-            slot.TargetPart == null
-                ? "NULL"
-                : slot.TargetPart.Type.ToString();
-
-        sb.AppendLine(
-            $"  SLOT : {slot.Phase} / SPD {slot.Speed}");
-
-        sb.AppendLine(
-            $"  SKILL : {skillName}");
-
-        sb.AppendLine(
-            $"  TARGET : {targetName} / {targetPart}");
-    }
-
-    //--------------------------------------------------
-    // Skills
-    //--------------------------------------------------
-
-    private void AppendAvailableSkills(
-        StringBuilder sb,
-        BodyPart part)
-    {
-        if (part.AvailableSkills == null ||
-            part.AvailableSkills.Count == 0)
-        {
-            sb.AppendLine("  SKILLS : None");
-            return;
-        }
-
-        sb.AppendLine("  SKILLS :");
-
-        foreach (Skill skill in part.AvailableSkills)
-        {
-            if (skill == null)
-                continue;
-
-            string usable =
-                character.CanUseSkill(part, skill)
-                    ? "OK"
-                    : "BLOCKED";
-
             sb.AppendLine(
-                $"    - {skill.SkillName} " +
-                $"[{skill.ActionType}] " +
-                $"PWR {skill.MinPower}~{skill.MaxPower} " +
-                $"({usable})");
-        }
-    }
-
-    //--------------------------------------------------
-    // Part Effects
-    //--------------------------------------------------
-
-    private void AppendPartEffects(
-        StringBuilder sb,
-        BodyPart part)
-    {
-        IReadOnlyList<StatusEffect> effects =
-            part.StatusEffects;
-
-        if (effects == null || effects.Count == 0)
-        {
-            sb.AppendLine("  EFFECTS : None");
-            return;
+                $"<b><size=120%>{characterName}</size></b>");
         }
 
-        sb.AppendLine("  EFFECTS :");
-
-        foreach (StatusEffect effect in effects)
-        {
-            sb.Append("    ");
-            AppendEffectLine(sb, effect);
-        }
+        sb.AppendLine();
     }
-
-    private void AppendEffectLine(
-        StringBuilder sb,
-        StatusEffect effect)
-    {
-        if (effect == null)
-            return;
-
-        string durationText =
-            effect.Duration < 0
-                ? "Permanent"
-                : $"{effect.Duration}T";
-
-        sb.AppendLine(
-            $"- {effect.Name} " +
-            $"Stack {effect.Stack} / {durationText}");
-    }
-
+    
     //--------------------------------------------------
     // Utility
     //--------------------------------------------------
@@ -520,5 +303,140 @@ public class StatusPopup : MonoBehaviour
             return "#FFD966";
 
         return "#A7F3D0";
+    }
+    
+    //--------------------------------------------------
+    // Compact Character Status
+    //--------------------------------------------------
+
+    private void AppendCompactCharacterStatus(StringBuilder sb)
+    {
+        CurrentStatus c = character.CurrentStatus;
+        RuntimeStatus r = character.RuntimeStatus;
+
+        int hp = character.CurrentHP;
+
+        sb.Append($"HP {hp}");
+
+        if (r != null && c != null)
+        {
+            sb.Append($" / 위세 {r.currentPrestige}/{c.maxPrestige}");
+
+            if (r.currentBlock > 0)
+            {
+                sb.Append($" / 방어도 {r.currentBlock}");
+            }
+        }
+
+        sb.AppendLine();
+        sb.AppendLine();
+    }
+
+    //--------------------------------------------------
+    // Compact Effects
+    //--------------------------------------------------
+
+    private void AppendCompactEffects(StringBuilder sb)
+    {
+        sb.Append("<b>Status</b> : ");
+
+        string effectNames =
+            GetEffectNames(character.StatusEffects);
+
+        if (string.IsNullOrEmpty(effectNames))
+        {
+            sb.AppendLine("None");
+        }
+        else
+        {
+            sb.AppendLine(effectNames);
+        }
+
+        sb.AppendLine();
+    }
+
+    private string GetEffectNames(
+        IReadOnlyList<StatusEffect> effects)
+    {
+        if (effects == null || effects.Count == 0)
+            return "";
+
+        List<string> names = new();
+
+        foreach (StatusEffect effect in effects)
+        {
+            if (effect == null)
+                continue;
+
+            if (string.IsNullOrEmpty(effect.Name))
+                continue;
+
+            names.Add(effect.Name);
+        }
+
+        if (names.Count == 0)
+            return "";
+
+        return string.Join(", ", names);
+    }
+
+    //--------------------------------------------------
+    // Compact Body Parts
+    //--------------------------------------------------
+
+    private void AppendCompactBodyParts(StringBuilder sb)
+    {
+        sb.AppendLine("<b>Parts</b>");
+
+        if (character.BodyParts == null)
+        {
+            sb.AppendLine("None");
+            return;
+        }
+
+        foreach (BodyPart part in character.BodyParts)
+        {
+            if (part == null)
+                continue;
+
+            AppendCompactBodyPart(sb, part);
+        }
+    }
+
+    private void AppendCompactBodyPart(
+        StringBuilder sb,
+        BodyPart part)
+    {
+        string stateColor =
+            GetPartStateColor(part);
+
+        int speed =
+            GetPartSpeed(part);
+
+        string partEffects =
+            GetEffectNames(part.StatusEffects);
+
+        if (string.IsNullOrEmpty(partEffects))
+            partEffects = "-";
+
+        ActionSlot slot =
+            GetCurrentSlot(part);
+
+        string skillName = "-";
+
+        if (slot != null && slot.Skill != null)
+            skillName = slot.Skill.SkillName;
+
+        sb.AppendLine(
+            $"- <b>{part.Type}</b> " +
+            $"<color={stateColor}>[{part.State}]</color> " +
+            $"HP {part.PartHP:0}/{part.MaxPartHP:0} " +
+            $"SPD {speed}");
+
+        sb.AppendLine(
+            $"  Skill : {skillName}");
+
+        sb.AppendLine(
+            $"  Status: {partEffects}");
     }
 }

@@ -6,6 +6,8 @@ public class BattleUIManager : MonoBehaviour
 {
     [SerializeField] private BattleManager battleManager;
     [SerializeField] private SkillSelectPanelUI skillSelectPanel;
+    
+    private BattleEvent battleEvent;
 
     private BattleInputMode inputMode = BattleInputMode.SelectOwner;
 
@@ -32,10 +34,12 @@ public class BattleUIManager : MonoBehaviour
 
     private void Start()
     {
-        SubscribeTurnStart();
+        SubscribeBattleEvents();
 
         if (skillSelectPanel != null)
             skillSelectPanel.Hide();
+
+        RefreshAllBodyPartButtons();
     }
 
     private void Update()
@@ -65,39 +69,73 @@ public class BattleUIManager : MonoBehaviour
 
     private void OnDestroy()
     {
-        UnsubscribeTurnStart();
+        UnsubscribeBattleEvents();
     }
+    
+    private void SubscribeBattleEvents()
+    {
+        if (battleManager == null)
+            battleManager = FindFirstObjectByType<BattleManager>();
 
+        if (battleManager == null)
+            return;
+
+        if (battleManager.BattleContext == null)
+            return;
+
+        battleEvent = battleManager.BattleContext._battleEvent;
+
+        if (battleEvent == null)
+            return;
+
+        battleEvent.OnTurnStart -= HandleTurnStart;
+        battleEvent.OnTurnStart += HandleTurnStart;
+
+        battleEvent.OnBodyPartRecovered -= OnBodyPartRecovered;
+        battleEvent.OnBodyPartRecovered += OnBodyPartRecovered;
+
+        battleEvent.OnBodyPartDestroyed -= OnBodyPartChanged;
+        battleEvent.OnBodyPartDestroyed += OnBodyPartChanged;
+
+        battleEvent.OnBodyPartWeakened -= OnBodyPartChanged;
+        battleEvent.OnBodyPartWeakened += OnBodyPartChanged;
+        
+        Debug.Log("[BattleUIManager] BattleEvent subscribed");
+    }
+    
+    private void UnsubscribeBattleEvents()
+    {
+        if (battleEvent == null)
+            return;
+
+        battleEvent.OnTurnStart -= HandleTurnStart;
+
+        battleEvent.OnBodyPartRecovered -= OnBodyPartRecovered;
+        battleEvent.OnBodyPartDestroyed -= OnBodyPartChanged;
+        battleEvent.OnBodyPartWeakened -= OnBodyPartChanged;
+    }
+    
+    private void OnBodyPartChanged(
+        Character character,
+        BodyPart part)
+    {
+        Debug.Log(
+            $"[UI EVENT] BodyPartChanged : " +
+            $"{GetCharacterName(character)} {part.Type} / State={part.State}");
+
+        RefreshAllBodyPartButtons();
+    }
+    
+    private void OnBodyPartRecovered(
+        Character character,
+        BodyPart part)
+    {
+        RefreshAllBodyPartButtons();
+    }
+    
     //---------------------------------------
 
-    private void SubscribeTurnStart()
-    {
-        if (battleManager == null)
-            return;
-
-        if (battleManager.BattleContext == null)
-            return;
-
-        if (battleManager.BattleContext._battleEvent == null)
-            return;
-
-        battleManager.BattleContext._battleEvent.OnTurnStart -= HandleTurnStart;
-        battleManager.BattleContext._battleEvent.OnTurnStart += HandleTurnStart;
-    }
-
-    private void UnsubscribeTurnStart()
-    {
-        if (battleManager == null)
-            return;
-
-        if (battleManager.BattleContext == null)
-            return;
-
-        if (battleManager.BattleContext._battleEvent == null)
-            return;
-
-        battleManager.BattleContext._battleEvent.OnTurnStart -= HandleTurnStart;
-    }
+ 
 
     private void HandleTurnStart(int turn)
     {
@@ -645,7 +683,7 @@ public class BattleUIManager : MonoBehaviour
     public void RefreshAllBodyPartButtons()
     {
         BodyPartButton[] buttons =
-            FindObjectsByType<BodyPartButton>(
+            Object.FindObjectsByType<BodyPartButton>(
                 FindObjectsInactive.Include,
                 FindObjectsSortMode.None);
 
@@ -656,15 +694,13 @@ public class BattleUIManager : MonoBehaviour
 
             button.Refresh();
 
-            if (!button.gameObject.activeInHierarchy)
-                continue;
-
-            button.SetNormalColor();
+            if (button.gameObject.activeInHierarchy)
+                button.SetNormalColor();
         }
 
         ApplyButtonHighlights(buttons);
     }
-    
+        
     private void ApplyButtonHighlights(BodyPartButton[] buttons)
     {
         if (!IsManagerReady())

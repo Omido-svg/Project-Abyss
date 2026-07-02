@@ -22,20 +22,26 @@ public class ElitePreparationSkill : PreparationSkill
         if (action.Target == null)
             return;
 
+        if (action.TargetPart == null)
+            return;
+
         //--------------------------------
         // 도사림은 선행 행동
-        // 직접 피해 없이 상태이상만 부여
+        // 직접 피해 없이 대상 부위에 상태이상만 부여
         //--------------------------------
 
-        action.Target.AddStatus(
+        action.Target.AddPartStatus(
+            action.TargetPart,
             new Burn(1),
             action.Owner);
 
-        action.Target.AddStatus(
+        action.Target.AddPartStatus(
+            action.TargetPart,
             new Bleeding(1),
             action.Owner);
 
         Debug.Log(
-            $"{action.Owner.Data.CharacterName} 도사림 효과 : 화상 1, 출혈 1 부여");
+            $"{action.Owner.Data.CharacterName} 도사림 효과 : " +
+            $"{action.Target.Data.CharacterName} {action.TargetPart.Type}에 화상 1, 출혈 1 부여");
     }
 }

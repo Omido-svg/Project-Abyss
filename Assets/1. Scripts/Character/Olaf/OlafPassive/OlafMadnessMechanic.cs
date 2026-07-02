@@ -83,15 +83,20 @@ public class OlafMadnessMechanic : CombatMechanic
         if (action.Target == null)
             return;
 
+        if (action.TargetPart == null)
+            return;
+
         int bleedAmount =
             GetDuelWinBleedAmount();
 
-        action.Target.AddStatus(
+        action.Target.AddPartStatus(
+            action.TargetPart,
             new Bleeding(bleedAmount),
             owner);
 
         Debug.Log(
-            $"{owner.Data.CharacterName} 결투 승리 효과 : 출혈 {bleedAmount} 부여");
+            $"{owner.Data.CharacterName} 결투 승리 효과 : " +
+            $"{action.Target.Data.CharacterName} {action.TargetPart.Type}에 출혈 {bleedAmount} 부여");
 
         TryExplodeBleedingByDuel(action);
     }
@@ -179,8 +184,7 @@ public class OlafMadnessMechanic : CombatMechanic
     // 출혈 폭발
     //------------------------------------------------
 
-    private void TryExplodeBleedingByDuel(
-        BattleAction action)
+    private void TryExplodeBleedingByDuel(BattleAction action)
     {
         if (action == null)
             return;
@@ -192,7 +196,8 @@ public class OlafMadnessMechanic : CombatMechanic
             return;
 
         Bleeding bleeding =
-            action.Target.GetStatus<Bleeding>();
+            action.Target.GetPartStatus<Bleeding>(
+                action.TargetPart);
 
         if (bleeding == null)
             return;
@@ -203,19 +208,19 @@ public class OlafMadnessMechanic : CombatMechanic
         int explosionDamage =
             bleeding.Stack * BleedExplosionDamagePerStack;
 
-        action.Target.TakeTrueDamage(
+        action.Target.TakeStatusPartDamage(
+            action.TargetPart,
             explosionDamage,
             bleeding);
 
-        action.Target.ForceBreakPart(
-            action.TargetPart);
-
-        action.Target.RemoveStatus(
+        action.Target.RemovePartStatus(
+            action.TargetPart,
             bleeding);
 
         Debug.Log(
             $"{owner.Data.CharacterName} 출혈 폭발 : " +
-            $"{action.Target.Data.CharacterName} {action.TargetPart.Type} 파괴");
+            $"{action.Target.Data.CharacterName} {action.TargetPart.Type}에 " +
+            $"{explosionDamage} 출혈 피해, 파괴 불가");
     }
 
     //------------------------------------------------
@@ -225,6 +230,9 @@ public class OlafMadnessMechanic : CombatMechanic
     private void RecoverTwoBrokenOrWeakenedParts()
     {
         if (owner == null)
+            return;
+
+        if (owner.BodyParts == null)
             return;
 
         List<BodyPart> candidates = new();
@@ -238,8 +246,29 @@ public class OlafMadnessMechanic : CombatMechanic
                 candidates.Add(part);
         }
 
-        candidates.Sort(
-            (a, b) => a.PartHP.CompareTo(b.PartHP));
+        if (candidates.Count <= 0)
+        {
+            Debug.Log($"{owner.Data.CharacterName} 광기 회복 대상 부위가 없습니다.");
+            return;
+        }
+
+        //--------------------------------
+        // 랜덤 섞기
+        //--------------------------------
+
+        for (int i = 0; i < candidates.Count; i++)
+        {
+            int randomIndex =
+                Random.Range(i, candidates.Count);
+
+            BodyPart temp = candidates[i];
+            candidates[i] = candidates[randomIndex];
+            candidates[randomIndex] = temp;
+        }
+
+        //--------------------------------
+        // 최대 2개 회복
+        //--------------------------------
 
         int recoverCount =
             Mathf.Min(2, candidates.Count);
@@ -248,14 +277,10 @@ public class OlafMadnessMechanic : CombatMechanic
         {
             BodyPart part = candidates[i];
 
-            part.Recover();
+            owner.RecoverPart(part);
 
-            if (battleEvent != null)
-            {
-                battleEvent.RaiseBodyPartRecovered(
-                    owner,
-                    part);
-            }
+            Debug.Log(
+                $"{owner.Data.CharacterName} 광기 효과 : {part.Type} 부위 회복");
         }
 
         owner.ForceRecalculateHP();

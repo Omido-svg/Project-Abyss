@@ -33,7 +33,8 @@ public class OlafNormalAttack : NormalSkill
                 madness.GetNormalAttackBleedAmount();
         }
 
-        action.Target.AddStatus(
+        action.Target.AddPartStatus(
+            action.TargetPart,
             new Bleeding(bleedAmount),
             action.Owner);
 
