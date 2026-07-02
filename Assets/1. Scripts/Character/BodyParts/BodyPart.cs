@@ -136,6 +136,19 @@ public class BodyPart
     // 부위 상태이상
     //------------------------------------------------
 
+    public void AddStatus(StatusEffect effect)
+    {
+        if (effect == null)
+            return;
+
+        if (statusEffects.Contains(effect))
+            return;
+
+        statusEffects.Add(effect);
+    }
+
+    // 기존 코드 호환용
+    // 가능하면 새 코드에서는 CharacterStatusController를 거쳐서 AddPartStatus를 쓰는 게 좋음
     public void AddStatus(
         StatusEffect effect,
         Character source)
@@ -151,6 +164,9 @@ public class BodyPart
 
         foreach (StatusEffect existing in statusEffects)
         {
+            if (existing == null)
+                continue;
+
             if (existing.GetType() == effect.GetType())
             {
                 existing.Merge(effect);
@@ -158,7 +174,10 @@ public class BodyPart
             }
         }
 
-        effect.Initialize(Owner, source, this);
+        effect.Initialize(
+            Owner,
+            source,
+            this);
 
         effect.OnApply();
 

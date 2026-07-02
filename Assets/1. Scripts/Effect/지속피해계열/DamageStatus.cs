@@ -16,11 +16,23 @@ public abstract class DamageStatus : StatusEffect
         if (owner == null)
             return;
 
-        owner.TakeTrueDamage(Damage, this);
+        if (IsPartEffect)
+        {
+            Owner.TakeStatusPartDamage(
+                OwnerPart,
+                Stack,
+                this);
+
+            return;
+        }
+
+        Owner.TakeTrueDamage(
+            Stack,
+            this);
 
         DecreaseDuration();
 
-        if (IsExpired())
+        if (IsExpired)
             RemoveStatus();
     }
 }

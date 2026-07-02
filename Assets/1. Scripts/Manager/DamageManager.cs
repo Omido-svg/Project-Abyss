@@ -81,9 +81,18 @@ public class DamageManager
         //--------------------------------
         // 최종 피해 적용
         //--------------------------------
-
+        
         if (context.FinalDamage > 0)
         {
+            if (action.TargetPart != null && action.TargetPart.IsBroken)
+            {
+                Debug.Log(
+                    $"[DAMAGE TO BROKEN PART] " +
+                    $"{action.Owner.Data.CharacterName} -> " +
+                    $"{action.Target.Data.CharacterName} {action.TargetPart.Type} / " +
+                    $"Damage={context.FinalDamage}");
+            }
+
             action.Target.TakeDamage(
                 action.TargetPart,
                 context.FinalDamage,
@@ -120,9 +129,6 @@ public class DamageManager
         if (action.OwnerPart == null)
             return false;
 
-        if (action.TargetPart == null)
-            return false;
-
         if (action.Skill == null)
             return false;
 
@@ -132,11 +138,16 @@ public class DamageManager
         if (action.Target.IsDead)
             return false;
 
+        //--------------------------------
+        // 공격자의 사용 부위가 파괴되면 행동 불가
+        //--------------------------------
         if (action.OwnerPart.IsBroken)
             return false;
 
-        if (action.TargetPart.IsBroken)
-            return false;
+        //--------------------------------
+        // TargetPart는 Broken이어도 유효하다.
+        // Character.TakeDamage 쪽에서 직접 피해로 처리한다.
+        //--------------------------------
 
         return true;
     }

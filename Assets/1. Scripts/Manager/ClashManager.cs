@@ -114,11 +114,18 @@ public class ClashManager
         if (slot.TargetCharacter.IsDead)
             return false;
 
+        //--------------------------------
+        // 공격자의 사용 부위가 파괴되면 행동 불가
+        //--------------------------------
         if (slot.Part.IsBroken)
             return false;
 
-        if (slot.TargetPart.IsBroken)
-            return false;
+        //--------------------------------
+        // 중요:
+        // TargetPart.IsBroken은 여기서 막으면 안 됨
+        // 대상 부위가 파괴되어 있어도 공격은 가능해야 함
+        // 피해 처리에서 직접 피해로 넘긴다
+        //--------------------------------
 
         return true;
     }
@@ -131,9 +138,46 @@ public class ClashManager
         BattleAction first,
         BattleAction second)
     {
+        bool canA =
+            CanExecuteAction(first);
+
+        bool canB =
+            CanExecuteAction(second);
+
+        if (!canA && !canB)
+        {
+            Debug.Log(
+                "[CLASH SKIP] 양쪽 행동 모두 실행 불가");
+
+            return;
+        }
+
+        if (canA && !canB)
+        {
+            Debug.Log(
+                $"[CLASH -> ONESIDE] " +
+                $"{first.Owner.Data.CharacterName} {first.OwnerPart.Type} 행동만 실행 / " +
+                $"{GetActionName(second)} 행동 불가");
+
+            ResolveOneSide(first);
+            return;
+        }
+
+        if (!canA && canB)
+        {
+            Debug.Log(
+                $"[CLASH -> ONESIDE] " +
+                $"{second.Owner.Data.CharacterName} {second.OwnerPart.Type} 행동만 실행 / " +
+                $"{GetActionName(first)} 행동 불가");
+
+            ResolveOneSide(second);
+            return;
+        }
+        
         battleContext._battleEvent.RaiseClashStart(
             first.Owner,
             second.Owner);
+
 
         //------------------------------------
         // 최초 굴림
@@ -259,14 +303,28 @@ public class ClashManager
         // 피해 적용
         //------------------------------------
 
-        int beforeHP =
-            Mathf.RoundToInt(winner.TargetPart.PartHP);
+        bool targetPartWasBrokenBeforeDamage =
+            winner.TargetPart != null &&
+            winner.TargetPart.IsBroken;
+
+        int beforeHP = 0;
+
+        if (winner.TargetPart != null)
+        {
+            beforeHP =
+                Mathf.RoundToInt(winner.TargetPart.PartHP);
+        }
 
         int damage =
             damageManager.ApplyDamage(winner);
 
-        int afterHP =
-            Mathf.RoundToInt(winner.TargetPart.PartHP);
+        int afterHP = 0;
+
+        if (winner.TargetPart != null)
+        {
+            afterHP =
+                Mathf.RoundToInt(winner.TargetPart.PartHP);
+        }
 
         //------------------------------------
         // 로그
@@ -280,13 +338,37 @@ public class ClashManager
             damage,
             prestigeGain,
             beforeHP,
-            afterHP);
+            afterHP,
+            targetPartWasBrokenBeforeDamage);
 
         battleContext.battleManager.BattleLogger.LogClashResult(
             loser,
             false,
             loserClash,
             winnerClash);
+    }
+    
+    private string GetActionName(BattleAction action)
+    {
+        if (action == null)
+            return "NULL";
+
+        string ownerName =
+            action.Owner != null
+                ? action.Owner.Data.CharacterName
+                : "NULL_OWNER";
+
+        string partName =
+            action.OwnerPart != null
+                ? action.OwnerPart.Type.ToString()
+                : "NULL_PART";
+
+        string skillName =
+            action.Skill != null
+                ? action.Skill.SkillName
+                : "NULL_SKILL";
+
+        return $"{ownerName} {partName} / {skillName}";
     }
 
     //--------------------------------------------------
@@ -305,6 +387,14 @@ public class ClashManager
 
     private void ResolveOneSide(BattleAction action)
     {
+        if (!CanExecuteAction(action))
+        {
+            Debug.Log(
+                $"[ONESIDE SKIP] {GetActionName(action)} 실행 불가");
+
+            return;
+        }
+
         if (action == null)
             return;
 
@@ -317,17 +407,15 @@ public class ClashManager
 
         if (!action.HasRolled)
         {
-            action.RolledPower = action.RollPower();
-            action.finalPower = action.RolledPower;
-            action.HasRolled = true;
+            action.RolledPower =
+                action.RollPower();
+
+            action.finalPower =
+                action.RolledPower;
+
+            action.HasRolled =
+                true;
         }
-
-        //------------------------------------
-        // 피해 전 HP
-        //------------------------------------
-
-        int beforeHP =
-            Mathf.RoundToInt(action.TargetPart.PartHP);
 
         //------------------------------------
         // 스킬 효과
@@ -336,32 +424,53 @@ public class ClashManager
         ExecuteSkill(action);
 
         //------------------------------------
+        // 피해 적용 직전 상태 저장
+        //------------------------------------
+
+        bool targetPartWasBrokenBeforeDamage =
+            action.TargetPart != null &&
+            action.TargetPart.IsBroken;
+
+        int beforeHP = 0;
+
+        if (action.TargetPart != null)
+        {
+            beforeHP =
+                Mathf.RoundToInt(action.TargetPart.PartHP);
+        }
+
+        //------------------------------------
         // 피해 적용
         //------------------------------------
 
         int damage =
             damageManager.ApplyDamage(action);
 
-        //------------------------------------
-        // 피해 후 HP
-        //------------------------------------
+        int afterHP = 0;
 
-        int afterHP =
-            Mathf.RoundToInt(action.TargetPart.PartHP);
+        if (action.TargetPart != null)
+        {
+            afterHP =
+                Mathf.RoundToInt(action.TargetPart.PartHP);
+        }
 
         //------------------------------------
         // 로그
         //------------------------------------
 
-        battleContext.battleManager.BattleLogger.LogOneSide(
+        battleContext.battleManager.BattleLogger.LogOneSideResult(
             action,
             damage,
             beforeHP,
-            afterHP);
+            afterHP,
+            targetPartWasBrokenBeforeDamage);
     }
     
     private void ExecuteSkill(BattleAction action)
     {
+        if (!CanExecuteAction(action))
+            return;
+        
         if (action == null)
             return;
 
@@ -370,8 +479,35 @@ public class ClashManager
 
         action.Skill.Execute(action);
 
-        action.Skill.ConsumeResource(
-            action.Owner);
+        action.Skill.ConsumeResource(action.Owner);
+    }
+    
+    private bool CanExecuteAction(BattleAction action)
+    {
+        if (action == null)
+            return false;
+
+        if (action.Owner == null)
+            return false;
+
+        if (action.Owner.IsDead)
+            return false;
+
+        if (action.OwnerPart == null)
+            return false;
+
+        if (action.OwnerPart.IsBroken)
+        {
+            Debug.Log(
+                $"[ACTION INVALID - BROKEN OWNER PART] " +
+                $"{action.Owner.Data.CharacterName} / " +
+                $"{action.OwnerPart.Type} / " +
+                $"{action.Skill?.SkillName}");
+
+            return false;
+        }
+
+        return true;
     }
     
     private void RollClashPower(BattleAction action)

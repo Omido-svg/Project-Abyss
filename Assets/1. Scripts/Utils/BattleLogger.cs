@@ -4,9 +4,9 @@ using UnityEngine;
 
 public class BattleLogger
 {
-    private readonly List<BattleLogEntry> logs = new();
+    private readonly List<string> logs = new();
 
-    public IReadOnlyList<BattleLogEntry> Logs => logs;
+    public IReadOnlyList<string> Logs => logs;
 
     //------------------------------------------------
 
@@ -23,35 +23,56 @@ public class BattleLogger
         BattleAction action,
         BattleLogType type)
     {
-        logs.Add(
+        string log =
             BattleLogEntry.Create(action)
                 .SetType(type)
                 .Build()
-        );
+                .ToString();
+
+        logs.Add(log);
     }
 
     //------------------------------------------------
     // 일방공격
     //------------------------------------------------
 
-    public void LogOneSide(
+    public void LogOneSideResult(
         BattleAction action,
         int damage,
         int beforeHP,
-        int afterHP)
+        int afterHP,
+        bool targetPartWasBrokenBeforeDamage = false)
     {
-        logs.Add(
-            BattleLogEntry.Create(action)
-                .SetType(BattleLogType.Normal)
-                .SetDamage(damage, beforeHP, afterHP)
-                .SetBroken(action != null &&
-                           action.TargetPart != null &&
-                           action.TargetPart.IsBroken)
-                .SetDead(action != null &&
-                         action.Target != null &&
-                         action.Target.IsDead)
-                .Build()
-        );
+        if (action == null)
+            return;
+
+        StringBuilder builder =
+            new StringBuilder();
+
+        builder.AppendLine("====================================");
+
+        builder.AppendLine(
+            $"{action.Owner.Data.CharacterName} ({action.OwnerPart.Type})");
+
+        builder.AppendLine(
+            $" -> {action.Target.Data.CharacterName} ({action.TargetPart.Type})");
+
+        builder.AppendLine($"Skill : {action.Skill.SkillName}");
+        builder.AppendLine($"Type  : {action.ActionType}");
+        builder.AppendLine($"Speed : {action.Speed}");
+        builder.AppendLine($"Power : {action.RolledPower}");
+
+        AppendDamageLog(
+            builder,
+            damage,
+            beforeHP,
+            afterHP,
+            targetPartWasBrokenBeforeDamage);
+
+        builder.AppendLine();
+        builder.AppendLine("----------------------------------");
+
+        logs.Add(builder.ToString());
     }
 
     //------------------------------------------------
@@ -65,18 +86,20 @@ public class BattleLogger
         int beforeHP,
         int afterHP)
     {
-        logs.Add(
+        string log =
             BattleLogEntry.Create(action)
                 .SetType(type)
                 .SetDamage(damage, beforeHP, afterHP)
                 .SetBroken(action != null &&
-                        action.TargetPart != null &&
-                        action.TargetPart.IsBroken)
+                           action.TargetPart != null &&
+                           action.TargetPart.IsBroken)
                 .SetDead(action != null &&
-                        action.Target != null &&
-                        action.Target.IsDead)
+                         action.Target != null &&
+                         action.Target.IsDead)
                 .Build()
-        );
+                .ToString();
+
+        logs.Add(log);
     }
 
     //------------------------------------------------
@@ -85,53 +108,72 @@ public class BattleLogger
 
     public void LogClashResult(
         BattleAction action,
-        bool isWinner,
-        int myPower,
-        int enemyPower,
+        bool isWin,
+        int myClash,
+        int enemyClash,
         int damage = 0,
         int prestigeGain = 0,
         int beforeHP = 0,
-        int afterHP = 0)
+        int afterHP = 0,
+        bool targetPartWasBrokenBeforeDamage = false)
     {
-        BattleLogBuilder builder =
-            BattleLogEntry.Create(action)
-                .SetType(BattleLogType.Clash)
-                .SetClash(myPower, enemyPower)
-                .SetWinner(isWinner);
+        if (action == null)
+            return;
 
-        if (isWinner)
+        StringBuilder builder =
+            new StringBuilder();
+
+        builder.AppendLine("====================================");
+
+        builder.AppendLine(
+            $"{action.Owner.Data.CharacterName} ({action.OwnerPart.Type})");
+
+        builder.AppendLine(
+            $" -> {action.Target.Data.CharacterName} ({action.TargetPart.Type})");
+
+        builder.AppendLine($"Skill : {action.Skill.SkillName}");
+        builder.AppendLine($"Type  : {action.ActionType}");
+        builder.AppendLine($"Speed : {action.Speed}");
+        builder.AppendLine($"Power : {action.RolledPower}");
+
+        builder.AppendLine($"Clash : {myClash} vs {enemyClash}");
+        builder.AppendLine(isWin ? "WIN" : "LOSE");
+
+        AppendDamageLog(
+            builder,
+            damage,
+            beforeHP,
+            afterHP,
+            targetPartWasBrokenBeforeDamage);
+
+        if (prestigeGain > 0)
         {
-            builder
-                .SetDamage(damage, beforeHP, afterHP)
-                .SetPrestige(prestigeGain)
-                .SetBroken(action != null &&
-                           action.TargetPart != null &&
-                           action.TargetPart.IsBroken)
-                .SetDead(action != null &&
-                         action.Target != null &&
-                         action.Target.IsDead);
+            builder.AppendLine($"Prestige : +{prestigeGain}");
         }
 
-        logs.Add(builder.Build());
+        builder.AppendLine();
+        builder.AppendLine("----------------------------------");
+
+        logs.Add(builder.ToString());
     }
 
     //------------------------------------------------
 
     public void PrintTurn(int turn)
     {
-        StringBuilder sb = new();
+        StringBuilder sb =
+            new StringBuilder();
 
         sb.AppendLine("==================================");
         sb.AppendLine($"TURN {turn} RESULT");
         sb.AppendLine("==================================");
 
-        foreach (BattleLogEntry log in logs)
+        foreach (string log in logs)
         {
-            if (log == null)
+            if (string.IsNullOrEmpty(log))
                 continue;
 
-            sb.AppendLine(log.ToString());
-            sb.AppendLine("----------------------------------");
+            sb.AppendLine(log);
         }
 
         sb.AppendLine("==================================");
@@ -139,5 +181,32 @@ public class BattleLogger
         Debug.Log(sb.ToString());
 
         logs.Clear();
+    }
+
+    //------------------------------------------------
+
+    private void AppendDamageLog(
+        StringBuilder builder,
+        int damage,
+        int beforeHP,
+        int afterHP,
+        bool targetPartWasBrokenBeforeDamage)
+    {
+        if (builder == null)
+            return;
+
+        if (damage <= 0)
+            return;
+
+        if (targetPartWasBrokenBeforeDamage)
+        {
+            builder.AppendLine("Target Part : Broken");
+            builder.AppendLine($"Damage : {damage}");
+            builder.AppendLine("Damage Type : Direct");
+            return;
+        }
+
+        builder.AppendLine($"Damage : {damage}");
+        builder.AppendLine($"HP : {beforeHP} -> {afterHP}");
     }
 }

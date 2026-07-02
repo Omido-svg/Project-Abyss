@@ -30,7 +30,7 @@ public class Burn : DamageStatus
 
         DecreaseDuration();
 
-        if (IsExpired())
+        if (IsExpired)
             RemoveStatus();
     }
 }

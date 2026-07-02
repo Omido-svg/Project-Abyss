@@ -32,6 +32,9 @@ public abstract class StatusEffect
 
     public bool IsPartEffect => ownerPart != null;
     public bool IsCharacterEffect => ownerPart == null;
+    
+    public bool IsExpired =>
+        Duration <= 0;
 
     //--------------------------------
 
@@ -163,11 +166,6 @@ public abstract class StatusEffect
     {
         if (Duration > 0)
             Duration--;
-    }
-
-    public bool IsExpired()
-    {
-        return Duration == 0;
     }
 
     //--------------------------------

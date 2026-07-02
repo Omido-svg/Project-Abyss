@@ -38,6 +38,9 @@ public class ActionResolver
         while (queue.Count > 0)
         {
             ActionSlot slot = queue.Dequeue();
+            
+            if (!CanExecuteSlot(slot))
+                continue;
 
             if (!IsValidSlot(slot))
                 continue;
@@ -152,5 +155,33 @@ public class ActionResolver
         {
             Slot = slot
         };
+    }
+    
+    private bool CanExecuteSlot(ActionSlot slot)
+    {
+        if (slot == null)
+            return false;
+
+        if (slot.Owner == null)
+            return false;
+
+        if (slot.Owner.IsDead)
+            return false;
+
+        if (slot.Part == null)
+            return false;
+
+        if (slot.Part.IsBroken)
+        {
+            Debug.Log(
+                $"[SKIP SLOT - BROKEN PART] " +
+                $"{slot.Owner.Data.CharacterName} / " +
+                $"{slot.Part.Type} / " +
+                $"{slot.Skill?.SkillName}");
+
+            return false;
+        }
+
+        return true;
     }
 }

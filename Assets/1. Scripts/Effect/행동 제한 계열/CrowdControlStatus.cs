@@ -9,7 +9,7 @@ public abstract class CrowdControlStatus : StatusEffect
     {
         DecreaseDuration();
 
-        if (IsExpired())
+        if (IsExpired)
             RemoveStatus();
     }
 }
