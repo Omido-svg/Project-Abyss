@@ -3,6 +3,10 @@ using UnityEngine;
 
 public class NormalEnemy : Enemy
 {
+    [Header("Skill Set")]
+    [SerializeField]
+    private NormalEnemySkillSet skillSet;
+
     private readonly List<BodyPart> bodyParts = new();
 
     public override IReadOnlyList<BodyPart> BodyParts => bodyParts;
@@ -19,12 +23,53 @@ public class NormalEnemy : Enemy
             new BodyPart(
                 PartType.HEAD,
                 50,
-                new Skill[]
-                {
-                    // new EnemyNormalAttack(),
-                    // new EnemyDuelSkill(),
-                    // new EnemyPrestigeSkill()
-                }));
+                CreateHeadSkillSet()));
+    }
+
+    //--------------------------------
+    // 스킬 생성
+    //--------------------------------
+
+    private Skill[] CreateHeadSkillSet()
+    {
+        return CreateSkillArray(
+            CreateSkill(skillSet != null ? skillSet.NormalAttack : null),
+            CreateSkill(skillSet != null ? skillSet.DuelSkill : null),
+            CreatePrestigeSkill());
+    }
+
+    private Skill CreateSkill(SkillDefinition definition)
+    {
+        if (definition == null)
+            return null;
+
+        return definition.CreateRuntimeSkill();
+    }
+
+    private Skill CreatePrestigeSkill()
+    {
+        if (skillSet == null)
+            return null;
+
+        if (skillSet.PrestigeSkill == null)
+            return null;
+
+        return skillSet.PrestigeSkill.CreateRuntimeSkill();
+    }
+
+    private Skill[] CreateSkillArray(params Skill[] skills)
+    {
+        List<Skill> result = new();
+
+        foreach (Skill skill in skills)
+        {
+            if (skill == null)
+                continue;
+
+            result.Add(skill);
+        }
+
+        return result.ToArray();
     }
 
     //--------------------------------
@@ -78,8 +123,5 @@ public class NormalEnemy : Enemy
     public override void Die()
     {
         base.Die();
-
-        // base.Die()에서 이미 사망 로그를 찍고 있다면
-        // 여기서 중복 로그는 찍지 않는 게 좋다.
     }
 }

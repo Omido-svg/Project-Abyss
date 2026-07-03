@@ -19,7 +19,7 @@ MonoBehaviour:
   GainPrestige: 1
   ResolverType: 0
   DiceMin: 1
-  DiceMax: 2
+  DiceMax: 3
   CoinCount: 0
   Effects:
   - {fileID: 11400000, guid: 34bc95e903f945046a515c97cda52fab, type: 2}

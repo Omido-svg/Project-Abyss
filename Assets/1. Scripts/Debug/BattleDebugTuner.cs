@@ -22,6 +22,9 @@ public class BattleDebugTuner : MonoBehaviour
     [SerializeField] private int playerCurrentPrestige = 0;
     [SerializeField] private int playerMaxPrestige = 100;
 
+    [Header("Enemy Prestige")]
+    [SerializeField] private bool overrideEnemyPrestige = false;
+
     [Header("Player Parts")]
     [SerializeField] private bool overridePlayerParts = false;
     [SerializeField] private List<PartTuningValue> playerParts = new();
@@ -81,7 +84,7 @@ public class BattleDebugTuner : MonoBehaviour
         enemies.Clear();
 
         InitializePlayerPartList();
-        InitializeEnemyPartList();
+        InitializeEnemyList();
     }
 
     private void InitializePlayerPartList()
@@ -111,7 +114,7 @@ public class BattleDebugTuner : MonoBehaviour
         }
     }
 
-    private void InitializeEnemyPartList()
+    private void InitializeEnemyList()
     {
         List<Character> enemyList = battleManager.BattleContext.Enemies;
 
@@ -127,6 +130,8 @@ public class BattleDebugTuner : MonoBehaviour
             EnemyTuningValue enemyValue = new EnemyTuningValue
             {
                 enemyIndex = enemyIndex,
+                currentPrestige = GetCurrentPrestige(enemy),
+                maxPrestige = GetMaxPrestige(enemy),
                 parts = new List<PartTuningValue>()
             };
 
@@ -162,6 +167,7 @@ public class BattleDebugTuner : MonoBehaviour
 
         ApplyMomentum();
         ApplyPlayerPrestige();
+        ApplyEnemyPrestige();
         ApplyPlayerParts();
         ApplyEnemyParts();
 
@@ -190,11 +196,63 @@ public class BattleDebugTuner : MonoBehaviour
         if (player == null)
             return;
 
+        int maxPrestige =
+            Mathf.Max(1, playerMaxPrestige);
+
+        int currentPrestige =
+            Mathf.Clamp(
+                playerCurrentPrestige,
+                0,
+                maxPrestige);
+
         if (player.CurrentStatus != null)
-            player.CurrentStatus.maxPrestige = playerMaxPrestige;
+            player.CurrentStatus.maxPrestige = maxPrestige;
 
         if (player.RuntimeStatus != null)
-            player.RuntimeStatus.currentPrestige = playerCurrentPrestige;
+            player.RuntimeStatus.currentPrestige = currentPrestige;
+    }
+
+    private void ApplyEnemyPrestige()
+    {
+        if (!overrideEnemyPrestige)
+            return;
+
+        List<Character> enemyList =
+            battleManager.BattleContext.Enemies;
+
+        if (enemyList == null)
+            return;
+
+        foreach (EnemyTuningValue enemyValue in enemies)
+        {
+            if (enemyValue == null)
+                continue;
+
+            if (enemyValue.enemyIndex < 0 ||
+                enemyValue.enemyIndex >= enemyList.Count)
+                continue;
+
+            Character enemy =
+                enemyList[enemyValue.enemyIndex];
+
+            if (enemy == null)
+                continue;
+
+            int maxPrestige =
+                Mathf.Max(1, enemyValue.maxPrestige);
+
+            int currentPrestige =
+                Mathf.Clamp(
+                    enemyValue.currentPrestige,
+                    0,
+                    maxPrestige);
+
+            if (enemy.CurrentStatus != null)
+                enemy.CurrentStatus.maxPrestige = maxPrestige;
+
+            if (enemy.RuntimeStatus != null)
+                enemy.RuntimeStatus.currentPrestige = currentPrestige;
+        }
     }
 
     private void ApplyPlayerParts()
@@ -275,6 +333,28 @@ public class BattleDebugTuner : MonoBehaviour
         character.ForceRecalculateHP();
     }
 
+    private int GetCurrentPrestige(Character character)
+    {
+        if (character == null)
+            return 0;
+
+        if (character.RuntimeStatus == null)
+            return 0;
+
+        return character.RuntimeStatus.currentPrestige;
+    }
+
+    private int GetMaxPrestige(Character character)
+    {
+        if (character == null)
+            return 100;
+
+        if (character.CurrentStatus == null)
+            return 100;
+
+        return character.CurrentStatus.maxPrestige;
+    }
+
     private bool IsReady()
     {
         if (battleManager == null)
@@ -303,5 +383,11 @@ public class PartTuningValue
 public class EnemyTuningValue
 {
     public int enemyIndex;
+
+    [Header("Prestige")]
+    public int currentPrestige = 0;
+    public int maxPrestige = 100;
+
+    [Header("Parts")]
     public List<PartTuningValue> parts = new();
 }

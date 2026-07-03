@@ -726,6 +726,7 @@ MonoBehaviour:
   overridePlayerPrestige: 0
   playerCurrentPrestige: 0
   playerMaxPrestige: 100
+  overrideEnemyPrestige: 0
   overridePlayerParts: 0
   playerParts: []
   overrideEnemyParts: 0

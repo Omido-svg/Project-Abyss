@@ -10,16 +10,17 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: a85a262093fed2b45a6f05cb3a256be9, type: 3}
-  m_Name: "\uB09C\uD3ED\uD55C \uACF5\uACA9(\uACB0\uD22C)"
+  m_Name: "\uCC98\uD615\uC790\uC758 \uC77C\uACA9(\uC704\uC138)"
   m_EditorClassIdentifier: 
-  SkillName: "\uB09C\uD3ED\uD55C \uACF5\uACA9(\uACB0\uD22C)"
-  ActionType: 1
-  BasePower: 2
-  CanBreakPart: 0
-  GainPrestige: 1
+  SkillName: "\uCC98\uD615\uC790\uC758 \uC77C\uACA9(\uC704\uC138)"
+  ActionType: 3
+  BasePower: 14
+  CanBreakPart: 1
+  GainPrestige: 0
   ResolverType: 0
   DiceMin: 2
-  DiceMax: 4
+  DiceMax: 6
   CoinCount: 0
   Effects:
-  - {fileID: 11400000, guid: 34bc95e903f945046a515c97cda52fab, type: 2}
+  - {fileID: 11400000, guid: faacc00a12e67cb49a20b6c972ff1cd7, type: 2}
+  - {fileID: 11400000, guid: c0ffe016bc393c44fbe4c873ed3a94f1, type: 2}

@@ -86,17 +86,13 @@ public class EliteEnemy : Enemy
 
     private Skill CreatePrestigeSkill()
     {
-        if (skillSet != null &&
-            skillSet.PrestigeSkill != null)
-        {
-            return skillSet.PrestigeSkill.CreateRuntimeSkill();
-        }
+        if (skillSet == null)
+            return null;
 
-        //--------------------------------
-        // 혹시 아직 ElitePrestigeSkill 코드를 유지 중이면 fallback
-        // 완전히 에셋화했으면 이 fallback은 나중에 제거 가능
-        //--------------------------------
-        return new ElitePrestigeSkill();
+        if (skillSet.PrestigeSkill == null)
+            return null;
+
+        return skillSet.PrestigeSkill.CreateRuntimeSkill();
     }
 
     private Skill[] CreateSkillArray(params Skill[] skills)
