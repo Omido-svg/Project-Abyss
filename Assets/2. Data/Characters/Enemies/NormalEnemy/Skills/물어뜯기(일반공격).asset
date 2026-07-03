@@ -1,0 +1,25 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a85a262093fed2b45a6f05cb3a256be9, type: 3}
+  m_Name: "\uBB3C\uC5B4\uB72F\uAE30(\uC77C\uBC18\uACF5\uACA9)"
+  m_EditorClassIdentifier: 
+  SkillName: "\uBB3C\uC5B4\uB72F\uAE30(\uC77C\uBC18\uACF5\uACA9)"
+  ActionType: 0
+  BasePower: 2
+  CanBreakPart: 0
+  GainPrestige: 1
+  ResolverType: 0
+  DiceMin: 1
+  DiceMax: 2
+  CoinCount: 0
+  Effects:
+  - {fileID: 11400000, guid: 34bc95e903f945046a515c97cda52fab, type: 2}

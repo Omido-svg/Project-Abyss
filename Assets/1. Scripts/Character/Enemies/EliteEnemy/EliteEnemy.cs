@@ -1,25 +1,25 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class Olaf : Character
+public class EliteEnemy : Enemy
 {
     [Header("Skill Set")]
     [SerializeField]
-    private OlafSkillSet skillSet;
+    private EliteEnemySkillSet skillSet;
 
     private readonly List<BodyPart> bodyParts = new();
 
     public override IReadOnlyList<BodyPart> BodyParts => bodyParts;
 
-    public OlafMadnessMechanic MadnessMechanic =>
-        GetMechanic<OlafMadnessMechanic>();
+    //--------------------------------
+    // EliteEnemy는 도사림 사용 허용
+    //--------------------------------
 
-    public OlafImmortalFuryMechanic ImmortalFuryMechanic =>
-        GetMechanic<OlafImmortalFuryMechanic>();
+    protected override bool AllowPreparationSkillAI => true;
 
-    //------------------------------------------------
+    //--------------------------------
     // 부위 구성
-    //------------------------------------------------
+    //--------------------------------
 
     protected override void BuildBodyParts()
     {
@@ -28,19 +28,19 @@ public class Olaf : Character
         bodyParts.Add(
             new BodyPart(
                 PartType.HEAD,
-                40,
+                50,
                 CreateHeadSkillSet()));
 
         bodyParts.Add(
             new BodyPart(
                 PartType.LEFT_HAND,
-                30,
+                50,
                 CreateHandSkillSet()));
 
         bodyParts.Add(
             new BodyPart(
                 PartType.RIGHT_HAND,
-                30,
+                50,
                 CreateHandSkillSet()));
 
         bodyParts.Add(
@@ -50,10 +50,10 @@ public class Olaf : Character
                 CreateLegSkillSet()));
     }
 
-    //------------------------------------------------
+    //--------------------------------
     // 스킬 생성
-    //------------------------------------------------
-    
+    //--------------------------------
+
     private Skill[] CreateHeadSkillSet()
     {
         return CreateSkillArray(
@@ -67,15 +67,13 @@ public class Olaf : Character
     {
         return CreateSkillArray(
             CreateSkill(skillSet != null ? skillSet.NormalAttack : null),
-            CreateSkill(skillSet != null ? skillSet.DuelSkill : null),
-            CreatePrestigeSkill());
+            CreateSkill(skillSet != null ? skillSet.DuelSkill : null));
     }
 
     private Skill[] CreateLegSkillSet()
     {
         return CreateSkillArray(
-            CreateSkill(skillSet != null ? skillSet.PreparationSkill : null),
-            CreatePrestigeSkill());
+            CreateSkill(skillSet != null ? skillSet.PreparationSkill : null));
     }
 
     private Skill CreateSkill(SkillDefinition definition)
@@ -88,13 +86,17 @@ public class Olaf : Character
 
     private Skill CreatePrestigeSkill()
     {
-        if (skillSet == null)
-            return null;
+        if (skillSet != null &&
+            skillSet.PrestigeSkill != null)
+        {
+            return skillSet.PrestigeSkill.CreateRuntimeSkill();
+        }
 
-        if (skillSet.PrestigeSkill == null)
-            return null;
-
-        return skillSet.PrestigeSkill.CreateRuntimeSkill();
+        //--------------------------------
+        // 혹시 아직 ElitePrestigeSkill 코드를 유지 중이면 fallback
+        // 완전히 에셋화했으면 이 fallback은 나중에 제거 가능
+        //--------------------------------
+        return new ElitePrestigeSkill();
     }
 
     private Skill[] CreateSkillArray(params Skill[] skills)
@@ -112,19 +114,21 @@ public class Olaf : Character
         return result.ToArray();
     }
 
-    //------------------------------------------------
-    // 고유 메커닉 구성
-    //------------------------------------------------
+    //--------------------------------
+    // 메커닉 구성
+    //--------------------------------
 
     protected override void BuildMechanics()
     {
-        AddMechanic(new OlafMadnessMechanic());
-        AddMechanic(new OlafImmortalFuryMechanic());
+        base.BuildMechanics();
+
+        AddMechanic(
+            new EliteEnemyMechanic());
     }
 
-    //------------------------------------------------
+    //--------------------------------
     // 약화 디버프
-    //------------------------------------------------
+    //--------------------------------
 
     protected override StatusEffect CreateDisabledDebuff(
         BodyPart part)
@@ -142,9 +146,9 @@ public class Olaf : Character
         };
     }
 
-    //------------------------------------------------
+    //--------------------------------
     // 파괴 디버프
-    //------------------------------------------------
+    //--------------------------------
 
     protected override StatusEffect CreateBrokenPartStatus(
         BodyPart part)
@@ -162,7 +166,7 @@ public class Olaf : Character
         };
     }
 
-    //------------------------------------------------
+    //--------------------------------
 
     public override void Die()
     {
