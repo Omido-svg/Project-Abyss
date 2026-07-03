@@ -25,20 +25,28 @@ public class ElitePreparationSkill : PreparationSkill
         if (action.TargetPart == null)
             return;
 
-        //--------------------------------
-        // 도사림은 선행 행동
-        // 직접 피해 없이 대상 부위에 상태이상만 부여
-        //--------------------------------
+        if (action.Owner.BattleContext == null)
+            return;
 
-        action.Target.AddPartStatus(
-            action.TargetPart,
-            new Burn(1),
-            action.Owner);
+        if (action.Owner.BattleContext.EffectResolver == null)
+            return;
 
-        action.Target.AddPartStatus(
-            action.TargetPart,
-            new Bleeding(1),
-            action.Owner);
+        BattleEffectResolver resolver =
+            action.Owner.BattleContext.EffectResolver;
+
+        resolver.ApplyBodyPartStatus(
+            EffectRequest.BodyPartStatus(
+                action.Owner,
+                action.Target,
+                action.TargetPart,
+                new Burn(1)));
+
+        resolver.ApplyBodyPartStatus(
+            EffectRequest.BodyPartStatus(
+                action.Owner,
+                action.Target,
+                action.TargetPart,
+                new Bleeding(1)));
 
         Debug.Log(
             $"{action.Owner.Data.CharacterName} 도사림 효과 : " +

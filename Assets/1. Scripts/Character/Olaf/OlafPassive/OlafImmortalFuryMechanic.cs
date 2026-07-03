@@ -142,17 +142,24 @@ public class OlafImmortalFuryMechanic : CombatMechanic
         if (owner.IsDead)
             return;
 
+        BattleEffectResolver resolver =
+            owner.BattleContext?.EffectResolver;
+
+        if (resolver == null)
+            return;
+
         OlafMadnessMechanic madness =
             owner.GetMechanic<OlafMadnessMechanic>();
 
         if (madness != null)
-        {
             madness.SetMadnessToMax();
-        }
 
-        owner.TakeTrueDamage(
-            SelfDamagePerTurn,
-            null);
+        resolver.ApplyTrueDamage(
+            EffectRequest.TrueDamage(
+                owner,
+                owner,
+                SelfDamagePerTurn,
+                null));
 
         turnsLeft--;
 
@@ -167,7 +174,10 @@ public class OlafImmortalFuryMechanic : CombatMechanic
 
             isActive = false;
 
-            owner.Die();
+            resolver.ForceKill(
+                EffectRequest.ForceKill(
+                    owner,
+                    owner));
         }
     }
 

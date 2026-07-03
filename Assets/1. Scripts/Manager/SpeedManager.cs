@@ -141,6 +141,9 @@ public class SpeedManager
 
     public void PrintSpeeds()
     {
+        if (!BattleDebugLog.ShowSpeedRoll)
+            return;
+            
         StringBuilder sb = new();
 
         sb.AppendLine("========== SPEED ROLL ==========");

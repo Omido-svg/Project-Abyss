@@ -206,25 +206,34 @@ public class CharacterStatusController
         if (owner == null)
             return;
 
-        foreach (StatusEffect effect in characterStatuses.ToArray())
+        //--------------------------------
+        // 캐릭터 상태이상 처리
+        //--------------------------------
+
+        foreach (StatusEffect effect in CharacterStatuses.ToArray())
         {
             if (effect == null)
                 continue;
 
-            effect.OnTurnEnd();
+            StatusEffectTickContext context =
+                new StatusEffectTickContext(
+                    owner,
+                    null,
+                    effect);
 
-            if (effect.IsExpired)
-            {
-                RemoveStatus(effect);
-            }
+            effect.OnTurnEnd(context);
         }
+
+        //--------------------------------
+        // 부위 상태이상 처리
+        //--------------------------------
+
+        if (owner.BodyParts == null)
+            return;
 
         foreach (BodyPart part in owner.BodyParts)
         {
             if (part == null)
-                continue;
-
-            if (part.IsBroken)
                 continue;
 
             foreach (StatusEffect effect in part.StatusEffects.ToArray())
@@ -232,14 +241,13 @@ public class CharacterStatusController
                 if (effect == null)
                     continue;
 
-                effect.OnTurnEnd();
-
-                if (effect.IsExpired)
-                {
-                    RemovePartStatus(
+                StatusEffectTickContext context =
+                    new StatusEffectTickContext(
+                        owner,
                         part,
                         effect);
-                }
+
+                effect.OnTurnEnd(context);
             }
         }
     }

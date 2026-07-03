@@ -28,6 +28,12 @@ public class OlafPrestigeSkill : PrestigeSkill
         if (action.TargetPart == null)
             return;
 
+        BattleEffectResolver resolver =
+            action.Owner.BattleContext?.EffectResolver;
+
+        if (resolver == null)
+            return;
+
         bool wasDead =
             action.Target.IsDead;
 
@@ -40,28 +46,21 @@ public class OlafPrestigeSkill : PrestigeSkill
         OlafMadnessMechanic madness =
             action.Owner.GetMechanic<OlafMadnessMechanic>();
 
-        //--------------------------------
-        // 위세 처리 중 발생하는 부위 파괴는
-        // 광기 증가에서 제외
-        //--------------------------------
-
         madness?.BeginSuppressPartBreakMadness();
 
         try
         {
-            //--------------------------------
-            // 위세 기본 피해
-            //--------------------------------
-
             int damage =
                 GetRolledPower(action);
 
             if (damage > 0)
             {
-                action.Target.TakeDamage(
-                    action.TargetPart,
-                    damage,
-                    CanBreakPart);
+                resolver.ApplyPartDamage(
+                    EffectRequest.PartDamage(
+                        action.Owner,
+                        action,
+                        damage,
+                        CanBreakPart));
 
                 totalDamage += damage;
 
@@ -69,12 +68,9 @@ public class OlafPrestigeSkill : PrestigeSkill
                     $"{action.Owner.Data.CharacterName} 위세 기본 피해 : {damage}");
             }
 
-            //--------------------------------
-            // 출혈 폭발
-            //--------------------------------
-
             Bleeding bleeding =
-                action.Target.GetPartStatus<Bleeding>(action.TargetPart);
+                action.Target.GetPartStatus<Bleeding>(
+                    action.TargetPart);
 
             if (bleeding != null)
             {
@@ -83,9 +79,12 @@ public class OlafPrestigeSkill : PrestigeSkill
 
                 if (explosionDamage > 0)
                 {
-                    action.Target.TakeTrueDamage(
-                        explosionDamage,
-                        bleeding);
+                    resolver.ApplyTrueDamage(
+                        EffectRequest.TrueDamage(
+                            action.Owner,
+                            action.Target,
+                            explosionDamage,
+                            bleeding));
 
                     totalDamage += explosionDamage;
 
@@ -93,14 +92,13 @@ public class OlafPrestigeSkill : PrestigeSkill
                         $"{action.Target.Data.CharacterName} 출혈 폭발 피해 : {explosionDamage}");
                 }
 
-                action.Target.RemovePartStatus(
-                    action.TargetPart,
-                    bleeding);
+                resolver.RemoveBodyPartStatus(
+                    EffectRequest.RemoveBodyPartStatus(
+                        action.Owner,
+                        action.Target,
+                        action.TargetPart,
+                        bleeding));
             }
-
-            //--------------------------------
-            // 광기 추가 피해
-            //--------------------------------
 
             if (madness != null)
             {
@@ -109,9 +107,12 @@ public class OlafPrestigeSkill : PrestigeSkill
 
                 if (madnessDamage > 0)
                 {
-                    action.Target.TakeTrueDamage(
-                        madnessDamage,
-                        null);
+                    resolver.ApplyTrueDamage(
+                        EffectRequest.TrueDamage(
+                            action.Owner,
+                            action.Target,
+                            madnessDamage,
+                            null));
 
                     totalDamage += madnessDamage;
 
@@ -119,12 +120,6 @@ public class OlafPrestigeSkill : PrestigeSkill
                         $"{action.Owner.Data.CharacterName} 광기 추가 피해 : {madnessDamage}");
                 }
             }
-
-            //--------------------------------
-            // 여기서 먼저 로그용 HP를 기록한다.
-            // 강제 파괴 후 HP 0이 아니라,
-            // 실제 피해 직후의 부위 HP를 기록하기 위함.
-            //--------------------------------
 
             int afterDamagePartHP =
                 Mathf.RoundToInt(
@@ -135,22 +130,17 @@ public class OlafPrestigeSkill : PrestigeSkill
                 beforePartHP,
                 afterDamagePartHP);
 
-            //--------------------------------
-            // 위세 효과: 대상 부위 강제 파괴
-            //--------------------------------
-
             if (!action.TargetPart.IsBroken)
             {
-                action.Target.ForceBreakPart(
-                    action.TargetPart);
+                resolver.ForceBreakPart(
+                    EffectRequest.ForceBreak(
+                        action.Owner,
+                        action.Target,
+                        action.TargetPart));
 
                 Debug.Log(
                     $"{action.Target.Data.CharacterName} {action.TargetPart.Type} 부위 강제 파괴");
             }
-
-            //--------------------------------
-            // 처치 이벤트
-            //--------------------------------
 
             if (!wasDead && action.Target.IsDead)
             {

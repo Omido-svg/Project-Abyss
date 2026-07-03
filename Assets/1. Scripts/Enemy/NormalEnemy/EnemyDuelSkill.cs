@@ -22,14 +22,21 @@ public class EnemyDuelSkill : DuelSkill
         if (action.Target == null)
             return;
 
-        //--------------------------------
-        // 결투 기본 피해는 DamageManager에서 처리
-        // 여기서는 추가 효과만 처리
-        //--------------------------------
+        if (action.TargetPart == null)
+            return;
 
-        action.Target.AddPartStatus(action.TargetPart,
-            new Bleeding(1),
-            action.Owner);
+        BattleEffectResolver resolver =
+            action.Owner.BattleContext?.EffectResolver;
+
+        if (resolver == null)
+            return;
+
+        resolver.ApplyBodyPartStatus(
+            EffectRequest.BodyPartStatus(
+                action.Owner,
+                action.Target,
+                action.TargetPart,
+                new Bleeding(1)));
 
         Debug.Log(
             $"{action.Owner.Data.CharacterName} 결투 효과 : 출혈 1 부여");

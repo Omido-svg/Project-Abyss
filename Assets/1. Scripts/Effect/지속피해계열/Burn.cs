@@ -21,16 +21,31 @@ public class Burn : DamageStatus
         Duration = Mathf.Max(Duration, burn.Duration);
     }
 
-    public override void OnTurnEnd()
+    public override void OnTurnEnd(StatusEffectTickContext context)
     {
-        if (owner == null)
+        if (context == null)
             return;
 
-        owner.TakeTrueDamage(Damage, this);
+        if (context.TargetCharacter == null)
+            return;
 
-        DecreaseDuration();
+        BattleEffectResolver resolver =
+            context.Resolver;
 
-        if (IsExpired)
-            RemoveStatus();
+        if (resolver == null)
+            return;
+
+        int damage =
+            Stack;
+
+        if (damage <= 0)
+            return;
+
+        resolver.ApplyTrueDamage(
+            EffectRequest.TrueDamage(
+                Source,
+                context.TargetCharacter,
+                damage,
+                this));
     }
 }

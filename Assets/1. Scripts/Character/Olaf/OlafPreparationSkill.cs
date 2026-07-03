@@ -17,6 +17,12 @@ public class OlafPreparationSkill : PreparationSkill
         if (action.Owner == null)
             return;
 
+        if (action.Owner.BattleContext == null)
+            return;
+
+        if (action.Owner.BattleContext.EffectResolver == null)
+            return;
+
         BodyPart sacrificePart =
             FindSacrificePart(action.Owner);
 
@@ -31,7 +37,14 @@ public class OlafPreparationSkill : PreparationSkill
         Debug.Log(
             $"{action.Owner.Data.CharacterName} 도사림 : {sacrificePart.Type} 부위 파괴");
 
-        action.Owner.ForceBreakPart(sacrificePart);
+        BattleEffectResolver resolver =
+            action.Owner.BattleContext.EffectResolver;
+
+        resolver.ForceBreakPart(
+            EffectRequest.ForceBreak(
+                action.Owner,
+                action.Owner,
+                sacrificePart));
     }
 
     private BodyPart FindSacrificePart(Character owner)

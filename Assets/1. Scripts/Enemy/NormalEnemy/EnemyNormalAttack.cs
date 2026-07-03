@@ -22,14 +22,21 @@ public class EnemyNormalAttack : NormalSkill
         if (action.Target == null)
             return;
 
-        //--------------------------------
-        // 기본 피해는 DamageManager에서 처리
-        // 여기서는 추가 효과만 처리
-        //--------------------------------
+        if (action.TargetPart == null)
+            return;
 
-        action.Target.AddPartStatus(action.TargetPart,
-            new Bleeding(1),
-            action.Owner);
+        BattleEffectResolver resolver =
+            action.Owner.BattleContext?.EffectResolver;
+
+        if (resolver == null)
+            return;
+
+        resolver.ApplyBodyPartStatus(
+            EffectRequest.BodyPartStatus(
+                action.Owner,
+                action.Target,
+                action.TargetPart,
+                new Bleeding(1)));
 
         Debug.Log(
             $"{action.Owner.Data.CharacterName} 일반공격 효과 : " +

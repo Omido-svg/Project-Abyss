@@ -177,7 +177,7 @@ public class BodyPartButton : MonoBehaviour, IPointerClickHandler
             return;
         }
 
-        Debug.Log(
+        BattleDebugLog.UIInput(
             $"[BUTTON CLICK] {owner.Data.CharacterName} / {bodyPart.Type}");
 
         uiManager.OnBodyPartClicked(owner, bodyPart);

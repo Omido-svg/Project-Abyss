@@ -12,6 +12,8 @@ public abstract class StatusEffect
     public int Stack { get; protected set; }
 
     public int Duration { get; protected set; }
+    
+    public virtual string EffectName => GetType().Name;
 
     //--------------------------------
     // 적용 대상
@@ -57,6 +59,11 @@ public abstract class StatusEffect
     public virtual void OnTurnStart() { }
 
     public virtual void OnTurnEnd() { }
+    
+    public virtual void OnTurnEnd(StatusEffectTickContext context)
+    {
+        OnTurnEnd();
+    }
 
     public virtual void OnRemove() { }
 

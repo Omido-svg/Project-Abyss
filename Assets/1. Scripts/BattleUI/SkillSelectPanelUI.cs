@@ -76,8 +76,8 @@ public class SkillSelectPanelUI : MonoBehaviour
 
         transform.SetAsLastSibling();
 
-        Debug.Log(
-            $"[SkillPanel] Show / Part : {selectedPart.Type}");
+        BattleDebugLog.SkillPanel(
+            $"[SkillPanel] Show / Part : {part.Type}");
     }
 
     public void Hide()

@@ -22,21 +22,29 @@ public class OlafNormalAttack : NormalSkill
         if (action.Target == null)
             return;
 
+        if (action.TargetPart == null)
+            return;
+
+        BattleEffectResolver resolver =
+            action.Owner.BattleContext?.EffectResolver;
+
+        if (resolver == null)
+            return;
+
         int bleedAmount = 1;
 
         OlafMadnessMechanic madness =
             action.Owner.GetMechanic<OlafMadnessMechanic>();
 
         if (madness != null)
-        {
-            bleedAmount =
-                madness.GetNormalAttackBleedAmount();
-        }
+            bleedAmount = madness.GetNormalAttackBleedAmount();
 
-        action.Target.AddPartStatus(
-            action.TargetPart,
-            new Bleeding(bleedAmount),
-            action.Owner);
+        resolver.ApplyBodyPartStatus(
+            EffectRequest.BodyPartStatus(
+                action.Owner,
+                action.Target,
+                action.TargetPart,
+                new Bleeding(bleedAmount)));
 
         Debug.Log(
             $"{action.Owner.Data.CharacterName} 평타 효과 : 출혈 {bleedAmount} 부여");

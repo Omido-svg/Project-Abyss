@@ -20,8 +20,7 @@ public class OlafBloodyAxeMechanic : CombatMechanic
         battleEvent.OnDamageResolved -= OnDamageResolved;
     }
 
-    private void OnDamageResolved(
-        DamageContext context)
+    private void OnDamageResolved(DamageContext context)
     {
         if (context == null)
             return;
@@ -35,6 +34,9 @@ public class OlafBloodyAxeMechanic : CombatMechanic
         if (context.Target == null)
             return;
 
+        if (context.TargetPart == null)
+            return;
+
         if (context.Action == null ||
             context.Action.Skill == null)
             return;
@@ -45,10 +47,18 @@ public class OlafBloodyAxeMechanic : CombatMechanic
         if (context.FinalDamage <= 0)
             return;
 
-        context.Target.AddPartStatus(
-            context.Action.TargetPart,
-            new Bleeding(1),
-            owner);
+        BattleEffectResolver resolver =
+            owner.BattleContext?.EffectResolver;
+
+        if (resolver == null)
+            return;
+
+        resolver.ApplyBodyPartStatus(
+            EffectRequest.BodyPartStatus(
+                owner,
+                context.Target,
+                context.TargetPart,
+                new Bleeding(1)));
 
         Debug.Log(
             $"{owner.Data.CharacterName} 아이템 발동 : {MechanicName} / 출혈 1 추가");

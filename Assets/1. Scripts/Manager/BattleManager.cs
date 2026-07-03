@@ -76,21 +76,8 @@ public class BattleManager : MonoBehaviour
         BattleContext.Player = player;
         BattleContext.Enemies = enemies;
 
-        BattleContext.AllCharacters.Clear();
-
-        if (player != null)
-            BattleContext.AllCharacters.Add(player);
-
-        if (enemies != null)
-        {
-            foreach (Character enemy in enemies)
-            {
-                if (enemy == null)
-                    continue;
-
-                BattleContext.AllCharacters.Add(enemy);
-            }
-        }
+        BattleContext.EffectResolver =
+            new BattleEffectResolver(BattleContext);
     }
 
     //------------------------------------------------

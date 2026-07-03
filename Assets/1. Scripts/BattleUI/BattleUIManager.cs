@@ -361,7 +361,7 @@ public class BattleUIManager : MonoBehaviour
         {
             if (IsPlayer(owner))
             {
-                Debug.Log("대상으로는 적 부위를 선택하세요.");
+                BattleDebugLog.UIInput("대상으로는 적 부위를 선택하세요.");
                 return;
             }
 
@@ -376,7 +376,7 @@ public class BattleUIManager : MonoBehaviour
 
         if (inputMode == BattleInputMode.SelectSkill)
         {
-            Debug.Log("먼저 왼쪽 스킬 패널에서 사용할 스킬을 선택하세요.");
+            BattleDebugLog.UIInput("먼저 왼쪽 스킬 패널에서 사용할 스킬을 선택하세요.");
             return;
         }
     }
@@ -495,9 +495,8 @@ public class BattleUIManager : MonoBehaviour
         }
         else
         {
-            Debug.Log(
-                $"[Owner Slot Selected] " +
-                $"{GetCharacterName(owner)} / {part.Type}");
+            BattleDebugLog.UIInput(
+                $"[Owner Slot Selected] {owner.Data.CharacterName} / {part.Type}");
         }
 
         return true;
@@ -549,10 +548,9 @@ public class BattleUIManager : MonoBehaviour
         
         RefreshAllBodyPartButtons();
 
-        Debug.Log(
-            $"[Target Selected] " +
-            $"{GetCharacterName(selectedOwner)} {selectedOwnerPart.Type} " +
-            $"-> {GetCharacterName(target)} {part.Type}");
+        BattleDebugLog.UIInput(
+            $"[Target Selected] {selectedOwner.Data.CharacterName} {selectedOwnerPart.Type} -> " +
+            $"{target.Data.CharacterName} {selectedTargetPart.Type}");
 
         ShowSkillPanel();
 
@@ -775,7 +773,7 @@ public class BattleUIManager : MonoBehaviour
         }
         else
         {
-            Debug.Log(
+            BattleDebugLog.ActionSlot(
                 "[ActionSlot Created]\n" +
                 FormatSlot(newSlot));
         }
@@ -822,7 +820,7 @@ public class BattleUIManager : MonoBehaviour
 
         RefreshAllBodyPartButtons();
 
-        Debug.Log("[UI] Current selection canceled.");
+        BattleDebugLog.UIInput("[UI] Current selection canceled.");
     }
 
     //---------------------------------------

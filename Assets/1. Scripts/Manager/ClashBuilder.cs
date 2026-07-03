@@ -219,6 +219,9 @@ public class ClashBuilder
 
     private void PrintSlots(IReadOnlyList<ActionSlot> slots)
     {
+        if (!BattleDebugLog.ShowClashBuild)
+            return;
+        
         Debug.Log("===== SLOT CONNECTION =====");
 
         if (slots == null)

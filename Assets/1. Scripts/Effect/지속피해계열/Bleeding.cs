@@ -31,40 +31,44 @@ public class Bleeding : DamageStatus
         Duration = Mathf.Max(Duration, bleeding.Duration);
     }
 
-    public override void OnTurnEnd()
+    public override void OnTurnEnd(StatusEffectTickContext context)
     {
-        if (Owner == null)
+        if (context == null)
             return;
 
-        if (Owner.IsDead)
+        if (context.TargetCharacter == null)
             return;
 
-        if (Stack <= 0)
+        BattleEffectResolver resolver =
+            context.Resolver;
+
+        if (resolver == null)
             return;
 
-        //--------------------------------
-        // 부위 출혈
-        // 부위 HP를 깎고 약화까지 가능
-        // 파괴는 불가능
-        //--------------------------------
+        int damage =
+            Stack;
 
-        if (IsPartEffect)
+        if (damage <= 0)
+            return;
+
+        if (context.IsPartStatus)
         {
-            Owner.TakeStatusPartDamage(
-                OwnerPart,
-                Stack,
-                this);
-
-            return;
+            resolver.ApplyStatusPartDamage(
+                EffectRequest.StatusPartDamage(
+                    Source,
+                    context.TargetCharacter,
+                    context.TargetPart,
+                    damage,
+                    this));
         }
-
-        //--------------------------------
-        // 캐릭터 출혈
-        // 부위가 없는 출혈이면 기존처럼 캐릭터 피해
-        //--------------------------------
-
-        Owner.TakeTrueDamage(
-            Stack,
-            this);
+        else
+        {
+            resolver.ApplyTrueDamage(
+                EffectRequest.TrueDamage(
+                    Source,
+                    context.TargetCharacter,
+                    damage,
+                    this));
+        }
     }
 }

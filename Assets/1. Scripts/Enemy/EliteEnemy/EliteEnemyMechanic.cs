@@ -49,21 +49,27 @@ public class EliteEnemyMechanic : CombatMechanic
         if (winnerAction.Target == null)
             return;
 
-        //--------------------------------
-        // 엘리트 본능:
-        // 합 승리 시 위세를 조금 더 빠르게 획득
-        //--------------------------------
+        if (winnerAction.TargetPart == null)
+            return;
 
-        owner.AddPrestige(
-            ClashWinPrestigeGain);
+        BattleEffectResolver resolver =
+            owner.BattleContext?.EffectResolver;
 
-        //--------------------------------
-        // 추가 압박 효과
-        //--------------------------------
+        if (resolver == null)
+            return;
 
-        winnerAction.Target.AddPartStatus(loserAction.TargetPart,
-            new Bleeding(1),
-            owner);
+        resolver.AddPrestige(
+            EffectRequest.Prestige(
+                owner,
+                owner,
+                ClashWinPrestigeGain));
+
+        resolver.ApplyBodyPartStatus(
+            EffectRequest.BodyPartStatus(
+                owner,
+                winnerAction.Target,
+                winnerAction.TargetPart,
+                new Bleeding(1)));
 
         Debug.Log(
             $"{owner.Data.CharacterName} 메커닉 발동 : {MechanicName} / " +
@@ -84,8 +90,17 @@ public class EliteEnemyMechanic : CombatMechanic
         if (target != owner)
             return;
 
-        owner.AddPrestige(
-            SelfPartWeakenedPrestigeGain);
+        BattleEffectResolver resolver =
+            owner.BattleContext?.EffectResolver;
+
+        if (resolver == null)
+            return;
+
+        resolver.AddPrestige(
+            EffectRequest.Prestige(
+                owner,
+                owner,
+                SelfPartWeakenedPrestigeGain));
 
         Debug.Log(
             $"{owner.Data.CharacterName} 메커닉 발동 : {MechanicName} / " +
@@ -106,8 +121,17 @@ public class EliteEnemyMechanic : CombatMechanic
         if (target != owner)
             return;
 
-        owner.AddPrestige(
-            SelfPartDestroyedPrestigeGain);
+        BattleEffectResolver resolver =
+            owner.BattleContext?.EffectResolver;
+
+        if (resolver == null)
+            return;
+
+        resolver.AddPrestige(
+            EffectRequest.Prestige(
+                owner,
+                owner,
+                SelfPartDestroyedPrestigeGain));
 
         Debug.Log(
             $"{owner.Data.CharacterName} 메커닉 발동 : {MechanicName} / " +

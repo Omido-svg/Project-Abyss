@@ -281,7 +281,9 @@ public class ClashManager
 
             if (prestigeGain > 0)
             {
-                winner.Owner.AddPrestige(
+                AddPrestigeThroughResolver(
+                    winner.Owner,
+                    winner.Owner,
                     prestigeGain);
             }
         }
@@ -289,8 +291,9 @@ public class ClashManager
         if (!wasOverwhelm &&
             momentumManager.IsOverwhelm(winner.Owner))
         {
-            winner.Owner.RuntimeStatus.currentPrestige =
-                winner.Owner.CurrentStatus.maxPrestige;
+            SetPrestigeToMaxThroughResolver(
+                winner.Owner,
+                winner.Owner);
         }
 
         //------------------------------------
@@ -522,5 +525,54 @@ public class ClashManager
 
         action.finalPower = action.RolledPower;
         action.HasRolled = true;
+    }
+    
+    private void AddPrestigeThroughResolver(
+        Character source,
+        Character target,
+        int amount)
+    {
+        if (source == null)
+            return;
+
+        if (target == null)
+            return;
+
+        if (amount <= 0)
+            return;
+
+        BattleEffectResolver resolver =
+            battleContext?.EffectResolver;
+
+        if (resolver == null)
+            return;
+
+        resolver.AddPrestige(
+            EffectRequest.Prestige(
+                source,
+                target,
+                amount));
+    }
+
+    private void SetPrestigeToMaxThroughResolver(
+        Character source,
+        Character target)
+    {
+        if (source == null)
+            return;
+
+        if (target == null)
+            return;
+
+        BattleEffectResolver resolver =
+            battleContext?.EffectResolver;
+
+        if (resolver == null)
+            return;
+
+        resolver.SetPrestigeToMax(
+            EffectRequest.PrestigeToMax(
+                source,
+                target));
     }
 }

@@ -93,10 +93,16 @@ public class DamageManager
                     $"Damage={context.FinalDamage}");
             }
 
-            action.Target.TakeDamage(
-                action.TargetPart,
-                context.FinalDamage,
-                context.CanBreakPart);
+            if (battleContext != null &&
+                battleContext.EffectResolver != null)
+            {
+                battleContext.EffectResolver.ApplyPartDamage(
+                    EffectRequest.PartDamage(
+                        action.Owner,
+                        action,
+                        context.FinalDamage,
+                        context.CanBreakPart));
+            }
         }
 
         //--------------------------------

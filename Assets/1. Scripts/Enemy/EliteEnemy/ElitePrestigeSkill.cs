@@ -27,6 +27,12 @@ public class ElitePrestigeSkill : PrestigeSkill
         if (action.TargetPart == null)
             return;
 
+        BattleEffectResolver resolver =
+            action.Owner.BattleContext?.EffectResolver;
+
+        if (resolver == null)
+            return;
+
         bool wasDead =
             action.Target.IsDead;
 
@@ -40,42 +46,33 @@ public class ElitePrestigeSkill : PrestigeSkill
         bool wasBrokenBeforeDamage =
             action.TargetPart.IsBroken;
 
-        //--------------------------------
-        // 위세 피해
-        //--------------------------------
-
         int damage =
             GetRolledPower(action);
 
         if (damage > 0)
         {
-            action.Target.TakeDamage(
-                action.TargetPart,
-                damage,
-                CanBreakPart);
+            resolver.ApplyPartDamage(
+                EffectRequest.PartDamage(
+                    action.Owner,
+                    action,
+                    damage,
+                    CanBreakPart));
 
             Debug.Log(
                 $"{action.Owner.Data.CharacterName} 위세 피해 : " +
                 $"{action.Target.Data.CharacterName} {action.TargetPart.Type}에 {damage}");
         }
 
-        //--------------------------------
-        // 추가 효과
-        //--------------------------------
-
-        action.Target.AddPartStatus(
-            action.TargetPart,
-            new Bleeding(3),
-            action.Owner);
+        resolver.ApplyBodyPartStatus(
+            EffectRequest.BodyPartStatus(
+                action.Owner,
+                action.Target,
+                action.TargetPart,
+                new Bleeding(3)));
 
         Debug.Log(
             $"{action.Owner.Data.CharacterName} 위세 효과 : " +
             $"{action.Target.Data.CharacterName} {action.TargetPart.Type}에 출혈 3 부여");
-
-        //--------------------------------
-        // 파괴 로그만 출력
-        // 실제 파괴는 TakeDamage 내부에서 처리
-        //--------------------------------
 
         if (wasWeakenedBeforeDamage &&
             !wasBrokenBeforeDamage &&
@@ -85,10 +82,6 @@ public class ElitePrestigeSkill : PrestigeSkill
                 $"{action.Target.Data.CharacterName} {action.TargetPart.Type} 약화 부위 파괴");
         }
 
-        //--------------------------------
-        // 로그용 데미지 기록
-        //--------------------------------
-
         int afterPartHP =
             Mathf.RoundToInt(
                 action.TargetPart.PartHP);
@@ -97,10 +90,6 @@ public class ElitePrestigeSkill : PrestigeSkill
             damage,
             beforePartHP,
             afterPartHP);
-
-        //--------------------------------
-        // 처치 이벤트
-        //--------------------------------
 
         if (!wasDead && action.Target.IsDead)
         {

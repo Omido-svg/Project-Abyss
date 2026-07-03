@@ -36,15 +36,21 @@ public class NormalEnemyBloodScentMechanic : CombatMechanic
         if (winnerAction.Target == null)
             return;
 
-        //--------------------------------
-        // 일반몹 메커닉:
-        // 합 승리 시 대상에게 출혈 1 부여
-        //--------------------------------
+        if (winnerAction.TargetPart == null)
+            return;
 
-        winnerAction.Target.AddPartStatus(
-            loserAction.TargetPart,
-            new Bleeding(1),
-            owner);
+        BattleEffectResolver resolver =
+            owner.BattleContext?.EffectResolver;
+
+        if (resolver == null)
+            return;
+
+        resolver.ApplyBodyPartStatus(
+            EffectRequest.BodyPartStatus(
+                owner,
+                winnerAction.Target,
+                winnerAction.TargetPart,
+                new Bleeding(1)));
 
         Debug.Log(
             $"{owner.Data.CharacterName} 메커닉 발동 : {MechanicName}");

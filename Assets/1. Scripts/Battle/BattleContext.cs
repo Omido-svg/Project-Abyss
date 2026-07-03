@@ -16,6 +16,8 @@ public class BattleContext
 
     public BattleEvent _battleEvent = new();
     
+    public BattleEffectResolver EffectResolver { get; set; }
+    
     public BattleManager battleManager;
     public readonly List<IBattleRule> BattleRules = new();
 

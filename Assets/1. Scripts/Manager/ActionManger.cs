@@ -66,7 +66,7 @@ public class ActionManager
 
         slots.Add(slot);
 
-        Debug.Log(
+        BattleDebugLog.ActionSlot(
             "[ActionManager AddOrReplaceSlot - New]\n" +
             FormatSlot(slot));
     }
@@ -191,6 +191,9 @@ public class ActionManager
 
     public void PrintSlots(string title = "ACTION MANAGER SLOTS")
     {
+        if (!BattleDebugLog.ShowActionSlot)
+            return;
+        
         StringBuilder sb = new();
 
         sb.AppendLine($"========== {title} ==========");
