@@ -4,6 +4,9 @@ using UnityEngine;
 public class CharacterBodyPartController
 {
     private readonly Character owner;
+    
+    // 로그 필요시 true 로 설정
+    private const bool VerboseLog = false;
 
     public CharacterBodyPartController(Character owner)
     {
@@ -70,25 +73,21 @@ public class CharacterBodyPartController
 
     private void BreakPartInternal(BodyPart part)
     {
+        if (owner == null)
+            return;
+
         if (part == null)
             return;
 
         if (part.IsBroken)
             return;
 
-        Debug.LogWarning(
+        LogVerboseWarning(
             $"[BREAK BEFORE] {owner.Data.CharacterName} {part.Type} " +
             $"State={part.State}, HP={part.PartHP}/{part.MaxPartHP}");
 
-        PrintActionSlotsOfPart(
-            "[BREAK SLOT BEFORE]",
-            part);
-
-        RemoveActionSlotsOfPart(part);
-
-        PrintActionSlotsOfPart(
-            "[BREAK SLOT AFTER]",
-            part);
+        int removedSlotCount =
+            RemoveActionSlotsOfPart(part);
 
         int remainingPartHP =
             Mathf.Max(
@@ -111,53 +110,12 @@ public class CharacterBodyPartController
             owner,
             part);
 
-        Debug.LogWarning(
+        LogVerboseWarning(
             $"[BREAK AFTER] {owner.Data.CharacterName} {part.Type} " +
-            $"State={part.State}, HP={part.PartHP}/{part.MaxPartHP}");
+            $"State={part.State}, HP={part.PartHP}/{part.MaxPartHP}, " +
+            $"RemovedSlots={removedSlotCount}");
 
         owner.CheckDead();
-    }
-    
-    private void PrintActionSlotsOfPart(
-        string title,
-        BodyPart part)
-    {
-        ActionManager actionManager =
-            GetActionManager();
-
-        if (actionManager == null)
-        {
-            Debug.LogWarning($"{title} ActionManager NULL");
-            return;
-        }
-
-        Debug.Log(
-            $"{title} {owner.Data.CharacterName} / {part.Type}");
-
-        int count = 0;
-
-        foreach (ActionSlot slot in actionManager.Slots)
-        {
-            if (slot == null)
-                continue;
-
-            if (slot.Owner != owner)
-                continue;
-
-            if (slot.Part != part)
-                continue;
-
-            count++;
-
-            Debug.Log(
-                $"  Slot Found : " +
-                $"Owner={slot.Owner.Data.CharacterName}, " +
-                $"Part={slot.Part.Type}, " +
-                $"Skill={slot.Skill?.SkillName}, " +
-                $"Phase={slot.Phase}");
-        }
-
-        Debug.Log($"{title} Count = {count}");
     }
     
     private ActionManager GetActionManager()
@@ -210,18 +168,21 @@ public class CharacterBodyPartController
             $"{owner.Data.CharacterName} {part.Type} 부위 회복");
     }
     
-    private void RemoveActionSlotsOfPart(BodyPart part)
+    private int RemoveActionSlotsOfPart(BodyPart part)
     {
+        if (owner == null)
+            return 0;
+
         if (part == null)
-            return;
+            return 0;
 
         ActionManager actionManager =
             GetActionManager();
 
         if (actionManager == null)
         {
-            Debug.LogWarning("[REMOVE SLOT] ActionManager NULL");
-            return;
+            LogVerboseWarning("[REMOVE SLOT] ActionManager NULL");
+            return 0;
         }
 
         int removeCount = 0;
@@ -236,7 +197,7 @@ public class CharacterBodyPartController
             if (slot == null)
                 break;
 
-            Debug.Log(
+            LogVerbose(
                 $"[REMOVE SLOT] " +
                 $"{owner.Data.CharacterName} / {part.Type} / " +
                 $"{slot.Skill?.SkillName}");
@@ -248,8 +209,26 @@ public class CharacterBodyPartController
             removeCount++;
         }
 
-        Debug.Log(
+        LogVerbose(
             $"[REMOVE SLOT RESULT] " +
             $"{owner.Data.CharacterName} / {part.Type} / Removed={removeCount}");
+
+        return removeCount;
+    }
+    
+    private void LogVerbose(string message)
+    {
+        if (!VerboseLog)
+            return;
+
+        Debug.Log(message);
+    }
+
+    private void LogVerboseWarning(string message)
+    {
+        if (!VerboseLog)
+            return;
+
+        Debug.LogWarning(message);
     }
 }

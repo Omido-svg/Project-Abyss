@@ -6,7 +6,6 @@ using UnityEngine.EventSystems;
 public class BodyPartButton : MonoBehaviour, IPointerClickHandler
 {
     [SerializeField] private BattleUIManager uiManager;
-    [SerializeField] private BattleManager battleManager;
     [SerializeField] private TMP_Text buttonText;
     
     [SerializeField] private Image buttonImage;
@@ -57,9 +56,6 @@ public class BodyPartButton : MonoBehaviour, IPointerClickHandler
             buttonText.overflowMode = TMPro.TextOverflowModes.Overflow;
         }
 
-        if (battleManager == null)
-            battleManager = FindFirstObjectByType<BattleManager>();
-
         if (uiManager == null)
             uiManager = FindFirstObjectByType<BattleUIManager>();
             
@@ -100,164 +96,67 @@ public class BodyPartButton : MonoBehaviour, IPointerClickHandler
 
     public void Refresh()
     {
+        if (uiManager == null)
+            uiManager = FindFirstObjectByType<BattleUIManager>();
+
+        if (uiManager == null)
+            return;
+
+        uiManager.RefreshBodyPartUI(bodyPart);
+    }
+    
+    public void ApplyViewModel(BodyPartButtonViewModel viewModel)
+    {
         EnsureReferences();
 
-        if (owner == null || bodyPart == null)
+        if (buttonText != null)
         {
-            gameObject.SetActive(false);
+            string skillLine =
+                string.IsNullOrEmpty(viewModel.SkillText)
+                    ? ""
+                    : "\n" + viewModel.SkillText;
+
+            buttonText.text =
+                viewModel.PartText + "\n" +
+                viewModel.HpText + "\n" +
+                viewModel.SpeedText +
+                skillLine;
+        }
+
+        if (button != null)
+        {
+            button.interactable = viewModel.Interactable;
+        }
+
+        ApplyColor(viewModel);
+    }
+
+    private void ApplyColor(BodyPartButtonViewModel viewModel)
+    {
+        EnsureReferences();
+
+        if (buttonImage == null)
+            return;
+
+        if (viewModel.IsTargetSelected)
+        {
+            buttonImage.color = targetSelectedColor;
             return;
         }
 
-        if (owner.IsDead)
+        if (viewModel.IsOwnerSelected)
         {
-            gameObject.SetActive(false);
+            buttonImage.color = ownerSelectedColor;
             return;
         }
 
-        if (bodyPart.IsBroken)
+        if (viewModel.IsWeakened)
         {
-            gameObject.SetActive(false);
+            buttonImage.color = weakenedColor;
             return;
         }
 
-        if (!gameObject.activeSelf)
-            gameObject.SetActive(true);
-
-        if (buttonText == null)
-            return;
-
-        buttonText.richText = true;
-
-        buttonText.text =
-            $"{GetPartText()}\n" +
-            $"{GetHpText()}\n" +
-            $"{GetSpeedText()}";
-    }
-    
-    private string GetPartText()
-    {
-        if (bodyPart == null)
-            return "NULL";
-
-        string stateColor =
-            bodyPart.State switch
-            {
-                BodyPartState.Normal => "#86EFAC",
-                BodyPartState.Weakened => "#FACC15",
-                BodyPartState.Broken => "#F87171",
-                _ => "#FFFFFF"
-            };
-
-        return
-            $"<color={stateColor}><b>{bodyPart.Type} [{bodyPart.State}]</b></color>";
-    }
-    
-    private string GetHpText()
-    {
-        if (bodyPart == null)
-            return "HP -";
-
-        int currentHP =
-            Mathf.RoundToInt(bodyPart.PartHP);
-
-        int maxHP =
-            Mathf.RoundToInt(bodyPart.MaxPartHP);
-
-        string hpColor = GetHpColor();
-
-        return
-            $"<color={hpColor}>HP {currentHP}/{maxHP}</color>";
-    }
-    
-    private string GetHpColor()
-    {
-        if (bodyPart == null)
-            return "#FFFFFF";
-
-        if (bodyPart.IsBroken)
-            return "#F87171";
-
-        if (bodyPart.IsWeakened)
-            return "#FACC15";
-
-        if (bodyPart.MaxPartHP <= 0f)
-            return "#FFFFFF";
-
-        float ratio =
-            bodyPart.PartHP / bodyPart.MaxPartHP;
-
-        if (ratio <= 0.3f)
-            return "#FACC15";
-
-        return "#86EFAC";
-    }
-    
-    private string GetSpeedText()
-    {
-        if (bodyPart == null)
-            return "SPD -";
-
-        if (battleManager == null)
-            battleManager = FindFirstObjectByType<BattleManager>();
-
-        if (battleManager == null ||
-            battleManager.SpeedManager == null)
-            return "SPD 0";
-
-        int speed =
-            battleManager.SpeedManager.GetSpeed(bodyPart);
-
-        return $"SPD {speed}";
-    }
-
-    //--------------------------------------------------
-    private string GetSelectedSkillText()
-    {
-        ActionSlot slot = GetCurrentSlot();
-
-        if (slot == null)
-            return "";
-
-        if (slot.Skill == null)
-            return "";
-
-        return $"<color=#FFFFFF><b>{slot.Skill.SkillName}</b></color>";
-    }
-
-    //--------------------------------------------------
-
-    private ActionSlot GetCurrentSlot()
-    {
-        if (battleManager == null)
-            return null;
-
-        if (battleManager.ActionManager == null)
-            return null;
-
-        ActionSlot slot =
-            battleManager.ActionManager.FindSlot(
-                owner,
-                bodyPart);
-
-        if (slot != null)
-            return slot;
-
-        foreach (ActionSlot actionSlot in battleManager.ActionManager.Slots)
-        {
-            if (actionSlot == null)
-                continue;
-
-            if (actionSlot.Owner != owner)
-                continue;
-
-            if (actionSlot.Part == null || bodyPart == null)
-                continue;
-
-            if (actionSlot.Part.Type == bodyPart.Type)
-                return actionSlot;
-        }
-
-        return null;
+        buttonImage.color = originalColor;
     }
 
     //--------------------------------------------------
@@ -295,42 +194,6 @@ public class BodyPartButton : MonoBehaviour, IPointerClickHandler
             return;
 
         uiManager.OnBodyPartRightClicked(owner, bodyPart);
-    }
-    
-    public void SetNormalColor()
-    {
-        EnsureReferences();
-
-        if (buttonImage == null)
-            return;
-
-        if (bodyPart != null && bodyPart.IsWeakened)
-        {
-            buttonImage.color = weakenedColor;
-            return;
-        }
-
-        buttonImage.color = originalColor;
-    }
-
-    public void SetOwnerSelectedColor()
-    {
-        EnsureReferences();
-
-        if (buttonImage == null)
-            return;
-
-        buttonImage.color = ownerSelectedColor;
-    }
-
-    public void SetTargetSelectedColor()
-    {
-        EnsureReferences();
-
-        if (buttonImage == null)
-            return;
-
-        buttonImage.color = targetSelectedColor;
     }
     
     public bool IsHiddenByBroken()

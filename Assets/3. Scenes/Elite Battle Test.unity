@@ -294,6 +294,53 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 204596916}
   m_CullTransparentMesh: 1
+--- !u!1 &225598043
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 225598045}
+  - component: {fileID: 225598044}
+  m_Layer: 0
+  m_Name: BattleUIEventBinder
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &225598044
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 225598043}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8dd86e3731e762c40b56f3872b7a5c8c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  battleManager: {fileID: 1453355684}
+  uiManager: {fileID: 605390726}
+  refreshScheduler: {fileID: 473917185}
+--- !u!4 &225598045
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 225598043}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 12.262817, y: 548.9197, z: 8.412476}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &243524347
 GameObject:
   m_ObjectHideFlags: 0
@@ -1307,6 +1354,51 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 433104043}
   m_CullTransparentMesh: 1
+--- !u!1 &473917184
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 473917186}
+  - component: {fileID: 473917185}
+  m_Layer: 0
+  m_Name: BattleUIRefreshScheduler
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &473917185
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 473917184}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 229bb378abc3bd54ca3b5b66cff3d8c1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  uiManager: {fileID: 605390726}
+--- !u!4 &473917186
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 473917184}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 12.262817, y: 548.9197, z: 8.412476}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &478031298
 GameObject:
   m_ObjectHideFlags: 0
@@ -1454,7 +1546,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   uiManager: {fileID: 605390726}
-  battleManager: {fileID: 1453355684}
   buttonText: {fileID: 1971725357}
   buttonImage: {fileID: 0}
   ownerSelectedColor: {r: 0.25, g: 0.65, b: 1, a: 1}
@@ -2558,7 +2649,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   uiManager: {fileID: 605390726}
-  battleManager: {fileID: 1453355684}
   buttonText: {fileID: 1806438817}
   buttonImage: {fileID: 0}
   ownerSelectedColor: {r: 0.25, g: 0.65, b: 1, a: 1}
@@ -2941,7 +3031,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   uiManager: {fileID: 605390726}
-  battleManager: {fileID: 1453355684}
   buttonText: {fileID: 1445933611}
   buttonImage: {fileID: 0}
   ownerSelectedColor: {r: 0.25, g: 0.65, b: 1, a: 1}
@@ -3614,7 +3703,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   uiManager: {fileID: 605390726}
-  battleManager: {fileID: 1453355684}
   buttonText: {fileID: 872342652}
   buttonImage: {fileID: 0}
   ownerSelectedColor: {r: 0.25, g: 0.65, b: 1, a: 1}
@@ -3861,7 +3949,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   uiManager: {fileID: 605390726}
-  battleManager: {fileID: 1453355684}
   buttonText: {fileID: 1793331189}
   buttonImage: {fileID: 0}
   ownerSelectedColor: {r: 0.25, g: 0.65, b: 1, a: 1}
@@ -4014,7 +4101,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   uiManager: {fileID: 605390726}
-  battleManager: {fileID: 1453355684}
   buttonText: {fileID: 204596918}
   buttonImage: {fileID: 0}
   ownerSelectedColor: {r: 0.25, g: 0.65, b: 1, a: 1}
@@ -5176,7 +5262,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   uiManager: {fileID: 605390726}
-  battleManager: {fileID: 1453355684}
   buttonText: {fileID: 1994860953}
   buttonImage: {fileID: 0}
   ownerSelectedColor: {r: 0.25, g: 0.65, b: 1, a: 1}
@@ -6492,7 +6577,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   uiManager: {fileID: 605390726}
-  battleManager: {fileID: 1453355684}
   buttonText: {fileID: 1842025270}
   buttonImage: {fileID: 0}
   ownerSelectedColor: {r: 0.25, g: 0.65, b: 1, a: 1}
@@ -6906,3 +6990,5 @@ SceneRoots:
   - {fileID: 901959364}
   - {fileID: 605390727}
   - {fileID: 269561328}
+  - {fileID: 225598045}
+  - {fileID: 473917186}
