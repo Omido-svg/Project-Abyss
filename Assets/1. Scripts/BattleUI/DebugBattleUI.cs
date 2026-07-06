@@ -18,6 +18,11 @@ public class DebugBattleUI : MonoBehaviour
     [SerializeField] private bool showAllActionSlots = true;
     [SerializeField] private bool showBodyPartSkills = true;
     [SerializeField] private bool showStatusEffects = true;
+    
+    [Header("Initial Visibility")]
+    [SerializeField] private bool hideOnStart = true;
+    [SerializeField] private bool clearSelectedCharacterOnStart = true;
+    
 
     [Header("Behavior")]
     [SerializeField] private bool showOnlyWhenCharacterSelected = true;
@@ -98,16 +103,46 @@ public class DebugBattleUI : MonoBehaviour
 
         SetupText();
 
+        if (text != null)
+            text.text = "";
+
         SetViewVisible(false);
     }
 
     private void Start()
     {
+        if (hideOnStart)
+        {
+            if (clearSelectedCharacterOnStart &&
+                battleManager != null)
+            {
+                battleManager.SelectedCharacter = null;
+            }
+
+            if (text != null)
+                text.text = "";
+
+            SetViewVisible(false);
+            return;
+        }
+
         RefreshNow();
     }
 
     private void Update()
     {
+        if (hideOnStart &&
+            showOnlyWhenCharacterSelected &&
+            battleManager != null &&
+            battleManager.SelectedCharacter == null)
+        {
+            if (text != null)
+                text.text = "";
+
+            SetViewVisible(false);
+            return;
+        }
+
         if (updateEveryFrame)
         {
             RefreshNow();

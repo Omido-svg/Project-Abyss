@@ -11,6 +11,9 @@ public class BattleDebugTuner : MonoBehaviour
     [Header("Apply Option")]
     [SerializeField] private bool liveApply = true;
     [SerializeField] private bool refreshUIAfterApply = true;
+    
+    [Header("View Refresh")]
+    [SerializeField] private bool refreshCharacterViewAfterApply = true;
 
     [Header("Momentum")]
     [SerializeField] private bool overrideMomentum = false;
@@ -331,6 +334,28 @@ public class BattleDebugTuner : MonoBehaviour
         }
 
         character.ForceRecalculateHP();
+
+        RefreshCharacterView(character);
+    }
+    
+    private void RefreshCharacterView(Character character)
+    {
+        if (!refreshCharacterViewAfterApply)
+            return;
+
+        if (character == null)
+            return;
+
+        CharacterView characterView =
+            character.GetComponent<CharacterView>();
+
+        if (characterView == null)
+            characterView = character.GetComponentInChildren<CharacterView>();
+
+        if (characterView == null)
+            return;
+
+        characterView.RefreshVisualState();
     }
 
     private int GetCurrentPrestige(Character character)

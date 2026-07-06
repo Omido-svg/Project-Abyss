@@ -130,7 +130,7 @@ public class StatusPopup : MonoBehaviour
 
         if (currentSelected != null && currentSelected != this)
         {
-            currentSelected.Deselect();
+            currentSelected.DeselectWithoutCameraReturn();
         }
 
         currentSelected = this;
@@ -148,7 +148,23 @@ public class StatusPopup : MonoBehaviour
 
         outline?.EnableOutline();
 
-        cameraController?.Focus(transform.position + focusOffset);
+        GetCameraController()?.Focus(transform.position + focusOffset);
+    }
+    
+    private void DeselectWithoutCameraReturn()
+    {
+        isSelected = false;
+
+        if (battleManager != null &&
+            battleManager.SelectedCharacter == character)
+        {
+            battleManager.SelectedCharacter = null;
+        }
+
+        if (popupRoot != null)
+            popupRoot.SetActive(false);
+
+        outline?.DisableOutline();
     }
 
     //--------------------------------------------------
@@ -171,7 +187,7 @@ public class StatusPopup : MonoBehaviour
 
         outline?.DisableOutline();
 
-        cameraController?.Return();
+        GetCameraController()?.Return();
 
         if (currentSelected == this)
             currentSelected = null;
@@ -438,5 +454,13 @@ public class StatusPopup : MonoBehaviour
 
         sb.AppendLine(
             $"  Status: {partEffects}");
+    }
+    
+    private CameraController GetCameraController()
+    {
+        if (cameraController == null)
+            cameraController = FindFirstObjectByType<CameraController>();
+
+        return cameraController;
     }
 }
