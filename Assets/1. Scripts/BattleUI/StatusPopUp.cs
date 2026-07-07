@@ -458,9 +458,16 @@ public class StatusPopup : MonoBehaviour
     
     private CameraController GetCameraController()
     {
-        if (cameraController == null)
-            cameraController = FindFirstObjectByType<CameraController>();
+        if (cameraController != null)
+            return cameraController;
 
+        if (CameraController.Instance != null)
+        {
+            cameraController = CameraController.Instance;
+            return cameraController;
+        }
+
+        cameraController = FindFirstObjectByType<CameraController>();
         return cameraController;
     }
 }

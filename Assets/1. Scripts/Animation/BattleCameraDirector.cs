@@ -1,66 +1,104 @@
-using Unity.Cinemachine;
+using System.Collections;
 using UnityEngine;
 
 public class BattleCameraDirector : MonoBehaviour
 {
-    [Header("Cinemachine Cameras")]
-    [SerializeField] private CinemachineCamera overviewCamera;
-    [SerializeField] private CinemachineCamera attackerCamera;
-    [SerializeField] private CinemachineCamera targetCamera;
+    [SerializeField] private CameraController cameraController;
 
-    [Header("Priority")]
-    [SerializeField] private int activePriority = 20;
-    [SerializeField] private int inactivePriority = 0;
+    private Coroutine shakeRoutine;
 
-    private void Start()
+    private void Awake()
     {
-        ShowOverview();
+        if (cameraController == null)
+            cameraController = FindFirstObjectByType<CameraController>();
     }
 
-    private void Update()
+    public void FocusBetween(
+        Character a,
+        Character b)
     {
-        if (Input.GetKeyDown(KeyCode.F1))
-            ShowOverview();
-
-        if (Input.GetKeyDown(KeyCode.F2))
-            ShowAttacker();
-
-        if (Input.GetKeyDown(KeyCode.F3))
-            ShowTarget();
-    }
-
-    public void ShowOverview()
-    {
-        SetActiveCamera(overviewCamera);
-    }
-
-    public void ShowAttacker()
-    {
-        SetActiveCamera(attackerCamera);
-    }
-
-    public void ShowTarget()
-    {
-        SetActiveCamera(targetCamera);
-    }
-
-    private void SetActiveCamera(
-        CinemachineCamera activeCamera)
-    {
-        SetPriority(overviewCamera, inactivePriority);
-        SetPriority(attackerCamera, inactivePriority);
-        SetPriority(targetCamera, inactivePriority);
-
-        SetPriority(activeCamera, activePriority);
-    }
-
-    private void SetPriority(
-        CinemachineCamera camera,
-        int priority)
-    {
-        if (camera == null)
+        if (cameraController == null)
             return;
 
-        camera.Priority = priority;
+        cameraController.FocusBetween(a, b);
+    }
+
+    public void Return()
+    {
+        if (cameraController == null)
+            return;
+
+        cameraController.Return();
+    }
+
+    public IEnumerator WaitUntilArrived(float timeout)
+    {
+        if (cameraController == null)
+            yield break;
+
+        yield return cameraController.WaitUntilArrived(timeout);
+    }
+
+    public void PlayShake(BattleCameraShakeSettings settings)
+    {
+        if (settings == null)
+            return;
+
+        if (shakeRoutine != null)
+            StopCoroutine(shakeRoutine);
+
+        shakeRoutine =
+            StartCoroutine(
+                ShakeRoutine(settings));
+    }
+
+    private IEnumerator ShakeRoutine(BattleCameraShakeSettings settings)
+    {
+        if (cameraController == null)
+            yield break;
+
+        float elapsed = 0f;
+
+        while (elapsed < settings.Duration)
+        {
+            elapsed += Time.deltaTime;
+
+            float t =
+                Mathf.Clamp01(elapsed / settings.Duration);
+
+            float power =
+                1f - t;
+
+            float noiseTime =
+                Time.time * settings.Frequency;
+
+            Vector3 positionOffset =
+                new Vector3(
+                    Mathf.PerlinNoise(noiseTime, 0.1f) - 0.5f,
+                    Mathf.PerlinNoise(0.2f, noiseTime) - 0.5f,
+                    0f) *
+                settings.PositionStrength *
+                power;
+
+            Vector3 rotationOffset =
+                new Vector3(
+                    0f,
+                    0f,
+                    (Mathf.PerlinNoise(noiseTime, 0.3f) - 0.5f) *
+                    settings.RotationStrength *
+                    power);
+
+            cameraController.SetNoiseOffset(
+                positionOffset,
+                rotationOffset);
+
+            yield return null;
+        }
+
+        cameraController.SetNoiseOffset(
+            Vector3.zero,
+            Vector3.zero);
+
+        shakeRoutine = null;
     }
 }

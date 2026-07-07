@@ -1,3 +1,4 @@
+using System.Collections;
 using Unity.Cinemachine;
 using UnityEngine;
 
@@ -7,6 +8,7 @@ public class CameraController : MonoBehaviour
     {
         Overview,
         Focus,
+        FocusBetween,
         Prestige
     }
 
@@ -34,6 +36,11 @@ public class CameraController : MonoBehaviour
 
     [Header("Snap")]
     [SerializeField] private bool snapToOverviewOnStart = true;
+    
+    private Character focusA;
+    private Character focusB;
+
+    public static CameraController Instance { get; private set; }
 
     private CameraMode currentMode = CameraMode.Overview;
 
@@ -41,6 +48,13 @@ public class CameraController : MonoBehaviour
     private Quaternion targetRotation;
 
     private Vector3 currentFocusPoint;
+    
+    private Vector3 rigPosition;
+    private Quaternion rigRotation;
+    private bool rigInitialized;
+
+    private Vector3 noisePositionOffset;
+    private Vector3 noiseEulerOffset;
 
     public bool IsMoving
     {
@@ -66,8 +80,21 @@ public class CameraController : MonoBehaviour
 
     private void Awake()
     {
+        if (Instance != null && Instance != this)
+        {
+            Debug.LogWarning("[CameraController] 씬에 CameraController가 2개 이상 있습니다.");
+        }
+
+        Instance = this;
+
         if (mainCamera == null)
             mainCamera = Camera.main;
+    }
+
+    private void OnDestroy()
+    {
+        if (Instance == this)
+            Instance = null;
     }
 
     private void Start()
@@ -89,6 +116,10 @@ public class CameraController : MonoBehaviour
     public void Focus(Vector3 worldPosition)
     {
         currentMode = CameraMode.Focus;
+
+        focusA = null;
+        focusB = null;
+
         currentFocusPoint = worldPosition;
 
         RefreshTargetPose();
@@ -97,6 +128,9 @@ public class CameraController : MonoBehaviour
     public void Return()
     {
         currentMode = CameraMode.Overview;
+
+        focusA = null;
+        focusB = null;
 
         RefreshTargetPose();
     }
@@ -146,10 +180,34 @@ public class CameraController : MonoBehaviour
                 SetTargetToFocus();
                 break;
 
+            case CameraMode.FocusBetween:
+                SetTargetToFocusBetween();
+                break;
+
             case CameraMode.Prestige:
                 SetTargetToPrestige();
                 break;
         }
+    }
+    
+    private void SetTargetToFocusBetween()
+    {
+        if (focusA == null || focusB == null)
+        {
+            SetTargetToOverview();
+            return;
+        }
+
+        Vector3 aPoint =
+            GetCharacterFocusPoint(focusA);
+
+        Vector3 bPoint =
+            GetCharacterFocusPoint(focusB);
+
+        currentFocusPoint =
+            (aPoint + bPoint) * 0.5f;
+
+        SetTargetToFocus();
     }
 
     private void SetTargetToOverview()
@@ -219,6 +277,13 @@ public class CameraController : MonoBehaviour
         if (focusCamera == null)
             return;
 
+        if (!rigInitialized)
+        {
+            rigPosition = focusCamera.transform.position;
+            rigRotation = focusCamera.transform.rotation;
+            rigInitialized = true;
+        }
+
         float deltaTime =
             Time.deltaTime;
 
@@ -228,17 +293,19 @@ public class CameraController : MonoBehaviour
         float safeRotationSpeed =
             Mathf.Max(0.01f, rotationSpeed);
 
-        focusCamera.transform.position =
+        rigPosition =
             Vector3.MoveTowards(
-                focusCamera.transform.position,
+                rigPosition,
                 targetPosition,
                 safeMoveSpeed * deltaTime);
 
-        focusCamera.transform.rotation =
+        rigRotation =
             Quaternion.RotateTowards(
-                focusCamera.transform.rotation,
+                rigRotation,
                 targetRotation,
                 safeRotationSpeed * deltaTime);
+
+        ApplyRigPose();
     }
 
     private void SnapToTarget()
@@ -246,11 +313,11 @@ public class CameraController : MonoBehaviour
         if (focusCamera == null)
             return;
 
-        focusCamera.transform.position =
-            targetPosition;
+        rigPosition = targetPosition;
+        rigRotation = targetRotation;
+        rigInitialized = true;
 
-        focusCamera.transform.rotation =
-            targetRotation;
+        ApplyRigPose();
     }
 
     private void SetPriority(
@@ -261,5 +328,66 @@ public class CameraController : MonoBehaviour
             return;
 
         camera.Priority = priority;
+    }
+    
+    public void SetNoiseOffset(
+        Vector3 positionOffset,
+        Vector3 eulerOffset)
+    {
+        noisePositionOffset = positionOffset;
+        noiseEulerOffset = eulerOffset;
+
+        ApplyRigPose();
+    }
+
+    private void ApplyRigPose()
+    {
+        if (focusCamera == null)
+            return;
+
+        focusCamera.transform.position =
+            rigPosition + noisePositionOffset;
+
+        focusCamera.transform.rotation =
+            rigRotation *
+            Quaternion.Euler(noiseEulerOffset);
+    }
+    
+    public void FocusBetween(Character a, Character b)
+    {
+        if (a == null || b == null)
+            return;
+
+        currentMode = CameraMode.FocusBetween;
+
+        focusA = a;
+        focusB = b;
+
+        RefreshTargetPose();
+    }
+
+    private Vector3 GetCharacterFocusPoint(Character character)
+    {
+        if (character == null)
+            return Vector3.zero;
+
+        CharacterView view =
+            character.GetComponent<CharacterView>();
+
+        if (view != null && view.LookAtPoint != null)
+            return view.LookAtPoint.position;
+
+        return character.transform.position + Vector3.up * 1.5f;
+    }
+    
+    public IEnumerator WaitUntilArrived(float timeout = 1.5f)
+    {
+        float elapsed = 0f;
+
+        while (IsMoving && elapsed < timeout)
+        {
+            elapsed += Time.deltaTime;
+            yield return null;
+        }
     }
 }

@@ -19,6 +19,50 @@ public class CharacterView : MonoBehaviour
     [SerializeField] private Transform lookAtPoint;
     [SerializeField] private Transform attackCameraPoint;
     [SerializeField] private Transform hitCameraPoint;
+    
+    [SerializeField] private string hitStateName = "Hit";
+    [SerializeField] private float hitCrossFadeDuration = 0.03f;
+    [SerializeField] private int baseLayerIndex = 0;
+
+    public void PlayHit()
+    {
+        if (animator == null)
+            return;
+
+        animator.SetTrigger(HitHash);
+    }
+
+    public void PlayHitRestart()
+    {
+        if (animator == null)
+        {
+            Debug.LogWarning($"{name} Animator 없음 - Hit 재생 불가");
+            return;
+        }
+
+        int hitStateHash =
+            Animator.StringToHash(hitStateName);
+
+        animator.ResetTrigger(HitHash);
+
+        if (animator.HasState(baseLayerIndex, hitStateHash))
+        {
+            animator.CrossFadeInFixedTime(
+                hitStateHash,
+                hitCrossFadeDuration,
+                baseLayerIndex,
+                0f);
+
+            Debug.Log($"{name} Hit 상태 직접 재생 : {hitStateName}");
+            return;
+        }
+
+        Debug.LogWarning(
+            $"{name} Animator에 Hit State를 찾을 수 없음 : {hitStateName} / " +
+            $"Trigger 방식으로 대체 실행");
+
+        animator.SetTrigger(HitHash);
+    }
 
     private Action hitFrameCallback;
     private Action effectFrameCallback;
@@ -133,14 +177,6 @@ public class CharacterView : MonoBehaviour
         animationEnded = false;
 
         RefreshVisualState();
-    }
-
-    public void PlayHit()
-    {
-        if (animator == null)
-            return;
-
-        animator.SetTrigger(HitHash);
     }
 
     public void PlayDead()
@@ -260,5 +296,25 @@ public class CharacterView : MonoBehaviour
     private void OnAnimationEnd()
     {
         animationEnded = true;
+    }
+    
+    public Vector3 GetDamageNumberPosition(BodyPart part)
+    {
+        Transform anchor = GetBodyPartAnchor(part);
+
+        if (anchor == null)
+            return transform.position + Vector3.up * 1.5f;
+
+        return anchor.position;
+    }
+
+    public Vector3 GetDamageNumberPosition(PartType partType)
+    {
+        Transform anchor = GetBodyPartAnchor(partType);
+
+        if (anchor == null)
+            return transform.position + Vector3.up * 1.5f;
+
+        return anchor.position;
     }
 }

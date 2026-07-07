@@ -23,6 +23,9 @@ public class SkillDefinition : ScriptableObject
 
     [Header("Effects")]
     public List<SkillEffectDefinition> Effects = new();
+    
+    [Header("Visual")]
+    public SkillVisualDefinition VisualDefinition;
 
     public Skill CreateRuntimeSkill()
     {

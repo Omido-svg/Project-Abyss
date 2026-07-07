@@ -1,6 +1,9 @@
-public class DataPreparationSkill : PreparationSkill
+public class DataPreparationSkill : PreparationSkill, IVisualSkill
 {
     private readonly SkillDefinition definition;
+    
+    public SkillVisualDefinition VisualDefinition =>
+        definition.VisualDefinition;
 
     public override bool CanBreakPart => definition.CanBreakPart;
     public override bool GainPrestige => definition.GainPrestige;

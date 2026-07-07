@@ -1,6 +1,9 @@
-public class DataPrestigeSkill : PrestigeSkill
+public class DataPrestigeSkill : PrestigeSkill, IVisualSkill
 {
     private readonly SkillDefinition definition;
+    
+    public SkillVisualDefinition VisualDefinition =>
+        definition.VisualDefinition;
 
     public override bool CanBreakPart => definition.CanBreakPart;
     public override bool GainPrestige => definition.GainPrestige;
