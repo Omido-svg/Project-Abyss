@@ -1,0 +1,18 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3c31426d8cc0fa34981701869d2c6f4f, type: 3}
+  m_Name: Olaf Skill VP
+  m_EditorClassIdentifier: 
+  NormalAttackVisual: {fileID: 11400000, guid: 5ec90a471f7cf1c43ba5e4937771e69b, type: 2}
+  DuelVisual: {fileID: 11400000, guid: b6686956fe4d9894fb6252b59875cdfe, type: 2}
+  PreparationVisual: {fileID: 11400000, guid: 39165c1b463ebf74c825f6f456ae62d6, type: 2}
+  PrestigeVisual: {fileID: 11400000, guid: 5a0c5a35b2c5a4c459e9d7f9dc9be814, type: 2}

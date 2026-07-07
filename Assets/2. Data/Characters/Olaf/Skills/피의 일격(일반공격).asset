@@ -23,3 +23,4 @@ MonoBehaviour:
   CoinCount: 1
   Effects:
   - {fileID: 11400000, guid: 3d4ad851a6890c54d8468509ca66ad36, type: 2}
+  VisualDefinition: {fileID: 11400000, guid: 5ec90a471f7cf1c43ba5e4937771e69b, type: 2}
