@@ -10,6 +10,7 @@ public class BattleAnimationDirector : MonoBehaviour
     [SerializeField] private DamageNumberManager damageNumberManager;
     [SerializeField] private SkillVisualProfile defaultVisualProfile;
     [SerializeField] private TargetArrowUI targetArrowUI;
+    [SerializeField] private MomentumScrollbarUI momentumScrollbarUI;
 
     [Header("Fallback")]
     [SerializeField] private bool logMissingReferences = true;
@@ -48,6 +49,9 @@ public class BattleAnimationDirector : MonoBehaviour
 
         if (targetArrowUI == null)
             targetArrowUI = FindFirstObjectByType<TargetArrowUI>();
+            
+        if (momentumScrollbarUI == null)
+            momentumScrollbarUI = FindFirstObjectByType<MomentumScrollbarUI>();
     }
 
     public IEnumerator Play(BattleVisualRequest request)
@@ -257,7 +261,17 @@ public class BattleAnimationDirector : MonoBehaviour
         yield return HideActionAnnouncement(
             visual);
 
+        yield return PlayMomentumRefreshAtVisualEnd();
+
         EndVisualRequest(request);
+    }
+    
+    private IEnumerator PlayMomentumRefreshAtVisualEnd()
+    {
+        if (momentumScrollbarUI == null)
+            yield break;
+
+        yield return momentumScrollbarUI.ReleaseAndAnimateToRealMomentumRoutine();
     }
 
     private void BeginVisualRequest(
@@ -265,6 +279,9 @@ public class BattleAnimationDirector : MonoBehaviour
     {
         if (targetArrowUI != null)
             targetArrowUI.SetCurrentVisualRequest(request);
+
+        if (momentumScrollbarUI != null)
+            momentumScrollbarUI.LockCurrentDisplay();
 
         PrepareVisualHpOverride(request);
     }
@@ -892,7 +909,7 @@ public class BattleAnimationDirector : MonoBehaviour
         if (attacker != null)
         {
             result.AttackerView =
-                attacker.GetComponent<CharacterView>();
+                GetCharacterView(attacker);
 
             result.AttackerFacing =
                 attacker.GetComponent<CharacterFacingController>();
@@ -904,13 +921,27 @@ public class BattleAnimationDirector : MonoBehaviour
         if (target != null)
         {
             result.TargetView =
-                target.GetComponent<CharacterView>();
+                GetCharacterView(target);
 
             result.TargetFacing =
                 target.GetComponent<CharacterFacingController>();
         }
 
         return result;
+    }
+    
+    private CharacterView GetCharacterView(Character character)
+    {
+        if (character == null)
+            return null;
+
+        CharacterView view =
+            character.GetComponent<CharacterView>();
+
+        if (view != null)
+            return view;
+
+        return character.GetComponentInChildren<CharacterView>(true);
     }
 
     private struct CharacterViewSet

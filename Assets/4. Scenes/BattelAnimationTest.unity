@@ -1552,8 +1552,8 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 435227555}
   serializedVersion: 2
-  m_LocalRotation: {x: -0.12079939, y: 0.39290527, z: -0.05225522, w: -0.9101112}
-  m_LocalPosition: {x: 0.19732493, y: 1.6658759, z: -0.3128658}
+  m_LocalRotation: {x: -0.038144547, y: -0.9618927, z: 0.19596907, w: -0.18682528}
+  m_LocalPosition: {x: -0.80813587, y: 2.0561318, z: 2.102457}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -1780,8 +1780,8 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 537395235}
   serializedVersion: 2
-  m_LocalRotation: {x: -0.19103535, y: 0.43069226, z: -0.09388592, w: -0.87703776}
-  m_LocalPosition: {x: 0.23519793, y: 1.997715, z: -0.30058065}
+  m_LocalRotation: {x: -0.06010718, y: -0.92116636, z: 0.15761788, w: -0.35070843}
+  m_LocalPosition: {x: -1.3044899, y: 2.1636326, z: 1.6348147}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -5725,6 +5725,7 @@ MonoBehaviour:
   playerAdvantageIsRight: 1
   minMomentum: -100
   maxMomentum: 100
+  animateDuration: 0.35
 --- !u!114 &1805580446
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -6799,11 +6800,18 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 375611975d798554db3ffd340204b69b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  lookAtPoint: {fileID: 891893405}
-  closeCameraPoint: {fileID: 891893404}
-  overShoulderCameraPoint: {fileID: 891893403}
-  hitImpactCameraPoint: {fileID: 435227556}
-  sideCameraPoint: {fileID: 826883480}
+  cameraPointsRoot: {fileID: 1062032630}
+  points:
+  - Key: LookAtPoint
+    Point: {fileID: 891893405}
+  - Key: CloseCameraPoint
+    Point: {fileID: 891893404}
+  - Key: OverShoulderCameraPoint
+    Point: {fileID: 891893403}
+  - Key: HitImpactCameraPoint
+    Point: {fileID: 435227556}
+  - Key: SideCameraPoint
+    Point: {fileID: 826883480}
 --- !u!1001 &1942539578
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -7020,11 +7028,18 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 375611975d798554db3ffd340204b69b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  lookAtPoint: {fileID: 224419469}
-  closeCameraPoint: {fileID: 224419468}
-  overShoulderCameraPoint: {fileID: 224419467}
-  hitImpactCameraPoint: {fileID: 537395236}
-  sideCameraPoint: {fileID: 618856361}
+  cameraPointsRoot: {fileID: 1740641563}
+  points:
+  - Key: LookAtPoint
+    Point: {fileID: 224419469}
+  - Key: CloseCameraPoint
+    Point: {fileID: 224419468}
+  - Key: OverShoulderCameraPoint
+    Point: {fileID: 224419467}
+  - Key: HitImpactCameraPoint
+    Point: {fileID: 537395236}
+  - Key: SideCameraPoint
+    Point: {fileID: 618856361}
 --- !u!1 &1969176755
 GameObject:
   m_ObjectHideFlags: 0
@@ -8620,6 +8635,7 @@ MonoBehaviour:
   damageNumberManager: {fileID: 1114428113}
   defaultVisualProfile: {fileID: 11400000, guid: 6ad6ee546df81ab4ebe3dcb118388219, type: 2}
   targetArrowUI: {fileID: 1289930843}
+  momentumScrollbarUI: {fileID: 1805580445}
   logMissingReferences: 1
   battleUIManager: {fileID: 605390726}
   actionAnnounceUI: {fileID: 1883356089}

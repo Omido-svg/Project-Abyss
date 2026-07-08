@@ -195,52 +195,59 @@ public class BattleCameraDirector : MonoBehaviour
         if (cameraController == null)
             return false;
 
-        Character cameraOwner =
-            GetCameraPointOwner(
-                request,
-                shot.CameraPointOwner);
-
-        Character lookAtOwner =
-            GetCameraPointOwner(
-                request,
-                shot.LookAtOwner);
-
-        if (cameraOwner == null)
-            return false;
-
-        CharacterCameraPointSet cameraPointSet =
-            cameraOwner.GetComponentInChildren<CharacterCameraPointSet>();
-
-        if (cameraPointSet == null)
-            return false;
-
         Transform cameraPoint =
-            cameraPointSet.GetPoint(
+            ResolveCameraPoint(
+                request,
                 shot.CameraPoint);
 
-        Transform lookAtPoint = null;
-
-        if (lookAtOwner != null)
-        {
-            CharacterCameraPointSet lookAtPointSet =
-                lookAtOwner.GetComponentInChildren<CharacterCameraPointSet>();
-
-            if (lookAtPointSet != null)
-            {
-                lookAtPoint =
-                    lookAtPointSet.GetPoint(
-                        shot.LookAtCameraPoint);
-            }
-        }
+        Transform lookAtPoint =
+            ResolveCameraPoint(
+                request,
+                shot.LookAtPoint);
 
         if (cameraPoint == null)
+        {
+            Debug.LogWarning(
+                $"[BattleCameraDirector] CameraPoint 찾기 실패 / " +
+                $"Owner={shot.CameraPoint.Owner}, Key={shot.CameraPoint.Key}");
+
             return false;
+        }
+
+        bool useCameraPointRotation =
+            shot.RotationMode == SkillCameraRotationMode.CameraPointRotation;
 
         cameraController.FocusFromTransform(
             cameraPoint,
-            lookAtPoint);
+            lookAtPoint,
+            useCameraPointRotation);
 
         return true;
+    }
+
+    private Transform ResolveCameraPoint(
+        BattleVisualRequest request,
+        SkillCameraPointReference pointReference)
+    {
+        if (request == null || pointReference == null)
+            return null;
+
+        Character owner =
+            GetCameraPointOwner(
+                request,
+                pointReference.Owner);
+
+        if (owner == null)
+            return null;
+
+        CharacterCameraPointSet pointSet =
+            owner.GetComponentInChildren<CharacterCameraPointSet>(true);
+
+        if (pointSet == null)
+            return null;
+
+        return pointSet.GetPoint(
+            pointReference.Key);
     }
 
     private Character GetCameraPointOwner(

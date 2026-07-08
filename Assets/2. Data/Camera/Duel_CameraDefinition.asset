@@ -21,10 +21,13 @@ MonoBehaviour:
     LookAtOffset: {x: 0, y: 0, z: 0}
     FocusDistance: 5
     UseSceneCameraPoint: 0
-    CameraPointOwner: 0
-    CameraPoint: 2
-    LookAtOwner: 1
-    LookAtCameraPoint: 0
+    CameraPoint:
+      Owner: 0
+      Key: OverShoulder
+    RotationMode: 0
+    LookAtPoint:
+      Owner: 1
+      Key: LookAt
     UseShake: 0
     Shake:
       Duration: 0.18
@@ -63,10 +66,13 @@ MonoBehaviour:
     LookAtOffset: {x: 0, y: 1.2, z: 0}
     FocusDistance: 5
     UseSceneCameraPoint: 0
-    CameraPointOwner: 0
-    CameraPoint: 2
-    LookAtOwner: 1
-    LookAtCameraPoint: 0
+    CameraPoint:
+      Owner: 0
+      Key: OverShoulder
+    RotationMode: 0
+    LookAtPoint:
+      Owner: 1
+      Key: LookAt
     UseShake: 0
     Shake:
       Duration: 0.18
@@ -105,10 +111,13 @@ MonoBehaviour:
     LookAtOffset: {x: 0, y: 1.1, z: 0}
     FocusDistance: 4
     UseSceneCameraPoint: 1
-    CameraPointOwner: 1
-    CameraPoint: 3
-    LookAtOwner: 1
-    LookAtCameraPoint: 0
+    CameraPoint:
+      Owner: 0
+      Key: HitImpactCameraPoint
+    RotationMode: 0
+    LookAtPoint:
+      Owner: 1
+      Key: LookAt
     UseShake: 1
     Shake:
       Duration: 0.25

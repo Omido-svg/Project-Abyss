@@ -22,15 +22,33 @@ public class SkillCameraShot
     [Header("Scene Camera Point Mode")]
     public bool UseSceneCameraPoint = false;
 
-    public SkillCameraPointOwner CameraPointOwner = SkillCameraPointOwner.Attacker;
-    public SkillCameraPointType CameraPoint = SkillCameraPointType.OverShoulder;
+    public SkillCameraPointReference CameraPoint =
+        new SkillCameraPointReference
+        {
+            Owner = SkillCameraPointOwner.Attacker,
+            Key = "OverShoulder"
+        };
 
-    public SkillCameraPointOwner LookAtOwner = SkillCameraPointOwner.Target;
-    public SkillCameraPointType LookAtCameraPoint = SkillCameraPointType.LookAt;
+    [Header("Rotation")]
+    public SkillCameraRotationMode RotationMode = SkillCameraRotationMode.LookAtPoint;
+
+    public SkillCameraPointReference LookAtPoint =
+        new SkillCameraPointReference
+        {
+            Owner = SkillCameraPointOwner.Target,
+            Key = "LookAt"
+        };
 
     [Header("Shake")]
     public bool UseShake;
     public BattleCameraShakeSettings Shake = new BattleCameraShakeSettings();
+}
+
+[Serializable]
+public class SkillCameraPointReference
+{
+    public SkillCameraPointOwner Owner = SkillCameraPointOwner.Attacker;
+    public string Key = "LookAt";
 }
 
 public enum SkillCameraShotTiming
@@ -59,11 +77,8 @@ public enum SkillCameraPointOwner
     Target
 }
 
-public enum SkillCameraPointType
+public enum SkillCameraRotationMode
 {
-    LookAt,
-    Close,
-    OverShoulder,
-    HitImpact,
-    Side
+    LookAtPoint,
+    CameraPointRotation
 }

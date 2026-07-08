@@ -65,6 +65,10 @@ public class CameraController : MonoBehaviour
     
     private Vector3 directCameraPosition;
     private Vector3 directLookAtPosition;
+    
+    private Transform directCameraPoint;
+    private Transform directLookAtPoint;
+    private bool directUseCameraPointRotation;
 
     public bool IsMoving
     {
@@ -152,18 +156,20 @@ public class CameraController : MonoBehaviour
                 SetTargetToCharacterFocus();
                 break;
 
-            case CameraMode.Prestige:
-                SetTargetToPrestige();
-                break;
             case CameraMode.DirectPose:
                 SetTargetToDirectPose();
+                break;
+
+            case CameraMode.Prestige:
+                SetTargetToPrestige();
                 break;
         }
     }
     
     public void FocusFromTransform(
         Transform cameraPoint,
-        Transform lookAtPoint)
+        Transform lookAtPoint,
+        bool useCameraPointRotation)
     {
         if (cameraPoint == null)
             return;
@@ -174,40 +180,45 @@ public class CameraController : MonoBehaviour
         focusB = null;
         focusCharacter = null;
 
-        directCameraPosition =
-            cameraPoint.position;
-
-        if (lookAtPoint != null)
-        {
-            directLookAtPosition =
-                lookAtPoint.position;
-        }
-        else
-        {
-            directLookAtPosition =
-                cameraPoint.position + cameraPoint.forward;
-        }
+        directCameraPoint = cameraPoint;
+        directLookAtPoint = lookAtPoint;
+        directUseCameraPointRotation = useCameraPointRotation;
 
         RefreshTargetPose();
     }
 
     private void SetTargetToDirectPose()
     {
+        if (directCameraPoint == null)
+        {
+            SetTargetToOverview();
+            return;
+        }
+
         targetPosition =
-            directCameraPosition;
+            directCameraPoint.position;
+
+        if (directUseCameraPointRotation ||
+            directLookAtPoint == null)
+        {
+            targetRotation =
+                directCameraPoint.rotation;
+
+            return;
+        }
 
         Vector3 lookDirection =
-            directLookAtPosition - targetPosition;
+            directLookAtPoint.position - targetPosition;
 
         if (lookDirection.sqrMagnitude <= 0.0001f)
-            lookDirection = transform.forward;
+            lookDirection = directCameraPoint.forward;
 
         targetRotation =
             Quaternion.LookRotation(
                 lookDirection.normalized,
                 Vector3.up);
     }
-    
+
     private void SetTargetToFocusBetween()
     {
         if (focusA == null || focusB == null)
@@ -487,6 +498,10 @@ public class CameraController : MonoBehaviour
         focusB = null;
         focusCharacter = null;
 
+        directCameraPoint = null;
+        directLookAtPoint = null;
+        directUseCameraPointRotation = false;
+
         RefreshTargetPose();
     }
 
@@ -538,6 +553,10 @@ public class CameraController : MonoBehaviour
         focusB = b;
         focusCharacter = null;
 
+        directCameraPoint = null;
+        directLookAtPoint = null;
+        directUseCameraPointRotation = false;
+
         RefreshTargetPose();
     }
 
@@ -561,5 +580,9 @@ public class CameraController : MonoBehaviour
         characterFocusDistance = distance;
 
         RefreshTargetPose();
+        
+        directCameraPoint = null;
+        directLookAtPoint = null;
+        directUseCameraPointRotation = false;
     }
 }

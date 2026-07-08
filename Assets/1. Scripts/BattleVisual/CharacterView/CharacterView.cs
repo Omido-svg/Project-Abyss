@@ -34,6 +34,11 @@ public class CharacterView : MonoBehaviour
 
     public void PlayHitRestart()
     {
+        Debug.Log(
+            $"[CharacterView] 실제 Hit 재생 / " +
+            $"ViewObject={name}, " +
+            $"Root={transform.root.name}");
+        
         if (animator == null)
         {
             Debug.LogWarning($"{name} Animator 없음 - Hit 재생 불가");
