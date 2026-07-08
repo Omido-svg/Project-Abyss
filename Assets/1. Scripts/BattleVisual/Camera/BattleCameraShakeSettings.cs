@@ -4,8 +4,15 @@ using UnityEngine;
 [Serializable]
 public class BattleCameraShakeSettings
 {
-    public float Duration = 0.18f;
-    public float PositionStrength = 0.08f;
-    public float RotationStrength = 1.5f;
-    public float Frequency = 40f;
+    public float Duration = 0.15f;
+    public float Frequency = 25f;
+    public float PositionStrength = 0.1f;
+    public float RotationStrength = 2f;
+
+    public AnimationCurve StrengthCurve =
+        AnimationCurve.EaseInOut(
+            0f,
+            1f,
+            1f,
+            0f);
 }

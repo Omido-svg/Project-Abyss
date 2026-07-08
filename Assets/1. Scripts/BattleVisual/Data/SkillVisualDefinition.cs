@@ -9,6 +9,7 @@ public class SkillVisualDefinition : ScriptableObject
     public bool UsesTargetCamera = true;
     public bool ReturnCameraAfterAction = true;
     public float CameraArriveTimeout = 1.5f;
+    public SkillCameraDefinition CameraDefinition;
 
     [Header("Movement")]
     public bool MovesToTarget = true;

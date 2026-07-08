@@ -15,6 +15,7 @@ MonoBehaviour:
   UsesTargetCamera: 0
   ReturnCameraAfterAction: 1
   CameraArriveTimeout: 1.5
+  CameraDefinition: {fileID: 11400000, guid: cd44884b0b4ffb54db569c9c0c307f03, type: 2}
   MovesToTarget: 0
   ReturnPositionAfterAction: 1
   FaceEachOther: 1
@@ -29,6 +30,8 @@ MonoBehaviour:
   BeforeActionDelay: 0.15
   AfterActionDelay: 0.25
   AfterReturnDelay: 0.3
+  DistributeDamageByHitCount: 1
+  ExpectedHitFrameCount: 1
   UseHitCameraShake: 0
   HitShake:
     Duration: 0.18

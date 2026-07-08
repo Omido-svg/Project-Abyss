@@ -87,7 +87,7 @@ public class BattleUIManager : MonoBehaviour
         return new BodyPartButtonViewModel
         {
             PartText = GetPartText(part),
-            HpText = GetHpText(part),
+            HpText = GetHpText(button),
             SpeedText = GetSpeedText(part),
             SkillText = GetSelectedSkillText(owner, part),
 
@@ -260,25 +260,35 @@ public class BattleUIManager : MonoBehaviour
             $"<color={stateColor}><b>{part.Type} [{part.State}]</b></color>";
     }
 
-    private string GetHpText(BodyPart part)
+    private string GetHpText(BodyPartButton button)
     {
+        if (button == null)
+            return "HP -";
+
+        BodyPart part =
+            button.BodyPart;
+
         if (part == null)
             return "HP -";
 
         int currentHP =
-            Mathf.RoundToInt(part.PartHP);
+            button.HasHpOverride
+                ? button.HpOverrideValue
+                : Mathf.RoundToInt(part.PartHP);
 
         int maxHP =
             Mathf.RoundToInt(part.MaxPartHP);
 
         string hpColor =
-            GetHpColor(part);
+            GetHpColor(part, currentHP);
 
         return
             $"<color={hpColor}>HP {currentHP}/{maxHP}</color>";
     }
 
-    private string GetHpColor(BodyPart part)
+    private string GetHpColor(
+        BodyPart part,
+        int displayHp)
     {
         if (part == null)
             return "#FFFFFF";
@@ -293,12 +303,76 @@ public class BattleUIManager : MonoBehaviour
             return "#FFFFFF";
 
         float ratio =
-            part.PartHP / part.MaxPartHP;
+            displayHp / part.MaxPartHP;
 
         if (ratio <= 0.3f)
             return "#FACC15";
 
         return "#86EFAC";
+    }
+    
+    public void SetBodyPartHpOverride(
+        Character character,
+        BodyPart part,
+        int hp)
+    {
+        BodyPartButton button =
+            FindBodyPartButton(
+                character,
+                part);
+
+        if (button == null)
+            return;
+
+        button.SetHpOverride(hp);
+    }
+
+    public void ClearBodyPartHpOverride(
+        Character character,
+        BodyPart part)
+    {
+        BodyPartButton button =
+            FindBodyPartButton(
+                character,
+                part);
+
+        if (button == null)
+            return;
+
+        button.ClearHpOverride();
+    }
+
+    private BodyPartButton FindBodyPartButton(
+        Character character,
+        BodyPart part)
+    {
+        if (character == null || part == null)
+            return null;
+
+        BodyPartButton[] buttons =
+            Object.FindObjectsByType<BodyPartButton>(
+                FindObjectsInactive.Include,
+                FindObjectsSortMode.None);
+
+        foreach (BodyPartButton button in buttons)
+        {
+            if (button == null)
+                continue;
+
+            if (button.Owner != character)
+                continue;
+
+            if (button.BodyPart == part)
+                return button;
+
+            if (button.BodyPart != null &&
+                button.BodyPart.Type == part.Type)
+            {
+                return button;
+            }
+        }
+
+        return null;
     }
 
     private string GetSpeedText(BodyPart part)

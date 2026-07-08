@@ -9,6 +9,8 @@ public class CameraController : MonoBehaviour
         Overview,
         Focus,
         FocusBetween,
+        CharacterFocus,
+        DirectPose,
         Prestige
     }
 
@@ -39,6 +41,11 @@ public class CameraController : MonoBehaviour
     
     private Character focusA;
     private Character focusB;
+    
+    private Character focusCharacter;
+    private Vector3 characterPositionOffset;
+    private Vector3 characterLookAtOffset;
+    private float characterFocusDistance;
 
     public static CameraController Instance { get; private set; }
 
@@ -55,6 +62,9 @@ public class CameraController : MonoBehaviour
 
     private Vector3 noisePositionOffset;
     private Vector3 noiseEulerOffset;
+    
+    private Vector3 directCameraPosition;
+    private Vector3 directLookAtPosition;
 
     public bool IsMoving
     {
@@ -113,52 +123,6 @@ public class CameraController : MonoBehaviour
         MoveLiveCamera();
     }
 
-    public void Focus(Vector3 worldPosition)
-    {
-        currentMode = CameraMode.Focus;
-
-        focusA = null;
-        focusB = null;
-
-        currentFocusPoint = worldPosition;
-
-        RefreshTargetPose();
-    }
-
-    public void Return()
-    {
-        currentMode = CameraMode.Overview;
-
-        focusA = null;
-        focusB = null;
-
-        RefreshTargetPose();
-    }
-
-    public void ShowPrestige()
-    {
-        currentMode = CameraMode.Prestige;
-
-        RefreshTargetPose();
-    }
-
-    public void SnapToOverview()
-    {
-        currentMode = CameraMode.Overview;
-
-        RefreshTargetPose();
-        SnapToTarget();
-    }
-
-    public void SnapToFocus(Vector3 worldPosition)
-    {
-        currentMode = CameraMode.Focus;
-        currentFocusPoint = worldPosition;
-
-        RefreshTargetPose();
-        SnapToTarget();
-    }
-
     private void SetOnlyFocusCameraLive()
     {
         SetPriority(overviewCamera, referencePriority);
@@ -184,10 +148,64 @@ public class CameraController : MonoBehaviour
                 SetTargetToFocusBetween();
                 break;
 
+            case CameraMode.CharacterFocus:
+                SetTargetToCharacterFocus();
+                break;
+
             case CameraMode.Prestige:
                 SetTargetToPrestige();
                 break;
+            case CameraMode.DirectPose:
+                SetTargetToDirectPose();
+                break;
         }
+    }
+    
+    public void FocusFromTransform(
+        Transform cameraPoint,
+        Transform lookAtPoint)
+    {
+        if (cameraPoint == null)
+            return;
+
+        currentMode = CameraMode.DirectPose;
+
+        focusA = null;
+        focusB = null;
+        focusCharacter = null;
+
+        directCameraPosition =
+            cameraPoint.position;
+
+        if (lookAtPoint != null)
+        {
+            directLookAtPosition =
+                lookAtPoint.position;
+        }
+        else
+        {
+            directLookAtPosition =
+                cameraPoint.position + cameraPoint.forward;
+        }
+
+        RefreshTargetPose();
+    }
+
+    private void SetTargetToDirectPose()
+    {
+        targetPosition =
+            directCameraPosition;
+
+        Vector3 lookDirection =
+            directLookAtPosition - targetPosition;
+
+        if (lookDirection.sqrMagnitude <= 0.0001f)
+            lookDirection = transform.forward;
+
+        targetRotation =
+            Quaternion.LookRotation(
+                lookDirection.normalized,
+                Vector3.up);
     }
     
     private void SetTargetToFocusBetween()
@@ -208,6 +226,76 @@ public class CameraController : MonoBehaviour
             (aPoint + bPoint) * 0.5f;
 
         SetTargetToFocus();
+    }
+    
+    private void SetTargetToCharacterFocus()
+    {
+        if (focusCharacter == null)
+        {
+            SetTargetToOverview();
+            return;
+        }
+
+        Transform referenceTransform =
+            GetCharacterViewTransform(focusCharacter);
+
+        Vector3 basePoint =
+            GetCharacterFocusPoint(focusCharacter);
+
+        Vector3 lookAtPoint =
+            basePoint +
+            referenceTransform.TransformDirection(
+                characterLookAtOffset);
+
+        Vector3 offset =
+            referenceTransform.TransformDirection(
+                characterPositionOffset);
+
+        if (offset.sqrMagnitude <= 0.0001f)
+        {
+            Vector3 fallbackForward =
+                GetReferenceForward();
+
+            if (fallbackForward.sqrMagnitude <= 0.0001f)
+                fallbackForward = Vector3.forward;
+
+            float distance =
+                characterFocusDistance > 0f
+                    ? characterFocusDistance
+                    : focusDistance;
+
+            offset =
+                -fallbackForward.normalized * distance;
+        }
+
+        targetPosition =
+            lookAtPoint + offset;
+
+        Vector3 lookDirection =
+            lookAtPoint - targetPosition;
+
+        if (lookDirection.sqrMagnitude <= 0.0001f)
+            lookDirection = referenceTransform.forward;
+
+        targetRotation =
+            Quaternion.LookRotation(
+                lookDirection.normalized,
+                Vector3.up);
+    }
+    
+    private Transform GetCharacterViewTransform(
+        Character character)
+    {
+        if (character == null)
+            return transform;
+
+        CharacterView view =
+            character.GetComponent<CharacterView>();
+
+        if (view != null)
+            return view.transform;
+
+        return character.transform;
     }
 
     private void SetTargetToOverview()
@@ -353,19 +441,6 @@ public class CameraController : MonoBehaviour
             Quaternion.Euler(noiseEulerOffset);
     }
     
-    public void FocusBetween(Character a, Character b)
-    {
-        if (a == null || b == null)
-            return;
-
-        currentMode = CameraMode.FocusBetween;
-
-        focusA = a;
-        focusB = b;
-
-        RefreshTargetPose();
-    }
-
     private Vector3 GetCharacterFocusPoint(Character character)
     {
         if (character == null)
@@ -389,5 +464,102 @@ public class CameraController : MonoBehaviour
             elapsed += Time.deltaTime;
             yield return null;
         }
+    }
+    
+    public void Focus(Vector3 worldPosition)
+    {
+        currentMode = CameraMode.Focus;
+
+        focusA = null;
+        focusB = null;
+        focusCharacter = null;
+
+        currentFocusPoint = worldPosition;
+
+        RefreshTargetPose();
+    }
+
+    public void Return()
+    {
+        currentMode = CameraMode.Overview;
+
+        focusA = null;
+        focusB = null;
+        focusCharacter = null;
+
+        RefreshTargetPose();
+    }
+
+    public void ShowPrestige()
+    {
+        currentMode = CameraMode.Prestige;
+
+        focusA = null;
+        focusB = null;
+        focusCharacter = null;
+
+        RefreshTargetPose();
+    }
+
+    public void SnapToOverview()
+    {
+        currentMode = CameraMode.Overview;
+
+        focusA = null;
+        focusB = null;
+        focusCharacter = null;
+
+        RefreshTargetPose();
+        SnapToTarget();
+    }
+
+    public void SnapToFocus(Vector3 worldPosition)
+    {
+        currentMode = CameraMode.Focus;
+
+        focusA = null;
+        focusB = null;
+        focusCharacter = null;
+
+        currentFocusPoint = worldPosition;
+
+        RefreshTargetPose();
+        SnapToTarget();
+    }
+
+    public void FocusBetween(Character a, Character b)
+    {
+        if (a == null || b == null)
+            return;
+
+        currentMode = CameraMode.FocusBetween;
+
+        focusA = a;
+        focusB = b;
+        focusCharacter = null;
+
+        RefreshTargetPose();
+    }
+
+    public void FocusCharacter(
+        Character character,
+        Vector3 positionOffset,
+        Vector3 lookAtOffset,
+        float distance)
+    {
+        if (character == null)
+            return;
+
+        currentMode = CameraMode.CharacterFocus;
+
+        focusA = null;
+        focusB = null;
+
+        focusCharacter = character;
+        characterPositionOffset = positionOffset;
+        characterLookAtOffset = lookAtOffset;
+        characterFocusDistance = distance;
+
+        RefreshTargetPose();
     }
 }

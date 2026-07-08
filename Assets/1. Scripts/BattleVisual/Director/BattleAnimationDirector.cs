@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 
 public class BattleAnimationDirector : MonoBehaviour
@@ -8,17 +9,27 @@ public class BattleAnimationDirector : MonoBehaviour
     [SerializeField] private BattleWorldFloatingTextManager floatingTextManager;
     [SerializeField] private DamageNumberManager damageNumberManager;
     [SerializeField] private SkillVisualProfile defaultVisualProfile;
+    [SerializeField] private TargetArrowUI targetArrowUI;
 
     [Header("Fallback")]
     [SerializeField] private bool logMissingReferences = true;
-    
+
     [Header("UI")]
     [SerializeField] private BattleUIManager battleUIManager;
     [SerializeField] private BattleActionAnnounceUI actionAnnounceUI;
 
     private bool isPlaying;
+    private Coroutine cameraShotRoutine;
+
+    private readonly Dictionary<BattleVisualRequest, int> visualDamageAccumulated = new();
+    private readonly Dictionary<BattleVisualRequest, int> visualHpStart = new();
 
     private void Awake()
+    {
+        ResolveReferences();
+    }
+
+    private void ResolveReferences()
     {
         if (cameraDirector == null)
             cameraDirector = FindFirstObjectByType<BattleCameraDirector>();
@@ -28,12 +39,15 @@ public class BattleAnimationDirector : MonoBehaviour
 
         if (damageNumberManager == null)
             damageNumberManager = FindFirstObjectByType<DamageNumberManager>();
-            
+
         if (battleUIManager == null)
             battleUIManager = FindFirstObjectByType<BattleUIManager>();
 
         if (actionAnnounceUI == null)
             actionAnnounceUI = FindFirstObjectByType<BattleActionAnnounceUI>();
+
+        if (targetArrowUI == null)
+            targetArrowUI = FindFirstObjectByType<TargetArrowUI>();
     }
 
     public IEnumerator Play(BattleVisualRequest request)
@@ -89,7 +103,9 @@ public class BattleAnimationDirector : MonoBehaviour
             Debug.LogWarning("[BattleAnimationDirector] VisualDefinition 없음");
             yield break;
         }
-        
+
+        BeginVisualRequest(request);
+
         Debug.Log(
             $"[BattleAnimationDirector] PlayInternal 시작 / " +
             $"Attacker={attacker?.Data.CharacterName}, " +
@@ -102,22 +118,25 @@ public class BattleAnimationDirector : MonoBehaviour
             $"HitDamages={request.HitDamages?.Count ?? 0}");
 
         CharacterViewSet views =
-            GetViews(attacker, target);
-            
+            GetViews(
+                attacker,
+                target);
+
         yield return ShowActionAnnouncement(
             request,
             visual);
 
-        if (visual.UsesTargetCamera &&
-            cameraDirector != null &&
-            target != null)
-        {
-            cameraDirector.FocusBetween(
-                attacker,
-                target);
-        }
+        StartCameraShots(
+            request,
+            visual,
+            SkillCameraShotTiming.OnActionStart);
 
-        if (visual.FaceEachOther && target != null)
+        BeginSkillCamera(
+            request,
+            visual);
+
+        if (visual.FaceEachOther &&
+            target != null)
         {
             yield return FaceEachOther(
                 views,
@@ -134,12 +153,8 @@ public class BattleAnimationDirector : MonoBehaviour
                 request.TargetPart);
         }
 
-        if (visual.UsesTargetCamera &&
-            cameraDirector != null)
-        {
-            yield return cameraDirector.WaitUntilArrived(
-                visual.CameraArriveTimeout);
-        }
+        yield return WaitSkillCameraArrive(
+            visual);
 
         if (visual.ShowsClashPower)
         {
@@ -149,8 +164,16 @@ public class BattleAnimationDirector : MonoBehaviour
                 visual);
         }
 
-        yield return new WaitForSeconds(
-            visual.BeforeActionDelay);
+        StartCameraShots(
+            request,
+            visual,
+            SkillCameraShotTiming.BeforeAttackAnimation);
+
+        if (visual.BeforeActionDelay > 0f)
+        {
+            yield return new WaitForSeconds(
+                visual.BeforeActionDelay);
+        }
 
         int hitFrameCount = 0;
 
@@ -174,18 +197,11 @@ public class BattleAnimationDirector : MonoBehaviour
                 onEffectFrame: null);
         }
 
-        bool hasDamageToShow =
-            request.HitDamages != null &&
-            request.HitDamages.Count > 0 &&
-            request.GetDamageForHitIndex(0) > 0;
-
         bool shouldFallbackHit =
-            visual.HasHitFrameDamage &&
-            hitFrameCount <= 0 &&
-            (
-                visual.ApplyDamageIfNoHitFrame ||
-                hasDamageToShow
-            );
+            ShouldFallbackHitFrame(
+                request,
+                visual,
+                hitFrameCount);
 
         if (shouldFallbackHit)
         {
@@ -205,8 +221,11 @@ public class BattleAnimationDirector : MonoBehaviour
         views.AttackerView?.RefreshVisualState();
         views.TargetView?.RefreshVisualState();
 
-        yield return new WaitForSeconds(
-            visual.AfterActionDelay);
+        if (visual.AfterActionDelay > 0f)
+        {
+            yield return new WaitForSeconds(
+                visual.AfterActionDelay);
+        }
 
         if (visual.ReturnPositionAfterAction &&
             visual.MovesToTarget &&
@@ -217,25 +236,350 @@ public class BattleAnimationDirector : MonoBehaviour
 
         if (visual.ReturnFacingAfterAction)
         {
-            yield return ReturnFacing(views);
+            yield return ReturnFacing(
+                views);
         }
 
-        if (visual.ReturnCameraAfterAction &&
-            cameraDirector != null)
-        {
-            cameraDirector.Return();
-        }
-        
+        StartCameraShots(
+            request,
+            visual,
+            SkillCameraShotTiming.AfterAction);
+
+        EndSkillCamera(
+            visual);
+
         if (visual.AfterReturnDelay > 0f)
         {
             yield return new WaitForSeconds(
                 visual.AfterReturnDelay);
         }
-        
+
         yield return HideActionAnnouncement(
             visual);
+
+        EndVisualRequest(request);
     }
-    
+
+    private void BeginVisualRequest(
+        BattleVisualRequest request)
+    {
+        if (targetArrowUI != null)
+            targetArrowUI.SetCurrentVisualRequest(request);
+
+        PrepareVisualHpOverride(request);
+    }
+
+    private void EndVisualRequest(
+        BattleVisualRequest request)
+    {
+        if (cameraShotRoutine != null)
+        {
+            StopCoroutine(cameraShotRoutine);
+            cameraShotRoutine = null;
+        }
+
+        ClearVisualHpOverride(request);
+
+        if (targetArrowUI != null)
+            targetArrowUI.ClearCurrentVisualRequest(request);
+    }
+
+    private void BeginSkillCamera(
+        BattleVisualRequest request,
+        SkillVisualDefinition visual)
+    {
+        if (request == null ||
+            visual == null)
+            return;
+
+        if (!visual.UsesTargetCamera)
+            return;
+
+        if (visual.CameraDefinition != null)
+            return;
+
+        if (cameraDirector == null)
+            return;
+
+        if (request.Attacker == null ||
+            request.Target == null)
+            return;
+
+        cameraDirector.FocusBetween(
+            request.Attacker,
+            request.Target);
+    }
+
+    private void StartCameraShots(
+        BattleVisualRequest request,
+        SkillVisualDefinition visual,
+        SkillCameraShotTiming timing)
+    {
+        if (request == null || visual == null)
+            return;
+
+        if (cameraDirector == null)
+            return;
+
+        if (visual.CameraDefinition == null)
+            return;
+
+        if (cameraShotRoutine != null)
+        {
+            StopCoroutine(cameraShotRoutine);
+            cameraShotRoutine = null;
+        }
+
+        cameraShotRoutine =
+            StartCoroutine(
+                PlayCameraShots(
+                    request,
+                    visual,
+                    timing));
+    }
+
+    private IEnumerator PlayCameraShots(
+        BattleVisualRequest request,
+        SkillVisualDefinition visual,
+        SkillCameraShotTiming timing)
+    {
+        if (request == null || visual == null)
+            yield break;
+
+        if (cameraDirector == null)
+            yield break;
+
+        if (visual.CameraDefinition == null)
+            yield break;
+
+        yield return cameraDirector.PlayShotsByTiming(
+            request,
+            visual.CameraDefinition,
+            timing);
+
+        cameraShotRoutine = null;
+    }
+
+    private IEnumerator WaitSkillCameraArrive(
+        SkillVisualDefinition visual)
+    {
+        if (visual == null)
+            yield break;
+
+        if (!visual.UsesTargetCamera)
+            yield break;
+
+        if (visual.CameraDefinition != null)
+            yield break;
+
+        if (cameraDirector == null)
+            yield break;
+
+        yield return cameraDirector.WaitUntilArrived(
+            visual.CameraArriveTimeout);
+    }
+
+    private void EndSkillCamera(
+        SkillVisualDefinition visual)
+    {
+        if (visual == null)
+            return;
+
+        if (cameraDirector == null)
+            return;
+
+        if (visual.CameraDefinition != null)
+        {
+            if (visual.CameraDefinition.ReturnToOverviewAfterAction)
+                cameraDirector.Return();
+
+            return;
+        }
+
+        if (!visual.ReturnCameraAfterAction)
+            return;
+
+        cameraDirector.Return();
+    }
+
+    private void PlayHitCameraShake(
+        SkillVisualDefinition visual)
+    {
+        if (visual == null)
+            return;
+
+        if (!visual.UseHitCameraShake)
+            return;
+
+        if (cameraDirector == null)
+            return;
+
+        cameraDirector.PlayShake(
+            visual.HitShake);
+    }
+
+    private bool ShouldFallbackHitFrame(
+        BattleVisualRequest request,
+        SkillVisualDefinition visual,
+        int hitFrameCount)
+    {
+        if (request == null ||
+            visual == null)
+        {
+            return false;
+        }
+
+        if (!visual.HasHitFrameDamage)
+            return false;
+
+        if (hitFrameCount > 0)
+            return false;
+
+        bool hasDamageToShow =
+            request.HitDamages != null &&
+            request.HitDamages.Count > 0 &&
+            request.GetDamageForHitIndex(0) > 0;
+
+        return
+            visual.ApplyDamageIfNoHitFrame ||
+            hasDamageToShow;
+    }
+
+    private void PrepareVisualHpOverride(
+        BattleVisualRequest request)
+    {
+        if (request == null)
+            return;
+
+        if (request.Target == null ||
+            request.TargetPart == null)
+            return;
+
+        if (request.HitDamages == null ||
+            request.HitDamages.Count <= 0)
+            return;
+
+        int totalDamage = 0;
+
+        foreach (int damage in request.HitDamages)
+        {
+            totalDamage += Mathf.Max(
+                0,
+                damage);
+        }
+
+        if (totalDamage <= 0)
+            return;
+
+        int realFinalHp =
+            Mathf.RoundToInt(
+                request.TargetPart.PartHP);
+
+        int maxHp =
+            Mathf.RoundToInt(
+                request.TargetPart.MaxPartHP);
+
+        int visualStartHp =
+            Mathf.Clamp(
+                realFinalHp + totalDamage,
+                0,
+                maxHp);
+
+        visualHpStart[request] =
+            visualStartHp;
+
+        visualDamageAccumulated[request] =
+            0;
+
+        if (battleUIManager != null)
+        {
+            battleUIManager.SetBodyPartHpOverride(
+                request.Target,
+                request.TargetPart,
+                visualStartHp);
+        }
+
+        RefreshBattleUIAtHitFrame(
+            request,
+            -1,
+            0);
+    }
+
+    private void ApplyVisualHpDamage(
+        BattleVisualRequest request,
+        int damage)
+    {
+        if (request == null)
+            return;
+
+        if (request.Target == null ||
+            request.TargetPart == null)
+            return;
+
+        if (damage <= 0)
+            return;
+
+        if (!visualHpStart.TryGetValue(
+                request,
+                out int startHp))
+        {
+            return;
+        }
+
+        if (!visualDamageAccumulated.TryGetValue(
+                request,
+                out int accumulatedDamage))
+        {
+            accumulatedDamage = 0;
+        }
+
+        accumulatedDamage += damage;
+
+        visualDamageAccumulated[request] =
+            accumulatedDamage;
+
+        int realFinalHp =
+            Mathf.RoundToInt(
+                request.TargetPart.PartHP);
+
+        int displayHp =
+            Mathf.Max(
+                realFinalHp,
+                startHp - accumulatedDamage);
+
+        if (battleUIManager != null)
+        {
+            battleUIManager.SetBodyPartHpOverride(
+                request.Target,
+                request.TargetPart,
+                displayHp);
+        }
+    }
+
+    private void ClearVisualHpOverride(
+        BattleVisualRequest request)
+    {
+        if (request == null)
+            return;
+
+        if (battleUIManager != null &&
+            request.Target != null &&
+            request.TargetPart != null)
+        {
+            battleUIManager.ClearBodyPartHpOverride(
+                request.Target,
+                request.TargetPart);
+        }
+
+        visualHpStart.Remove(request);
+        visualDamageAccumulated.Remove(request);
+
+        RefreshBattleUIAtHitFrame(
+            request,
+            -1,
+            0);
+    }
+
     private IEnumerator ShowActionAnnouncement(
         BattleVisualRequest request,
         SkillVisualDefinition visual)
@@ -255,7 +599,7 @@ public class BattleAnimationDirector : MonoBehaviour
         yield return actionAnnounceUI.ShowPersistent(
             request);
     }
-    
+
     private IEnumerator HideActionAnnouncement(
         SkillVisualDefinition visual)
     {
@@ -277,6 +621,12 @@ public class BattleAnimationDirector : MonoBehaviour
         SkillVisualDefinition visual,
         int hitIndex)
     {
+        if (request == null ||
+            visual == null)
+        {
+            return;
+        }
+
         if (!visual.HasHitFrameDamage)
             return;
 
@@ -297,15 +647,16 @@ public class BattleAnimationDirector : MonoBehaviour
             return;
         }
 
+        int damage =
+            request.GetDamageForHitIndex(
+                hitIndex);
+
         Debug.Log(
             $"[BattleAnimationDirector] HitFrame 적용 : " +
             $"{request.Attacker?.Data.CharacterName} -> {request.Target?.Data.CharacterName} / " +
-            $"HitIndex={hitIndex} / Damage={request.GetDamageForHitIndex(hitIndex)}");
+            $"HitIndex={hitIndex} / Damage={damage}");
 
         targetView.PlayHitRestart();
-
-        int damage =
-            request.GetDamageForHitIndex(hitIndex);
 
         if (damage > 0)
         {
@@ -315,18 +666,28 @@ public class BattleAnimationDirector : MonoBehaviour
                 damage);
         }
 
-        RefreshBattleUIAtHitFrame(request);
+        StartCameraShots(
+            request,
+            visual,
+            SkillCameraShotTiming.OnHitFrame);
 
-        if (visual.UseHitCameraShake &&
-            cameraDirector != null)
-        {
-            cameraDirector.PlayShake(
-                visual.HitShake);
-        }
+        ApplyVisualHpDamage(
+            request,
+            damage);
+
+        RefreshBattleUIAtHitFrame(
+            request,
+            hitIndex,
+            damage);
+
+        PlayHitCameraShake(
+            visual);
     }
-    
+
     private void RefreshBattleUIAtHitFrame(
-        BattleVisualRequest request)
+        BattleVisualRequest request,
+        int hitIndex,
+        int damage)
     {
         if (battleUIManager == null)
             battleUIManager = FindFirstObjectByType<BattleUIManager>();
@@ -342,13 +703,17 @@ public class BattleAnimationDirector : MonoBehaviour
 
         Canvas.ForceUpdateCanvases();
 
+        if (hitIndex < 0)
+            return;
+
         Debug.Log(
             $"[BattleAnimationDirector] HitFrame UI 갱신 / " +
             $"Target={request.Target?.Data.CharacterName}, " +
             $"Part={request.TargetPart?.Type}, " +
-            $"Damage={request.GetDamageForHitIndex(0)}");
+            $"HitIndex={hitIndex}, " +
+            $"Damage={damage}");
     }
-    
+
     private IEnumerator ShowClashPower(
         BattleVisualRequest request,
         CharacterViewSet views,
@@ -403,7 +768,8 @@ public class BattleAnimationDirector : MonoBehaviour
             return;
 
         Vector3 position =
-            targetView.GetDamageNumberPosition(targetPart);
+            targetView.GetDamageNumberPosition(
+                targetPart);
 
         damageNumberManager.ShowDamage(
             position,
@@ -413,8 +779,11 @@ public class BattleAnimationDirector : MonoBehaviour
     private SkillVisualDefinition ResolveVisualDefinition(
         BattleAction action)
     {
-        if (action == null || action.Skill == null)
+        if (action == null ||
+            action.Skill == null)
+        {
             return null;
+        }
 
         if (action.Skill is IVisualSkill visualSkill &&
             visualSkill.VisualDefinition != null)
@@ -441,14 +810,16 @@ public class BattleAnimationDirector : MonoBehaviour
         {
             attackerRoutine =
                 StartCoroutine(
-                    views.AttackerFacing.FaceTargetSmooth(target));
+                    views.AttackerFacing.FaceTargetSmooth(
+                        target));
         }
 
         if (views.TargetFacing != null)
         {
             targetRoutine =
                 StartCoroutine(
-                    views.TargetFacing.FaceTargetSmooth(attacker));
+                    views.TargetFacing.FaceTargetSmooth(
+                        attacker));
         }
 
         if (attackerRoutine != null)
@@ -458,7 +829,8 @@ public class BattleAnimationDirector : MonoBehaviour
             yield return targetRoutine;
     }
 
-    private IEnumerator ReturnFacing(CharacterViewSet views)
+    private IEnumerator ReturnFacing(
+        CharacterViewSet views)
     {
         Coroutine attackerRoutine = null;
         Coroutine targetRoutine = null;
@@ -491,10 +863,14 @@ public class BattleAnimationDirector : MonoBehaviour
         if (view != null)
         {
             Transform headAnchor =
-                view.GetBodyPartAnchor(PartType.HEAD);
+                view.GetBodyPartAnchor(
+                    PartType.HEAD);
 
-            if (headAnchor != null && headAnchor != view.transform)
+            if (headAnchor != null &&
+                headAnchor != view.transform)
+            {
                 return headAnchor;
+            }
 
             if (view.LookAtPoint != null)
                 return view.LookAtPoint;

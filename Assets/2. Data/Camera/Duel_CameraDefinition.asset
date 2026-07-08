@@ -1,0 +1,142 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c7b56c43dceefc044a06e1e7f964052c, type: 3}
+  m_Name: Duel_CameraDefinition
+  m_EditorClassIdentifier: 
+  Shots:
+  - Timing: 0
+    ShotType: 5
+    Duration: 0
+    BlendWaitTime: 0
+    PositionOffset: {x: 0, y: 0, z: 0}
+    LookAtOffset: {x: 0, y: 0, z: 0}
+    FocusDistance: 5
+    UseSceneCameraPoint: 0
+    CameraPointOwner: 0
+    CameraPoint: 2
+    LookAtOwner: 1
+    LookAtCameraPoint: 0
+    UseShake: 0
+    Shake:
+      Duration: 0.18
+      Frequency: 40
+      PositionStrength: 0.08
+      RotationStrength: 1.5
+      StrengthCurve:
+        serializedVersion: 2
+        m_Curve:
+        - serializedVersion: 3
+          time: 0
+          value: 1
+          inSlope: 0
+          outSlope: 0
+          tangentMode: 0
+          weightedMode: 0
+          inWeight: 0
+          outWeight: 0
+        - serializedVersion: 3
+          time: 1
+          value: 0
+          inSlope: 0
+          outSlope: 0
+          tangentMode: 0
+          weightedMode: 0
+          inWeight: 0
+          outWeight: 0
+        m_PreInfinity: 2
+        m_PostInfinity: 2
+        m_RotationOrder: 4
+  - Timing: 1
+    ShotType: 3
+    Duration: 0.25
+    BlendWaitTime: 0.1
+    PositionOffset: {x: 1, y: 1.5, z: -2.5}
+    LookAtOffset: {x: 0, y: 1.2, z: 0}
+    FocusDistance: 5
+    UseSceneCameraPoint: 0
+    CameraPointOwner: 0
+    CameraPoint: 2
+    LookAtOwner: 1
+    LookAtCameraPoint: 0
+    UseShake: 0
+    Shake:
+      Duration: 0.18
+      Frequency: 40
+      PositionStrength: 0.08
+      RotationStrength: 1.5
+      StrengthCurve:
+        serializedVersion: 2
+        m_Curve:
+        - serializedVersion: 3
+          time: 0
+          value: 1
+          inSlope: 0
+          outSlope: 0
+          tangentMode: 0
+          weightedMode: 0
+          inWeight: 0
+          outWeight: 0
+        - serializedVersion: 3
+          time: 1
+          value: 0
+          inSlope: 0
+          outSlope: 0
+          tangentMode: 0
+          weightedMode: 0
+          inWeight: 0
+          outWeight: 0
+        m_PreInfinity: 2
+        m_PostInfinity: 2
+        m_RotationOrder: 4
+  - Timing: 2
+    ShotType: 6
+    Duration: 0.12
+    BlendWaitTime: 0
+    PositionOffset: {x: -0.7, y: 0.2, z: -2}
+    LookAtOffset: {x: 0, y: 1.1, z: 0}
+    FocusDistance: 4
+    UseSceneCameraPoint: 1
+    CameraPointOwner: 1
+    CameraPoint: 3
+    LookAtOwner: 1
+    LookAtCameraPoint: 0
+    UseShake: 1
+    Shake:
+      Duration: 0.25
+      Frequency: 35
+      PositionStrength: 0.6
+      RotationStrength: 8
+      StrengthCurve:
+        serializedVersion: 2
+        m_Curve:
+        - serializedVersion: 3
+          time: 0
+          value: 1
+          inSlope: 0
+          outSlope: 0
+          tangentMode: 0
+          weightedMode: 0
+          inWeight: 0
+          outWeight: 0
+        - serializedVersion: 3
+          time: 1
+          value: 0
+          inSlope: 0
+          outSlope: 0
+          tangentMode: 0
+          weightedMode: 0
+          inWeight: 0
+          outWeight: 0
+        m_PreInfinity: 2
+        m_PostInfinity: 2
+        m_RotationOrder: 4
+  ReturnToOverviewAfterAction: 1

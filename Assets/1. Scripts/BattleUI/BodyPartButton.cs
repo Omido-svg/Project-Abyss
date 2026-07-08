@@ -26,6 +26,14 @@ public class BodyPartButton : MonoBehaviour, IPointerClickHandler
     public Character Owner => owner;
     public BodyPart BodyPart => bodyPart;
     public RectTransform RectTransform => rectTransform;
+    
+    private bool hasHpOverride;
+    private int hpOverrideValue;
+
+    public bool HasHpOverride => hasHpOverride;
+    public int HpOverrideValue => hpOverrideValue;
+
+
 
     //--------------------------------------------------
 
@@ -199,5 +207,20 @@ public class BodyPartButton : MonoBehaviour, IPointerClickHandler
     public bool IsHiddenByBroken()
     {
         return bodyPart != null && bodyPart.IsBroken;
+    }
+    
+    public void SetHpOverride(int hp)
+    {
+        hasHpOverride = true;
+        hpOverrideValue = Mathf.Max(0, hp);
+
+        Refresh();
+    }
+
+    public void ClearHpOverride()
+    {
+        hasHpOverride = false;
+
+        Refresh();
     }
 }
