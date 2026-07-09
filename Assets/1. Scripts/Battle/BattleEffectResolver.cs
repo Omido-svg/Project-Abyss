@@ -3,10 +3,14 @@ using UnityEngine;
 public class BattleEffectResolver
 {
     private readonly BattleContext context;
+    private BattleStatusVisualDirector statusVisualDirector;
 
     public BattleEffectResolver(BattleContext context)
     {
         this.context = context;
+
+        statusVisualDirector =
+            Object.FindFirstObjectByType<BattleStatusVisualDirector>();
     }
 
     public bool ApplyPartDamage(EffectRequest request)
@@ -24,7 +28,7 @@ public class BattleEffectResolver
             request.TargetPart,
             request.Value,
             request.CanBreakPart);
-            
+
         return true;
     }
 
@@ -47,6 +51,15 @@ public class BattleEffectResolver
             request.Value,
             request.SourceStatusEffect);
 
+        Debug.Log(
+            $"[BattleEffectResolver] 상태이상 피해 시각화 요청 시도 / " +
+            $"Target={request.TargetCharacter?.Data.CharacterName}, " +
+            $"Part={request.TargetPart?.Type}, " +
+            $"Damage={request.Value}, " +
+            $"Status={request.SourceStatusEffect?.GetType().Name}");
+
+        ShowStatusDamageVisual(request);
+
         return true;
     }
 
@@ -62,7 +75,73 @@ public class BattleEffectResolver
             request.Value,
             request.SourceStatusEffect);
 
+        ShowStatusDamageVisual(request);
+
         return true;
+    }
+
+    private void ShowStatusDamageVisual(
+        EffectRequest request)
+    {
+        if (request == null)
+        {
+            Debug.LogWarning("[BattleEffectResolver] 상태 시각화 실패 : request null");
+            return;
+        }
+
+        if (request.Value <= 0)
+        {
+            Debug.LogWarning("[BattleEffectResolver] 상태 시각화 실패 : damage <= 0");
+            return;
+        }
+
+        if (request.SourceStatusEffect == null)
+        {
+            Debug.LogWarning("[BattleEffectResolver] 상태 시각화 실패 : SourceStatusEffect null");
+            return;
+        }
+
+        if (request.TargetCharacter == null)
+        {
+            Debug.LogWarning("[BattleEffectResolver] 상태 시각화 실패 : TargetCharacter null");
+            return;
+        }
+
+        if (statusVisualDirector == null)
+        {
+            statusVisualDirector =
+                Object.FindFirstObjectByType<BattleStatusVisualDirector>();
+        }
+
+        if (statusVisualDirector == null)
+        {
+            Debug.LogWarning("[BattleEffectResolver] 상태 시각화 실패 : BattleStatusVisualDirector 없음");
+            return;
+        }
+
+        string statusKey =
+            request.SourceStatusEffect.GetType().Name;
+
+        string partName =
+            request.TargetPart != null
+                ? request.TargetPart.Type.ToString()
+                : "NONE";
+
+        Debug.Log(
+            $"[BattleEffectResolver] 상태 시각화 요청 전달 / " +
+            $"StatusKey={statusKey}, " +
+            $"Target={request.TargetCharacter.Data.CharacterName}, " +
+            $"Part={partName}, " +
+            $"Damage={request.Value}");
+
+        statusVisualDirector.ShowStatusDamage(
+            new StatusDamageVisualRequest
+            {
+                Target = request.TargetCharacter,
+                TargetPart = request.TargetPart,
+                Damage = request.Value,
+                StatusKey = statusKey
+            });
     }
 
     public bool ApplyCharacterStatus(EffectRequest request)
@@ -169,20 +248,6 @@ public class BattleEffectResolver
         return true;
     }
 
-    private bool IsValidCommonRequest(EffectRequest request)
-    {
-        if (request == null)
-            return false;
-
-        if (request.TargetCharacter == null)
-            return false;
-
-        if (request.Value < 0)
-            return false;
-
-        return true;
-    }
-    
     public bool RemoveBodyPartStatus(EffectRequest request)
     {
         if (!IsValidCommonRequest(request))
@@ -239,7 +304,7 @@ public class BattleEffectResolver
 
         return true;
     }
-    
+
     public bool SetPrestigeToMax(EffectRequest request)
     {
         if (!IsValidCommonRequest(request))
@@ -256,6 +321,20 @@ public class BattleEffectResolver
 
         request.TargetCharacter.RuntimeStatus.currentPrestige =
             request.TargetCharacter.CurrentStatus.maxPrestige;
+
+        return true;
+    }
+
+    private bool IsValidCommonRequest(EffectRequest request)
+    {
+        if (request == null)
+            return false;
+
+        if (request.TargetCharacter == null)
+            return false;
+
+        if (request.Value < 0)
+            return false;
 
         return true;
     }

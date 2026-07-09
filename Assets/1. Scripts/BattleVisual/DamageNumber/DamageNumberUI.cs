@@ -27,10 +27,26 @@ public class DamageNumberUI : MonoBehaviour
             damageText = GetComponentInChildren<TMP_Text>();
     }
 
-    public void Play(int damage)
+    public void Play(
+        int damage)
     {
+        Play(
+            damage,
+            Color.white);
+    }
+
+    public void Play(
+        int damage,
+        Color color)
+    {
+        if (damageText == null)
+            damageText = GetComponentInChildren<TMP_Text>();
+
         if (damageText != null)
+        {
             damageText.text = damage.ToString();
+            damageText.color = color;
+        }
 
         if (canvasGroup != null)
             canvasGroup.alpha = 1f;

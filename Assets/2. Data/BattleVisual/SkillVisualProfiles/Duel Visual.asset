@@ -25,16 +25,54 @@ MonoBehaviour:
   TieColor: {r: 1, g: 0.45, b: 0.1, a: 1}
   HasHitFrameDamage: 1
   ApplyDamageIfNoHitFrame: 1
+  HitDamageWeights: 0100000003000000
   ShowsActionAnnouncement: 1
   ActionAnnouncementDuration: 0.8
   BeforeActionDelay: 0.2
   AfterActionDelay: 0.35
   AfterReturnDelay: 0.45
   DistributeDamageByHitCount: 1
-  ExpectedHitFrameCount: 2
+  ExpectedHitFrameCount: 1
   UseHitCameraShake: 0
   HitShake:
     Duration: 0.18
+    Frequency: 40
     PositionStrength: 0.08
     RotationStrength: 1.5
-    Frequency: 40
+    StrengthCurve:
+      serializedVersion: 2
+      m_Curve:
+      - serializedVersion: 3
+        time: 0
+        value: 1
+        inSlope: 0
+        outSlope: 0
+        tangentMode: 0
+        weightedMode: 0
+        inWeight: 0
+        outWeight: 0
+      - serializedVersion: 3
+        time: 1
+        value: 0
+        inSlope: 0
+        outSlope: 0
+        tangentMode: 0
+        weightedMode: 0
+        inWeight: 0
+        outWeight: 0
+      m_PreInfinity: 2
+      m_PostInfinity: 2
+      m_RotationOrder: 4
+  VfxCues:
+  - Timing: 2
+    Vfx: {fileID: 11400000, guid: 2c4e00942f01fb74293f88c097c7e6a1, type: 2}
+    AnchorType: 3
+    UseHitIndexFilter: 0
+    HitIndex: 0
+    Delay: 0
+  - Timing: 2
+    Vfx: {fileID: 11400000, guid: 2c4e00942f01fb74293f88c097c7e6a1, type: 2}
+    AnchorType: 3
+    UseHitIndexFilter: 1
+    HitIndex: 1
+    Delay: 0

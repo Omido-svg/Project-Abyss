@@ -24,6 +24,17 @@ public class DamageNumberManager : MonoBehaviour
         Vector3 worldPosition,
         int damage)
     {
+        ShowDamage(
+            worldPosition,
+            damage,
+            Color.white);
+    }
+
+    public void ShowDamage(
+        Vector3 worldPosition,
+        int damage,
+        Color color)
+    {
         if (damageNumberPrefab == null)
             return;
 
@@ -37,7 +48,8 @@ public class DamageNumberManager : MonoBehaviour
             worldCamera = Camera.main;
 
         Vector3 screenPosition =
-            worldCamera.WorldToScreenPoint(worldPosition);
+            worldCamera.WorldToScreenPoint(
+                worldPosition);
 
         Camera uiCamera =
             canvas.renderMode == RenderMode.ScreenSpaceOverlay
@@ -61,6 +73,8 @@ public class DamageNumberManager : MonoBehaviour
         if (numberRect != null)
             numberRect.anchoredPosition = localPoint;
 
-        number.Play(damage);
+        number.Play(
+            damage,
+            color);
     }
 }

@@ -11,6 +11,7 @@ public class BattleAnimationDirector : MonoBehaviour
     [SerializeField] private SkillVisualProfile defaultVisualProfile;
     [SerializeField] private TargetArrowUI targetArrowUI;
     [SerializeField] private MomentumScrollbarUI momentumScrollbarUI;
+    [SerializeField] private BattleVfxManager vfxManager;
 
     [Header("Fallback")]
     [SerializeField] private bool logMissingReferences = true;
@@ -24,6 +25,7 @@ public class BattleAnimationDirector : MonoBehaviour
 
     private readonly Dictionary<BattleVisualRequest, int> visualDamageAccumulated = new();
     private readonly Dictionary<BattleVisualRequest, int> visualHpStart = new();
+    private readonly Dictionary<BattleVisualRequest, List<int>> visualHitDamages = new();
 
     private void Awake()
     {
@@ -52,6 +54,9 @@ public class BattleAnimationDirector : MonoBehaviour
             
         if (momentumScrollbarUI == null)
             momentumScrollbarUI = FindFirstObjectByType<MomentumScrollbarUI>();
+            
+        if (vfxManager == null)
+            vfxManager = FindFirstObjectByType<BattleVfxManager>();
     }
 
     public IEnumerator Play(BattleVisualRequest request)
@@ -108,7 +113,14 @@ public class BattleAnimationDirector : MonoBehaviour
             yield break;
         }
 
-        BeginVisualRequest(request);
+        BeginVisualRequest(
+            request,
+            visual);
+        
+        PlaySkillVfx(
+            request,
+            visual,
+            BattleVfxTiming.OnActionStart);
 
         Debug.Log(
             $"[BattleAnimationDirector] PlayInternal 시작 / " +
@@ -129,6 +141,8 @@ public class BattleAnimationDirector : MonoBehaviour
         yield return ShowActionAnnouncement(
             request,
             visual);
+            
+
 
         StartCameraShots(
             request,
@@ -167,6 +181,13 @@ public class BattleAnimationDirector : MonoBehaviour
                 views,
                 visual);
         }
+        
+        PlaySkillVfx(
+            request,
+            visual,
+            BattleVfxTiming.BeforeAttackAnimation);
+        
+
 
         StartCameraShots(
             request,
@@ -224,6 +245,11 @@ public class BattleAnimationDirector : MonoBehaviour
 
         views.AttackerView?.RefreshVisualState();
         views.TargetView?.RefreshVisualState();
+        
+        PlaySkillVfx(
+            request,
+            visual,
+            BattleVfxTiming.AfterAction);
 
         if (visual.AfterActionDelay > 0f)
         {
@@ -266,6 +292,46 @@ public class BattleAnimationDirector : MonoBehaviour
         EndVisualRequest(request);
     }
     
+    private void PlaySkillVfx(
+        BattleVisualRequest request,
+        SkillVisualDefinition visual,
+        BattleVfxTiming timing,
+        int hitIndex = -1,
+        int damage = 0)
+    {
+        if (request == null || visual == null)
+            return;
+
+        if (vfxManager == null)
+            return;
+
+        if (visual.VfxCues == null)
+            return;
+
+        BattleVfxContext context =
+            new BattleVfxContext
+            {
+                Attacker = request.Attacker,
+                Target = request.Target,
+                TargetPart = request.TargetPart,
+                HitIndex = hitIndex,
+                Damage = damage
+            };
+
+        foreach (BattleVfxCue cue in visual.VfxCues)
+        {
+            if (cue == null)
+                continue;
+
+            if (cue.Timing != timing)
+                continue;
+
+            vfxManager.PlayCue(
+                cue,
+                context);
+        }
+    }
+    
     private IEnumerator PlayMomentumRefreshAtVisualEnd()
     {
         if (momentumScrollbarUI == null)
@@ -275,8 +341,13 @@ public class BattleAnimationDirector : MonoBehaviour
     }
 
     private void BeginVisualRequest(
-        BattleVisualRequest request)
+        BattleVisualRequest request,
+        SkillVisualDefinition visual)
     {
+        PrepareVisualHitDamages(
+            request,
+            visual);
+
         if (targetArrowUI != null)
             targetArrowUI.SetCurrentVisualRequest(request);
 
@@ -284,6 +355,167 @@ public class BattleAnimationDirector : MonoBehaviour
             momentumScrollbarUI.LockCurrentDisplay();
 
         PrepareVisualHpOverride(request);
+    }
+    
+    private void PrepareVisualHitDamages(
+        BattleVisualRequest request,
+        SkillVisualDefinition visual)
+    {
+        if (request == null)
+            return;
+
+        visualHitDamages.Remove(request);
+
+        if (request.HitDamages == null ||
+            request.HitDamages.Count <= 0)
+        {
+            return;
+        }
+
+        int totalDamage = 0;
+
+        foreach (int damage in request.HitDamages)
+        {
+            totalDamage += Mathf.Max(
+                0,
+                damage);
+        }
+
+        if (totalDamage <= 0)
+            return;
+
+        // 이미 분할되어 들어온 경우는 그대로 사용
+        if (request.HitDamages.Count > 1)
+        {
+            visualHitDamages[request] =
+                new List<int>(request.HitDamages);
+
+            return;
+        }
+
+        // 현재 문제 상황: [4] 하나만 들어온 경우
+        List<int> weights =
+            visual != null
+                ? visual.HitDamageWeights
+                : null;
+
+        if (weights == null ||
+            weights.Count <= 0)
+        {
+            visualHitDamages[request] =
+                new List<int> { totalDamage };
+
+            return;
+        }
+
+        visualHitDamages[request] =
+            SplitDamageByWeights(
+                totalDamage,
+                weights);
+
+        Debug.Log(
+            "[BattleAnimationDirector] HitDamage 분할 / " +
+            "Total=" + totalDamage + ", " +
+            "Result=" + string.Join(",", visualHitDamages[request]));
+    }
+    
+    private List<int> SplitDamageByWeights(
+        int totalDamage,
+        List<int> weights)
+    {
+        List<int> result =
+            new List<int>();
+
+        if (totalDamage <= 0)
+            return result;
+
+        if (weights == null ||
+            weights.Count <= 0)
+        {
+            result.Add(totalDamage);
+            return result;
+        }
+
+        int weightSum = 0;
+
+        foreach (int weight in weights)
+        {
+            weightSum += Mathf.Max(
+                0,
+                weight);
+        }
+
+        if (weightSum <= 0)
+        {
+            result.Add(totalDamage);
+            return result;
+        }
+
+        int remainingDamage =
+            totalDamage;
+
+        for (int i = 0; i < weights.Count; i++)
+        {
+            int weight =
+                Mathf.Max(
+                    0,
+                    weights[i]);
+
+            int splitDamage;
+
+            if (i == weights.Count - 1)
+            {
+                splitDamage = remainingDamage;
+            }
+            else
+            {
+                splitDamage =
+                    Mathf.FloorToInt(
+                        totalDamage * (float)weight / weightSum);
+
+                splitDamage =
+                    Mathf.Clamp(
+                        splitDamage,
+                        0,
+                        remainingDamage);
+            }
+
+            result.Add(splitDamage);
+
+            remainingDamage -= splitDamage;
+        }
+
+        return result;
+    }
+    
+    private int GetVisualDamageForHitIndex(
+        BattleVisualRequest request,
+        int hitIndex)
+    {
+        if (request == null)
+            return 0;
+
+        if (visualHitDamages.TryGetValue(
+                request,
+                out List<int> damages))
+        {
+            if (damages == null ||
+                damages.Count <= 0)
+            {
+                return 0;
+            }
+
+            if (hitIndex < 0)
+                return damages[0];
+
+            if (hitIndex >= damages.Count)
+                return 0;
+
+            return damages[hitIndex];
+        }
+
+        return request.GetDamageForHitIndex(
+            hitIndex);
     }
 
     private void EndVisualRequest(
@@ -472,13 +704,22 @@ public class BattleAnimationDirector : MonoBehaviour
             request.TargetPart == null)
             return;
 
-        if (request.HitDamages == null ||
-            request.HitDamages.Count <= 0)
+        if (!visualHitDamages.TryGetValue(
+                request,
+                out List<int> damages))
+        {
             return;
+        }
+
+        if (damages == null ||
+            damages.Count <= 0)
+        {
+            return;
+        }
 
         int totalDamage = 0;
 
-        foreach (int damage in request.HitDamages)
+        foreach (int damage in damages)
         {
             totalDamage += Mathf.Max(
                 0,
@@ -590,6 +831,7 @@ public class BattleAnimationDirector : MonoBehaviour
 
         visualHpStart.Remove(request);
         visualDamageAccumulated.Remove(request);
+        visualHitDamages.Remove(request);
 
         RefreshBattleUIAtHitFrame(
             request,
@@ -665,13 +907,21 @@ public class BattleAnimationDirector : MonoBehaviour
         }
 
         int damage =
-            request.GetDamageForHitIndex(
+            GetVisualDamageForHitIndex(
+                request,
                 hitIndex);
-
+                
         Debug.Log(
             $"[BattleAnimationDirector] HitFrame 적용 : " +
             $"{request.Attacker?.Data.CharacterName} -> {request.Target?.Data.CharacterName} / " +
             $"HitIndex={hitIndex} / Damage={damage}");
+            
+        PlaySkillVfx(
+            request,
+            visual,
+            BattleVfxTiming.OnHitFrame,
+            hitIndex,
+            damage);
 
         targetView.PlayHitRestart();
 

@@ -1028,13 +1028,36 @@ public class TargetArrowUI : MonoBehaviour
 
         highlightButtons.Clear();
 
-        AddActionHighlightButtons(
-            currentVisualRequest.SourceAction,
-            highlightButtons);
+        BattleAction source =
+            currentVisualRequest.SourceAction;
 
-        AddActionHighlightButtons(
-            currentVisualRequest.OpponentAction,
-            highlightButtons);
+        BattleAction opponent =
+            currentVisualRequest.OpponentAction;
+
+        bool isClash =
+            source != null &&
+            opponent != null &&
+            currentVisualRequest.ClashSteps != null &&
+            currentVisualRequest.ClashSteps.Count > 0;
+
+        if (isClash)
+        {
+            // 합은 두 행동 주체 부위만 노란색
+            AddActionOwnerHighlightButton(
+                source,
+                highlightButtons);
+
+            AddActionOwnerHighlightButton(
+                opponent,
+                highlightButtons);
+        }
+        else
+        {
+            // 일반 공격 / 도사림 / 위세는 행동 주체 부위만 노란색
+            AddActionOwnerHighlightButton(
+                source,
+                highlightButtons);
+        }
 
         int usedCount = 0;
 
@@ -1056,8 +1079,8 @@ public class TargetArrowUI : MonoBehaviour
 
         return usedCount;
     }
-
-    private void AddActionHighlightButtons(
+    
+    private void AddActionOwnerHighlightButton(
         BattleAction action,
         HashSet<BodyPartButton> result)
     {
@@ -1069,16 +1092,8 @@ public class TargetArrowUI : MonoBehaviour
                 action.Owner,
                 action.OwnerPart);
 
-        BodyPartButton targetButton =
-            FindButton(
-                action.Target,
-                action.TargetPart);
-
         if (ownerButton != null)
             result.Add(ownerButton);
-
-        if (targetButton != null)
-            result.Add(targetButton);
     }
 
     private void DrawHighlight(

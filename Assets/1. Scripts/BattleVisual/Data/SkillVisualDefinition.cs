@@ -1,4 +1,5 @@
 using UnityEngine;
+using System.Collections.Generic;
 
 [CreateAssetMenu(
     menuName = "Battle/Visual/Skill Visual Definition",
@@ -27,6 +28,9 @@ public class SkillVisualDefinition : ScriptableObject
     [Header("Hit / Damage")]
     public bool HasHitFrameDamage = true;
     public bool ApplyDamageIfNoHitFrame = false;
+    
+    [Header("Hit Damage Split")]
+    public List<int> HitDamageWeights = new() { 1 };
 
     [Header("Action Announcement")]
     public bool ShowsActionAnnouncement = true;
@@ -44,4 +48,7 @@ public class SkillVisualDefinition : ScriptableObject
     [Header("Camera Shake")]
     public bool UseHitCameraShake = false;
     public BattleCameraShakeSettings HitShake = new BattleCameraShakeSettings();
+    
+    [Header("VFX")]
+    public List<BattleVfxCue> VfxCues = new();
 }
