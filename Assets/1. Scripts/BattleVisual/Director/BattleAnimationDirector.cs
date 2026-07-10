@@ -142,8 +142,6 @@ public class BattleAnimationDirector : MonoBehaviour
             request,
             visual);
             
-
-
         StartCameraShots(
             request,
             visual,
@@ -162,13 +160,23 @@ public class BattleAnimationDirector : MonoBehaviour
                 target);
         }
 
-        if (visual.MovesToTarget &&
-            views.AttackerMover != null &&
+        if (views.AttackerMover != null &&
             target != null)
         {
-            yield return views.AttackerMover.MoveNearTarget(
-                target,
-                request.TargetPart);
+            if (visual.MoveSettings != null)
+            {
+                yield return views.AttackerMover.MoveToActionStartPosition(
+                    attacker,
+                    target,
+                    request.TargetPart,
+                    visual.MoveSettings);
+            }
+            else if (visual.MovesToTarget)
+            {
+                yield return views.AttackerMover.MoveNearTarget(
+                    target,
+                    request.TargetPart);
+            }
         }
 
         yield return WaitSkillCameraArrive(
@@ -176,6 +184,17 @@ public class BattleAnimationDirector : MonoBehaviour
 
         if (visual.ShowsClashPower)
         {
+            StartCameraShots(
+                request,
+                visual,
+                SkillCameraShotTiming.OnClashRoll);
+
+            if (visual.ClashRollCameraLeadTime > 0f)
+            {
+                yield return new WaitForSeconds(
+                    visual.ClashRollCameraLeadTime);
+            }
+
             yield return ShowClashPower(
                 request,
                 views,
@@ -187,8 +206,6 @@ public class BattleAnimationDirector : MonoBehaviour
             visual,
             BattleVfxTiming.BeforeAttackAnimation);
         
-
-
         StartCameraShots(
             request,
             visual,
@@ -257,11 +274,18 @@ public class BattleAnimationDirector : MonoBehaviour
                 visual.AfterActionDelay);
         }
 
-        if (visual.ReturnPositionAfterAction &&
-            visual.MovesToTarget &&
-            views.AttackerMover != null)
+        if (views.AttackerMover != null)
         {
-            yield return views.AttackerMover.ReturnToDefaultPosition();
+            if (visual.MoveSettings != null)
+            {
+                yield return views.AttackerMover.ReturnToDefaultPosition(
+                    visual.MoveSettings);
+            }
+            else if (visual.ReturnPositionAfterAction &&
+                    visual.MovesToTarget)
+            {
+                yield return views.AttackerMover.ReturnToDefaultPosition();
+            }
         }
 
         if (visual.ReturnFacingAfterAction)
@@ -1164,8 +1188,20 @@ public class BattleAnimationDirector : MonoBehaviour
             result.AttackerFacing =
                 attacker.GetComponent<CharacterFacingController>();
 
+            if (result.AttackerFacing == null)
+            {
+                result.AttackerFacing =
+                    attacker.GetComponentInChildren<CharacterFacingController>(true);
+            }
+
             result.AttackerMover =
                 attacker.GetComponent<CharacterActionMover>();
+
+            if (result.AttackerMover == null)
+            {
+                result.AttackerMover =
+                    attacker.GetComponentInChildren<CharacterActionMover>(true);
+            }
         }
 
         if (target != null)
@@ -1175,6 +1211,12 @@ public class BattleAnimationDirector : MonoBehaviour
 
             result.TargetFacing =
                 target.GetComponent<CharacterFacingController>();
+
+            if (result.TargetFacing == null)
+            {
+                result.TargetFacing =
+                    target.GetComponentInChildren<CharacterFacingController>(true);
+            }
         }
 
         return result;

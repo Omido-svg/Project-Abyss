@@ -56,7 +56,8 @@ public enum SkillCameraShotTiming
     OnActionStart,
     BeforeAttackAnimation,
     OnHitFrame,
-    AfterAction
+    AfterAction,
+    OnClashRoll
 }
 
 public enum SkillCameraShotType

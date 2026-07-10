@@ -1,3 +1,5 @@
+using UnityEngine;
+
 public enum ActionType
 {
     NormalAttack,   // 일반 공격
@@ -25,6 +27,8 @@ public class BattleAction
     public int finalPower;
     public bool HasRolled;
 
+    public RollResult LastRollResult;
+
     //--------------------------------
     // 로그용 데미지 결과
     //--------------------------------
@@ -36,9 +40,43 @@ public class BattleAction
 
     public int RollPower()
     {
-        int roll = Skill.Resolver.Roll();
-        roll = Owner.ModifyRoll(this, roll);
-        return Skill.BasePower + roll;
+        if (Skill == null)
+            return 0;
+
+        LastRollResult =
+            Skill.RollPowerResult();
+
+        if (LastRollResult == null)
+            return Skill.BasePower;
+
+        int modifiedRoll =
+            LastRollResult.RawValue;
+
+        if (Owner != null)
+        {
+            modifiedRoll =
+                Owner.ModifyRoll(
+                    this,
+                    LastRollResult.RawValue);
+        }
+
+        LastRollResult.ModifiedValue =
+            modifiedRoll;
+
+        LastRollResult.FinalPower =
+            Skill.BasePower + modifiedRoll;
+            
+        Debug.Log(
+            $"[BattleAction] RollPower / " +
+            $"Owner={Owner?.Data.CharacterName}, " +
+            $"Skill={Skill?.SkillName}, " +
+            $"Type={LastRollResult?.ResolverType}, " +
+            $"Raw={LastRollResult?.RawValue}, " +
+            $"Modified={LastRollResult?.ModifiedValue}, " +
+            $"Final={LastRollResult?.FinalPower}, " +
+            $"Display={LastRollResult?.GetShortDisplayText()}");
+
+        return LastRollResult.FinalPower;
     }
 
     public void SetDamageLog(

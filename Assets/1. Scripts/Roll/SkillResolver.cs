@@ -5,13 +5,20 @@ public abstract class SkillResolver
 
     public virtual RollResult RollResult(Skill skill)
     {
-        int raw = Roll();
+        int raw =
+            Roll();
+
+        int basePower =
+            skill != null
+                ? skill.BasePower
+                : 0;
 
         return new RollResult
         {
             RawValue = raw,
             ModifiedValue = raw,
-            FinalPower = skill.BasePower + raw,
+            BasePower = basePower,
+            FinalPower = basePower + raw,
             IsMax = raw >= MaxValue,
             IsCritical = raw >= MaxValue
         };

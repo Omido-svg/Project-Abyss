@@ -59,6 +59,9 @@ public class SkillDefinition : ScriptableObject
             case SkillResolverType.Coin:
                 return new CoinResolver(CoinCount);
 
+            case SkillResolverType.Slot:
+                return new SlotResolver();
+
             default:
                 Debug.LogError($"지원하지 않는 ResolverType입니다 : {ResolverType}");
                 return new DiceResolver(0, 0);
@@ -69,5 +72,6 @@ public class SkillDefinition : ScriptableObject
 public enum SkillResolverType
 {
     Dice,
-    Coin
+    Coin,
+    Slot
 }

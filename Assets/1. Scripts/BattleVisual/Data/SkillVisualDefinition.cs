@@ -11,6 +11,9 @@ public class SkillVisualDefinition : ScriptableObject
     public bool ReturnCameraAfterAction = true;
     public float CameraArriveTimeout = 1.5f;
     public SkillCameraDefinition CameraDefinition;
+    
+    [Header("Clash Roll Camera")]
+    public float ClashRollCameraLeadTime = 0.25f;
 
     [Header("Movement")]
     public bool MovesToTarget = true;
@@ -51,4 +54,8 @@ public class SkillVisualDefinition : ScriptableObject
     
     [Header("VFX")]
     public List<BattleVfxCue> VfxCues = new();
+    
+    [Header("Action Move")]
+    public CharacterActionMoveSettings MoveSettings =
+        new CharacterActionMoveSettings();
 }

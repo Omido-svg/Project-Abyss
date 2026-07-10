@@ -168,10 +168,33 @@ public class ClashManager
             secondClash =
                 CalculateClashPower(second, first);
 
+            int firstSpeedModifier =
+                CalculateSpeedModifier(
+                    first,
+                    second);
+
+            int secondSpeedModifier =
+                CalculateSpeedModifier(
+                    second,
+                    first);
+                    
+            Debug.Log(
+                $"[ClashManager] Clash Step / " +
+                $"First={first.Owner?.Data.CharacterName}, " +
+                $"FirstRoll={first.LastRollResult?.GetShortDisplayText()}, " +
+                $"FirstClash={firstClash}, " +
+                $"Second={second.Owner?.Data.CharacterName}, " +
+                $"SecondRoll={second.LastRollResult?.GetShortDisplayText()}, " +
+                $"SecondClash={secondClash}");
+
             firstSecondSteps.Add(
                 new ClashRollVisualStep(
                     firstClash,
-                    secondClash));
+                    secondClash,
+                    first.LastRollResult,
+                    second.LastRollResult,
+                    firstSpeedModifier,
+                    secondSpeedModifier));
 
         } while (firstClash == secondClash);
 
@@ -208,7 +231,6 @@ public class ClashManager
         //------------------------------------
         // 연출용 합 기록을 Winner / Loser 기준으로 변환
         //------------------------------------
-
         foreach (ClashRollVisualStep step in firstSecondSteps)
         {
             if (firstWin)
@@ -216,14 +238,22 @@ public class ClashManager
                 context.ClashSteps.Add(
                     new ClashRollVisualStep(
                         step.AttackerValue,
-                        step.TargetValue));
+                        step.TargetValue,
+                        step.AttackerRollResult,
+                        step.TargetRollResult,
+                        step.AttackerSpeedModifier,
+                        step.TargetSpeedModifier));
             }
             else
             {
                 context.ClashSteps.Add(
                     new ClashRollVisualStep(
                         step.TargetValue,
-                        step.AttackerValue));
+                        step.AttackerValue,
+                        step.TargetRollResult,
+                        step.AttackerRollResult,
+                        step.TargetSpeedModifier,
+                        step.AttackerSpeedModifier));
             }
         }
 
@@ -387,8 +417,26 @@ public class ClashManager
         BattleAction self,
         BattleAction opponent)
     {
-        return self.RolledPower +
-               (self.Speed - opponent.Speed) * SpeedWeight;
+        if (self == null)
+            return 0;
+
+        return
+            self.RolledPower +
+            CalculateSpeedModifier(
+                self,
+                opponent);
+    }
+    
+    private int CalculateSpeedModifier(
+        BattleAction self,
+        BattleAction opponent)
+    {
+        if (self == null || opponent == null)
+            return 0;
+
+        return
+            (self.Speed - opponent.Speed) *
+            SpeedWeight;
     }
 
     // =====================================================
@@ -554,13 +602,29 @@ public class ClashManager
         if (action == null)
             return;
 
-        action.RolledPower =
+        int rolledPowerBeforeLastStand =
+            action.RollPower();
+
+        int rolledPowerAfterLastStand =
             momentumManager.ApplyLastStand(
                 action.Owner,
-                action.RollPower());
+                rolledPowerBeforeLastStand);
 
-        action.finalPower = action.RolledPower;
-        action.HasRolled = true;
+        if (action.LastRollResult != null &&
+            rolledPowerAfterLastStand != action.LastRollResult.FinalPower)
+        {
+            action.LastRollResult.ApplyExternalFinalPower(
+                rolledPowerAfterLastStand);
+        }
+
+        action.RolledPower =
+            rolledPowerAfterLastStand;
+
+        action.finalPower =
+            action.RolledPower;
+
+        action.HasRolled =
+            true;
     }
     
     private void AddPrestigeThroughResolver(

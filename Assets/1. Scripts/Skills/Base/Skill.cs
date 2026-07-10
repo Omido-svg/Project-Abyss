@@ -214,10 +214,10 @@ public abstract class Skill
 
     public virtual int RollRawPower()
     {
-        if (Resolver == null)
-            return BasePower;
+        RollResult result =
+            RollPowerResult();
 
-        return BasePower + Resolver.Roll();
+        return result.FinalPower;
     }
 
     //--------------------------------
@@ -225,4 +225,20 @@ public abstract class Skill
     //--------------------------------
 
     public abstract void Execute(BattleAction action);
+    
+    public virtual RollResult RollPowerResult()
+    {
+        if (Resolver == null)
+        {
+            return new RollResult
+            {
+                BasePower = BasePower,
+                RawValue = 0,
+                ModifiedValue = 0,
+                FinalPower = BasePower
+            };
+        }
+
+        return Resolver.RollResult(this);
+    }
 }

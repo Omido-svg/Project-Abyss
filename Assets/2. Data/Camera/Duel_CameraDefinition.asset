@@ -13,6 +13,51 @@ MonoBehaviour:
   m_Name: Duel_CameraDefinition
   m_EditorClassIdentifier: 
   Shots:
+  - Timing: 4
+    ShotType: 0
+    Duration: 0.12
+    BlendWaitTime: 0
+    PositionOffset: {x: -0.7, y: 0.2, z: -2}
+    LookAtOffset: {x: 0, y: 1.1, z: 0}
+    FocusDistance: 4
+    UseSceneCameraPoint: 1
+    CameraPoint:
+      Owner: 0
+      Key: ClashRollCameraPoint
+    RotationMode: 0
+    LookAtPoint:
+      Owner: 1
+      Key: LookAt
+    UseShake: 0
+    Shake:
+      Duration: 0.25
+      Frequency: 35
+      PositionStrength: 0.6
+      RotationStrength: 8
+      StrengthCurve:
+        serializedVersion: 2
+        m_Curve:
+        - serializedVersion: 3
+          time: 0
+          value: 1
+          inSlope: 0
+          outSlope: 0
+          tangentMode: 0
+          weightedMode: 0
+          inWeight: 0
+          outWeight: 0
+        - serializedVersion: 3
+          time: 1
+          value: 0
+          inSlope: 0
+          outSlope: 0
+          tangentMode: 0
+          weightedMode: 0
+          inWeight: 0
+          outWeight: 0
+        m_PreInfinity: 2
+        m_PostInfinity: 2
+        m_RotationOrder: 4
   - Timing: 0
     ShotType: 5
     Duration: 0

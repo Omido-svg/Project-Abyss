@@ -16,6 +16,7 @@ MonoBehaviour:
   ReturnCameraAfterAction: 1
   CameraArriveTimeout: 1.5
   CameraDefinition: {fileID: 11400000, guid: b80eba35731b13b4ab5c07c213c61152, type: 2}
+  ClashRollCameraLeadTime: 0.25
   MovesToTarget: 1
   ReturnPositionAfterAction: 1
   FaceEachOther: 1
@@ -76,3 +77,17 @@ MonoBehaviour:
     UseHitIndexFilter: 1
     HitIndex: 1
     Delay: 0
+  MoveSettings:
+    UseMove: 1
+    StartPositionMode: 3
+    TargetPointType: 2
+    ApproachDistance: 1.8
+    WorldOffset: {x: 0, y: 0, z: 0}
+    DefaultLocalOffset: {x: 0, y: 0, z: 0}
+    TargetRelativeOffset: {x: 0, y: 0, z: 0}
+    OverrideMoveSpeed: 0
+    MoveSpeed: 8
+    OverrideArriveDistance: 0
+    ArriveDistance: 0.03
+    ReturnAfterAction: 1
+    InstantReturn: 0

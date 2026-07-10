@@ -35,9 +35,9 @@ public class BattleWorldFloatingTextUI : MonoBehaviour
 
         if (text != null)
         {
-            text.enableWordWrapping = false;
             text.overflowMode = TextOverflowModes.Overflow;
             text.alignment = TextAlignmentOptions.Center;
+            text.richText = true;
         }
     }
 
@@ -141,6 +141,194 @@ public class BattleWorldFloatingTextUI : MonoBehaviour
         }
 
         SetText(finalValue.ToString());
+    }
+    
+    public IEnumerator RollToClashResult(
+        RollResult rollResult,
+        int finalClashValue,
+        int speedModifier,
+        float rollDuration,
+        float tickInterval,
+        int randomMin,
+        int randomMax)
+    {
+        Debug.Log(
+            $"[FloatingTextUI] RollToClashResult / " +
+            $"Type={rollResult?.ResolverType}, " +
+            $"Display={rollResult?.GetShortDisplayText()}, " +
+            $"FinalPower={rollResult?.FinalPower}, " +
+            $"FinalClash={finalClashValue}, " +
+            $"SpeedModifier={speedModifier}");
+            
+        if (rollResult == null)
+        {
+            yield return RollToValue(
+                finalClashValue,
+                rollDuration,
+                tickInterval,
+                randomMin,
+                randomMax);
+
+            yield break;
+        }
+
+        SetAlpha(1f);
+
+        float elapsed =
+            0f;
+
+        float tickTimer =
+            0f;
+
+        while (elapsed < rollDuration)
+        {
+            elapsed +=
+                Time.deltaTime;
+
+            tickTimer +=
+                Time.deltaTime;
+
+            if (tickTimer >= tickInterval)
+            {
+                tickTimer =
+                    0f;
+
+                SetText(
+                    CreateRollingPreviewText(
+                        rollResult,
+                        randomMin,
+                        randomMax));
+            }
+
+            yield return null;
+        }
+
+        SetText(
+            CreateFinalRollText(
+                rollResult,
+                finalClashValue,
+                speedModifier));
+    }
+    
+    private string CreateRollingPreviewText(
+        RollResult rollResult,
+        int randomMin,
+        int randomMax)
+    {
+        if (rollResult == null)
+            return "?";
+
+        switch (rollResult.ResolverType)
+        {
+            case SkillResolverType.Dice:
+            {
+                int min =
+                    rollResult.DiceMin;
+
+                int max =
+                    rollResult.DiceMax;
+
+                if (max < min)
+                {
+                    min = randomMin;
+                    max = randomMax;
+                }
+
+                int value =
+                    Random.Range(
+                        min,
+                        max + 1);
+
+                return $"🎲 {value}";
+            }
+
+            case SkillResolverType.Coin:
+            {
+                int count =
+                    rollResult.CoinFaces != null &&
+                    rollResult.CoinFaces.Count > 0
+                        ? rollResult.CoinFaces.Count
+                        : 1;
+
+                string text =
+                    "🪙 ";
+
+                for (int i = 0; i < count; i++)
+                {
+                    text +=
+                        Random.value >= 0.5f
+                            ? "앞"
+                            : "뒤";
+
+                    if (i < count - 1)
+                        text += " ";
+                }
+
+                return text;
+            }
+
+            case SkillResolverType.Slot:
+            {
+                int a =
+                    Random.Range(
+                        1,
+                        10);
+
+                int b =
+                    Random.Range(
+                        1,
+                        10);
+
+                return $"🎰 {a} × {b}";
+            }
+        }
+
+        return Random.Range(
+                randomMin,
+                randomMax + 1)
+            .ToString();
+    }
+    
+    private string CreateFinalRollText(
+        RollResult rollResult,
+        int finalClashValue,
+        int speedModifier)
+    {
+        if (rollResult == null)
+            return finalClashValue.ToString();
+
+        string baseText =
+            rollResult.GetShortDisplayText();
+
+        string powerText =
+            $"기본 {rollResult.BasePower} + 굴림 {rollResult.ModifiedValue}";
+
+        if (rollResult.ExternalModifier != 0)
+        {
+            powerText +=
+                rollResult.ExternalModifier > 0
+                    ? $" + 보정 {rollResult.ExternalModifier}"
+                    : $" - 보정 {Mathf.Abs(rollResult.ExternalModifier)}";
+        }
+
+        powerText +=
+            $" = {rollResult.FinalPower}";
+
+        if (speedModifier != 0)
+        {
+            powerText +=
+                speedModifier > 0
+                    ? $" / 속도 +{speedModifier}"
+                    : $" / 속도 {speedModifier}";
+        }
+
+        if (finalClashValue != rollResult.FinalPower)
+        {
+            powerText +=
+                $" / 합 {finalClashValue}";
+        }
+
+        return $"{baseText}\n<size=70%>{powerText}</size>";
     }
 
     public IEnumerator FadeAndDestroy(float fadeDuration)

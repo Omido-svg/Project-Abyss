@@ -265,8 +265,10 @@ public class BattleWorldFloatingTextManager : MonoBehaviour
 
             Coroutine attackerRoll =
                 StartCoroutine(
-                    attackerText.RollToValue(
+                    attackerText.RollToClashResult(
+                        step.AttackerRollResult,
                         step.AttackerValue,
+                        step.AttackerSpeedModifier,
                         rollDuration,
                         tickInterval,
                         randomMin,
@@ -274,8 +276,10 @@ public class BattleWorldFloatingTextManager : MonoBehaviour
 
             Coroutine targetRoll =
                 StartCoroutine(
-                    targetText.RollToValue(
+                    targetText.RollToClashResult(
+                        step.TargetRollResult,
                         step.TargetValue,
+                        step.TargetSpeedModifier,
                         rollDuration,
                         tickInterval,
                         randomMin,
