@@ -17,6 +17,10 @@ public class BattleVisualRequest
 
     public int FallbackDamage;
 
+    public bool HasTargetPartHpSnapshot;
+    public int TargetPartHpBefore;
+    public int TargetPartHpAfter;
+
     public static BattleVisualRequest FromAction(
         BattleAction action,
         SkillVisualDefinition visualDefinition)
@@ -45,6 +49,9 @@ public class BattleVisualRequest
     {
         if (HitDamages == null || HitDamages.Count == 0)
             return FallbackDamage;
+
+        if (hitIndex < 0)
+            return HitDamages[0];
 
         if (hitIndex < HitDamages.Count)
             return HitDamages[hitIndex];

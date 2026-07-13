@@ -100,11 +100,15 @@ public class CharacterActionMover : MonoBehaviour
         if (target == null)
             yield break;
 
+        CharacterView targetView =
+            BattleCameraTargetResolver.GetView(target);
+
         Vector3 targetPoint =
             GetTargetPoint(
                 target,
                 targetPart,
-                settings.TargetPointType);
+                settings.TargetPointType,
+                targetView);
 
         Vector3 directionFromTargetToSelf =
             visualRoot.position - targetPoint;
@@ -162,17 +166,18 @@ public class CharacterActionMover : MonoBehaviour
         if (target == null)
             yield break;
 
+        CharacterView targetView =
+            BattleCameraTargetResolver.GetView(target);
+
         Vector3 targetPoint =
             GetTargetPoint(
                 target,
                 targetPart,
-                settings.TargetPointType);
+                settings.TargetPointType,
+                targetView);
 
         Transform targetTransform =
             target.transform;
-
-        CharacterView targetView =
-            target.GetComponentInChildren<CharacterView>(true);
 
         if (targetView != null && targetView.LookAtPoint != null)
             targetTransform = targetView.LookAtPoint;
@@ -243,21 +248,11 @@ public class CharacterActionMover : MonoBehaviour
         float speed,
         float arrive)
     {
-        while (Vector3.Distance(
-                   visualRoot.position,
-                   destination) > arrive)
-        {
-            visualRoot.position =
-                Vector3.MoveTowards(
-                    visualRoot.position,
-                    destination,
-                    speed * Time.deltaTime);
-
-            yield return null;
-        }
-
-        visualRoot.position =
-            destination;
+        return MovePosition(
+            destination,
+            speed,
+            arrive,
+            false);
     }
 
     private IEnumerator MoveLocalPosition(
@@ -265,33 +260,69 @@ public class CharacterActionMover : MonoBehaviour
         float speed,
         float arrive)
     {
+        return MovePosition(
+            destinationLocal,
+            speed,
+            arrive,
+            true);
+    }
+
+    private IEnumerator MovePosition(
+        Vector3 destination,
+        float speed,
+        float arrive,
+        bool useLocalPosition)
+    {
         while (Vector3.Distance(
-                   visualRoot.localPosition,
-                   destinationLocal) > arrive)
+                   GetVisualPosition(useLocalPosition),
+                   destination) > arrive)
         {
-            visualRoot.localPosition =
+            Vector3 nextPosition =
                 Vector3.MoveTowards(
-                    visualRoot.localPosition,
-                    destinationLocal,
+                    GetVisualPosition(useLocalPosition),
+                    destination,
                     speed * Time.deltaTime);
+
+            SetVisualPosition(
+                nextPosition,
+                useLocalPosition);
 
             yield return null;
         }
 
-        visualRoot.localPosition =
-            destinationLocal;
+        SetVisualPosition(
+            destination,
+            useLocalPosition);
+    }
+
+    private Vector3 GetVisualPosition(bool useLocalPosition)
+    {
+        return useLocalPosition
+            ? visualRoot.localPosition
+            : visualRoot.position;
+    }
+
+    private void SetVisualPosition(
+        Vector3 position,
+        bool useLocalPosition)
+    {
+        if (useLocalPosition)
+        {
+            visualRoot.localPosition = position;
+            return;
+        }
+
+        visualRoot.position = position;
     }
 
     private Vector3 GetTargetPoint(
         Character target,
         BodyPart targetPart,
-        CharacterActionTargetPointType targetPointType)
+        CharacterActionTargetPointType targetPointType,
+        CharacterView targetView)
     {
         if (target == null)
             return Vector3.zero;
-
-        CharacterView targetView =
-            target.GetComponentInChildren<CharacterView>(true);
 
         switch (targetPointType)
         {

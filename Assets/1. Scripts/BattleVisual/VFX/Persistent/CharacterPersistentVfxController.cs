@@ -11,8 +11,11 @@ public class CharacterPersistentVfxController : MonoBehaviour
     [Header("Initial VFX")]
     [SerializeField] private List<PersistentBattleVfxDefinition> initialVfx = new();
 
-    private readonly Dictionary<string, GameObject> activeVfx =
-        new Dictionary<string, GameObject>();
+    [Header("Debug")]
+    [SerializeField] private bool logDebug;
+
+    private readonly Dictionary<string, ActivePersistentVfx> activeVfx =
+        new Dictionary<string, ActivePersistentVfx>();
 
     private void Awake()
     {
@@ -20,10 +23,12 @@ public class CharacterPersistentVfxController : MonoBehaviour
             character = GetComponentInParent<Character>();
 
         if (characterView == null)
-            characterView = GetComponent<CharacterView>();
-
-        if (characterView == null)
-            characterView = GetComponentInChildren<CharacterView>(true);
+        {
+            characterView =
+                character != null
+                    ? BattleCameraTargetResolver.GetView(character)
+                    : GetComponentInChildren<CharacterView>(true);
+        }
     }
 
     private void OnEnable()
@@ -38,6 +43,9 @@ public class CharacterPersistentVfxController : MonoBehaviour
 
     private void PlayInitialVfx()
     {
+        if (initialVfx == null)
+            return;
+
         foreach (PersistentBattleVfxDefinition definition in initialVfx)
         {
             if (definition == null)
@@ -114,17 +122,22 @@ public class CharacterPersistentVfxController : MonoBehaviour
         instance.transform.localScale =
             definition.LocalScale;
 
-        activeVfx[key] =
-            instance;
+        ActivePersistentVfx activeInstance =
+            new ActivePersistentVfx(instance);
+
+        activeVfx[key] = activeInstance;
 
         if (definition.PlayOnSpawn)
         {
-            PlayAllEffects(instance);
+            PlayAllEffects(activeInstance);
         }
 
-        Debug.Log(
-            $"[CharacterPersistentVfxController] Persistent VFX Play / " +
-            $"Character={character?.Data.CharacterName}, Key={key}, Prefab={definition.Prefab.name}");
+        if (logDebug)
+        {
+            Debug.Log(
+                $"[CharacterPersistentVfxController] Persistent VFX Play / " +
+                $"Character={character?.Data.CharacterName}, Key={key}, Prefab={definition.Prefab.name}");
+        }
     }
 
     public void Stop(
@@ -149,37 +162,32 @@ public class CharacterPersistentVfxController : MonoBehaviour
         if (string.IsNullOrEmpty(key))
             return;
 
-        if (!activeVfx.TryGetValue(key, out GameObject instance))
+        if (!activeVfx.TryGetValue(
+                key,
+                out ActivePersistentVfx activeInstance))
             return;
 
         activeVfx.Remove(key);
 
-        if (instance == null)
-            return;
+        StopInstance(
+            activeInstance,
+            stopParticles,
+            destroyDelay);
 
-        if (stopParticles)
+        if (logDebug)
         {
-            StopAllEffects(instance);
+            Debug.Log(
+                $"[CharacterPersistentVfxController] Persistent VFX Stop / " +
+                $"Character={character?.Data.CharacterName}, Key={key}");
         }
-
-        Destroy(
-            instance,
-            Mathf.Max(0f, destroyDelay));
-
-        Debug.Log(
-            $"[CharacterPersistentVfxController] Persistent VFX Stop / " +
-            $"Character={character?.Data.CharacterName}, Key={key}");
     }
 
     public void StopAll()
     {
-        List<string> keys =
-            new List<string>(activeVfx.Keys);
-
-        foreach (string key in keys)
+        foreach (ActivePersistentVfx activeInstance in activeVfx.Values)
         {
-            Stop(
-                key,
+            StopInstance(
+                activeInstance,
                 stopParticles: true,
                 destroyDelay: 0f);
         }
@@ -194,7 +202,12 @@ public class CharacterPersistentVfxController : MonoBehaviour
             return transform;
 
         if (characterView == null)
-            characterView = GetComponentInChildren<CharacterView>(true);
+        {
+            characterView =
+                character != null
+                    ? BattleCameraTargetResolver.GetView(character)
+                    : GetComponentInChildren<CharacterView>(true);
+        }
 
         switch (definition.AnchorType)
         {
@@ -237,50 +250,101 @@ public class CharacterPersistentVfxController : MonoBehaviour
     }
 
     private void PlayAllEffects(
-        GameObject instance)
+        ActivePersistentVfx activeInstance)
     {
-        if (instance == null)
+        if (activeInstance == null ||
+            activeInstance.Instance == null)
             return;
 
-        ParticleSystem[] particles =
-            instance.GetComponentsInChildren<ParticleSystem>(true);
+        activeInstance.RefreshEffects();
 
-        foreach (ParticleSystem particle in particles)
+        foreach (ParticleSystem particle in activeInstance.Particles)
         {
-            particle.Play(true);
+            if (particle != null)
+                particle.Play(true);
         }
 
-        VisualEffect[] visualEffects =
-            instance.GetComponentsInChildren<VisualEffect>(true);
-
-        foreach (VisualEffect visualEffect in visualEffects)
+        foreach (VisualEffect visualEffect in activeInstance.VisualEffects)
         {
-            visualEffect.Play();
+            if (visualEffect != null)
+                visualEffect.Play();
         }
     }
 
     private void StopAllEffects(
-        GameObject instance)
+        ActivePersistentVfx activeInstance)
     {
-        if (instance == null)
+        if (activeInstance == null ||
+            activeInstance.Instance == null)
             return;
 
-        ParticleSystem[] particles =
-            instance.GetComponentsInChildren<ParticleSystem>(true);
+        activeInstance.RefreshEffects();
 
-        foreach (ParticleSystem particle in particles)
+        foreach (ParticleSystem particle in activeInstance.Particles)
         {
+            if (particle == null)
+                continue;
+
             particle.Stop(
                 true,
                 ParticleSystemStopBehavior.StopEmitting);
         }
 
-        VisualEffect[] visualEffects =
-            instance.GetComponentsInChildren<VisualEffect>(true);
-
-        foreach (VisualEffect visualEffect in visualEffects)
+        foreach (VisualEffect visualEffect in activeInstance.VisualEffects)
         {
-            visualEffect.Stop();
+            if (visualEffect != null)
+                visualEffect.Stop();
+        }
+    }
+
+    private void StopInstance(
+        ActivePersistentVfx activeInstance,
+        bool stopParticles,
+        float destroyDelay)
+    {
+        if (activeInstance == null ||
+            activeInstance.Instance == null)
+        {
+            return;
+        }
+
+        if (stopParticles)
+            StopAllEffects(activeInstance);
+
+        Destroy(
+            activeInstance.Instance,
+            Mathf.Max(0f, destroyDelay));
+    }
+
+    private sealed class ActivePersistentVfx
+    {
+        public ActivePersistentVfx(
+            GameObject instance)
+        {
+            Instance = instance;
+
+        }
+
+        public GameObject Instance { get; }
+
+        public List<ParticleSystem> Particles { get; } = new();
+        public List<VisualEffect> VisualEffects { get; } = new();
+
+        public void RefreshEffects()
+        {
+            Particles.Clear();
+            VisualEffects.Clear();
+
+            if (Instance == null)
+                return;
+
+            Instance.GetComponentsInChildren(
+                true,
+                Particles);
+
+            Instance.GetComponentsInChildren(
+                true,
+                VisualEffects);
         }
     }
 }

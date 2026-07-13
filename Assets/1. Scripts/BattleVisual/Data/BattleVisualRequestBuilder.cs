@@ -15,7 +15,9 @@ public class BattleVisualRequestBuilder
         BattleAction action,
         List<ClashRollVisualStep> clashSteps,
         List<int> hitDamages,
-        BattleAction opponentAction = null)
+        BattleAction opponentAction = null,
+        int? targetPartHpBefore = null,
+        int? targetPartHpAfter = null)
     {
         if (action == null)
             return null;
@@ -50,9 +52,44 @@ public class BattleVisualRequestBuilder
         if (request.HitDamages.Count > 0)
             request.FallbackDamage = request.HitDamages[0];
 
+        ApplyTargetPartHpSnapshot(
+            request,
+            action,
+            targetPartHpBefore,
+            targetPartHpAfter);
+
         ApplyDamageDistribution(request);
 
         return request;
+    }
+
+    private static void ApplyTargetPartHpSnapshot(
+        BattleVisualRequest request,
+        BattleAction action,
+        int? targetPartHpBefore,
+        int? targetPartHpAfter)
+    {
+        if (request == null)
+            return;
+
+        if (targetPartHpBefore.HasValue &&
+            targetPartHpAfter.HasValue)
+        {
+            request.HasTargetPartHpSnapshot = true;
+            request.TargetPartHpBefore = targetPartHpBefore.Value;
+            request.TargetPartHpAfter = targetPartHpAfter.Value;
+            return;
+        }
+
+        if (action == null ||
+            !action.HasDamageLog)
+        {
+            return;
+        }
+
+        request.HasTargetPartHpSnapshot = true;
+        request.TargetPartHpBefore = action.LoggedBeforeHP;
+        request.TargetPartHpAfter = action.LoggedAfterHP;
     }
     
     private void ApplyDamageDistribution(

@@ -1,5 +1,5 @@
+using System;
 using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
 public class BattleAnimationDirector : MonoBehaviour
@@ -16,20 +16,40 @@ public class BattleAnimationDirector : MonoBehaviour
     [Header("Fallback")]
     [SerializeField] private bool logMissingReferences = true;
 
+    [Header("Debug")]
+    [SerializeField] private bool logDebug;
+
     [Header("UI")]
     [SerializeField] private BattleUIManager battleUIManager;
     [SerializeField] private BattleActionAnnounceUI actionAnnounceUI;
 
     private bool isPlaying;
     private Coroutine cameraShotRoutine;
-
-    private readonly Dictionary<BattleVisualRequest, int> visualDamageAccumulated = new();
-    private readonly Dictionary<BattleVisualRequest, int> visualHpStart = new();
-    private readonly Dictionary<BattleVisualRequest, List<int>> visualHitDamages = new();
+    private BattleVisualRequestBuilder requestBuilder;
+    private BattleVisualDamagePresenter damagePresenter;
+    private BattleVisualPlaybackState activePlayback;
 
     private void Awake()
     {
         ResolveReferences();
+        requestBuilder =
+            new BattleVisualRequestBuilder(
+                defaultVisualProfile);
+
+        damagePresenter =
+            new BattleVisualDamagePresenter(
+                battleUIManager,
+                logDebug);
+    }
+
+    private void OnDisable()
+    {
+        CancelActivePlayback();
+    }
+
+    private void OnDestroy()
+    {
+        CancelActivePlayback();
     }
 
     private void ResolveReferences()
@@ -70,11 +90,109 @@ public class BattleAnimationDirector : MonoBehaviour
             yield break;
         }
 
+        if (!isActiveAndEnabled)
+        {
+            Debug.LogWarning(
+                "[BattleAnimationDirector] 비활성 상태에서는 전투 연출을 시작할 수 없습니다.");
+            yield break;
+        }
+
         isPlaying = true;
+        BattleVisualPlaybackState playback =
+            new BattleVisualPlaybackState(request);
 
-        yield return PlayInternal(request);
+        activePlayback = playback;
 
-        isPlaying = false;
+        Coroutine playbackRoutine =
+            StartCoroutine(
+                RunPlayback(playback));
+
+        if (playbackRoutine == null)
+        {
+            playback.IsCancellationRequested = true;
+            CompletePlayback(playback);
+            yield break;
+        }
+
+        try
+        {
+            while (!playback.IsCompleted)
+                yield return null;
+        }
+        finally
+        {
+            if (!playback.IsCompleted &&
+                ReferenceEquals(activePlayback, playback))
+            {
+                CancelActivePlayback();
+            }
+        }
+    }
+
+    public void CancelActivePlayback()
+    {
+        BattleVisualPlaybackState playback =
+            activePlayback;
+
+        if (playback == null)
+            return;
+
+        playback.IsCancellationRequested = true;
+
+        StopAllCoroutines();
+        cameraShotRoutine = null;
+
+        CompletePlayback(playback);
+    }
+
+    private IEnumerator RunPlayback(
+        BattleVisualPlaybackState playback)
+    {
+        bool completedNormally = false;
+
+        try
+        {
+            yield return PlayInternal(playback);
+            completedNormally = true;
+        }
+        finally
+        {
+            if (!completedNormally)
+                playback.IsCancellationRequested = true;
+
+            CompletePlayback(playback);
+        }
+    }
+
+    private void CompletePlayback(
+        BattleVisualPlaybackState playback)
+    {
+        if (playback == null ||
+            playback.IsCompleted)
+        {
+            return;
+        }
+
+        try
+        {
+            EndVisualRequest(playback);
+        }
+        catch (Exception exception)
+        {
+            Debug.LogException(
+                exception,
+                this);
+        }
+        finally
+        {
+            playback.IsCompleted = true;
+
+            if (ReferenceEquals(activePlayback, playback))
+            {
+                activePlayback = null;
+                isPlaying = false;
+            }
+        }
     }
 
     public IEnumerator PlayAction(BattleAction action)
@@ -82,19 +200,25 @@ public class BattleAnimationDirector : MonoBehaviour
         if (action == null)
             yield break;
 
-        SkillVisualDefinition visualDefinition =
-            ResolveVisualDefinition(action);
+        requestBuilder ??=
+            new BattleVisualRequestBuilder(
+                defaultVisualProfile);
 
         BattleVisualRequest request =
-            BattleVisualRequest.FromAction(
+            requestBuilder.Build(
                 action,
-                visualDefinition);
+                clashSteps: null,
+                hitDamages: null);
 
         yield return Play(request);
     }
 
-    private IEnumerator PlayInternal(BattleVisualRequest request)
+    private IEnumerator PlayInternal(
+        BattleVisualPlaybackState playback)
     {
+        BattleVisualRequest request =
+            playback.Request;
+
         Character attacker =
             request.Attacker;
 
@@ -114,46 +238,60 @@ public class BattleAnimationDirector : MonoBehaviour
         }
 
         BeginVisualRequest(
-            request,
+            playback,
             visual);
-        
-        PlaySkillVfx(
-            request,
-            visual,
-            BattleVfxTiming.OnActionStart);
-
-        Debug.Log(
-            $"[BattleAnimationDirector] PlayInternal 시작 / " +
-            $"Attacker={attacker?.Data.CharacterName}, " +
-            $"Target={target?.Data.CharacterName}, " +
-            $"ActionType={request.ActionType}, " +
-            $"HasHitFrameDamage={visual.HasHitFrameDamage}, " +
-            $"ApplyDamageIfNoHitFrame={visual.ApplyDamageIfNoHitFrame}, " +
-            $"ShowsClashPower={visual.ShowsClashPower}, " +
-            $"ClashSteps={request.ClashSteps?.Count ?? 0}, " +
-            $"HitDamages={request.HitDamages?.Count ?? 0}");
 
         CharacterViewSet views =
             GetViews(
                 attacker,
                 target);
 
-        yield return ShowActionAnnouncement(
+        playback.AttackerView = views.AttackerView;
+        playback.TargetView = views.TargetView;
+        playback.AttackerMover = views.AttackerMover;
+        playback.AttackerFacing = views.AttackerFacing;
+        playback.TargetFacing = views.TargetFacing;
+        
+        PlaySkillVfx(
+            playback,
             request,
+            visual,
+            BattleVfxTiming.OnActionStart);
+
+        if (logDebug)
+        {
+            Debug.Log(
+                $"[BattleAnimationDirector] PlayInternal 시작 / " +
+                $"Attacker={attacker?.Data.CharacterName}, " +
+                $"Target={target?.Data.CharacterName}, " +
+                $"ActionType={request.ActionType}, " +
+                $"HasHitFrameDamage={visual.HasHitFrameDamage}, " +
+                $"ApplyDamageIfNoHitFrame={visual.ApplyDamageIfNoHitFrame}, " +
+                $"ShowsClashPower={visual.ShowsClashPower}, " +
+                $"ClashSteps={request.ClashSteps?.Count ?? 0}, " +
+                $"HitDamages={request.HitDamages?.Count ?? 0}");
+        }
+
+        yield return ShowActionAnnouncement(
+            playback,
             visual);
             
         StartCameraShots(
+            playback,
             request,
             visual,
             SkillCameraShotTiming.OnActionStart);
 
         BeginSkillCamera(
+            playback,
             request,
             visual);
 
         if (visual.FaceEachOther &&
             target != null)
         {
+            playback.ShouldRestoreFacing = true;
+
             yield return FaceEachOther(
                 views,
                 attacker,
@@ -165,6 +303,14 @@ public class BattleAnimationDirector : MonoBehaviour
         {
             if (visual.MoveSettings != null)
             {
+                CharacterActionStartPositionMode startPositionMode =
+                    visual.MoveSettings.StartPositionMode;
+
+                playback.ShouldRestoreAttackerPosition =
+                    visual.MoveSettings.UseMove &&
+                    startPositionMode != CharacterActionStartPositionMode.None &&
+                    startPositionMode != CharacterActionStartPositionMode.CurrentPosition;
+
                 yield return views.AttackerMover.MoveToActionStartPosition(
                     attacker,
                     target,
@@ -173,6 +319,8 @@ public class BattleAnimationDirector : MonoBehaviour
             }
             else if (visual.MovesToTarget)
             {
+                playback.ShouldRestoreAttackerPosition = true;
+
                 yield return views.AttackerMover.MoveNearTarget(
                     target,
                     request.TargetPart);
@@ -185,6 +333,7 @@ public class BattleAnimationDirector : MonoBehaviour
         if (visual.ShowsClashPower)
         {
             StartCameraShots(
+                playback,
                 request,
                 visual,
                 SkillCameraShotTiming.OnClashRoll);
@@ -196,17 +345,20 @@ public class BattleAnimationDirector : MonoBehaviour
             }
 
             yield return ShowClashPower(
+                playback,
                 request,
                 views,
                 visual);
         }
         
         PlaySkillVfx(
+            playback,
             request,
             visual,
             BattleVfxTiming.BeforeAttackAnimation);
         
         StartCameraShots(
+            playback,
             request,
             visual,
             SkillCameraShotTiming.BeforeAttackAnimation);
@@ -231,7 +383,7 @@ public class BattleAnimationDirector : MonoBehaviour
                     hitFrameCount++;
 
                     ApplyHitFrame(
-                        request,
+                        playback,
                         views,
                         visual,
                         hitIndex);
@@ -239,31 +391,17 @@ public class BattleAnimationDirector : MonoBehaviour
                 onEffectFrame: null);
         }
 
-        bool shouldFallbackHit =
-            ShouldFallbackHitFrame(
-                request,
-                visual,
-                hitFrameCount);
-                
-        if (shouldFallbackHit)
-        {
-            Debug.LogWarning(
-                $"[BattleAnimationDirector] {request.ActionType}에 HitFrame이 없어서 fallback 피격/데미지 연출을 적용합니다. " +
-                $"Attacker={request.Attacker?.Data.CharacterName}, " +
-                $"Target={request.Target?.Data.CharacterName}, " +
-                $"Damage={request.GetDamageForHitIndex(0)}");
-
-            ApplyHitFrame(
-                request,
-                views,
-                visual,
-                0);
-        }
+        ApplyMissingHitFrameFallback(
+            playback,
+            views,
+            visual,
+            hitFrameCount);
 
         views.AttackerView?.RefreshVisualState();
         views.TargetView?.RefreshVisualState();
         
         PlaySkillVfx(
+            playback,
             request,
             visual,
             BattleVfxTiming.AfterAction);
@@ -288,18 +426,30 @@ public class BattleAnimationDirector : MonoBehaviour
             }
         }
 
+        playback.ShouldRestoreAttackerPosition = false;
+
         if (visual.ReturnFacingAfterAction)
         {
             yield return ReturnFacing(
                 views);
         }
 
-        StartCameraShots(
-            request,
-            visual,
-            SkillCameraShotTiming.AfterAction);
+        playback.ShouldRestoreFacing = false;
+
+        StopCameraShotRoutine();
+
+        Coroutine afterActionCameraRoutine =
+            StartCameraShots(
+                playback,
+                request,
+                visual,
+                SkillCameraShotTiming.AfterAction);
+
+        if (afterActionCameraRoutine != null)
+            yield return afterActionCameraRoutine;
 
         EndSkillCamera(
+            playback,
             visual);
 
         if (visual.AfterReturnDelay > 0f)
@@ -309,14 +459,15 @@ public class BattleAnimationDirector : MonoBehaviour
         }
 
         yield return HideActionAnnouncement(
+            playback,
             visual);
 
-        yield return PlayMomentumRefreshAtVisualEnd();
-
-        EndVisualRequest(request);
+        yield return PlayMomentumRefreshAtVisualEnd(
+            playback);
     }
     
     private void PlaySkillVfx(
+        BattleVisualPlaybackState playback,
         BattleVisualRequest request,
         SkillVisualDefinition visual,
         BattleVfxTiming timing,
@@ -337,10 +488,14 @@ public class BattleAnimationDirector : MonoBehaviour
             {
                 Attacker = request.Attacker,
                 Target = request.Target,
+                AttackerView = playback?.AttackerView,
+                TargetView = playback?.TargetView,
                 TargetPart = request.TargetPart,
                 HitIndex = hitIndex,
                 Damage = damage
             };
+
+        context.BindPlayback(playback);
 
         foreach (BattleVfxCue cue in visual.VfxCues)
         {
@@ -356,208 +511,241 @@ public class BattleAnimationDirector : MonoBehaviour
         }
     }
     
-    private IEnumerator PlayMomentumRefreshAtVisualEnd()
+    private IEnumerator PlayMomentumRefreshAtVisualEnd(
+        BattleVisualPlaybackState playback)
     {
         if (momentumScrollbarUI == null)
             yield break;
 
         yield return momentumScrollbarUI.ReleaseAndAnimateToRealMomentumRoutine();
+
+        if (playback != null)
+            playback.IsMomentumDisplayLocked = false;
     }
 
     private void BeginVisualRequest(
-        BattleVisualRequest request,
+        BattleVisualPlaybackState playback,
         SkillVisualDefinition visual)
     {
-        PrepareVisualHitDamages(
-            request,
+        if (playback == null)
+            return;
+
+        BattleVisualRequest request =
+            playback.Request;
+
+        playback.HasBegun = true;
+
+        damagePresenter ??=
+            new BattleVisualDamagePresenter(
+                battleUIManager,
+                logDebug);
+
+        damagePresenter.Prepare(
+            playback,
             visual);
 
         if (targetArrowUI != null)
+        {
+            playback.IsTargetArrowBound = true;
             targetArrowUI.SetCurrentVisualRequest(request);
+        }
 
         if (momentumScrollbarUI != null)
+        {
+            playback.IsMomentumDisplayLocked = true;
             momentumScrollbarUI.LockCurrentDisplay();
+        }
 
-        PrepareVisualHpOverride(request);
     }
     
-    private void PrepareVisualHitDamages(
-        BattleVisualRequest request,
-        SkillVisualDefinition visual)
-    {
-        if (request == null)
-            return;
-
-        visualHitDamages.Remove(request);
-
-        if (request.HitDamages == null ||
-            request.HitDamages.Count <= 0)
-        {
-            return;
-        }
-
-        int totalDamage = 0;
-
-        foreach (int damage in request.HitDamages)
-        {
-            totalDamage += Mathf.Max(
-                0,
-                damage);
-        }
-
-        if (totalDamage <= 0)
-            return;
-
-        // 이미 분할되어 들어온 경우는 그대로 사용
-        if (request.HitDamages.Count > 1)
-        {
-            visualHitDamages[request] =
-                new List<int>(request.HitDamages);
-
-            return;
-        }
-
-        // 현재 문제 상황: [4] 하나만 들어온 경우
-        List<int> weights =
-            visual != null
-                ? visual.HitDamageWeights
-                : null;
-
-        if (weights == null ||
-            weights.Count <= 0)
-        {
-            visualHitDamages[request] =
-                new List<int> { totalDamage };
-
-            return;
-        }
-
-        visualHitDamages[request] =
-            SplitDamageByWeights(
-                totalDamage,
-                weights);
-
-        Debug.Log(
-            "[BattleAnimationDirector] HitDamage 분할 / " +
-            "Total=" + totalDamage + ", " +
-            "Result=" + string.Join(",", visualHitDamages[request]));
-    }
-    
-    private List<int> SplitDamageByWeights(
-        int totalDamage,
-        List<int> weights)
-    {
-        List<int> result =
-            new List<int>();
-
-        if (totalDamage <= 0)
-            return result;
-
-        if (weights == null ||
-            weights.Count <= 0)
-        {
-            result.Add(totalDamage);
-            return result;
-        }
-
-        int weightSum = 0;
-
-        foreach (int weight in weights)
-        {
-            weightSum += Mathf.Max(
-                0,
-                weight);
-        }
-
-        if (weightSum <= 0)
-        {
-            result.Add(totalDamage);
-            return result;
-        }
-
-        int remainingDamage =
-            totalDamage;
-
-        for (int i = 0; i < weights.Count; i++)
-        {
-            int weight =
-                Mathf.Max(
-                    0,
-                    weights[i]);
-
-            int splitDamage;
-
-            if (i == weights.Count - 1)
-            {
-                splitDamage = remainingDamage;
-            }
-            else
-            {
-                splitDamage =
-                    Mathf.FloorToInt(
-                        totalDamage * (float)weight / weightSum);
-
-                splitDamage =
-                    Mathf.Clamp(
-                        splitDamage,
-                        0,
-                        remainingDamage);
-            }
-
-            result.Add(splitDamage);
-
-            remainingDamage -= splitDamage;
-        }
-
-        return result;
-    }
-    
-    private int GetVisualDamageForHitIndex(
-        BattleVisualRequest request,
-        int hitIndex)
-    {
-        if (request == null)
-            return 0;
-
-        if (visualHitDamages.TryGetValue(
-                request,
-                out List<int> damages))
-        {
-            if (damages == null ||
-                damages.Count <= 0)
-            {
-                return 0;
-            }
-
-            if (hitIndex < 0)
-                return damages[0];
-
-            if (hitIndex >= damages.Count)
-                return 0;
-
-            return damages[hitIndex];
-        }
-
-        return request.GetDamageForHitIndex(
-            hitIndex);
-    }
-
     private void EndVisualRequest(
-        BattleVisualRequest request)
+        BattleVisualPlaybackState playback)
     {
-        if (cameraShotRoutine != null)
+        if (playback == null ||
+            playback.IsCleanedUp)
         {
-            StopCoroutine(cameraShotRoutine);
-            cameraShotRoutine = null;
+            return;
         }
 
-        ClearVisualHpOverride(request);
+        playback.IsCleanedUp = true;
 
-        if (targetArrowUI != null)
-            targetArrowUI.ClearCurrentVisualRequest(request);
+        for (BattleVisualCleanupPhase phase = BattleVisualCleanupPhase.CameraRoutine;
+             phase <= BattleVisualCleanupPhase.Momentum;
+             phase++)
+        {
+            RunCleanupPhase(
+                playback,
+                phase);
+        }
+    }
+
+    private void RunCleanupPhase(
+        BattleVisualPlaybackState playback,
+        BattleVisualCleanupPhase phase)
+    {
+        try
+        {
+            switch (phase)
+            {
+                case BattleVisualCleanupPhase.CameraRoutine:
+                    StopCameraShotRoutine();
+                    break;
+
+                case BattleVisualCleanupPhase.AttackerAnimation:
+                    if (playback.AttackerView != null)
+                    {
+                        if (playback.IsCancellationRequested)
+                            playback.AttackerView.AbortActionPlayback();
+                        else
+                            playback.AttackerView.CancelActionPlayback();
+                    }
+                    break;
+
+                case BattleVisualCleanupPhase.TargetVisualState:
+                    if (playback.TargetView != null)
+                        playback.TargetView.RefreshVisualState();
+                    break;
+
+                case BattleVisualCleanupPhase.Vfx:
+                    CleanupTrackedVfx(playback);
+                    break;
+
+                case BattleVisualCleanupPhase.Position:
+                {
+                    bool shouldRestore =
+                        playback.ShouldRestoreAttackerPosition;
+
+                    playback.ShouldRestoreAttackerPosition = false;
+
+                    if (shouldRestore && playback.AttackerMover != null)
+                        playback.AttackerMover.ReturnToDefaultPositionInstant();
+                    break;
+                }
+
+                case BattleVisualCleanupPhase.Facing:
+                {
+                    bool shouldRestore =
+                        playback.ShouldRestoreFacing;
+
+                    playback.ShouldRestoreFacing = false;
+
+                    if (!shouldRestore)
+                        break;
+
+                    if (playback.AttackerFacing != null)
+                        playback.AttackerFacing.ReturnToDefaultInstant();
+
+                    if (playback.TargetFacing != null)
+                        playback.TargetFacing.ReturnToDefaultInstant();
+                    break;
+                }
+
+                case BattleVisualCleanupPhase.Camera:
+                {
+                    bool hadCameraActivity =
+                        playback.HasCameraActivity;
+
+                    playback.HasCameraActivity = false;
+
+                    if (hadCameraActivity && cameraDirector != null)
+                        cameraDirector.Return();
+                    break;
+                }
+
+                case BattleVisualCleanupPhase.Announcement:
+                {
+                    bool wasVisible =
+                        playback.IsAnnouncementVisible;
+
+                    playback.IsAnnouncementVisible = false;
+
+                    if (wasVisible && actionAnnounceUI != null)
+                        actionAnnounceUI.HideImmediate();
+                    break;
+                }
+
+                case BattleVisualCleanupPhase.FloatingText:
+                {
+                    bool hadFloatingText =
+                        playback.HasFloatingTextActivity;
+
+                    playback.HasFloatingTextActivity = false;
+
+                    if (hadFloatingText && floatingTextManager != null)
+                        floatingTextManager.CancelAllActiveTexts();
+                    break;
+                }
+
+                case BattleVisualCleanupPhase.DamagePresentation:
+                    if (playback.HasBegun)
+                        damagePresenter?.Clear(playback);
+                    break;
+
+                case BattleVisualCleanupPhase.TargetArrow:
+                {
+                    bool wasBound =
+                        playback.IsTargetArrowBound;
+
+                    playback.IsTargetArrowBound = false;
+
+                    if (wasBound && targetArrowUI != null)
+                    {
+                        targetArrowUI.ClearCurrentVisualRequest(
+                            playback.Request);
+                    }
+                    break;
+                }
+
+                case BattleVisualCleanupPhase.Momentum:
+                {
+                    bool wasLocked =
+                        playback.IsMomentumDisplayLocked;
+
+                    playback.IsMomentumDisplayLocked = false;
+
+                    if (wasLocked && momentumScrollbarUI != null)
+                        momentumScrollbarUI.ForceRefresh();
+                    break;
+                }
+            }
+        }
+        catch (Exception exception)
+        {
+            Debug.LogError(
+                $"[BattleAnimationDirector] Cleanup 실패 / Phase={phase}",
+                this);
+
+            Debug.LogException(
+                exception,
+                this);
+        }
+    }
+
+    private static void CleanupTrackedVfx(
+        BattleVisualPlaybackState playback)
+    {
+        if (playback == null)
+            return;
+
+        try
+        {
+            if (playback.IsCancellationRequested)
+            {
+                foreach (GameObject instance in playback.SpawnedVfxInstances)
+                {
+                    if (instance != null)
+                        Destroy(instance);
+                }
+            }
+        }
+        finally
+        {
+            playback.SpawnedVfxInstances.Clear();
+        }
     }
 
     private void BeginSkillCamera(
+        BattleVisualPlaybackState playback,
         BattleVisualRequest request,
         SkillVisualDefinition visual)
     {
@@ -568,7 +756,7 @@ public class BattleAnimationDirector : MonoBehaviour
         if (!visual.UsesTargetCamera)
             return;
 
-        if (visual.CameraDefinition != null)
+        if (HasAnyCameraShots(visual.CameraDefinition))
             return;
 
         if (cameraDirector == null)
@@ -578,30 +766,37 @@ public class BattleAnimationDirector : MonoBehaviour
             request.Target == null)
             return;
 
+        if (playback != null)
+            playback.HasCameraActivity = true;
+
         cameraDirector.FocusBetween(
             request.Attacker,
             request.Target);
     }
 
-    private void StartCameraShots(
+    private Coroutine StartCameraShots(
+        BattleVisualPlaybackState playback,
         BattleVisualRequest request,
         SkillVisualDefinition visual,
         SkillCameraShotTiming timing)
     {
         if (request == null || visual == null)
-            return;
+            return null;
 
         if (cameraDirector == null)
-            return;
+            return null;
 
         if (visual.CameraDefinition == null)
-            return;
+            return null;
 
-        if (cameraShotRoutine != null)
+        if (!HasCameraShots(
+                visual.CameraDefinition,
+                timing))
         {
-            StopCoroutine(cameraShotRoutine);
-            cameraShotRoutine = null;
+            return null;
         }
+
+        StopCameraShotRoutine();
 
         cameraShotRoutine =
             StartCoroutine(
@@ -609,6 +804,60 @@ public class BattleAnimationDirector : MonoBehaviour
                     request,
                     visual,
                     timing));
+
+        if (playback != null)
+            playback.HasCameraActivity = true;
+
+        return cameraShotRoutine;
+    }
+
+    private void StopCameraShotRoutine()
+    {
+        if (cameraShotRoutine == null)
+            return;
+
+        StopCoroutine(cameraShotRoutine);
+        cameraShotRoutine = null;
+    }
+
+    private static bool HasCameraShots(
+        SkillCameraDefinition definition,
+        SkillCameraShotTiming timing)
+    {
+        if (definition == null ||
+            definition.Shots == null)
+        {
+            return false;
+        }
+
+        foreach (SkillCameraShot shot in definition.Shots)
+        {
+            if (shot != null &&
+                shot.Timing == timing)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static bool HasAnyCameraShots(
+        SkillCameraDefinition definition)
+    {
+        if (definition == null ||
+            definition.Shots == null)
+        {
+            return false;
+        }
+
+        foreach (SkillCameraShot shot in definition.Shots)
+        {
+            if (shot != null)
+                return true;
+        }
+
+        return false;
     }
 
     private IEnumerator PlayCameraShots(
@@ -642,7 +891,7 @@ public class BattleAnimationDirector : MonoBehaviour
         if (!visual.UsesTargetCamera)
             yield break;
 
-        if (visual.CameraDefinition != null)
+        if (HasAnyCameraShots(visual.CameraDefinition))
             yield break;
 
         if (cameraDirector == null)
@@ -653,15 +902,26 @@ public class BattleAnimationDirector : MonoBehaviour
     }
 
     private void EndSkillCamera(
+        BattleVisualPlaybackState playback,
         SkillVisualDefinition visual)
     {
         if (visual == null)
+        {
+            if (playback != null)
+                playback.HasCameraActivity = false;
+
             return;
+        }
 
         if (cameraDirector == null)
-            return;
+        {
+            if (playback != null)
+                playback.HasCameraActivity = false;
 
-        if (visual.CameraDefinition != null)
+            return;
+        }
+
+        if (HasAnyCameraShots(visual.CameraDefinition))
         {
             if (visual.CameraDefinition.ReturnToOverviewAfterAction)
             {
@@ -669,13 +929,24 @@ public class BattleAnimationDirector : MonoBehaviour
                     visual.CameraDefinition);
             }
 
+            if (playback != null)
+                playback.HasCameraActivity = false;
+
             return;
         }
 
         if (!visual.ReturnCameraAfterAction)
+        {
+            if (playback != null)
+                playback.HasCameraActivity = false;
+
             return;
+        }
 
         cameraDirector.Return();
+
+        if (playback != null)
+            playback.HasCameraActivity = false;
     }
 
     private void PlayHitCameraShake(
@@ -694,182 +965,86 @@ public class BattleAnimationDirector : MonoBehaviour
             visual.HitShake);
     }
 
-    private bool ShouldFallbackHitFrame(
-        BattleVisualRequest request,
+    private void ApplyMissingHitFrameFallback(
+        BattleVisualPlaybackState playback,
+        CharacterViewSet views,
         SkillVisualDefinition visual,
         int hitFrameCount)
     {
-        if (request == null ||
+        if (playback == null ||
             visual == null)
         {
-            return false;
+            return;
         }
 
         if (!visual.HasHitFrameDamage)
-            return false;
-
-        if (hitFrameCount > 0)
-            return false;
-
-        bool hasDamageToShow =
-            request.HitDamages != null &&
-            request.HitDamages.Count > 0 &&
-            request.GetDamageForHitIndex(0) > 0;
-
-        return
-            visual.ApplyDamageIfNoHitFrame ||
-            hasDamageToShow;
-    }
-
-    private void PrepareVisualHpOverride(
-        BattleVisualRequest request)
-    {
-        if (request == null)
             return;
 
-        if (request.Target == null ||
-            request.TargetPart == null)
-            return;
+        int plannedHitCount =
+            playback.HitDamages.Count;
 
-        if (!visualHitDamages.TryGetValue(
-                request,
-                out List<int> damages))
+        if (plannedHitCount <= hitFrameCount)
+        {
+            if (hitFrameCount > 0 ||
+                !visual.ApplyDamageIfNoHitFrame)
+            {
+                return;
+            }
+        }
+
+        int remainingDamage = 0;
+
+        for (int i = Mathf.Max(0, hitFrameCount);
+             i < plannedHitCount;
+             i++)
+        {
+            remainingDamage +=
+                Mathf.Max(
+                    0,
+                    playback.HitDamages[i]);
+        }
+
+        BattleVisualRequest request =
+            playback.Request;
+
+        if (plannedHitCount == 0)
+        {
+            remainingDamage =
+                Mathf.Max(
+                    0,
+                    request.GetDamageForHitIndex(0));
+        }
+
+        if (remainingDamage <= 0 &&
+            !visual.ApplyDamageIfNoHitFrame)
         {
             return;
         }
 
-        if (damages == null ||
-            damages.Count <= 0)
-        {
-            return;
-        }
+        Debug.LogWarning(
+            $"[BattleAnimationDirector] 계획된 HitFrame 일부가 없어 fallback 피격/데미지 연출을 적용합니다. " +
+            $"Attacker={request.Attacker?.Data.CharacterName}, " +
+            $"Target={request.Target?.Data.CharacterName}, " +
+            $"ActualHits={hitFrameCount}, PlannedHits={plannedHitCount}, " +
+            $"RemainingDamage={remainingDamage}");
 
-        int totalDamage = 0;
-
-        foreach (int damage in damages)
-        {
-            totalDamage += Mathf.Max(
-                0,
-                damage);
-        }
-
-        if (totalDamage <= 0)
-            return;
-
-        int realFinalHp =
-            Mathf.RoundToInt(
-                request.TargetPart.PartHP);
-
-        int maxHp =
-            Mathf.RoundToInt(
-                request.TargetPart.MaxPartHP);
-
-        int visualStartHp =
-            Mathf.Clamp(
-                realFinalHp + totalDamage,
-                0,
-                maxHp);
-
-        visualHpStart[request] =
-            visualStartHp;
-
-        visualDamageAccumulated[request] =
-            0;
-
-        if (battleUIManager != null)
-        {
-            battleUIManager.SetBodyPartHpOverride(
-                request.Target,
-                request.TargetPart,
-                visualStartHp);
-        }
-
-        RefreshBattleUIAtHitFrame(
-            request,
-            -1,
-            0);
-    }
-
-    private void ApplyVisualHpDamage(
-        BattleVisualRequest request,
-        int damage)
-    {
-        if (request == null)
-            return;
-
-        if (request.Target == null ||
-            request.TargetPart == null)
-            return;
-
-        if (damage <= 0)
-            return;
-
-        if (!visualHpStart.TryGetValue(
-                request,
-                out int startHp))
-        {
-            return;
-        }
-
-        if (!visualDamageAccumulated.TryGetValue(
-                request,
-                out int accumulatedDamage))
-        {
-            accumulatedDamage = 0;
-        }
-
-        accumulatedDamage += damage;
-
-        visualDamageAccumulated[request] =
-            accumulatedDamage;
-
-        int realFinalHp =
-            Mathf.RoundToInt(
-                request.TargetPart.PartHP);
-
-        int displayHp =
-            Mathf.Max(
-                realFinalHp,
-                startHp - accumulatedDamage);
-
-        if (battleUIManager != null)
-        {
-            battleUIManager.SetBodyPartHpOverride(
-                request.Target,
-                request.TargetPart,
-                displayHp);
-        }
-    }
-
-    private void ClearVisualHpOverride(
-        BattleVisualRequest request)
-    {
-        if (request == null)
-            return;
-
-        if (battleUIManager != null &&
-            request.Target != null &&
-            request.TargetPart != null)
-        {
-            battleUIManager.ClearBodyPartHpOverride(
-                request.Target,
-                request.TargetPart);
-        }
-
-        visualHpStart.Remove(request);
-        visualDamageAccumulated.Remove(request);
-        visualHitDamages.Remove(request);
-
-        RefreshBattleUIAtHitFrame(
-            request,
-            -1,
-            0);
+        ApplyHitFrame(
+            playback,
+            views,
+            visual,
+            Mathf.Max(0, hitFrameCount),
+            remainingDamage);
     }
 
     private IEnumerator ShowActionAnnouncement(
-        BattleVisualRequest request,
+        BattleVisualPlaybackState playback,
         SkillVisualDefinition visual)
     {
+        BattleVisualRequest request =
+            playback != null
+                ? playback.Request
+                : null;
+
         if (request == null)
             yield break;
 
@@ -882,11 +1057,14 @@ public class BattleAnimationDirector : MonoBehaviour
         if (actionAnnounceUI == null)
             yield break;
 
+        playback.IsAnnouncementVisible = true;
+
         yield return actionAnnounceUI.ShowPersistent(
             request);
     }
 
     private IEnumerator HideActionAnnouncement(
+        BattleVisualPlaybackState playback,
         SkillVisualDefinition visual)
     {
         if (visual == null)
@@ -899,14 +1077,30 @@ public class BattleAnimationDirector : MonoBehaviour
             yield break;
 
         yield return actionAnnounceUI.Hide();
+
+        if (playback != null)
+            playback.IsAnnouncementVisible = false;
     }
 
     private void ApplyHitFrame(
-        BattleVisualRequest request,
+        BattleVisualPlaybackState playback,
         CharacterViewSet views,
         SkillVisualDefinition visual,
-        int hitIndex)
+        int hitIndex,
+        int? damageOverride = null)
     {
+        if (playback == null ||
+            playback.IsCancellationRequested ||
+            playback.IsCompleted ||
+            playback.IsCleanedUp ||
+            !ReferenceEquals(activePlayback, playback))
+        {
+            return;
+        }
+
+        BattleVisualRequest request =
+            playback.Request;
+
         if (request == null ||
             visual == null)
         {
@@ -923,7 +1117,8 @@ public class BattleAnimationDirector : MonoBehaviour
             request.Target != null)
         {
             targetView =
-                request.Target.GetComponent<CharacterView>();
+                BattleCameraTargetResolver.GetView(
+                    request.Target);
         }
 
         if (targetView == null)
@@ -934,16 +1129,21 @@ public class BattleAnimationDirector : MonoBehaviour
         }
 
         int damage =
-            GetVisualDamageForHitIndex(
-                request,
+            damageOverride ??
+            damagePresenter.GetDamageForHitIndex(
+                playback,
                 hitIndex);
-                
-        Debug.Log(
-            $"[BattleAnimationDirector] HitFrame 적용 : " +
-            $"{request.Attacker?.Data.CharacterName} -> {request.Target?.Data.CharacterName} / " +
-            $"HitIndex={hitIndex} / Damage={damage}");
+
+        if (logDebug)
+        {
+            Debug.Log(
+                $"[BattleAnimationDirector] HitFrame 적용 : " +
+                $"{request.Attacker?.Data.CharacterName} -> {request.Target?.Data.CharacterName} / " +
+                $"HitIndex={hitIndex} / Damage={damage}");
+        }
             
         PlaySkillVfx(
+            playback,
             request,
             visual,
             BattleVfxTiming.OnHitFrame,
@@ -961,16 +1161,13 @@ public class BattleAnimationDirector : MonoBehaviour
         }
 
         StartCameraShots(
+            playback,
             request,
             visual,
             SkillCameraShotTiming.OnHitFrame);
 
-        ApplyVisualHpDamage(
-            request,
-            damage);
-
-        RefreshBattleUIAtHitFrame(
-            request,
+        damagePresenter.ApplyHit(
+            playback,
             hitIndex,
             damage);
 
@@ -978,37 +1175,8 @@ public class BattleAnimationDirector : MonoBehaviour
             visual);
     }
 
-    private void RefreshBattleUIAtHitFrame(
-        BattleVisualRequest request,
-        int hitIndex,
-        int damage)
-    {
-        if (battleUIManager == null)
-            battleUIManager = FindFirstObjectByType<BattleUIManager>();
-
-        if (battleUIManager == null)
-        {
-            Debug.LogWarning(
-                "[BattleAnimationDirector] HitFrame UI 갱신 실패 : BattleUIManager 없음");
-            return;
-        }
-
-        battleUIManager.RefreshAllBodyPartButtons();
-
-        Canvas.ForceUpdateCanvases();
-
-        if (hitIndex < 0)
-            return;
-
-        Debug.Log(
-            $"[BattleAnimationDirector] HitFrame UI 갱신 / " +
-            $"Target={request.Target?.Data.CharacterName}, " +
-            $"Part={request.TargetPart?.Type}, " +
-            $"HitIndex={hitIndex}, " +
-            $"Damage={damage}");
-    }
-
     private IEnumerator ShowClashPower(
+        BattleVisualPlaybackState playback,
         BattleVisualRequest request,
         CharacterViewSet views,
         SkillVisualDefinition visual)
@@ -1037,12 +1205,18 @@ public class BattleAnimationDirector : MonoBehaviour
                 request.Target,
                 views.TargetView);
 
+        if (playback != null)
+            playback.HasFloatingTextActivity = true;
+
         yield return floatingTextManager.ShowClashPowerSequence(
             attackerAnchor,
             targetAnchor,
             request.ClashSteps,
             visual.ClashColor,
             visual.TieColor);
+
+        if (playback != null)
+            playback.HasFloatingTextActivity = false;
     }
 
     private void ShowDamageNumber(
@@ -1068,28 +1242,6 @@ public class BattleAnimationDirector : MonoBehaviour
         damageNumberManager.ShowDamage(
             position,
             damage);
-    }
-
-    private SkillVisualDefinition ResolveVisualDefinition(
-        BattleAction action)
-    {
-        if (action == null ||
-            action.Skill == null)
-        {
-            return null;
-        }
-
-        if (action.Skill is IVisualSkill visualSkill &&
-            visualSkill.VisualDefinition != null)
-        {
-            return visualSkill.VisualDefinition;
-        }
-
-        if (defaultVisualProfile == null)
-            return null;
-
-        return defaultVisualProfile.GetDefault(
-            action.Skill.ActionType);
     }
 
     private IEnumerator FaceEachOther(
@@ -1186,57 +1338,43 @@ public class BattleAnimationDirector : MonoBehaviour
         if (attacker != null)
         {
             result.AttackerView =
-                GetCharacterView(attacker);
+                BattleCameraTargetResolver.GetView(
+                    attacker);
 
             result.AttackerFacing =
-                attacker.GetComponent<CharacterFacingController>();
-
-            if (result.AttackerFacing == null)
-            {
-                result.AttackerFacing =
-                    attacker.GetComponentInChildren<CharacterFacingController>(true);
-            }
+                attacker.GetComponentInChildren<CharacterFacingController>(true);
 
             result.AttackerMover =
-                attacker.GetComponent<CharacterActionMover>();
-
-            if (result.AttackerMover == null)
-            {
-                result.AttackerMover =
-                    attacker.GetComponentInChildren<CharacterActionMover>(true);
-            }
+                attacker.GetComponentInChildren<CharacterActionMover>(true);
         }
 
         if (target != null)
         {
             result.TargetView =
-                GetCharacterView(target);
+                BattleCameraTargetResolver.GetView(
+                    target);
 
             result.TargetFacing =
-                target.GetComponent<CharacterFacingController>();
-
-            if (result.TargetFacing == null)
-            {
-                result.TargetFacing =
-                    target.GetComponentInChildren<CharacterFacingController>(true);
-            }
+                target.GetComponentInChildren<CharacterFacingController>(true);
         }
 
         return result;
     }
     
-    private CharacterView GetCharacterView(Character character)
+    private enum BattleVisualCleanupPhase
     {
-        if (character == null)
-            return null;
-
-        CharacterView view =
-            character.GetComponent<CharacterView>();
-
-        if (view != null)
-            return view;
-
-        return character.GetComponentInChildren<CharacterView>(true);
+        CameraRoutine,
+        AttackerAnimation,
+        TargetVisualState,
+        Vfx,
+        Position,
+        Facing,
+        Camera,
+        Announcement,
+        FloatingText,
+        DamagePresentation,
+        TargetArrow,
+        Momentum
     }
 
     private struct CharacterViewSet

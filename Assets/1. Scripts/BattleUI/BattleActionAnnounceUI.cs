@@ -79,7 +79,7 @@ public class BattleActionAnnounceUI : MonoBehaviour
         canvasGroup.alpha = targetAlpha;
     }
 
-    private void HideImmediate()
+    public void HideImmediate()
     {
         if (canvasGroup != null)
             canvasGroup.alpha = 0f;

@@ -13,6 +13,9 @@ public class BattleWorldFloatingTextUI : MonoBehaviour
     [SerializeField] private bool faceCamera = true;
     [SerializeField] private Vector3 rotationOffset = Vector3.zero;
 
+    [Header("Debug")]
+    [SerializeField] private bool logDebug;
+
     private Camera worldCamera;
 
     private Transform followTarget;
@@ -43,6 +46,9 @@ public class BattleWorldFloatingTextUI : MonoBehaviour
 
     private void LateUpdate()
     {
+        if (worldCamera == null)
+            worldCamera = Camera.main;
+
         FollowTarget();
         FaceCamera();
     }
@@ -56,6 +62,8 @@ public class BattleWorldFloatingTextUI : MonoBehaviour
         Color color,
         int sortingOrder)
     {
+        StopAllCoroutines();
+
         followTarget = target;
         worldCamera = camera;
         worldOffset = offset;
@@ -152,13 +160,16 @@ public class BattleWorldFloatingTextUI : MonoBehaviour
         int randomMin,
         int randomMax)
     {
-        Debug.Log(
-            $"[FloatingTextUI] RollToClashResult / " +
-            $"Type={rollResult?.ResolverType}, " +
-            $"Display={rollResult?.GetShortDisplayText()}, " +
-            $"FinalPower={rollResult?.FinalPower}, " +
-            $"FinalClash={finalClashValue}, " +
-            $"SpeedModifier={speedModifier}");
+        if (logDebug)
+        {
+            Debug.Log(
+                $"[FloatingTextUI] RollToClashResult / " +
+                $"Type={rollResult?.ResolverType}, " +
+                $"Display={rollResult?.GetShortDisplayText()}, " +
+                $"FinalPower={rollResult?.FinalPower}, " +
+                $"FinalClash={finalClashValue}, " +
+                $"SpeedModifier={speedModifier}");
+        }
             
         if (rollResult == null)
         {
@@ -333,6 +344,18 @@ public class BattleWorldFloatingTextUI : MonoBehaviour
 
     public IEnumerator FadeAndDestroy(float fadeDuration)
     {
+        yield return FadeOut(fadeDuration);
+        Destroy(gameObject);
+    }
+
+    internal IEnumerator FadeOut(float fadeDuration)
+    {
+        if (fadeDuration <= 0f)
+        {
+            SetAlpha(0f);
+            yield break;
+        }
+
         float fadeElapsed = 0f;
 
         while (fadeElapsed < fadeDuration)
@@ -347,16 +370,29 @@ public class BattleWorldFloatingTextUI : MonoBehaviour
             yield return null;
         }
 
-        Destroy(gameObject);
+        SetAlpha(0f);
+    }
+
+    internal void ResetForPool()
+    {
+        StopAllCoroutines();
+
+        followTarget = null;
+        worldCamera = null;
+        worldOffset = Vector3.zero;
+        cameraRightOffset = 0f;
+
+        SetText(string.Empty);
+        SetAlpha(0f);
+
+        if (canvas != null)
+            canvas.worldCamera = null;
     }
 
     private void FollowTarget()
     {
         if (followTarget == null)
             return;
-
-        if (worldCamera == null)
-            worldCamera = Camera.main;
 
         Vector3 cameraRight =
             worldCamera != null
@@ -373,9 +409,6 @@ public class BattleWorldFloatingTextUI : MonoBehaviour
     {
         if (!faceCamera)
             return;
-
-        if (worldCamera == null)
-            worldCamera = Camera.main;
 
         if (worldCamera == null)
             return;

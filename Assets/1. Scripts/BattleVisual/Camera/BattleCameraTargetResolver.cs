@@ -21,6 +21,17 @@ public static class BattleCameraTargetResolver
         CharacterView view =
             GetView(character);
 
+        return GetLookAtTarget(
+            character,
+            view);
+    }
+
+    public static Transform GetLookAtTarget(
+        Character character,
+        CharacterView resolvedView)
+    {
+        CharacterView view = resolvedView;
+
         if (view != null &&
             view.LookAtPoint != null)
         {
@@ -37,13 +48,26 @@ public static class BattleCameraTargetResolver
         CharacterView view =
             GetView(character);
 
+        return GetAttackCameraPoint(
+            character,
+            view);
+    }
+
+    public static Transform GetAttackCameraPoint(
+        Character character,
+        CharacterView resolvedView)
+    {
+        CharacterView view = resolvedView;
+
         if (view != null &&
             view.AttackCameraPoint != null)
         {
             return view.AttackCameraPoint;
         }
 
-        return GetLookAtTarget(character);
+        return GetLookAtTarget(
+            character,
+            view);
     }
 
     public static Transform GetHitCameraPoint(Character character)
@@ -51,13 +75,26 @@ public static class BattleCameraTargetResolver
         CharacterView view =
             GetView(character);
 
+        return GetHitCameraPoint(
+            character,
+            view);
+    }
+
+    public static Transform GetHitCameraPoint(
+        Character character,
+        CharacterView resolvedView)
+    {
+        CharacterView view = resolvedView;
+
         if (view != null &&
             view.HitCameraPoint != null)
         {
             return view.HitCameraPoint;
         }
 
-        return GetLookAtTarget(character);
+        return GetLookAtTarget(
+            character,
+            view);
     }
 
     public static Transform GetTargetPartAnchor(
@@ -67,18 +104,41 @@ public static class BattleCameraTargetResolver
         CharacterView view =
             GetView(character);
 
+        return GetTargetPartAnchor(
+            character,
+            part,
+            view);
+    }
+
+    public static Transform GetTargetPartAnchor(
+        Character character,
+        BodyPart part,
+        CharacterView resolvedView)
+    {
+        CharacterView view = resolvedView;
+
         if (view == null)
-            return GetLookAtTarget(character);
+        {
+            return character != null
+                ? character.transform
+                : null;
+        }
 
         if (part == null)
-            return view.LookAtPoint;
+        {
+            return GetLookAtTarget(
+                character,
+                view);
+        }
 
         Transform anchor =
             view.GetBodyPartAnchor(part);
 
         return anchor != null
             ? anchor
-            : view.LookAtPoint;
+            : GetLookAtTarget(
+                character,
+                view);
     }
 
     public static Transform ResolveCameraPoint(

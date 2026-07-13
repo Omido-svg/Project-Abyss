@@ -30,7 +30,8 @@ public class ShaderMaterialEffectPlayer : MonoBehaviour, IBattleVfxPlayable
     public void Play(
         BattleVfxPlayData playData)
     {
-        if (targetRenderer == null)
+        if (playData == null ||
+            targetRenderer == null)
             return;
 
         if (routine != null)
@@ -50,9 +51,16 @@ public class ShaderMaterialEffectPlayer : MonoBehaviour, IBattleVfxPlayable
                 playData.Lifetime);
 
         float elapsed = 0f;
+        Camera facingCamera =
+            faceCamera
+                ? Camera.main
+                : null;
 
         while (elapsed < lifetime)
         {
+            if (faceCamera && facingCamera == null)
+                facingCamera = Camera.main;
+
             elapsed += Time.deltaTime;
 
             float t =
@@ -66,12 +74,11 @@ public class ShaderMaterialEffectPlayer : MonoBehaviour, IBattleVfxPlayable
                 playData,
                 progress);
 
-            if (faceCamera &&
-                Camera.main != null)
+            if (facingCamera != null)
             {
                 transform.rotation =
                     Quaternion.LookRotation(
-                        transform.position - Camera.main.transform.position);
+                        transform.position - facingCamera.transform.position);
             }
 
             yield return null;

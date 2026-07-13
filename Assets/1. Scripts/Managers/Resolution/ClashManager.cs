@@ -257,8 +257,6 @@ public class ClashManager
             }
         }
 
-        battleContext._battleEvent.RaiseClashResolved(context);
-
         //------------------------------------
         // 합 승리 / 패배 이벤트
         //------------------------------------
@@ -363,6 +361,15 @@ public class ClashManager
         }
 
         context.HitDamages.Add(damage);
+
+        if (winner.TargetPart != null)
+        {
+            context.HasTargetPartHpSnapshot = true;
+            context.TargetPartHpBefore = beforeHP;
+            context.TargetPartHpAfter = afterHP;
+        }
+
+        battleContext._battleEvent.RaiseClashResolved(context);
 
         //------------------------------------
         // 로그
@@ -536,7 +543,10 @@ public class ClashManager
                 WinnerAction = action,
                 WinnerClashPower = action.finalPower,
                 LoserClashPower = 0,
-                Gap = 0
+                Gap = 0,
+                HasTargetPartHpSnapshot = action.TargetPart != null,
+                TargetPartHpBefore = beforeHP,
+                TargetPartHpAfter = afterHP
             };
 
         context.HitDamages.Add(damage);

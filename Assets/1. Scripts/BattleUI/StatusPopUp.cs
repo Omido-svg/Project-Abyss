@@ -2,10 +2,13 @@ using System.Collections.Generic;
 using System.Text;
 using TMPro;
 using UnityEngine;
+using UnityEngine.EventSystems;
 
 public class StatusPopup : MonoBehaviour
 {
     private static StatusPopup currentSelected;
+    private static StatusPopup pointerRaycastPopup;
+    private static int pointerRaycastFrame = -1;
 
     [Header("Reference")]
     [SerializeField] private Character character;
@@ -21,8 +24,10 @@ public class StatusPopup : MonoBehaviour
 
     [Header("Popup")]
     [SerializeField] private Vector3 focusOffset = new Vector3(0f, 2f, 0f);
+    [SerializeField, Min(0.1f)] private float focusDistance = 5f;
 
     private Camera mainCamera;
+    private BattleCameraDirector battleCameraDirector;
     private CameraController cameraController;
 
     private bool isSelected;
@@ -44,6 +49,7 @@ public class StatusPopup : MonoBehaviour
             battleManager = FindFirstObjectByType<BattleManager>();
 
         mainCamera = Camera.main;
+        battleCameraDirector = FindFirstObjectByType<BattleCameraDirector>();
         cameraController = FindFirstObjectByType<CameraController>();
 
         if (popupRoot != null)
@@ -86,7 +92,8 @@ public class StatusPopup : MonoBehaviour
     {
         if (Input.GetMouseButtonDown(mouseButtonSelect))
         {
-            if (IsMouseOverThisCharacter())
+            if (!IsPointerOverUi() &&
+                IsMouseOverThisCharacter())
             {
                 Select();
             }
@@ -105,23 +112,64 @@ public class StatusPopup : MonoBehaviour
 
     //--------------------------------------------------
 
-    private bool IsMouseOverThisCharacter()
+    private static bool IsPointerOverUi()
     {
-        if (mainCamera == null)
-            return false;
-
-        Ray ray = mainCamera.ScreenPointToRay(Input.mousePosition);
-
-        if (!Physics.Raycast(ray, out RaycastHit hit))
-            return false;
-
-        StatusPopup popup =
-            hit.transform.GetComponentInParent<StatusPopup>();
-
-        return popup == this;
+        return EventSystem.current != null &&
+               EventSystem.current.IsPointerOverGameObject();
     }
 
     //--------------------------------------------------
+
+    private bool IsMouseOverThisCharacter()
+    {
+        if (pointerRaycastFrame == Time.frameCount)
+            return pointerRaycastPopup == this;
+
+        pointerRaycastFrame = Time.frameCount;
+        pointerRaycastPopup = null;
+
+        Camera activeCamera =
+            GetMainCamera();
+
+        if (activeCamera == null)
+            return false;
+
+        Ray ray =
+            activeCamera.ScreenPointToRay(Input.mousePosition);
+
+        RaycastHit[] hits =
+            Physics.RaycastAll(
+                ray,
+                Mathf.Infinity,
+                Physics.DefaultRaycastLayers,
+                QueryTriggerInteraction.Collide);
+
+        float closestDistance = float.MaxValue;
+
+        foreach (RaycastHit hit in hits)
+        {
+            StatusPopup popup =
+                hit.transform.GetComponentInParent<StatusPopup>();
+
+            if (popup == null ||
+                hit.distance >= closestDistance)
+            {
+                continue;
+            }
+
+            pointerRaycastPopup = popup;
+            closestDistance = hit.distance;
+        }
+
+        return pointerRaycastPopup == this;
+    }
+
+    //--------------------------------------------------
+
+    public void Show()
+    {
+        Select();
+    }
 
     private void Select()
     {
@@ -148,7 +196,7 @@ public class StatusPopup : MonoBehaviour
 
         outline?.EnableOutline();
 
-        GetCameraController()?.Focus(transform.position + focusOffset);
+        FocusCamera();
     }
     
     private void DeselectWithoutCameraReturn()
@@ -187,7 +235,7 @@ public class StatusPopup : MonoBehaviour
 
         outline?.DisableOutline();
 
-        GetCameraController()?.Return();
+        ReturnCamera();
 
         if (currentSelected == this)
             currentSelected = null;
@@ -224,13 +272,16 @@ public class StatusPopup : MonoBehaviour
 
     private void FaceCamera()
     {
-        if (mainCamera == null)
+        Camera activeCamera =
+            GetMainCamera();
+
+        if (activeCamera == null)
             return;
 
         popupRoot.transform.LookAt(
             popupRoot.transform.position +
-            mainCamera.transform.rotation * Vector3.forward,
-            mainCamera.transform.rotation * Vector3.up);
+            activeCamera.transform.rotation * Vector3.forward,
+            activeCamera.transform.rotation * Vector3.up);
     }
 
     //--------------------------------------------------
@@ -469,5 +520,62 @@ public class StatusPopup : MonoBehaviour
 
         cameraController = FindFirstObjectByType<CameraController>();
         return cameraController;
+    }
+
+    private Camera GetMainCamera()
+    {
+        if (mainCamera != null &&
+            mainCamera.isActiveAndEnabled)
+        {
+            return mainCamera;
+        }
+
+        mainCamera = Camera.main;
+        return mainCamera;
+    }
+
+    private BattleCameraDirector GetBattleCameraDirector()
+    {
+        if (battleCameraDirector != null)
+            return battleCameraDirector;
+
+        battleCameraDirector =
+            FindFirstObjectByType<BattleCameraDirector>();
+
+        return battleCameraDirector;
+    }
+
+    private void FocusCamera()
+    {
+        Vector3 focusPosition =
+            transform.position + focusOffset;
+
+        BattleCameraDirector director =
+            GetBattleCameraDirector();
+
+        if (director != null)
+        {
+            director.Focus(
+                focusPosition,
+                focusDistance);
+
+            return;
+        }
+
+        GetCameraController()?.Focus(focusPosition);
+    }
+
+    private void ReturnCamera()
+    {
+        BattleCameraDirector director =
+            GetBattleCameraDirector();
+
+        if (director != null)
+        {
+            director.ReturnFromInteraction();
+            return;
+        }
+
+        GetCameraController()?.Return();
     }
 }

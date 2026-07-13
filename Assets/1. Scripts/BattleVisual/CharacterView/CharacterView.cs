@@ -3,7 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class CharacterView : MonoBehaviour
+public class CharacterView : MonoBehaviour, ISerializationCallbackReceiver
 {
     [Header("Model")]
     [SerializeField] private Character character;
@@ -15,6 +15,9 @@ public class CharacterView : MonoBehaviour
     [Header("Body Part Anchors")]
     [SerializeField] private List<BodyPartAnchor> bodyPartAnchors = new();
 
+    private readonly Dictionary<PartType, Transform> bodyPartAnchorCache = new();
+    private bool bodyPartAnchorCacheDirty = true;
+
     [Header("Camera Points")]
     [SerializeField] private Transform lookAtPoint;
     [SerializeField] private Transform attackCameraPoint;
@@ -23,6 +26,9 @@ public class CharacterView : MonoBehaviour
     [SerializeField] private string hitStateName = "Hit";
     [SerializeField] private float hitCrossFadeDuration = 0.03f;
     [SerializeField] private int baseLayerIndex = 0;
+
+    [Header("Debug")]
+    [SerializeField] private bool logDebug;
 
     public void PlayHit()
     {
@@ -34,10 +40,13 @@ public class CharacterView : MonoBehaviour
 
     public void PlayHitRestart()
     {
-        Debug.Log(
-            $"[CharacterView] 실제 Hit 재생 / " +
-            $"ViewObject={name}, " +
-            $"Root={transform.root.name}");
+        if (logDebug)
+        {
+            Debug.Log(
+                $"[CharacterView] 실제 Hit 재생 / " +
+                $"ViewObject={name}, " +
+                $"Root={transform.root.name}");
+        }
         
         if (animator == null)
         {
@@ -58,7 +67,8 @@ public class CharacterView : MonoBehaviour
                 baseLayerIndex,
                 0f);
 
-            Debug.Log($"{name} Hit 상태 직접 재생 : {hitStateName}");
+            if (logDebug)
+                Debug.Log($"{name} Hit 상태 직접 재생 : {hitStateName}");
             return;
         }
 
@@ -105,6 +115,12 @@ public class CharacterView : MonoBehaviour
     {
         animator = GetComponentInChildren<Animator>();
         eventRelay = GetComponentInChildren<AnimationEventRelay>();
+        InvalidateBodyPartAnchorCache();
+    }
+
+    private void Awake()
+    {
+        RebuildBodyPartAnchorCache();
     }
 
     private void OnEnable()
@@ -114,7 +130,27 @@ public class CharacterView : MonoBehaviour
 
     private void OnDisable()
     {
+        CancelActionPlayback();
         UnsubscribeEvents();
+    }
+
+    private void OnValidate()
+    {
+        InvalidateBodyPartAnchorCache();
+    }
+
+    private void OnTransformChildrenChanged()
+    {
+        InvalidateBodyPartAnchorCache();
+    }
+
+    void ISerializationCallbackReceiver.OnBeforeSerialize()
+    {
+    }
+
+    void ISerializationCallbackReceiver.OnAfterDeserialize()
+    {
+        bodyPartAnchorCacheDirty = true;
     }
 
     public void Bind(Character targetCharacter)
@@ -157,8 +193,77 @@ public class CharacterView : MonoBehaviour
         hitFrameCallback = onHitFrame;
         effectFrameCallback = onEffectFrame;
 
-        int triggerHash =
-            GetTriggerHash(actionType);
+        try
+        {
+            int triggerHash =
+                GetTriggerHash(actionType);
+
+            ResetActionTriggers();
+
+            animator.SetTrigger(triggerHash);
+
+            float elapsed = 0f;
+
+            while (!animationEnded && elapsed < timeout)
+            {
+                elapsed += Time.deltaTime;
+                yield return null;
+            }
+        }
+        finally
+        {
+            hitFrameCallback = null;
+            effectFrameCallback = null;
+            animationEnded = false;
+        }
+
+        RefreshVisualState();
+    }
+
+    public void CancelActionPlayback()
+    {
+        ClearActionPlaybackCallbacks();
+
+        if (animator != null)
+            RefreshVisualState();
+    }
+
+    public void AbortActionPlayback()
+    {
+        ClearActionPlaybackCallbacks();
+
+        if (animator == null)
+            return;
+
+        bool isDead =
+            character != null &&
+            character.IsDead;
+
+        ResetActionTriggers();
+
+        if (animator.isActiveAndEnabled)
+            animator.Rebind();
+
+        RefreshVisualState();
+
+        if (isDead)
+            PlayDead();
+
+        if (animator.isActiveAndEnabled)
+            animator.Update(0f);
+    }
+
+    private void ClearActionPlaybackCallbacks()
+    {
+        hitFrameCallback = null;
+        effectFrameCallback = null;
+        animationEnded = true;
+    }
+
+    private void ResetActionTriggers()
+    {
+        if (animator == null)
+            return;
 
         animator.ResetTrigger(HitHash);
         animator.ResetTrigger(DeadHash);
@@ -166,22 +271,6 @@ public class CharacterView : MonoBehaviour
         animator.ResetTrigger(DuelHash);
         animator.ResetTrigger(PreparationHash);
         animator.ResetTrigger(PrestigeHash);
-
-        animator.SetTrigger(triggerHash);
-
-        float elapsed = 0f;
-
-        while (!animationEnded && elapsed < timeout)
-        {
-            elapsed += Time.deltaTime;
-            yield return null;
-        }
-
-        hitFrameCallback = null;
-        effectFrameCallback = null;
-        animationEnded = false;
-
-        RefreshVisualState();
     }
 
     public void PlayDead()
@@ -217,8 +306,11 @@ public class CharacterView : MonoBehaviour
             VisualStateHash,
             (float)state);
 
-        Debug.Log(
-            $"{name} VisualState 갱신 : {state} / float = {(float)state}");
+        if (logDebug)
+        {
+            Debug.Log(
+                $"{name} VisualState 갱신 : {state} / float = {(float)state}");
+        }
     }
 
     private CharacterVisualState CalculateVisualState()
@@ -259,21 +351,67 @@ public class CharacterView : MonoBehaviour
 
     public Transform GetBodyPartAnchor(PartType partType)
     {
-        foreach (BodyPartAnchor anchor in bodyPartAnchors)
+        EnsureBodyPartAnchorCache();
+
+        if (!bodyPartAnchorCache.TryGetValue(
+                partType,
+                out Transform anchor))
         {
-            if (anchor == null)
-                continue;
+            return transform;
+        }
 
-            if (anchor.PartType != partType)
-                continue;
+        if (anchor != null)
+            return anchor;
 
-            if (anchor.Anchor == null)
-                continue;
+        // A cached Unity object can become invalid when the hierarchy changes at runtime.
+        // Rebuild once so a later valid duplicate entry can take over.
+        RebuildBodyPartAnchorCache();
 
-            return anchor.Anchor;
+        if (bodyPartAnchorCache.TryGetValue(
+                partType,
+                out anchor) &&
+            anchor != null)
+        {
+            return anchor;
         }
 
         return transform;
+    }
+
+    public void InvalidateBodyPartAnchorCache()
+    {
+        bodyPartAnchorCacheDirty = true;
+    }
+
+    public void RebuildBodyPartAnchorCache()
+    {
+        bodyPartAnchorCache.Clear();
+
+        if (bodyPartAnchors != null)
+        {
+            foreach (BodyPartAnchor anchor in bodyPartAnchors)
+            {
+                if (anchor == null || anchor.Anchor == null)
+                    continue;
+
+                // Preserve the previous list lookup semantics: the first valid
+                // anchor for a part wins, while null entries are ignored.
+                if (bodyPartAnchorCache.ContainsKey(anchor.PartType))
+                    continue;
+
+                bodyPartAnchorCache.Add(
+                    anchor.PartType,
+                    anchor.Anchor);
+            }
+        }
+
+        bodyPartAnchorCacheDirty = false;
+    }
+
+    private void EnsureBodyPartAnchorCache()
+    {
+        if (bodyPartAnchorCacheDirty)
+            RebuildBodyPartAnchorCache();
     }
 
     private int GetTriggerHash(ActionType actionType)

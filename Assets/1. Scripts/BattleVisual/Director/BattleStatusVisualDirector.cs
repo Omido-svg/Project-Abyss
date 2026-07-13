@@ -11,6 +11,9 @@ public class BattleStatusVisualDirector : MonoBehaviour
     [Header("Timing")]
     [SerializeField] private float delayBetweenTicks = 0.15f;
 
+    [Header("Debug")]
+    [SerializeField] private bool logDebug;
+
     private Coroutine queueRoutine;
     private readonly Queue<StatusDamageVisualRequest> queue = new();
 
@@ -23,6 +26,15 @@ public class BattleStatusVisualDirector : MonoBehaviour
             damageNumberManager = FindFirstObjectByType<DamageNumberManager>();
     }
 
+    private void OnDisable()
+    {
+        if (queueRoutine != null)
+            StopCoroutine(queueRoutine);
+
+        queueRoutine = null;
+        queue.Clear();
+    }
+
     public void ShowStatusDamage(
         StatusDamageVisualRequest request)
     {
@@ -32,12 +44,18 @@ public class BattleStatusVisualDirector : MonoBehaviour
             return;
         }
 
-        Debug.Log(
-            $"[BattleStatusVisualDirector] 상태 데미지 표시 요청 받음 / " +
-            $"StatusKey={request.StatusKey}, " +
-            $"Target={request.Target?.Data.CharacterName}, " +
-            $"Part={request.TargetPart?.Type}, " +
-            $"Damage={request.Damage}");
+        if (!isActiveAndEnabled)
+            return;
+
+        if (logDebug)
+        {
+            Debug.Log(
+                $"[BattleStatusVisualDirector] 상태 데미지 표시 요청 받음 / " +
+                $"StatusKey={request.StatusKey}, " +
+                $"Target={request.Target?.Data.CharacterName}, " +
+                $"Part={request.TargetPart?.Type}, " +
+                $"Damage={request.Damage}");
+        }
 
         queue.Enqueue(request);
 
@@ -47,18 +65,25 @@ public class BattleStatusVisualDirector : MonoBehaviour
 
     private IEnumerator ProcessQueue()
     {
-        while (queue.Count > 0)
+        try
         {
-            StatusDamageVisualRequest request =
-                queue.Dequeue();
+            while (queue.Count > 0)
+            {
+                StatusDamageVisualRequest request =
+                    queue.Dequeue();
 
-            PlayOne(request);
+                PlayOne(request);
 
-            if (delayBetweenTicks > 0f)
-                yield return new WaitForSeconds(delayBetweenTicks);
+                if (delayBetweenTicks > 0f)
+                    yield return new WaitForSeconds(delayBetweenTicks);
+                else
+                    yield return null;
+            }
         }
-
-        queueRoutine = null;
+        finally
+        {
+            queueRoutine = null;
+        }
     }
 
     private void PlayOne(
@@ -90,7 +115,8 @@ public class BattleStatusVisualDirector : MonoBehaviour
             visual.DamageNumberColor;
 
         CharacterView targetView =
-            request.Target.GetComponentInChildren<CharacterView>(true);
+            BattleCameraTargetResolver.GetView(
+                request.Target);
 
         if (targetView != null &&
             damageNumberManager != null)
@@ -104,9 +130,12 @@ public class BattleStatusVisualDirector : MonoBehaviour
                 request.Damage,
                 damageColor);
 
-            Debug.Log(
-                $"[BattleStatusVisualDirector] 상태 데미지 숫자 표시 / " +
-                $"Damage={request.Damage}, Color={damageColor}");
+            if (logDebug)
+            {
+                Debug.Log(
+                    $"[BattleStatusVisualDirector] 상태 데미지 숫자 표시 / " +
+                    $"Damage={request.Damage}, Color={damageColor}");
+            }
         }
         else
         {
@@ -132,13 +161,17 @@ public class BattleStatusVisualDirector : MonoBehaviour
             new BattleVfxContext
             {
                 Target = request.Target,
+                TargetView = targetView,
                 TargetPart = request.TargetPart,
                 Damage = request.Damage
             };
 
-        Debug.Log(
-            $"[BattleStatusVisualDirector] 상태 VFX 실행 / " +
-            $"StatusKey={request.StatusKey}, VFX={visual.TickDamageVfx.name}");
+        if (logDebug)
+        {
+            Debug.Log(
+                $"[BattleStatusVisualDirector] 상태 VFX 실행 / " +
+                $"StatusKey={request.StatusKey}, VFX={visual.TickDamageVfx.name}");
+        }
 
         vfxManager.PlayVfx(
             visual.TickDamageVfx,

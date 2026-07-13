@@ -1,3 +1,4 @@
+using System;
 using DG.Tweening;
 using TMPro;
 using UnityEngine;
@@ -15,16 +16,11 @@ public class DamageNumberUI : MonoBehaviour
 
     private RectTransform rectTransform;
     private Sequence sequence;
+    private Action<DamageNumberUI> releaseHandler;
 
     private void Awake()
     {
-        rectTransform = transform as RectTransform;
-
-        if (canvasGroup == null)
-            canvasGroup = GetComponent<CanvasGroup>();
-
-        if (damageText == null)
-            damageText = GetComponentInChildren<TMP_Text>();
+        ResolveReferences();
     }
 
     public void Play(
@@ -39,8 +35,8 @@ public class DamageNumberUI : MonoBehaviour
         int damage,
         Color color)
     {
-        if (damageText == null)
-            damageText = GetComponentInChildren<TMP_Text>();
+        ResolveReferences();
+        StopSequence();
 
         if (damageText != null)
         {
@@ -53,8 +49,6 @@ public class DamageNumberUI : MonoBehaviour
 
         transform.localScale =
             Vector3.one * startScale;
-
-        sequence?.Kill();
 
         sequence = DOTween.Sequence();
 
@@ -79,14 +73,79 @@ public class DamageNumberUI : MonoBehaviour
                     duration));
         }
 
-        sequence.OnComplete(() =>
+        sequence.OnComplete(CompletePlayback);
+    }
+
+    internal void PrepareForUse(Action<DamageNumberUI> onRelease)
+    {
+        StopSequence();
+        ResolveReferences();
+        releaseHandler = onRelease;
+    }
+
+    internal void ResetForPool()
+    {
+        releaseHandler = null;
+        StopSequence();
+
+        if (canvasGroup != null)
+            canvasGroup.alpha = 0f;
+
+        transform.localScale = Vector3.one;
+    }
+
+    private void ResolveReferences()
+    {
+        if (rectTransform == null)
+            rectTransform = transform as RectTransform;
+
+        if (canvasGroup == null)
+            canvasGroup = GetComponent<CanvasGroup>();
+
+        if (damageText == null)
+            damageText = GetComponentInChildren<TMP_Text>(true);
+    }
+
+    private void CompletePlayback()
+    {
+        sequence = null;
+
+        Action<DamageNumberUI> callback = releaseHandler;
+
+        if (callback != null)
         {
-            Destroy(gameObject);
-        });
+            callback(this);
+            return;
+        }
+
+        Destroy(gameObject);
+    }
+
+    private void StopSequence()
+    {
+        if (sequence == null)
+            return;
+
+        sequence.Kill(false);
+        sequence = null;
+    }
+
+    private void OnDisable()
+    {
+        StopSequence();
+
+        Action<DamageNumberUI> callback = releaseHandler;
+
+        if (callback == null)
+            return;
+
+        releaseHandler = null;
+        callback(this);
     }
 
     private void OnDestroy()
     {
-        sequence?.Kill();
+        releaseHandler = null;
+        StopSequence();
     }
 }

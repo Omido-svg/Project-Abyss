@@ -1,8 +1,14 @@
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.VFX;
 
 public class BattleVfxManager : MonoBehaviour
 {
+    [Header("Debug")]
+    [SerializeField] private bool logDebug;
+
+    private readonly Stack<List<MonoBehaviour>> playableSearchBufferPool = new();
+
     public void PlayCue(
         BattleVfxCue cue,
         BattleVfxContext context)
@@ -13,9 +19,28 @@ public class BattleVfxManager : MonoBehaviour
         if (cue.Vfx == null)
             return;
 
+        if (context == null)
+        {
+            Debug.LogWarning("[BattleVfxManager] Context null");
+            return;
+        }
+
         if (cue.UseHitIndexFilter &&
             cue.HitIndex != context.HitIndex)
         {
+            return;
+        }
+
+        if (!context.CanPlayVfx())
+            return;
+
+        if (cue.Delay <= 0f)
+        {
+            PlayVfx(
+                cue.Vfx,
+                cue.AnchorType,
+                context);
+
             return;
         }
 
@@ -31,6 +56,9 @@ public class BattleVfxManager : MonoBehaviour
     {
         if (cue.Delay > 0f)
             yield return new WaitForSeconds(cue.Delay);
+
+        if (!context.CanPlayVfx())
+            yield break;
 
         PlayVfx(
             cue.Vfx,
@@ -56,6 +84,15 @@ public class BattleVfxManager : MonoBehaviour
             return;
         }
 
+        if (context == null)
+        {
+            Debug.LogWarning("[BattleVfxManager] Context null");
+            return;
+        }
+
+        if (!context.CanPlayVfx())
+            return;
+
         Transform anchor =
             ResolveAnchor(
                 anchorType,
@@ -74,20 +111,34 @@ public class BattleVfxManager : MonoBehaviour
         position += rotation * definition.PositionOffset;
         rotation *= Quaternion.Euler(definition.RotationOffset);
         
-        Debug.Log(
-            $"[BattleVfxManager] VFX 위치 계산 / " +
-            $"Definition={definition.name}, " +
-            $"AnchorType={anchorType}, " +
-            $"Anchor={(anchor != null ? anchor.name : "NULL")}, " +
-            $"Position={position}, " +
-            $"Target={context?.Target?.Data.CharacterName}, " +
-            $"TargetPart={context?.TargetPart?.Type}");
+        if (logDebug)
+        {
+            Debug.Log(
+                $"[BattleVfxManager] VFX 위치 계산 / " +
+                $"Definition={definition.name}, " +
+                $"AnchorType={anchorType}, " +
+                $"Anchor={(anchor != null ? anchor.name : "NULL")}, " +
+                $"Position={position}, " +
+                $"Target={context?.Target?.Data.CharacterName}, " +
+                $"TargetPart={context?.TargetPart?.Type}");
+        }
 
         GameObject instance =
             Instantiate(
                 definition.EffectPrefab,
                 position,
                 rotation);
+
+        if (instance == null)
+            return;
+
+        if (!context.CanPlayVfx())
+        {
+            Destroy(instance);
+            return;
+        }
+
+        context.TrackSpawnedVfx(instance);
 
         instance.transform.localScale =
             definition.Scale;
@@ -119,6 +170,9 @@ public class BattleVfxManager : MonoBehaviour
             TryPlayWithCustomPlayer(
                 instance,
                 playData);
+
+        if (!context.CanPlayVfx())
+            return;
 
         if (!playedByCustomPlayer)
         {
@@ -152,21 +206,61 @@ public class BattleVfxManager : MonoBehaviour
         if (instance == null)
             return false;
 
-        MonoBehaviour[] behaviours =
-            instance.GetComponentsInChildren<MonoBehaviour>(true);
+        List<MonoBehaviour> searchBuffer =
+            GetPlayableSearchBuffer();
 
         bool played = false;
 
-        foreach (MonoBehaviour behaviour in behaviours)
+        try
         {
-            if (behaviour is IBattleVfxPlayable playable)
+            instance.GetComponentsInChildren(
+                true,
+                searchBuffer);
+
+            foreach (MonoBehaviour behaviour in searchBuffer)
             {
+                if (playData.Context != null &&
+                    !playData.Context.CanPlayVfx())
+                {
+                    break;
+                }
+
+                if (behaviour is not IBattleVfxPlayable playable)
+                    continue;
+
                 playable.Play(playData);
                 played = true;
+
+                if (playData.Context != null &&
+                    !playData.Context.CanPlayVfx())
+                {
+                    break;
+                }
             }
+        }
+        finally
+        {
+            ReleasePlayableSearchBuffer(searchBuffer);
         }
 
         return played;
+    }
+
+    private List<MonoBehaviour> GetPlayableSearchBuffer()
+    {
+        return playableSearchBufferPool.Count > 0
+            ? playableSearchBufferPool.Pop()
+            : new List<MonoBehaviour>();
+    }
+
+    private void ReleasePlayableSearchBuffer(
+        List<MonoBehaviour> searchBuffer)
+    {
+        if (searchBuffer == null)
+            return;
+
+        searchBuffer.Clear();
+        playableSearchBufferPool.Push(searchBuffer);
     }
 
     private void TryPlayAsVfxGraphFallback(
@@ -214,22 +308,26 @@ public class BattleVfxManager : MonoBehaviour
                     : null;
 
             case BattleVfxAnchorType.AttackerBodyPart:
-                return GetBodyPartAnchor(
+                return BattleCameraTargetResolver.GetTargetPartAnchor(
                     context.Attacker,
-                    context.AttackerPart);
+                    context.AttackerPart,
+                    context.AttackerView);
 
             case BattleVfxAnchorType.TargetBodyPart:
-                return GetBodyPartAnchor(
+                return BattleCameraTargetResolver.GetTargetPartAnchor(
                     context.Target,
-                    context.TargetPart);
+                    context.TargetPart,
+                    context.TargetView);
 
             case BattleVfxAnchorType.AttackerLookAt:
-                return GetLookAtPoint(
-                    context.Attacker);
+                return BattleCameraTargetResolver.GetLookAtTarget(
+                    context.Attacker,
+                    context.AttackerView);
 
             case BattleVfxAnchorType.TargetLookAt:
-                return GetLookAtPoint(
-                    context.Target);
+                return BattleCameraTargetResolver.GetLookAtTarget(
+                    context.Target,
+                    context.TargetView);
 
             case BattleVfxAnchorType.WorldPosition:
                 return null;
@@ -238,78 +336,4 @@ public class BattleVfxManager : MonoBehaviour
         return null;
     }
 
-    private Transform GetBodyPartAnchor(
-        Character character,
-        BodyPart part)
-    {
-        if (character == null)
-            return null;
-
-        CharacterView view =
-            character.GetComponentInChildren<CharacterView>(true);
-
-        if (view == null)
-        {
-            Debug.LogWarning(
-                $"[BattleVfxManager] CharacterView 없음 / Character={character.Data.CharacterName}");
-
-            return character.transform;
-        }
-
-        if (part != null)
-        {
-            Transform partAnchor =
-                view.GetBodyPartAnchor(
-                    part.Type);
-
-            if (partAnchor != null)
-            {
-                Debug.Log(
-                    $"[BattleVfxManager] BodyPartAnchor 사용 / " +
-                    $"Character={character.Data.CharacterName}, Part={part.Type}, Anchor={partAnchor.name}");
-
-                return partAnchor;
-            }
-
-            Debug.LogWarning(
-                $"[BattleVfxManager] BodyPartAnchor 못 찾음 / " +
-                $"Character={character.Data.CharacterName}, Part={part.Type}");
-        }
-        else
-        {
-            Debug.LogWarning(
-                $"[BattleVfxManager] TargetPart null / Character={character.Data.CharacterName}");
-        }
-
-        if (view.LookAtPoint != null)
-        {
-            Debug.LogWarning(
-                $"[BattleVfxManager] BodyPartAnchor 대신 LookAtPoint 사용 / Character={character.Data.CharacterName}");
-
-            return view.LookAtPoint;
-        }
-
-        Debug.LogWarning(
-            $"[BattleVfxManager] BodyPartAnchor/LookAtPoint 모두 없음. CharacterRoot 사용 / Character={character.Data.CharacterName}");
-
-        return character.transform;
-    }
-
-    private Transform GetLookAtPoint(
-        Character character)
-    {
-        if (character == null)
-            return null;
-
-        CharacterView view =
-            character.GetComponentInChildren<CharacterView>(true);
-
-        if (view == null)
-            return character.transform;
-
-        if (view.LookAtPoint != null)
-            return view.LookAtPoint;
-
-        return character.transform;
-    }
 }

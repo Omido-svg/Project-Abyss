@@ -27,4 +27,8 @@ public class ClashResultContext
 
     // 실제 데미지 연출용
     public List<int> HitDamages = new();
+
+    public bool HasTargetPartHpSnapshot;
+    public int TargetPartHpBefore;
+    public int TargetPartHpAfter;
 }

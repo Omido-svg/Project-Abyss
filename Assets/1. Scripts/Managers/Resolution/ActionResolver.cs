@@ -59,41 +59,51 @@ public class ActionResolver
             BattleAction action =
                 CreateBattleAction(slot);
 
-            battleContext._battleEvent.RaiseActionStart(
-                action);
+            bool actionStarted = false;
 
-            ExecuteSkill(action);
-
-            BattleLogType type = action.Phase switch
+            try
             {
-                ActionPhase.PRETURN => BattleLogType.Prestige,
-                ActionPhase.FORESIGHT => BattleLogType.Preparation,
-                _ => BattleLogType.Normal
-            };
+                battleContext._battleEvent.RaiseActionStart(
+                    action);
 
-            if (action.HasDamageLog)
-            {
-                battleContext.battleManager.BattleLogger.LogDamage(
+                actionStarted = true;
+                ExecuteSkill(action);
+
+                BattleLogType type = action.Phase switch
+                {
+                    ActionPhase.PRETURN => BattleLogType.Prestige,
+                    ActionPhase.FORESIGHT => BattleLogType.Preparation,
+                    _ => BattleLogType.Normal
+                };
+
+                if (action.HasDamageLog)
+                {
+                    battleContext.battleManager.BattleLogger.LogDamage(
+                        action,
+                        type,
+                        action.LoggedDamage,
+                        action.LoggedBeforeHP,
+                        action.LoggedAfterHP);
+                }
+                else
+                {
+                    battleContext.battleManager.BattleLogger.LogAction(
+                        action,
+                        type);
+                }
+
+                yield return PlayActionVisual(
                     action,
-                    type,
-                    action.LoggedDamage,
-                    action.LoggedBeforeHP,
-                    action.LoggedAfterHP);
+                    clashSteps: null);
             }
-            else
+            finally
             {
-                battleContext.battleManager.BattleLogger.LogAction(
-                    action,
-                    type);
+                if (actionStarted)
+                {
+                    battleContext._battleEvent.RaiseActionEnd(
+                        action);
+                }
             }
-
-            // 여기 추가
-            yield return PlayActionVisual(
-                action,
-                clashSteps: null);
-
-            battleContext._battleEvent.RaiseActionEnd(
-                action);
         }
     }
     
@@ -101,7 +111,9 @@ public class ActionResolver
         BattleAction action,
         List<ClashRollVisualStep> clashSteps,
         List<int> hitDamagesOverride = null,
-        BattleAction opponentAction = null)
+        BattleAction opponentAction = null,
+        int? targetPartHpBefore = null,
+        int? targetPartHpAfter = null)
     {
         if (action == null)
             yield break;
@@ -119,7 +131,9 @@ public class ActionResolver
                 action,
                 clashSteps,
                 hitDamages,
-                opponentAction);
+                opponentAction,
+                targetPartHpBefore,
+                targetPartHpAfter);
 
         if (request == null)
             yield break;
@@ -198,7 +212,13 @@ public class ActionResolver
                     visualAction,
                     steps,
                     result.HitDamages,
-                    result.LoserAction);
+                    result.LoserAction,
+                    result.HasTargetPartHpSnapshot
+                        ? result.TargetPartHpBefore
+                        : null,
+                    result.HasTargetPartHpSnapshot
+                        ? result.TargetPartHpAfter
+                        : null);
         }
     }
 
