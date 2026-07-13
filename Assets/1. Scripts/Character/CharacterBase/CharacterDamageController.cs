@@ -51,6 +51,19 @@ public class CharacterDamageController
                 sourceEffect));
     }
 
+    public void TakeDirectDamage(
+        int damage,
+        Character source = null,
+        BattleAction sourceAction = null)
+    {
+        ApplyDamage(
+            DamageRequest.Direct(
+                source,
+                owner,
+                damage,
+                sourceAction));
+    }
+
     //------------------------------------------------
     // 피해 타입 라우터
     //------------------------------------------------
@@ -225,13 +238,23 @@ public class CharacterDamageController
     // - Broken 부위 타격, Weakened 부위 타격의 결과로도 사용됨
     //------------------------------------------------
 
-    private void ApplyDirectDamage(DamageRequest request)
+    private void ApplyDirectDamage(
+        DamageRequest request)
     {
+        int beforeHp =
+            owner.CurrentHP;
+
         owner.ReduceCurrentHP(
             request.Damage);
 
+        int applied =
+            Mathf.Max(
+                0,
+                beforeHp - owner.CurrentHP);
+
         Debug.Log(
-            $"{owner.Data.CharacterName}이 직접 피해 {request.Damage}를 받음");
+            $"{owner.Data.CharacterName}이 직접 피해 {applied}를 받음 " +
+            $"HP : {beforeHp} -> {owner.CurrentHP}");
 
         owner.CheckDead();
     }

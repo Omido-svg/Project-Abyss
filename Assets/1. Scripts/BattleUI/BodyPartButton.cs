@@ -26,6 +26,10 @@ public class BodyPartButton : MonoBehaviour, IPointerClickHandler
     public Character Owner => owner;
     public BodyPart BodyPart => bodyPart;
     public RectTransform RectTransform => rectTransform;
+
+    public bool IsCharacterTargetButton =>
+        owner != null &&
+        bodyPart == null;
     
     private bool hasHpOverride;
     private int hpOverrideValue;
@@ -119,6 +123,11 @@ public class BodyPartButton : MonoBehaviour, IPointerClickHandler
 
         if (buttonText != null)
         {
+            string slotLine =
+                string.IsNullOrEmpty(viewModel.SlotText)
+                    ? ""
+                    : "\n" + viewModel.SlotText;
+
             string skillLine =
                 string.IsNullOrEmpty(viewModel.SkillText)
                     ? ""
@@ -128,6 +137,7 @@ public class BodyPartButton : MonoBehaviour, IPointerClickHandler
                 viewModel.PartText + "\n" +
                 viewModel.HpText + "\n" +
                 viewModel.SpeedText +
+                slotLine +
                 skillLine;
         }
 
@@ -175,20 +185,31 @@ public class BodyPartButton : MonoBehaviour, IPointerClickHandler
 
         if (uiManager == null)
         {
-            Debug.LogWarning("BodyPartButton : uiManager가 연결되어 있지 않습니다.");
+            Debug.LogWarning(
+                "BodyPartButton : uiManager가 연결되어 있지 않습니다.");
             return;
         }
 
-        if (owner == null || bodyPart == null)
+        if (owner == null)
         {
-            Debug.LogWarning("BodyPartButton : owner 또는 bodyPart가 없습니다.");
+            Debug.LogWarning(
+                "BodyPartButton : owner가 없습니다.");
             return;
         }
+
+        string targetText =
+            bodyPart == null
+                ? "SINGLE_HP"
+                : bodyPart.Type.ToString();
 
         BattleDebugLog.UIInput(
-            $"[BUTTON CLICK] {owner.Data.CharacterName} / {bodyPart.Type}");
+            $"[BUTTON CLICK] " +
+            $"{owner.Data.CharacterName} / " +
+            $"{targetText}");
 
-        uiManager.OnBodyPartClicked(owner, bodyPart);
+        uiManager.OnBodyPartClicked(
+            owner,
+            bodyPart);
     }
     
     public void OnPointerClick(PointerEventData eventData)

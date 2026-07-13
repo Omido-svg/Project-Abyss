@@ -97,6 +97,25 @@ public class CharacterMechanicController
         }
     }
 
+    public void NotifyBodyPartBreakBeforeDeath(
+        BodyPartBreakEventContext context)
+    {
+        if (context == null)
+            return;
+
+        foreach (CombatMechanic mechanic in mechanics)
+        {
+            if (mechanic is not
+                IBodyPartBreakImmediateReaction reaction)
+            {
+                continue;
+            }
+
+            reaction.OnBodyPartBrokenBeforeDeath(
+                context);
+        }
+    }
+
     public bool CanOwnerDie()
     {
         foreach (CombatMechanic mechanic in mechanics)

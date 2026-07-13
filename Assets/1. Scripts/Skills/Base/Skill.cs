@@ -1,3 +1,5 @@
+using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 public enum PrestigeUsePolicy
@@ -9,195 +11,222 @@ public enum PrestigeUsePolicy
 
 public abstract class Skill
 {
-    //--------------------------------
-    // 기본 정보
-    //--------------------------------
-
     public string SkillName { get; protected set; }
-
-    // 평타 / 결투 / 도사림 / 위세
     public abstract ActionType ActionType { get; }
 
-    //--------------------------------
-    // 위력
-    //--------------------------------
-
     public int BasePower { get; protected set; }
-
-    // 주사위 / 코인 / 슬롯머신 등
     public SkillResolver Resolver { get; protected set; }
-
-    //--------------------------------
-    // 초기화용 참조
-    //--------------------------------
 
     protected Character owner;
     protected BattleEvent battleEvent;
-    
+
+    private BattleEvent registeredBattleEvent;
+    private readonly HashSet<SkillEffectDispatchKey> activeEffectDispatches = new();
+
+    protected virtual SkillDefinition RuntimeDefinition => null;
+
     public virtual bool CanBreakPart => false;
 
-    //--------------------------------
-    // 실행 Phase
-    //--------------------------------
-
-    public virtual ActionPhase DefaultPhase
-    {
-        get
+    public virtual ActionPhase DefaultPhase =>
+        ActionType switch
         {
-            return ActionType switch
-            {
-                ActionType.Prestige => ActionPhase.PRETURN,
-                ActionType.Preparation => ActionPhase.FORESIGHT,
-                _ => ActionPhase.COMBAT
-            };
-        }
-    }
+            ActionType.Prestige => ActionPhase.PRETURN,
+            ActionType.Preparation => ActionPhase.FORESIGHT,
+            _ => ActionPhase.COMBAT
+        };
 
-    //--------------------------------
-    // 전투 옵션
-    //--------------------------------
+    public virtual bool CanClash =>
+        ActionType == ActionType.NormalAttack ||
+        ActionType == ActionType.Duel;
 
-    public virtual bool CanClash
-    {
-        get
-        {
-            return ActionType == ActionType.NormalAttack ||
-                   ActionType == ActionType.Duel;
-        }
-    }
+    public virtual bool GainPrestige =>
+        ActionType == ActionType.Duel;
 
-    // 기본적으로 결투 스킬만 합 승리 시 위세 획득
-    public virtual bool GainPrestige
-    {
-        get
-        {
-            return ActionType == ActionType.Duel;
-        }
-    }
-
-    // 방어도 무시 비율
     public virtual float IgnoreBlock => 0f;
-
-    //--------------------------------
-    // 위세 사용 정책
-    //--------------------------------
 
     public virtual PrestigeUsePolicy PrestigeUsePolicy
     {
         get
         {
-            if (this.ActionType == ActionType.Prestige)
-                return PrestigeUsePolicy.OncePerTurn;
+            SkillDefinition definition = RuntimeDefinition;
 
-            return PrestigeUsePolicy.None;
+            if (definition != null &&
+                definition.OverridePrestigeUsePolicy)
+            {
+                return definition.PrestigeUsePolicy;
+            }
+
+            return ActionType == ActionType.Prestige
+                ? PrestigeUsePolicy.OncePerTurn
+                : PrestigeUsePolicy.None;
         }
     }
 
-    //--------------------------------
-    // 자원 조건
-    //--------------------------------
+    public int UseCountThisTurn =>
+        SkillUsageTracker.GetUseCount(
+            owner,
+            GetUsageIdentity());
 
-    public virtual bool CanUseByResource(Character owner)
+    public bool IsFirstUseThisTurn =>
+        UseCountThisTurn == 1;
+
+    public virtual bool CanUseByResource(Character character)
     {
-        if (owner == null)
+        if (character == null)
             return false;
 
-        // 위세 스킬이 아니면 별도 위세 자원 검사를 하지 않음
-        if (this.ActionType != ActionType.Prestige)
+        SkillDefinition definition = RuntimeDefinition;
+
+        if (definition != null &&
+            definition.OverrideResourceRules)
+        {
+            if (character.RuntimeStatus == null)
+                return false;
+
+            if (definition.RequireFullPrestige)
+            {
+                if (character.CurrentStatus == null ||
+                    character.CurrentStatus.maxPrestige <= 0 ||
+                    character.RuntimeStatus.currentPrestige <
+                    character.CurrentStatus.maxPrestige)
+                {
+                    return false;
+                }
+            }
+
+            if (definition.PrestigeCost > 0 &&
+                character.RuntimeStatus.currentPrestige <
+                definition.PrestigeCost)
+            {
+                return false;
+            }
+
+            if (!string.IsNullOrWhiteSpace(
+                    definition.CustomResourceKey) &&
+                definition.CustomResourceCost > 0 &&
+                SkillResourceAccess.Get(
+                    character,
+                    definition.CustomResourceKey) <
+                definition.CustomResourceCost)
+            {
+                return false;
+            }
+
+            return true;
+        }
+
+        if (ActionType != ActionType.Prestige)
             return true;
 
-        if (owner.CurrentStatus == null ||
-            owner.RuntimeStatus == null)
+        if (character.CurrentStatus == null ||
+            character.RuntimeStatus == null)
+        {
+            return false;
+        }
+
+        if (character.CurrentStatus.maxPrestige <= 0)
             return false;
 
-        if (owner.CurrentStatus.maxPrestige <= 0)
-            return false;
-
-        return owner.RuntimeStatus.currentPrestige >=
-               owner.CurrentStatus.maxPrestige;
+        return character.RuntimeStatus.currentPrestige >=
+               character.CurrentStatus.maxPrestige;
     }
-    
-    public virtual void ConsumeResource(Character owner)
+
+    public virtual void ConsumeResource(Character character)
     {
-        if (owner == null)
+        if (character == null)
             return;
 
-        if (this.ActionType != ActionType.Prestige)
-            return;
+        SkillDefinition definition = RuntimeDefinition;
 
-        if (owner.RuntimeStatus == null)
-            return;
+        if (definition != null &&
+            definition.OverrideResourceRules)
+        {
+            if (character.RuntimeStatus != null)
+            {
+                if (definition.ConsumeAllPrestige)
+                {
+                    character.RuntimeStatus.currentPrestige = 0;
+                }
+                else if (definition.PrestigeCost > 0)
+                {
+                    character.RuntimeStatus.currentPrestige =
+                        Mathf.Max(
+                            0,
+                            character.RuntimeStatus.currentPrestige -
+                            definition.PrestigeCost);
+                }
+            }
 
-        owner.RuntimeStatus.currentPrestige = 0;
+            if (!string.IsNullOrWhiteSpace(
+                    definition.CustomResourceKey))
+            {
+                if (definition.ConsumeAllCustomResource)
+                {
+                    SkillResourceAccess.Set(
+                        character,
+                        definition.CustomResourceKey,
+                        0);
+                }
+                else if (definition.CustomResourceCost > 0)
+                {
+                    SkillResourceAccess.Modify(
+                        character,
+                        definition.CustomResourceKey,
+                        -definition.CustomResourceCost,
+                        0,
+                        int.MaxValue);
+                }
+            }
+
+            return;
+        }
+
+        if (ActionType != ActionType.Prestige ||
+            character.RuntimeStatus == null)
+        {
+            return;
+        }
+
+        character.RuntimeStatus.currentPrestige = 0;
 
         Debug.Log(
-            $"{owner.Data.CharacterName} 위세 게이지 소모 : 0");
+            $"{character.Data.CharacterName} 위세 게이지 소모 : 0");
     }
 
-    //--------------------------------
-    // AI 사용 가능 여부
-    //--------------------------------
-
     public virtual bool CanAIUse(
-        Character owner,
+        Character character,
         BodyPart part,
         BattleContext context)
     {
-        return true;
+        return CanUseByResource(character);
     }
-
-    //--------------------------------
-    // 합 승리 보너스 확장 지점
-    //--------------------------------
 
     public virtual int GetMomentumPushBonus(
-        BattleAction action)
-    {
-        return 0;
-    }
+        BattleAction action) => 0;
 
     public virtual int GetPrestigeGainBonus(
-        BattleAction action)
-    {
-        return 0;
-    }
+        BattleAction action) => 0;
 
-    //--------------------------------
-    // UI 표시용
-    //--------------------------------
+    public int MinPower =>
+        Resolver == null
+            ? BasePower
+            : BasePower + Resolver.MinValue;
 
-    public int MinPower
-    {
-        get
-        {
-            if (Resolver == null)
-                return BasePower;
-
-            return BasePower + Resolver.MinValue;
-        }
-    }
-
-    public int MaxPower
-    {
-        get
-        {
-            if (Resolver == null)
-                return BasePower;
-
-            return BasePower + Resolver.MaxValue;
-        }
-    }
-
-    //--------------------------------
-    // 초기화
-    //--------------------------------
+    public int MaxPower =>
+        Resolver == null
+            ? BasePower
+            : BasePower + Resolver.MaxValue;
 
     public virtual void Initialize(
-        Character owner,
+        Character character,
         BattleEvent battleEvent)
     {
-        this.owner = owner;
+        UnregisterRuntimeEvents();
+
+        owner = character;
         this.battleEvent = battleEvent;
+
+        RegisterRuntimeEvents();
     }
 
     public virtual void Register()
@@ -206,26 +235,17 @@ public abstract class Skill
 
     public virtual void Unregister()
     {
+        UnregisterRuntimeEvents();
     }
-
-    //--------------------------------
-    // 순수 스킬 굴림
-    //--------------------------------
 
     public virtual int RollRawPower()
     {
-        RollResult result =
-            RollPowerResult();
-
-        return result.FinalPower;
+        RollResult result = RollPowerResult();
+        return result?.FinalPower ?? BasePower;
     }
 
-    //--------------------------------
-    // 스킬 효과
-    //--------------------------------
-
     public abstract void Execute(BattleAction action);
-    
+
     public virtual RollResult RollPowerResult()
     {
         if (Resolver == null)
@@ -240,5 +260,338 @@ public abstract class Skill
         }
 
         return Resolver.RollResult(this);
+    }
+
+    protected IReadOnlyList<SkillEffectResult>
+        ExecuteDefinitionEffects(
+            BattleAction action,
+            SkillEffectTiming timing,
+            BattleAction opponentAction = null,
+            DamageContext damageContext = null,
+            KillEventContext killContext = null)
+    {
+        SkillDefinition definition = RuntimeDefinition;
+
+        if (definition == null ||
+            definition.Effects == null ||
+            action == null)
+        {
+            return Array.Empty<SkillEffectResult>();
+        }
+
+        SkillEffectDispatchKey dispatchKey =
+            new SkillEffectDispatchKey(
+                action.ActionId,
+                timing);
+
+        if (!activeEffectDispatches.Add(dispatchKey))
+            return Array.Empty<SkillEffectResult>();
+
+        try
+        {
+            SkillEffectContext context =
+                new SkillEffectContext(
+                    action,
+                    definition,
+                    timing,
+                    opponentAction,
+                    damageContext,
+                    killContext,
+                    UseCountThisTurn);
+
+            List<SkillEffectResult> results = new();
+
+            foreach (SkillEffectDefinition effect
+                     in definition.Effects)
+            {
+                if (effect == null)
+                    continue;
+
+                SkillEffectResult result =
+                    effect.TryApply(
+                        context,
+                        timing);
+
+                if (result != null)
+                    results.Add(result);
+            }
+
+            return results;
+        }
+        finally
+        {
+            activeEffectDispatches.Remove(
+                dispatchKey);
+        }
+    }
+
+    private object GetUsageIdentity()
+    {
+        return (object)RuntimeDefinition ?? this;
+    }
+
+    private void RegisterRuntimeEvents()
+    {
+        if (battleEvent == null)
+            return;
+
+        registeredBattleEvent = battleEvent;
+
+        registeredBattleEvent.OnTurnStart +=
+            OnTurnStart;
+        registeredBattleEvent.OnActionStart +=
+            OnActionStart;
+        registeredBattleEvent.OnActionEnd +=
+            OnActionEnd;
+        registeredBattleEvent.OnClashWin +=
+            OnClashWin;
+        registeredBattleEvent.OnClashLose +=
+            OnClashLose;
+        registeredBattleEvent.OnDamageEventResolved +=
+            OnDamageEventResolved;
+        registeredBattleEvent.OnKillResolved +=
+            OnKillResolved;
+    }
+
+    private void UnregisterRuntimeEvents()
+    {
+        if (registeredBattleEvent == null)
+            return;
+
+        registeredBattleEvent.OnTurnStart -=
+            OnTurnStart;
+        registeredBattleEvent.OnActionStart -=
+            OnActionStart;
+        registeredBattleEvent.OnActionEnd -=
+            OnActionEnd;
+        registeredBattleEvent.OnClashWin -=
+            OnClashWin;
+        registeredBattleEvent.OnClashLose -=
+            OnClashLose;
+        registeredBattleEvent.OnDamageEventResolved -=
+            OnDamageEventResolved;
+        registeredBattleEvent.OnKillResolved -=
+            OnKillResolved;
+
+        registeredBattleEvent = null;
+    }
+
+    private void OnTurnStart(int turn)
+    {
+        SkillUsageTracker.ResetOwner(owner);
+    }
+
+    private void OnActionStart(BattleAction action)
+    {
+        if (action?.Skill != this)
+            return;
+
+        SkillUsageTracker.Increment(
+            owner,
+            GetUsageIdentity());
+    }
+
+    private void OnActionEnd(BattleAction action)
+    {
+        if (action?.Skill != this)
+            return;
+
+        ExecuteDefinitionEffects(
+            action,
+            SkillEffectTiming.OnActionEnd);
+    }
+
+    private void OnClashWin(
+        BattleAction winnerAction,
+        BattleAction loserAction)
+    {
+        if (winnerAction?.Skill != this)
+            return;
+
+        ExecuteDefinitionEffects(
+            winnerAction,
+            SkillEffectTiming.OnClashWin,
+            loserAction);
+    }
+
+    private void OnClashLose(
+        BattleAction loserAction,
+        BattleAction winnerAction)
+    {
+        if (loserAction?.Skill != this)
+            return;
+
+        ExecuteDefinitionEffects(
+            loserAction,
+            SkillEffectTiming.OnClashLose,
+            winnerAction);
+    }
+
+    private void OnDamageEventResolved(
+        DamageEventResult eventResult)
+    {
+        DamageContext context =
+            eventResult?.Context;
+
+        if (context?.Action?.Skill != this)
+            return;
+
+        if (context.GetDisplayDamage() > 0)
+        {
+            ExecuteDefinitionEffects(
+                context.Action,
+                SkillEffectTiming.AfterDamage,
+                null,
+                context);
+        }
+
+        if (context.WasCritical)
+        {
+            ExecuteDefinitionEffects(
+                context.Action,
+                SkillEffectTiming.OnCritical,
+                null,
+                context);
+        }
+    }
+
+    private void OnKillResolved(
+        KillEventContext context)
+    {
+        if (context?.SourceAction?.Skill != this)
+            return;
+
+        ExecuteDefinitionEffects(
+            context.SourceAction,
+            SkillEffectTiming.OnKill,
+            null,
+            context.DamageContext,
+            context);
+    }
+
+    private readonly struct SkillEffectDispatchKey :
+        IEquatable<SkillEffectDispatchKey>
+    {
+        private readonly long actionId;
+        private readonly SkillEffectTiming timing;
+
+        public SkillEffectDispatchKey(
+            long actionId,
+            SkillEffectTiming timing)
+        {
+            this.actionId = actionId;
+            this.timing = timing;
+        }
+
+        public bool Equals(
+            SkillEffectDispatchKey other) =>
+            actionId == other.actionId &&
+            timing == other.timing;
+
+        public override bool Equals(object obj) =>
+            obj is SkillEffectDispatchKey other &&
+            Equals(other);
+
+        public override int GetHashCode()
+        {
+            unchecked
+            {
+                return (actionId.GetHashCode() * 397) ^
+                       (int)timing;
+            }
+        }
+    }
+}
+
+internal static class SkillUsageTracker
+{
+    private sealed class UsageKey : IEquatable<UsageKey>
+    {
+        public Character Owner;
+        public object Identity;
+
+        public bool Equals(UsageKey other) =>
+            other != null &&
+            Owner == other.Owner &&
+            ReferenceEquals(Identity, other.Identity);
+
+        public override bool Equals(object obj) =>
+            obj is UsageKey other && Equals(other);
+
+        public override int GetHashCode()
+        {
+            unchecked
+            {
+                int ownerHash = Owner == null
+                    ? 0
+                    : Owner.GetHashCode();
+
+                int identityHash = Identity == null
+                    ? 0
+                    : Identity.GetHashCode();
+
+                return (ownerHash * 397) ^ identityHash;
+            }
+        }
+    }
+
+    private static readonly Dictionary<UsageKey, int>
+        useCounts = new();
+
+    public static int GetUseCount(
+        Character owner,
+        object identity)
+    {
+        if (owner == null || identity == null)
+            return 0;
+
+        UsageKey lookup = new UsageKey
+        {
+            Owner = owner,
+            Identity = identity
+        };
+
+        return useCounts.TryGetValue(
+            lookup,
+            out int value)
+            ? value
+            : 0;
+    }
+
+    public static void Increment(
+        Character owner,
+        object identity)
+    {
+        if (owner == null || identity == null)
+            return;
+
+        UsageKey key = new UsageKey
+        {
+            Owner = owner,
+            Identity = identity
+        };
+
+        useCounts.TryGetValue(
+            key,
+            out int value);
+
+        useCounts[key] = value + 1;
+    }
+
+    public static void ResetOwner(Character owner)
+    {
+        if (owner == null)
+            return;
+
+        List<UsageKey> removeTargets = new();
+
+        foreach (UsageKey key in useCounts.Keys)
+        {
+            if (key.Owner == owner)
+                removeTargets.Add(key);
+        }
+
+        foreach (UsageKey key in removeTargets)
+            useCounts.Remove(key);
     }
 }

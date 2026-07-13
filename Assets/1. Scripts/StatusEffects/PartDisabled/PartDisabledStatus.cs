@@ -1,14 +1,20 @@
-// 각 캐릭터 부위별 디버프는 이 클래스를 상속받아 구현
-// CreateDisabledDebuff 메서드를 통해서 리턴되는 객체를 다르게 하면됨
 public abstract class PartDisabledStatus : StatusEffect
 {
     protected PartDisabledStatus(string name)
     {
         Name = name;
-        Duration = -1; // 영구
+        Duration = -1;
     }
 
-    public override void OnApply() { }
+    public override StatusEffectDurationPolicy DurationPolicy =>
+        StatusEffectDurationPolicy.Permanent;
 
+    public override StatusEffectStackPolicy StackPolicy =>
+        StatusEffectStackPolicy.Ignore;
+
+    // 약화 디버프는 부위가 파괴되면 제거되고 캐릭터 상태로 이전되지 않는다.
+    public override bool TransferToCharacterOnPartBreak => false;
+
+    public override void OnApply() { }
     public override void OnRemove() { }
 }

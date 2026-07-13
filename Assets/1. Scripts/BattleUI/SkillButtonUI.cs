@@ -9,7 +9,10 @@ public class SkillButtonUI : MonoBehaviour
     [SerializeField] private TMP_Text buttonText;
 
     private Skill boundSkill;
-    private Action<Skill> onClicked;
+    private int boundActionIndex;
+    private Action<Skill, int> onClicked;
+
+    public int BoundActionIndex => boundActionIndex;
 
     private void Awake()
     {
@@ -26,24 +29,45 @@ public class SkillButtonUI : MonoBehaviour
         bool interactable,
         Action<Skill> clickCallback)
     {
+        Bind(
+            label,
+            skill,
+            0,
+            interactable,
+            clickCallback == null
+                ? null
+                : (selectedSkill, _) =>
+                    clickCallback(selectedSkill));
+    }
+
+    public void Bind(
+        string label,
+        Skill skill,
+        int actionIndex,
+        bool interactable,
+        Action<Skill, int> clickCallback)
+    {
         boundSkill = skill;
+        boundActionIndex = Mathf.Max(0, actionIndex);
         onClicked = clickCallback;
 
         if (buttonText != null)
             buttonText.text = label;
 
-        if (button != null)
+        if (button == null)
+            return;
+
+        button.onClick.RemoveAllListeners();
+        button.interactable = interactable;
+
+        button.onClick.AddListener(() =>
         {
-            button.onClick.RemoveAllListeners();
-            button.interactable = interactable;
+            if (boundSkill == null)
+                return;
 
-            button.onClick.AddListener(() =>
-            {
-                if (boundSkill == null)
-                    return;
-
-                onClicked?.Invoke(boundSkill);
-            });
-        }
+            onClicked?.Invoke(
+                boundSkill,
+                boundActionIndex);
+        });
     }
 }

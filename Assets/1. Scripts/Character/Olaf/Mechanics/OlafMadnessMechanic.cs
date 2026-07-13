@@ -36,8 +36,8 @@ public class OlafMadnessMechanic : CombatMechanic
 
         battleEvent.OnClashWin += OnClashWin;
         battleEvent.OnClashLose += OnClashLose;
-        battleEvent.OnBodyPartDestroyed += OnBodyPartDestroyed;
-        battleEvent.OnKill += OnKill;
+        battleEvent.OnBodyPartBreakResolved += OnBodyPartBreakResolved;
+        battleEvent.OnKillResolved += OnKillResolved;
     }
     
     public void ClearMadness()
@@ -55,8 +55,8 @@ public class OlafMadnessMechanic : CombatMechanic
 
         battleEvent.OnClashWin -= OnClashWin;
         battleEvent.OnClashLose -= OnClashLose;
-        battleEvent.OnBodyPartDestroyed -= OnBodyPartDestroyed;
-        battleEvent.OnKill -= OnKill;
+        battleEvent.OnBodyPartBreakResolved -= OnBodyPartBreakResolved;
+        battleEvent.OnKillResolved -= OnKillResolved;
     }
 
     //------------------------------------------------
@@ -152,14 +152,17 @@ public class OlafMadnessMechanic : CombatMechanic
     // 부위 파괴
     //------------------------------------------------
 
-    private void OnBodyPartDestroyed(
-        Character target,
-        BodyPart part)
+    private void OnBodyPartBreakResolved(
+        BodyPartBreakEventContext context)
     {
-        if (target == null || part == null)
+        if (context == null ||
+            context.Target == null ||
+            context.Part == null)
+        {
             return;
+        }
 
-        if (target != owner)
+        if (context.Target != owner)
             return;
 
         if (suppressPartBreakMadnessDepth > 0)
@@ -178,11 +181,16 @@ public class OlafMadnessMechanic : CombatMechanic
     // 처치
     //------------------------------------------------
 
-    private void OnKill(
-        Character killer,
-        Character victim)
+    private void OnKillResolved(
+        KillEventContext context)
     {
-        if (killer != owner)
+        if (context == null)
+            return;
+
+        if (context.Killer != owner)
+            return;
+
+        if (context.Victim == null)
             return;
 
         if (!IsMaxMadness())
@@ -325,7 +333,6 @@ public class OlafMadnessMechanic : CombatMechanic
                 $"{owner.Data.CharacterName} 광기 효과 : {part.Type} 부위 회복");
         }
 
-        owner.ForceRecalculateHP();
     }
 
     //------------------------------------------------

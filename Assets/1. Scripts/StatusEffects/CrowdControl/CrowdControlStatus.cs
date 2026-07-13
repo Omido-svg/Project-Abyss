@@ -5,11 +5,12 @@ public abstract class CrowdControlStatus : StatusEffect
         Duration = duration;
     }
 
-    public override void OnTurnEnd()
-    {
-        DecreaseDuration();
+    public override StatusEffectDurationPolicy DurationPolicy =>
+        StatusEffectDurationPolicy.TurnEnd;
 
-        if (IsExpired)
-            RemoveStatus();
-    }
+    public override StatusEffectStackPolicy StackPolicy =>
+        StatusEffectStackPolicy.RefreshDuration;
+
+    // 지속시간 감소/만료 제거는 CharacterStatusController가 한 번만 담당한다.
+    public override void OnTurnEnd() { }
 }

@@ -1,79 +1,146 @@
 using UnityEngine;
 
 [CreateAssetMenu(
-    menuName = "Battle/Skill Effect/Olaf/Break Own Part",
-    fileName = "OlafBreakOwnPartEffect")]
-public class OlafBreakOwnPartEffect : SkillEffectDefinition
+    menuName = "Battle/Skill Effect/Olaf/Prestige Effect",
+    fileName = "OlafPrestigeEffect")]
+public class OlafPrestigeEffect : SkillEffectDefinition
 {
-    public PartType[] PriorityParts;
+    [Header("Bleeding Explosion")]
+    [SerializeField] private bool consumeBleeding = true;
+    [SerializeField] private int damagePerBleedingStack = 1;
 
-    public override void Apply(SkillEffectContext context)
+    [Header("Madness Bonus")]
+    [SerializeField] private bool consumeMadness = true;
+    [SerializeField] private int damagePerMadness = 2;
+
+    [Header("Break")]
+    [SerializeField] private bool forceBreakTargetPart = true;
+
+    public override void Apply(
+        SkillEffectContext context)
     {
-        if (context == null)
-            return;
-
-        if (context.Owner == null)
-            return;
-
-        if (context.Resolver == null)
-            return;
-
-        BodyPart part =
-            FindPartToBreak(context.Owner);
-
-        if (part == null)
+        if (context?.Owner == null ||
+            context.Target == null ||
+            context.Resolver == null)
         {
-            Debug.LogWarning(
-                $"{context.Owner.Data.CharacterName} 도사림 실패 : 파괴 가능한 부위 없음");
-
             return;
+        }
+
+        Character owner = context.Owner;
+        Character target = context.Target;
+        BodyPart targetPart = context.TargetPart;
+
+        OlafMadnessMechanic madness =
+            owner.GetMechanic<OlafMadnessMechanic>();
+
+        int bleedingDamage =
+            CalculateBleedingExplosionDamage(
+                context,
+                target,
+                targetPart);
+
+        int madnessDamage =
+            CalculateMadnessBonusDamage(madness);
+
+        int totalExtraDamage =
+            bleedingDamage + madnessDamage;
+
+        if (totalExtraDamage > 0)
+        {
+            DamageType damageType =
+                targetPart == null
+                    ? DamageType.Direct
+                    : DamageType.BleedExplosion;
+
+            DamageRequest request =
+                DamageRequest.Custom(
+                    damageType,
+                    owner,
+                    target,
+                    targetPart,
+                    totalExtraDamage,
+                    1f,
+                    true,
+                    false,
+                    false,
+                    false,
+                    true,
+                    context.Action);
+
+            context.ApplyDamage(request);
+        }
+
+        if (forceBreakTargetPart &&
+            targetPart != null &&
+            !targetPart.IsBroken)
+        {
+            EffectRequest request =
+                EffectRequest.ForceBreak(
+                    owner,
+                    target,
+                    targetPart);
+
+            request.SourceAction = context.Action;
+            context.Resolver.ForceBreakPart(request);
         }
 
         Debug.Log(
-            $"{context.Owner.Data.CharacterName} 도사림 : {part.Type} 부위 파괴");
-
-        context.Resolver.ForceBreakPart(
-            EffectRequest.ForceBreak(
-                context.Owner,
-                context.Owner,
-                part));
+            $"{owner.Data.CharacterName} 위세 효과 : " +
+            $"{target.Data.CharacterName} " +
+            $"{(targetPart == null ? "SINGLE_HP" : targetPart.Type.ToString())}에 " +
+            $"추가 피해 {totalExtraDamage}, " +
+            $"강제 파괴 {forceBreakTargetPart && targetPart != null}");
     }
 
-    private BodyPart FindPartToBreak(Character owner)
+    private int CalculateBleedingExplosionDamage(
+        SkillEffectContext context,
+        Character target,
+        BodyPart targetPart)
     {
-        if (owner == null)
-            return null;
+        Bleeding bleeding =
+            targetPart != null
+                ? target.GetPartStatus<Bleeding>(targetPart)
+                : target.GetStatus<Bleeding>();
 
-        if (owner.BodyParts == null)
-            return null;
+        if (bleeding == null)
+            return 0;
 
-        if (PriorityParts != null)
+        int stack = Mathf.Max(0, bleeding.Stack);
+
+        if (consumeBleeding)
         {
-            foreach (PartType type in PriorityParts)
+            if (targetPart != null)
             {
-                foreach (BodyPart part in owner.BodyParts)
-                {
-                    if (part == null)
-                        continue;
-
-                    if (part.IsBroken)
-                        continue;
-
-                    if (part.Type == type)
-                        return part;
-                }
+                context.Resolver.RemoveBodyPartStatus(
+                    EffectRequest.RemoveBodyPartStatus(
+                        context.Owner,
+                        target,
+                        targetPart,
+                        bleeding));
+            }
+            else
+            {
+                target.RemoveStatus(
+                    bleeding,
+                    StatusEffectRemoveReason.Manual);
             }
         }
 
-        foreach (BodyPart part in owner.BodyParts)
-        {
-            if (part == null)
-                continue;
+        return stack * damagePerBleedingStack;
+    }
 
-            if (!part.IsBroken)
-                return part;
-        }
+    private int CalculateMadnessBonusDamage(
+        OlafMadnessMechanic madness)
+    {
+        if (madness == null)
+            return 0;
 
-        return null;
+        int currentMadness = madness.CurrentMadness;
+        int damage = currentMadness * damagePerMadness;
+
+        if (consumeMadness)
+            madness.ClearMadness();
+
+        return damage;
     }
 }

@@ -3,33 +3,16 @@ using UnityEngine;
 
 public abstract class Enemy : Character
 {
-    //--------------------------------------------------
-    // 기본 AI 정책
-    //--------------------------------------------------
-
-    protected virtual bool AllowPreparationSkillAI => false;
-
-    protected virtual bool RequireClashForCombatSkill => true;
-
-    //--------------------------------------------------
-    // AI 행동 결정
-    //--------------------------------------------------
-
-    public List<ActionSlot> DecideSlots(BattleContext context)
+    public virtual List<ActionSlot> DecideSlots(
+        BattleContext context)
     {
         List<ActionSlot> result = new();
 
-        if (context == null)
+        if (context?.battleManager == null ||
+            context.battleManager.SpeedManager == null)
+        {
             return result;
-
-        if (context.battleManager == null)
-            return result;
-
-        if (context.battleManager.SpeedManager == null)
-            return result;
-
-        if (BodyParts == null)
-            return result;
+        }
 
         Character target =
             ChooseTarget(context);
@@ -37,157 +20,169 @@ public abstract class Enemy : Character
         if (target == null)
             return result;
 
-        foreach (BodyPart part in BodyParts)
+        bool prestigeSelectedThisTurn = false;
+
+        if (UsesBodyParts)
         {
-            if (part == null)
-                continue;
+            if (BodyParts == null)
+                return result;
 
-            if (!part.IsUsable)
-                continue;
-
-            int maxSlotCount =
-                GetMaxActionSlotsForPart(part);
-
-            if (maxSlotCount <= 0)
-                continue;
-
-            for (int actionIndex = 0;
-                 actionIndex < maxSlotCount;
-                 actionIndex++)
+            foreach (BodyPart part in BodyParts)
             {
                 ActionSlot slot =
                     SelectBestSlotForPart(
                         context,
                         part,
                         target,
-                        actionIndex,
-                        result);
+                        !prestigeSelectedThisTurn,
+                        out bool selectedPrestige);
 
                 if (slot == null)
                     continue;
 
                 result.Add(slot);
+
+                if (selectedPrestige)
+                    prestigeSelectedThisTurn = true;
             }
+
+            return result;
         }
+
+        ActionSlot singleHpSlot =
+            SelectBestSlotForPart(
+                context,
+                null,
+                target,
+                allowPrestige: true,
+                out _);
+
+        if (singleHpSlot != null)
+            result.Add(singleHpSlot);
 
         return result;
     }
 
-    //--------------------------------------------------
-    // 공격 대상 선택
-    //--------------------------------------------------
-
     protected virtual Character ChooseTarget(
         BattleContext context)
     {
-        if (context == null)
-            return null;
-
-        return context.Player;
+        return context?.Player;
     }
 
-    //--------------------------------------------------
-    // 부위별 최선 행동 선택
-    //--------------------------------------------------
+    protected virtual IReadOnlyList<Skill> GetAvailableSkills(
+        BodyPart part)
+    {
+        return part?.AvailableSkills;
+    }
 
     protected virtual ActionSlot SelectBestSlotForPart(
         BattleContext context,
         BodyPart part,
         Character target,
-        int actionIndex,
-        List<ActionSlot> plannedSlots)
+        bool allowPrestige,
+        out bool selectedPrestige)
     {
-        if (context == null)
+        selectedPrestige = false;
+
+        if (context?.battleManager == null ||
+            context.battleManager.SpeedManager == null ||
+            target == null)
+        {
             return null;
+        }
 
-        if (context.battleManager == null)
+        if (part != null &&
+            !part.IsUsable)
+        {
             return null;
+        }
 
-        if (context.battleManager.SpeedManager == null)
+        IReadOnlyList<Skill> availableSkills =
+            GetAvailableSkills(part);
+
+        if (availableSkills == null ||
+            availableSkills.Count == 0)
+        {
             return null;
+        }
 
-        if (part == null)
-            return null;
+        List<ActionSlot> prestigeCandidates = new();
+        List<ActionSlot> normalCandidates = new();
 
-        if (!part.IsUsable)
-            return null;
-
-        if (target == null)
-            return null;
-
-        if (target.BodyParts == null ||
-            target.BodyParts.Count == 0)
-            return null;
-
-        if (part.AvailableSkills == null ||
-            part.AvailableSkills.Count == 0)
-            return null;
-
-        List<ActionSlot> candidates = new();
-
-        foreach (Skill skill in part.AvailableSkills)
+        foreach (Skill skill in availableSkills)
         {
             if (skill == null)
                 continue;
 
-            if (!IsSkillUsable(
-                    context,
-                    part,
-                    skill,
-                    plannedSlots))
-            {
+            if (!IsSkillUsable(part, skill))
                 continue;
+
+            if (skill.ActionType == ActionType.Prestige)
+            {
+                if (!allowPrestige ||
+                    !IsPrestigeReady())
+                {
+                    continue;
+                }
             }
 
-            foreach (BodyPart targetPart in target.BodyParts)
-            {
-                if (targetPart == null)
-                    continue;
+            TargetPoint targetPoint =
+                BattleTargetValidator
+                    .ChooseWeightedTargetPoint(
+                        target,
+                        TargetSelectionRule.StandardAttack,
+                        brokenPartWeight: 0.7f);
 
-                if (!IsTargetPartSelectable(targetPart))
-                    continue;
+            if (!targetPoint.IsValid)
+                continue;
 
-                ActionSlot slot = new ActionSlot
+            ActionSlot slot =
+                new ActionSlot
                 {
                     Owner = this,
                     Part = part,
-
                     Skill = skill,
-
-                    TargetCharacter = target,
-                    TargetPart = targetPart,
-
-                    Speed =
-                        context.battleManager.SpeedManager.GetSpeed(part),
-
-                    Phase = skill.DefaultPhase,
-
-                    TargetSlot = null,
-
-                    ActionIndex = actionIndex
+                    TargetCharacter = targetPoint.Character,
+                    TargetPart = targetPoint.Part,
+                    Speed = context.battleManager
+                        .SpeedManager
+                        .GetSpeed(this, part),
+                    Phase = CalculateActionPhase(skill),
+                    ActionIndex = 0
                 };
 
-                candidates.Add(slot);
+            if (skill.ActionType ==
+                ActionType.Prestige)
+            {
+                prestigeCandidates.Add(slot);
+            }
+            else
+            {
+                normalCandidates.Add(slot);
             }
         }
 
-        if (candidates.Count == 0)
-            return null;
+        if (allowPrestige &&
+            IsPrestigeReady() &&
+            prestigeCandidates.Count > 0)
+        {
+            selectedPrestige = true;
 
-        return SelectHighestScoreSlot(
-            context,
-            candidates,
-            plannedSlots);
+            return SelectHighestScoreSlot(
+                context,
+                prestigeCandidates);
+        }
+
+        return normalCandidates.Count > 0
+            ? SelectHighestScoreSlot(
+                context,
+                normalCandidates)
+            : null;
     }
-
-    //--------------------------------------------------
-    // 점수가 가장 높은 슬롯 선택
-    //--------------------------------------------------
 
     protected ActionSlot SelectHighestScoreSlot(
         BattleContext context,
-        List<ActionSlot> candidates,
-        List<ActionSlot> plannedSlots)
+        List<ActionSlot> candidates)
     {
         if (candidates == null ||
             candidates.Count == 0)
@@ -203,443 +198,259 @@ public abstract class Enemy : Character
             float score =
                 ScoreSlot(
                     context,
-                    slot,
-                    plannedSlots);
+                    slot);
 
-            if (score > bestScore)
-            {
-                bestScore = score;
-                bestSlot = slot;
-            }
+            if (score <= bestScore)
+                continue;
+
+            bestScore = score;
+            bestSlot = slot;
         }
 
         return bestSlot;
     }
 
-    //--------------------------------------------------
-    // 행동 점수 계산
-    //--------------------------------------------------
-
     protected virtual float ScoreSlot(
         BattleContext context,
-        ActionSlot slot,
-        List<ActionSlot> plannedSlots)
+        ActionSlot slot)
     {
-        if (slot == null)
-            return float.MinValue;
-
-        if (slot.Skill == null)
-            return float.MinValue;
-
-        if (slot.TargetCharacter == null ||
-            slot.TargetPart == null)
-            return float.MinValue;
-
-        if (slot.TargetCharacter.IsDead)
-            return float.MinValue;
-
-        if (slot.TargetPart.IsBroken)
-            return float.MinValue;
-
-        float score = 0f;
-
-        //--------------------------------
-        // 완전 고정 AI 방지용 랜덤성
-        //--------------------------------
-
-        score += Random.Range(0f, 25f);
-
-        //--------------------------------
-        // 스킬 타입 가치
-        //--------------------------------
-
-        switch (slot.Skill.ActionType)
+        if (slot?.Skill == null ||
+            slot.TargetCharacter == null ||
+            slot.TargetCharacter.IsDead)
         {
-            case ActionType.Prestige:
-                score += 10000f;
-                break;
-
-            case ActionType.Duel:
-                score += 80f;
-                break;
-
-            case ActionType.NormalAttack:
-                score += 60f;
-                break;
-
-            case ActionType.Preparation:
-                score += 40f;
-                break;
+            return float.MinValue;
         }
 
-        //--------------------------------
-        // 합 가능 스킬 선호
-        //--------------------------------
+        if (!BattleTargetValidator.IsValid(
+                slot.TargetCharacter,
+                slot.TargetPart,
+                TargetSelectionRule.StandardAttack))
+        {
+            return float.MinValue;
+        }
+
+        float score =
+            Random.Range(0f, 25f);
+
+        score += slot.Skill.ActionType switch
+        {
+            ActionType.Prestige => 10000f,
+            ActionType.Duel => 80f,
+            ActionType.NormalAttack => 60f,
+            ActionType.Preparation => -10000f,
+            _ => 0f
+        };
 
         if (slot.Skill.CanClash)
             score += 30f;
 
-        //--------------------------------
-        // Phase 기반 가중치
-        //--------------------------------
+        score += ScoreTargetPoint(
+            slot.TargetCharacter,
+            slot.TargetPart);
 
-        if (slot.Phase == ActionPhase.COMBAT)
-            score += 15f;
-
-        if (slot.Phase == ActionPhase.FORESIGHT)
-            score += 10f;
-
-        if (slot.Phase == ActionPhase.PRETURN)
-            score += 5f;
-
-        //--------------------------------
-        // 타겟 부위 자체 가치
-        //--------------------------------
-
-        score +=
-            ScoreTargetPart(
-                slot.TargetPart);
-
-        //--------------------------------
-        // 여러 적이 같은 플레이어 부위를 몰빵하지 않도록 감점
-        //--------------------------------
-
-        score +=
-            ScoreTargetSpread(
-                context,
-                slot,
-                plannedSlots);
-
-        //--------------------------------
-        // 속도는 약하게만 반영
-        //--------------------------------
+        score += ScoreTargetSpread(
+            context,
+            slot);
 
         score += slot.Speed * 1.5f;
 
         return score;
     }
 
-    //--------------------------------------------------
-    // 타겟 부위 점수
-    //--------------------------------------------------
-
-    protected virtual float ScoreTargetPart(
+    protected virtual float ScoreTargetPoint(
+        Character target,
         BodyPart targetPart)
     {
-        if (targetPart == null)
+        if (target == null)
             return -10000f;
+
+        if (targetPart == null)
+        {
+            return target.IsSingleHpTarget
+                ? 50f
+                : -10000f;
+        }
+
+        float score = 30f;
 
         if (targetPart.IsBroken)
-            return -10000f;
+        {
+            // 파괴 부위 재공격은 전체 HP 직접 피해다.
+            score += 55f;
+            return score;
+        }
 
-        float score = 0f;
-
-        // 살아있는 부위를 기본적으로 선호
-        score += 30f;
-
-        // 약화된 부위는 약간 선호
         if (targetPart.IsWeakened)
             score += 20f;
 
-        // HP 낮은 부위 마무리 선호는 약하게만
-        if (targetPart.MaxPartHP > 0)
+        if (targetPart.MaxPartHP > 0f)
         {
             float hpRate =
-                targetPart.PartHP / targetPart.MaxPartHP;
+                targetPart.PartHP /
+                targetPart.MaxPartHP;
 
-            float missingHpRate =
-                1f - hpRate;
-
-            score += missingHpRate * 15f;
+            score +=
+                (1f - hpRate) * 15f;
         }
 
-        // 합 가능한 부위를 조금 더 선호
         if (HasClashSkill(targetPart))
             score += 25f;
 
         return score;
     }
 
-    //--------------------------------------------------
-    // 타겟 분산 점수
-    //--------------------------------------------------
-
     protected virtual float ScoreTargetSpread(
         BattleContext context,
-        ActionSlot candidate,
-        List<ActionSlot> plannedSlots)
+        ActionSlot candidate)
     {
-        if (candidate == null ||
-            candidate.TargetCharacter == null ||
-            candidate.TargetPart == null)
+        ActionManager actionManager =
+            context?.battleManager?.ActionManager;
+
+        if (actionManager == null ||
+            candidate?.TargetCharacter == null)
         {
             return 0f;
         }
 
-        int sameTargetPartCount = 0;
+        int sameTargetCount = 0;
 
-        //--------------------------------
-        // 이미 ActionManager에 들어간 슬롯 검사
-        //--------------------------------
-
-        if (context != null &&
-            context.battleManager != null &&
-            context.battleManager.ActionManager != null)
+        foreach (ActionSlot existingSlot
+                 in actionManager.Slots)
         {
-            foreach (ActionSlot existingSlot in context.battleManager.ActionManager.Slots)
+            if (existingSlot == null ||
+                existingSlot.Owner == context.Player)
             {
-                if (existingSlot == null)
-                    continue;
-
-                // 플레이어 슬롯은 AI 타겟 분산 계산에서 제외
-                if (existingSlot.Owner == context.Player)
-                    continue;
-
-                if (existingSlot.TargetCharacter != candidate.TargetCharacter)
-                    continue;
-
-                if (!IsSamePart(
-                        existingSlot.TargetPart,
-                        candidate.TargetPart))
-                {
-                    continue;
-                }
-
-                sameTargetPartCount++;
+                continue;
             }
+
+            if (!BattleTargetValidator.IsSameTarget(
+                    existingSlot.TargetCharacter,
+                    existingSlot.TargetPart,
+                    candidate.TargetCharacter,
+                    candidate.TargetPart))
+            {
+                continue;
+            }
+
+            sameTargetCount++;
         }
 
-        //--------------------------------
-        // 이번 DecideSlots에서 이미 계획한 슬롯 검사
-        //--------------------------------
-
-        if (plannedSlots != null)
-        {
-            foreach (ActionSlot plannedSlot in plannedSlots)
-            {
-                if (plannedSlot == null)
-                    continue;
-
-                if (plannedSlot.TargetCharacter != candidate.TargetCharacter)
-                    continue;
-
-                if (!IsSamePart(
-                        plannedSlot.TargetPart,
-                        candidate.TargetPart))
-                {
-                    continue;
-                }
-
-                sameTargetPartCount++;
-            }
-        }
-
-        if (sameTargetPartCount == 0)
-            return 80f;
-
-        return -120f * sameTargetPartCount;
+        return sameTargetCount == 0
+            ? 80f
+            : -120f * sameTargetCount;
     }
-
-    //--------------------------------------------------
-    // 타겟 부위 선택 가능 여부
-    //--------------------------------------------------
 
     protected virtual bool IsTargetPartSelectable(
+        Character target,
         BodyPart targetPart)
     {
-        if (targetPart == null)
-            return false;
-
-        if (targetPart.IsBroken)
-            return false;
-
-        return true;
+        return BattleTargetValidator.IsValid(
+            target,
+            targetPart,
+            TargetSelectionRule.StandardAttack);
     }
 
-    //--------------------------------------------------
-    // 스킬 사용 가능 여부
-    //--------------------------------------------------
-
     protected virtual bool IsSkillUsable(
-        BattleContext context,
         BodyPart part,
-        Skill skill,
-        List<ActionSlot> plannedSlots)
+        Skill skill)
     {
-        if (part == null)
-            return false;
-
         if (skill == null)
             return false;
 
-        if (part.IsBroken)
-            return false;
-
-        //--------------------------------
-        // AI 사용 가능 여부
-        //--------------------------------
-
-        if (!skill.CanAIUse(this, part, context))
-            return false;
-
-        //--------------------------------
-        // 기본 Enemy는 도사림 사용 금지
-        // 특수 Enemy는 AllowPreparationSkillAI override
-        //--------------------------------
-
-        if (!AllowPreparationSkillAI &&
-            skill.ActionType == ActionType.Preparation)
+        if (part == null)
         {
-            return false;
-        }
-
-        //--------------------------------
-        // 자원 조건
-        // 기본 Prestige는 currentPrestige 확인
-        // 김삿갓 같은 특수 Prestige는 Skill override
-        //--------------------------------
-
-        if (!skill.CanUseByResource(this))
-            return false;
-
-        //--------------------------------
-        // Prestige 사용 횟수 정책
-        //--------------------------------
-
-        if (skill.ActionType == ActionType.Prestige)
-        {
-            if (skill.PrestigeUsePolicy == PrestigeUsePolicy.None)
+            if (!IsSingleHpTarget)
                 return false;
-
-            if (skill.PrestigeUsePolicy == PrestigeUsePolicy.OncePerTurn)
-            {
-                if (HasPrestigeSlotSelected(
-                        context,
-                        plannedSlots))
-                {
-                    return false;
-                }
-            }
+        }
+        else if (part.IsBroken)
+        {
+            return false;
         }
 
-        //--------------------------------
-        // 기본 Enemy는 COMBAT 비합 스킬 사용 제한
-        //--------------------------------
+        if (skill.ActionType ==
+            ActionType.Preparation &&
+            !AllowPreparationSkillAI)
+        {
+            return false;
+        }
 
-        if (RequireClashForCombatSkill &&
-            skill.DefaultPhase == ActionPhase.COMBAT &&
-            skill.ActionType != ActionType.Prestige &&
+        if (skill.ActionType ==
+            ActionType.Prestige &&
+            !IsPrestigeReady())
+        {
+            return false;
+        }
+
+        if (skill.ActionType !=
+            ActionType.Prestige &&
+            skill.ActionType !=
+            ActionType.Preparation &&
             !skill.CanClash)
         {
             return false;
         }
 
-        //--------------------------------
-        // 캐릭터 / 상태이상 / 메커닉 사용 가능 여부
-        //--------------------------------
-
-        if (!CanUseSkill(part, skill))
-            return false;
-
-        return true;
+        return CanUseSkill(
+            part,
+            skill);
     }
 
-    //--------------------------------------------------
-    // 위세 슬롯 이미 선택했는지 확인
-    //--------------------------------------------------
+    protected virtual bool AllowPreparationSkillAI =>
+        false;
 
-    protected virtual bool HasPrestigeSlotSelected(
-        BattleContext context,
-        List<ActionSlot> plannedSlots)
+    protected bool IsPrestigeReady()
     {
-        //--------------------------------
-        // 이번 AI 결정 중 이미 고른 슬롯
-        //--------------------------------
-
-        if (plannedSlots != null)
+        if (CurrentStatus == null ||
+            RuntimeStatus == null ||
+            CurrentStatus.maxPrestige <= 0)
         {
-            foreach (ActionSlot slot in plannedSlots)
-            {
-                if (slot == null)
-                    continue;
-
-                if (slot.Owner != this)
-                    continue;
-
-                if (slot.Skill == null)
-                    continue;
-
-                if (slot.Skill.ActionType == ActionType.Prestige)
-                    return true;
-            }
+            return false;
         }
 
-        //--------------------------------
-        // 이미 ActionManager에 들어간 슬롯
-        //--------------------------------
-
-        if (context != null &&
-            context.battleManager != null &&
-            context.battleManager.ActionManager != null)
-        {
-            foreach (ActionSlot slot in context.battleManager.ActionManager.Slots)
-            {
-                if (slot == null)
-                    continue;
-
-                if (slot.Owner != this)
-                    continue;
-
-                if (slot.Skill == null)
-                    continue;
-
-                if (slot.Skill.ActionType == ActionType.Prestige)
-                    return true;
-            }
-        }
-
-        return false;
+        return
+            RuntimeStatus.currentPrestige >=
+            CurrentStatus.maxPrestige;
     }
 
-    //--------------------------------------------------
-    // 합 가능 스킬 보유 여부
-    //--------------------------------------------------
+    protected ActionPhase CalculateActionPhase(
+        Skill skill)
+    {
+        return skill?.DefaultPhase ??
+               ActionPhase.COMBAT;
+    }
 
     protected bool HasClashSkill(
         BodyPart part)
     {
-        if (part == null)
+        IReadOnlyList<Skill> skills =
+            GetAvailableSkills(part);
+
+        if (skills == null)
             return false;
 
-        if (part.AvailableSkills == null)
-            return false;
-
-        foreach (Skill skill in part.AvailableSkills)
+        foreach (Skill skill in skills)
         {
-            if (skill == null)
-                continue;
-
-            if (skill.CanClash)
+            if (skill?.CanClash == true)
                 return true;
         }
 
         return false;
     }
 
-    //--------------------------------------------------
-    // 같은 부위인지 확인
-    //--------------------------------------------------
-
     protected bool IsSamePart(
-        BodyPart a,
-        BodyPart b)
+        BodyPart first,
+        BodyPart second)
     {
-        if (a == null || b == null)
-            return false;
+        if (first == null ||
+            second == null)
+        {
+            return
+                first == null &&
+                second == null;
+        }
 
-        if (a == b)
-            return true;
-
-        return a.Type == b.Type;
+        return
+            first == second ||
+            first.Type == second.Type;
     }
 }

@@ -3,30 +3,15 @@ using UnityEngine;
 
 public abstract class StatusEffect
 {
-    //--------------------------------
-    // 기본 정보
-    //--------------------------------
-
     public string Name { get; protected set; }
-
     public int Stack { get; protected set; }
-
     public int Duration { get; protected set; }
-    
-    public virtual string EffectName => GetType().Name;
 
-    //--------------------------------
-    // 적용 대상
-    //--------------------------------
+    public virtual string EffectName => GetType().Name;
 
     protected Character owner;
     protected Character source;
-
-    // null이면 캐릭터 디버프
-    // null이 아니면 부위 디버프
     protected BodyPart ownerPart;
-
-    //--------------------------------
 
     public Character Owner => owner;
     public Character Source => source;
@@ -34,11 +19,29 @@ public abstract class StatusEffect
 
     public bool IsPartEffect => ownerPart != null;
     public bool IsCharacterEffect => ownerPart == null;
-    
+
+    public virtual StatusEffectDurationPolicy DurationPolicy =>
+        Duration < 0
+            ? StatusEffectDurationPolicy.Permanent
+            : StatusEffectDurationPolicy.TurnEnd;
+
+    public virtual StatusEffectStackPolicy StackPolicy =>
+        StatusEffectStackPolicy.RefreshDuration;
+
+    // 부위 파괴 시 DOT 등은 캐릭터 상태로 이전할 수 있다.
+    // 약화 디버프는 PartDisabledStatus에서 false로 막는다.
+    public virtual bool TransferToCharacterOnPartBreak => true;
+
+    public bool IsPermanent =>
+        DurationPolicy == StatusEffectDurationPolicy.Permanent ||
+        Duration < 0;
+
     public bool IsExpired =>
+        !IsPermanent &&
         Duration <= 0;
 
-    //--------------------------------
+    public StatusEffectRemoveReason LastRemoveReason { get; private set; } =
+        StatusEffectRemoveReason.Manual;
 
     public virtual void Initialize(
         Character owner,
@@ -50,16 +53,15 @@ public abstract class StatusEffect
         this.ownerPart = ownerPart;
     }
 
-    //--------------------------------
-    // Life Cycle
-    //--------------------------------
-
     public virtual void OnApply() { }
-
     public virtual void OnTurnStart() { }
-
     public virtual void OnTurnEnd() { }
-    
+
+    public virtual void OnTurnStart(StatusEffectTickContext context)
+    {
+        OnTurnStart();
+    }
+
     public virtual void OnTurnEnd(StatusEffectTickContext context)
     {
         OnTurnEnd();
@@ -67,55 +69,153 @@ public abstract class StatusEffect
 
     public virtual void OnRemove() { }
 
-    public virtual void Merge(StatusEffect other) { }
+    public virtual void Merge(StatusEffect other)
+    {
+        if (other == null)
+            return;
 
-    //--------------------------------
-    // Roll
-    //--------------------------------
+        switch (StackPolicy)
+        {
+            case StatusEffectStackPolicy.Ignore:
+                return;
 
-    public virtual int ModifyRoll(
-        BattleAction action,
-        int roll)
+            case StatusEffectStackPolicy.RefreshDuration:
+                RefreshDurationFrom(other);
+                return;
+
+            case StatusEffectStackPolicy.AddStacks:
+                Stack += Mathf.Max(0, other.Stack);
+                return;
+
+            case StatusEffectStackPolicy.AddStacksAndRefreshDuration:
+                Stack += Mathf.Max(0, other.Stack);
+                RefreshDurationFrom(other);
+                return;
+
+            case StatusEffectStackPolicy.Replace:
+                Stack = other.Stack;
+                Duration = other.Duration;
+                return;
+        }
+    }
+
+    public virtual bool CanMergeWith(StatusEffect other)
+    {
+        if (other == null)
+            return false;
+
+        return GetMergeKey() == other.GetMergeKey();
+    }
+
+    protected virtual string GetMergeKey()
+    {
+        return GetType().FullName;
+    }
+
+    internal StatusEffectApplyResult ApplyIncoming(
+        StatusEffect incoming,
+        bool wasTransferred = false)
+    {
+        StatusEffectApplyResult result =
+            new StatusEffectApplyResult
+            {
+                TargetCharacter = owner,
+                TargetPart = ownerPart,
+                Effect = this,
+                IncomingEffect = incoming,
+                StackBefore = Stack,
+                DurationBefore = Duration,
+                WasTransferred = wasTransferred
+            };
+
+        if (!CanMergeWith(incoming))
+        {
+            result.Kind = StatusEffectApplyKind.Rejected;
+            result.StackAfter = Stack;
+            result.DurationAfter = Duration;
+            return result;
+        }
+
+        if (StackPolicy == StatusEffectStackPolicy.Ignore)
+        {
+            result.Kind = StatusEffectApplyKind.Ignored;
+            result.StackAfter = Stack;
+            result.DurationAfter = Duration;
+            return result;
+        }
+
+        Merge(incoming);
+
+        if (incoming?.Source != null)
+            source = incoming.Source;
+
+        result.StackAfter = Stack;
+        result.DurationAfter = Duration;
+
+        if (result.StackAfter != result.StackBefore)
+            result.Kind = StatusEffectApplyKind.Stacked;
+        else if (result.DurationAfter != result.DurationBefore)
+            result.Kind = StatusEffectApplyKind.Refreshed;
+        else
+            result.Kind = StatusEffectApplyKind.Refreshed;
+
+        return result;
+    }
+
+    internal void ProcessTurnStart(StatusEffectTickContext context)
+    {
+        if (context == null)
+            return;
+
+        context.CaptureBefore(this);
+        OnTurnStart(context);
+
+        if (DurationPolicy == StatusEffectDurationPolicy.TurnStart)
+            DecreaseDuration();
+
+        context.CaptureAfter(this);
+    }
+
+    internal void ProcessTurnEnd(StatusEffectTickContext context)
+    {
+        if (context == null)
+            return;
+
+        context.CaptureBefore(this);
+        OnTurnEnd(context);
+
+        if (DurationPolicy == StatusEffectDurationPolicy.TurnEnd)
+            DecreaseDuration();
+
+        context.CaptureAfter(this);
+    }
+
+    internal void PrepareRemoval(StatusEffectRemoveReason reason)
+    {
+        LastRemoveReason = reason;
+    }
+
+    public virtual int ModifyRoll(BattleAction action, int roll)
     {
         return roll;
     }
 
-    //--------------------------------
-    // Damage
-    //--------------------------------
-
-    public virtual int ModifyDamage(
-        BattleAction action,
-        int damage)
+    public virtual int ModifyDamage(BattleAction action, int damage)
     {
         return damage;
     }
 
-    public virtual float ModifyDamageTaken(
-        BattleAction action,
-        float damage)
+    public virtual float ModifyDamageTaken(BattleAction action, float damage)
     {
         return damage;
     }
 
-    //--------------------------------
-    // Speed
-    //--------------------------------
-
-    public virtual int ModifySpeed(
-        BodyPart part,
-        int speed)
+    public virtual int ModifySpeed(BodyPart part, int speed)
     {
         return speed;
     }
 
-    //--------------------------------
-    // Skill
-    //--------------------------------
-
-    public virtual bool CanUseSkill(
-        BodyPart part,
-        Skill skill)
+    public virtual bool CanUseSkill(BodyPart part, Skill skill)
     {
         return true;
     }
@@ -124,10 +224,6 @@ public abstract class StatusEffect
     {
         return true;
     }
-
-    //--------------------------------
-    // Utility
-    //--------------------------------
 
     protected bool IsMyPart(BodyPart part)
     {
@@ -144,7 +240,7 @@ public abstract class StatusEffect
 
     protected BodyPart GetRandomAlivePart()
     {
-        if (owner == null)
+        if (owner == null || owner.BodyParts == null)
             return null;
 
         List<BodyPart> candidates = new();
@@ -165,31 +261,43 @@ public abstract class StatusEffect
             Random.Range(0, candidates.Count)];
     }
 
-    //--------------------------------
-    // Duration
-    //--------------------------------
-
     public void DecreaseDuration()
     {
+        if (IsPermanent)
+            return;
+
         if (Duration > 0)
             Duration--;
     }
 
-    //--------------------------------
-    // Remove
-    //--------------------------------
+    protected void RefreshDurationFrom(StatusEffect other)
+    {
+        if (other == null)
+            return;
 
+        if (IsPermanent)
+            return;
+
+        Duration = Mathf.Max(Duration, other.Duration);
+    }
+
+    // 기존 파생 클래스 호환용 수동 제거 API.
     protected void RemoveStatus()
     {
+        if (owner == null)
+            return;
+
         if (ownerPart != null)
         {
-            ownerPart.RemoveStatus(this);
+            owner.RemovePartStatus(
+                ownerPart,
+                this,
+                StatusEffectRemoveReason.Manual);
             return;
         }
 
-        if (owner != null)
-        {
-            owner.RemoveStatus(this);
-        }
+        owner.RemoveStatus(
+            this,
+            StatusEffectRemoveReason.Manual);
     }
 }

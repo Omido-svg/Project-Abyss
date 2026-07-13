@@ -1,6 +1,6 @@
 using UnityEngine;
 
-public class OlafImmortalFuryMechanic : CombatMechanic
+public class OlafImmortalFuryMechanic : CombatMechanic, IBodyPartBreakImmediateReaction
 {
     public override string MechanicName => "불사의 분노";
 
@@ -22,7 +22,6 @@ public class OlafImmortalFuryMechanic : CombatMechanic
         if (battleEvent == null)
             return;
 
-        battleEvent.OnBodyPartDestroyed += OnBodyPartDestroyed;
         battleEvent.OnTurnEnd += OnTurnEnd;
     }
 
@@ -31,21 +30,23 @@ public class OlafImmortalFuryMechanic : CombatMechanic
         if (battleEvent == null)
             return;
 
-        battleEvent.OnBodyPartDestroyed -= OnBodyPartDestroyed;
         battleEvent.OnTurnEnd -= OnTurnEnd;
     }
 
     //------------------------------------------------
     // 부위 파괴 감지
     //------------------------------------------------
-    private void OnBodyPartDestroyed(
-        Character target,
-        BodyPart part)
+    public void OnBodyPartBrokenBeforeDeath(
+        BodyPartBreakEventContext context)
     {
-        if (target == null || part == null)
+        if (context == null ||
+            context.Target == null ||
+            context.Part == null)
+        {
             return;
+        }
 
-        if (target != owner)
+        if (context.Target != owner)
             return;
 
         TryEnterImmortalFury();

@@ -7,16 +7,14 @@ public class ForceBreakOwnPartEffect : SkillEffectDefinition
 {
     public PartType[] PriorityParts;
 
-    public override void Apply(SkillEffectContext context)
+    public override void Apply(
+        SkillEffectContext context)
     {
-        if (context == null)
+        if (context?.Resolver == null ||
+            context.Owner == null)
+        {
             return;
-
-        if (context.Resolver == null)
-            return;
-
-        if (context.Owner == null)
-            return;
+        }
 
         BodyPart part =
             FindPartToBreak(context.Owner);
@@ -24,53 +22,51 @@ public class ForceBreakOwnPartEffect : SkillEffectDefinition
         if (part == null)
         {
             Debug.LogWarning(
-                $"{context.Owner.Data.CharacterName} 부위 파괴 실패 : 파괴 가능한 부위 없음");
-
+                $"{context.Owner.Data.CharacterName} 부위 파괴 실패 : " +
+                "파괴 가능한 부위 없음");
             return;
         }
 
         Debug.Log(
-            $"{context.Owner.Data.CharacterName} 도사림 : {part.Type} 부위 파괴");
+            $"{context.Owner.Data.CharacterName} 도사림 : " +
+            $"{part.Type} 부위 파괴");
 
-        context.Resolver.ForceBreakPart(
+        EffectRequest request =
             EffectRequest.ForceBreak(
                 context.Owner,
                 context.Owner,
-                part));
+                part);
+
+        request.SourceAction = context.Action;
+
+        context.Resolver.ForceBreakPart(request);
     }
 
-    private BodyPart FindPartToBreak(Character owner)
+    private BodyPart FindPartToBreak(
+        Character character)
     {
-        if (owner == null)
-            return null;
-
-        if (owner.BodyParts == null)
+        if (character?.BodyParts == null)
             return null;
 
         if (PriorityParts != null)
         {
             foreach (PartType type in PriorityParts)
             {
-                foreach (BodyPart part in owner.BodyParts)
+                foreach (BodyPart part in character.BodyParts)
                 {
-                    if (part == null)
-                        continue;
-
-                    if (part.IsBroken)
-                        continue;
-
-                    if (part.Type == type)
+                    if (part != null &&
+                        !part.IsBroken &&
+                        part.Type == type)
+                    {
                         return part;
+                    }
                 }
             }
         }
 
-        foreach (BodyPart part in owner.BodyParts)
+        foreach (BodyPart part in character.BodyParts)
         {
-            if (part == null)
-                continue;
-
-            if (!part.IsBroken)
+            if (part != null && !part.IsBroken)
                 return part;
         }
 

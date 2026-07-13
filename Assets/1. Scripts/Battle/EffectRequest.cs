@@ -1,5 +1,9 @@
 public class EffectRequest
 {
+    public DamageRequest DamageRequest;
+    public DamageContext DamageContext;
+
+    public BattleAction SourceAction;
     public Character SourceCharacter;
     public BodyPart SourcePart;
     public Skill SourceSkill;
@@ -24,6 +28,7 @@ public class EffectRequest
     {
         return new EffectRequest
         {
+            SourceAction = action,
             SourceCharacter = source,
             SourcePart = action?.OwnerPart,
             SourceSkill = action?.Skill,
@@ -174,4 +179,53 @@ public class EffectRequest
             TargetCharacter = target
         };
     }
+    public static EffectRequest Damage(
+        DamageContext context)
+    {
+        if (context == null)
+            return null;
+
+        return new EffectRequest
+        {
+            DamageRequest = context.Request,
+            DamageContext = context,
+
+            SourceAction = context.Action,
+            SourceCharacter = context.Attacker,
+            SourcePart = context.Action?.OwnerPart,
+            SourceSkill = context.Action?.Skill,
+            SourceStatusEffect =
+                context.Request.SourceEffect,
+
+            TargetCharacter = context.Target,
+            TargetPart = context.TargetPart,
+
+            Value = context.FinalDamage,
+            CanBreakPart = context.CanBreakPart,
+            DamageType = context.DamageType
+        };
+    }
+
+    public static EffectRequest DirectDamage(
+        Character source,
+        Character target,
+        int damage,
+        BattleAction sourceAction = null)
+    {
+        return new EffectRequest
+        {
+            SourceAction = sourceAction,
+            SourceCharacter = source,
+            SourcePart = sourceAction?.OwnerPart,
+            SourceSkill = sourceAction?.Skill,
+
+            TargetCharacter = target,
+            TargetPart = null,
+
+            Value = damage,
+            CanBreakPart = false,
+            DamageType = DamageType.Direct
+        };
+    }
+
 }

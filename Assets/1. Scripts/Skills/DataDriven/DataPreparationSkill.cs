@@ -1,16 +1,32 @@
+using UnityEngine;
+
 public class DataPreparationSkill : PreparationSkill, IVisualSkill
 {
     private readonly SkillDefinition definition;
-    
-    public SkillVisualDefinition VisualDefinition =>
-        definition.VisualDefinition;
 
-    public override bool CanBreakPart => definition.CanBreakPart;
-    public override bool GainPrestige => definition.GainPrestige;
+    protected override SkillDefinition RuntimeDefinition =>
+        definition;
+
+    public SkillVisualDefinition VisualDefinition =>
+        definition?.VisualDefinition;
+
+    public override bool CanBreakPart =>
+        definition != null && definition.CanBreakPart;
+
+    public override bool GainPrestige =>
+        definition != null && definition.GainPrestige;
 
     public DataPreparationSkill(SkillDefinition definition)
     {
         this.definition = definition;
+
+        if (definition == null)
+        {
+            SkillName = "NULL SKILL";
+            BasePower = 0;
+            Resolver = new DiceResolver(0, 0);
+            return;
+        }
 
         SkillName = definition.SkillName;
         BasePower = definition.BasePower;
@@ -19,17 +35,11 @@ public class DataPreparationSkill : PreparationSkill, IVisualSkill
 
     public override void Execute(BattleAction action)
     {
-        SkillEffectContext context =
-            new SkillEffectContext(
-                action,
-                definition);
+        if (action == null)
+            return;
 
-        foreach (SkillEffectDefinition effect in definition.Effects)
-        {
-            if (effect == null)
-                continue;
-
-            effect.Apply(context);
-        }
+        ExecuteDefinitionEffects(
+            action,
+            SkillEffectTiming.OnExecute);
     }
 }

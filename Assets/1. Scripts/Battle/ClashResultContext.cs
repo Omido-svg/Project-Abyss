@@ -18,17 +18,30 @@ public class ClashResultContext
     public MomentumState WinnerMomentumStateBefore;
     public MomentumState WinnerMomentumStateAfter;
 
-    // 실제 합이었는지 여부
+    // 실제 합인지, 일방 공격 결과인지 구분한다.
     public bool IsClash;
 
-    // 합 수치 연출용
-    // WinnerAction 기준 값 / LoserAction 기준 값
     public List<ClashRollVisualStep> ClashSteps = new();
-
-    // 실제 데미지 연출용
     public List<int> HitDamages = new();
+
+    public DamageContext DamageContext;
+    public DamageResult DamageResult;
+    public DamageEventResult DamageEventResult;
+
+    public int FinalHpDamage;
+    public int PartHpDamage;
+    public int DirectHpDamage;
+
+    public bool WasCritical;
+    public bool WasKilled;
+    public bool BrokePart;
+    public bool WeakenedPart;
 
     public bool HasTargetPartHpSnapshot;
     public int TargetPartHpBefore;
     public int TargetPartHpAfter;
+
+    public bool HasTargetCharacterHpSnapshot;
+    public int TargetCharacterHpBefore;
+    public int TargetCharacterHpAfter;
 }

@@ -3624,6 +3624,7 @@ MonoBehaviour:
   mouseButtonSelect: 0
   mouseButtonDeselect: 1
   focusOffset: {x: 0, y: 2, z: 0}
+  focusDistance: 5
 --- !u!114 &1244269864
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3684,6 +3685,7 @@ MonoBehaviour:
   hitStateName: Hit
   hitCrossFadeDuration: 0.03
   baseLayerIndex: 0
+  logDebug: 0
 --- !u!114 &1244269867
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3887,6 +3889,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   canvasGroup: {fileID: 1299797370}
+  slotHeaderText: {fileID: 0}
   normalAttackButton: {fileID: 1730484223}
   duelButton: {fileID: 699706617}
   preparationButton: {fileID: 842641891}
@@ -6819,6 +6822,7 @@ MonoBehaviour:
   character: {fileID: 2094296668}
   characterView: {fileID: 2094296671}
   initialVfx: []
+  logDebug: 0
 --- !u!1001 &1942539578
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -7068,6 +7072,7 @@ MonoBehaviour:
   character: {fileID: 1244269864}
   characterView: {fileID: 1244269866}
   initialVfx: []
+  logDebug: 0
 --- !u!1 &1969176755
 GameObject:
   m_ObjectHideFlags: 0
@@ -8394,6 +8399,7 @@ MonoBehaviour:
   mouseButtonSelect: 0
   mouseButtonDeselect: 1
   focusOffset: {x: 0, y: 2, z: 0}
+  focusDistance: 5
 --- !u!114 &2094296671
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -8424,6 +8430,7 @@ MonoBehaviour:
   hitStateName: Hit
   hitCrossFadeDuration: 0.03
   baseLayerIndex: 0
+  logDebug: 0
 --- !u!114 &2094296672
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -8515,6 +8522,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   rig: {fileID: 1653399053}
+  legacyCameraController: {fileID: 0}
+  interactionMoveSpeed: 8
+  interactionRotationSpeed: 360
+  interactionArriveDistance: 0.01
+  interactionArriveAngle: 0.1
   logDebug: 1
 --- !u!1 &2109434802
 GameObject:
@@ -8701,6 +8713,7 @@ MonoBehaviour:
   maxTieRerollCount: 10
   randomMin: 1
   randomMax: 20
+  logDebug: 0
 --- !u!114 &2113237152
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -8721,6 +8734,7 @@ MonoBehaviour:
   momentumScrollbarUI: {fileID: 1805580445}
   vfxManager: {fileID: 2113237154}
   logMissingReferences: 1
+  logDebug: 0
   battleUIManager: {fileID: 605390726}
   actionAnnounceUI: {fileID: 1883356089}
 --- !u!4 &2113237153
@@ -8750,6 +8764,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 85846d6ee54abf24cb0256607b9b00e0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  logDebug: 0
 --- !u!114 &2113237155
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -8766,6 +8781,7 @@ MonoBehaviour:
   vfxManager: {fileID: 2113237154}
   damageNumberManager: {fileID: 2113237156}
   delayBetweenTicks: 0.15
+  logDebug: 0
 --- !u!114 &2113237156
 MonoBehaviour:
   m_ObjectHideFlags: 0

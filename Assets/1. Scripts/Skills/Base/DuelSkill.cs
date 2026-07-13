@@ -1,4 +1,5 @@
 public abstract class DuelSkill : Skill
 {
-    public override ActionType ActionType => ActionType.Duel;
+    public override ActionType ActionType =>
+        ActionType.Duel;
 }

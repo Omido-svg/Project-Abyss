@@ -6,7 +6,7 @@ public abstract class Character : MonoBehaviour
     [Header("Data")]
     [SerializeField] private CharacterData data;
     public CharacterData Data => data;
-    
+
     public BattleContext BattleContext => battleContext;
 
     public BattleEvent BattleEvent
@@ -19,13 +19,21 @@ public abstract class Character : MonoBehaviour
             return battleContext._battleEvent;
         }
     }
-    
+
     private CharacterDamageController damageController;
     private CharacterBodyPartController bodyPartController;
     private CharacterStatusController statusController;
     private CharacterBuildController buildController;
     private CharacterResourceController resourceController;
     private CharacterLifeController lifeController;
+
+    private DamageContext activeDamageContext;
+
+    public DamageContext ActiveDamageContext =>
+        activeDamageContext;
+
+    public bool IsDamageResolutionInProgress =>
+        activeDamageContext != null;
 
     public int CurrentHP
     {
@@ -37,7 +45,7 @@ public abstract class Character : MonoBehaviour
             return RuntimeStatus.currentHP;
         }
     }
-    
+
     public IReadOnlyList<StatusEffect> StatusEffects
     {
         get
@@ -48,7 +56,7 @@ public abstract class Character : MonoBehaviour
             return statusController.CharacterStatuses;
         }
     }
-    
+
     private CharacterMechanicController mechanicController;
 
     public IReadOnlyList<CombatMechanic> Mechanics
@@ -67,6 +75,27 @@ public abstract class Character : MonoBehaviour
     //--------------------------------
 
     public abstract IReadOnlyList<BodyPart> BodyParts { get; }
+
+    public ICombatTargetModel TargetModel { get; private set; }
+
+    public bool UsesBodyParts =>
+        TargetModel?.UsesBodyParts ??
+        (BodyParts != null && BodyParts.Count > 0);
+
+    public bool IsSingleHpTarget =>
+        TargetModel != null &&
+        !TargetModel.UsesBodyParts;
+
+    public int MaxCombatHP
+    {
+        get
+        {
+            if (TargetModel != null)
+                return TargetModel.GetMaxHp(this);
+
+            return Mathf.Max(1, CurrentHP);
+        }
+    }
 
     //--------------------------------
     // Status
@@ -99,7 +128,7 @@ public abstract class Character : MonoBehaviour
             return lifeController.IsDead;
         }
     }
-    
+
     public void TransferPartStatusesToCharacter(BodyPart part)
     {
         if (statusController == null)
@@ -114,7 +143,7 @@ public abstract class Character : MonoBehaviour
     protected BattleEvent battleEvent;
 
     //------------------------------------------------
-    
+
     // 아이템과 증강들
     [SerializeField] private List<CharacterItem> equippedItems = new();
     [SerializeField] private List<CharacterAugment> equippedAugments = new();
@@ -141,7 +170,7 @@ public abstract class Character : MonoBehaviour
         }
     }
 
-    
+
     public virtual void Initialize(BattleContext context)
     {
         if (context == null)
@@ -162,7 +191,7 @@ public abstract class Character : MonoBehaviour
             new CharacterMechanicController(this);
 
         mechanicController.Clear();
-        
+
         lifeController =
             new CharacterLifeController(
                 this,
@@ -209,6 +238,14 @@ public abstract class Character : MonoBehaviour
             }
         }
 
+        foreach (Skill skill in GetCharacterSkills())
+        {
+            if (skill == null)
+                continue;
+
+            skill.Initialize(this, battleEvent);
+        }
+
         //--------------------------------
         // 4. 기본 스탯 재계산
         //--------------------------------
@@ -230,8 +267,11 @@ public abstract class Character : MonoBehaviour
             BodyParts);
 
         //--------------------------------
-        // 7. 런타임 스탯 생성
+        // 7. 타겟 모델 / 런타임 스탯 생성
         //--------------------------------
+
+        TargetModel =
+            CreateCombatTargetModel();
 
         RuntimeStatus =
             new RuntimeStatus(CurrentStatus);
@@ -276,13 +316,29 @@ public abstract class Character : MonoBehaviour
     {
         mechanicController?.UnregisterAll();
     }
-    
+
     protected abstract void BuildBodyParts();
+
+    protected virtual IEnumerable<Skill> GetCharacterSkills()
+    {
+        return System.Array.Empty<Skill>();
+    }
+
+    protected virtual ICombatTargetModel CreateCombatTargetModel()
+    {
+        if (BodyParts != null &&
+            BodyParts.Count > 0)
+        {
+            return new BodyPartTargetModel();
+        }
+
+        return new SingleHpTargetModel(1);
+    }
 
     protected virtual void BuildMechanics()
     {
     }
-    
+
     protected void AddMechanic(CombatMechanic mechanic)
     {
         if (mechanicController == null)
@@ -292,11 +348,15 @@ public abstract class Character : MonoBehaviour
     }
 
     //------------------------------------------------
-    
+
     public virtual int GetMaxActionSlotsForPart(BodyPart part)
     {
         if (part == null)
-            return 0;
+        {
+            return IsSingleHpTarget
+                ? 1
+                : 0;
+        }
 
         if (part.IsBroken)
             return 0;
@@ -311,9 +371,11 @@ public abstract class Character : MonoBehaviour
 
         mechanicController?.ModifyActionSlotPolicy(context);
 
-        return Mathf.Max(0, context.MaxSlots);
+        return Mathf.Max(
+            0,
+            context.MaxSlots);
     }
-    
+
     public T GetStatus<T>() where T : StatusEffect
     {
         if (statusController == null)
@@ -321,7 +383,7 @@ public abstract class Character : MonoBehaviour
 
         return statusController.GetStatus<T>();
     }
-    
+
     public BodyPart GetRandomUsablePart()
     {
         List<BodyPart> candidates = new();
@@ -346,17 +408,29 @@ public abstract class Character : MonoBehaviour
 
     private int CalculateInitialHP()
     {
+        if (TargetModel != null)
+        {
+            return Mathf.Max(
+                0,
+                TargetModel.CalculateInitialHp(this));
+        }
+
         int hp = 0;
+
+        if (BodyParts == null)
+            return hp;
 
         foreach (BodyPart part in BodyParts)
         {
-            if (part == null)
+            if (part == null ||
+                part.IsBroken)
+            {
                 continue;
+            }
 
-            if (part.State == BodyPartState.Broken)
-                continue;
-
-            hp += Mathf.Max(0, Mathf.RoundToInt(part.PartHP));
+            hp += Mathf.Max(
+                0,
+                Mathf.RoundToInt(part.PartHP));
         }
 
         return hp;
@@ -378,6 +452,10 @@ public abstract class Character : MonoBehaviour
 
     public virtual void TurnStart()
     {
+        if (IsDead)
+            return;
+
+        statusController?.OnTurnStart();
     }
 
     public virtual void TurnEnd()
@@ -392,6 +470,19 @@ public abstract class Character : MonoBehaviour
         CheckDead();
     }
 
+    internal void BeginDamageResolution(
+        DamageContext context)
+    {
+        activeDamageContext = context;
+    }
+
+    internal void EndDamageResolution(
+        DamageContext context)
+    {
+        if (activeDamageContext == context)
+            activeDamageContext = null;
+    }
+
     //------------------------------------------------
     // Damage
     //------------------------------------------------
@@ -403,7 +494,7 @@ public abstract class Character : MonoBehaviour
     {
         if (damageController == null)
             return;
-            
+
         damageController.TakeDamage(
             targetPart,
             damage,
@@ -422,7 +513,18 @@ public abstract class Character : MonoBehaviour
                 RuntimeStatus.currentHP - damage,
                 0);
     }
-    
+
+    public void RestoreCurrentHP(int amount)
+    {
+        if (RuntimeStatus == null || amount <= 0)
+            return;
+
+        RuntimeStatus.currentHP =
+            Mathf.Min(
+                RuntimeStatus.currentHP + amount,
+                MaxCombatHP);
+    }
+
     public void RecoverPart(BodyPart part)
     {
         if (bodyPartController == null)
@@ -438,15 +540,46 @@ public abstract class Character : MonoBehaviour
         if (RuntimeStatus == null)
             return;
 
-        RuntimeStatus.currentHP = CalculateInitialHP();
+        RuntimeStatus.currentHP =
+            CalculateInitialHP();
     }
-    
+
     public bool TryBreakWeakenedPart(BodyPart part)
+    {
+        return TryBreakWeakenedPart(
+            part,
+            activeDamageContext?.Attacker,
+            activeDamageContext?.Action);
+    }
+
+    public bool TryBreakWeakenedPart(
+        BodyPart part,
+        Character source,
+        BattleAction sourceAction = null)
     {
         if (bodyPartController == null)
             return false;
 
-        return bodyPartController.TryBreakWeakenedPart(part);
+        return bodyPartController.TryBreakWeakenedPart(
+            part,
+            source,
+            sourceAction);
+    }
+
+    //------------------------------------------------
+
+    public virtual void TakeDirectDamage(
+        int damage,
+        Character source = null,
+        BattleAction sourceAction = null)
+    {
+        if (damageController == null)
+            return;
+
+        damageController.TakeDirectDamage(
+            damage,
+            source,
+            sourceAction);
     }
 
     //------------------------------------------------
@@ -467,10 +600,21 @@ public abstract class Character : MonoBehaviour
 
     public virtual void CheckDead()
     {
+        CheckDead(
+            activeDamageContext?.Attacker,
+            activeDamageContext?.Action);
+    }
+
+    public virtual void CheckDead(
+        Character killer,
+        BattleAction sourceAction = null)
+    {
         if (lifeController == null)
             return;
 
-        lifeController.CheckDead();
+        lifeController.CheckDead(
+            killer,
+            sourceAction);
     }
 
     //------------------------------------------------
@@ -487,10 +631,24 @@ public abstract class Character : MonoBehaviour
 
     public virtual void Die()
     {
+        Die(
+            null,
+            null,
+            activeDamageContext);
+    }
+
+    public virtual void Die(
+        Character killer,
+        BattleAction sourceAction = null,
+        DamageContext damageContext = null)
+    {
         if (lifeController == null)
             return;
 
-        lifeController.Die();
+        lifeController.Die(
+            killer,
+            sourceAction,
+            damageContext);
     }
 
     //------------------------------------------------
@@ -511,6 +669,14 @@ public abstract class Character : MonoBehaviour
             this);
     }
 
+    public void ApplyDisabledStatusForPart(BodyPart part)
+    {
+        if (part == null || part.IsBroken)
+            return;
+
+        OnBodyPartDisabled(part);
+    }
+
     protected virtual StatusEffect CreateDisabledDebuff(
         BodyPart part)
     {
@@ -523,10 +689,24 @@ public abstract class Character : MonoBehaviour
 
     public void ForceBreakPart(BodyPart part)
     {
+        ForceBreakPart(
+            part,
+            this,
+            null);
+    }
+
+    public void ForceBreakPart(
+        BodyPart part,
+        Character source,
+        BattleAction sourceAction = null)
+    {
         if (bodyPartController == null)
             return;
 
-        bodyPartController.ForceBreakPart(part);
+        bodyPartController.ForceBreakPart(
+            part,
+            source,
+            sourceAction);
     }
 
     //------------------------------------------------
@@ -543,7 +723,7 @@ public abstract class Character : MonoBehaviour
 
         AddStatus(brokenStatus, this);
     }
-    
+
     protected virtual StatusEffect CreateBrokenPartStatus(
         BodyPart part)
     {
@@ -574,10 +754,35 @@ public abstract class Character : MonoBehaviour
 
     public void RemoveStatus(StatusEffect effect)
     {
+        RemoveStatus(
+            effect,
+            StatusEffectRemoveReason.Manual);
+    }
+
+    public void RemoveStatus(
+        StatusEffect effect,
+        StatusEffectRemoveReason reason)
+    {
         if (statusController == null)
             return;
 
-        statusController.RemoveStatus(effect);
+        statusController.RemoveStatus(
+            effect,
+            reason);
+    }
+
+    public void RemoveAllPartStatuses(
+        BodyPart part,
+        StatusEffectRemoveReason reason)
+    {
+        statusController?.RemoveAllPartStatuses(
+            part,
+            reason);
+    }
+
+    public void RemoveBrokenStatusForPart(BodyPart part)
+    {
+        statusController?.RemoveBrokenStatusForPart(part);
     }
 
     //------------------------------------------------
@@ -628,19 +833,23 @@ public abstract class Character : MonoBehaviour
 
         return value;
     }
-    
+
     public bool CanUseSkill(
         BodyPart part,
         Skill skill)
     {
-        if (part == null)
-            return false;
-
         if (skill == null)
             return false;
 
-        if (part.IsBroken)
+        if (part == null)
+        {
+            if (!IsSingleHpTarget)
+                return false;
+        }
+        else if (part.IsBroken)
+        {
             return false;
+        }
 
         foreach (StatusEffect effect in StatusEffects)
         {
@@ -651,13 +860,16 @@ public abstract class Character : MonoBehaviour
                 return false;
         }
 
-        foreach (StatusEffect effect in part.StatusEffects)
+        if (part != null)
         {
-            if (effect == null)
-                continue;
+            foreach (StatusEffect effect in part.StatusEffects)
+            {
+                if (effect == null)
+                    continue;
 
-            if (!effect.CanUseSkill(part, skill))
-                return false;
+                if (!effect.CanUseSkill(part, skill))
+                    return false;
+            }
         }
 
         if (mechanicController != null &&
@@ -671,7 +883,15 @@ public abstract class Character : MonoBehaviour
 
         return true;
     }
-    
+
+    public void NotifyBodyPartBreakBeforeDeath(
+        BodyPartBreakEventContext context)
+    {
+        mechanicController?
+            .NotifyBodyPartBreakBeforeDeath(
+                context);
+    }
+
     public T GetMechanic<T>() where T : CombatMechanic
     {
         if (mechanicController == null)
@@ -679,7 +899,7 @@ public abstract class Character : MonoBehaviour
 
         return mechanicController.GetMechanic<T>();
     }
-    
+
     public virtual bool CanAIUse(
         Character owner,
         BodyPart part,
@@ -687,7 +907,7 @@ public abstract class Character : MonoBehaviour
     {
         return true;
     }
-    
+
     public void AddItem(CharacterItem item)
     {
         if (buildController == null)
@@ -721,7 +941,7 @@ public abstract class Character : MonoBehaviour
 
         buildController.AddAugment(augment);
     }
-    
+
     public void AddBlock(int amount)
     {
         if (resourceController == null)
@@ -729,7 +949,7 @@ public abstract class Character : MonoBehaviour
 
         resourceController.AddBlock(amount);
     }
-    
+
     public void ClearBlock()
     {
         if (resourceController == null)
@@ -737,7 +957,7 @@ public abstract class Character : MonoBehaviour
 
         resourceController.ClearBlock();
     }
-    
+
     public void AddPartStatus(
         BodyPart part,
         StatusEffect effect,
@@ -753,12 +973,26 @@ public abstract class Character : MonoBehaviour
         BodyPart part,
         StatusEffect effect)
     {
+        RemovePartStatus(
+            part,
+            effect,
+            StatusEffectRemoveReason.Manual);
+    }
+
+    public void RemovePartStatus(
+        BodyPart part,
+        StatusEffect effect,
+        StatusEffectRemoveReason reason)
+    {
         if (statusController == null)
             return;
 
-        statusController.RemovePartStatus(part, effect);
+        statusController.RemovePartStatus(
+            part,
+            effect,
+            reason);
     }
-    
+
     public T GetPartStatus<T>(BodyPart part) where T : StatusEffect
     {
         if (statusController == null)
@@ -784,7 +1018,7 @@ public abstract class Character : MonoBehaviour
         return statusController.HasPartStatus<T>(
             part);
     }
-        
+
     public void TakeStatusPartDamage(
         BodyPart targetPart,
         int damage,

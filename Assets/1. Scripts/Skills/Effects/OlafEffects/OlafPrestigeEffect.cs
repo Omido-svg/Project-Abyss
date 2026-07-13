@@ -1,146 +1,54 @@
 using UnityEngine;
 
 [CreateAssetMenu(
-    menuName = "Battle/Skill Effect/Olaf/Prestige Effect",
-    fileName = "OlafPrestigeEffect")]
-public class OlafPrestigeEffect : SkillEffectDefinition
+    menuName = "Battle/Skill Effect/Olaf/Normal Bleed",
+    fileName = "OlafNormalBleedEffect")]
+public class OlafNormalBleedEffect : SkillEffectDefinition
 {
-    [Header("Bleeding Explosion")]
-    [SerializeField]
-    private bool consumeBleeding = true;
-
-    [SerializeField]
-    private int damagePerBleedingStack = 1;
-
-    [Header("Madness Bonus")]
-    [SerializeField]
-    private bool consumeMadness = true;
-
-    [SerializeField]
-    private int damagePerMadness = 2;
-
-    [Header("Break")]
-    [SerializeField]
-    private bool forceBreakTargetPart = true;
-
-    public override void Apply(SkillEffectContext context)
+    public override void Apply(
+        SkillEffectContext context)
     {
-        if (context == null)
+        if (context?.Owner == null ||
+            context.Target == null ||
+            context.Resolver == null)
+        {
             return;
+        }
 
-        if (context.Owner == null)
-            return;
-
-        if (context.Target == null)
-            return;
-
-        if (context.TargetPart == null)
-            return;
-
-        if (context.Resolver == null)
-            return;
-
-        BodyPart targetPart =
-            context.TargetPart;
-
-        Character owner =
-            context.Owner;
-
-        Character target =
-            context.Target;
+        int bleedAmount = 1;
 
         OlafMadnessMechanic madness =
-            owner.GetMechanic<OlafMadnessMechanic>();
+            context.Owner.GetMechanic<OlafMadnessMechanic>();
 
-        int bleedingDamage =
-            CalculateBleedingExplosionDamage(
-                context,
-                target,
-                targetPart);
-
-        int madnessDamage =
-            CalculateMadnessBonusDamage(
-                madness);
-
-        int totalExtraDamage =
-            bleedingDamage + madnessDamage;
-
-        if (totalExtraDamage > 0)
+        if (madness != null)
         {
-            context.Resolver.ApplyPartDamage(
-                EffectRequest.PartDamage(
-                    owner,
-                    context.Action,
-                    totalExtraDamage,
-                    true));
+            bleedAmount =
+                madness.GetNormalAttackBleedAmount();
         }
-
-        if (forceBreakTargetPart)
-        {
-            context.Resolver.ForceBreakPart(
-                EffectRequest.ForceBreak(
-                    owner,
-                    target,
-                    targetPart));
-        }
-
-        Debug.Log(
-            $"{owner.Data.CharacterName} 위세 효과 : " +
-            $"{target.Data.CharacterName} {targetPart.Type}에 " +
-            $"추가 피해 {totalExtraDamage}, 강제 파괴 {forceBreakTargetPart}");
-    }
-
-    private int CalculateBleedingExplosionDamage(
-        SkillEffectContext context,
-        Character target,
-        BodyPart targetPart)
-    {
-        if (target == null)
-            return 0;
-
-        if (targetPart == null)
-            return 0;
 
         Bleeding bleeding =
-            target.GetPartStatus<Bleeding>(
-                targetPart);
+            new Bleeding(bleedAmount);
 
-        if (bleeding == null)
-            return 0;
-
-        int stack =
-            Mathf.Max(0, bleeding.Stack);
-
-        if (consumeBleeding)
+        if (context.TargetPart != null)
         {
-            context.Resolver.RemoveBodyPartStatus(
-                EffectRequest.RemoveBodyPartStatus(
+            context.Resolver.ApplyBodyPartStatus(
+                EffectRequest.BodyPartStatus(
                     context.Owner,
-                    target,
-                    targetPart,
+                    context.Target,
+                    context.TargetPart,
+                    bleeding));
+        }
+        else
+        {
+            context.Resolver.ApplyCharacterStatus(
+                EffectRequest.CharacterStatus(
+                    context.Owner,
+                    context.Target,
                     bleeding));
         }
 
-        return stack * damagePerBleedingStack;
-    }
-
-    private int CalculateMadnessBonusDamage(
-        OlafMadnessMechanic madness)
-    {
-        if (madness == null)
-            return 0;
-
-        int currentMadness =
-            madness.CurrentMadness;
-
-        int damage =
-            currentMadness * damagePerMadness;
-
-        if (consumeMadness)
-        {
-            madness.ClearMadness();
-        }
-
-        return damage;
+        Debug.Log(
+            $"{context.Owner.Data.CharacterName} 일반공격 효과 : " +
+            $"출혈 {bleedAmount} 부여");
     }
 }

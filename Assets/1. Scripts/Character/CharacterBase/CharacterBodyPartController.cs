@@ -1,11 +1,8 @@
-using System.Linq;
 using UnityEngine;
 
 public class CharacterBodyPartController
 {
     private readonly Character owner;
-    
-    // 로그 필요시 true 로 설정
     private const bool VerboseLog = false;
 
     public CharacterBodyPartController(Character owner)
@@ -15,72 +12,116 @@ public class CharacterBodyPartController
 
     public void WeakenPart(BodyPart part)
     {
-        if (owner == null)
-            return;
+        WeakenPart(
+            part,
+            owner?.ActiveDamageContext?.Attacker,
+            owner?.ActiveDamageContext?.Action);
+    }
 
-        if (part == null)
+    public void WeakenPart(
+        BodyPart part,
+        Character source,
+        BattleAction sourceAction = null)
+    {
+        if (owner == null ||
+            part == null ||
+            part.IsBroken ||
+            part.IsWeakened)
+        {
             return;
+        }
 
-        if (part.IsBroken)
-            return;
-
-        if (part.IsWeakened)
-            return;
+        BodyPartState stateBefore =
+            part.State;
 
         part.Weaken();
 
-        owner.BattleEvent?.RaiseBodyPartWeakened(
-            owner,
-            part);
+        // 이벤트 구독자가 약화 디버프까지 적용된 완성 상태를 보게 한다.
+        owner.ApplyDisabledStatusForPart(part);
+
+        // DamageManager 처리 중이면 최종 스냅샷으로 한 번만 발행한다.
+        if (!owner.IsDamageResolutionInProgress)
+        {
+            owner.BattleEvent?.RaiseBodyPartWeakened(
+                BodyPartWeakenEventContext.External(
+                    source,
+                    owner,
+                    part,
+                    sourceAction,
+                    stateBefore));
+        }
     }
 
     public bool TryBreakWeakenedPart(BodyPart part)
     {
-        if (owner == null)
-            return false;
+        return TryBreakWeakenedPart(
+            part,
+            owner?.ActiveDamageContext?.Attacker,
+            owner?.ActiveDamageContext?.Action);
+    }
 
-        if (part == null)
+    public bool TryBreakWeakenedPart(
+        BodyPart part,
+        Character source,
+        BattleAction sourceAction = null)
+    {
+        if (owner == null ||
+            part == null ||
+            part.IsBroken)
+        {
             return false;
-
-        if (part.IsBroken)
-            return false;
+        }
 
         if (!part.IsWeakened)
         {
             Debug.Log(
-                $"{owner.Data.CharacterName} {part.Type} 부위는 약화 상태가 아니므로 파괴할 수 없습니다.");
+                $"{owner.Data.CharacterName} {part.Type} 부위는 " +
+                "약화 상태가 아니므로 파괴할 수 없습니다.");
 
             return false;
         }
 
-        BreakPartInternal(part);
+        BreakPartInternal(
+            part,
+            source,
+            sourceAction);
+
         return true;
     }
 
     public void ForceBreakPart(BodyPart part)
     {
-        if (owner == null)
-            return;
-
-        if (part == null)
-            return;
-
-        if (part.IsBroken)
-            return;
-
-        BreakPartInternal(part);
+        ForceBreakPart(
+            part,
+            owner,
+            null);
     }
 
-    private void BreakPartInternal(BodyPart part)
+    public void ForceBreakPart(
+        BodyPart part,
+        Character source,
+        BattleAction sourceAction = null)
     {
-        if (owner == null)
+        if (owner == null ||
+            part == null ||
+            part.IsBroken)
+        {
             return;
+        }
 
-        if (part == null)
-            return;
+        BreakPartInternal(
+            part,
+            source,
+            sourceAction);
+    }
 
-        if (part.IsBroken)
-            return;
+    private void BreakPartInternal(
+        BodyPart part,
+        Character source,
+        BattleAction sourceAction)
+    {
+        BodyPartState stateBefore =
+            part.State;
 
         LogVerboseWarning(
             $"[BREAK BEFORE] {owner.Data.CharacterName} {part.Type} " +
@@ -95,85 +136,106 @@ public class CharacterBodyPartController
                 Mathf.RoundToInt(part.PartHP));
 
         if (remainingPartHP > 0)
-        {
-            owner.ReduceCurrentHP(
-                remainingPartHP);
-        }
+            owner.ReduceCurrentHP(remainingPartHP);
 
         part.Break();
 
         owner.TransferPartStatusesToCharacter(part);
-
         owner.OnBodyPartBroken(part, null);
 
-        owner.BattleEvent?.RaiseBodyPartDestroyed(
-            owner,
-            part);
+        DamageContext activeDamage =
+            owner.ActiveDamageContext;
+
+        BodyPartBreakEventContext breakContext =
+            activeDamage != null
+                ? new BodyPartBreakEventContext(
+                    activeDamage.Attacker,
+                    owner,
+                    part,
+                    activeDamage.Action,
+                    activeDamage,
+                    activeDamage.Result,
+                    stateBefore,
+                    part.State,
+                    true)
+                : BodyPartBreakEventContext.External(
+                    source,
+                    owner,
+                    part,
+                    sourceAction,
+                    stateBefore);
+
+        // 불사의 분노처럼 사망 판정에 영향을 주는 메커닉은
+        // 공개 이벤트보다 먼저 내부 훅으로 처리한다.
+        owner.NotifyBodyPartBreakBeforeDeath(
+            breakContext);
+
+        // 표준 피해 중에는 DamageEventDispatcher가 발행한다.
+        // 강제 파괴처럼 DamageContext가 없는 경로만 여기서 즉시 발행한다.
+        if (!owner.IsDamageResolutionInProgress)
+        {
+            owner.BattleEvent?.RaiseBodyPartDestroyed(
+                breakContext);
+        }
 
         LogVerboseWarning(
             $"[BREAK AFTER] {owner.Data.CharacterName} {part.Type} " +
             $"State={part.State}, HP={part.PartHP}/{part.MaxPartHP}, " +
             $"RemovedSlots={removedSlotCount}");
 
-        owner.CheckDead();
-    }
-    
-    private ActionManager GetActionManager()
-    {
-        if (owner == null)
-            return null;
-
-        BattleContext context =
-            owner.BattleContext;
-
-        if (context == null)
-            return null;
-
-        if (context.battleManager == null)
-            return null;
-
-        return context.battleManager.ActionManager;
+        owner.CheckDead(
+            source,
+            sourceAction);
     }
 
     public void RecoverPart(BodyPart part)
     {
-        if (owner == null)
-            return;
-
-        if (part == null)
+        if (owner == null || part == null)
             return;
 
         if (!part.IsBroken && !part.IsWeakened)
             return;
 
-        foreach (StatusEffect effect in part.StatusEffects.ToArray())
-        {
-            part.RemoveStatus(effect);
+        int hpBeforeRecovery =
+            Mathf.Max(
+                0,
+                Mathf.RoundToInt(part.PartHP));
 
-            owner.BattleEvent?.RaiseBodyPartStatusRemoved(
-                owner,
-                part,
-                effect);
-        }
+        int recoverAmount =
+            Mathf.Max(
+                0,
+                Mathf.RoundToInt(part.MaxPartHP) -
+                hpBeforeRecovery);
+
+        owner.RemoveAllPartStatuses(
+            part,
+            StatusEffectRemoveReason.PartRecovered);
 
         part.Recover();
+
+        owner.RemoveBrokenStatusForPart(part);
+
+        // 기존 직접 피해를 보존하고 회복된 부위량만 더한다.
+        owner.RestoreCurrentHP(recoverAmount);
 
         owner.BattleEvent?.RaiseBodyPartRecovered(
             owner,
             part);
 
-        owner.ForceRecalculateHP();
-
         Debug.Log(
-            $"{owner.Data.CharacterName} {part.Type} 부위 회복");
+            $"{owner.Data.CharacterName} {part.Type} 부위 회복 / " +
+            $"HP +{recoverAmount} ({owner.CurrentHP}/{owner.MaxCombatHP})");
     }
-    
+
+    private ActionManager GetActionManager()
+    {
+        return owner?.BattleContext?
+            .battleManager?.ActionManager;
+    }
+
     private int RemoveActionSlotsOfPart(BodyPart part)
     {
-        if (owner == null)
-            return 0;
-
-        if (part == null)
+        if (owner == null || part == null)
             return 0;
 
         ActionManager actionManager =
@@ -181,7 +243,8 @@ public class CharacterBodyPartController
 
         if (actionManager == null)
         {
-            LogVerboseWarning("[REMOVE SLOT] ActionManager NULL");
+            LogVerboseWarning(
+                "[REMOVE SLOT] ActionManager NULL");
             return 0;
         }
 
@@ -197,38 +260,26 @@ public class CharacterBodyPartController
             if (slot == null)
                 break;
 
-            LogVerbose(
-                $"[REMOVE SLOT] " +
-                $"{owner.Data.CharacterName} / {part.Type} / " +
-                $"{slot.Skill?.SkillName}");
-
             actionManager.RemoveSlot(
                 owner,
-                part);
+                part,
+                slot.ActionIndex);
 
             removeCount++;
         }
 
-        LogVerbose(
-            $"[REMOVE SLOT RESULT] " +
-            $"{owner.Data.CharacterName} / {part.Type} / Removed={removeCount}");
-
         return removeCount;
     }
-    
+
     private void LogVerbose(string message)
     {
-        if (!VerboseLog)
-            return;
-
-        Debug.Log(message);
+        if (VerboseLog)
+            Debug.Log(message);
     }
 
     private void LogVerboseWarning(string message)
     {
-        if (!VerboseLog)
-            return;
-
-        Debug.LogWarning(message);
+        if (VerboseLog)
+            Debug.LogWarning(message);
     }
 }

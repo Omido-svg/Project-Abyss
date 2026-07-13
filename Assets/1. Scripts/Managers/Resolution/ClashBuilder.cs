@@ -1,228 +1,192 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class ClashBuilder
+/// <summary>
+/// 페이즈 분리와 합 매칭 결과를 조립하는 진입점.
+/// 실제 규칙은 ActionPhaseSorter와 ClashMatchPolicy에 위임한다.
+/// </summary>
+public sealed class ClashBuilder
 {
-    public ActionExecutionQueue BuildQueue(IReadOnlyList<ActionSlot> slots)
-    {
-        ActionExecutionQueue queue = new();
+    private readonly ActionPhaseSorter phaseSorter;
+    private readonly ClashMatchPolicy matchPolicy;
 
-        ClearTargetSlots(slots);
+    public ClashBuilder()
+        : this(
+            new ActionPhaseSorter(),
+            null)
+    {
+    }
+
+    public ClashBuilder(
+        ActionPhaseSorter phaseSorter,
+        ClashMatchPolicy matchPolicy)
+    {
+        this.phaseSorter =
+            phaseSorter ??
+            new ActionPhaseSorter();
+
+        this.matchPolicy =
+            matchPolicy ??
+            new ClashMatchPolicy(
+                this.phaseSorter);
+    }
+
+    public ActionExecutionQueue BuildQueue(
+        IReadOnlyList<ActionSlot> slots)
+    {
+        ActionExecutionQueue queue =
+            new();
 
         List<ActionSlot> prestigeSlots =
-            GetPhaseSlots(slots, ActionPhase.PRETURN);
+            phaseSorter.GetPhaseSlots(
+                slots,
+                ActionPhase.PRETURN);
 
-        List<ActionSlot> ambushSlots =
-            GetPhaseSlots(slots, ActionPhase.FORESIGHT);
+        List<ActionSlot> preparationSlots =
+            phaseSorter.GetPhaseSlots(
+                slots,
+                ActionPhase.FORESIGHT);
 
         List<ActionSlot> combatSlots =
-            GetPhaseSlots(slots, ActionPhase.COMBAT);
+            phaseSorter.GetPhaseSlots(
+                slots,
+                ActionPhase.COMBAT);
 
-        foreach (ActionSlot slot in prestigeSlots)
-            queue.PrestigeQueue.Enqueue(slot);
+        EnqueueSlots(
+            queue.PrestigeQueue,
+            prestigeSlots);
 
-        foreach (ActionSlot slot in ambushSlots)
-            queue.AmbushQueue.Enqueue(slot);
+        EnqueueSlots(
+            queue.PreparationQueue,
+            preparationSlots);
+
+        ActionPairingResult pairingResult =
+            BuildPairingResult(
+                combatSlots);
+
+        // 실제 실행 계획을 만들 때만 슬롯의 TargetSlot 링크를 갱신한다.
+        pairingResult.ApplyTargetLinks(slots);
 
         queue.ClashQueue =
-            BuildClashQueue(combatSlots);
+            pairingResult.ToQueue();
 
         PrintSlots(slots);
 
         return queue;
     }
-    
-    private void ClearTargetSlots(IReadOnlyList<ActionSlot> slots)
+
+    /// <summary>
+    /// UI도 실제 전투와 동일한 합 규칙을 사용한다.
+    /// 이 메서드는 ActionSlot.TargetSlot을 변경하지 않는다.
+    /// 따라서 LateUpdate에서 반복 호출해도 실제 실행 계획을 오염시키지 않는다.
+    /// </summary>
+    public IReadOnlyList<ClashPair> BuildClashPreview(
+        IReadOnlyList<ActionSlot> slots)
     {
-        if (slots == null)
-            return;
+        List<ActionSlot> combatSlots =
+            phaseSorter.GetPhaseSlots(
+                slots,
+                ActionPhase.COMBAT);
 
-        foreach (ActionSlot slot in slots)
-        {
-            if (slot == null)
-                continue;
+        ActionPairingResult pairingResult =
+            BuildPairingResult(
+                combatSlots);
 
-            slot.TargetSlot = null;
-        }
+        return new List<ClashPair>(
+            pairingResult.Pairs);
     }
-    
-    private Queue<ClashPair> BuildClashQueue(
-        List<ActionSlot> combatSlots)
+
+    public ActionPairingResult BuildPairingResult(
+        IReadOnlyList<ActionSlot> combatSlots)
     {
-        Queue<ClashPair> result = new();
+        ActionPairingResult result =
+            new();
 
-        combatSlots.Sort((a, b) => b.Speed.CompareTo(a.Speed));
+        if (combatSlots == null)
+            return result;
 
-        HashSet<ActionSlot> used = new();
+        // 전달받은 목록이 이미 정렬되어 있어도,
+        // 외부 호출을 위해 복사 후 실행 순서를 다시 고정한다.
+        List<ActionSlot> orderedSlots =
+            new();
 
         foreach (ActionSlot slot in combatSlots)
         {
-            if (slot == null)
-                continue;
+            if (slot != null)
+                orderedSlots.Add(slot);
+        }
 
-            if (used.Contains(slot))
-                continue;
+        orderedSlots.Sort(
+            phaseSorter.CompareForExecution);
 
-            ActionSlot targetSlot =
-                FindTargetActionSlot(slot, combatSlots);
+        HashSet<ActionSlot> usedSlots =
+            new();
 
-            if (targetSlot != null &&
-                !used.Contains(targetSlot) &&
-                CanEnterClash(slot) &&
-                CanEnterClash(targetSlot))
+        foreach (ActionSlot slot in orderedSlots)
+        {
+            if (slot == null ||
+                usedSlots.Contains(slot))
             {
-                bool isMutual =
-                    IsExactMutual(slot, targetSlot);
-
-                bool canSteal =
-                    CanStealClash(slot, targetSlot);
-
-                if (isMutual || canSteal)
-                {
-                    slot.TargetSlot = targetSlot;
-                    targetSlot.TargetSlot = slot;
-
-                    result.Enqueue(
-                        new ClashPair(slot, targetSlot));
-
-                    used.Add(slot);
-                    used.Add(targetSlot);
-
-                    continue;
-                }
+                continue;
             }
 
-            result.Enqueue(
-                new ClashPair(slot));
+            if (!matchPolicy.CanEnterClash(slot))
+            {
+                result.AddOneSide(slot);
+                usedSlots.Add(slot);
+                continue;
+            }
 
-            used.Add(slot);
+            ActionSlot targetSlot =
+                matchPolicy.FindBestMatch(
+                    slot,
+                    orderedSlots,
+                    usedSlots);
+
+            if (targetSlot != null)
+            {
+                result.AddClash(
+                    slot,
+                    targetSlot);
+
+                usedSlots.Add(slot);
+                usedSlots.Add(targetSlot);
+                continue;
+            }
+
+            // 합 상대를 찾지 못한 공격은 속도순 일방 공격으로 남는다.
+            result.AddOneSide(slot);
+            usedSlots.Add(slot);
         }
 
         return result;
     }
-    
-    private ActionSlot FindTargetActionSlot(
-        ActionSlot slot,
-        List<ActionSlot> slots)
+
+    private void EnqueueSlots(
+        Queue<ActionSlot> queue,
+        IReadOnlyList<ActionSlot> slots)
     {
-        foreach (ActionSlot other in slots)
+        if (queue == null ||
+            slots == null)
         {
-            if (other == null)
-                continue;
-
-            if (other == slot)
-                continue;
-
-            if (other.Owner != slot.TargetCharacter)
-                continue;
-
-            if (!IsSamePart(other.Part, slot.TargetPart))
-                continue;
-
-            return other;
+            return;
         }
-
-        return null;
-    }
-    
-    private bool CanEnterClash(ActionSlot slot)
-    {
-        if (slot == null)
-            return false;
-
-        if (slot.Owner == null ||
-            slot.Part == null ||
-            slot.TargetCharacter == null ||
-            slot.TargetPart == null)
-            return false;
-
-        if (slot.Phase != ActionPhase.COMBAT)
-            return false;
-
-        if (slot.Skill == null)
-            return false;
-
-        if (!slot.Skill.CanClash)
-            return false;
-
-        return true;
-    }
-    
-    private bool IsExactMutual(
-        ActionSlot a,
-        ActionSlot b)
-    {
-        if (a == null || b == null)
-            return false;
-
-        return
-            b.TargetCharacter == a.Owner &&
-            IsSamePart(b.TargetPart, a.Part);
-    }
-    
-    private bool CanStealClash(
-        ActionSlot attacker,
-        ActionSlot targetSlot)
-    {
-        if (attacker == null || targetSlot == null)
-            return false;
-
-        if (targetSlot.TargetCharacter != attacker.Owner)
-            return false;
-
-        if (attacker.Speed <= targetSlot.Speed)
-            return false;
-
-        return true;
-    }
-    
-    private bool IsSamePart(
-        BodyPart a,
-        BodyPart b)
-    {
-        if (a == null || b == null)
-            return false;
-
-        if (a == b)
-            return true;
-
-        return a.Type == b.Type;
-    }
-
-    //------------------------------------
-    // Phase별 슬롯 추출 + 속도 정렬
-    //------------------------------------
-
-    private List<ActionSlot> GetPhaseSlots(
-        IReadOnlyList<ActionSlot> slots,
-        ActionPhase phase)
-    {
-        List<ActionSlot> result = new();
 
         foreach (ActionSlot slot in slots)
         {
-            if (slot == null)
-                continue;
-
-            if (slot.Phase == phase)
-                result.Add(slot);
+            if (slot != null)
+                queue.Enqueue(slot);
         }
-
-        result.Sort((a, b) => b.Speed.CompareTo(a.Speed));
-
-        return result;
     }
 
-    //------------------------------------
-    // Debug
-    //------------------------------------
-
-    private void PrintSlots(IReadOnlyList<ActionSlot> slots)
+    private void PrintSlots(
+        IReadOnlyList<ActionSlot> slots)
     {
         if (!BattleDebugLog.ShowClashBuild)
             return;
-        
-        Debug.Log("===== SLOT CONNECTION =====");
+
+        Debug.Log(
+            "===== SLOT CONNECTION =====");
 
         if (slots == null)
         {
@@ -238,98 +202,72 @@ public class ClashBuilder
                 continue;
             }
 
-            string ownerName = GetCharacterName(slot.Owner);
-            string ownerPart = GetPartName(slot.Part);
-
-            string targetName = GetCharacterName(slot.TargetCharacter);
-            string targetPart = GetPartName(slot.TargetPart);
-
-            string skillName = GetSkillName(slot.Skill);
-
-            string targetSlotText = GetTargetSlotText(slot.TargetSlot);
-
             string log =
-                $"{ownerName} ({ownerPart}) -> " +
-                $"{targetName} ({targetPart}) / " +
-                $"Skill : {skillName} / " +
-                $"Speed : {slot.Speed} / " +
-                $"Phase : {slot.Phase} / " +
-                $"TargetSlot = {targetSlotText}";
-
-            if (IsConfirmedClash(slot))
-            {
-                log += " / Clash = YES";
-            }
+                $"Id={slot.ActionId}, " +
+                $"Index={slot.ActionIndex}, " +
+                $"{GetCharacterName(slot.Owner)} " +
+                $"({GetPartName(slot.Part)}) -> " +
+                $"{GetCharacterName(slot.TargetCharacter)} " +
+                $"({GetPartName(slot.TargetPart)}) / " +
+                $"Skill={GetSkillName(slot.Skill)} / " +
+                $"Speed={slot.Speed} / " +
+                $"Phase={slot.Phase} / " +
+                $"TargetSlot={GetTargetSlotText(slot.TargetSlot)} / " +
+                $"Clash={(IsConfirmedClash(slot) ? "YES" : "NO")}";
 
             Debug.Log(log);
         }
     }
-    
-    private bool IsConfirmedClash(ActionSlot slot)
+
+    private bool IsConfirmedClash(
+        ActionSlot slot)
     {
-        if (slot == null)
+        if (slot?.TargetSlot == null)
             return false;
 
-        if (slot.TargetSlot == null)
-            return false;
-
-        ActionSlot targetSlot = slot.TargetSlot;
-
-        // 서로를 향하고 있어야 함
-        if (targetSlot.TargetSlot != slot)
-            return false;
-
-        // 둘 다 전투 페이즈여야 함
-        if (slot.Phase != ActionPhase.COMBAT)
-            return false;
-
-        if (targetSlot.Phase != ActionPhase.COMBAT)
-            return false;
-
-        // 둘 다 합 가능한 스킬이어야 함
-        if (slot.Skill == null || !slot.Skill.CanClash)
-            return false;
-
-        if (targetSlot.Skill == null || !targetSlot.Skill.CanClash)
-            return false;
-
-        return true;
+        return
+            slot.TargetSlot.TargetSlot == slot &&
+            matchPolicy.CanEnterClash(slot) &&
+            matchPolicy.CanEnterClash(
+                slot.TargetSlot);
     }
-    
-    private string GetCharacterName(Character character)
+
+    private string GetCharacterName(
+        Character character)
     {
         if (character == null)
             return "NULL";
 
-        if (character.Data == null)
-            return character.name;
-
-        return character.Data.CharacterName;
+        return character.Data == null
+            ? character.name
+            : character.Data.CharacterName;
     }
 
-    private string GetPartName(BodyPart part)
+    private string GetPartName(
+        BodyPart part)
     {
-        if (part == null)
-            return "NULL";
-
-        return part.Type.ToString();
+        return part == null
+            ? "NONE"
+            : part.Type.ToString();
     }
 
-    private string GetSkillName(Skill skill)
+    private string GetSkillName(
+        Skill skill)
     {
-        if (skill == null)
-            return "NULL";
-
-        return skill.SkillName;
+        return skill == null
+            ? "NULL"
+            : skill.SkillName;
     }
 
-    private string GetTargetSlotText(ActionSlot targetSlot)
+    private string GetTargetSlotText(
+        ActionSlot targetSlot)
     {
         if (targetSlot == null)
             return "NULL";
 
         return
             $"{GetCharacterName(targetSlot.Owner)} " +
-            $"({GetPartName(targetSlot.Part)})";
+            $"({GetPartName(targetSlot.Part)}) " +
+            $"[Index={targetSlot.ActionIndex}, Id={targetSlot.ActionId}]";
     }
 }

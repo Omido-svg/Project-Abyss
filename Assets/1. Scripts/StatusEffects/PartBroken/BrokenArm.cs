@@ -21,10 +21,10 @@ public class BrokenArm : BrokenPartStatus
         BattleAction action,
         int roll)
     {
-        if (action == null)
+        if (action?.OwnerPart == null)
             return roll;
 
-        if (action.Skill == null)
+        if (action.OwnerPart.Type != BrokenPart)
             return roll;
 
         switch (action.ActionType)

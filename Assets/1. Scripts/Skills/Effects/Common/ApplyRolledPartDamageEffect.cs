@@ -1,106 +1,74 @@
 using UnityEngine;
 
 [CreateAssetMenu(
-    menuName = "Battle/Skill Effect/Common/Apply Rolled Part Damage",
-    fileName = "ApplyRolledPartDamageEffect")]
+    menuName = "Battle/Skill Effect/Common/Apply Rolled Damage",
+    fileName = "ApplyRolledDamageEffect")]
 public class ApplyRolledPartDamageEffect : SkillEffectDefinition
 {
     [Header("Damage")]
+    [SerializeField] private float powerMultiplier = 1f;
+    [SerializeField] private int flatBonus;
+    [SerializeField] private DamageType damageType =
+        DamageType.SkillPart;
+
     [SerializeField]
     private bool useSkillCanBreakPart = true;
 
     [SerializeField]
-    private bool canBreakPart = false;
+    private bool canBreakPart;
 
-    [Header("Log")]
-    [SerializeField]
-    private bool writeDamageLog = true;
+    [Header("Pipeline")]
+    [SerializeField] private bool applyMomentum;
+    [SerializeField] private bool applyDefense = true;
+    [SerializeField] private bool applyGuard = true;
+    [SerializeField] private bool applyProtection = true;
 
-    [SerializeField]
-    private bool raiseKillEvent = true;
-
-    public override void Apply(SkillEffectContext context)
+    public override void Apply(
+        SkillEffectContext context)
     {
-        if (context == null)
+        if (context?.Action == null ||
+            context.Owner == null ||
+            context.Target == null)
+        {
             return;
+        }
 
-        if (context.Action == null)
-            return;
+        int rolledPower =
+            GetRolledPower(context.Action);
 
-        if (context.Owner == null)
-            return;
-
-        if (context.Target == null)
-            return;
-
-        if (context.TargetPart == null)
-            return;
-
-        if (context.Resolver == null)
-            return;
-
-        BattleAction action =
-            context.Action;
-
-        bool wasDead =
-            context.Target.IsDead;
-
-        int beforePartHP =
+        int damage = Mathf.Max(
+            0,
             Mathf.RoundToInt(
-                context.TargetPart.PartHP);
-
-        bool finalCanBreakPart =
-            GetCanBreakPart(context);
-
-        int damage =
-            GetRolledPower(action);
+                rolledPower * powerMultiplier) +
+            flatBonus);
 
         if (damage <= 0)
             return;
 
-        context.Resolver.ApplyPartDamage(
-            EffectRequest.PartDamage(
+        DamageType finalType =
+            context.TargetPart == null &&
+            damageType == DamageType.SkillPart
+                ? DamageType.Direct
+                : damageType;
+
+        DamageRequest request =
+            DamageRequest.Custom(
+                finalType,
                 context.Owner,
-                action,
+                context.Target,
+                context.TargetPart,
                 damage,
-                finalCanBreakPart));
+                1f,
+                useSkillCanBreakPart
+                    ? context.SkillDefinition?.CanBreakPart == true
+                    : canBreakPart,
+                applyMomentum,
+                applyDefense,
+                applyGuard,
+                applyProtection,
+                context.Action);
 
-        int afterPartHP =
-            Mathf.RoundToInt(
-                context.TargetPart.PartHP);
-
-        if (writeDamageLog)
-        {
-            action.SetDamageLog(
-                damage,
-                beforePartHP,
-                afterPartHP);
-        }
-
-        if (raiseKillEvent &&
-            !wasDead &&
-            context.Target.IsDead)
-        {
-            context.BattleContext?._battleEvent?.RaiseKill(
-                context.Owner,
-                context.Target);
-        }
-
-        Debug.Log(
-            $"{context.Owner.Data.CharacterName} 스킬 피해 : " +
-            $"{context.Target.Data.CharacterName} {context.TargetPart.Type}에 {damage}");
-    }
-
-    private bool GetCanBreakPart(
-        SkillEffectContext context)
-    {
-        if (!useSkillCanBreakPart)
-            return canBreakPart;
-
-        if (context.SkillDefinition == null)
-            return canBreakPart;
-
-        return context.SkillDefinition.CanBreakPart;
+        context.ApplyDamage(request);
     }
 
     private int GetRolledPower(
@@ -111,19 +79,15 @@ public class ApplyRolledPartDamageEffect : SkillEffectDefinition
 
         if (!action.HasRolled)
         {
-            int power =
-                action.RollPower();
-
+            int power = action.RollPower();
             action.RolledPower = power;
             action.finalPower = power;
             action.HasRolled = true;
-
             return power;
         }
 
-        if (action.finalPower > 0)
-            return action.finalPower;
-
-        return action.RolledPower;
+        return action.finalPower > 0
+            ? action.finalPower
+            : action.RolledPower;
     }
 }

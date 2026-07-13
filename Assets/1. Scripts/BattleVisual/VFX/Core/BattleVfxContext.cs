@@ -1,7 +1,10 @@
+using System;
 using UnityEngine;
 
 public class BattleVfxContext
 {
+    public BattleAction SourceAction;
+
     public Character Attacker;
     public Character Target;
 
@@ -15,6 +18,15 @@ public class BattleVfxContext
 
     public BodyPart AttackerPart;
     public BodyPart TargetPart;
+
+    public TargetPoint ResolvedTargetPoint =>
+        new TargetPoint(
+            Target,
+            TargetPart);
+
+    public bool IsCharacterLevelTarget =>
+        Target != null &&
+        TargetPart == null;
 
     public int HitIndex = -1;
     public int Damage = 0;
@@ -73,6 +85,27 @@ public class BattleVfxContext
             targetViewOwner = Target;
             targetViewResolved = value != null;
         }
+    }
+
+    public static BattleVfxContext FromRequest(
+        BattleVisualRequest request,
+        int hitIndex = -1,
+        int damage = 0)
+    {
+        if (request == null)
+            return new BattleVfxContext();
+
+        return new BattleVfxContext
+        {
+            SourceAction = request.SourceAction,
+            Attacker = request.Attacker,
+            Target = request.Target,
+            AttackerPart =
+                request.SourceAction?.OwnerPart,
+            TargetPart = request.TargetPart,
+            HitIndex = hitIndex,
+            Damage = damage
+        };
     }
 
     public void InvalidateResolvedViews()

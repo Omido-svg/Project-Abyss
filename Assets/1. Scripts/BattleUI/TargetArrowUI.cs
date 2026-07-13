@@ -98,11 +98,8 @@ public class TargetArrowUI : MonoBehaviour
     private readonly List<HighlightVisual> highlights = new();
 
     private readonly List<UIClashPair> clashPairs = new();
-    private readonly List<ActionSlot> playerClashCandidateSlots = new();
 
     private readonly HashSet<ActionSlot> clashSlots = new();
-    private readonly HashSet<ActionSlot> usedPlayerSlots = new();
-    private readonly HashSet<ActionSlot> usedEnemySlots = new();
     private readonly HashSet<BodyPartButton> highlightButtons = new();
 
     private BodyPartButton[] cachedButtons;
@@ -456,6 +453,15 @@ public class TargetArrowUI : MonoBehaviour
             GetLocalCenter(
                 toButton.RectTransform);
 
+        Vector2 offset =
+            GetActionIndexOffset(
+                start,
+                end,
+                action.ActionIndex);
+
+        start += offset;
+        end += offset;
+
         ArrowVisual arrow =
             GetArrow(arrowIndex);
 
@@ -497,6 +503,19 @@ public class TargetArrowUI : MonoBehaviour
             GetLocalCenter(
                 opponentButton.RectTransform);
 
+        Vector2 originalSourceStart = sourceStart;
+        Vector2 originalOpponentStart = opponentStart;
+
+        sourceStart += GetActionIndexOffset(
+            originalSourceStart,
+            originalOpponentStart,
+            source.ActionIndex);
+
+        opponentStart += GetActionIndexOffset(
+            originalOpponentStart,
+            originalSourceStart,
+            opponent.ActionIndex);
+
         return DrawTwoArrowsToCenter(
             arrowIndex,
             sourceStart,
@@ -534,6 +553,15 @@ public class TargetArrowUI : MonoBehaviour
         Vector2 end =
             GetLocalCenter(
                 toButton.RectTransform);
+
+        Vector2 offset =
+            GetActionIndexOffset(
+                start,
+                end,
+                slot.ActionIndex);
+
+        start += offset;
+        end += offset;
 
         ArrowVisual arrow =
             GetArrow(arrowIndex);
@@ -579,6 +607,19 @@ public class TargetArrowUI : MonoBehaviour
             GetLocalCenter(
                 enemyButton.RectTransform);
 
+        Vector2 originalPlayerStart = playerStart;
+        Vector2 originalEnemyStart = enemyStart;
+
+        playerStart += GetActionIndexOffset(
+            originalPlayerStart,
+            originalEnemyStart,
+            playerSlot.ActionIndex);
+
+        enemyStart += GetActionIndexOffset(
+            originalEnemyStart,
+            originalPlayerStart,
+            enemySlot.ActionIndex);
+
         if (showEnemySideOnClash)
         {
             return DrawTwoArrowsToCenter(
@@ -595,6 +636,35 @@ public class TargetArrowUI : MonoBehaviour
             playerStart,
             enemyStart,
             playerArrowColor);
+    }
+
+    private Vector2 GetActionIndexOffset(
+        Vector2 start,
+        Vector2 end,
+        int actionIndex)
+    {
+        if (actionIndex <= 0)
+            return Vector2.zero;
+
+        Vector2 direction = end - start;
+
+        if (direction.sqrMagnitude <= 0.01f)
+            return Vector2.zero;
+
+        direction.Normalize();
+
+        Vector2 perpendicular =
+            new Vector2(
+                -direction.y,
+                direction.x);
+
+        int rank = (actionIndex + 1) / 2;
+        float side =
+            actionIndex % 2 == 1
+                ? 1f
+                : -1f;
+
+        return perpendicular * rank * 8f * side;
     }
 
     private int DrawSingleArrowToCenter(
@@ -697,89 +767,36 @@ public class TargetArrowUI : MonoBehaviour
         List<UIClashPair> result)
     {
         result.Clear();
-        playerClashCandidateSlots.Clear();
-        usedPlayerSlots.Clear();
-        usedEnemySlots.Clear();
 
-        if (slots == null || player == null)
+        if (slots == null ||
+            player == null ||
+            battleManager == null ||
+            battleManager.ClashBuilder == null)
+        {
+            return;
+        }
+
+        IReadOnlyList<ClashPair> corePairs =
+            battleManager.ClashBuilder
+                .BuildClashPreview(slots);
+
+        if (corePairs == null)
             return;
 
-        foreach (ActionSlot slot in slots)
+        foreach (ClashPair pair in corePairs)
         {
-            if (!CanEnterClash(slot))
+            if (pair == null ||
+                !pair.IsClash ||
+                pair.First == null ||
+                pair.Second == null)
+            {
                 continue;
-
-            if (slot.Owner != player)
-                continue;
-
-            playerClashCandidateSlots.Add(slot);
-        }
-
-        foreach (ActionSlot playerSlot in playerClashCandidateSlots)
-        {
-            if (usedPlayerSlots.Contains(playerSlot))
-                continue;
-
-            ActionSlot enemySlot =
-                FindEnemySlotSelectedByPlayer(
-                    playerSlot,
-                    slots,
-                    player);
-
-            if (enemySlot == null)
-                continue;
-
-            if (usedEnemySlots.Contains(enemySlot))
-                continue;
-
-            if (!CanEnterClash(enemySlot))
-                continue;
-
-            if (!IsExactMutual(playerSlot, enemySlot))
-                continue;
+            }
 
             result.Add(
                 new UIClashPair(
-                    playerSlot,
-                    enemySlot));
-
-            usedPlayerSlots.Add(playerSlot);
-            usedEnemySlots.Add(enemySlot);
-        }
-
-        playerClashCandidateSlots.Sort(
-            (a, b) => b.Speed.CompareTo(a.Speed));
-
-        foreach (ActionSlot playerSlot in playerClashCandidateSlots)
-        {
-            if (usedPlayerSlots.Contains(playerSlot))
-                continue;
-
-            ActionSlot enemySlot =
-                FindEnemySlotSelectedByPlayer(
-                    playerSlot,
-                    slots,
-                    player);
-
-            if (enemySlot == null)
-                continue;
-
-            if (usedEnemySlots.Contains(enemySlot))
-                continue;
-
-            if (!CanEnterClash(enemySlot))
-                continue;
-
-            if (!CanPlayerStealClash(playerSlot, enemySlot))
-                continue;
-
-            result.Add(
-                new UIClashPair(
-                    playerSlot,
-                    enemySlot));
-
-            usedPlayerSlots.Add(playerSlot);
-            usedEnemySlots.Add(enemySlot);
+                    pair.First,
+                    pair.Second));
         }
     }
 
@@ -805,133 +822,64 @@ public class TargetArrowUI : MonoBehaviour
         }
     }
 
-    private ActionSlot FindEnemySlotSelectedByPlayer(
-        ActionSlot playerSlot,
-        IReadOnlyList<ActionSlot> slots,
-        Character player)
-    {
-        if (playerSlot == null ||
-            slots == null ||
-            playerSlot.Owner != player)
-        {
-            return null;
-        }
-
-        foreach (ActionSlot enemySlot in slots)
-        {
-            if (enemySlot == null)
-                continue;
-
-            if (enemySlot == playerSlot)
-                continue;
-
-            if (enemySlot.Owner == null ||
-                enemySlot.Part == null)
-                continue;
-
-            if (enemySlot.Owner == player)
-                continue;
-
-            if (enemySlot.Owner != playerSlot.TargetCharacter)
-                continue;
-
-            if (!IsSamePart(
-                    enemySlot.Part,
-                    playerSlot.TargetPart))
-                continue;
-
-            return enemySlot;
-        }
-
-        return null;
-    }
-
-    private bool CanEnterClash(ActionSlot slot)
-    {
-        if (slot == null)
-            return false;
-
-        if (slot.Owner == null ||
-            slot.Part == null ||
-            slot.TargetCharacter == null ||
-            slot.TargetPart == null)
-            return false;
-
-        if (slot.Phase != ActionPhase.COMBAT)
-            return false;
-
-        if (slot.Skill == null)
-            return false;
-
-        return slot.Skill.CanClash;
-    }
-
-    private bool IsExactMutual(
-        ActionSlot playerSlot,
-        ActionSlot enemySlot)
-    {
-        if (playerSlot == null || enemySlot == null)
-            return false;
-
-        return
-            enemySlot.TargetCharacter == playerSlot.Owner &&
-            IsSamePart(
-                enemySlot.TargetPart,
-                playerSlot.Part);
-    }
-
-    private bool CanPlayerStealClash(
-        ActionSlot playerSlot,
-        ActionSlot enemySlot)
-    {
-        if (playerSlot == null || enemySlot == null)
-            return false;
-
-        return playerSlot.Speed > enemySlot.Speed;
-    }
-
     private bool IsDrawableEnemySlot(
         ActionSlot slot,
         Character player)
     {
-        if (!showEnemyTargetArrows)
+        if (!showEnemyTargetArrows ||
+            slot?.Owner == null ||
+            slot.TargetCharacter == null)
+        {
             return false;
+        }
 
-        if (slot == null)
+        if (slot.Owner == player ||
+            slot.TargetCharacter != player)
+        {
             return false;
+        }
 
-        if (slot.Owner == null ||
-            slot.Part == null ||
-            slot.TargetCharacter == null ||
-            slot.TargetPart == null)
+        if (FindButton(
+                slot.Owner,
+                slot.Part) == null)
+        {
             return false;
+        }
 
-        if (slot.Owner == player)
-            return false;
-
-        return slot.TargetCharacter == player;
+        return BattleTargetValidator.IsValid(
+            slot.TargetCharacter,
+            slot.TargetPart,
+            TargetSelectionRule.StandardAttack);
     }
 
     private bool IsDrawablePlayerSlot(
         ActionSlot slot,
         Character player)
     {
-        if (!showPlayerArrows)
+        if (!showPlayerArrows ||
+            slot?.Owner == null ||
+            slot.TargetCharacter == null)
+        {
             return false;
+        }
 
-        if (slot == null)
+        if (slot.Owner != player ||
+            slot.TargetCharacter == player)
+        {
             return false;
+        }
 
-        if (slot.Owner == null ||
-            slot.Part == null ||
-            slot.TargetCharacter == null ||
-            slot.TargetPart == null)
+        if (FindButton(
+                slot.Owner,
+                slot.Part) == null)
+        {
             return false;
+        }
 
-        if (slot.Owner != player)
-            return false;
-
-        return slot.TargetCharacter != player;
+        return BattleTargetValidator.IsValid(
+            slot.TargetCharacter,
+            slot.TargetPart,
+            TargetSelectionRule.StandardAttack);
     }
 
     private bool IsPreparationSlot(ActionSlot slot)
@@ -980,22 +928,16 @@ public class TargetArrowUI : MonoBehaviour
         if (action.Slot == slot)
             return true;
 
-        if (slot.Owner != action.Owner)
-            return false;
+        if (slot.ActionId > 0 &&
+            action.ActionId > 0)
+        {
+            return slot.ActionId == action.ActionId;
+        }
 
-        if (slot.Part != action.OwnerPart)
-            return false;
-
-        if (slot.TargetCharacter != action.Target)
-            return false;
-
-        if (slot.TargetPart != action.TargetPart)
-            return false;
-
-        if (slot.Skill != action.Skill)
-            return false;
-
-        return true;
+        return
+            slot.Owner == action.Owner &&
+            slot.Part == action.OwnerPart &&
+            slot.ActionIndex == action.ActionIndex;
     }
 
     private bool IsCurrentVisualPair(UIClashPair pair)
@@ -1166,31 +1108,32 @@ public class TargetArrowUI : MonoBehaviour
         BodyPart part)
     {
         if (character == null ||
-            part == null ||
             cachedButtons == null)
         {
             return null;
         }
 
-        for (int i = 0; i < cachedButtons.Length; i++)
+        for (int i = 0;
+             i < cachedButtons.Length;
+             i++)
         {
             BodyPartButton button =
                 cachedButtons[i];
 
-            if (button == null)
+            if (button == null ||
+                !button.gameObject.activeInHierarchy ||
+                button.Owner != character)
+            {
                 continue;
-
-            if (!button.gameObject.activeInHierarchy)
-                continue;
-
-            if (button.Owner != character)
-                continue;
+            }
 
             if (button.BodyPart == part)
                 return button;
 
-            if (button.BodyPart != null &&
-                button.BodyPart.Type == part.Type)
+            if (part != null &&
+                button.BodyPart != null &&
+                button.BodyPart.Type ==
+                part.Type)
             {
                 return button;
             }
@@ -1547,6 +1490,7 @@ public class TargetArrowUI : MonoBehaviour
     {
         cachedButtons =
             FindObjectsByType<BodyPartButton>(
+                FindObjectsInactive.Include,
                 FindObjectsSortMode.None);
     }
 

@@ -9,7 +9,7 @@ public class OlafBloodyAxeMechanic : CombatMechanic
         if (battleEvent == null)
             return;
 
-        battleEvent.OnDamageResolved += OnDamageResolved;
+        battleEvent.OnDamageEventResolved += OnDamageEventResolved;
     }
 
     public override void OnUnregister()
@@ -17,11 +17,15 @@ public class OlafBloodyAxeMechanic : CombatMechanic
         if (battleEvent == null)
             return;
 
-        battleEvent.OnDamageResolved -= OnDamageResolved;
+        battleEvent.OnDamageEventResolved -= OnDamageEventResolved;
     }
 
-    private void OnDamageResolved(DamageContext context)
+    private void OnDamageEventResolved(
+        DamageEventResult eventResult)
     {
+        DamageContext context =
+            eventResult?.Context;
+
         if (context == null)
             return;
 

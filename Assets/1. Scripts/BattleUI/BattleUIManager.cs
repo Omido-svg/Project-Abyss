@@ -1,4 +1,5 @@
-using System.Linq;
+using System.Collections.Generic;
+using System.Text;
 using UnityEngine;
 using UnityEngine.EventSystems;
 
@@ -16,8 +17,17 @@ public class BattleUIManager : MonoBehaviour
     private Character selectedOwner;
     private BodyPart selectedOwnerPart;
 
+    private int selectedActionIndex;
+    private int selectedMaxActionSlots = 1;
+
+    private readonly Dictionary<BodyPart, int>
+        actionIndexCursorByPart = new();
+
     private Character selectedTarget;
     private BodyPart selectedTargetPart;
+
+    public int SelectedActionIndex => selectedActionIndex;
+    public int SelectedMaxActionSlots => selectedMaxActionSlots;
 
     //---------------------------------------
 
@@ -66,42 +76,83 @@ public class BattleUIManager : MonoBehaviour
     private BodyPartButtonViewModel CreateBodyPartButtonViewModel(
         BodyPartButton button)
     {
-        BodyPart part =
-            button.BodyPart;
-
-        Character owner =
-            button.Owner;
-
-        if (part == null)
+        if (button == null)
         {
             return new BodyPartButtonViewModel
             {
                 PartText = "NULL",
                 HpText = "HP -",
                 SpeedText = "SPD -",
+                SlotText = "",
                 SkillText = "",
                 Interactable = false
             };
         }
 
+        Character owner =
+            button.Owner;
+
+        BodyPart part =
+            button.BodyPart;
+
+        if (owner == null)
+        {
+            return new BodyPartButtonViewModel
+            {
+                PartText = "NULL",
+                HpText = "HP -",
+                SpeedText = "SPD -",
+                SlotText = "",
+                SkillText = "",
+                Interactable = false
+            };
+        }
+
+        bool characterTarget =
+            part == null &&
+            owner.IsSingleHpTarget;
+
         return new BodyPartButtonViewModel
         {
-            PartText = GetPartText(part),
-            HpText = GetHpText(button),
-            SpeedText = GetSpeedText(part),
-            SkillText = GetSelectedSkillText(owner, part),
+            PartText = characterTarget
+                ? $"<color=#86EFAC><b>{GetCharacterName(owner)} [SINGLE HP]</b></color>"
+                : GetPartText(part),
+
+            HpText =
+                GetHpText(button),
+
+            SpeedText =
+                GetSpeedText(owner, part),
+
+            SlotText =
+                characterTarget
+                    ? ""
+                    : GetActionSlotStatusText(
+                        owner,
+                        part),
+
+            SkillText =
+                GetSelectedSkillText(
+                    owner,
+                    part),
 
             Interactable =
-                part != null &&
-                !part.IsBroken,
+                CanInteractWithPart(
+                    owner,
+                    part),
 
             IsOwnerSelected =
-                IsOwnerHighlighted(owner, part),
+                IsOwnerHighlighted(
+                    owner,
+                    part),
 
             IsTargetSelected =
-                IsTargetHighlighted(owner, part),
+                IsTargetHighlighted(
+                    owner,
+                    part),
 
             IsWeakened =
+                part != null &&
                 part.IsWeakened
         };
     }
@@ -110,20 +161,124 @@ public class BattleUIManager : MonoBehaviour
         Character owner,
         BodyPart part)
     {
-        ActionSlot slot =
-            FindSlotByOwnerPart(
-                owner,
-                part);
+        List<ActionSlot> slots =
+            GetSlotsByOwnerPart(owner, part);
 
-        if (slot == null)
+        if (slots.Count == 0)
             return "";
 
-        if (slot.Skill == null)
-            return "";
+        StringBuilder builder = new();
 
-        return $"<color=#FFFFFF><b>{slot.Skill.SkillName}</b></color>";
+        foreach (ActionSlot slot in slots)
+        {
+            if (slot?.Skill == null)
+                continue;
+
+            if (builder.Length > 0)
+                builder.AppendLine();
+
+            builder.Append(
+                $"<color=#FFFFFF><b>[#{slot.ActionIndex + 1}] " +
+                $"{slot.Skill.SkillName}</b></color>");
+        }
+
+        return builder.ToString();
     }
-    
+
+    private string GetActionSlotStatusText(
+        Character owner,
+        BodyPart part)
+    {
+        if (owner == null ||
+            part == null ||
+            !IsPlayer(owner))
+        {
+            return "";
+        }
+
+        int maxSlots =
+            GetMaxActionSlots(owner, part);
+
+        int currentCount =
+            GetSlotsByOwnerPart(owner, part).Count;
+
+        if (maxSlots <= 1)
+        {
+            return
+                selectedOwner == owner &&
+                IsSamePart(selectedOwnerPart, part)
+                    ? "<color=#93C5FD>행동 슬롯 #1 선택</color>"
+                    : "";
+        }
+
+        string selectionText =
+            selectedOwner == owner &&
+            IsSamePart(selectedOwnerPart, part)
+                ? $" / 편집 #{selectedActionIndex + 1}"
+                : "";
+
+        return
+            $"<color=#93C5FD>행동 {currentCount}/{maxSlots}" +
+            $"{selectionText}</color>";
+    }
+
+    private List<ActionSlot> GetSlotsByOwnerPart(
+        Character owner,
+        BodyPart part)
+    {
+        if (owner == null ||
+            battleManager?.ActionManager == null)
+        {
+            return new List<ActionSlot>();
+        }
+
+        return battleManager.ActionManager
+            .FindSlots(owner, part);
+    }
+
+    private int GetMaxActionSlots(
+        Character owner,
+        BodyPart part)
+    {
+        if (owner == null ||
+            part == null)
+        {
+            return 0;
+        }
+
+        return Mathf.Max(
+            0,
+            owner.GetMaxActionSlotsForPart(part));
+    }
+
+    private bool CanInteractWithPart(
+        Character owner,
+        BodyPart part)
+    {
+        if (owner == null ||
+            owner.IsDead)
+        {
+            return false;
+        }
+
+        if (part == null)
+        {
+            return
+                !IsPlayer(owner) &&
+                owner.IsSingleHpTarget;
+        }
+
+        if (IsPlayer(owner))
+        {
+            return
+                !part.IsBroken &&
+                part.IsUsable;
+        }
+
+        // 파괴된 대상 부위는 재공격 가능하다.
+        return true;
+    }
+
     private bool IsOwnerHighlighted(
         Character owner,
         BodyPart part)
@@ -169,17 +324,18 @@ public class BattleUIManager : MonoBehaviour
         Character owner,
         BodyPart part)
     {
-        if (owner == null || part == null)
+        if (owner == null)
             return false;
 
         if (selectedTarget == owner &&
-            IsSamePart(selectedTargetPart, part))
+            IsSameTargetPart(
+                selectedTargetPart,
+                part))
         {
             return true;
         }
 
-        if (battleManager == null ||
-            battleManager.ActionManager == null ||
+        if (battleManager?.ActionManager == null ||
             battleManager.BattleContext == null)
         {
             return false;
@@ -188,16 +344,19 @@ public class BattleUIManager : MonoBehaviour
         Character player =
             battleManager.BattleContext.Player;
 
-        foreach (ActionSlot slot in battleManager.ActionManager.Slots)
+        foreach (ActionSlot slot
+                 in battleManager.ActionManager.Slots)
         {
-            if (slot == null)
+            if (slot == null ||
+                slot.Owner != player)
+            {
                 continue;
-
-            if (slot.Owner != player)
-                continue;
+            }
 
             if (slot.TargetCharacter == owner &&
-                IsSamePart(slot.TargetPart, part))
+                IsSameTargetPart(
+                    slot.TargetPart,
+                    part))
             {
                 return true;
             }
@@ -206,42 +365,6 @@ public class BattleUIManager : MonoBehaviour
         return false;
     }
 
-    private ActionSlot FindSlotByOwnerPart(
-        Character owner,
-        BodyPart part)
-    {
-        if (owner == null || part == null)
-            return null;
-
-        if (battleManager == null ||
-            battleManager.ActionManager == null)
-        {
-            return null;
-        }
-
-        ActionSlot slot =
-            battleManager.ActionManager.FindSlot(
-                owner,
-                part);
-
-        if (slot != null)
-            return slot;
-
-        foreach (ActionSlot actionSlot in battleManager.ActionManager.Slots)
-        {
-            if (actionSlot == null)
-                continue;
-
-            if (actionSlot.Owner != owner)
-                continue;
-
-            if (IsSamePart(actionSlot.Part, part))
-                return actionSlot;
-        }
-
-        return null;
-    }
-    
     private string GetPartText(BodyPart part)
     {
         if (part == null)
@@ -260,50 +383,69 @@ public class BattleUIManager : MonoBehaviour
             $"<color={stateColor}><b>{part.Type} [{part.State}]</b></color>";
     }
 
-    private string GetHpText(BodyPartButton button)
+    private string GetHpText(
+        BodyPartButton button)
     {
-        if (button == null)
+        if (button?.Owner == null)
             return "HP -";
+
+        Character owner =
+            button.Owner;
 
         BodyPart part =
             button.BodyPart;
 
-        if (part == null)
-            return "HP -";
-
-        int currentHP =
+        int currentHp =
             button.HasHpOverride
                 ? button.HpOverrideValue
-                : Mathf.RoundToInt(part.PartHP);
+                : part != null
+                    ? Mathf.RoundToInt(
+                        part.PartHP)
+                    : owner.CurrentHP;
 
-        int maxHP =
-            Mathf.RoundToInt(part.MaxPartHP);
+        int maxHp =
+            part != null
+                ? Mathf.RoundToInt(
+                    part.MaxPartHP)
+                : Mathf.Max(
+                    1,
+                    owner.MaxCombatHP);
 
         string hpColor =
-            GetHpColor(part, currentHP);
+            GetHpColor(
+                owner,
+                part,
+                currentHp,
+                maxHp);
 
         return
-            $"<color={hpColor}>HP {currentHP}/{maxHP}</color>";
+            $"<color={hpColor}>HP {currentHp}/{maxHp}</color>";
     }
 
     private string GetHpColor(
+        Character owner,
         BodyPart part,
-        int displayHp)
+        int displayHp,
+        int maxHp)
     {
-        if (part == null)
+        if (owner == null)
             return "#FFFFFF";
 
-        if (part.IsBroken)
-            return "#F87171";
+        if (part != null)
+        {
+            if (part.IsBroken)
+                return "#F87171";
 
-        if (part.IsWeakened)
-            return "#FACC15";
+            if (part.IsWeakened)
+                return "#FACC15";
+        }
 
-        if (part.MaxPartHP <= 0f)
+        if (maxHp <= 0)
             return "#FFFFFF";
 
         float ratio =
-            displayHp / part.MaxPartHP;
+            (float)displayHp /
+            maxHp;
 
         if (ratio <= 0.3f)
             return "#FACC15";
@@ -316,37 +458,51 @@ public class BattleUIManager : MonoBehaviour
         BodyPart part,
         int hp)
     {
+        SetTargetHpOverride(
+            character,
+            part,
+            hp);
+    }
+
+    public void SetTargetHpOverride(
+        Character character,
+        BodyPart part,
+        int hp)
+    {
         BodyPartButton button =
             FindBodyPartButton(
                 character,
                 part);
 
-        if (button == null)
-            return;
-
-        button.SetHpOverride(hp);
+        button?.SetHpOverride(hp);
     }
 
     public void ClearBodyPartHpOverride(
         Character character,
         BodyPart part)
     {
+        ClearTargetHpOverride(
+            character,
+            part);
+    }
+
+    public void ClearTargetHpOverride(
+        Character character,
+        BodyPart part)
+    {
         BodyPartButton button =
             FindBodyPartButton(
                 character,
                 part);
 
-        if (button == null)
-            return;
-
-        button.ClearHpOverride();
+        button?.ClearHpOverride();
     }
 
     private BodyPartButton FindBodyPartButton(
         Character character,
         BodyPart part)
     {
-        if (character == null || part == null)
+        if (character == null)
             return null;
 
         BodyPartButton[] buttons =
@@ -356,17 +512,19 @@ public class BattleUIManager : MonoBehaviour
 
         foreach (BodyPartButton button in buttons)
         {
-            if (button == null)
+            if (button == null ||
+                button.Owner != character)
+            {
                 continue;
-
-            if (button.Owner != character)
-                continue;
+            }
 
             if (button.BodyPart == part)
                 return button;
 
-            if (button.BodyPart != null &&
-                button.BodyPart.Type == part.Type)
+            if (part != null &&
+                button.BodyPart != null &&
+                button.BodyPart.Type ==
+                part.Type)
             {
                 return button;
             }
@@ -375,19 +533,17 @@ public class BattleUIManager : MonoBehaviour
         return null;
     }
 
-    private string GetSpeedText(BodyPart part)
+    private string GetSpeedText(
+        Character owner,
+        BodyPart part)
     {
-        if (part == null)
-            return "SPD -";
-
-        if (battleManager == null ||
-            battleManager.SpeedManager == null)
-        {
+        if (battleManager?.SpeedManager == null)
             return "SPD 0";
-        }
 
         int speed =
-            battleManager.SpeedManager.GetSpeed(part);
+            battleManager.SpeedManager.GetSpeed(
+                owner,
+                part);
 
         return $"SPD {speed}";
     }
@@ -406,53 +562,67 @@ public class BattleUIManager : MonoBehaviour
     // BodyPartButton 왼쪽 클릭
     //---------------------------------------
 
-    public void OnBodyPartClicked(Character owner, BodyPart part)
+    public void OnBodyPartClicked(
+        Character owner,
+        BodyPart part)
     {
-        if (!IsManagerReady())
-            return;
-
-        if (owner == null || part == null)
-            return;
-
-        if (inputMode == BattleInputMode.SelectOwner)
+        if (!IsManagerReady() ||
+            owner == null)
         {
-            if (!IsPlayer(owner))
+            return;
+        }
+
+        if (inputMode ==
+            BattleInputMode.SelectOwner)
+        {
+            if (!IsPlayer(owner) ||
+                part == null)
             {
-                Debug.Log("먼저 플레이어의 행동 부위를 선택하세요.");
+                Debug.Log(
+                    "먼저 플레이어의 행동 부위를 선택하세요.");
                 return;
             }
 
             bool success =
-                TrySelectOwnerSlot(owner, part);
+                TrySelectOwnerSlot(
+                    owner,
+                    part);
 
             if (success)
-                inputMode = BattleInputMode.SelectTarget;
+            {
+                inputMode =
+                    BattleInputMode.SelectTarget;
+            }
 
             return;
         }
 
-        if (inputMode == BattleInputMode.SelectTarget)
+        if (inputMode ==
+            BattleInputMode.SelectTarget)
         {
             if (IsPlayer(owner))
             {
-                BattleDebugLog.UIInput("대상으로는 적 부위를 선택하세요.");
+                BattleDebugLog.UIInput(
+                    "대상으로는 적을 선택하세요.");
                 return;
             }
 
             bool success =
-                TrySelectTargetSlot(owner, part);
+                TrySelectTargetSlot(
+                    owner,
+                    part);
 
             if (success)
-                inputMode = BattleInputMode.SelectSkill;
+            {
+                inputMode =
+                    BattleInputMode.SelectSkill;
+            }
 
             return;
         }
 
-        if (inputMode == BattleInputMode.SelectSkill)
-        {
-            BattleDebugLog.UIInput("먼저 왼쪽 스킬 패널에서 사용할 스킬을 선택하세요.");
-            return;
-        }
+        BattleDebugLog.UIInput(
+            "먼저 왼쪽 스킬 패널에서 사용할 스킬을 선택하세요.");
     }
     
     public void RefreshAllUI()
@@ -468,11 +638,9 @@ public class BattleUIManager : MonoBehaviour
         RefreshAllBodyPartButtons();
     }
 
-    public void RefreshBodyPartUI(BodyPart part)
+    public void RefreshBodyPartUI(
+        BodyPart part)
     {
-        if (part == null)
-            return;
-
         RefreshAllBodyPartButtons();
     }
 
@@ -480,7 +648,9 @@ public class BattleUIManager : MonoBehaviour
     // BodyPartButton 오른쪽 클릭
     //---------------------------------------
 
-    public void OnBodyPartRightClicked(Character owner, BodyPart part)
+    public void OnBodyPartRightClicked(
+        Character owner,
+        BodyPart part)
     {
         if (!IsManagerReady())
             return;
@@ -491,19 +661,34 @@ public class BattleUIManager : MonoBehaviour
             return;
         }
 
-        // 플레이어 부위를 우클릭하면 해당 부위의 지정된 행동 슬롯 삭제
         if (IsPlayer(owner))
         {
+            int actionIndex =
+                ResolveActionIndexForRemoval(
+                    owner,
+                    part);
+
             ActionSlot oldSlot =
-                battleManager.ActionManager.FindSlot(owner, part);
+                battleManager.ActionManager.FindSlot(
+                    owner,
+                    part,
+                    actionIndex);
 
             if (oldSlot != null)
             {
-                battleManager.ActionManager.RemoveSlot(owner, part);
+                battleManager.ActionManager.RemoveSlot(
+                    owner,
+                    part,
+                    actionIndex);
+
+                actionIndexCursorByPart[part] =
+                    Mathf.Max(0, actionIndex - 1);
 
                 Debug.Log(
                     "[ActionSlot Canceled]\n" +
-                    $"{GetCharacterName(owner)} {part.Type}");
+                    $"{GetCharacterName(owner)} {part.Type} / " +
+                    $"ActionIndex={actionIndex}, " +
+                    $"ActionId={oldSlot.ActionId}");
 
                 RefreshAllBodyPartButtons();
             }
@@ -516,12 +701,41 @@ public class BattleUIManager : MonoBehaviour
     // 행동 부위 선택
     //---------------------------------------
 
-    public void SelectOwnerSlot(Character owner, BodyPart part)
+    public void SelectOwnerSlot(
+        Character owner,
+        BodyPart part)
     {
-        TrySelectOwnerSlot(owner, part);
+        TrySelectOwnerSlot(
+            owner,
+            part,
+            requestedActionIndex: null);
     }
 
-    private bool TrySelectOwnerSlot(Character owner, BodyPart part)
+    public bool SelectOwnerSlot(
+        Character owner,
+        BodyPart part,
+        int actionIndex)
+    {
+        return TrySelectOwnerSlot(
+            owner,
+            part,
+            actionIndex);
+    }
+
+    private bool TrySelectOwnerSlot(
+        Character owner,
+        BodyPart part)
+    {
+        return TrySelectOwnerSlot(
+            owner,
+            part,
+            requestedActionIndex: null);
+    }
+
+    private bool TrySelectOwnerSlot(
+        Character owner,
+        BodyPart part,
+        int? requestedActionIndex)
     {
         if (!IsManagerReady())
             return false;
@@ -531,35 +745,63 @@ public class BattleUIManager : MonoBehaviour
 
         if (!IsPlayer(owner))
         {
-            Debug.Log("플레이어의 부위만 행동 슬롯으로 선택할 수 있습니다.");
+            Debug.Log(
+                "플레이어의 부위만 행동 슬롯으로 선택할 수 있습니다.");
             return false;
         }
 
         if (owner.IsDead)
         {
-            Debug.Log($"{GetCharacterName(owner)}는 사망 상태입니다.");
+            Debug.Log(
+                $"{GetCharacterName(owner)}는 사망 상태입니다.");
             return false;
         }
 
         if (part.IsBroken)
         {
-            Debug.Log($"[{part.Type}] 파괴된 부위는 행동할 수 없습니다.");
+            Debug.Log(
+                $"[{part.Type}] 파괴된 부위는 행동할 수 없습니다.");
             return false;
         }
 
         if (!part.IsUsable)
         {
-            Debug.Log($"[{part.Type}] 사용할 수 없는 부위입니다.");
+            Debug.Log(
+                $"[{part.Type}] 사용할 수 없는 부위입니다.");
             return false;
         }
 
+        selectedMaxActionSlots =
+            GetMaxActionSlots(
+                owner,
+                part);
+
+        if (selectedMaxActionSlots <= 0)
+        {
+            Debug.LogWarning(
+                $"[{part.Type}] 선택 가능한 행동 슬롯이 없습니다.");
+            return false;
+        }
+
+        selectedActionIndex =
+            ResolveActionIndexForSelection(
+                owner,
+                part,
+                selectedMaxActionSlots,
+                requestedActionIndex);
+
         selectedOwner = owner;
         selectedOwnerPart = part;
-        
+        actionIndexCursorByPart[part] =
+            selectedActionIndex;
+
         RefreshAllBodyPartButtons();
 
         ActionSlot oldSlot =
-            battleManager.ActionManager.FindSlot(owner, part);
+            battleManager.ActionManager.FindSlot(
+                owner,
+                part,
+                selectedActionIndex);
 
         if (oldSlot != null)
         {
@@ -570,7 +812,10 @@ public class BattleUIManager : MonoBehaviour
         else
         {
             BattleDebugLog.UIInput(
-                $"[Owner Slot Selected] {owner.Data.CharacterName} / {part.Type}");
+                $"[Owner Slot Selected] " +
+                $"{owner.Data.CharacterName} / {part.Type} / " +
+                $"ActionIndex={selectedActionIndex} / " +
+                $"MaxSlots={selectedMaxActionSlots}");
         }
 
         return true;
@@ -585,46 +830,57 @@ public class BattleUIManager : MonoBehaviour
         TrySelectTargetSlot(target, part);
     }
 
-    private bool TrySelectTargetSlot(Character target, BodyPart part)
+    private bool TrySelectTargetSlot(
+        Character target,
+        BodyPart part)
     {
-        if (!IsManagerReady())
-            return false;
-
-        if (target == null || part == null)
-            return false;
-
-        if (selectedOwner == null || selectedOwnerPart == null)
+        if (!IsManagerReady() ||
+            target == null)
         {
-            Debug.Log("먼저 공격 부위를 선택하세요.");
+            return false;
+        }
+
+        if (selectedOwner == null ||
+            selectedOwnerPart == null)
+        {
+            Debug.Log(
+                "먼저 공격 부위를 선택하세요.");
             return false;
         }
 
         if (target == selectedOwner)
         {
-            Debug.Log("자기 자신은 공격할 수 없습니다.");
+            Debug.Log(
+                "자기 자신은 공격할 수 없습니다.");
             return false;
         }
 
-        if (target.IsDead)
+        if (!BattleTargetValidator.IsValid(
+                target,
+                part,
+                TargetSelectionRule.StandardAttack))
         {
-            Debug.Log($"{GetCharacterName(target)}는 이미 사망했습니다.");
+            Debug.LogWarning(
+                $"선택할 수 없는 대상입니다. " +
+                $"Target={GetCharacterName(target)}, " +
+                $"Part={(part == null ? "SINGLE_HP" : part.Type.ToString())}");
             return false;
         }
 
-        if (part.IsBroken)
-        {
-            Debug.Log($"[{part.Type}] 파괴된 부위는 대상으로 지정할 수 없습니다.");
-            return false;
-        }
+        selectedTarget =
+            target;
 
-        selectedTarget = target;
-        selectedTargetPart = part;
-        
+        selectedTargetPart =
+            part;
+
         RefreshAllBodyPartButtons();
 
         BattleDebugLog.UIInput(
-            $"[Target Selected] {selectedOwner.Data.CharacterName} {selectedOwnerPart.Type} -> " +
-            $"{target.Data.CharacterName} {selectedTargetPart.Type}");
+            $"[Target Selected] " +
+            $"{selectedOwner.Data.CharacterName} " +
+            $"{selectedOwnerPart.Type} -> " +
+            $"{GetCharacterName(target)} " +
+            $"{(part == null ? "SINGLE_HP" : part.Type.ToString())}");
 
         ShowSkillPanel();
 
@@ -648,31 +904,53 @@ public class BattleUIManager : MonoBehaviour
 
         skillSelectPanel.Show(
             this,
-            selectedOwnerPart);
+            selectedOwnerPart,
+            selectedActionIndex,
+            selectedMaxActionSlots);
     }
 
-    public void OnSkillSelectedFromPanel(Skill skill)
+    public void OnSkillSelectedFromPanel(
+        Skill skill)
+    {
+        OnSkillSelectedFromPanel(
+            skill,
+            selectedActionIndex);
+    }
+
+    public void OnSkillSelectedFromPanel(
+        Skill skill,
+        int actionIndex)
     {
         if (skill == null)
             return;
 
-        if (!IsSkillSelectable(selectedOwnerPart, skill))
+        if (actionIndex < 0 ||
+            actionIndex >= selectedMaxActionSlots)
         {
-            Debug.Log($"[{skill.SkillName}] 사용할 수 없는 스킬입니다.");
+            Debug.LogWarning(
+                $"잘못된 ActionIndex입니다. " +
+                $"Index={actionIndex}, Max={selectedMaxActionSlots}");
             return;
         }
 
-        bool created =
-            CreateSlot(skill);
+        selectedActionIndex = actionIndex;
 
-        if (!created)
+        if (!IsSkillSelectable(
+                selectedOwnerPart,
+                skill))
+        {
+            Debug.Log(
+                $"[{skill.SkillName}] 사용할 수 없는 스킬입니다.");
+            return;
+        }
+
+        if (!CreateSlot(skill))
             return;
 
         if (skillSelectPanel != null)
             skillSelectPanel.Hide();
 
         ClearSelection();
-
         RefreshAllBodyPartButtons();
     }
 
@@ -724,7 +1002,7 @@ public class BattleUIManager : MonoBehaviour
         if (part.AvailableSkills == null)
             return false;
 
-        if (!part.AvailableSkills.Contains(skill))
+        if (!ContainsSkill(part.AvailableSkills, skill))
             return false;
 
         if (skill.ActionType == ActionType.Prestige)
@@ -732,7 +1010,8 @@ public class BattleUIManager : MonoBehaviour
             if (!IsPrestigeReady(selectedOwner))
                 return false;
 
-            if (skill.PrestigeUsePolicy == PrestigeUsePolicy.OncePerTurn)
+            if (skill.PrestigeUsePolicy ==
+                PrestigeUsePolicy.OncePerTurn)
             {
                 if (HasPrestigeSlotSelected(selectedOwner))
                     return false;
@@ -740,6 +1019,22 @@ public class BattleUIManager : MonoBehaviour
         }
 
         return true;
+    }
+
+    private bool ContainsSkill(
+        IReadOnlyList<Skill> skills,
+        Skill targetSkill)
+    {
+        if (skills == null || targetSkill == null)
+            return false;
+
+        for (int i = 0; i < skills.Count; i++)
+        {
+            if (skills[i] == targetSkill)
+                return true;
+        }
+
+        return false;
     }
 
     private bool IsPrestigeReady(Character character)
@@ -759,55 +1054,71 @@ public class BattleUIManager : MonoBehaviour
     // ActionSlot 생성
     //---------------------------------------
 
-    private bool CreateSlot(Skill skill)
+    private bool CreateSlot(
+        Skill skill)
     {
         if (!IsManagerReady())
             return false;
 
         if (selectedOwner == null ||
             selectedOwnerPart == null ||
-            selectedTarget == null ||
-            selectedTargetPart == null)
+            selectedTarget == null)
         {
-            Debug.LogWarning("ActionSlot 생성 실패 : 선택 정보가 부족합니다.");
+            Debug.LogWarning(
+                "ActionSlot 생성 실패 : 선택 정보가 부족합니다.");
             return false;
         }
 
-        if (selectedOwner.IsDead || selectedTarget.IsDead)
+        if (!BattleTargetValidator.IsValid(
+                selectedTarget,
+                selectedTargetPart,
+                TargetSelectionRule.StandardAttack))
         {
-            Debug.LogWarning("ActionSlot 생성 실패 : 사망한 캐릭터가 포함되어 있습니다.");
+            Debug.LogWarning(
+                "ActionSlot 생성 실패 : 대상 계약이 올바르지 않습니다.");
+            return false;
+        }
+
+        if (selectedOwner.IsDead ||
+            selectedTarget.IsDead)
+        {
+            Debug.LogWarning(
+                "ActionSlot 생성 실패 : 사망한 캐릭터가 포함되어 있습니다.");
             return false;
         }
 
         if (selectedOwnerPart.IsBroken)
         {
-            Debug.LogWarning("ActionSlot 생성 실패 : 행동 부위가 파괴되어 있습니다.");
-            return false;
-        }
-
-        if (selectedTargetPart.IsBroken)
-        {
-            Debug.LogWarning("ActionSlot 생성 실패 : 대상 부위가 파괴되어 있습니다.");
+            Debug.LogWarning(
+                "ActionSlot 생성 실패 : 행동 부위가 파괴되어 있습니다.");
             return false;
         }
 
         if (skill == null)
         {
-            Debug.LogWarning("ActionSlot 생성 실패 : Skill이 없습니다.");
+            Debug.LogWarning(
+                "ActionSlot 생성 실패 : Skill이 없습니다.");
             return false;
         }
-        
-        if (skill.ActionType == ActionType.Prestige)
+
+        if (skill.ActionType ==
+            ActionType.Prestige)
         {
-            if (!IsPrestigeReady(selectedOwner))
+            if (!IsPrestigeReady(
+                    selectedOwner))
             {
-                Debug.LogWarning("ActionSlot 생성 실패 : 위세 게이지가 부족합니다.");
+                Debug.LogWarning(
+                    "ActionSlot 생성 실패 : 위세 게이지가 부족합니다.");
                 return false;
             }
 
-            if (HasPrestigeSlotSelected(selectedOwner, selectedOwnerPart))
+            if (HasPrestigeSlotSelected(
+                    selectedOwner,
+                    selectedOwnerPart,
+                    selectedActionIndex))
             {
-                Debug.LogWarning("ActionSlot 생성 실패 : 이번 턴에 이미 위세 스킬을 선택했습니다.");
+                Debug.LogWarning(
+                    "ActionSlot 생성 실패 : 이번 턴에 이미 위세 스킬을 선택했습니다.");
                 return false;
             }
         }
@@ -815,26 +1126,28 @@ public class BattleUIManager : MonoBehaviour
         ActionSlot oldSlot =
             battleManager.ActionManager.FindSlot(
                 selectedOwner,
-                selectedOwnerPart);
+                selectedOwnerPart,
+                selectedActionIndex);
 
-        ActionSlot newSlot = new ActionSlot
-        {
-            Owner = selectedOwner,
-            Part = selectedOwnerPart,
+        ActionSlot newSlot =
+            new ActionSlot
+            {
+                Owner = selectedOwner,
+                Part = selectedOwnerPart,
+                Skill = skill,
+                TargetCharacter = selectedTarget,
+                TargetPart = selectedTargetPart,
+                Speed = battleManager.SpeedManager.GetSpeed(
+                    selectedOwner,
+                    selectedOwnerPart),
+                ActionIndex = selectedActionIndex,
+                Phase = skill.DefaultPhase,
+                TargetSlot = null
+            };
 
-            Skill = skill,
-
-            TargetCharacter = selectedTarget,
-            TargetPart = selectedTargetPart,
-
-            Speed = battleManager.SpeedManager.GetSpeed(selectedOwnerPart),
-
-            Phase = skill.DefaultPhase,
-
-            TargetSlot = null
-        };
-
-        battleManager.ActionManager.AddOrReplaceSlot(newSlot);
+        battleManager.ActionManager
+            .AddOrReplaceSlot(
+                newSlot);
 
         if (oldSlot != null)
         {
@@ -916,6 +1229,8 @@ public class BattleUIManager : MonoBehaviour
     {
         selectedOwner = null;
         selectedOwnerPart = null;
+        selectedActionIndex = 0;
+        selectedMaxActionSlots = 1;
 
         selectedTarget = null;
         selectedTargetPart = null;
@@ -1032,9 +1347,13 @@ public class BattleUIManager : MonoBehaviour
         string targetSlotName =
             slot.TargetSlot == null
                 ? "NULL"
-                : $"{GetCharacterName(slot.TargetSlot.Owner)} {slot.TargetSlot.Part.Type}";
+                : $"{GetCharacterName(slot.TargetSlot.Owner)} " +
+                  $"{(slot.TargetSlot.Part == null ? "NONE" : slot.TargetSlot.Part.Type.ToString())} " +
+                  $"[#{slot.TargetSlot.ActionIndex + 1}, Id={slot.TargetSlot.ActionId}]";
 
         return
+            $"ActionId   : {slot.ActionId}\n" +
+            $"ActionIndex: {slot.ActionIndex}\n" +
             $"Owner      : {ownerName}\n" +
             $"Part       : {partName}\n" +
             $"Skill      : {skillName}\n" +
@@ -1058,57 +1377,144 @@ public class BattleUIManager : MonoBehaviour
     
     private bool HasPrestigeSlotSelected(
         Character owner,
-        BodyPart ignorePart = null)
+        BodyPart ignorePart = null,
+        int ignoreActionIndex = -1)
     {
-        if (owner == null)
-            return false;
-
-        if (battleManager == null ||
-            battleManager.ActionManager == null)
-            return false;
-
-        foreach (ActionSlot slot in battleManager.ActionManager.Slots)
+        if (owner == null ||
+            battleManager?.ActionManager == null)
         {
-            if (slot == null)
-                continue;
+            return false;
+        }
 
-            if (slot.Owner != owner)
-                continue;
-
-            if (slot.Skill == null)
-                continue;
-
-            if (ignorePart != null &&
-                IsSamePart(slot.Part, ignorePart))
+        foreach (ActionSlot slot
+                 in battleManager.ActionManager.Slots)
+        {
+            if (slot == null ||
+                slot.Owner != owner ||
+                slot.Skill == null)
             {
                 continue;
             }
 
-            if (slot.Skill.ActionType == ActionType.Prestige)
+            bool isIgnoredExactSlot =
+                ignoreActionIndex >= 0 &&
+                IsSamePart(slot.Part, ignorePart) &&
+                slot.ActionIndex == ignoreActionIndex;
+
+            if (isIgnoredExactSlot)
+                continue;
+
+            if (slot.Skill.ActionType ==
+                ActionType.Prestige)
+            {
                 return true;
+            }
         }
 
         return false;
     }
-    
+
+    private int ResolveActionIndexForSelection(
+        Character owner,
+        BodyPart part,
+        int maxSlots,
+        int? requestedActionIndex)
+    {
+        if (requestedActionIndex.HasValue)
+        {
+            return Mathf.Clamp(
+                requestedActionIndex.Value,
+                0,
+                Mathf.Max(0, maxSlots - 1));
+        }
+
+        // 빈 슬롯을 먼저 선택한다.
+        for (int index = 0;
+             index < maxSlots;
+             index++)
+        {
+            if (battleManager.ActionManager.FindSlot(
+                    owner,
+                    part,
+                    index) == null)
+            {
+                return index;
+            }
+        }
+
+        // 모두 찼으면 클릭할 때마다 편집 대상을 순환한다.
+        int cursor = -1;
+
+        if (part != null &&
+            actionIndexCursorByPart.TryGetValue(
+                part,
+                out int storedCursor))
+        {
+            cursor = storedCursor;
+        }
+
+        return
+            (cursor + 1) %
+            Mathf.Max(1, maxSlots);
+    }
+
+    private int ResolveActionIndexForRemoval(
+        Character owner,
+        BodyPart part)
+    {
+        List<ActionSlot> slots =
+            GetSlotsByOwnerPart(owner, part);
+
+        if (slots.Count == 0)
+            return 0;
+
+        if (selectedOwner == owner &&
+            IsSamePart(selectedOwnerPart, part) &&
+            battleManager.ActionManager.FindSlot(
+                owner,
+                part,
+                selectedActionIndex) != null)
+        {
+            return selectedActionIndex;
+        }
+
+        if (part != null &&
+            actionIndexCursorByPart.TryGetValue(
+                part,
+                out int cursor) &&
+            battleManager.ActionManager.FindSlot(
+                owner,
+                part,
+                cursor) != null)
+        {
+            return cursor;
+        }
+
+        return slots[slots.Count - 1].ActionIndex;
+    }
+
     private bool IsSamePart(
         BodyPart a,
         BodyPart b)
     {
-        if (a == null || b == null)
-            return false;
+        if (a == null ||
+            b == null)
+        {
+            return
+                a == null &&
+                b == null;
+        }
 
-        if (a == b)
-            return true;
-
-        return a.Type == b.Type;
+        return
+            a == b ||
+            a.Type == b.Type;
     }
 
-}
+    private bool IsSameTargetPart(
+        BodyPart a,
+        BodyPart b)
+    {
+        return IsSamePart(a, b);
+    }
 
-public enum BattleInputMode
-{
-    SelectOwner,
-    SelectTarget,
-    SelectSkill
 }

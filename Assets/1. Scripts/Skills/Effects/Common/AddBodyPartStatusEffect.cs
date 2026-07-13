@@ -1,43 +1,48 @@
 using UnityEngine;
 
 [CreateAssetMenu(
-    menuName = "Battle/Skill Effect/Add Body Part Status",
-    fileName = "AddBodyPartStatusEffect")]
+    menuName = "Battle/Skill Effect/Add Status",
+    fileName = "AddStatusEffect")]
 public class AddBodyPartStatusEffect : SkillEffectDefinition
 {
     public StatusEffectId StatusEffectId;
-    public int Stack = 1;
+    [Min(1)] public int Stack = 1;
+    [Min(1)] public int Duration = 3;
 
-    public override void Apply(SkillEffectContext context)
+    public override void Apply(
+        SkillEffectContext context)
     {
-        if (context == null)
+        if (context?.Resolver == null ||
+            context.Owner == null ||
+            context.Target == null)
+        {
             return;
-
-        if (context.Resolver == null)
-            return;
-
-        if (context.Owner == null)
-            return;
-
-        if (context.Target == null)
-            return;
-
-        if (context.TargetPart == null)
-            return;
+        }
 
         StatusEffect effect =
             StatusEffectFactory.Create(
                 StatusEffectId,
-                Stack);
+                Stack,
+                Duration);
 
         if (effect == null)
             return;
 
-        context.Resolver.ApplyBodyPartStatus(
-            EffectRequest.BodyPartStatus(
+        if (context.TargetPart != null)
+        {
+            context.Resolver.ApplyBodyPartStatus(
+                EffectRequest.BodyPartStatus(
+                    context.Owner,
+                    context.Target,
+                    context.TargetPart,
+                    effect));
+            return;
+        }
+
+        context.Resolver.ApplyCharacterStatus(
+            EffectRequest.CharacterStatus(
                 context.Owner,
                 context.Target,
-                context.TargetPart,
                 effect));
     }
 }

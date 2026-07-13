@@ -7,74 +7,74 @@ public class NormalEnemy : Enemy
     [SerializeField]
     private NormalEnemySkillSet skillSet;
 
+    [Header("Single HP")]
+    [SerializeField, Min(1)]
+    private int singleMaxHP = 50;
+
     private readonly List<BodyPart> bodyParts = new();
+    private readonly List<Skill> characterSkills = new();
 
-    public override IReadOnlyList<BodyPart> BodyParts => bodyParts;
+    public override IReadOnlyList<BodyPart> BodyParts =>
+        bodyParts;
 
-    //--------------------------------
-    // 부위 구성
-    //--------------------------------
+    public IReadOnlyList<Skill> CharacterSkills =>
+        characterSkills;
 
     protected override void BuildBodyParts()
     {
+        // 일반몹은 가짜 HEAD를 만들지 않는다.
         bodyParts.Clear();
+        characterSkills.Clear();
 
-        bodyParts.Add(
-            new BodyPart(
-                PartType.HEAD,
-                50,
-                CreateHeadSkillSet()));
+        AddRuntimeSkill(
+            skillSet != null
+                ? skillSet.NormalAttack
+                : null);
+
+        AddRuntimeSkill(
+            skillSet != null
+                ? skillSet.DuelSkill
+                : null);
+
+        AddRuntimeSkill(
+            skillSet != null
+                ? skillSet.PrestigeSkill
+                : null);
     }
 
-    //--------------------------------
-    // 스킬 생성
-    //--------------------------------
-
-    private Skill[] CreateHeadSkillSet()
+    protected override IEnumerable<Skill>
+        GetCharacterSkills()
     {
-        return CreateSkillArray(
-            CreateSkill(skillSet != null ? skillSet.NormalAttack : null),
-            CreateSkill(skillSet != null ? skillSet.DuelSkill : null),
-            CreatePrestigeSkill());
+        return characterSkills;
     }
 
-    private Skill CreateSkill(SkillDefinition definition)
+    protected override IReadOnlyList<Skill>
+        GetAvailableSkills(BodyPart part)
+    {
+        return part == null
+            ? characterSkills
+            : null;
+    }
+
+    protected override ICombatTargetModel
+        CreateCombatTargetModel()
+    {
+        return new SingleHpTargetModel(
+            singleMaxHP);
+    }
+
+    private void AddRuntimeSkill(
+        SkillDefinition definition)
     {
         if (definition == null)
-            return null;
+            return;
 
-        return definition.CreateRuntimeSkill();
+        Skill skill =
+            definition.CreateRuntimeSkill();
+
+        if (skill != null)
+            characterSkills.Add(skill);
     }
-
-    private Skill CreatePrestigeSkill()
-    {
-        if (skillSet == null)
-            return null;
-
-        if (skillSet.PrestigeSkill == null)
-            return null;
-
-        return skillSet.PrestigeSkill.CreateRuntimeSkill();
-    }
-
-    private Skill[] CreateSkillArray(params Skill[] skills)
-    {
-        List<Skill> result = new();
-
-        foreach (Skill skill in skills)
-        {
-            if (skill == null)
-                continue;
-
-            result.Add(skill);
-        }
-
-        return result.ToArray();
-    }
-
-    //--------------------------------
-    // 메커닉 구성
-    //--------------------------------
 
     protected override void BuildMechanics()
     {
@@ -84,44 +84,15 @@ public class NormalEnemy : Enemy
             new NormalEnemyBloodScentMechanic());
     }
 
-    //--------------------------------
-    // 약화 디버프
-    //--------------------------------
-
-    protected override StatusEffect CreateDisabledDebuff(
-        BodyPart part)
+    protected override StatusEffect
+        CreateDisabledDebuff(BodyPart part)
     {
-        if (part == null)
-            return null;
-
-        return part.Type switch
-        {
-            PartType.HEAD => new HeadDisabled(),
-            _ => null
-        };
+        return null;
     }
 
-    //--------------------------------
-    // 파괴 디버프
-    //--------------------------------
-
-    protected override StatusEffect CreateBrokenPartStatus(
-        BodyPart part)
+    protected override StatusEffect
+        CreateBrokenPartStatus(BodyPart part)
     {
-        if (part == null)
-            return null;
-
-        return part.Type switch
-        {
-            PartType.HEAD => new BrokenHead(),
-            _ => null
-        };
-    }
-
-    //--------------------------------
-
-    public override void Die()
-    {
-        base.Die();
+        return null;
     }
 }

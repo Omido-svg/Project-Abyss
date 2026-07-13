@@ -1,7 +1,8 @@
 public enum StatusEffectId
 {
     Bleeding,
-    Burn
+    Burn,
+    Stun
 }
 
 public static class StatusEffectFactory
@@ -10,16 +11,35 @@ public static class StatusEffectFactory
         StatusEffectId id,
         int stack)
     {
-        switch (id)
+        return Create(
+            id,
+            stack,
+            3);
+    }
+
+    public static StatusEffect Create(
+        StatusEffectId id,
+        int stack,
+        int duration)
+    {
+        int safeStack =
+            UnityEngine.Mathf.Max(1, stack);
+        int safeDuration =
+            UnityEngine.Mathf.Max(1, duration);
+
+        return id switch
         {
-            case StatusEffectId.Bleeding:
-                return new Bleeding(stack);
-
-            case StatusEffectId.Burn:
-                return new Burn(stack);
-
-            default:
-                return null;
-        }
+            StatusEffectId.Bleeding =>
+                new Bleeding(
+                    safeStack,
+                    safeDuration),
+            StatusEffectId.Burn =>
+                new Burn(
+                    safeStack,
+                    safeDuration),
+            StatusEffectId.Stun =>
+                new Stun(),
+            _ => null
+        };
     }
 }

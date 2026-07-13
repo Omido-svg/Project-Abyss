@@ -1,8 +1,12 @@
+using TMPro;
 using UnityEngine;
 
 public class SkillSelectPanelUI : MonoBehaviour
 {
     [SerializeField] private CanvasGroup canvasGroup;
+
+    [Header("Optional Slot Header")]
+    [SerializeField] private TMP_Text slotHeaderText;
 
     [Header("Skill Buttons")]
     [SerializeField] private SkillButtonUI normalAttackButton;
@@ -12,11 +16,12 @@ public class SkillSelectPanelUI : MonoBehaviour
 
     private BattleUIManager uiManager;
     private BodyPart selectedPart;
+    private int selectedActionIndex;
+    private int maxActionSlots = 1;
 
     private void Awake()
     {
         EnsureReferences();
-
         Hide();
     }
 
@@ -30,9 +35,15 @@ public class SkillSelectPanelUI : MonoBehaviour
         BattleUIManager manager,
         BodyPart part)
     {
-        // 중요:
-        // 오브젝트가 꺼져 있던 상태라면 SetActive(true) 순간 Awake가 실행될 수 있음.
-        // 그래서 selectedPart 저장보다 SetActive(true)가 먼저 와야 함.
+        Show(manager, part, 0, 1);
+    }
+
+    public void Show(
+        BattleUIManager manager,
+        BodyPart part,
+        int actionIndex,
+        int maxSlots)
+    {
         if (!gameObject.activeSelf)
             gameObject.SetActive(true);
 
@@ -40,6 +51,9 @@ public class SkillSelectPanelUI : MonoBehaviour
 
         uiManager = manager;
         selectedPart = part;
+        maxActionSlots = Mathf.Max(1, maxSlots);
+        selectedActionIndex =
+            Mathf.Clamp(actionIndex, 0, maxActionSlots - 1);
 
         if (uiManager == null || selectedPart == null)
         {
@@ -54,37 +68,34 @@ public class SkillSelectPanelUI : MonoBehaviour
             canvasGroup.blocksRaycasts = true;
         }
 
-        BindSkillButton(
-            normalAttackButton,
-            ActionType.NormalAttack,
-            "일반공격");
+        if (slotHeaderText != null)
+        {
+            slotHeaderText.text =
+                $"행동 슬롯 #{selectedActionIndex + 1} / {maxActionSlots}";
+        }
 
-        BindSkillButton(
-            duelButton,
-            ActionType.Duel,
-            "결투");
-
-        BindSkillButton(
-            preparationButton,
-            ActionType.Preparation,
-            "도사림");
-
-        BindSkillButton(
-            prestigeButton,
-            ActionType.Prestige,
-            "위세");
+        BindSkillButton(normalAttackButton, ActionType.NormalAttack, "일반공격");
+        BindSkillButton(duelButton, ActionType.Duel, "결투");
+        BindSkillButton(preparationButton, ActionType.Preparation, "도사림");
+        BindSkillButton(prestigeButton, ActionType.Prestige, "위세");
 
         transform.SetAsLastSibling();
 
         BattleDebugLog.SkillPanel(
-            $"[SkillPanel] Show / Part : {part.Type}");
+            $"[SkillPanel] Show / Part={part.Type}, " +
+            $"ActionIndex={selectedActionIndex}, MaxSlots={maxActionSlots}");
     }
 
     public void Hide()
     {
         selectedPart = null;
+        selectedActionIndex = 0;
+        maxActionSlots = 1;
 
         EnsureReferences();
+
+        if (slotHeaderText != null)
+            slotHeaderText.text = "";
 
         if (canvasGroup != null)
         {
@@ -92,10 +103,6 @@ public class SkillSelectPanelUI : MonoBehaviour
             canvasGroup.interactable = false;
             canvasGroup.blocksRaycasts = false;
         }
-
-        // 중요:
-        // 여기서 gameObject.SetActive(false) 하지 말 것.
-        // 꺼버리면 다음 Show 때 Awake/Hide 타이밍 문제가 다시 생길 수 있음.
     }
 
     private void BindSkillButton(
@@ -111,9 +118,9 @@ public class SkillSelectPanelUI : MonoBehaviour
             skillButton.Bind(
                 $"{defaultName}\n<없음>",
                 null,
+                selectedActionIndex,
                 false,
                 null);
-
             return;
         }
 
@@ -127,24 +134,17 @@ public class SkillSelectPanelUI : MonoBehaviour
                 selectedPart,
                 skill);
 
-        string label;
-
-        if (skill == null)
-        {
-            label = $"{defaultName}\n<없음>";
-        }
-        else if (!usable)
-        {
-            label = $"{skill.SkillName}\n<비활성화>";
-        }
-        else
-        {
-            label = skill.SkillName;
-        }
+        string label =
+            skill == null
+                ? $"{defaultName}\n<없음>"
+                : !usable
+                    ? $"{skill.SkillName}\n<비활성화>"
+                    : skill.SkillName;
 
         skillButton.Bind(
             label,
             skill,
+            selectedActionIndex,
             usable,
             uiManager.OnSkillSelectedFromPanel);
     }

@@ -6,8 +6,7 @@ public class CharacterStatusController
 {
     private readonly Character owner;
 
-    private readonly List<StatusEffect> characterStatuses =
-        new List<StatusEffect>();
+    private readonly List<StatusEffect> characterStatuses = new();
 
     public IReadOnlyList<StatusEffect> CharacterStatuses =>
         characterStatuses;
@@ -17,157 +16,172 @@ public class CharacterStatusController
         this.owner = owner;
     }
 
-    //--------------------------------------------------
-    // 캐릭터 상태이상 추가
-    //--------------------------------------------------
-
-    public void AddStatus(
+    public StatusEffectApplyResult AddStatus(
         StatusEffect effect,
         Character source)
     {
-        if (owner == null)
-            return;
+        return AddCharacterStatusInternal(
+            effect,
+            source,
+            wasTransferred: false);
+    }
 
-        if (effect == null)
-            return;
+    public StatusEffectApplyResult AddPartStatus(
+        BodyPart part,
+        StatusEffect effect,
+        Character source)
+    {
+        if (owner == null || effect == null)
+            return Rejected(effect, part);
+
+        // Single HP 대상 또는 이미 파괴된 부위는 캐릭터 상태로 받는다.
+        if (part == null || part.IsBroken)
+        {
+            return AddCharacterStatusInternal(
+                effect,
+                source,
+                wasTransferred: part != null);
+        }
+
+        effect.Initialize(owner, source, part);
+
+        StatusEffect existing =
+            FindSamePartStatus(part, effect);
+
+        if (existing != null)
+        {
+            StatusEffectApplyResult merged =
+                existing.ApplyIncoming(effect);
+
+            RaiseApplyEvents(merged);
+            return merged;
+        }
+
+        effect.OnApply();
+        part.AddStatus(effect);
+
+        StatusEffectApplyResult result =
+            CreateAppliedResult(effect, part, false);
+
+        RaiseApplyEvents(result);
+
+        Debug.Log(
+            $"{GetOwnerName()} {part.Type} 부위에 " +
+            $"{effect.Name} 상태 부여 " +
+            $"(Stack={effect.Stack}, Duration={effect.Duration})");
+
+        return result;
+    }
+
+    private StatusEffectApplyResult AddCharacterStatusInternal(
+        StatusEffect effect,
+        Character source,
+        bool wasTransferred)
+    {
+        if (owner == null || effect == null)
+            return Rejected(effect, null);
+
+        effect.Initialize(owner, source, null);
 
         StatusEffect existing =
             FindSameStatus(effect);
 
         if (existing != null)
         {
-            existing.Merge(effect);
-            return;
+            StatusEffectApplyResult merged =
+                existing.ApplyIncoming(
+                    effect,
+                    wasTransferred);
+
+            RaiseApplyEvents(merged);
+            return merged;
         }
 
-        effect.Initialize(
-            owner,
-            source,
-            null);
-
         effect.OnApply();
-
         characterStatuses.Add(effect);
 
-        owner.BattleEvent?.RaiseStatusApplied(
-            owner,
-            effect);
-
-        Debug.Log(
-            $"{owner.Data.CharacterName}에게 {effect.Name} 상태 부여");
-    }
-
-    //--------------------------------------------------
-    // 부위 상태이상 추가
-    //--------------------------------------------------
-
-    public void AddPartStatus(
-        BodyPart part,
-        StatusEffect effect,
-        Character source)
-    {
-        if (owner == null)
-            return;
-
-        if (effect == null)
-            return;
-
-        if (part == null || part.IsBroken)
-        {
-            AddStatus(
+        StatusEffectApplyResult result =
+            CreateAppliedResult(
                 effect,
-                source);
+                null,
+                wasTransferred);
 
-            return;
-        }
-
-        StatusEffect existing =
-            FindSamePartStatus(
-                part,
-                effect);
-
-        if (existing != null)
-        {
-            existing.Merge(effect);
-            return;
-        }
-
-        effect.Initialize(
-            owner,
-            source,
-            part);
-
-        effect.OnApply();
-
-        part.AddStatus(effect);
-
-        owner.BattleEvent?.RaiseBodyPartStatusApplied(
-            owner,
-            part,
-            effect);
+        RaiseApplyEvents(result);
 
         Debug.Log(
-            $"{owner.Data.CharacterName} {part.Type} 부위에 {effect.Name} 상태 부여");
-    }
+            $"{GetOwnerName()}에게 {effect.Name} 상태 부여 " +
+            $"(Stack={effect.Stack}, Duration={effect.Duration})");
 
-    //--------------------------------------------------
-    // 캐릭터 상태 제거
-    //--------------------------------------------------
+        return result;
+    }
 
     public void RemoveStatus(StatusEffect effect)
     {
-        if (effect == null)
-            return;
-
-        if (!characterStatuses.Contains(effect))
-            return;
-
-        effect.OnRemove();
-
-        characterStatuses.Remove(effect);
-
-        owner.BattleEvent?.RaiseStatusRemoved(
-            owner,
-            effect);
-
-        Debug.Log(
-            $"{owner.Data.CharacterName}의 {effect.Name} 상태 제거");
+        RemoveStatus(
+            effect,
+            StatusEffectRemoveReason.Manual);
     }
 
-    //--------------------------------------------------
-    // 부위 상태 제거
-    //--------------------------------------------------
+    public void RemoveStatus(
+        StatusEffect effect,
+        StatusEffectRemoveReason reason)
+    {
+        if (effect == null ||
+            !characterStatuses.Contains(effect))
+        {
+            return;
+        }
+
+        effect.PrepareRemoval(reason);
+        effect.OnRemove();
+        characterStatuses.Remove(effect);
+
+        RaiseRemoveEvents(
+            null,
+            effect,
+            reason);
+
+        Debug.Log(
+            $"{GetOwnerName()}의 {effect.Name} 상태 제거 / Reason={reason}");
+    }
 
     public void RemovePartStatus(
         BodyPart part,
         StatusEffect effect)
     {
-        if (part == null)
-            return;
-
-        if (effect == null)
-            return;
-
-        part.RemoveStatus(effect);
-
-        owner.BattleEvent?.RaiseBodyPartStatusRemoved(
-            owner,
+        RemovePartStatus(
             part,
-            effect);
-
-        Debug.Log(
-            $"{owner.Data.CharacterName} {part.Type}의 {effect.Name} 상태 제거");
+            effect,
+            StatusEffectRemoveReason.Manual);
     }
 
-    //--------------------------------------------------
-    // 부위 파괴 시 상태이상 이전
-    //--------------------------------------------------
-
-    public void TransferPartStatusesToCharacter(BodyPart part)
+    public void RemovePartStatus(
+        BodyPart part,
+        StatusEffect effect,
+        StatusEffectRemoveReason reason)
     {
-        if (owner == null)
+        if (part == null || effect == null)
             return;
 
+        if (!part.StatusEffects.Contains(effect))
+            return;
+
+        effect.PrepareRemoval(reason);
+        part.RemoveStatus(effect);
+
+        RaiseRemoveEvents(
+            part,
+            effect,
+            reason);
+
+        Debug.Log(
+            $"{GetOwnerName()} {part.Type}의 {effect.Name} 상태 제거 / Reason={reason}");
+    }
+
+    public void RemoveAllPartStatuses(
+        BodyPart part,
+        StatusEffectRemoveReason reason)
+    {
         if (part == null)
             return;
 
@@ -176,85 +190,189 @@ public class CharacterStatusController
             if (effect == null)
                 continue;
 
-            Character source =
-                effect.Source != null
-                    ? effect.Source
-                    : owner;
-
-            part.RemoveStatus(effect);
-
-            owner.BattleEvent?.RaiseBodyPartStatusRemoved(
-                owner,
+            RemovePartStatus(
                 part,
-                effect);
-
-            AddStatus(
                 effect,
-                source);
-
-            Debug.Log(
-                $"{owner.Data.CharacterName} {part.Type}의 {effect.Name} 상태가 캐릭터 상태로 이전됨");
+                reason);
         }
     }
 
-    //--------------------------------------------------
-    // 턴 종료 상태 처리
-    //--------------------------------------------------
-
-    public void OnTurnEnd()
+    public void RemoveBrokenStatusForPart(BodyPart part)
     {
-        if (owner == null)
+        if (part == null)
             return;
 
-        //--------------------------------
-        // 캐릭터 상태이상 처리
-        //--------------------------------
+        foreach (StatusEffect effect in characterStatuses.ToArray())
+        {
+            if (effect is not BrokenPartStatus broken)
+                continue;
 
-        foreach (StatusEffect effect in CharacterStatuses.ToArray())
+            if (!broken.MatchesPart(part))
+                continue;
+
+            RemoveStatus(
+                effect,
+                StatusEffectRemoveReason.PartRecovered);
+        }
+    }
+
+    public void TransferPartStatusesToCharacter(BodyPart part)
+    {
+        if (owner == null || part == null)
+            return;
+
+        foreach (StatusEffect effect in part.StatusEffects.ToArray())
         {
             if (effect == null)
                 continue;
 
-            StatusEffectTickContext context =
-                new StatusEffectTickContext(
-                    owner,
-                    null,
-                    effect);
+            Character source =
+                effect.Source ?? owner;
 
-            effect.OnTurnEnd(context);
+            if (!effect.TransferToCharacterOnPartBreak)
+            {
+                RemovePartStatus(
+                    part,
+                    effect,
+                    StatusEffectRemoveReason.PartBroken);
+                continue;
+            }
+
+            RemovePartStatus(
+                part,
+                effect,
+                StatusEffectRemoveReason.Transferred);
+
+            AddCharacterStatusInternal(
+                effect,
+                source,
+                wasTransferred: true);
+
+            Debug.Log(
+                $"{GetOwnerName()} {part.Type}의 {effect.Name} 상태가 " +
+                "캐릭터 상태로 이전됨");
         }
+    }
 
-        //--------------------------------
-        // 부위 상태이상 처리
-        //--------------------------------
+    public void OnTurnStart()
+    {
+        TickCharacterStatuses(
+            StatusEffectTickTiming.TurnStart);
 
-        if (owner.BodyParts == null)
+        TickPartStatuses(
+            StatusEffectTickTiming.TurnStart);
+    }
+
+    public void OnTurnEnd()
+    {
+        TickCharacterStatuses(
+            StatusEffectTickTiming.TurnEnd);
+
+        if (owner != null && !owner.IsDead)
+        {
+            TickPartStatuses(
+                StatusEffectTickTiming.TurnEnd);
+        }
+    }
+
+    private void TickCharacterStatuses(
+        StatusEffectTickTiming timing)
+    {
+        foreach (StatusEffect effect in characterStatuses.ToArray())
+        {
+            if (owner == null || owner.IsDead)
+                break;
+
+            if (effect == null ||
+                !characterStatuses.Contains(effect))
+            {
+                continue;
+            }
+
+            TickEffect(
+                effect,
+                null,
+                timing);
+        }
+    }
+
+    private void TickPartStatuses(
+        StatusEffectTickTiming timing)
+    {
+        if (owner?.BodyParts == null)
             return;
 
         foreach (BodyPart part in owner.BodyParts)
         {
-            if (part == null)
+            if (owner.IsDead)
+                break;
+
+            if (part == null || part.IsBroken)
                 continue;
 
             foreach (StatusEffect effect in part.StatusEffects.ToArray())
             {
-                if (effect == null)
+                if (owner.IsDead)
+                    break;
+
+                if (effect == null ||
+                    !part.StatusEffects.Contains(effect))
+                {
                     continue;
+                }
 
-                StatusEffectTickContext context =
-                    new StatusEffectTickContext(
-                        owner,
-                        part,
-                        effect);
-
-                effect.OnTurnEnd(context);
+                TickEffect(
+                    effect,
+                    part,
+                    timing);
             }
         }
     }
 
-    //--------------------------------------------------
-    // 조회
-    //--------------------------------------------------
+    private void TickEffect(
+        StatusEffect effect,
+        BodyPart part,
+        StatusEffectTickTiming timing)
+    {
+        StatusEffectTickContext context =
+            new StatusEffectTickContext(
+                owner,
+                part,
+                effect,
+                timing);
+
+        if (timing == StatusEffectTickTiming.TurnStart)
+            effect.ProcessTurnStart(context);
+        else
+            effect.ProcessTurnEnd(context);
+
+        owner.BattleEvent?.RaiseStatusTicked(context);
+
+        Debug.Log(
+            $"[STATUS TICK] {GetOwnerName()} / " +
+            $"Status={effect.Name}, " +
+            $"Part={(part == null ? "NONE" : part.Type.ToString())}, " +
+            $"Stack={context.StackBefore}->{context.StackAfter}, " +
+            $"Duration={context.DurationBefore}->{context.DurationAfter}, " +
+            $"Damage={context.AppliedDamage}");
+
+        if (!effect.IsExpired)
+            return;
+
+        if (part == null)
+        {
+            RemoveStatus(
+                effect,
+                StatusEffectRemoveReason.Expired);
+        }
+        else
+        {
+            RemovePartStatus(
+                part,
+                effect,
+                StatusEffectRemoveReason.Expired);
+        }
+    }
 
     public T GetStatus<T>() where T : StatusEffect
     {
@@ -291,10 +409,6 @@ public class CharacterStatusController
         return GetPartStatus<T>(part) != null;
     }
 
-    //--------------------------------------------------
-    // 내부 검색
-    //--------------------------------------------------
-
     private StatusEffect FindSameStatus(StatusEffect effect)
     {
         if (effect == null)
@@ -302,11 +416,11 @@ public class CharacterStatusController
 
         foreach (StatusEffect existing in characterStatuses)
         {
-            if (existing == null)
-                continue;
-
-            if (existing.GetType() == effect.GetType())
+            if (existing != null &&
+                existing.CanMergeWith(effect))
+            {
                 return existing;
+            }
         }
 
         return null;
@@ -316,21 +430,118 @@ public class CharacterStatusController
         BodyPart part,
         StatusEffect effect)
     {
-        if (part == null)
-            return null;
-
-        if (effect == null)
+        if (part == null || effect == null)
             return null;
 
         foreach (StatusEffect existing in part.StatusEffects)
         {
-            if (existing == null)
-                continue;
-
-            if (existing.GetType() == effect.GetType())
+            if (existing != null &&
+                existing.CanMergeWith(effect))
+            {
                 return existing;
+            }
         }
 
         return null;
+    }
+
+    private void RaiseApplyEvents(
+        StatusEffectApplyResult result)
+    {
+        if (result == null || !result.Succeeded)
+            return;
+
+        if (result.TargetPart == null)
+        {
+            owner.BattleEvent?.RaiseStatusApplied(
+                owner,
+                result.Effect);
+        }
+        else
+        {
+            owner.BattleEvent?.RaiseBodyPartStatusApplied(
+                owner,
+                result.TargetPart,
+                result.Effect);
+        }
+
+        owner.BattleEvent?.RaiseStatusApplyResolved(result);
+
+        owner.BattleContext?.EffectResolver?
+            .ShowStatusApplyVisual(result);
+    }
+
+    private void RaiseRemoveEvents(
+        BodyPart part,
+        StatusEffect effect,
+        StatusEffectRemoveReason reason)
+    {
+        if (part == null)
+        {
+            owner.BattleEvent?.RaiseStatusRemoved(
+                owner,
+                effect);
+        }
+        else
+        {
+            owner.BattleEvent?.RaiseBodyPartStatusRemoved(
+                owner,
+                part,
+                effect);
+        }
+
+        owner.BattleEvent?.RaiseStatusRemovedDetailed(
+            owner,
+            part,
+            effect,
+            reason);
+
+        owner.BattleContext?.EffectResolver?
+            .ShowStatusRemoveVisual(
+                owner,
+                part,
+                effect,
+                reason);
+    }
+
+    private StatusEffectApplyResult CreateAppliedResult(
+        StatusEffect effect,
+        BodyPart part,
+        bool wasTransferred)
+    {
+        return new StatusEffectApplyResult
+        {
+            TargetCharacter = owner,
+            TargetPart = part,
+            Effect = effect,
+            IncomingEffect = effect,
+            Kind = StatusEffectApplyKind.Applied,
+            StackBefore = 0,
+            StackAfter = effect?.Stack ?? 0,
+            DurationBefore = 0,
+            DurationAfter = effect?.Duration ?? 0,
+            WasTransferred = wasTransferred
+        };
+    }
+
+    private StatusEffectApplyResult Rejected(
+        StatusEffect effect,
+        BodyPart part)
+    {
+        return new StatusEffectApplyResult
+        {
+            TargetCharacter = owner,
+            TargetPart = part,
+            Effect = effect,
+            IncomingEffect = effect,
+            Kind = StatusEffectApplyKind.Rejected
+        };
+    }
+
+    private string GetOwnerName()
+    {
+        return owner?.Data?.CharacterName ??
+               owner?.name ??
+               "NULL";
     }
 }

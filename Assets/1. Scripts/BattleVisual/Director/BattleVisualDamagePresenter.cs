@@ -10,8 +10,11 @@ internal sealed class BattleVisualDamagePresenter
         BattleUIManager battleUIManager,
         bool logDebug)
     {
-        this.battleUIManager = battleUIManager;
-        this.logDebug = logDebug;
+        this.battleUIManager =
+            battleUIManager;
+
+        this.logDebug =
+            logDebug;
     }
 
     public void Prepare(
@@ -22,26 +25,25 @@ internal sealed class BattleVisualDamagePresenter
             playback,
             visual);
 
-        BeginHpOverride(playback);
+        BeginHpOverride(
+            playback);
     }
 
     public int GetDamageForHitIndex(
         BattleVisualPlaybackState playback,
         int hitIndex)
     {
-        if (playback == null ||
-            playback.Request == null)
-        {
+        if (playback?.Request == null)
             return 0;
-        }
 
         List<int> damages =
             playback.HitDamages;
 
         if (damages.Count == 0)
         {
-            return playback.Request.GetDamageForHitIndex(
-                hitIndex);
+            return playback.Request
+                .GetDamageForHitIndex(
+                    hitIndex);
         }
 
         if (hitIndex < 0)
@@ -62,9 +64,7 @@ internal sealed class BattleVisualDamagePresenter
             damage);
 
         RefreshBattleUi(
-            playback != null
-                ? playback.Request
-                : null,
+            playback?.Request,
             hitIndex,
             damage);
     }
@@ -85,11 +85,9 @@ internal sealed class BattleVisualDamagePresenter
 
         if (hadVisualHpOverride &&
             battleUIManager != null &&
-            request != null &&
-            request.Target != null &&
-            request.TargetPart != null)
+            request?.Target != null)
         {
-            battleUIManager.ClearBodyPartHpOverride(
+            battleUIManager.ClearTargetHpOverride(
                 request.Target,
                 request.TargetPart);
         }
@@ -121,8 +119,7 @@ internal sealed class BattleVisualDamagePresenter
 
         playback.HitDamages.Clear();
 
-        if (request == null ||
-            request.HitDamages == null ||
+        if (request?.HitDamages == null ||
             request.HitDamages.Count == 0)
         {
             return;
@@ -130,17 +127,21 @@ internal sealed class BattleVisualDamagePresenter
 
         int totalDamage = 0;
 
-        foreach (int damage in request.HitDamages)
-            totalDamage += Mathf.Max(0, damage);
+        foreach (int damage
+                 in request.HitDamages)
+        {
+            totalDamage +=
+                Mathf.Max(0, damage);
+        }
 
         if (totalDamage <= 0)
             return;
 
-        // A request that already contains multiple values owns its hit plan.
         if (request.HitDamages.Count > 1)
         {
             playback.HitDamages.AddRange(
                 request.HitDamages);
+
             return;
         }
 
@@ -150,16 +151,17 @@ internal sealed class BattleVisualDamagePresenter
                 : null;
 
         playback.HitDamages.AddRange(
-            DamageDistributionUtility.DistributeByWeights(
-                totalDamage,
-                weights));
+            DamageDistributionUtility
+                .DistributeByWeights(
+                    totalDamage,
+                    weights));
 
         if (logDebug)
         {
             Debug.Log(
                 "[BattleVisualDamagePresenter] HitDamage 분할 / " +
-                "Total=" + totalDamage + ", " +
-                "Result=" + string.Join(",", playback.HitDamages));
+                $"Total={totalDamage}, " +
+                $"Result={string.Join(",", playback.HitDamages)}");
         }
     }
 
@@ -172,9 +174,7 @@ internal sealed class BattleVisualDamagePresenter
         BattleVisualRequest request =
             playback.Request;
 
-        if (request == null ||
-            request.Target == null ||
-            request.TargetPart == null ||
+        if (request?.Target == null ||
             playback.HitDamages.Count == 0)
         {
             return;
@@ -182,35 +182,78 @@ internal sealed class BattleVisualDamagePresenter
 
         int totalDamage = 0;
 
-        foreach (int damage in playback.HitDamages)
-            totalDamage += Mathf.Max(0, damage);
+        foreach (int damage
+                 in playback.HitDamages)
+        {
+            totalDamage +=
+                Mathf.Max(0, damage);
+        }
 
         if (totalDamage <= 0)
             return;
 
-        int maxHp =
-            Mathf.RoundToInt(
-                request.TargetPart.MaxPartHP);
+        ResolveHpRange(
+            request,
+            totalDamage,
+            out int visualStartHp,
+            out int visualFinalHp);
 
-        int visualStartHp;
-        int visualFinalHp;
+        playback.VisualHpStart =
+            visualStartHp;
 
-        if (request.HasTargetPartHpSnapshot)
+        playback.VisualHpFinal =
+            visualFinalHp;
+
+        playback.VisualDamageAccumulated =
+            0;
+
+        playback.HasVisualHpOverride =
+            true;
+
+        ResolveBattleUiManager();
+
+        battleUIManager?.SetTargetHpOverride(
+            request.Target,
+            request.TargetPart,
+            visualStartHp);
+
+        RefreshBattleUi(
+            request,
+            -1,
+            0);
+    }
+
+    private static void ResolveHpRange(
+        BattleVisualRequest request,
+        int totalDamage,
+        out int visualStartHp,
+        out int visualFinalHp)
+    {
+        if (request.TargetPart != null)
         {
-            visualStartHp =
-                Mathf.Clamp(
-                    request.TargetPartHpBefore,
-                    0,
-                    maxHp);
+            int maxHp =
+                Mathf.Max(
+                    1,
+                    Mathf.RoundToInt(
+                        request.TargetPart.MaxPartHP));
 
-            visualFinalHp =
-                Mathf.Clamp(
-                    request.TargetPartHpAfter,
-                    0,
-                    maxHp);
-        }
-        else
-        {
+            if (request.HasTargetPartHpSnapshot)
+            {
+                visualStartHp =
+                    Mathf.Clamp(
+                        request.TargetPartHpBefore,
+                        0,
+                        maxHp);
+
+                visualFinalHp =
+                    Mathf.Clamp(
+                        request.TargetPartHpAfter,
+                        0,
+                        maxHp);
+
+                return;
+            }
+
             visualFinalHp =
                 Mathf.Clamp(
                     Mathf.RoundToInt(
@@ -220,30 +263,50 @@ internal sealed class BattleVisualDamagePresenter
 
             visualStartHp =
                 Mathf.Clamp(
-                    visualFinalHp + totalDamage,
+                    visualFinalHp +
+                    totalDamage,
                     0,
                     maxHp);
+
+            return;
         }
 
-        playback.VisualHpStart = visualStartHp;
-        playback.VisualHpFinal = visualFinalHp;
-        playback.VisualDamageAccumulated = 0;
-        playback.HasVisualHpOverride = true;
+        int characterMaxHp =
+            Mathf.Max(
+                1,
+                request.TargetCharacterMaxHp > 0
+                    ? request.TargetCharacterMaxHp
+                    : request.Target.MaxCombatHP);
 
-        ResolveBattleUiManager();
-
-        if (battleUIManager != null)
+        if (request.HasTargetCharacterHpSnapshot)
         {
-            battleUIManager.SetBodyPartHpOverride(
-                request.Target,
-                request.TargetPart,
-                visualStartHp);
+            visualStartHp =
+                Mathf.Clamp(
+                    request.TargetCharacterHpBefore,
+                    0,
+                    characterMaxHp);
+
+            visualFinalHp =
+                Mathf.Clamp(
+                    request.TargetCharacterHpAfter,
+                    0,
+                    characterMaxHp);
+
+            return;
         }
 
-        RefreshBattleUi(
-            request,
-            -1,
-            0);
+        visualFinalHp =
+            Mathf.Clamp(
+                request.Target.CurrentHP,
+                0,
+                characterMaxHp);
+
+        visualStartHp =
+            Mathf.Clamp(
+                visualFinalHp +
+                totalDamage,
+                0,
+                characterMaxHp);
     }
 
     private void ApplyHpDamage(
@@ -260,14 +323,11 @@ internal sealed class BattleVisualDamagePresenter
         BattleVisualRequest request =
             playback.Request;
 
-        if (request == null ||
-            request.Target == null ||
-            request.TargetPart == null)
-        {
+        if (request?.Target == null)
             return;
-        }
 
-        playback.VisualDamageAccumulated += damage;
+        playback.VisualDamageAccumulated +=
+            damage;
 
         int displayHp =
             Mathf.Max(
@@ -277,13 +337,10 @@ internal sealed class BattleVisualDamagePresenter
 
         ResolveBattleUiManager();
 
-        if (battleUIManager != null)
-        {
-            battleUIManager.SetBodyPartHpOverride(
-                request.Target,
-                request.TargetPart,
-                displayHp);
-        }
+        battleUIManager?.SetTargetHpOverride(
+            request.Target,
+            request.TargetPart,
+            displayHp);
     }
 
     private void RefreshBattleUi(
@@ -297,6 +354,7 @@ internal sealed class BattleVisualDamagePresenter
         {
             Debug.LogWarning(
                 "[BattleVisualDamagePresenter] UI 갱신 실패: BattleUIManager 없음");
+
             return;
         }
 
@@ -310,11 +368,17 @@ internal sealed class BattleVisualDamagePresenter
             return;
         }
 
+        string targetPoint =
+            request.TargetPart == null
+                ? "SINGLE_HP"
+                : request.TargetPart.Type.ToString();
+
         Debug.Log(
-            $"[BattleVisualDamagePresenter] HitFrame UI 갱신 / " +
-            $"Target={request.Target?.Data.CharacterName}, " +
-            $"Part={request.TargetPart?.Type}, " +
-            $"HitIndex={hitIndex}, Damage={damage}");
+            "[BattleVisualDamagePresenter] HitFrame UI 갱신 / " +
+            $"Target={request.Target?.Data?.CharacterName}, " +
+            $"Point={targetPoint}, " +
+            $"HitIndex={hitIndex}, " +
+            $"Damage={damage}");
     }
 
     private void ResolveBattleUiManager()
@@ -322,7 +386,8 @@ internal sealed class BattleVisualDamagePresenter
         if (battleUIManager == null)
         {
             battleUIManager =
-                Object.FindFirstObjectByType<BattleUIManager>();
+                Object.FindFirstObjectByType<
+                    BattleUIManager>();
         }
     }
 }
