@@ -1,5 +1,6 @@
 using System;
 using UnityEngine;
+using Unity.Cinemachine;
 
 [Serializable]
 public class SkillCameraShot
@@ -13,6 +14,25 @@ public class SkillCameraShot
     [Header("Time")]
     public float Duration = 0.35f;
     public float BlendWaitTime = 0.15f;
+    
+    [Header("Cinemachine Brain Blend")]
+    public bool OverrideBrainBlend = true;
+    public CinemachineBlendDefinition.Styles BlendStyle =
+        CinemachineBlendDefinition.Styles.Cut;
+    public float BlendTime = 0f;
+
+    [Header("Cinemachine Group Framing")]
+    public float AttackerWeight = 1f;
+    public float TargetWeight = 1f;
+    public float AttackerRadius = 1f;
+    public float TargetRadius = 1f;
+
+    [Header("Side View")]
+    public bool UseSideViewPlacement = false;
+    public float SideDistance = 7f;
+    public float SideHeight = 2.4f;
+    public float LookAtHeight = 1.4f;
+    public bool FlipSide = false;
 
     [Header("Offset Position Mode")]
     public Vector3 PositionOffset = new Vector3(0f, 2f, -5f);

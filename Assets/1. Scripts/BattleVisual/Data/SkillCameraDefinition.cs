@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using Unity.Cinemachine;
 using UnityEngine;
 
 [CreateAssetMenu(
@@ -11,4 +12,12 @@ public class SkillCameraDefinition : ScriptableObject
 
     [Header("Return")]
     public bool ReturnToOverviewAfterAction = true;
+
+    [Header("Return Blend")]
+    public bool OverrideReturnBrainBlend = true;
+
+    public CinemachineBlendDefinition.Styles ReturnBlendStyle =
+        CinemachineBlendDefinition.Styles.EaseOut;
+
+    public float ReturnBlendTime = 0.25f;
 }

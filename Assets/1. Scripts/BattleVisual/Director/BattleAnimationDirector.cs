@@ -244,7 +244,7 @@ public class BattleAnimationDirector : MonoBehaviour
                 request,
                 visual,
                 hitFrameCount);
-
+                
         if (shouldFallbackHit)
         {
             Debug.LogWarning(
@@ -664,7 +664,10 @@ public class BattleAnimationDirector : MonoBehaviour
         if (visual.CameraDefinition != null)
         {
             if (visual.CameraDefinition.ReturnToOverviewAfterAction)
-                cameraDirector.Return();
+            {
+                cameraDirector.Return(
+                    visual.CameraDefinition);
+            }
 
             return;
         }

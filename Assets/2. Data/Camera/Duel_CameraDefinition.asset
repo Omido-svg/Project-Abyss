@@ -15,8 +15,20 @@ MonoBehaviour:
   Shots:
   - Timing: 4
     ShotType: 0
-    Duration: 0.12
+    Duration: 0
     BlendWaitTime: 0
+    OverrideBrainBlend: 1
+    BlendStyle: 1
+    BlendTime: 0.1
+    AttackerWeight: 1
+    TargetWeight: 1
+    AttackerRadius: 1
+    TargetRadius: 1
+    UseSideViewPlacement: 0
+    SideDistance: 7
+    SideHeight: 2.4
+    LookAtHeight: 1.4
+    FlipSide: 0
     PositionOffset: {x: -0.7, y: 0.2, z: -2}
     LookAtOffset: {x: 0, y: 1.1, z: 0}
     FocusDistance: 4
@@ -58,10 +70,24 @@ MonoBehaviour:
         m_PreInfinity: 2
         m_PostInfinity: 2
         m_RotationOrder: 4
+      UseImpulse: 1
+      ImpulseForce: 1
   - Timing: 0
     ShotType: 5
     Duration: 0
     BlendWaitTime: 0
+    OverrideBrainBlend: 1
+    BlendStyle: 1
+    BlendTime: 0.5
+    AttackerWeight: 1
+    TargetWeight: 1
+    AttackerRadius: 1
+    TargetRadius: 1
+    UseSideViewPlacement: 0
+    SideDistance: 7
+    SideHeight: 2.4
+    LookAtHeight: 1.4
+    FlipSide: 0
     PositionOffset: {x: 0, y: 0, z: 0}
     LookAtOffset: {x: 0, y: 0, z: 0}
     FocusDistance: 5
@@ -103,10 +129,24 @@ MonoBehaviour:
         m_PreInfinity: 2
         m_PostInfinity: 2
         m_RotationOrder: 4
+      UseImpulse: 1
+      ImpulseForce: 1
   - Timing: 1
     ShotType: 3
-    Duration: 0.25
-    BlendWaitTime: 0.1
+    Duration: 0
+    BlendWaitTime: 0
+    OverrideBrainBlend: 1
+    BlendStyle: 5
+    BlendTime: 0.2
+    AttackerWeight: 1
+    TargetWeight: 1
+    AttackerRadius: 1
+    TargetRadius: 1
+    UseSideViewPlacement: 0
+    SideDistance: 7
+    SideHeight: 2.4
+    LookAtHeight: 1.4
+    FlipSide: 0
     PositionOffset: {x: 1, y: 1.5, z: -2.5}
     LookAtOffset: {x: 0, y: 1.2, z: 0}
     FocusDistance: 5
@@ -148,10 +188,24 @@ MonoBehaviour:
         m_PreInfinity: 2
         m_PostInfinity: 2
         m_RotationOrder: 4
+      UseImpulse: 1
+      ImpulseForce: 1
   - Timing: 2
     ShotType: 6
-    Duration: 0.12
+    Duration: 0
     BlendWaitTime: 0
+    OverrideBrainBlend: 1
+    BlendStyle: 0
+    BlendTime: 0
+    AttackerWeight: 1
+    TargetWeight: 1
+    AttackerRadius: 1
+    TargetRadius: 1
+    UseSideViewPlacement: 0
+    SideDistance: 7
+    SideHeight: 2.4
+    LookAtHeight: 1.4
+    FlipSide: 0
     PositionOffset: {x: -0.7, y: 0.2, z: -2}
     LookAtOffset: {x: 0, y: 1.1, z: 0}
     FocusDistance: 4
@@ -193,4 +247,9 @@ MonoBehaviour:
         m_PreInfinity: 2
         m_PostInfinity: 2
         m_RotationOrder: 4
+      UseImpulse: 1
+      ImpulseForce: 1
   ReturnToOverviewAfterAction: 1
+  OverrideReturnBrainBlend: 1
+  ReturnBlendStyle: 3
+  ReturnBlendTime: 0.25
