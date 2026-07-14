@@ -196,49 +196,59 @@ public class ClashManager
 
         int firstClash;
         int secondClash;
+        int roundIndex = 0;
 
         do
         {
-            RollClashPower(first);
-            RollClashPower(second);
+            roundIndex++;
+
+            RollClashPower(
+                first,
+                second,
+                roundIndex > 1);
+
+            RollClashPower(
+                second,
+                first,
+                roundIndex > 1);
 
             firstClash =
-                CalculateClashPower(
-                    first,
-                    second);
+                CalculateClashPower(first);
 
             secondClash =
-                CalculateClashPower(
-                    second,
-                    first);
-
-            int firstSpeedModifier =
-                CalculateSpeedModifier(
-                    first,
-                    second);
-
-            int secondSpeedModifier =
-                CalculateSpeedModifier(
-                    second,
-                    first);
+                CalculateClashPower(second);
 
             Debug.Log(
                 $"[ClashManager] Clash Step / " +
+                $"Round={roundIndex}, " +
                 $"First={first.Owner?.Data?.CharacterName}, " +
                 $"FirstRoll={first.LastRollResult?.GetShortDisplayText()}, " +
+                $"FirstFinal={first.RolledPower}, " +
+                $"FirstSpeed={first.SpeedModifier}, " +
+                $"FirstMomentum={first.MomentumModifier}, " +
                 $"FirstClash={firstClash}, " +
+                $"FirstCritical={first.Critical}, " +
                 $"Second={second.Owner?.Data?.CharacterName}, " +
                 $"SecondRoll={second.LastRollResult?.GetShortDisplayText()}, " +
-                $"SecondClash={secondClash}");
+                $"SecondFinal={second.RolledPower}, " +
+                $"SecondSpeed={second.SpeedModifier}, " +
+                $"SecondMomentum={second.MomentumModifier}, " +
+                $"SecondClash={secondClash}, " +
+                $"SecondCritical={second.Critical}");
 
             steps.Add(
                 new ClashRollVisualStep(
+                    roundIndex,
                     firstClash,
                     secondClash,
                     first.LastRollResult,
                     second.LastRollResult,
-                    firstSpeedModifier,
-                    secondSpeedModifier));
+                    first.SpeedModifier,
+                    second.SpeedModifier,
+                    first.MomentumModifier,
+                    second.MomentumModifier,
+                    first.Critical,
+                    second.Critical));
 
         } while (firstClash == secondClash);
 
@@ -267,33 +277,17 @@ public class ClashManager
                 LoserClashPower = loserClash,
                 Gap = Mathf.Abs(
                     winnerClash -
-                    loserClash)
+                    loserClash),
+                WinnerWasCritical = winner.Critical,
+                LoserWasCritical = loser.Critical
             };
 
         foreach (ClashRollVisualStep step in steps)
         {
-            if (firstWin)
-            {
-                result.ClashSteps.Add(
-                    new ClashRollVisualStep(
-                        step.AttackerValue,
-                        step.TargetValue,
-                        step.AttackerRollResult,
-                        step.TargetRollResult,
-                        step.AttackerSpeedModifier,
-                        step.TargetSpeedModifier));
-            }
-            else
-            {
-                result.ClashSteps.Add(
-                    new ClashRollVisualStep(
-                        step.TargetValue,
-                        step.AttackerValue,
-                        step.TargetRollResult,
-                        step.AttackerRollResult,
-                        step.TargetSpeedModifier,
-                        step.AttackerSpeedModifier));
-            }
+            result.ClashSteps.Add(
+                firstWin
+                    ? step
+                    : step.Swapped());
         }
 
         battleContext._battleEvent
@@ -306,7 +300,9 @@ public class ClashManager
                 loser,
                 winner);
 
-        int rawPowerGap =
+        // 속도와 합 전용 기세 보정은 기세 이동량/위세 획득량에도
+        // 직접 섞지 않는다. 기존 밸런스를 유지하며 순수 위력 차이만 사용한다.
+        int purePowerGap =
             Mathf.Abs(
                 first.RolledPower -
                 second.RolledPower);
@@ -324,13 +320,13 @@ public class ClashManager
 
         momentumManager.ApplyClashResult(
             winner.Owner,
-            rawPowerGap,
+            purePowerGap,
             momentumBonus);
 
         int prestigeGain =
             ApplyPrestigeGain(
                 winner,
-                rawPowerGap,
+                purePowerGap,
                 wasOverwhelm);
 
         result.PrestigeGain =
@@ -406,15 +402,10 @@ public class ClashManager
         }
 
         if (!action.HasRolled)
-        {
-            action.RolledPower =
-                action.RollPower();
+            action.RollPower();
 
-            action.finalPower =
-                action.RolledPower;
-
-            action.HasRolled = true;
-        }
+        // 일방 공격에는 합 전용 속도/기세 보정을 적용하지 않는다.
+        action.ClearClashModifiers();
 
         ExecuteSkill(action);
 
@@ -457,9 +448,11 @@ public class ClashManager
                 IsClash = false,
                 WinnerAction = action,
                 WinnerClashPower =
-                    action.finalPower,
+                    action.RolledPower,
                 LoserClashPower = 0,
-                Gap = 0
+                Gap = 0,
+                WinnerWasCritical = action.Critical,
+                LoserWasCritical = false
             };
 
         FillDamageResult(
@@ -518,9 +511,6 @@ public class ClashManager
         result.WeakenedPart =
             damageContext.WeakenedPart;
 
-        result.WinnerWasCritical =
-            damageContext.WasCritical;
-
         result.HasTargetCharacterHpSnapshot = true;
         result.TargetCharacterHpBefore =
             damageContext.TargetHpBefore;
@@ -539,7 +529,7 @@ public class ClashManager
 
     private int ApplyPrestigeGain(
         BattleAction winner,
-        int rawPowerGap,
+        int purePowerGap,
         bool wasOverwhelm)
     {
         int prestigeGain = 0;
@@ -550,7 +540,7 @@ public class ClashManager
             prestigeGain =
                 momentumManager
                     .CalculatePrestigeGain(
-                        rawPowerGap);
+                        purePowerGap);
 
             prestigeGain +=
                 winner.Skill
@@ -579,17 +569,9 @@ public class ClashManager
     }
 
     private int CalculateClashPower(
-        BattleAction self,
-        BattleAction opponent)
+        BattleAction action)
     {
-        if (self == null)
-            return 0;
-
-        return
-            self.RolledPower +
-            CalculateSpeedModifier(
-                self,
-                opponent);
+        return action?.ClashPower ?? 0;
     }
 
     private int CalculateSpeedModifier(
@@ -659,35 +641,35 @@ public class ClashManager
     }
 
     private void RollClashPower(
-        BattleAction action)
+        BattleAction action,
+        BattleAction opponent,
+        bool wasRerolled)
     {
         if (action == null)
             return;
 
-        int rolledPower =
+        int finalPower =
             action.RollPower();
 
-        int afterLastStand =
+        if (action.LastRollResult != null)
+            action.LastRollResult.WasRerolled = wasRerolled;
+
+        int afterMomentum =
             momentumManager.ApplyLastStand(
                 action.Owner,
-                rolledPower);
+                finalPower);
 
-        if (action.LastRollResult != null &&
-            afterLastStand !=
-            action.LastRollResult.FinalPower)
-        {
-            action.LastRollResult
-                .ApplyExternalFinalPower(
-                    afterLastStand);
-        }
+        int momentumModifier =
+            afterMomentum - finalPower;
 
-        action.RolledPower =
-            afterLastStand;
+        int speedModifier =
+            CalculateSpeedModifier(
+                action,
+                opponent);
 
-        action.finalPower =
-            afterLastStand;
-
-        action.HasRolled = true;
+        action.ApplyClashModifiers(
+            speedModifier,
+            momentumModifier);
     }
 
     private void AddPrestigeThroughResolver(

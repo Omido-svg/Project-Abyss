@@ -14,6 +14,15 @@ public class BattleLogEntry
 
     public BattleLogType Type;
 
+    public BattleLogCategory Category =
+        BattleLogCategory.Combat;
+
+    public BattleLogLevel Level =
+        BattleLogLevel.Info;
+
+    public int TurnNumber;
+    public int Sequence;
+
     public bool IsWinner;
 
     public int MyPower;
@@ -26,125 +35,241 @@ public class BattleLogEntry
     public int TargetHPAfter;
 
     public bool TargetPartBroken;
+    public bool TargetPartWasBrokenBeforeDamage;
     public bool TargetDead;
 
     public string Message;
 
     //--------------------------------
+    // BattleAction 변경과 무관한 스냅샷
+    //--------------------------------
 
-    public static BattleLogBuilder Create(BattleAction action)
+    public long ActionId;
+    public int ActionIndex;
+
+    public string OwnerName;
+    public string OwnerPartName;
+
+    public string TargetName;
+    public string TargetPartName;
+
+    public string SkillName;
+    public string ActionTypeName;
+
+    public int Speed;
+    public int PurePower;
+    public int ClashPower;
+    public int SpeedModifier;
+    public int MomentumModifier;
+    public bool Critical;
+
+    private bool snapshotCaptured;
+
+    public static BattleLogBuilder Create(
+        BattleAction action)
     {
-        return new BattleLogBuilder(action);
+        return new BattleLogBuilder(
+            action);
     }
 
-    //--------------------------------
+    public void CaptureActionSnapshot()
+    {
+        if (snapshotCaptured)
+            return;
+
+        snapshotCaptured = true;
+
+        if (Action == null)
+        {
+            OwnerName = "NULL";
+            OwnerPartName = "NONE";
+            TargetName = "NULL";
+            TargetPartName = "NONE";
+            SkillName = "NULL";
+            ActionTypeName = "NULL";
+            return;
+        }
+
+        ActionId =
+            Action.ActionId;
+
+        ActionIndex =
+            Action.ActionIndex;
+
+        OwnerName =
+            GetCharacterName(
+                Action.Owner);
+
+        OwnerPartName =
+            GetOwnerPartName(
+                Action.OwnerPart);
+
+        TargetName =
+            GetCharacterName(
+                Action.Target);
+
+        TargetPartName =
+            GetTargetPartName(
+                Action.Target,
+                Action.TargetPart);
+
+        SkillName =
+            Action.Skill?.SkillName ??
+            "NULL";
+
+        ActionTypeName =
+            Action.Skill == null
+                ? "NULL"
+                : Action.ActionType.ToString();
+
+        Speed =
+            Action.Speed;
+
+        PurePower =
+            Action.RolledPower;
+
+        ClashPower =
+            Action.ClashPower;
+
+        SpeedModifier =
+            Action.SpeedModifier;
+
+        MomentumModifier =
+            Action.MomentumModifier;
+
+        Critical =
+            Action.Critical;
+    }
 
     public override string ToString()
     {
-        StringBuilder sb = new();
+        CaptureActionSnapshot();
 
-        sb.AppendLine("====================================");
+        StringBuilder builder =
+            new();
 
-        sb.AppendLine(
-            $"{GetCharacterName(Action?.Owner)} " +
-            $"({GetPartName(Action?.OwnerPart)})");
+        builder.AppendLine(
+            "====================================");
 
-        sb.AppendLine(
-            $" -> {GetCharacterName(Action?.Target)} " +
-            $"({GetPartName(Action?.TargetPart)})");
+        builder.AppendLine(
+            $"[{BattleDebugLog.GetCategoryLabel(Category)}] " +
+            $"Seq={Sequence}, Turn={TurnNumber}, " +
+            $"ActionId={ActionId}, Index={ActionIndex}");
 
-        sb.AppendLine($"Skill : {GetSkillName(Action?.Skill)}");
-        sb.AppendLine($"Type  : {GetActionType()}");
+        builder.AppendLine(
+            $"{OwnerName} ({OwnerPartName})");
 
-        sb.AppendLine($"Speed : {GetSpeed()}");
-        sb.AppendLine($"Power : {GetPower()}");
+        builder.AppendLine(
+            $" -> {TargetName} ({TargetPartName})");
+
+        builder.AppendLine(
+            $"Skill : {SkillName}");
+
+        builder.AppendLine(
+            $"Type  : {ActionTypeName}");
+
+        builder.AppendLine(
+            $"Speed : {Speed}");
+
+        builder.AppendLine(
+            $"Power : {PurePower}");
+
+        builder.AppendLine(
+            $"Critical : {(Critical ? "YES" : "NO")}");
 
         if (Type == BattleLogType.Clash)
         {
-            sb.AppendLine($"Clash : {MyPower} vs {EnemyPower}");
-            sb.AppendLine(IsWinner ? "WIN" : "LOSE");
+            builder.AppendLine(
+                $"Clash : {MyPower} vs {EnemyPower}");
+
+            builder.AppendLine(
+                $"Clash Breakdown : " +
+                $"{PurePower} " +
+                $"{FormatSigned("Speed", SpeedModifier)} " +
+                $"{FormatSigned("Momentum", MomentumModifier)} " +
+                $"= {ClashPower}");
+
+            builder.AppendLine(
+                IsWinner
+                    ? "WIN"
+                    : "LOSE");
         }
 
         if (Damage > 0)
-            sb.AppendLine($"Damage : {Damage}");
+        {
+            builder.AppendLine(
+                $"Damage : {Damage}");
+
+            if (TargetPartWasBrokenBeforeDamage)
+            {
+                builder.AppendLine(
+                    "Damage Route : Direct HP " +
+                    "(target part was already broken)");
+            }
+            else if (TargetHPBefore !=
+                     TargetHPAfter)
+            {
+                builder.AppendLine(
+                    $"HP : {TargetHPBefore} " +
+                    $"-> {TargetHPAfter}");
+            }
+        }
 
         if (PrestigeGain > 0)
-            sb.AppendLine($"Prestige : +{PrestigeGain}");
-
-        if (TargetHPBefore != TargetHPAfter)
-            sb.AppendLine($"HP : {TargetHPBefore} -> {TargetHPAfter}");
+        {
+            builder.AppendLine(
+                $"Prestige : +{PrestigeGain}");
+        }
 
         if (TargetPartBroken)
-            sb.AppendLine("Part Broken");
+            builder.AppendLine("Part Broken");
 
         if (TargetDead)
-            sb.AppendLine("Target Dead");
+            builder.AppendLine("Target Dead");
 
-        if (!string.IsNullOrEmpty(Message))
-            sb.AppendLine(Message);
+        if (!string.IsNullOrWhiteSpace(Message))
+            builder.AppendLine(Message);
 
-        return sb.ToString();
+        return builder.ToString();
     }
 
-    //--------------------------------
+    private static string FormatSigned(
+        string label,
+        int value)
+    {
+        return value >= 0
+            ? $"+ {label} {value}"
+            : $"- {label} {-value}";
+    }
 
-    private string GetCharacterName(Character character)
+    private static string GetCharacterName(
+        Character character)
     {
         if (character == null)
             return "NULL";
 
-        if (character.Data == null)
-            return character.name;
-
-        return character.Data.CharacterName;
+        return character.Data?.CharacterName ??
+               character.name ??
+               "NULL";
     }
 
-    private string GetPartName(BodyPart part)
+    private static string GetOwnerPartName(
+        BodyPart part)
     {
-        if (part == null)
-            return "NULL";
-
-        return part.Type.ToString();
+        return part == null
+            ? "NONE"
+            : part.Type.ToString();
     }
 
-    private string GetSkillName(Skill skill)
+    private static string GetTargetPartName(
+        Character target,
+        BodyPart part)
     {
-        if (skill == null)
-            return "NULL";
+        if (part != null)
+            return part.Type.ToString();
 
-        return skill.SkillName;
-    }
-
-    private string GetActionType()
-    {
-        if (Action == null)
-            return "NULL";
-
-        if (Action.Skill == null)
-            return "NULL";
-
-        return Action.ActionType.ToString();
-    }
-
-    private int GetSpeed()
-    {
-        if (Action == null)
-            return 0;
-
-        return Action.Speed;
-    }
-
-    private int GetPower()
-    {
-        if (Action == null)
-            return 0;
-
-        if (Action.finalPower != 0)
-            return Action.finalPower;
-
-        if (Action.HasRolled)
-            return Action.RolledPower;
-
-        return 0;
+        return target == null
+            ? "NONE"
+            : "SINGLE_HP";
     }
 }

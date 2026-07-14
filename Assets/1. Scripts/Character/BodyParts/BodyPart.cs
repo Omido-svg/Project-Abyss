@@ -23,25 +23,31 @@ public class BodyPart
     public float MaxPartHP { get; private set; }
     public float PartHP { get; set; }
 
-    public BodyPartState State { get; set; } = BodyPartState.Normal;
+    public BodyPartState State { get; set; } =
+        BodyPartState.Normal;
 
     public Character Owner { get; private set; }
 
+    public int Revision { get; private set; }
+
     private readonly List<Skill> availableSkills = new();
-    public IReadOnlyList<Skill> AvailableSkills => availableSkills;
+    public IReadOnlyList<Skill> AvailableSkills =>
+        availableSkills;
 
     public Skill CurrentSkill { get; set; }
 
     private readonly List<StatusEffect> statusEffects = new();
-    public IReadOnlyList<StatusEffect> StatusEffects => statusEffects;
+    public IReadOnlyList<StatusEffect> StatusEffects =>
+        statusEffects;
 
-    public bool IsBroken => State == BodyPartState.Broken;
-    public bool IsWeakened => State == BodyPartState.Weakened;
-    public bool IsUsable => State != BodyPartState.Broken;
+    public bool IsBroken =>
+        State == BodyPartState.Broken;
 
-    //------------------------------------------------
-    // 생성자
-    //------------------------------------------------
+    public bool IsWeakened =>
+        State == BodyPartState.Weakened;
+
+    public bool IsUsable =>
+        State != BodyPartState.Broken;
 
     public BodyPart(
         PartType type,
@@ -49,60 +55,63 @@ public class BodyPart
         Skill[] skills)
     {
         Type = type;
-
-        MaxPartHP = maxPartHP;
-        PartHP = maxPartHP;
-
-        State = BodyPartState.Normal;
-
-        if (skills != null)
-        {
-            availableSkills.AddRange(skills);
-        }
-
-        if (availableSkills.Count > 0)
-        {
-            CurrentSkill = availableSkills[0];
-        }
-    }
-
-    //------------------------------------------------
-    // 초기화
-    //------------------------------------------------
-
-    public void Initialize(Character owner)
-    {
-        Owner = owner;
-
+        MaxPartHP = Mathf.Max(1f, maxPartHP);
         PartHP = MaxPartHP;
         State = BodyPartState.Normal;
 
-        statusEffects.Clear();
+        ReplaceSkills(skills);
+    }
 
-        if (availableSkills.Count > 0 && CurrentSkill == null)
+    public void Initialize(Character owner)
+    {
+        // 재사용되는 BodyPart라면 남아 있던 상태 객체의 정리 훅을 먼저 호출한다.
+        ClearStatusEffects();
+
+        Owner = owner;
+        PartHP = MaxPartHP;
+        State = BodyPartState.Normal;
+        Revision++;
+
+        if (availableSkills.Count > 0 &&
+            CurrentSkill == null)
         {
             CurrentSkill = availableSkills[0];
         }
     }
 
-    //------------------------------------------------
-    // 약화
-    //------------------------------------------------
+    public int ApplyDamage(int damage)
+    {
+        if (damage <= 0 || State != BodyPartState.Normal)
+            return 0;
+
+        int before = Mathf.Max(
+            0,
+            Mathf.CeilToInt(PartHP));
+
+        int applied = Mathf.Min(before, damage);
+        PartHP = Mathf.Max(0f, PartHP - applied);
+
+        if (applied > 0)
+            Revision++;
+
+        return applied;
+    }
 
     public void Weaken()
     {
-        if (State == BodyPartState.Broken)
+        if (State == BodyPartState.Broken ||
+            State == BodyPartState.Weakened)
+        {
             return;
+        }
 
         State = BodyPartState.Weakened;
         PartHP = 0f;
+        Revision++;
 
-        Debug.Log($"{Owner.Data.CharacterName}의 {Type} 부위 약화");
+        Debug.Log(
+            $"{OwnerName()}의 {Type} 부위 약화");
     }
-
-    //------------------------------------------------
-    // 파괴
-    //------------------------------------------------
 
     public void Break()
     {
@@ -111,44 +120,32 @@ public class BodyPart
 
         State = BodyPartState.Broken;
         PartHP = 0f;
+        Revision++;
 
-        Debug.Log($"{OwnerName()}의 {Type} 부위 파괴");
+        Debug.Log(
+            $"{OwnerName()}의 {Type} 부위 파괴");
     }
-
-    //------------------------------------------------
-    // 회복
-    //------------------------------------------------
 
     public void Recover()
     {
         State = BodyPartState.Normal;
         PartHP = MaxPartHP;
+        Revision++;
 
-        string ownerName =
-            Owner == null || Owner.Data == null
-                ? "NULL"
-                : Owner.Data.CharacterName;
-
-        Debug.Log($"{ownerName}의 {Type} 부위 회복");
+        Debug.Log(
+            $"{OwnerName()}의 {Type} 부위 회복");
     }
-
-    //------------------------------------------------
-    // 부위 상태이상
-    //------------------------------------------------
 
     public void AddStatus(StatusEffect effect)
     {
-        if (effect == null)
-            return;
-
-        if (statusEffects.Contains(effect))
+        if (effect == null || statusEffects.Contains(effect))
             return;
 
         statusEffects.Add(effect);
+        Revision++;
     }
 
-    // 기존 코드 호환용
-    // 가능하면 새 코드에서는 CharacterStatusController를 거쳐서 AddPartStatus를 쓰는 게 좋음
+    // 기존 코드 호환용. 새 코드는 CharacterStatusController를 사용한다.
     public void AddStatus(
         StatusEffect effect,
         Character source)
@@ -158,7 +155,8 @@ public class BodyPart
 
         if (Owner == null)
         {
-            Debug.LogWarning($"{Type} 부위에 Owner가 없습니다.");
+            Debug.LogWarning(
+                $"{Type} 부위에 Owner가 없습니다.");
             return;
         }
 
@@ -167,34 +165,31 @@ public class BodyPart
             if (existing == null)
                 continue;
 
-            if (existing.GetType() == effect.GetType())
+            if (existing.CanMergeWith(effect))
             {
                 existing.Merge(effect);
+                Revision++;
                 return;
             }
         }
 
-        effect.Initialize(
-            Owner,
-            source,
-            this);
-
+        effect.Initialize(Owner, source, this);
         effect.OnApply();
-
         statusEffects.Add(effect);
+        Revision++;
     }
 
     public void RemoveStatus(StatusEffect effect)
     {
-        if (effect == null)
+        if (effect == null ||
+            !statusEffects.Contains(effect))
+        {
             return;
-
-        if (!statusEffects.Contains(effect))
-            return;
+        }
 
         effect.OnRemove();
-
         statusEffects.Remove(effect);
+        Revision++;
     }
 
     public void ClearStatusEffects()
@@ -205,19 +200,6 @@ public class BodyPart
         }
     }
 
-    //------------------------------------------------
-
-    private string OwnerName()
-    {
-        if (Owner == null)
-            return "NULL";
-
-        if (Owner.Data == null)
-            return Owner.name;
-
-        return Owner.Data.CharacterName;
-    }
-    
     public void SetDebugState(
         float currentHP,
         float maxHP,
@@ -230,6 +212,7 @@ public class BodyPart
         {
             State = BodyPartState.Broken;
             PartHP = 0f;
+            Revision++;
             return;
         }
 
@@ -237,13 +220,18 @@ public class BodyPart
         {
             State = BodyPartState.Weakened;
             PartHP = 0f;
+            Revision++;
             return;
         }
 
         State = BodyPartState.Normal;
-        PartHP = Mathf.Clamp(currentHP, 1f, MaxPartHP);
+        PartHP = Mathf.Clamp(
+            currentHP,
+            1f,
+            MaxPartHP);
+        Revision++;
     }
-    
+
     public void ReplaceSkills(
         IEnumerable<Skill> newSkills)
     {
@@ -253,23 +241,19 @@ public class BodyPart
         {
             foreach (Skill skill in newSkills)
             {
-                if (skill == null)
-                    continue;
-
-                availableSkills.Add(skill);
+                if (skill != null)
+                    availableSkills.Add(skill);
             }
         }
 
-        if (availableSkills.Count > 0)
-        {
-            CurrentSkill = availableSkills[0];
-        }
-        else
-        {
-            CurrentSkill = null;
-        }
+        CurrentSkill =
+            availableSkills.Count > 0
+                ? availableSkills[0]
+                : null;
+
+        Revision++;
     }
-    
+
     public void IncreaseMaxHPPercent(
         float percent,
         bool healByIncreaseAmount = true)
@@ -278,28 +262,31 @@ public class BodyPart
             return;
 
         float oldMaxHP = MaxPartHP;
+        float increase = oldMaxHP * percent;
 
-        float increase =
-            oldMaxHP * percent;
+        MaxPartHP = Mathf.Max(
+            1f,
+            oldMaxHP + increase);
 
-        MaxPartHP =
-            Mathf.Max(1f, oldMaxHP + increase);
+        PartHP = healByIncreaseAmount
+            ? Mathf.Clamp(
+                PartHP + increase,
+                0f,
+                MaxPartHP)
+            : Mathf.Clamp(
+                PartHP,
+                0f,
+                MaxPartHP);
 
-        if (healByIncreaseAmount)
-        {
-            PartHP =
-                Mathf.Clamp(
-                    PartHP + increase,
-                    0f,
-                    MaxPartHP);
-        }
-        else
-        {
-            PartHP =
-                Mathf.Clamp(
-                    PartHP,
-                    0f,
-                    MaxPartHP);
-        }
+        Revision++;
+    }
+
+    private string OwnerName()
+    {
+        if (Owner == null)
+            return "NULL";
+
+        return Owner.Data?.CharacterName ??
+               Owner.name;
     }
 }

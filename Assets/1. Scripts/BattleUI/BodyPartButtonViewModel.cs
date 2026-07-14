@@ -11,4 +11,10 @@ public struct BodyPartButtonViewModel
     public bool IsOwnerSelected;
     public bool IsTargetSelected;
     public bool IsWeakened;
+    public bool IsBroken;
+    public bool IsCharacterTarget;
+    public bool HasHpOverride;
+
+    public int ActionCount;
+    public int MaxActionSlots;
 }

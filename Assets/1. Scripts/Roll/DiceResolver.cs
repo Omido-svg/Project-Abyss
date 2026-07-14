@@ -1,53 +1,39 @@
+using UnityEngine;
+
 public class DiceResolver : SkillResolver
 {
-    private int min;
-    private int max;
+    private readonly int min;
+    private readonly int max;
 
     public override int MinValue => min;
-
     public override int MaxValue => max;
 
     public DiceResolver(int min, int max)
     {
-        this.min = min;
-        this.max = max;
+        this.min = Mathf.Min(min, max);
+        this.max = Mathf.Max(min, max);
     }
 
     public override int Roll()
     {
-        return UnityEngine.Random.Range(
+        return Random.Range(
             min,
             max + 1);
     }
 
     public override RollResult RollResult(Skill skill)
     {
-        int value =
-            Roll();
-
-        int basePower =
-            skill != null
-                ? skill.BasePower
-                : 0;
+        int value = Roll();
 
         RollResult result =
-            new RollResult
-            {
-                ResolverType = SkillResolverType.Dice,
+            CreateResult(
+                skill,
+                SkillResolverType.Dice,
+                value,
+                value >= MaxValue);
 
-                BasePower = basePower,
-
-                RawValue = value,
-                ModifiedValue = value,
-                FinalPower = basePower + value,
-
-                IsMax = value >= MaxValue,
-                IsCritical = value >= MaxValue,
-
-                DiceMin = min,
-                DiceMax = max
-            };
-
+        result.DiceMin = min;
+        result.DiceMax = max;
         result.DiceValues.Add(value);
 
         return result;

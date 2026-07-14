@@ -2,95 +2,142 @@ public class BattleLogBuilder
 {
     private readonly BattleLogEntry entry;
 
-    public BattleLogBuilder(BattleAction action)
+    public BattleLogBuilder(
+        BattleAction action)
     {
-        entry = new BattleLogEntry
-        {
-            Action = action
-        };
+        entry =
+            new BattleLogEntry
+            {
+                Action = action
+            };
     }
 
-    //--------------------------------
-
-    public BattleLogBuilder SetType(BattleLogType type)
+    public BattleLogBuilder SetType(
+        BattleLogType type)
     {
         entry.Type = type;
         return this;
     }
 
-    //--------------------------------
+    public BattleLogBuilder SetCategory(
+        BattleLogCategory category)
+    {
+        entry.Category = category;
+        return this;
+    }
+
+    public BattleLogBuilder SetLevel(
+        BattleLogLevel level)
+    {
+        entry.Level = level;
+        return this;
+    }
+
+    public BattleLogBuilder SetTurn(
+        int turn)
+    {
+        entry.TurnNumber = turn;
+        return this;
+    }
+
+    public BattleLogBuilder SetSequence(
+        int sequence)
+    {
+        entry.Sequence = sequence;
+        return this;
+    }
 
     public BattleLogBuilder SetClash(
         int myPower,
         int enemyPower)
     {
-        entry.Type = BattleLogType.Clash;
+        entry.Type =
+            BattleLogType.Clash;
 
-        entry.MyPower = myPower;
-        entry.EnemyPower = enemyPower;
+        entry.MyPower =
+            myPower;
+
+        entry.EnemyPower =
+            enemyPower;
 
         return this;
     }
 
-    //--------------------------------
-
-    public BattleLogBuilder SetWinner(bool isWinner)
+    public BattleLogBuilder SetWinner(
+        bool isWinner)
     {
-        entry.IsWinner = isWinner;
+        entry.IsWinner =
+            isWinner;
+
         return this;
     }
-
-    //--------------------------------
 
     public BattleLogBuilder SetDamage(
         int damage,
         int beforeHP,
         int afterHP)
     {
-        entry.Damage = damage;
+        entry.Damage =
+            damage;
 
-        entry.TargetHPBefore = beforeHP;
-        entry.TargetHPAfter = afterHP;
+        entry.TargetHPBefore =
+            beforeHP;
+
+        entry.TargetHPAfter =
+            afterHP;
 
         return this;
     }
 
-    //--------------------------------
-
-    public BattleLogBuilder SetPrestige(int prestige)
+    public BattleLogBuilder SetPrestige(
+        int prestige)
     {
-        entry.PrestigeGain = prestige;
+        entry.PrestigeGain =
+            prestige;
+
         return this;
     }
 
-    //--------------------------------
-
-    public BattleLogBuilder SetBroken(bool broken)
+    public BattleLogBuilder SetBroken(
+        bool broken)
     {
-        entry.TargetPartBroken = broken;
+        entry.TargetPartBroken =
+            broken;
+
         return this;
     }
 
-    //--------------------------------
-
-    public BattleLogBuilder SetDead(bool dead)
+    public BattleLogBuilder
+        SetTargetPartWasBrokenBeforeDamage(
+            bool wasBroken)
     {
-        entry.TargetDead = dead;
+        entry.TargetPartWasBrokenBeforeDamage =
+            wasBroken;
+
         return this;
     }
 
-    //--------------------------------
-
-    public BattleLogBuilder SetMessage(string message)
+    public BattleLogBuilder SetDead(
+        bool dead)
     {
-        entry.Message = message;
+        entry.TargetDead =
+            dead;
+
         return this;
     }
 
-    //--------------------------------
+    public BattleLogBuilder SetMessage(
+        string message)
+    {
+        entry.Message =
+            message;
+
+        return this;
+    }
 
     public BattleLogEntry Build()
     {
+        entry.CaptureActionSnapshot();
         return entry;
     }
 }

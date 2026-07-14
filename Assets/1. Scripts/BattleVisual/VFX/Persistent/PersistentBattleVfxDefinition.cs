@@ -11,6 +11,10 @@ public class PersistentBattleVfxDefinition : ScriptableObject
     [Header("Prefab")]
     public GameObject Prefab;
 
+    [Header("Pooling")]
+    public bool UsePooling = true;
+    [Min(0)] public int MaxPoolSize = 4;
+
     [Header("Anchor")]
     public CharacterPersistentVfxAnchorType AnchorType =
         CharacterPersistentVfxAnchorType.LookAtPoint;
@@ -26,5 +30,14 @@ public class PersistentBattleVfxDefinition : ScriptableObject
     public bool ParentToAnchor = true;
     public bool PlayOnSpawn = true;
     public bool StopParticleSystemsOnRemove = true;
-    public float DestroyDelay = 0.5f;
+    [Min(0f)] public float DestroyDelay = 0.5f;
+
+    private void OnValidate()
+    {
+        MaxPoolSize = Mathf.Max(0, MaxPoolSize);
+        DestroyDelay = Mathf.Max(0f, DestroyDelay);
+
+        if (LocalScale == Vector3.zero)
+            LocalScale = Vector3.one;
+    }
 }

@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -37,38 +38,93 @@ public class BattleManager : MonoBehaviour
     public ClashBuilder ClashBuilder { get; private set; }
     public AIManager AIManager { get; private set; }
 
+    private readonly BattleLifecycleGuard lifecycleGuard = new();
+
     private bool charactersCleanedUp;
+    private bool initializedSuccessfully;
+    private bool endingOrEnded;
+    private bool destroyed;
 
     private void Awake()
     {
-        InitializeContext();
-
-        if (battleUIManager == null)
+        try
         {
-            battleUIManager =
-                FindFirstObjectByType<BattleUIManager>();
+            InitializeContext();
+
+            if (battleUIManager == null)
+            {
+                battleUIManager =
+                    FindFirstObjectByType<BattleUIManager>();
+            }
+
+            CreateManagers();
+            InitializeCharacters();
+            BindButtons();
+
+            SelectedCharacter = player;
+
+            if (!lifecycleGuard.MarkReady())
+            {
+                throw new InvalidOperationException(
+                    "BattleLifecycleGuard를 Ready 상태로 전환하지 못했습니다.");
+            }
+
+            initializedSuccessfully = true;
+
+            Debug.Log("===== Battle Ready =====");
         }
-
-        CreateManagers();
-        InitializeCharacters();
-        BindButtons();
-
-        SelectedCharacter = player;
-
-        Debug.Log("===== Battle Ready =====");
+        catch (Exception exception)
+        {
+            HandleInitializationFailure(exception);
+        }
     }
 
     private IEnumerator Start()
     {
         yield return null;
 
+        if (!initializedSuccessfully ||
+            endingOrEnded ||
+            destroyed)
+        {
+            yield break;
+        }
+
         Debug.Log("===== Battle Start =====");
         StartBattle();
     }
 
+    private void OnDisable()
+    {
+        if (!Application.isPlaying ||
+            destroyed ||
+            !initializedSuccessfully ||
+            endingOrEnded ||
+            TurnManager == null ||
+            !TurnManager.IsBattleRunning)
+        {
+            return;
+        }
+
+        EndBattleInternal(
+            "BattleManager disabled");
+    }
+
     private void OnDestroy()
     {
-        CleanupCharacters();
+        if (destroyed)
+            return;
+
+        destroyed = true;
+
+        if (!endingOrEnded)
+        {
+            EndBattleInternal(
+                "BattleManager destroyed");
+        }
+
+        ActionManager?.Dispose();
+        lifecycleGuard.Dispose();
     }
 
     private void InitializeContext()
@@ -133,7 +189,9 @@ public class BattleManager : MonoBehaviour
                 SpeedManager,
                 ActionResolver,
                 MomentumManager,
-                ClashBuilder);
+                ClashBuilder,
+                lifecycleGuard,
+                HandleTurnFatalError);
     }
 
     private void InitializeCharacters()
@@ -314,6 +372,15 @@ public class BattleManager : MonoBehaviour
 
     public void StartBattle()
     {
+        if (!initializedSuccessfully ||
+            endingOrEnded ||
+            destroyed)
+        {
+            Debug.LogWarning(
+                "[BattleManager] 초기화되지 않았거나 종료된 전투는 시작할 수 없습니다.");
+            return;
+        }
+
         if (TurnManager == null)
         {
             Debug.LogWarning(
@@ -321,16 +388,33 @@ public class BattleManager : MonoBehaviour
             return;
         }
 
+        BattleEvent battleEvent =
+            BattleContext?._battleEvent;
+
+        if (battleEvent == null ||
+            battleEvent.IsDisposed)
+        {
+            Debug.LogWarning(
+                "[BattleManager] BattleEvent가 없거나 이미 Dispose되었습니다.");
+            return;
+        }
+
         charactersCleanedUp = false;
 
         TurnManager.StartBattle();
+
+        if (!TurnManager.IsBattleRunning)
+            return;
 
         battleUIManager?.RefreshAllBodyPartButtons();
     }
 
     public void NextTurn()
     {
-        if (TurnManager == null ||
+        if (!initializedSuccessfully ||
+            endingOrEnded ||
+            destroyed ||
+            TurnManager == null ||
             TurnManager.IsResolving)
         {
             return;
@@ -368,6 +452,13 @@ public class BattleManager : MonoBehaviour
 
     private void OnTurnResolved()
     {
+        if (endingOrEnded ||
+            destroyed ||
+            !initializedSuccessfully)
+        {
+            return;
+        }
+
         battleUIManager?.RefreshAllBodyPartButtons();
 
         if (CheckBattleEnd())
@@ -428,15 +519,121 @@ public class BattleManager : MonoBehaviour
         return true;
     }
 
-    private void EndBattle()
+    public void EndBattle()
     {
-        TurnManager?.EndBattle();
+        EndBattleInternal(
+            "Battle completed");
+    }
 
-        CleanupCharacters();
+    private void EndBattleInternal(
+        string reason)
+    {
+        if (endingOrEnded)
+            return;
 
-        battleUIManager?.RefreshAllBodyPartButtons();
+        endingOrEnded = true;
 
-        Debug.Log("===== Battle End =====");
+        BattleEvent battleEvent =
+            BattleContext?._battleEvent;
+
+        try
+        {
+            RunCleanupStep(
+                "TurnManager.EndBattle",
+                () => TurnManager?.EndBattle());
+
+            // UI와 View Binder가 먼저 스스로 구독을 해제한다.
+            RunCleanupStep(
+                "BattleEvent.RaiseBattleEnded",
+                () => battleEvent?.RaiseBattleEnded());
+
+            RunCleanupStep(
+                "Character Mechanics",
+                CleanupCharacters);
+
+            RunCleanupStep(
+                "ActionManager.Clear",
+                () => ActionManager?.Clear());
+
+            RunCleanupStep(
+                "Battle UI Refresh",
+                () => battleUIManager?.RefreshAllBodyPartButtons());
+
+            Debug.Log(
+                "===== Battle End ===== " +
+                $"Reason={reason}");
+        }
+        finally
+        {
+            // 알려지지 않은 구독자까지 참조를 남기지 않도록
+            // 전투 단위 Event Bus를 마지막에 폐기한다.
+            RunCleanupStep(
+                "BattleEvent.Dispose",
+                () => battleEvent?.Dispose());
+        }
+    }
+
+    private void HandleTurnFatalError(
+        Exception exception)
+    {
+        if (endingOrEnded)
+            return;
+
+        Debug.LogError(
+            "[BattleManager] 턴 처리 실패로 전투를 안전 종료합니다.");
+
+        if (exception != null)
+            Debug.LogException(exception);
+
+        EndBattleInternal(
+            "Turn processing failure");
+    }
+
+    private void HandleInitializationFailure(
+        Exception exception)
+    {
+        initializedSuccessfully = false;
+        endingOrEnded = true;
+
+        lifecycleGuard.Fault(exception);
+
+        Debug.LogError(
+            "[BattleManager] 전투 초기화에 실패했습니다.");
+
+        if (exception != null)
+            Debug.LogException(exception);
+
+        try
+        {
+            CleanupCharacters();
+        }
+        finally
+        {
+            BattleContext?._battleEvent?.Dispose();
+            ActionManager?.Dispose();
+            enabled = false;
+        }
+    }
+
+    private static void RunCleanupStep(
+        string phase,
+        Action cleanup)
+    {
+        if (cleanup == null)
+            return;
+
+        try
+        {
+            cleanup();
+        }
+        catch (Exception exception)
+        {
+            Debug.LogError(
+                "[BattleManager] 전투 종료 정리 실패 / " +
+                $"Phase={phase}");
+
+            Debug.LogException(exception);
+        }
     }
 
     private void CleanupCharacters()
@@ -452,7 +649,21 @@ public class BattleManager : MonoBehaviour
         foreach (Character character
                  in BattleContext.AllCharacters)
         {
-            character?.UnregisterMechanics();
+            if (character == null)
+                continue;
+
+            try
+            {
+                character.UnregisterMechanics();
+            }
+            catch (Exception exception)
+            {
+                Debug.LogError(
+                    "[BattleManager] 캐릭터 메커닉 해제 실패 / " +
+                    $"Character={character.name}");
+
+                Debug.LogException(exception);
+            }
         }
     }
 }

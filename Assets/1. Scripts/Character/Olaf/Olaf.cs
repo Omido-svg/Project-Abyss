@@ -9,7 +9,8 @@ public class Olaf : Character
 
     private readonly List<BodyPart> bodyParts = new();
 
-    public override IReadOnlyList<BodyPart> BodyParts => bodyParts;
+    public override IReadOnlyList<BodyPart> BodyParts =>
+        bodyParts;
 
     public OlafMadnessMechanic MadnessMechanic =>
         GetMechanic<OlafMadnessMechanic>();
@@ -17,114 +18,66 @@ public class Olaf : Character
     public OlafImmortalFuryMechanic ImmortalFuryMechanic =>
         GetMechanic<OlafImmortalFuryMechanic>();
 
-    //------------------------------------------------
-    // 부위 구성
-    //------------------------------------------------
-
     protected override void BuildBodyParts()
     {
         bodyParts.Clear();
+
+        if (skillSet == null)
+        {
+            Debug.LogWarning(
+                $"{nameof(Olaf)} SkillSet이 연결되지 않았습니다. " +
+                "부위는 생성되지만 사용할 수 있는 스킬이 없습니다.");
+        }
 
         bodyParts.Add(
             new BodyPart(
                 PartType.HEAD,
                 40,
-                CreateHeadSkillSet()));
+                CreateSkillArray(
+                    skillSet?.CreateNormalAttack(),
+                    skillSet?.CreateDuelSkill(),
+                    skillSet?.CreatePreparationSkill(),
+                    skillSet?.CreatePrestigeSkill())));
 
         bodyParts.Add(
             new BodyPart(
                 PartType.LEFT_HAND,
                 30,
-                CreateHandSkillSet()));
+                CreateSkillArray(
+                    skillSet?.CreateNormalAttack(),
+                    skillSet?.CreateDuelSkill(),
+                    skillSet?.CreatePrestigeSkill())));
 
         bodyParts.Add(
             new BodyPart(
                 PartType.RIGHT_HAND,
                 30,
-                CreateHandSkillSet()));
+                CreateSkillArray(
+                    skillSet?.CreateNormalAttack(),
+                    skillSet?.CreateDuelSkill(),
+                    skillSet?.CreatePrestigeSkill())));
 
         bodyParts.Add(
             new BodyPart(
                 PartType.LEGS,
                 50,
-                CreateLegSkillSet()));
+                CreateSkillArray(
+                    skillSet?.CreatePreparationSkill(),
+                    skillSet?.CreatePrestigeSkill())));
     }
-
-    //------------------------------------------------
-    // 스킬 생성
-    //------------------------------------------------
-    
-    private Skill[] CreateHeadSkillSet()
-    {
-        return CreateSkillArray(
-            CreateSkill(skillSet != null ? skillSet.NormalAttack : null),
-            CreateSkill(skillSet != null ? skillSet.DuelSkill : null),
-            CreateSkill(skillSet != null ? skillSet.PreparationSkill : null),
-            CreatePrestigeSkill());
-    }
-
-    private Skill[] CreateHandSkillSet()
-    {
-        return CreateSkillArray(
-            CreateSkill(skillSet != null ? skillSet.NormalAttack : null),
-            CreateSkill(skillSet != null ? skillSet.DuelSkill : null),
-            CreatePrestigeSkill());
-    }
-
-    private Skill[] CreateLegSkillSet()
-    {
-        return CreateSkillArray(
-            CreateSkill(skillSet != null ? skillSet.PreparationSkill : null),
-            CreatePrestigeSkill());
-    }
-
-    private Skill CreateSkill(SkillDefinition definition)
-    {
-        if (definition == null)
-            return null;
-
-        return definition.CreateRuntimeSkill();
-    }
-
-    private Skill CreatePrestigeSkill()
-    {
-        if (skillSet == null)
-            return null;
-
-        if (skillSet.PrestigeSkill == null)
-            return null;
-
-        return skillSet.PrestigeSkill.CreateRuntimeSkill();
-    }
-
-    private Skill[] CreateSkillArray(params Skill[] skills)
-    {
-        List<Skill> result = new();
-
-        foreach (Skill skill in skills)
-        {
-            if (skill == null)
-                continue;
-
-            result.Add(skill);
-        }
-
-        return result.ToArray();
-    }
-
-    //------------------------------------------------
-    // 고유 메커닉 구성
-    //------------------------------------------------
 
     protected override void BuildMechanics()
     {
-        AddMechanic(new OlafMadnessMechanic());
-        AddMechanic(new OlafImmortalFuryMechanic());
-    }
+        AddMechanic(
+            new OlafMadnessMechanic());
 
-    //------------------------------------------------
-    // 약화 디버프
-    //------------------------------------------------
+        AddMechanic(
+            new OlafImmortalFuryMechanic());
+
+        // 피 묻은 도끼는 OlafBloodyAxeItem이 장착되었을 때
+        // CharacterBuildController가 메커닉을 추가한다.
+        // 기본 메커닉으로 중복 추가하지 않는다.
+    }
 
     protected override StatusEffect CreateDisabledDebuff(
         BodyPart part)
@@ -134,17 +87,23 @@ public class Olaf : Character
 
         return part.Type switch
         {
-            PartType.HEAD => new HeadDisabled(),
-            PartType.LEFT_HAND => new ArmDisabled(PartType.LEFT_HAND),
-            PartType.RIGHT_HAND => new ArmDisabled(PartType.RIGHT_HAND),
-            PartType.LEGS => new LegsDisabled(),
+            PartType.HEAD =>
+                new HeadDisabled(),
+
+            PartType.LEFT_HAND =>
+                new ArmDisabled(
+                    PartType.LEFT_HAND),
+
+            PartType.RIGHT_HAND =>
+                new ArmDisabled(
+                    PartType.RIGHT_HAND),
+
+            PartType.LEGS =>
+                new LegsDisabled(),
+
             _ => null
         };
     }
-
-    //------------------------------------------------
-    // 파괴 디버프
-    //------------------------------------------------
 
     protected override StatusEffect CreateBrokenPartStatus(
         BodyPart part)
@@ -154,18 +113,38 @@ public class Olaf : Character
 
         return part.Type switch
         {
-            PartType.HEAD => new BrokenHead(),
-            PartType.LEFT_HAND => new BrokenArm(PartType.LEFT_HAND),
-            PartType.RIGHT_HAND => new BrokenArm(PartType.RIGHT_HAND),
-            PartType.LEGS => new BrokenLegs(),
+            PartType.HEAD =>
+                new BrokenHead(),
+
+            PartType.LEFT_HAND =>
+                new BrokenArm(
+                    PartType.LEFT_HAND),
+
+            PartType.RIGHT_HAND =>
+                new BrokenArm(
+                    PartType.RIGHT_HAND),
+
+            PartType.LEGS =>
+                new BrokenLegs(),
+
             _ => null
         };
     }
 
-    //------------------------------------------------
-
-    public override void Die()
+    private Skill[] CreateSkillArray(
+        params Skill[] skills)
     {
-        base.Die();
+        List<Skill> result = new();
+
+        if (skills == null)
+            return result.ToArray();
+
+        foreach (Skill skill in skills)
+        {
+            if (skill != null)
+                result.Add(skill);
+        }
+
+        return result.ToArray();
     }
 }

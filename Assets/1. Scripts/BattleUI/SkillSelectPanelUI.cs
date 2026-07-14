@@ -1,7 +1,7 @@
 using TMPro;
 using UnityEngine;
 
-public class SkillSelectPanelUI : MonoBehaviour
+public sealed class SkillSelectPanelUI : MonoBehaviour
 {
     [SerializeField] private CanvasGroup canvasGroup;
 
@@ -19,6 +19,10 @@ public class SkillSelectPanelUI : MonoBehaviour
     private int selectedActionIndex;
     private int maxActionSlots = 1;
 
+    public bool IsVisible =>
+        canvasGroup != null &&
+        canvasGroup.alpha > 0.001f;
+
     private void Awake()
     {
         EnsureReferences();
@@ -27,13 +31,10 @@ public class SkillSelectPanelUI : MonoBehaviour
 
     private void EnsureReferences()
     {
-        if (canvasGroup == null)
-            canvasGroup = GetComponent<CanvasGroup>();
+        canvasGroup ??= GetComponent<CanvasGroup>();
     }
 
-    public void Show(
-        BattleUIManager manager,
-        BodyPart part)
+    public void Show(BattleUIManager manager, BodyPart part)
     {
         Show(manager, part, 0, 1);
     }
@@ -52,8 +53,10 @@ public class SkillSelectPanelUI : MonoBehaviour
         uiManager = manager;
         selectedPart = part;
         maxActionSlots = Mathf.Max(1, maxSlots);
-        selectedActionIndex =
-            Mathf.Clamp(actionIndex, 0, maxActionSlots - 1);
+        selectedActionIndex = Mathf.Clamp(
+            actionIndex,
+            0,
+            maxActionSlots - 1);
 
         if (uiManager == null || selectedPart == null)
         {
@@ -105,6 +108,17 @@ public class SkillSelectPanelUI : MonoBehaviour
         }
     }
 
+    public void RefreshVisibleButtons()
+    {
+        if (!IsVisible || uiManager == null || selectedPart == null)
+            return;
+
+        BindSkillButton(normalAttackButton, ActionType.NormalAttack, "일반공격");
+        BindSkillButton(duelButton, ActionType.Duel, "결투");
+        BindSkillButton(preparationButton, ActionType.Preparation, "도사림");
+        BindSkillButton(prestigeButton, ActionType.Prestige, "위세");
+    }
+
     private void BindSkillButton(
         SkillButtonUI skillButton,
         ActionType actionType,
@@ -113,39 +127,42 @@ public class SkillSelectPanelUI : MonoBehaviour
         if (skillButton == null)
             return;
 
-        if (uiManager == null || selectedPart == null)
-        {
-            skillButton.Bind(
-                $"{defaultName}\n<없음>",
-                null,
-                selectedActionIndex,
-                false,
-                null);
-            return;
-        }
-
-        Skill skill =
-            uiManager.FindSkillByActionType(
-                selectedPart,
-                actionType);
+        Skill skill = uiManager?.FindSkillByActionType(
+            selectedPart,
+            actionType);
 
         bool usable =
-            uiManager.IsSkillSelectable(
-                selectedPart,
-                skill);
+            uiManager != null &&
+            uiManager.IsSkillSelectable(selectedPart, skill);
 
-        string label =
-            skill == null
-                ? $"{defaultName}\n<없음>"
-                : !usable
-                    ? $"{skill.SkillName}\n<비활성화>"
-                    : skill.SkillName;
+        string reason = uiManager?.GetSkillSelectionReason(
+            selectedPart,
+            skill);
+
+        string label;
+
+        if (skill == null)
+        {
+            label = $"{defaultName}\n<없음>";
+        }
+        else if (!usable)
+        {
+            label = string.IsNullOrEmpty(reason)
+                ? $"{skill.SkillName}\n<비활성화>"
+                : $"{skill.SkillName}\n<color=#FCA5A5>{reason}</color>";
+        }
+        else
+        {
+            label = skill.SkillName;
+        }
 
         skillButton.Bind(
             label,
             skill,
             selectedActionIndex,
             usable,
-            uiManager.OnSkillSelectedFromPanel);
+            uiManager == null
+                ? null
+                : uiManager.OnSkillSelectedFromPanel);
     }
 }

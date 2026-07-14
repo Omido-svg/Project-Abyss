@@ -64,6 +64,8 @@ public class TargetArrowUI : MonoBehaviour
     [SerializeField] private BattleManager battleManager;
     [SerializeField] private Canvas canvas;
     [SerializeField] private RectTransform arrowRoot;
+    [SerializeField] private BodyPartButtonRegistry bodyPartButtonRegistry;
+    [SerializeField] private BattleTargetButtonRegistry targetButtonRegistry;
 
     [Header("Draw Option")]
     [SerializeField] private bool showPlayerArrows = true;
@@ -102,7 +104,6 @@ public class TargetArrowUI : MonoBehaviour
     private readonly HashSet<ActionSlot> clashSlots = new();
     private readonly HashSet<BodyPartButton> highlightButtons = new();
 
-    private BodyPartButton[] cachedButtons;
     private BattleVisualRequest currentVisualRequest;
 
     private static Sprite whiteSprite;
@@ -118,8 +119,8 @@ public class TargetArrowUI : MonoBehaviour
         if (canvas == null)
             canvas = FindFirstObjectByType<Canvas>();
 
+        EnsureButtonRegistries();
         EnsureArrowRoot();
-        CacheButtons();
     }
 
     private void LateUpdate()
@@ -145,6 +146,8 @@ public class TargetArrowUI : MonoBehaviour
 
     public void Refresh()
     {
+        EnsureButtonRegistries();
+
         if (battleManager == null ||
             battleManager.ActionManager == null ||
             battleManager.BattleContext == null ||
@@ -153,9 +156,6 @@ public class TargetArrowUI : MonoBehaviour
             HideAll();
             return;
         }
-
-        if (cachedButtons == null || cachedButtons.Length == 0)
-            CacheButtons();
 
         Character player =
             battleManager.BattleContext.Player;
@@ -332,17 +332,19 @@ public class TargetArrowUI : MonoBehaviour
         {
             if (hasCurrentVisual &&
                 IsCurrentVisualSlot(slot))
+            {
                 continue;
+            }
 
             if (!IsPreparationSlot(slot))
                 continue;
 
-            bool drawable =
-                IsDrawablePlayerSlot(slot, player) ||
-                IsDrawableEnemySlot(slot, player);
-
-            if (!drawable)
+            if (!IsDrawablePreparationSlot(
+                    slot,
+                    player))
+            {
                 continue;
+            }
 
             arrowIndex =
                 DrawActionArrow(
@@ -352,6 +354,60 @@ public class TargetArrowUI : MonoBehaviour
         }
 
         return arrowIndex;
+    }
+    
+    private bool IsDrawablePreparationSlot(
+        ActionSlot slot,
+        Character player)
+    {
+        if (slot?.Owner == null ||
+            slot.TargetCharacter == null)
+        {
+            return false;
+        }
+
+        bool isPlayerAction =
+            slot.Owner == player;
+
+        if (isPlayerAction)
+        {
+            if (!showPlayerArrows)
+                return false;
+        }
+        else
+        {
+            if (!showEnemyTargetArrows)
+                return false;
+        }
+
+        BodyPartButton fromButton =
+            FindButton(
+                slot.Owner,
+                slot.Part);
+
+        BodyPartButton toButton =
+            FindButton(
+                slot.TargetCharacter,
+                slot.TargetPart);
+
+        if (fromButton == null ||
+            toButton == null)
+        {
+            return false;
+        }
+
+        // 도사림은 자기 자신 또는 자기 부위를 대상으로 할 수 있다.
+        if (slot.Owner ==
+            slot.TargetCharacter)
+        {
+            return true;
+        }
+
+        // 상대를 대상으로 하는 특수 도사림을 허용할 경우에만 검사.
+        return BattleTargetValidator.IsValid(
+            slot.TargetCharacter,
+            slot.TargetPart,
+            TargetSelectionRule.StandardAttack);
     }
 
     private int DrawClashArrows(
@@ -442,8 +498,28 @@ public class TargetArrowUI : MonoBehaviour
                 action.Target,
                 action.TargetPart);
 
-        if (fromButton == null || toButton == null)
+        if (fromButton == null ||
+            toButton == null)
+        {
             return arrowIndex;
+        }
+
+        bool isSelfTarget =
+            action.Owner == action.Target &&
+            IsSamePart(
+                action.OwnerPart,
+                action.TargetPart);
+
+        if (isSelfTarget ||
+            fromButton == toButton)
+        {
+            return DrawSelfTargetArrow(
+                arrowIndex,
+                fromButton,
+                color,
+                action.ActionIndex,
+                IsPlayerCharacter(action.Owner));
+        }
 
         Vector2 start =
             GetLocalCenter(
@@ -543,8 +619,29 @@ public class TargetArrowUI : MonoBehaviour
                 slot.TargetCharacter,
                 slot.TargetPart);
 
-        if (fromButton == null || toButton == null)
+        if (fromButton == null ||
+            toButton == null)
+        {
             return arrowIndex;
+        }
+
+        bool isSelfTarget =
+            slot.Owner ==
+            slot.TargetCharacter &&
+            IsSamePart(
+                slot.Part,
+                slot.TargetPart);
+
+        if (isSelfTarget ||
+            fromButton == toButton)
+        {
+            return DrawSelfTargetArrow(
+                arrowIndex,
+                fromButton,
+                color,
+                slot.ActionIndex,
+                IsPlayerCharacter(slot.Owner));
+        }
 
         Vector2 start =
             GetLocalCenter(
@@ -574,6 +671,89 @@ public class TargetArrowUI : MonoBehaviour
 
         return arrowIndex + 1;
     }
+    
+    private int DrawSelfTargetArrow(
+        int arrowIndex,
+        BodyPartButton button,
+        Color color,
+        int actionIndex,
+        bool isPlayerOwner)
+    {
+        if (button == null ||
+            button.RectTransform == null)
+        {
+            return arrowIndex;
+        }
+
+        GetLocalRect(
+            button.RectTransform,
+            out Vector2 center,
+            out Vector2 size);
+
+        float halfWidth =
+            Mathf.Max(1f, size.x * 0.5f);
+
+        float halfHeight =
+            Mathf.Max(1f, size.y * 0.5f);
+
+        float laneOffset =
+            Mathf.Max(0, actionIndex) * 12f;
+
+        Vector2 start;
+        Vector2 end;
+
+        if (isPlayerOwner)
+        {
+            // 플레이어 버튼은 전장 쪽(위)에서 버튼으로 내려온다.
+            start =
+                center +
+                new Vector2(
+                    halfWidth * 0.25f + laneOffset,
+                    halfHeight + 58f + laneOffset);
+
+            end =
+                center +
+                new Vector2(
+                    halfWidth * 0.15f + laneOffset,
+                    halfHeight - 4f);
+        }
+        else
+        {
+            // 적 버튼은 전장 쪽(아래)에서 버튼으로 올라간다.
+            start =
+                center +
+                new Vector2(
+                    -halfWidth * 0.25f - laneOffset,
+                    -halfHeight - 58f - laneOffset);
+
+            end =
+                center +
+                new Vector2(
+                    -halfWidth * 0.15f - laneOffset,
+                    -halfHeight + 4f);
+        }
+
+        ArrowVisual arrow =
+            GetArrow(arrowIndex);
+
+        DrawArrowToPoint(
+            arrow,
+            start,
+            end,
+            color);
+
+        return arrowIndex + 1;
+    }
+
+    private bool IsPlayerCharacter(
+        Character character)
+    {
+        return character != null &&
+               battleManager != null &&
+               battleManager.BattleContext != null &&
+               battleManager.BattleContext.Player == character;
+    }
+
 
     private int DrawUIClashPair(
         int arrowIndex,
@@ -1103,43 +1283,43 @@ public class TargetArrowUI : MonoBehaviour
                 Mathf.Abs(topRight.y - bottomLeft.y));
     }
 
+    private void EnsureButtonRegistries()
+    {
+        if (bodyPartButtonRegistry == null)
+        {
+            bodyPartButtonRegistry =
+                FindFirstObjectByType<BodyPartButtonRegistry>();
+        }
+
+        if (targetButtonRegistry == null)
+        {
+            targetButtonRegistry =
+                FindFirstObjectByType<BattleTargetButtonRegistry>();
+        }
+    }
+
     private BodyPartButton FindButton(
         Character character,
         BodyPart part)
     {
-        if (character == null ||
-            cachedButtons == null)
-        {
+        if (character == null)
             return null;
-        }
 
-        for (int i = 0;
-             i < cachedButtons.Length;
-             i++)
-        {
-            BodyPartButton button =
-                cachedButtons[i];
+        EnsureButtonRegistries();
 
-            if (button == null ||
-                !button.gameObject.activeInHierarchy ||
-                button.Owner != character)
-            {
-                continue;
-            }
+        BodyPartButton button =
+            targetButtonRegistry?.FindButton(
+                character,
+                part,
+                requireActive: true);
 
-            if (button.BodyPart == part)
-                return button;
+        if (button != null)
+            return button;
 
-            if (part != null &&
-                button.BodyPart != null &&
-                button.BodyPart.Type ==
-                part.Type)
-            {
-                return button;
-            }
-        }
-
-        return null;
+        return bodyPartButtonRegistry?.Find(
+            character,
+            part,
+            requireActive: true);
     }
 
     private Vector2 GetLocalCenter(RectTransform rect)
@@ -1484,14 +1664,6 @@ public class TargetArrowUI : MonoBehaviour
         canvasGroup.blocksRaycasts = false;
 
         arrowRoot.SetAsLastSibling();
-    }
-
-    private void CacheButtons()
-    {
-        cachedButtons =
-            FindObjectsByType<BodyPartButton>(
-                FindObjectsInactive.Include,
-                FindObjectsSortMode.None);
     }
 
     private void HideUnusedArrows(int usedArrowCount)

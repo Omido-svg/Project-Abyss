@@ -13,56 +13,72 @@ public class StatusEffectVisualDatabase : ScriptableObject
 
     private void OnEnable()
     {
-        RebuildLookup();
+        RebuildLookup(logWarnings: false);
     }
 
     private void OnValidate()
     {
-        visualsByKey = null;
+        RebuildLookup(logWarnings: true);
     }
 
-    public StatusEffectVisualDefinition GetVisual(
-        string statusKey)
+    public StatusEffectVisualDefinition GetVisual(string statusKey)
     {
-        if (string.IsNullOrEmpty(statusKey))
+        if (string.IsNullOrWhiteSpace(statusKey))
             return null;
 
         EnsureLookup();
 
         return visualsByKey.TryGetValue(
-            statusKey,
+            Normalize(statusKey),
             out StatusEffectVisualDefinition visual)
                 ? visual
                 : null;
     }
 
+    public IEnumerable<StatusEffectVisualDefinition> EnumerateVisuals()
+    {
+        return visuals ?? new List<StatusEffectVisualDefinition>();
+    }
+
     private void EnsureLookup()
     {
         if (visualsByKey == null)
-            RebuildLookup();
+            RebuildLookup(logWarnings: false);
     }
 
-    private void RebuildLookup()
+    private void RebuildLookup(bool logWarnings)
     {
-        visualsByKey =
-            new Dictionary<string, StatusEffectVisualDefinition>(
-                StringComparer.Ordinal);
+        visualsByKey = new Dictionary<string, StatusEffectVisualDefinition>(
+            StringComparer.OrdinalIgnoreCase);
 
         if (visuals == null)
             return;
 
         foreach (StatusEffectVisualDefinition visual in visuals)
         {
-            if (visual == null ||
-                string.IsNullOrEmpty(visual.StatusKey) ||
-                visualsByKey.ContainsKey(visual.StatusKey))
+            if (visual == null || string.IsNullOrWhiteSpace(visual.StatusKey))
+                continue;
+
+            string key = Normalize(visual.StatusKey);
+
+            if (visualsByKey.ContainsKey(key))
             {
+                if (logWarnings)
+                {
+                    Debug.LogWarning(
+                        $"[STATUS VISUAL VALIDATION] 중복 StatusKey / Key={key}",
+                        this);
+                }
+
                 continue;
             }
 
-            visualsByKey.Add(
-                visual.StatusKey,
-                visual);
+            visualsByKey.Add(key, visual);
         }
+    }
+
+    private static string Normalize(string key)
+    {
+        return key?.Trim() ?? string.Empty;
     }
 }

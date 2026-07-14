@@ -1,11 +1,15 @@
+using System;
 using System.Collections.Generic;
 using Unity.Cinemachine;
 using UnityEngine;
 
-public class BattleCinemachineTargetGroupBinder
+public sealed class BattleCinemachineTargetGroupBinder : IDisposable
 {
     private readonly CinemachineTargetGroup targetGroup;
     private readonly List<Transform> boundMembers = new();
+
+    public bool IsAvailable => targetGroup != null;
+    public int BoundMemberCount => boundMembers.Count;
 
     public BattleCinemachineTargetGroupBinder(
         CinemachineTargetGroup targetGroup)
@@ -13,7 +17,7 @@ public class BattleCinemachineTargetGroupBinder
         this.targetGroup = targetGroup;
     }
 
-    public void BindTwoTargets(
+    public bool BindTwoTargets(
         Transform first,
         Transform second,
         float firstWeight,
@@ -24,56 +28,68 @@ public class BattleCinemachineTargetGroupBinder
         Clear();
 
         if (targetGroup == null)
-            return;
+            return false;
 
-        Add(
-            first,
-            firstWeight,
-            firstRadius);
+        if (first == null && second == null)
+            return false;
 
-        Add(
-            second,
-            secondWeight,
-            secondRadius);
+        if (first == second)
+        {
+            return BindOneTarget(
+                first,
+                Mathf.Max(firstWeight, secondWeight),
+                Mathf.Max(firstRadius, secondRadius));
+        }
 
-        targetGroup.DoUpdate();
+        Add(first, firstWeight, firstRadius);
+        Add(second, secondWeight, secondRadius);
+        RefreshGroup();
+
+        return boundMembers.Count > 0;
     }
 
-    public void BindOneTarget(
+    public bool BindOneTarget(
         Transform target,
         float weight,
         float radius)
     {
         Clear();
 
-        if (targetGroup == null)
-            return;
+        if (targetGroup == null || target == null)
+            return false;
 
-        Add(
-            target,
-            weight,
-            radius);
+        Add(target, weight, radius);
+        RefreshGroup();
 
-        targetGroup.DoUpdate();
+        return boundMembers.Count == 1;
     }
 
     public void Clear()
     {
         if (targetGroup == null)
-            return;
-
-        foreach (Transform member in boundMembers)
         {
+            boundMembers.Clear();
+            return;
+        }
+
+        for (int i = boundMembers.Count - 1; i >= 0; i--)
+        {
+            Transform member = boundMembers[i];
+
             if (member == null)
                 continue;
 
-            targetGroup.RemoveMember(
-                member);
+            if (targetGroup.FindMember(member) >= 0)
+                targetGroup.RemoveMember(member);
         }
 
         boundMembers.Clear();
+        RefreshGroup();
+    }
 
-        targetGroup.DoUpdate();
+    public void Dispose()
+    {
+        Clear();
     }
 
     private void Add(
@@ -81,11 +97,11 @@ public class BattleCinemachineTargetGroupBinder
         float weight,
         float radius)
     {
-        if (target == null)
+        if (target == null || targetGroup == null)
             return;
 
         if (targetGroup.FindMember(target) >= 0)
-            return;
+            targetGroup.RemoveMember(target);
 
         targetGroup.AddMember(
             target,
@@ -93,5 +109,11 @@ public class BattleCinemachineTargetGroupBinder
             Mathf.Max(0.01f, radius));
 
         boundMembers.Add(target);
+    }
+
+    private void RefreshGroup()
+    {
+        if (targetGroup != null)
+            targetGroup.DoUpdate();
     }
 }

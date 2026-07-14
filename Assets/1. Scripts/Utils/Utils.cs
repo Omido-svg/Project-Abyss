@@ -4,30 +4,32 @@ using UnityEngine;
 
 public static class Utils
 {
-    //--------------------------------------------------
-    // Shuffle
-    //--------------------------------------------------
-
-    public static void Shuffle<T>(List<T> list)
+    public static void Shuffle<T>(
+        List<T> list)
     {
         if (list == null)
             return;
 
-        for (int i = 0; i < list.Count; i++)
+        for (int i = 0;
+             i < list.Count;
+             i++)
         {
-            int rand = Random.Range(i, list.Count);
+            int randomIndex =
+                Random.Range(
+                    i,
+                    list.Count);
 
-            (list[i], list[rand]) = (list[rand], list[i]);
+            (list[i], list[randomIndex]) =
+                (list[randomIndex], list[i]);
         }
     }
 
-    //--------------------------------------------------
-    // Character List
-    //--------------------------------------------------
-
-    public static void PrintList(List<Character> list)
+    public static void PrintList(
+        List<Character> list)
     {
-        PrintList(list, null);
+        PrintList(
+            list,
+            null);
     }
 
     public static void PrintList(
@@ -36,208 +38,259 @@ public static class Utils
     {
         if (list == null)
         {
-            Debug.Log("Character List : NULL");
+            BattleDebugLog.Warning(
+                BattleLogCategory.Combat,
+                "Character List : NULL");
             return;
         }
 
-        StringBuilder sb = new();
+        StringBuilder builder =
+            new();
 
-        sb.AppendLine("========================================================");
-        sb.AppendLine($" Character List ({list.Count})");
-        sb.AppendLine("========================================================");
+        builder.AppendLine(
+            "========================================================");
+
+        builder.AppendLine(
+            $" Character List ({list.Count})");
+
+        builder.AppendLine(
+            "========================================================");
 
         foreach (Character character in list)
         {
-            AppendCharacter(sb, character, battleManager);
+            AppendCharacter(
+                builder,
+                character,
+                battleManager);
 
-            sb.AppendLine("--------------------------------------------------------");
+            builder.AppendLine(
+                "--------------------------------------------------------");
         }
 
-        Debug.Log(sb.ToString());
+        BattleDebugLog.Combat(
+            builder.ToString(),
+            BattleLogLevel.Trace);
     }
 
-    //--------------------------------------------------
-
     private static void AppendCharacter(
-        StringBuilder sb,
+        StringBuilder builder,
         Character character,
         BattleManager battleManager)
     {
         if (character == null)
         {
-            sb.AppendLine("NULL Character");
+            builder.AppendLine(
+                "NULL Character");
             return;
         }
 
-        CurrentStatus current = character.CurrentStatus;
-        RuntimeStatus runtime = character.RuntimeStatus;
+        CurrentStatus current =
+            character.CurrentStatus;
 
-        sb.AppendLine($"[{GetCharacterName(character)}]");
+        RuntimeStatus runtime =
+            character.RuntimeStatus;
 
-        if (current != null && runtime != null)
+        builder.AppendLine(
+            $"[{GetCharacterName(character)}]");
+
+        if (current != null &&
+            runtime != null)
         {
-            sb.AppendLine($"  HP        : {runtime.currentHP}/{GetMaxHP(character)}");
-            sb.AppendLine($"  Prestige  : {runtime.currentPrestige}/{current.maxPrestige}");
-            sb.AppendLine($"  Speed     : {current.minSpeed} ~ {current.maxSpeed}");
-            sb.AppendLine($"  DamageM   : {current.damageMultiplier:0.00}");
+            builder.AppendLine(
+                $"  HP        : " +
+                $"{runtime.currentHP}/" +
+                $"{GetMaxHP(character)}");
+
+            builder.AppendLine(
+                $"  Prestige  : " +
+                $"{runtime.currentPrestige}/" +
+                $"{current.maxPrestige}");
+
+            builder.AppendLine(
+                $"  Speed     : " +
+                $"{current.minSpeed} ~ " +
+                $"{current.maxSpeed}");
+
+            builder.AppendLine(
+                $"  DamageM   : " +
+                $"{current.damageMultiplier:0.00}");
         }
         else
         {
-            sb.AppendLine("  Status Not Initialized");
+            builder.AppendLine(
+                "  Status Not Initialized");
         }
 
-        sb.AppendLine($"  Dead      : {character.IsDead}");
+        builder.AppendLine(
+            $"  Dead      : {character.IsDead}");
 
-        AppendCharacterStatusEffects(sb, character);
-        AppendBodyParts(sb, character, battleManager);
+        AppendCharacterStatusEffects(
+            builder,
+            character);
+
+        AppendBodyParts(
+            builder,
+            character,
+            battleManager);
     }
 
-    //--------------------------------------------------
-    // Character Status Effects
-    //--------------------------------------------------
-
     private static void AppendCharacterStatusEffects(
-        StringBuilder sb,
+        StringBuilder builder,
         Character character)
     {
-        sb.AppendLine();
-        sb.AppendLine("  Character Status Effects");
+        builder.AppendLine();
+        builder.AppendLine(
+            "  Character Status Effects");
 
         if (character.StatusEffects == null ||
             character.StatusEffects.Count == 0)
         {
-            sb.AppendLine("    None");
+            builder.AppendLine("    None");
             return;
         }
 
-        foreach (StatusEffect effect in character.StatusEffects)
+        foreach (StatusEffect effect
+                 in character.StatusEffects)
         {
-            AppendEffect(sb, effect, "    - ");
+            AppendEffect(
+                builder,
+                effect,
+                "    - ");
         }
     }
 
-    //--------------------------------------------------
-    // Body Parts
-    //--------------------------------------------------
-
     private static void AppendBodyParts(
-        StringBuilder sb,
+        StringBuilder builder,
         Character character,
         BattleManager battleManager)
     {
-        sb.AppendLine();
-        sb.AppendLine("  Body Parts");
+        builder.AppendLine();
+        builder.AppendLine(
+            "  Body Parts");
 
         if (character.BodyParts == null ||
             character.BodyParts.Count == 0)
         {
-            sb.AppendLine("    None");
+            builder.AppendLine("    None");
             return;
         }
 
-        foreach (BodyPart part in character.BodyParts)
+        foreach (BodyPart part
+                 in character.BodyParts)
         {
             if (part == null)
                 continue;
 
-            AppendBodyPart(sb, character, part, battleManager);
+            AppendBodyPart(
+                builder,
+                character,
+                part,
+                battleManager);
         }
     }
 
     private static void AppendBodyPart(
-        StringBuilder sb,
+        StringBuilder builder,
         Character character,
         BodyPart part,
         BattleManager battleManager)
     {
-        sb.AppendLine(
+        builder.AppendLine(
             $"    [{part.Type}] [{part.State}]");
 
-        sb.AppendLine(
-            $"      HP     : {part.PartHP:0}/{part.MaxPartHP:0}");
+        builder.AppendLine(
+            $"      HP     : " +
+            $"{part.PartHP:0}/" +
+            $"{part.MaxPartHP:0}");
 
-        sb.AppendLine(
+        builder.AppendLine(
             $"      Usable : {part.IsUsable}");
 
-        sb.AppendLine(
-            $"      Speed  : {GetPartSpeed(part, battleManager)}");
-
-        //--------------------------------
-        // 현재 ActionSlot
-        //--------------------------------
+        builder.AppendLine(
+            $"      Speed  : " +
+            $"{GetPartSpeed(part, battleManager)}");
 
         ActionSlot slot =
-            GetSlot(character, part, battleManager);
+            GetSlot(
+                character,
+                part,
+                battleManager);
 
         if (slot == null)
         {
-            sb.AppendLine("      Slot   : None");
+            builder.AppendLine(
+                "      Slot   : None");
         }
         else
         {
-            sb.AppendLine("      Slot");
+            builder.AppendLine(
+                "      Slot");
 
-            sb.AppendLine(
-                $"        Skill      : {GetSkillName(slot.Skill)}");
+            builder.AppendLine(
+                $"        Skill      : " +
+                $"{GetSkillName(slot.Skill)}");
 
-            sb.AppendLine(
-                $"        Phase      : {slot.Phase}");
+            builder.AppendLine(
+                $"        Phase      : " +
+                $"{slot.Phase}");
 
-            sb.AppendLine(
-                $"        Speed      : {slot.Speed}");
+            builder.AppendLine(
+                $"        Speed      : " +
+                $"{slot.Speed}");
 
-            sb.AppendLine(
-                $"        Target     : {GetCharacterName(slot.TargetCharacter)}");
+            builder.AppendLine(
+                $"        Target     : " +
+                $"{GetCharacterName(slot.TargetCharacter)}");
 
-            sb.AppendLine(
-                $"        TargetPart : {GetPartName(slot.TargetPart)}");
+            builder.AppendLine(
+                $"        TargetPart : " +
+                $"{GetPartName(slot.TargetPart, slot.TargetCharacter)}");
 
-            sb.AppendLine(
-                $"        TargetSlot : {GetSlotName(slot.TargetSlot)}");
+            builder.AppendLine(
+                $"        TargetSlot : " +
+                $"{GetSlotName(slot.TargetSlot)}");
         }
 
-        //--------------------------------
-        // 스킬 목록
-        //--------------------------------
+        AppendPartSkills(
+            builder,
+            character,
+            part);
 
-        AppendPartSkills(sb, character, part);
-
-        //--------------------------------
-        // 부위 상태이상
-        //--------------------------------
-
-        AppendPartStatusEffects(sb, part);
+        AppendPartStatusEffects(
+            builder,
+            part);
     }
 
-    //--------------------------------------------------
-    // Part Skills
-    //--------------------------------------------------
-
     private static void AppendPartSkills(
-        StringBuilder sb,
+        StringBuilder builder,
         Character character,
         BodyPart part)
     {
-        sb.AppendLine("      Skills");
+        builder.AppendLine(
+            "      Skills");
 
         if (part.AvailableSkills == null ||
             part.AvailableSkills.Count == 0)
         {
-            sb.AppendLine("        None");
+            builder.AppendLine(
+                "        None");
             return;
         }
 
-        foreach (Skill skill in part.AvailableSkills)
+        foreach (Skill skill
+                 in part.AvailableSkills)
         {
             if (skill == null)
                 continue;
 
             string usable =
-                character.CanUseSkill(part, skill)
+                character.CanUseSkill(
+                    part,
+                    skill)
                     ? "OK"
                     : "BLOCKED";
 
-            sb.AppendLine(
+            builder.AppendLine(
                 $"        - {skill.SkillName} " +
                 $"[{skill.ActionType}] " +
                 $"PWR {skill.MinPower}~{skill.MaxPower} " +
@@ -245,186 +298,246 @@ public static class Utils
         }
     }
 
-    //--------------------------------------------------
-    // Part Status Effects
-    //--------------------------------------------------
-
     private static void AppendPartStatusEffects(
-        StringBuilder sb,
+        StringBuilder builder,
         BodyPart part)
     {
-        sb.AppendLine("      Effects");
+        builder.AppendLine(
+            "      Effects");
 
         if (part.StatusEffects == null ||
             part.StatusEffects.Count == 0)
         {
-            sb.AppendLine("        None");
+            builder.AppendLine(
+                "        None");
             return;
         }
 
-        foreach (StatusEffect effect in part.StatusEffects)
+        foreach (StatusEffect effect
+                 in part.StatusEffects)
         {
-            AppendEffect(sb, effect, "        - ");
+            AppendEffect(
+                builder,
+                effect,
+                "        - ");
         }
     }
-
-    //--------------------------------------------------
-    // ActionSlot List
-    //--------------------------------------------------
 
     public static void PrintSlots(
         IReadOnlyList<ActionSlot> slots)
     {
         if (slots == null)
         {
-            Debug.Log("ActionSlot List : NULL");
+            BattleDebugLog.Warning(
+                BattleLogCategory.Combat,
+                "ActionSlot List : NULL");
             return;
         }
 
-        StringBuilder sb = new();
+        StringBuilder builder =
+            new();
 
-        sb.AppendLine("========================================");
-        sb.AppendLine($" Action Slots ({slots.Count})");
-        sb.AppendLine("========================================");
+        builder.AppendLine(
+            "========================================");
 
-        for (int i = 0; i < slots.Count; i++)
+        builder.AppendLine(
+            $" Action Slots ({slots.Count})");
+
+        builder.AppendLine(
+            "========================================");
+
+        for (int i = 0;
+             i < slots.Count;
+             i++)
         {
-            ActionSlot slot = slots[i];
+            builder.AppendLine(
+                $"[{i}]");
 
-            sb.AppendLine($"[{i}]");
-            AppendSlot(sb, slot, "  ");
-            sb.AppendLine("----------------------------------------");
+            AppendSlot(
+                builder,
+                slots[i],
+                "  ");
+
+            builder.AppendLine(
+                "----------------------------------------");
         }
 
-        Debug.Log(sb.ToString());
+        BattleDebugLog.ActionSlot(
+            builder.ToString());
     }
 
     private static void AppendSlot(
-        StringBuilder sb,
+        StringBuilder builder,
         ActionSlot slot,
         string indent)
     {
         if (slot == null)
         {
-            sb.AppendLine($"{indent}NULL SLOT");
+            builder.AppendLine(
+                $"{indent}NULL SLOT");
             return;
         }
 
-        sb.AppendLine(
-            $"{indent}Owner      : {GetCharacterName(slot.Owner)}");
+        builder.AppendLine(
+            $"{indent}ActionId   : " +
+            $"{slot.ActionId}");
 
-        sb.AppendLine(
-            $"{indent}Part       : {GetPartName(slot.Part)}");
+        builder.AppendLine(
+            $"{indent}ActionIndex: " +
+            $"{slot.ActionIndex}");
 
-        sb.AppendLine(
-            $"{indent}Skill      : {GetSkillName(slot.Skill)}");
+        builder.AppendLine(
+            $"{indent}Owner      : " +
+            $"{GetCharacterName(slot.Owner)}");
 
-        sb.AppendLine(
-            $"{indent}Speed      : {slot.Speed}");
+        builder.AppendLine(
+            $"{indent}Part       : " +
+            $"{GetPartName(slot.Part, slot.Owner)}");
 
-        sb.AppendLine(
-            $"{indent}Phase      : {slot.Phase}");
+        builder.AppendLine(
+            $"{indent}Skill      : " +
+            $"{GetSkillName(slot.Skill)}");
 
-        sb.AppendLine(
-            $"{indent}Target     : {GetCharacterName(slot.TargetCharacter)}");
+        builder.AppendLine(
+            $"{indent}Speed      : " +
+            $"{slot.Speed}");
 
-        sb.AppendLine(
-            $"{indent}TargetPart : {GetPartName(slot.TargetPart)}");
+        builder.AppendLine(
+            $"{indent}Phase      : " +
+            $"{slot.Phase}");
 
-        sb.AppendLine(
-            $"{indent}TargetSlot : {GetSlotName(slot.TargetSlot)}");
+        builder.AppendLine(
+            $"{indent}Target     : " +
+            $"{GetCharacterName(slot.TargetCharacter)}");
+
+        builder.AppendLine(
+            $"{indent}TargetPart : " +
+            $"{GetPartName(slot.TargetPart, slot.TargetCharacter)}");
+
+        builder.AppendLine(
+            $"{indent}TargetSlot : " +
+            $"{GetSlotName(slot.TargetSlot)}");
     }
 
-    //--------------------------------------------------
-    // BattleAction List
-    //--------------------------------------------------
-
-    public static void PrintActions(List<BattleAction> actions)
+    public static void PrintActions(
+        List<BattleAction> actions)
     {
         if (actions == null)
         {
-            Debug.Log("BattleAction List : NULL");
+            BattleDebugLog.Warning(
+                BattleLogCategory.Combat,
+                "BattleAction List : NULL");
             return;
         }
 
-        StringBuilder sb = new();
+        StringBuilder builder =
+            new();
 
-        sb.AppendLine("========================================");
-        sb.AppendLine($" Battle Actions ({actions.Count})");
-        sb.AppendLine("========================================");
+        builder.AppendLine(
+            "========================================");
 
-        for (int i = 0; i < actions.Count; i++)
+        builder.AppendLine(
+            $" Battle Actions ({actions.Count})");
+
+        builder.AppendLine(
+            "========================================");
+
+        for (int i = 0;
+             i < actions.Count;
+             i++)
         {
-            BattleAction action = actions[i];
+            BattleAction action =
+                actions[i];
 
             if (action == null)
             {
-                sb.AppendLine($"[{i}] NULL");
-                sb.AppendLine("----------------------------------------");
+                builder.AppendLine(
+                    $"[{i}] NULL");
+
+                builder.AppendLine(
+                    "----------------------------------------");
+
                 continue;
             }
 
-            AppendBattleAction(sb, action, i);
+            AppendBattleAction(
+                builder,
+                action,
+                i);
 
-            sb.AppendLine("----------------------------------------");
+            builder.AppendLine(
+                "----------------------------------------");
         }
 
-        Debug.Log(sb.ToString());
+        BattleDebugLog.Combat(
+            builder.ToString(),
+            BattleLogLevel.Trace);
     }
 
     private static void AppendBattleAction(
-        StringBuilder sb,
+        StringBuilder builder,
         BattleAction action,
         int index)
     {
-        sb.AppendLine($"[{index}]");
+        builder.AppendLine(
+            $"[{index}]");
 
-        sb.AppendLine(
-            $"  {GetCharacterName(action.Owner)} ({GetPartName(action.OwnerPart)})");
+        builder.AppendLine(
+            $"  {GetCharacterName(action.Owner)} " +
+            $"({GetPartName(action.OwnerPart, action.Owner)})");
 
-        sb.AppendLine("      ↓");
+        builder.AppendLine("      ↓");
 
-        sb.AppendLine(
-            $"  {GetCharacterName(action.Target)} ({GetPartName(action.TargetPart)})");
+        builder.AppendLine(
+            $"  {GetCharacterName(action.Target)} " +
+            $"({GetPartName(action.TargetPart, action.Target)})");
 
-        sb.AppendLine();
+        builder.AppendLine();
 
-        sb.AppendLine(
+        builder.AppendLine(
+            $"  ActionId   : {action.ActionId}");
+
+        builder.AppendLine(
+            $"  ActionIndex: {action.ActionIndex}");
+
+        builder.AppendLine(
             $"  Skill      : {GetSkillName(action.Skill)}");
 
-        sb.AppendLine(
+        builder.AppendLine(
             $"  Type       : {action.ActionType}");
 
-        sb.AppendLine(
+        builder.AppendLine(
             $"  Phase      : {action.Phase}");
 
-        sb.AppendLine(
+        builder.AppendLine(
             $"  Speed      : {action.Speed}");
 
-        string rolledPower =
-            action.HasRolled
-                ? action.RolledPower.ToString()
-                : "-";
+        builder.AppendLine(
+            $"  PurePower  : " +
+            $"{(action.HasRolled ? action.RolledPower.ToString() : "-")}");
 
-        sb.AppendLine(
-            $"  RolledPow  : {rolledPower}");
+        builder.AppendLine(
+            $"  SpeedMod   : {action.SpeedModifier}");
 
-        sb.AppendLine(
-            $"  FinalPower : {action.finalPower}");
+        builder.AppendLine(
+            $"  MomentumMod: {action.MomentumModifier}");
+
+        builder.AppendLine(
+            $"  ClashPower : {action.ClashPower}");
+
+        builder.AppendLine(
+            $"  Critical   : {action.Critical}");
     }
 
-    //--------------------------------------------------
-    // Effect
-    //--------------------------------------------------
-
     private static void AppendEffect(
-        StringBuilder sb,
+        StringBuilder builder,
         StatusEffect effect,
         string prefix)
     {
         if (effect == null)
         {
-            sb.AppendLine($"{prefix}NULL");
+            builder.AppendLine(
+                $"{prefix}NULL");
             return;
         }
 
@@ -433,99 +546,104 @@ public static class Utils
                 ? "Permanent"
                 : $"{effect.Duration}T";
 
-        sb.AppendLine(
+        builder.AppendLine(
             $"{prefix}{effect.Name} " +
-            $"Stack {effect.Stack} / {durationText}");
+            $"Stack {effect.Stack} / " +
+            $"{durationText}");
     }
-
-    //--------------------------------------------------
-    // Utility
-    //--------------------------------------------------
 
     private static ActionSlot GetSlot(
         Character character,
         BodyPart part,
         BattleManager battleManager)
     {
-        if (battleManager == null)
+        if (battleManager?.ActionManager == null)
             return null;
 
-        if (battleManager.ActionManager == null)
-            return null;
-
-        return battleManager.ActionManager.FindSlot(
-            character,
-            part);
+        return battleManager.ActionManager
+            .FindSlot(
+                character,
+                part);
     }
 
     private static int GetPartSpeed(
         BodyPart part,
         BattleManager battleManager)
     {
-        if (part == null)
+        if (part == null ||
+            battleManager?.SpeedManager == null)
+        {
             return 0;
+        }
 
-        if (battleManager == null)
-            return 0;
-
-        if (battleManager.SpeedManager == null)
-            return 0;
-
-        return battleManager.SpeedManager.GetSpeed(part);
+        return battleManager.SpeedManager
+            .GetSpeed(part);
     }
 
-    private static int GetMaxHP(Character character)
+    private static int GetMaxHP(
+        Character character)
     {
-        if (character == null)
+        if (character?.BodyParts == null)
             return 0;
 
         int maxHP = 0;
 
-        foreach (BodyPart part in character.BodyParts)
+        foreach (BodyPart part
+                 in character.BodyParts)
         {
             if (part == null)
                 continue;
 
-            maxHP += Mathf.RoundToInt(part.MaxPartHP);
+            maxHP +=
+                Mathf.RoundToInt(
+                    part.MaxPartHP);
         }
 
         return maxHP;
     }
 
-    private static string GetCharacterName(Character character)
+    private static string GetCharacterName(
+        Character character)
     {
         if (character == null)
             return "NULL";
 
-        if (character.Data == null)
-            return character.name;
-
-        return character.Data.CharacterName;
+        return character.Data?.CharacterName ??
+               character.name ??
+               "NULL";
     }
 
-    private static string GetPartName(BodyPart part)
+    private static string GetPartName(
+        BodyPart part,
+        Character owner)
     {
-        if (part == null)
-            return "NULL";
+        if (part != null)
+            return part.Type.ToString();
 
-        return part.Type.ToString();
+        return owner == null
+            ? "NONE"
+            : owner.IsSingleHpTarget
+                ? "SINGLE_HP"
+                : "NONE";
     }
 
-    private static string GetSkillName(Skill skill)
+    private static string GetSkillName(
+        Skill skill)
     {
-        if (skill == null)
-            return "NULL";
-
-        return skill.SkillName;
+        return skill?.SkillName ??
+               "NULL";
     }
 
-    private static string GetSlotName(ActionSlot slot)
+    private static string GetSlotName(
+        ActionSlot slot)
     {
         if (slot == null)
             return "None";
 
         return
             $"{GetCharacterName(slot.Owner)} / " +
-            $"{GetPartName(slot.Part)}";
+            $"{GetPartName(slot.Part, slot.Owner)} / " +
+            $"Index={slot.ActionIndex}, " +
+            $"Id={slot.ActionId}";
     }
 }

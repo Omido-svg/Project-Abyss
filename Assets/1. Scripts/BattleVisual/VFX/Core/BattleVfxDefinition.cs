@@ -9,8 +9,14 @@ public class BattleVfxDefinition : ScriptableObject
     public GameObject EffectPrefab;
 
     [Header("Lifetime")]
-    public float Lifetime = 1.0f;
+    [Min(0f)] public float Lifetime = 1.0f;
     public bool DestroyAfterLifetime = true;
+    public bool UseUnscaledLifetime = false;
+
+    [Header("Pooling")]
+    public bool UsePooling = true;
+    [Min(0)] public int PrewarmCount = 0;
+    [Min(0)] public int MaxPoolSize = 8;
 
     [Header("Transform")]
     public Vector3 PositionOffset;
@@ -30,4 +36,17 @@ public class BattleVfxDefinition : ScriptableObject
 
     [Header("Debug")]
     public bool LogSpawn;
+
+    private void OnValidate()
+    {
+        Lifetime = Mathf.Max(0f, Lifetime);
+        PrewarmCount = Mathf.Max(0, PrewarmCount);
+        MaxPoolSize = Mathf.Max(0, MaxPoolSize);
+
+        if (MaxPoolSize > 0)
+            PrewarmCount = Mathf.Min(PrewarmCount, MaxPoolSize);
+
+        if (Scale == Vector3.zero)
+            Scale = Vector3.one;
+    }
 }

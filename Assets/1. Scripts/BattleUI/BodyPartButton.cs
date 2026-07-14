@@ -1,19 +1,20 @@
 using TMPro;
 using UnityEngine;
-using UnityEngine.UI;
 using UnityEngine.EventSystems;
+using UnityEngine.UI;
 
 public class BodyPartButton : MonoBehaviour, IPointerClickHandler
 {
     [SerializeField] private BattleUIManager uiManager;
+    [SerializeField] private BodyPartButtonRegistry registry;
     [SerializeField] private TMP_Text buttonText;
-    
     [SerializeField] private Image buttonImage;
-    
+
     [Header("Button Colors")]
-    [SerializeField] private Color ownerSelectedColor = new Color(0.25f, 0.65f, 1f, 1f);
-    [SerializeField] private Color targetSelectedColor = new Color(1f, 0.25f, 0.25f, 1f);
-    [SerializeField] private Color weakenedColor = new Color(1f, 0.85f, 0.1f, 1f);
+    [SerializeField] private Color ownerSelectedColor = new(0.25f, 0.65f, 1f, 1f);
+    [SerializeField] private Color targetSelectedColor = new(1f, 0.25f, 0.25f, 1f);
+    [SerializeField] private Color weakenedColor = new(1f, 0.85f, 0.1f, 1f);
+    [SerializeField] private Color brokenColor = new(0.45f, 0.15f, 0.15f, 1f);
 
     private Color originalColor;
     private bool originalColorSaved;
@@ -23,27 +24,28 @@ public class BodyPartButton : MonoBehaviour, IPointerClickHandler
     private RectTransform rectTransform;
     private Button button;
 
+    private bool hasHpOverride;
+    private int hpOverrideValue;
+
     public Character Owner => owner;
     public BodyPart BodyPart => bodyPart;
     public RectTransform RectTransform => rectTransform;
 
     public bool IsCharacterTargetButton =>
-        owner != null &&
-        bodyPart == null;
-    
-    private bool hasHpOverride;
-    private int hpOverrideValue;
+        owner != null && bodyPart == null;
 
     public bool HasHpOverride => hasHpOverride;
     public int HpOverrideValue => hpOverrideValue;
 
-
-
-    //--------------------------------------------------
-
     private void Awake()
     {
         EnsureReferences();
+    }
+
+    private void OnEnable()
+    {
+        EnsureReferences();
+        registry?.Register(this);
     }
 
     private void Start()
@@ -51,28 +53,29 @@ public class BodyPartButton : MonoBehaviour, IPointerClickHandler
         Refresh();
     }
 
+    private void OnDisable()
+    {
+        registry?.Unregister(this);
+    }
+
     private void EnsureReferences()
     {
-        if (rectTransform == null)
-            rectTransform = GetComponent<RectTransform>();
-
-        if (button == null)
-            button = GetComponent<Button>();
-
-        if (buttonText == null)
-            buttonText = GetComponentInChildren<TMP_Text>(true);
+        rectTransform ??= GetComponent<RectTransform>();
+        button ??= GetComponent<Button>();
+        buttonText ??= GetComponentInChildren<TMP_Text>(true);
+        buttonImage ??= GetComponent<Image>();
 
         if (buttonText != null)
         {
             buttonText.richText = true;
-            buttonText.overflowMode = TMPro.TextOverflowModes.Overflow;
+            buttonText.overflowMode = TextOverflowModes.Overflow;
         }
 
         if (uiManager == null)
             uiManager = FindFirstObjectByType<BattleUIManager>();
-            
-        if (buttonImage == null)
-            buttonImage = GetComponent<Image>();
+
+        if (registry == null)
+            registry = FindFirstObjectByType<BodyPartButtonRegistry>();
 
         if (buttonImage != null && !originalColorSaved)
         {
@@ -81,16 +84,22 @@ public class BodyPartButton : MonoBehaviour, IPointerClickHandler
         }
     }
 
-    //--------------------------------------------------
-
-    public void Bind(
-        Character owner,
-        BodyPart bodyPart)
+    public void Bind(Character owner, BodyPart bodyPart)
     {
         EnsureReferences();
 
+        bool bindingChanged =
+            this.owner != owner ||
+            this.bodyPart != bodyPart;
+
         this.owner = owner;
         this.bodyPart = bodyPart;
+
+        if (bindingChanged)
+        {
+            hasHpOverride = false;
+            hpOverrideValue = 0;
+        }
 
         if (button == null)
         {
@@ -101,37 +110,29 @@ public class BodyPartButton : MonoBehaviour, IPointerClickHandler
         button.onClick.RemoveAllListeners();
         button.onClick.AddListener(OnClick);
 
+        registry?.NotifyBindingChanged(this);
         Refresh();
     }
 
-    //--------------------------------------------------
-
     public void Refresh()
     {
-        if (uiManager == null)
-            uiManager = FindFirstObjectByType<BattleUIManager>();
-
-        if (uiManager == null)
-            return;
-
-        uiManager.RefreshBodyPartUI(bodyPart);
+        EnsureReferences();
+        uiManager?.RefreshButton(this);
     }
-    
+
     public void ApplyViewModel(BodyPartButtonViewModel viewModel)
     {
         EnsureReferences();
 
         if (buttonText != null)
         {
-            string slotLine =
-                string.IsNullOrEmpty(viewModel.SlotText)
-                    ? ""
-                    : "\n" + viewModel.SlotText;
+            string slotLine = string.IsNullOrEmpty(viewModel.SlotText)
+                ? ""
+                : "\n" + viewModel.SlotText;
 
-            string skillLine =
-                string.IsNullOrEmpty(viewModel.SkillText)
-                    ? ""
-                    : "\n" + viewModel.SkillText;
+            string skillLine = string.IsNullOrEmpty(viewModel.SkillText)
+                ? ""
+                : "\n" + viewModel.SkillText;
 
             buttonText.text =
                 viewModel.PartText + "\n" +
@@ -142,17 +143,13 @@ public class BodyPartButton : MonoBehaviour, IPointerClickHandler
         }
 
         if (button != null)
-        {
             button.interactable = viewModel.Interactable;
-        }
 
         ApplyColor(viewModel);
     }
 
     private void ApplyColor(BodyPartButtonViewModel viewModel)
     {
-        EnsureReferences();
-
         if (buttonImage == null)
             return;
 
@@ -168,6 +165,12 @@ public class BodyPartButton : MonoBehaviour, IPointerClickHandler
             return;
         }
 
+        if (viewModel.IsBroken)
+        {
+            buttonImage.color = brokenColor;
+            return;
+        }
+
         if (viewModel.IsWeakened)
         {
             buttonImage.color = weakenedColor;
@@ -177,71 +180,60 @@ public class BodyPartButton : MonoBehaviour, IPointerClickHandler
         buttonImage.color = originalColor;
     }
 
-    //--------------------------------------------------
-
     private void OnClick()
     {
         EnsureReferences();
 
-        if (uiManager == null)
-        {
-            Debug.LogWarning(
-                "BodyPartButton : uiManager가 연결되어 있지 않습니다.");
+        if (uiManager == null || owner == null)
             return;
-        }
 
-        if (owner == null)
-        {
-            Debug.LogWarning(
-                "BodyPartButton : owner가 없습니다.");
-            return;
-        }
-
-        string targetText =
-            bodyPart == null
-                ? "SINGLE_HP"
-                : bodyPart.Type.ToString();
+        string targetText = bodyPart == null
+            ? "SINGLE_HP"
+            : bodyPart.Type.ToString();
 
         BattleDebugLog.UIInput(
-            $"[BUTTON CLICK] " +
-            $"{owner.Data.CharacterName} / " +
-            $"{targetText}");
+            $"[BUTTON CLICK] {GetOwnerName()} / {targetText}");
 
-        uiManager.OnBodyPartClicked(
-            owner,
-            bodyPart);
+        uiManager.OnBodyPartClicked(owner, bodyPart);
     }
-    
+
     public void OnPointerClick(PointerEventData eventData)
     {
-        EnsureReferences();
-
         if (eventData.button != PointerEventData.InputButton.Right)
             return;
 
-        if (uiManager == null)
-            return;
-
-        uiManager.OnBodyPartRightClicked(owner, bodyPart);
+        EnsureReferences();
+        uiManager?.OnBodyPartRightClicked(owner, bodyPart);
     }
-    
+
     public bool IsHiddenByBroken()
     {
         return bodyPart != null && bodyPart.IsBroken;
     }
-    
+
     public void SetHpOverride(int hp)
     {
         hasHpOverride = true;
         hpOverrideValue = Mathf.Max(0, hp);
-
         Refresh();
     }
 
     public void ClearHpOverride()
     {
-        hasHpOverride = false;
+        if (!hasHpOverride)
+            return;
 
+        hasHpOverride = false;
         Refresh();
+    }
+
+    private string GetOwnerName()
+    {
+        if (owner == null)
+            return "NULL";
+
+        return owner.Data == null
+            ? owner.name
+            : owner.Data.CharacterName;
     }
 }

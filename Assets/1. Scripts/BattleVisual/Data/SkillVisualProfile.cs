@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 [CreateAssetMenu(
@@ -12,22 +13,32 @@ public class SkillVisualProfile : ScriptableObject
 
     public SkillVisualDefinition GetDefault(ActionType actionType)
     {
-        switch (actionType)
+        SkillVisualDefinition result = actionType switch
         {
-            case ActionType.NormalAttack:
-                return NormalAttackVisual;
+            ActionType.NormalAttack => NormalAttackVisual,
+            ActionType.Duel => DuelVisual,
+            ActionType.Preparation => PreparationVisual,
+            ActionType.Prestige => PrestigeVisual,
+            _ => NormalAttackVisual
+        };
 
-            case ActionType.Duel:
-                return DuelVisual;
+        return result != null && result.AllowAsProfileFallback
+            ? result
+            : null;
+    }
 
-            case ActionType.Preparation:
-                return PreparationVisual;
+    public IEnumerable<SkillVisualDefinition> EnumerateDefinitions()
+    {
+        if (NormalAttackVisual != null)
+            yield return NormalAttackVisual;
 
-            case ActionType.Prestige:
-                return PrestigeVisual;
+        if (DuelVisual != null)
+            yield return DuelVisual;
 
-            default:
-                return NormalAttackVisual;
-        }
+        if (PreparationVisual != null)
+            yield return PreparationVisual;
+
+        if (PrestigeVisual != null)
+            yield return PrestigeVisual;
     }
 }

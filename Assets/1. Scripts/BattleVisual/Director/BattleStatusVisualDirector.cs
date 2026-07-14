@@ -9,13 +9,14 @@ public class BattleStatusVisualDirector : MonoBehaviour
     [SerializeField] private DamageNumberManager damageNumberManager;
 
     [Header("Timing")]
-    [SerializeField] private float delayBetweenTicks = 0.15f;
+    [SerializeField] private float delayBetweenRequests = 0.15f;
+    [SerializeField] private bool useUnscaledTime = false;
 
     [Header("Debug")]
     [SerializeField] private bool logDebug;
 
     private Coroutine queueRoutine;
-    private readonly Queue<StatusDamageVisualRequest> queue = new();
+    private readonly Queue<QueuedStatusVisual> queue = new();
 
     private void Awake()
     {
@@ -33,71 +34,26 @@ public class BattleStatusVisualDirector : MonoBehaviour
 
     public void ShowStatusDamage(StatusDamageVisualRequest request)
     {
-        if (request == null || !isActiveAndEnabled)
+        if (request == null || request.Target == null || !isActiveAndEnabled)
             return;
 
-        queue.Enqueue(request);
-
-        if (queueRoutine == null)
-            queueRoutine = StartCoroutine(ProcessQueue());
+        queue.Enqueue(QueuedStatusVisual.ForDamage(request));
+        EnsureQueueRoutine();
     }
 
-    public void ShowStatusLifecycle(
-        StatusEffectLifecycleVisualRequest request)
+    public void ShowStatusLifecycle(StatusEffectLifecycleVisualRequest request)
     {
-        if (request == null ||
-            request.Target == null ||
-            !isActiveAndEnabled)
-        {
-            return;
-        }
-
-        ResolveReferences();
-
-        StatusEffectVisualDefinition visual =
-            visualDatabase?.GetVisual(request.StatusKey);
-
-        if (visual == null)
+        if (request == null || request.Target == null || !isActiveAndEnabled)
             return;
 
-        BattleVfxDefinition definition =
-            request.Phase switch
-            {
-                StatusEffectVisualPhase.Applied => visual.ApplyVfx,
-                StatusEffectVisualPhase.Refreshed => visual.ApplyVfx,
-                StatusEffectVisualPhase.Stacked => visual.ApplyVfx,
-                StatusEffectVisualPhase.Removed => visual.RemoveVfx,
-                StatusEffectVisualPhase.Expired => visual.RemoveVfx,
-                _ => null
-            };
+        queue.Enqueue(QueuedStatusVisual.ForLifecycle(request));
+        EnsureQueueRoutine();
+    }
 
-        if (definition == null || vfxManager == null)
-            return;
-
-        CharacterView targetView =
-            BattleCameraTargetResolver.GetView(request.Target);
-
-        vfxManager.PlayVfx(
-            definition,
-            request.TargetPart != null
-                ? BattleVfxAnchorType.TargetBodyPart
-                : BattleVfxAnchorType.TargetRoot,
-            new BattleVfxContext
-            {
-                Target = request.Target,
-                TargetView = targetView,
-                TargetPart = request.TargetPart,
-                Damage = 0
-            });
-
-        if (logDebug)
-        {
-            Debug.Log(
-                $"[BattleStatusVisualDirector] Lifecycle VFX / " +
-                $"Status={request.StatusKey}, Phase={request.Phase}, " +
-                $"Target={request.Target.Data?.CharacterName}, " +
-                $"Part={(request.TargetPart == null ? "NONE" : request.TargetPart.Type.ToString())}");
-        }
+    private void EnsureQueueRoutine()
+    {
+        if (queueRoutine == null)
+            queueRoutine = StartCoroutine(ProcessQueue());
     }
 
     private IEnumerator ProcessQueue()
@@ -106,12 +62,25 @@ public class BattleStatusVisualDirector : MonoBehaviour
         {
             while (queue.Count > 0)
             {
-                PlayDamage(queue.Dequeue());
+                QueuedStatusVisual visual = queue.Dequeue();
 
-                if (delayBetweenTicks > 0f)
-                    yield return new WaitForSeconds(delayBetweenTicks);
-                else
+                if (visual.DamageRequest != null)
+                    PlayDamage(visual.DamageRequest);
+                else if (visual.LifecycleRequest != null)
+                    PlayLifecycle(visual.LifecycleRequest);
+
+                if (delayBetweenRequests <= 0f)
+                {
                     yield return null;
+                }
+                else if (useUnscaledTime)
+                {
+                    yield return new WaitForSecondsRealtime(delayBetweenRequests);
+                }
+                else
+                {
+                    yield return new WaitForSeconds(delayBetweenRequests);
+                }
             }
         }
         finally
@@ -120,11 +89,70 @@ public class BattleStatusVisualDirector : MonoBehaviour
         }
     }
 
-    private void PlayDamage(StatusDamageVisualRequest request)
+    private void PlayLifecycle(StatusEffectLifecycleVisualRequest request)
     {
-        if (request?.Target == null)
+        ResolveReferences();
+
+        StatusEffectVisualDefinition visual =
+            visualDatabase?.GetVisual(request.StatusKey);
+
+        if (visual == null)
             return;
 
+        CharacterPersistentVfxController persistentController =
+            request.Target.GetComponentInChildren<CharacterPersistentVfxController>(true);
+
+        bool isApplyLike =
+            request.Phase == StatusEffectVisualPhase.Applied ||
+            request.Phase == StatusEffectVisualPhase.Refreshed ||
+            request.Phase == StatusEffectVisualPhase.Stacked;
+
+        if (visual.PersistentVfx != null && persistentController != null)
+        {
+            if (isApplyLike)
+                persistentController.Play(visual.PersistentVfx);
+            else
+                persistentController.Stop(visual.PersistentVfx);
+        }
+
+        BattleVfxDefinition definition = visual.GetLifecycleVfx(request.Phase);
+
+        if (definition != null && vfxManager != null)
+        {
+            CharacterView targetView =
+                BattleCameraTargetResolver.GetView(request.Target);
+
+            BattleVfxContext context = BattleVfxContext.ForStatus(
+                request.Target,
+                request.TargetPart,
+                request.StatusKey,
+                request.Phase,
+                damage: 0,
+                request.DamageContext);
+
+            context.Attacker = request.Source ?? context.Attacker;
+            context.TargetView = targetView;
+
+            vfxManager.PlayVfx(
+                definition,
+                request.TargetPart != null
+                    ? BattleVfxAnchorType.TargetBodyPart
+                    : BattleVfxAnchorType.TargetRoot,
+                context);
+        }
+
+        if (logDebug)
+        {
+            Debug.Log(
+                $"[BattleStatusVisualDirector] Lifecycle / " +
+                $"Status={request.StatusKey}, Phase={request.Phase}, " +
+                $"Target={request.Target.Data?.CharacterName}, " +
+                $"Part={(request.TargetPart == null ? "NONE" : request.TargetPart.Type.ToString())}");
+        }
+    }
+
+    private void PlayDamage(StatusDamageVisualRequest request)
+    {
         ResolveReferences();
 
         StatusEffectVisualDefinition visual =
@@ -136,41 +164,43 @@ public class BattleStatusVisualDirector : MonoBehaviour
         CharacterView targetView =
             BattleCameraTargetResolver.GetView(request.Target);
 
+        Color damageColor = request.HasDamageColorOverride
+            ? request.DamageColor
+            : visual.DamageNumberColor;
+
         if (targetView != null &&
             damageNumberManager != null &&
             request.Damage > 0)
         {
-            Vector3 position =
-                targetView.GetDamageNumberPosition(
-                    request.TargetPart);
-
-            damageNumberManager.ShowDamage(
-                position,
-                request.Damage,
-                visual.DamageNumberColor);
+            Vector3 position = targetView.GetDamageNumberPosition(request.TargetPart);
+            damageNumberManager.ShowDamage(position, request.Damage, damageColor);
         }
 
-        if (visual.TickDamageVfx != null &&
-            vfxManager != null)
+        if (visual.TickDamageVfx != null && vfxManager != null)
         {
+            BattleVfxContext context = BattleVfxContext.ForStatus(
+                request.Target,
+                request.TargetPart,
+                request.StatusKey,
+                StatusEffectVisualPhase.Stacked,
+                request.Damage,
+                request.DamageContext);
+
+            context.Attacker = request.Source ?? context.Attacker;
+            context.TargetView = targetView;
+
             vfxManager.PlayVfx(
                 visual.TickDamageVfx,
                 request.TargetPart != null
                     ? BattleVfxAnchorType.TargetBodyPart
                     : BattleVfxAnchorType.TargetRoot,
-                new BattleVfxContext
-                {
-                    Target = request.Target,
-                    TargetView = targetView,
-                    TargetPart = request.TargetPart,
-                    Damage = request.Damage
-                });
+                context);
         }
 
         if (logDebug)
         {
             Debug.Log(
-                $"[BattleStatusVisualDirector] Tick VFX / " +
+                $"[BattleStatusVisualDirector] Tick / " +
                 $"Status={request.StatusKey}, Damage={request.Damage}, " +
                 $"Target={request.Target.Data?.CharacterName}");
         }
@@ -183,5 +213,21 @@ public class BattleStatusVisualDirector : MonoBehaviour
 
         if (damageNumberManager == null)
             damageNumberManager = FindFirstObjectByType<DamageNumberManager>();
+    }
+
+    private sealed class QueuedStatusVisual
+    {
+        public StatusDamageVisualRequest DamageRequest;
+        public StatusEffectLifecycleVisualRequest LifecycleRequest;
+
+        public static QueuedStatusVisual ForDamage(StatusDamageVisualRequest request)
+        {
+            return new QueuedStatusVisual { DamageRequest = request };
+        }
+
+        public static QueuedStatusVisual ForLifecycle(StatusEffectLifecycleVisualRequest request)
+        {
+            return new QueuedStatusVisual { LifecycleRequest = request };
+        }
     }
 }

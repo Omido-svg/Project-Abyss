@@ -1,146 +1,95 @@
+using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 [CreateAssetMenu(
-    menuName = "Battle/Skill Effect/Olaf/Prestige Effect",
-    fileName = "OlafPrestigeEffect")]
-public class OlafPrestigeEffect : SkillEffectDefinition
+    menuName = "Battle/Skill Effect/Olaf/Break Own Part",
+    fileName = "OlafBreakOwnPartEffect")]
+public class OlafBreakOwnPartEffect : SkillEffectDefinition
 {
-    [Header("Bleeding Explosion")]
-    [SerializeField] private bool consumeBleeding = true;
-    [SerializeField] private int damagePerBleedingStack = 1;
+    [FormerlySerializedAs("PriorityParts")]
+    [SerializeField]
+    private PartType[] priorityParts;
 
-    [Header("Madness Bonus")]
-    [SerializeField] private bool consumeMadness = true;
-    [SerializeField] private int damagePerMadness = 2;
-
-    [Header("Break")]
-    [SerializeField] private bool forceBreakTargetPart = true;
+    [Tooltip("true면 마지막 남은 부위도 파괴할 수 있습니다.")]
+    [SerializeField]
+    private bool allowBreakLastPart;
 
     public override void Apply(
         SkillEffectContext context)
     {
-        if (context?.Owner == null ||
-            context.Target == null ||
+        if (context?.Owner is not Olaf olaf ||
             context.Resolver == null)
         {
             return;
         }
 
-        Character owner = context.Owner;
-        Character target = context.Target;
-        BodyPart targetPart = context.TargetPart;
+        BodyPart part =
+            FindPartToBreak(olaf);
 
-        OlafMadnessMechanic madness =
-            owner.GetMechanic<OlafMadnessMechanic>();
-
-        int bleedingDamage =
-            CalculateBleedingExplosionDamage(
-                context,
-                target,
-                targetPart);
-
-        int madnessDamage =
-            CalculateMadnessBonusDamage(madness);
-
-        int totalExtraDamage =
-            bleedingDamage + madnessDamage;
-
-        if (totalExtraDamage > 0)
+        if (part == null)
         {
-            DamageType damageType =
-                targetPart == null
-                    ? DamageType.Direct
-                    : DamageType.BleedExplosion;
-
-            DamageRequest request =
-                DamageRequest.Custom(
-                    damageType,
-                    owner,
-                    target,
-                    targetPart,
-                    totalExtraDamage,
-                    1f,
-                    true,
-                    false,
-                    false,
-                    false,
-                    true,
-                    context.Action);
-
-            context.ApplyDamage(request);
-        }
-
-        if (forceBreakTargetPart &&
-            targetPart != null &&
-            !targetPart.IsBroken)
-        {
-            EffectRequest request =
-                EffectRequest.ForceBreak(
-                    owner,
-                    target,
-                    targetPart);
-
-            request.SourceAction = context.Action;
-            context.Resolver.ForceBreakPart(request);
+            Debug.LogWarning(
+                $"{olaf.Data.CharacterName} 도사림 실패 : " +
+                "조건을 만족하는 파괴 가능 부위 없음");
+            return;
         }
 
         Debug.Log(
-            $"{owner.Data.CharacterName} 위세 효과 : " +
-            $"{target.Data.CharacterName} " +
-            $"{(targetPart == null ? "SINGLE_HP" : targetPart.Type.ToString())}에 " +
-            $"추가 피해 {totalExtraDamage}, " +
-            $"강제 파괴 {forceBreakTargetPart && targetPart != null}");
+            $"{olaf.Data.CharacterName} 도사림 : " +
+            $"{part.Type} 부위 파괴 / " +
+            $"ActionId={context.Action?.ActionId ?? 0}");
+
+        EffectRequest request =
+            EffectRequest.ForceBreak(
+                olaf,
+                olaf,
+                part);
+
+        request.SourceAction =
+            context.Action;
+
+        context.Resolver.ForceBreakPart(
+            request);
     }
 
-    private int CalculateBleedingExplosionDamage(
-        SkillEffectContext context,
-        Character target,
-        BodyPart targetPart)
+    private BodyPart FindPartToBreak(
+        Olaf olaf)
     {
-        Bleeding bleeding =
-            targetPart != null
-                ? target.GetPartStatus<Bleeding>(targetPart)
-                : target.GetStatus<Bleeding>();
+        if (olaf?.BodyParts == null)
+            return null;
 
-        if (bleeding == null)
-            return 0;
+        List<BodyPart> candidates = new();
 
-        int stack = Mathf.Max(0, bleeding.Stack);
-
-        if (consumeBleeding)
+        foreach (BodyPart part in olaf.BodyParts)
         {
-            if (targetPart != null)
+            if (part != null &&
+                !part.IsBroken)
             {
-                context.Resolver.RemoveBodyPartStatus(
-                    EffectRequest.RemoveBodyPartStatus(
-                        context.Owner,
-                        target,
-                        targetPart,
-                        bleeding));
-            }
-            else
-            {
-                target.RemoveStatus(
-                    bleeding,
-                    StatusEffectRemoveReason.Manual);
+                candidates.Add(part);
             }
         }
 
-        return stack * damagePerBleedingStack;
-    }
+        if (!allowBreakLastPart &&
+            candidates.Count <= 1)
+        {
+            return null;
+        }
 
-    private int CalculateMadnessBonusDamage(
-        OlafMadnessMechanic madness)
-    {
-        if (madness == null)
-            return 0;
+        if (priorityParts != null)
+        {
+            foreach (PartType type in priorityParts)
+            {
+                foreach (BodyPart part in candidates)
+                {
+                    if (part.Type == type)
+                        return part;
+                }
+            }
+        }
 
-        int currentMadness = madness.CurrentMadness;
-        int damage = currentMadness * damagePerMadness;
-
-        if (consumeMadness)
-            madness.ClearMadness();
-
-        return damage;
+        return candidates.Count > 0
+            ? candidates[0]
+            : null;
     }
 }

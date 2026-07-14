@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 public class CharacterBodyPartController
@@ -25,6 +26,7 @@ public class CharacterBodyPartController
     {
         if (owner == null ||
             part == null ||
+            (part.Owner != null && part.Owner != owner) ||
             part.IsBroken ||
             part.IsWeakened)
         {
@@ -67,6 +69,7 @@ public class CharacterBodyPartController
     {
         if (owner == null ||
             part == null ||
+            (part.Owner != null && part.Owner != owner) ||
             part.IsBroken)
         {
             return false;
@@ -104,6 +107,7 @@ public class CharacterBodyPartController
     {
         if (owner == null ||
             part == null ||
+            (part.Owner != null && part.Owner != owner) ||
             part.IsBroken)
         {
             return;
@@ -190,8 +194,12 @@ public class CharacterBodyPartController
 
     public void RecoverPart(BodyPart part)
     {
-        if (owner == null || part == null)
+        if (owner == null ||
+            part == null ||
+            (part.Owner != null && part.Owner != owner))
+        {
             return;
+        }
 
         if (!part.IsBroken && !part.IsWeakened)
             return;
@@ -249,6 +257,7 @@ public class CharacterBodyPartController
         }
 
         int removeCount = 0;
+        HashSet<long> visitedActionIds = new();
 
         while (true)
         {
@@ -259,6 +268,17 @@ public class CharacterBodyPartController
 
             if (slot == null)
                 break;
+
+            // RemoveSlot 구현 이상으로 같은 슬롯이 반복 반환될 경우
+            // 전투 해석을 멈추는 무한 루프를 방지한다.
+            if (!visitedActionIds.Add(slot.ActionId))
+            {
+                Debug.LogWarning(
+                    $"[REMOVE SLOT ABORT] " +
+                    $"{owner.Data?.CharacterName} / {part.Type} / " +
+                    $"ActionId={slot.ActionId}");
+                break;
+            }
 
             actionManager.RemoveSlot(
                 owner,
@@ -283,3 +303,4 @@ public class CharacterBodyPartController
             Debug.LogWarning(message);
     }
 }
+

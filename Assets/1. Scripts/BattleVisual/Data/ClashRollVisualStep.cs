@@ -3,6 +3,9 @@ using System;
 [Serializable]
 public struct ClashRollVisualStep
 {
+    public int RoundIndex;
+
+    // 합 판정에 사용된 최종 수치.
     public int AttackerValue;
     public int TargetValue;
 
@@ -12,23 +15,50 @@ public struct ClashRollVisualStep
     public int AttackerSpeedModifier;
     public int TargetSpeedModifier;
 
-    public bool IsTie =>
-        AttackerValue == TargetValue;
+    public int AttackerMomentumModifier;
+    public int TargetMomentumModifier;
+
+    public bool AttackerCritical;
+    public bool TargetCritical;
+
+    public int AttackerFinalPower =>
+        AttackerRollResult?.FinalPower ??
+        AttackerValue -
+        AttackerSpeedModifier -
+        AttackerMomentumModifier;
+
+    public int TargetFinalPower =>
+        TargetRollResult?.FinalPower ??
+        TargetValue -
+        TargetSpeedModifier -
+        TargetMomentumModifier;
+
+    public int AttackerClashPower => AttackerValue;
+    public int TargetClashPower => TargetValue;
+
+    public bool IsTie => AttackerValue == TargetValue;
+    public bool AttackerWon => AttackerValue > TargetValue;
+    public bool TargetWon => TargetValue > AttackerValue;
 
     public ClashRollVisualStep(
         int attackerValue,
         int targetValue)
+        : this(
+            0,
+            attackerValue,
+            targetValue,
+            null,
+            null,
+            0,
+            0,
+            0,
+            0,
+            false,
+            false)
     {
-        AttackerValue = attackerValue;
-        TargetValue = targetValue;
-
-        AttackerRollResult = null;
-        TargetRollResult = null;
-
-        AttackerSpeedModifier = 0;
-        TargetSpeedModifier = 0;
     }
 
+    // 기존 호출부 호환.
     public ClashRollVisualStep(
         int attackerValue,
         int targetValue,
@@ -36,14 +66,60 @@ public struct ClashRollVisualStep
         RollResult targetRollResult,
         int attackerSpeedModifier,
         int targetSpeedModifier)
+        : this(
+            0,
+            attackerValue,
+            targetValue,
+            attackerRollResult,
+            targetRollResult,
+            attackerSpeedModifier,
+            targetSpeedModifier,
+            attackerRollResult?.MomentumModifier ?? 0,
+            targetRollResult?.MomentumModifier ?? 0,
+            attackerRollResult?.IsCritical ?? false,
+            targetRollResult?.IsCritical ?? false)
     {
+    }
+
+    public ClashRollVisualStep(
+        int roundIndex,
+        int attackerValue,
+        int targetValue,
+        RollResult attackerRollResult,
+        RollResult targetRollResult,
+        int attackerSpeedModifier,
+        int targetSpeedModifier,
+        int attackerMomentumModifier,
+        int targetMomentumModifier,
+        bool attackerCritical,
+        bool targetCritical)
+    {
+        RoundIndex = roundIndex;
         AttackerValue = attackerValue;
         TargetValue = targetValue;
-
         AttackerRollResult = attackerRollResult;
         TargetRollResult = targetRollResult;
-
         AttackerSpeedModifier = attackerSpeedModifier;
         TargetSpeedModifier = targetSpeedModifier;
+        AttackerMomentumModifier = attackerMomentumModifier;
+        TargetMomentumModifier = targetMomentumModifier;
+        AttackerCritical = attackerCritical;
+        TargetCritical = targetCritical;
+    }
+
+    public ClashRollVisualStep Swapped()
+    {
+        return new ClashRollVisualStep(
+            RoundIndex,
+            TargetValue,
+            AttackerValue,
+            TargetRollResult,
+            AttackerRollResult,
+            TargetSpeedModifier,
+            AttackerSpeedModifier,
+            TargetMomentumModifier,
+            AttackerMomentumModifier,
+            TargetCritical,
+            AttackerCritical);
     }
 }

@@ -4,7 +4,8 @@ using UnityEngine;
 
 public class DamageNumberManager : MonoBehaviour
 {
-    private const int MaxPoolSize = 16;
+    [Header("Pool")]
+    [SerializeField, Min(0)] private int maxPoolSize = 16;
 
     [SerializeField] private DamageNumberUI damageNumberPrefab;
     [SerializeField] private Canvas canvas;
@@ -67,6 +68,9 @@ public class DamageNumberManager : MonoBehaviour
             worldCamera.WorldToScreenPoint(
                 worldPosition);
 
+        if (screenPosition.z <= 0f)
+            return;
+
         Camera uiCamera =
             canvas.renderMode == RenderMode.ScreenSpaceOverlay
                 ? null
@@ -104,6 +108,9 @@ public class DamageNumberManager : MonoBehaviour
 
         if (canvasRect == null && canvas != null)
             canvasRect = canvas.transform as RectTransform;
+
+        if (worldCamera == null && canvas != null && canvas.worldCamera != null)
+            worldCamera = canvas.worldCamera;
 
         if (worldCamera == null)
             worldCamera = Camera.main;
@@ -145,7 +152,7 @@ public class DamageNumberManager : MonoBehaviour
 
         number.ResetForPool();
 
-        if (isShuttingDown || numberPool.Count >= MaxPoolSize)
+        if (isShuttingDown || numberPool.Count >= maxPoolSize)
         {
             Destroy(number.gameObject);
             return;
@@ -195,3 +202,5 @@ public class DamageNumberManager : MonoBehaviour
         Destroy(number.gameObject);
     }
 }
+
+

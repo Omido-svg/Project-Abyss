@@ -8,15 +8,46 @@ public class BattleDebugTuner : MonoBehaviour
     [SerializeField] private BattleManager battleManager;
     [SerializeField] private BattleUIManager battleUIManager;
 
+    [Header("Logger")]
+    [SerializeField]
+    private bool configureLogger = true;
+
+    [SerializeField]
+    private BattleLogCategory enabledLogCategories =
+        BattleLogCategory.Combat |
+        BattleLogCategory.Damage |
+        BattleLogCategory.Status |
+        BattleLogCategory.Event;
+
+    [SerializeField]
+    private BattleLogLevel minimumLogLevel =
+        BattleLogLevel.Info;
+
+    [SerializeField]
+    private bool includeRealtimeInLog;
+
+    [SerializeField]
+    private bool includeFrameInLog = true;
+
+    [SerializeField]
+    private bool captureRecentLogs = true;
+
+    [SerializeField, Min(0)]
+    private int recentLogCapacity = 250;
+
+    [SerializeField]
+    private bool clearRecentLogsOnStart = true;
+
     [Header("Apply Option")]
     [SerializeField] private bool liveApply = true;
     [SerializeField] private bool refreshUIAfterApply = true;
-    
+
     [Header("View Refresh")]
     [SerializeField] private bool refreshCharacterViewAfterApply = true;
 
     [Header("Momentum")]
     [SerializeField] private bool overrideMomentum = false;
+
     [Range(-100f, 100f)]
     [SerializeField] private float momentum = 0f;
 
@@ -39,11 +70,22 @@ public class BattleDebugTuner : MonoBehaviour
     private void Awake()
     {
         FindReferences();
+        ApplyLoggerSettings();
+    }
+
+    private void OnEnable()
+    {
+        ApplyLoggerSettings();
     }
 
     private void Start()
     {
         FindReferences();
+
+        if (clearRecentLogsOnStart)
+            BattleDebugLog.ClearRecentMessages();
+
+        ApplyLoggerSettings();
         InitializeDefaultLists();
         Apply();
     }
@@ -61,6 +103,13 @@ public class BattleDebugTuner : MonoBehaviour
 
     private void OnValidate()
     {
+        recentLogCapacity =
+            Mathf.Max(
+                0,
+                recentLogCapacity);
+
+        ApplyLoggerSettings();
+
         if (!Application.isPlaying)
             return;
 
@@ -71,10 +120,46 @@ public class BattleDebugTuner : MonoBehaviour
     private void FindReferences()
     {
         if (battleManager == null)
-            battleManager = FindFirstObjectByType<BattleManager>();
+            battleManager =
+                FindFirstObjectByType<BattleManager>();
 
         if (battleUIManager == null)
-            battleUIManager = FindFirstObjectByType<BattleUIManager>();
+            battleUIManager =
+                FindFirstObjectByType<BattleUIManager>();
+    }
+
+    [ContextMenu("Apply Logger Settings")]
+    public void ApplyLoggerSettings()
+    {
+        if (!configureLogger)
+            return;
+
+        BattleDebugLog.Configure(
+            enabledLogCategories,
+            minimumLogLevel,
+            includeRealtimeInLog,
+            includeFrameInLog,
+            captureRecentLogs,
+            recentLogCapacity);
+    }
+
+    [ContextMenu("Clear Recent Logs")]
+    public void ClearRecentLogs()
+    {
+        BattleDebugLog.ClearRecentMessages();
+    }
+
+    [ContextMenu("Print Logger Configuration")]
+    public void PrintLoggerConfiguration()
+    {
+        BattleDebugLog.Log(
+            BattleLogCategory.Event,
+            $"Logger Configuration / " +
+            $"Categories={BattleDebugLog.EnabledCategories}, " +
+            $"MinimumLevel={BattleDebugLog.MinimumLevel}, " +
+            $"RecentCount={BattleDebugLog.RecentMessages.Count}",
+            BattleLogLevel.Info,
+            this);
     }
 
     [ContextMenu("Initialize Default Lists")]
@@ -92,69 +177,107 @@ public class BattleDebugTuner : MonoBehaviour
 
     private void InitializePlayerPartList()
     {
-        Character player = battleManager.BattleContext.Player;
+        Character player =
+            battleManager.BattleContext.Player;
 
-        if (player == null || player.BodyParts == null)
+        if (player == null ||
+            player.BodyParts == null)
+        {
             return;
+        }
 
         playerParts.Clear();
 
-        for (int i = 0; i < player.BodyParts.Count; i++)
+        for (int i = 0;
+             i < player.BodyParts.Count;
+             i++)
         {
-            BodyPart part = player.BodyParts[i];
+            BodyPart part =
+                player.BodyParts[i];
 
             if (part == null)
                 continue;
 
-            playerParts.Add(new PartTuningValue
-            {
-                partIndex = i,
-                currentHP = Mathf.RoundToInt(part.PartHP),
-                maxHP = Mathf.RoundToInt(part.MaxPartHP),
-                isWeakened = part.IsWeakened,
-                isBroken = part.IsBroken
-            });
+            playerParts.Add(
+                new PartTuningValue
+                {
+                    partIndex = i,
+                    currentHP =
+                        Mathf.RoundToInt(
+                            part.PartHP),
+                    maxHP =
+                        Mathf.RoundToInt(
+                            part.MaxPartHP),
+                    isWeakened =
+                        part.IsWeakened,
+                    isBroken =
+                        part.IsBroken
+                });
         }
     }
 
     private void InitializeEnemyList()
     {
-        List<Character> enemyList = battleManager.BattleContext.Enemies;
+        List<Character> enemyList =
+            battleManager.BattleContext.Enemies;
 
         if (enemyList == null)
             return;
 
         enemies.Clear();
 
-        for (int enemyIndex = 0; enemyIndex < enemyList.Count; enemyIndex++)
+        for (int enemyIndex = 0;
+             enemyIndex < enemyList.Count;
+             enemyIndex++)
         {
-            Character enemy = enemyList[enemyIndex];
+            Character enemy =
+                enemyList[enemyIndex];
 
-            EnemyTuningValue enemyValue = new EnemyTuningValue
-            {
-                enemyIndex = enemyIndex,
-                currentPrestige = GetCurrentPrestige(enemy),
-                maxPrestige = GetMaxPrestige(enemy),
-                parts = new List<PartTuningValue>()
-            };
-
-            if (enemy != null && enemy.BodyParts != null)
-            {
-                for (int partIndex = 0; partIndex < enemy.BodyParts.Count; partIndex++)
+            EnemyTuningValue enemyValue =
+                new EnemyTuningValue
                 {
-                    BodyPart part = enemy.BodyParts[partIndex];
+                    enemyIndex =
+                        enemyIndex,
+                    currentPrestige =
+                        GetCurrentPrestige(
+                            enemy),
+                    maxPrestige =
+                        GetMaxPrestige(
+                            enemy),
+                    parts =
+                        new List<PartTuningValue>()
+                };
+
+            if (enemy != null &&
+                enemy.BodyParts != null)
+            {
+                for (int partIndex = 0;
+                     partIndex <
+                     enemy.BodyParts.Count;
+                     partIndex++)
+                {
+                    BodyPart part =
+                        enemy.BodyParts[partIndex];
 
                     if (part == null)
                         continue;
 
-                    enemyValue.parts.Add(new PartTuningValue
-                    {
-                        partIndex = partIndex,
-                        currentHP = Mathf.RoundToInt(part.PartHP),
-                        maxHP = Mathf.RoundToInt(part.MaxPartHP),
-                        isWeakened = part.IsWeakened,
-                        isBroken = part.IsBroken
-                    });
+                    enemyValue.parts.Add(
+                        new PartTuningValue
+                        {
+                            partIndex =
+                                partIndex,
+                            currentHP =
+                                Mathf.RoundToInt(
+                                    part.PartHP),
+                            maxHP =
+                                Mathf.RoundToInt(
+                                    part.MaxPartHP),
+                            isWeakened =
+                                part.IsWeakened,
+                            isBroken =
+                                part.IsBroken
+                        });
                 }
             }
 
@@ -174,8 +297,12 @@ public class BattleDebugTuner : MonoBehaviour
         ApplyPlayerParts();
         ApplyEnemyParts();
 
-        if (refreshUIAfterApply && battleUIManager != null)
-            battleUIManager.RefreshAllBodyPartButtons();
+        if (refreshUIAfterApply &&
+            battleUIManager != null)
+        {
+            battleUIManager
+                .RefreshAllBodyPartButtons();
+        }
     }
 
     private void ApplyMomentum()
@@ -186,7 +313,9 @@ public class BattleDebugTuner : MonoBehaviour
         if (battleManager.MomentumManager == null)
             return;
 
-        battleManager.MomentumManager.SetMomentumForDebug(momentum);
+        battleManager.MomentumManager
+            .SetMomentumForDebug(
+                momentum);
     }
 
     private void ApplyPlayerPrestige()
@@ -194,13 +323,16 @@ public class BattleDebugTuner : MonoBehaviour
         if (!overridePlayerPrestige)
             return;
 
-        Character player = battleManager.BattleContext.Player;
+        Character player =
+            battleManager.BattleContext.Player;
 
         if (player == null)
             return;
 
         int maxPrestige =
-            Mathf.Max(1, playerMaxPrestige);
+            Mathf.Max(
+                1,
+                playerMaxPrestige);
 
         int currentPrestige =
             Mathf.Clamp(
@@ -209,10 +341,16 @@ public class BattleDebugTuner : MonoBehaviour
                 maxPrestige);
 
         if (player.CurrentStatus != null)
-            player.CurrentStatus.maxPrestige = maxPrestige;
+        {
+            player.CurrentStatus.maxPrestige =
+                maxPrestige;
+        }
 
         if (player.RuntimeStatus != null)
-            player.RuntimeStatus.currentPrestige = currentPrestige;
+        {
+            player.RuntimeStatus.currentPrestige =
+                currentPrestige;
+        }
     }
 
     private void ApplyEnemyPrestige()
@@ -226,23 +364,30 @@ public class BattleDebugTuner : MonoBehaviour
         if (enemyList == null)
             return;
 
-        foreach (EnemyTuningValue enemyValue in enemies)
+        foreach (EnemyTuningValue enemyValue
+                 in enemies)
         {
             if (enemyValue == null)
                 continue;
 
             if (enemyValue.enemyIndex < 0 ||
-                enemyValue.enemyIndex >= enemyList.Count)
+                enemyValue.enemyIndex >=
+                enemyList.Count)
+            {
                 continue;
+            }
 
             Character enemy =
-                enemyList[enemyValue.enemyIndex];
+                enemyList[
+                    enemyValue.enemyIndex];
 
             if (enemy == null)
                 continue;
 
             int maxPrestige =
-                Mathf.Max(1, enemyValue.maxPrestige);
+                Mathf.Max(
+                    1,
+                    enemyValue.maxPrestige);
 
             int currentPrestige =
                 Mathf.Clamp(
@@ -251,10 +396,16 @@ public class BattleDebugTuner : MonoBehaviour
                     maxPrestige);
 
             if (enemy.CurrentStatus != null)
-                enemy.CurrentStatus.maxPrestige = maxPrestige;
+            {
+                enemy.CurrentStatus.maxPrestige =
+                    maxPrestige;
+            }
 
             if (enemy.RuntimeStatus != null)
-                enemy.RuntimeStatus.currentPrestige = currentPrestige;
+            {
+                enemy.RuntimeStatus.currentPrestige =
+                    currentPrestige;
+            }
         }
     }
 
@@ -263,12 +414,15 @@ public class BattleDebugTuner : MonoBehaviour
         if (!overridePlayerParts)
             return;
 
-        Character player = battleManager.BattleContext.Player;
+        Character player =
+            battleManager.BattleContext.Player;
 
         if (player == null)
             return;
 
-        ApplyPartList(player, playerParts);
+        ApplyPartList(
+            player,
+            playerParts);
     }
 
     private void ApplyEnemyParts()
@@ -276,26 +430,35 @@ public class BattleDebugTuner : MonoBehaviour
         if (!overrideEnemyParts)
             return;
 
-        List<Character> enemyList = battleManager.BattleContext.Enemies;
+        List<Character> enemyList =
+            battleManager.BattleContext.Enemies;
 
         if (enemyList == null)
             return;
 
-        foreach (EnemyTuningValue enemyValue in enemies)
+        foreach (EnemyTuningValue enemyValue
+                 in enemies)
         {
             if (enemyValue == null)
                 continue;
 
             if (enemyValue.enemyIndex < 0 ||
-                enemyValue.enemyIndex >= enemyList.Count)
+                enemyValue.enemyIndex >=
+                enemyList.Count)
+            {
                 continue;
+            }
 
-            Character enemy = enemyList[enemyValue.enemyIndex];
+            Character enemy =
+                enemyList[
+                    enemyValue.enemyIndex];
 
             if (enemy == null)
                 continue;
 
-            ApplyPartList(enemy, enemyValue.parts);
+            ApplyPartList(
+                enemy,
+                enemyValue.parts);
         }
     }
 
@@ -303,25 +466,29 @@ public class BattleDebugTuner : MonoBehaviour
         Character character,
         List<PartTuningValue> values)
     {
-        if (character == null)
+        if (character == null ||
+            character.BodyParts == null ||
+            values == null)
+        {
             return;
+        }
 
-        if (character.BodyParts == null)
-            return;
-
-        if (values == null)
-            return;
-
-        foreach (PartTuningValue value in values)
+        foreach (PartTuningValue value
+                 in values)
         {
             if (value == null)
                 continue;
 
             if (value.partIndex < 0 ||
-                value.partIndex >= character.BodyParts.Count)
+                value.partIndex >=
+                character.BodyParts.Count)
+            {
                 continue;
+            }
 
-            BodyPart part = character.BodyParts[value.partIndex];
+            BodyPart part =
+                character.BodyParts[
+                    value.partIndex];
 
             if (part == null)
                 continue;
@@ -334,23 +501,29 @@ public class BattleDebugTuner : MonoBehaviour
         }
 
         character.ForceRecalculateHP();
-
         RefreshCharacterView(character);
     }
-    
-    private void RefreshCharacterView(Character character)
-    {
-        if (!refreshCharacterViewAfterApply)
-            return;
 
-        if (character == null)
+    private void RefreshCharacterView(
+        Character character)
+    {
+        if (!refreshCharacterViewAfterApply ||
+            character == null)
+        {
             return;
+        }
 
         CharacterView characterView =
-            character.GetComponent<CharacterView>();
+            character
+                .GetComponent<CharacterView>();
 
         if (characterView == null)
-            characterView = character.GetComponentInChildren<CharacterView>();
+        {
+            characterView =
+                character
+                    .GetComponentInChildren<
+                        CharacterView>();
+        }
 
         if (characterView == null)
             return;
@@ -358,37 +531,33 @@ public class BattleDebugTuner : MonoBehaviour
         characterView.RefreshVisualState();
     }
 
-    private int GetCurrentPrestige(Character character)
+    private static int GetCurrentPrestige(
+        Character character)
     {
-        if (character == null)
+        if (character?.RuntimeStatus == null)
             return 0;
 
-        if (character.RuntimeStatus == null)
-            return 0;
-
-        return character.RuntimeStatus.currentPrestige;
+        return character
+            .RuntimeStatus
+            .currentPrestige;
     }
 
-    private int GetMaxPrestige(Character character)
+    private static int GetMaxPrestige(
+        Character character)
     {
-        if (character == null)
+        if (character?.CurrentStatus == null)
             return 100;
 
-        if (character.CurrentStatus == null)
-            return 100;
-
-        return character.CurrentStatus.maxPrestige;
+        return character
+            .CurrentStatus
+            .maxPrestige;
     }
 
     private bool IsReady()
     {
-        if (battleManager == null)
-            return false;
-
-        if (battleManager.BattleContext == null)
-            return false;
-
-        return true;
+        return
+            battleManager != null &&
+            battleManager.BattleContext != null;
     }
 }
 
@@ -400,8 +569,8 @@ public class PartTuningValue
     public int currentHP = 50;
     public int maxHP = 50;
 
-    public bool isWeakened = false;
-    public bool isBroken = false;
+    public bool isWeakened;
+    public bool isBroken;
 }
 
 [Serializable]
@@ -410,9 +579,10 @@ public class EnemyTuningValue
     public int enemyIndex;
 
     [Header("Prestige")]
-    public int currentPrestige = 0;
+    public int currentPrestige;
     public int maxPrestige = 100;
 
     [Header("Parts")]
-    public List<PartTuningValue> parts = new();
+    public List<PartTuningValue> parts =
+        new();
 }

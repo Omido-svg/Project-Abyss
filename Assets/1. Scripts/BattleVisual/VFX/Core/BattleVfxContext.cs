@@ -1,9 +1,10 @@
-using System;
 using UnityEngine;
 
 public class BattleVfxContext
 {
     public BattleAction SourceAction;
+    public DamageContext DamageContext;
+    public DamageResult DamageResult;
 
     public Character Attacker;
     public Character Target;
@@ -20,18 +21,19 @@ public class BattleVfxContext
     public BodyPart TargetPart;
 
     public TargetPoint ResolvedTargetPoint =>
-        new TargetPoint(
-            Target,
-            TargetPart);
+        new TargetPoint(Target, TargetPart);
 
     public bool IsCharacterLevelTarget =>
-        Target != null &&
-        TargetPart == null;
+        Target != null && TargetPart == null;
 
     public int HitIndex = -1;
     public int Damage = 0;
 
+    public bool HasWorldPosition;
     public Vector3 WorldPosition;
+
+    public string StatusKey;
+    public StatusEffectVisualPhase? StatusPhase;
 
     public CharacterView AttackerView
     {
@@ -43,9 +45,7 @@ public class BattleVfxContext
                     attackerView,
                     attackerViewResolved))
             {
-                attackerView =
-                    BattleCameraTargetResolver.GetView(Attacker);
-
+                attackerView = BattleCameraTargetResolver.GetView(Attacker);
                 attackerViewOwner = Attacker;
                 attackerViewResolved = true;
             }
@@ -70,9 +70,7 @@ public class BattleVfxContext
                     targetView,
                     targetViewResolved))
             {
-                targetView =
-                    BattleCameraTargetResolver.GetView(Target);
-
+                targetView = BattleCameraTargetResolver.GetView(Target);
                 targetViewOwner = Target;
                 targetViewResolved = true;
             }
@@ -98,12 +96,38 @@ public class BattleVfxContext
         return new BattleVfxContext
         {
             SourceAction = request.SourceAction,
+            DamageContext = request.DamageContext,
+            DamageResult = request.DamageResult,
             Attacker = request.Attacker,
             Target = request.Target,
-            AttackerPart =
-                request.SourceAction?.OwnerPart,
+            AttackerPart = request.AttackerPart,
             TargetPart = request.TargetPart,
             HitIndex = hitIndex,
+            Damage = damage,
+            HasWorldPosition = request.HasWorldPosition,
+            WorldPosition = request.WorldPosition
+        };
+    }
+
+    public static BattleVfxContext ForStatus(
+        Character target,
+        BodyPart targetPart,
+        string statusKey,
+        StatusEffectVisualPhase phase,
+        int damage = 0,
+        DamageContext damageContext = null)
+    {
+        return new BattleVfxContext
+        {
+            Attacker = damageContext?.Attacker,
+            AttackerPart = damageContext?.Action?.OwnerPart,
+            Target = target,
+            TargetPart = targetPart,
+            SourceAction = damageContext?.Action,
+            DamageContext = damageContext,
+            DamageResult = damageContext?.Result,
+            StatusKey = statusKey,
+            StatusPhase = phase,
             Damage = damage
         };
     }
@@ -118,8 +142,7 @@ public class BattleVfxContext
         targetViewResolved = false;
     }
 
-    internal void BindPlayback(
-        BattleVisualPlaybackState playbackState)
+    internal void BindPlayback(BattleVisualPlaybackState playbackState)
     {
         playback = playbackState;
     }
@@ -132,17 +155,20 @@ public class BattleVfxContext
                 !playback.IsCleanedUp);
     }
 
-    internal void TrackSpawnedVfx(
-        GameObject instance)
+    internal void TrackSpawnedVfx(BattleVfxInstance instance)
     {
-        if (playback == null ||
-            instance == null ||
-            !CanPlayVfx())
-        {
+        if (playback == null || instance == null || !CanPlayVfx())
             return;
-        }
 
-        playback.SpawnedVfxInstances.Add(instance);
+        playback.TrackVfx(instance);
+    }
+
+    internal bool TryMarkCuePlayed(string runtimeKey)
+    {
+        if (string.IsNullOrEmpty(runtimeKey))
+            return true;
+
+        return playback == null || playback.TryMarkVfxCue(runtimeKey);
     }
 
     private static bool ShouldResolveView(
@@ -151,15 +177,9 @@ public class BattleVfxContext
         CharacterView cachedView,
         bool wasResolved)
     {
-        if (!wasResolved ||
-            !ReferenceEquals(character, cachedOwner))
-        {
+        if (!wasResolved || !ReferenceEquals(character, cachedOwner))
             return true;
-        }
 
-        // Unity's destroyed-object null differs from a real cached miss. A real
-        // null is kept for this short-lived context; a destroyed view is retried.
-        return !ReferenceEquals(cachedView, null) &&
-               cachedView == null;
+        return !ReferenceEquals(cachedView, null) && cachedView == null;
     }
 }

@@ -26,14 +26,24 @@ public abstract class Character : MonoBehaviour
     private CharacterBuildController buildController;
     private CharacterResourceController resourceController;
     private CharacterLifeController lifeController;
+    private CharacterMechanicController mechanicController;
 
-    private DamageContext activeDamageContext;
+    private readonly CharacterCombatState combatState = new();
+    private readonly CharacterEventBinder eventBinder = new();
+    private readonly List<Skill> characterSkills = new();
+
+    private CharacterTargetModel targetModel;
+
+    public CharacterCombatState CombatState => combatState;
+
+    public bool IsInitialized =>
+        combatState.IsInitialized;
 
     public DamageContext ActiveDamageContext =>
-        activeDamageContext;
+        combatState.ActiveDamageContext;
 
     public bool IsDamageResolutionInProgress =>
-        activeDamageContext != null;
+        combatState.IsDamageResolutionInProgress;
 
     public int CurrentHP
     {
@@ -57,8 +67,6 @@ public abstract class Character : MonoBehaviour
         }
     }
 
-    private CharacterMechanicController mechanicController;
-
     public IReadOnlyList<CombatMechanic> Mechanics
     {
         get
@@ -76,22 +84,27 @@ public abstract class Character : MonoBehaviour
 
     public abstract IReadOnlyList<BodyPart> BodyParts { get; }
 
-    public ICombatTargetModel TargetModel { get; private set; }
+    // 기존 외부 코드 호환용 ICombatTargetModel 노출.
+    public ICombatTargetModel TargetModel =>
+        targetModel?.Model;
+
+    public CharacterTargetModel Targeting =>
+        targetModel;
 
     public bool UsesBodyParts =>
-        TargetModel?.UsesBodyParts ??
+        targetModel?.UsesBodyParts ??
         (BodyParts != null && BodyParts.Count > 0);
 
     public bool IsSingleHpTarget =>
-        TargetModel != null &&
-        !TargetModel.UsesBodyParts;
+        targetModel != null &&
+        !targetModel.UsesBodyParts;
 
     public int MaxCombatHP
     {
         get
         {
-            if (TargetModel != null)
-                return TargetModel.GetMaxHp(this);
+            if (targetModel != null)
+                return targetModel.GetMaxHp(this);
 
             return Mathf.Max(1, CurrentHP);
         }
@@ -175,143 +188,198 @@ public abstract class Character : MonoBehaviour
     {
         if (context == null)
         {
-            Debug.LogWarning($"{GetType().Name} Initialize 실패 : BattleContext가 null입니다.");
+            Debug.LogWarning(
+                $"{GetType().Name} Initialize 실패 : BattleContext가 null입니다.");
             return;
         }
+
+        // 같은 GameObject를 전투 재시작에서 다시 사용할 수 있으므로
+        // 이전 Skill/Mechanic/Status 구독을 먼저 완전히 해제한다.
+        ShutdownRuntime(clearBattleReferences: true);
+        combatState.BeginInitialization();
 
         battleContext = context;
         battleEvent = context._battleEvent;
 
-        resourceController =
-            new CharacterResourceController(this);
-
-        resourceController.Reset();
-
-        mechanicController =
-            new CharacterMechanicController(this);
-
-        mechanicController.Clear();
-
-        lifeController =
-            new CharacterLifeController(
-                this,
-                mechanicController);
-
-        lifeController.Reset();
-
-        buildController =
-            new CharacterBuildController(
-                this,
-                equippedItems,
-                equippedAugments);
-
-        //--------------------------------
-        // 1. 기본 부위 / 기본 스킬 생성
-        //--------------------------------
-
-        BuildBodyParts();
-
-        //--------------------------------
-        // 2. 아이템이 스킬 목록 수정
-        //--------------------------------
-
-        buildController.ApplyItemSkillModifiers(
-            BodyParts);
-
-        //--------------------------------
-        // 3. 스킬 초기화
-        //--------------------------------
-
-        foreach (BodyPart part in BodyParts)
+        try
         {
-            if (part == null)
-                continue;
+            resourceController ??=
+                new CharacterResourceController(this);
+            resourceController.Reset();
 
-            part.Initialize(this);
+            mechanicController ??=
+                new CharacterMechanicController(this);
+            mechanicController.Reset();
 
-            foreach (Skill skill in part.AvailableSkills)
+            buildController =
+                new CharacterBuildController(
+                    this,
+                    equippedItems,
+                    equippedAugments);
+
+            //--------------------------------
+            // 1. 부위와 스킬 런타임 객체 생성
+            //--------------------------------
+            BuildBodyParts();
+
+            buildController.ApplyItemSkillModifiers(
+                BodyParts);
+
+            if (BodyParts != null)
             {
-                if (skill == null)
-                    continue;
+                foreach (BodyPart part in BodyParts)
+                {
+                    part?.Initialize(this);
+                }
+            }
 
-                skill.Initialize(this, battleEvent);
+            //--------------------------------
+            // 2. 스탯과 타겟 모델 구성
+            //--------------------------------
+            RecalculateStatus();
+
+            CurrentStatus ??=
+                new CurrentStatus(data);
+
+            buildController.ApplyStatusModifiers(
+                CurrentStatus);
+
+            buildController.ApplyBodyPartModifiers(
+                BodyParts);
+
+            targetModel =
+                new CharacterTargetModel(
+                    CreateCombatTargetModel());
+
+            RuntimeStatus =
+                new RuntimeStatus(CurrentStatus);
+
+            RuntimeStatus.currentHP =
+                CalculateInitialHP();
+
+            //--------------------------------
+            // 3. 런타임 컨트롤러 구성
+            //--------------------------------
+            bodyPartController =
+                new CharacterBodyPartController(this);
+
+            statusController =
+                new CharacterStatusController(this);
+
+            damageController =
+                new CharacterDamageController(
+                    this,
+                    bodyPartController);
+
+            lifeController =
+                new CharacterLifeController(
+                    this,
+                    mechanicController,
+                    combatState);
+
+            lifeController.Reset();
+
+            //--------------------------------
+            // 4. 모든 런타임 Skill 이벤트 구독
+            //--------------------------------
+            characterSkills.Clear();
+
+            IEnumerable<Skill> extraSkills =
+                GetCharacterSkills();
+
+            if (extraSkills != null)
+            {
+                foreach (Skill skill in extraSkills)
+                {
+                    if (skill != null)
+                        characterSkills.Add(skill);
+                }
+            }
+
+            eventBinder.BindSkills(
+                this,
+                battleEvent,
+                BodyParts,
+                characterSkills);
+
+            //--------------------------------
+            // 5. 메커닉 생성 및 구독
+            //--------------------------------
+            BuildMechanics();
+
+            foreach (CombatMechanic mechanic
+                     in buildController.CreateMechanics())
+            {
+                AddMechanic(mechanic);
+            }
+
+            mechanicController.InitializeAndRegisterAll(
+                battleContext);
+
+            RuntimeStatus.Clamp(
+                CurrentStatus,
+                MaxCombatHP);
+
+            combatState.CompleteInitialization();
+        }
+        catch (System.Exception exception)
+        {
+            Debug.LogException(exception, this);
+            ShutdownRuntime(clearBattleReferences: true);
+            combatState.FailInitialization();
+        }
+    }
+
+    private void ShutdownRuntime(
+        bool clearBattleReferences)
+    {
+        eventBinder.UnbindAll();
+        mechanicController?.Reset();
+
+        statusController?.ClearAll(
+            StatusEffectRemoveReason.Cleared,
+            raiseEvents: false);
+
+        // StatusController가 아직 없던 초기화 실패도 안전하게 정리한다.
+        if (statusController == null &&
+            BodyParts != null)
+        {
+            foreach (BodyPart part in BodyParts)
+            {
+                part?.ClearStatusEffects();
             }
         }
 
-        foreach (Skill skill in GetCharacterSkills())
-        {
-            if (skill == null)
-                continue;
+        characterSkills.Clear();
+        combatState.ClearDamageResolution();
 
-            skill.Initialize(this, battleEvent);
-        }
+        damageController = null;
+        bodyPartController = null;
+        statusController = null;
+        buildController = null;
+        lifeController = null;
+        targetModel = null;
+        CurrentStatus = null;
+        RuntimeStatus = null;
 
-        //--------------------------------
-        // 4. 기본 스탯 재계산
-        //--------------------------------
+        if (!clearBattleReferences)
+            return;
 
-        RecalculateStatus();
-
-        //--------------------------------
-        // 5. 아이템/증강 스탯 적용
-        //--------------------------------
-
-        buildController.ApplyStatusModifiers(
-            CurrentStatus);
-
-        //--------------------------------
-        // 6. 부위 스탯 적용
-        //--------------------------------
-
-        buildController.ApplyBodyPartModifiers(
-            BodyParts);
-
-        //--------------------------------
-        // 7. 타겟 모델 / 런타임 스탯 생성
-        //--------------------------------
-
-        TargetModel =
-            CreateCombatTargetModel();
-
-        RuntimeStatus =
-            new RuntimeStatus(CurrentStatus);
-
-        RuntimeStatus.currentHP =
-            CalculateInitialHP();
-
-        bodyPartController =
-            new CharacterBodyPartController(this);
-
-        statusController =
-            new CharacterStatusController(this);
-
-        damageController =
-            new CharacterDamageController(
-                this,
-                bodyPartController);
-
-        //--------------------------------
-        // 8. 기본 메커닉 생성
-        //--------------------------------
-
-        BuildMechanics();
-
-        //--------------------------------
-        // 9. 아이템/증강 메커닉 생성
-        //--------------------------------
-
-        foreach (CombatMechanic mechanic in buildController.CreateMechanics())
-        {
-            AddMechanic(mechanic);
-        }
-
-        //--------------------------------
-        // 10. 메커닉 초기화/등록
-        //--------------------------------
-
-        mechanicController.InitializeAndRegisterAll(
-            battleContext);
+        battleEvent = null;
+        battleContext = null;
     }
+
+    public virtual void DisposeRuntime()
+    {
+        ShutdownRuntime(clearBattleReferences: true);
+        combatState.Dispose();
+    }
+
+    protected virtual void OnDestroy()
+    {
+        DisposeRuntime();
+    }
+
     public virtual void UnregisterMechanics()
     {
         mechanicController?.UnregisterAll();
@@ -326,17 +394,33 @@ public abstract class Character : MonoBehaviour
 
     protected virtual ICombatTargetModel CreateCombatTargetModel()
     {
-        if (BodyParts != null &&
-            BodyParts.Count > 0)
-        {
-            return new BodyPartTargetModel();
-        }
-
-        return new SingleHpTargetModel(1);
+        return CharacterTargetModel.CreateDefault(
+            this,
+            data);
     }
 
     protected virtual void BuildMechanics()
     {
+    }
+
+    public bool IsValidTargetPart(
+        BodyPart part,
+        bool allowBrokenPart = false)
+    {
+        return targetModel != null &&
+               targetModel.IsValidTargetPart(
+                   this,
+                   part,
+                   allowBrokenPart);
+    }
+
+    public IReadOnlyList<TargetPoint> GetTargetPoints(
+        bool includeBrokenParts = false)
+    {
+        return targetModel?.GetTargetPoints(
+                   this,
+                   includeBrokenParts) ??
+               System.Array.Empty<TargetPoint>();
     }
 
     protected void AddMechanic(CombatMechanic mechanic)
@@ -388,6 +472,9 @@ public abstract class Character : MonoBehaviour
     {
         List<BodyPart> candidates = new();
 
+        if (BodyParts == null)
+            return null;
+
         foreach (BodyPart part in BodyParts)
         {
             if (part == null)
@@ -408,11 +495,11 @@ public abstract class Character : MonoBehaviour
 
     private int CalculateInitialHP()
     {
-        if (TargetModel != null)
+        if (targetModel != null)
         {
             return Mathf.Max(
                 0,
-                TargetModel.CalculateInitialHp(this));
+                targetModel.CalculateInitialHp(this));
         }
 
         int hp = 0;
@@ -452,7 +539,7 @@ public abstract class Character : MonoBehaviour
 
     public virtual void TurnStart()
     {
-        if (IsDead)
+        if (!IsInitialized || IsDead)
             return;
 
         statusController?.OnTurnStart();
@@ -460,7 +547,7 @@ public abstract class Character : MonoBehaviour
 
     public virtual void TurnEnd()
     {
-        if (IsDead)
+        if (!IsInitialized || IsDead)
             return;
 
         statusController?.OnTurnEnd();
@@ -473,14 +560,13 @@ public abstract class Character : MonoBehaviour
     internal void BeginDamageResolution(
         DamageContext context)
     {
-        activeDamageContext = context;
+        combatState.BeginDamageResolution(context);
     }
 
     internal void EndDamageResolution(
         DamageContext context)
     {
-        if (activeDamageContext == context)
-            activeDamageContext = null;
+        combatState.EndDamageResolution(context);
     }
 
     //------------------------------------------------
@@ -541,15 +627,18 @@ public abstract class Character : MonoBehaviour
             return;
 
         RuntimeStatus.currentHP =
-            CalculateInitialHP();
+            Mathf.Clamp(
+                CalculateInitialHP(),
+                0,
+                MaxCombatHP);
     }
 
     public bool TryBreakWeakenedPart(BodyPart part)
     {
         return TryBreakWeakenedPart(
             part,
-            activeDamageContext?.Attacker,
-            activeDamageContext?.Action);
+            ActiveDamageContext?.Attacker,
+            ActiveDamageContext?.Action);
     }
 
     public bool TryBreakWeakenedPart(
@@ -601,8 +690,8 @@ public abstract class Character : MonoBehaviour
     public virtual void CheckDead()
     {
         CheckDead(
-            activeDamageContext?.Attacker,
-            activeDamageContext?.Action);
+            ActiveDamageContext?.Attacker,
+            ActiveDamageContext?.Action);
     }
 
     public virtual void CheckDead(
@@ -634,7 +723,7 @@ public abstract class Character : MonoBehaviour
         Die(
             null,
             null,
-            activeDamageContext);
+            ActiveDamageContext);
     }
 
     public virtual void Die(
@@ -795,6 +884,48 @@ public abstract class Character : MonoBehaviour
         resourceController.AddPrestige(amount);
     }
 
+    public int GetCustomResource(string key)
+    {
+        return resourceController?.GetResource(key) ?? 0;
+    }
+
+    public void SetCustomResource(
+        string key,
+        int value,
+        int max = int.MaxValue)
+    {
+        resourceController?.SetResource(
+            key,
+            value,
+            max);
+    }
+
+    public void AddCustomResource(
+        string key,
+        int amount,
+        int max = int.MaxValue)
+    {
+        resourceController?.AddResource(
+            key,
+            amount,
+            max);
+    }
+
+    public bool TryConsumeCustomResource(
+        string key,
+        int amount)
+    {
+        return resourceController != null &&
+               resourceController.TryConsumeResource(
+                   key,
+                   amount);
+    }
+
+    public CharacterRuntimeSnapshot CaptureRuntimeSnapshot()
+    {
+        return CharacterRuntimeSnapshot.Capture(this);
+    }
+
     //------------------------------------------------
 
     public int ModifyRoll(
@@ -846,7 +977,8 @@ public abstract class Character : MonoBehaviour
             if (!IsSingleHpTarget)
                 return false;
         }
-        else if (part.IsBroken)
+        else if ((part.Owner != null && part.Owner != this) ||
+                 part.IsBroken)
         {
             return false;
         }
@@ -1033,3 +1165,4 @@ public abstract class Character : MonoBehaviour
             sourceEffect);
     }
 }
+

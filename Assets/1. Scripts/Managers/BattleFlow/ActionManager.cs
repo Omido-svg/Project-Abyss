@@ -3,15 +3,53 @@ using System.Collections.Generic;
 using System.Text;
 using UnityEngine;
 
-public class ActionManager
+public class ActionManager : IDisposable
 {
     private readonly List<ActionSlot> slots = new();
 
     private long nextActionId = 1;
+    private bool isDisposed;
+    private bool hasLoggedDisposedMutation;
 
     public IReadOnlyList<ActionSlot> Slots => slots;
+    public bool IsDisposed => isDisposed;
 
     public void Clear()
+    {
+        if (isDisposed)
+            return;
+
+        ClearInternal();
+    }
+
+    public void ResetForBattle()
+    {
+        if (!EnsureWritable(nameof(ResetForBattle)))
+            return;
+
+        ClearInternal();
+        nextActionId = 1;
+        hasLoggedDisposedMutation = false;
+    }
+
+    public IReadOnlyList<ActionSlot> CreateExecutionSnapshot()
+    {
+        if (isDisposed || slots.Count == 0)
+            return Array.Empty<ActionSlot>();
+
+        return GetAllSlots();
+    }
+
+    public void Dispose()
+    {
+        if (isDisposed)
+            return;
+
+        ClearInternal();
+        isDisposed = true;
+    }
+
+    private void ClearInternal()
     {
         ClearTargetSlotLinks();
         slots.Clear();
@@ -24,7 +62,8 @@ public class ActionManager
 
     public void AddSlot(ActionSlot slot)
     {
-        if (slot == null)
+        if (!EnsureWritable(nameof(AddSlot)) ||
+            slot == null)
             return;
 
         NormalizeForAdd(slot);
@@ -43,7 +82,8 @@ public class ActionManager
 
     public void AddOrReplaceSlot(ActionSlot slot)
     {
-        if (slot == null)
+        if (!EnsureWritable(nameof(AddOrReplaceSlot)) ||
+            slot == null)
             return;
 
         if (slot.ActionIndex < 0)
@@ -92,7 +132,8 @@ public class ActionManager
 
     public bool RemoveSlot(ActionSlot slot)
     {
-        if (slot == null)
+        if (!EnsureWritable(nameof(RemoveSlot)) ||
+            slot == null)
             return false;
 
         ActionSlot storedSlot = slot;
@@ -164,6 +205,9 @@ public class ActionManager
         Character owner,
         BodyPart part)
     {
+        if (!EnsureWritable(nameof(RemoveSlots)))
+            return 0;
+
         return RemoveWhere(
             slot =>
                 slot.Owner == owner &&
@@ -173,7 +217,8 @@ public class ActionManager
     public void RemoveSlotsByOwner(
         Character owner)
     {
-        if (owner == null)
+        if (!EnsureWritable(nameof(RemoveSlotsByOwner)) ||
+            owner == null)
             return;
 
         RemoveWhere(
@@ -185,6 +230,9 @@ public class ActionManager
         BodyPart part,
         int actionIndex)
     {
+        if (isDisposed)
+            return null;
+
         foreach (ActionSlot slot in slots)
         {
             if (slot == null)
@@ -211,6 +259,9 @@ public class ActionManager
         Character owner,
         BodyPart part)
     {
+        if (isDisposed)
+            return null;
+
         ActionSlot result = null;
 
         foreach (ActionSlot slot in slots)
@@ -239,7 +290,8 @@ public class ActionManager
     public ActionSlot FindSlotById(
         long actionId)
     {
-        if (actionId <= 0)
+        if (isDisposed ||
+            actionId <= 0)
             return null;
 
         foreach (ActionSlot slot in slots)
@@ -296,6 +348,9 @@ public class ActionManager
     public int CountSlots(
         Character owner)
     {
+        if (isDisposed)
+            return 0;
+
         int count = 0;
 
         foreach (ActionSlot slot in slots)
@@ -312,6 +367,9 @@ public class ActionManager
 
     public List<ActionSlot> GetAllSlots()
     {
+        if (isDisposed)
+            return new List<ActionSlot>();
+
         List<ActionSlot> result =
             new(slots);
 
@@ -551,6 +609,23 @@ public class ActionManager
             $"Speed      : {slot.Speed}\n" +
             $"Phase      : {slot.Phase}\n" +
             $"TargetSlot : {targetSlotName}";
+    }
+
+    private bool EnsureWritable(string operation)
+    {
+        if (!isDisposed)
+            return true;
+
+        if (!hasLoggedDisposedMutation)
+        {
+            hasLoggedDisposedMutation = true;
+
+            Debug.LogWarning(
+                "[ActionManager] Dispose 이후 변경 요청을 무시합니다. " +
+                $"Operation={operation}");
+        }
+
+        return false;
     }
 
     private static string GetCharacterName(

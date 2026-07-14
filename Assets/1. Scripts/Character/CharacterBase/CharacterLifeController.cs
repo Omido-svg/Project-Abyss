@@ -1,23 +1,37 @@
 using UnityEngine;
 
-public class CharacterLifeController
+public sealed class CharacterLifeController
 {
     private readonly Character owner;
     private readonly CharacterMechanicController mechanicController;
+    private readonly CharacterCombatState combatState;
 
-    public bool IsDead { get; private set; }
+    public bool IsDead =>
+        combatState?.IsDead ?? false;
 
     public CharacterLifeController(
         Character owner,
         CharacterMechanicController mechanicController)
+        : this(
+            owner,
+            mechanicController,
+            new CharacterCombatState())
+    {
+    }
+
+    public CharacterLifeController(
+        Character owner,
+        CharacterMechanicController mechanicController,
+        CharacterCombatState combatState)
     {
         this.owner = owner;
         this.mechanicController = mechanicController;
+        this.combatState = combatState;
     }
 
     public void Reset()
     {
-        IsDead = false;
+        combatState?.MarkAlive();
     }
 
     public void CheckDead(
@@ -38,7 +52,7 @@ public class CharacterLifeController
 
     public bool CanDie()
     {
-        if (owner == null)
+        if (owner == null || IsDead)
             return false;
 
         if (mechanicController != null &&
@@ -53,14 +67,11 @@ public class CharacterLifeController
             return true;
         }
 
-        ICombatTargetModel targetModel =
-            owner.TargetModel;
+        CharacterTargetModel targetModel =
+            owner.Targeting;
 
-        if (targetModel == null)
-            return false;
-
-        return targetModel.IsStructureDestroyed(
-            owner);
+        return targetModel != null &&
+               targetModel.IsStructureDestroyed(owner);
     }
 
     public void Die(
@@ -71,14 +82,13 @@ public class CharacterLifeController
         if (owner == null || IsDead)
             return;
 
-        IsDead = true;
+        combatState?.MarkDead();
 
         Debug.Log(
-            $"{owner.Data.CharacterName} 사망");
+            $"{owner.Data?.CharacterName ?? owner.name} 사망");
 
-        // 표준 DamageManager 처리 중이라면
-        // HP/부위 적용이 모두 끝난 뒤 DamageEventDispatcher가
-        // Death/Kill 이벤트를 한 번만 발행한다.
+        // 표준 DamageManager 처리 중에는 최종 스냅샷을 만든 뒤
+        // DamageEventDispatcher가 Death/Kill 이벤트를 한 번만 발행한다.
         if (damageContext != null ||
             owner.IsDamageResolutionInProgress)
         {

@@ -1,10 +1,8 @@
 using System.Collections.Generic;
-using UnityEngine;
 
 internal sealed class BattleVisualPlaybackState
 {
-    public BattleVisualPlaybackState(
-        BattleVisualRequest request)
+    public BattleVisualPlaybackState(BattleVisualRequest request)
     {
         Request = request;
     }
@@ -12,7 +10,8 @@ internal sealed class BattleVisualPlaybackState
     public BattleVisualRequest Request { get; }
 
     public List<int> HitDamages { get; } = new();
-    public List<GameObject> SpawnedVfxInstances { get; } = new();
+    public HashSet<BattleVfxInstance> SpawnedVfxInstances { get; } = new();
+    public HashSet<string> PlayedVfxCueKeys { get; } = new();
 
     public int VisualHpStart { get; set; }
     public int VisualHpFinal { get; set; }
@@ -36,4 +35,16 @@ internal sealed class BattleVisualPlaybackState
     public CharacterView TargetView { get; set; }
     public CharacterFacingController AttackerFacing { get; set; }
     public CharacterFacingController TargetFacing { get; set; }
+
+    public void TrackVfx(BattleVfxInstance instance)
+    {
+        if (instance != null)
+            SpawnedVfxInstances.Add(instance);
+    }
+
+    public bool TryMarkVfxCue(string runtimeKey)
+    {
+        return string.IsNullOrEmpty(runtimeKey) ||
+               PlayedVfxCueKeys.Add(runtimeKey);
+    }
 }

@@ -32,6 +32,12 @@ public class BattleAnimationDirector : MonoBehaviour
     private void Awake()
     {
         ResolveReferences();
+
+        BattleVisualValidator.ValidateProfile(
+            defaultVisualProfile,
+            this,
+            logWarnings: true);
+
         requestBuilder =
             new BattleVisualRequestBuilder(
                 defaultVisualProfile);
@@ -237,6 +243,11 @@ public class BattleAnimationDirector : MonoBehaviour
             yield break;
         }
 
+        BattleVisualValidator.ValidateDefinition(
+            visual,
+            attacker,
+            logWarnings: true);
+
         BeginVisualRequest(
             playback,
             visual);
@@ -288,7 +299,8 @@ public class BattleAnimationDirector : MonoBehaviour
             visual);
 
         if (visual.FaceEachOther &&
-            target != null)
+            target != null &&
+            !(request.IsSelfTarget && visual.SkipFacingForSelfTarget))
         {
             playback.ShouldRestoreFacing = true;
 
@@ -299,7 +311,8 @@ public class BattleAnimationDirector : MonoBehaviour
         }
 
         if (views.AttackerMover != null &&
-            target != null)
+            target != null &&
+            !(request.IsSelfTarget && visual.SkipMovementForSelfTarget))
         {
             if (visual.MoveSettings != null)
             {
@@ -332,6 +345,12 @@ public class BattleAnimationDirector : MonoBehaviour
 
         if (visual.ShowsClashPower)
         {
+            PlaySkillVfx(
+                playback,
+                request,
+                visual,
+                BattleVfxTiming.OnClashRoll);
+
             StartCameraShots(
                 playback,
                 request,
@@ -406,13 +425,23 @@ public class BattleAnimationDirector : MonoBehaviour
             visual,
             BattleVfxTiming.AfterAction);
 
+        if (request.WasKilled)
+        {
+            PlaySkillVfx(
+                playback,
+                request,
+                visual,
+                BattleVfxTiming.OnKill);
+        }
+
         if (visual.AfterActionDelay > 0f)
         {
             yield return new WaitForSeconds(
                 visual.AfterActionDelay);
         }
 
-        if (views.AttackerMover != null)
+        if (views.AttackerMover != null &&
+            playback.ShouldRestoreAttackerPosition)
         {
             if (visual.MoveSettings != null)
             {
@@ -428,7 +457,8 @@ public class BattleAnimationDirector : MonoBehaviour
 
         playback.ShouldRestoreAttackerPosition = false;
 
-        if (visual.ReturnFacingAfterAction)
+        if (visual.ReturnFacingAfterAction &&
+            playback.ShouldRestoreFacing)
         {
             yield return ReturnFacing(
                 views);
@@ -474,43 +504,38 @@ public class BattleAnimationDirector : MonoBehaviour
         int hitIndex = -1,
         int damage = 0)
     {
-        if (request == null || visual == null)
+        if (request == null ||
+            visual == null ||
+            vfxManager == null ||
+            visual.VfxCues == null)
+        {
             return;
-
-        if (vfxManager == null)
-            return;
-
-        if (visual.VfxCues == null)
-            return;
+        }
 
         BattleVfxContext context =
-            new BattleVfxContext
-            {
-                Attacker = request.Attacker,
-                Target = request.Target,
-                AttackerView = playback?.AttackerView,
-                TargetView = playback?.TargetView,
-                TargetPart = request.TargetPart,
-                HitIndex = hitIndex,
-                Damage = damage
-            };
+            BattleVfxContext.FromRequest(
+                request,
+                hitIndex,
+                damage);
 
+        context.AttackerView = playback?.AttackerView;
+        context.TargetView = playback?.TargetView;
         context.BindPlayback(playback);
 
-        foreach (BattleVfxCue cue in visual.VfxCues)
+        for (int i = 0; i < visual.VfxCues.Count; i++)
         {
-            if (cue == null)
-                continue;
+            BattleVfxCue cue = visual.VfxCues[i];
 
-            if (cue.Timing != timing)
+            if (cue == null || cue.Timing != timing)
                 continue;
 
             vfxManager.PlayCue(
                 cue,
-                context);
+                context,
+                i);
         }
     }
-    
+
     private IEnumerator PlayMomentumRefreshAtVisualEnd(
         BattleVisualPlaybackState playback)
     {
@@ -729,18 +754,19 @@ public class BattleAnimationDirector : MonoBehaviour
 
         try
         {
-            if (playback.IsCancellationRequested)
+            if (!playback.IsCancellationRequested)
+                return;
+
+            foreach (BattleVfxInstance instance
+                     in playback.SpawnedVfxInstances)
             {
-                foreach (GameObject instance in playback.SpawnedVfxInstances)
-                {
-                    if (instance != null)
-                        Destroy(instance);
-                }
+                instance?.Release();
             }
         }
         finally
         {
             playback.SpawnedVfxInstances.Clear();
+            playback.PlayedVfxCueKeys.Clear();
         }
     }
 
@@ -764,6 +790,10 @@ public class BattleAnimationDirector : MonoBehaviour
 
         if (request.Attacker == null ||
             request.Target == null)
+            return;
+
+        // 자기 대상 도사림은 동일 캐릭터 두 개를 FocusBetween하지 않는다.
+        if (request.IsSelfTarget)
             return;
 
         if (playback != null)
@@ -1150,6 +1180,17 @@ public class BattleAnimationDirector : MonoBehaviour
             hitIndex,
             damage);
 
+        if (request.WasCritical && hitIndex == 0)
+        {
+            PlaySkillVfx(
+                playback,
+                request,
+                visual,
+                BattleVfxTiming.OnCritical,
+                hitIndex,
+                damage);
+        }
+
         targetView.PlayHitRestart();
 
         if (damage > 0)
@@ -1388,3 +1429,5 @@ public class BattleAnimationDirector : MonoBehaviour
         public CharacterActionMover AttackerMover;
     }
 }
+
+

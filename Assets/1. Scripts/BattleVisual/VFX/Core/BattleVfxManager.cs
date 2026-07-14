@@ -1,56 +1,72 @@
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.VFX;
 
 public class BattleVfxManager : MonoBehaviour
 {
+    [Header("References")]
+    [SerializeField] private BattleVfxPool pool;
+
     [Header("Debug")]
     [SerializeField] private bool logDebug;
 
     private readonly Stack<List<MonoBehaviour>> playableSearchBufferPool = new();
 
-    public void PlayCue(
-        BattleVfxCue cue,
-        BattleVfxContext context)
+    private void Awake()
     {
-        if (cue == null)
+        if (pool == null)
+            pool = BattleVfxPool.GetOrCreate();
+    }
+
+    public void PlayCue(BattleVfxCue cue, BattleVfxContext context)
+    {
+        if (cue == null || cue.Vfx == null || context == null)
             return;
 
-        if (cue.Vfx == null)
+        if (!cue.Matches(context) || !context.CanPlayVfx())
             return;
 
-        if (context == null)
-        {
-            Debug.LogWarning("[BattleVfxManager] Context null");
-            return;
-        }
+        string runtimeKey = cue.BuildRuntimeKey(-1, context);
 
-        if (cue.UseHitIndexFilter &&
-            cue.HitIndex != context.HitIndex)
-        {
-            return;
-        }
-
-        if (!context.CanPlayVfx())
+        if (!context.TryMarkCuePlayed(runtimeKey))
             return;
 
         if (cue.Delay <= 0f)
         {
-            PlayVfx(
-                cue.Vfx,
-                cue.AnchorType,
-                context);
-
+            PlayVfx(cue.Vfx, cue.AnchorType, context);
             return;
         }
 
-        StartCoroutine(
-            PlayCueRoutine(
-                cue,
-                context));
+        StartCoroutine(PlayCueRoutine(cue, context));
     }
 
-    private System.Collections.IEnumerator PlayCueRoutine(
+    public void PlayCue(
+        BattleVfxCue cue,
+        BattleVfxContext context,
+        int cueIndex)
+    {
+        if (cue == null || cue.Vfx == null || context == null)
+            return;
+
+        if (!cue.Matches(context) || !context.CanPlayVfx())
+            return;
+
+        string runtimeKey = cue.BuildRuntimeKey(cueIndex, context);
+
+        if (!context.TryMarkCuePlayed(runtimeKey))
+            return;
+
+        if (cue.Delay <= 0f)
+        {
+            PlayVfx(cue.Vfx, cue.AnchorType, context);
+            return;
+        }
+
+        StartCoroutine(PlayCueRoutine(cue, context));
+    }
+
+    private IEnumerator PlayCueRoutine(
         BattleVfxCue cue,
         BattleVfxContext context)
     {
@@ -60,143 +76,173 @@ public class BattleVfxManager : MonoBehaviour
         if (!context.CanPlayVfx())
             yield break;
 
-        PlayVfx(
-            cue.Vfx,
-            cue.AnchorType,
-            context);
+        PlayVfx(cue.Vfx, cue.AnchorType, context);
     }
 
-    public void PlayVfx(
+    public BattleVfxInstance PlayVfx(
         BattleVfxDefinition definition,
         BattleVfxAnchorType anchorType,
         BattleVfxContext context)
     {
-        if (definition == null)
-        {
-            Debug.LogWarning("[BattleVfxManager] Definition null");
-            return;
-        }
+        if (!VfxDefinitionValidator.Validate(definition, this))
+            return null;
 
-        if (definition.EffectPrefab == null)
-        {
-            Debug.LogWarning(
-                $"[BattleVfxManager] EffectPrefab null / Definition={definition.name}");
-            return;
-        }
+        if (context == null || !context.CanPlayVfx())
+            return null;
 
-        if (context == null)
-        {
-            Debug.LogWarning("[BattleVfxManager] Context null");
-            return;
-        }
+        if (pool == null)
+            pool = BattleVfxPool.GetOrCreate();
 
-        if (!context.CanPlayVfx())
-            return;
+        Transform anchor = ResolveAnchor(anchorType, context);
 
-        Transform anchor =
-            ResolveAnchor(
+        if (!TryResolveSpawnPose(
+                definition,
+                anchor,
                 anchorType,
-                context);
-
-        Vector3 position =
-            anchor != null
-                ? anchor.position
-                : context.WorldPosition;
-
-        Quaternion rotation =
-            anchor != null
-                ? anchor.rotation
-                : Quaternion.identity;
-
-        position += rotation * definition.PositionOffset;
-        rotation *= Quaternion.Euler(definition.RotationOffset);
-        
-        if (logDebug)
+                context,
+                out Vector3 position,
+                out Quaternion rotation))
         {
-            Debug.Log(
-                $"[BattleVfxManager] VFX 위치 계산 / " +
-                $"Definition={definition.name}, " +
-                $"AnchorType={anchorType}, " +
-                $"Anchor={(anchor != null ? anchor.name : "NULL")}, " +
-                $"Position={position}, " +
-                $"Target={context?.Target?.Data.CharacterName}, " +
-                $"TargetPart={context?.TargetPart?.Type}");
+            return null;
         }
 
-        GameObject instance =
-            Instantiate(
+        Transform parent =
+            definition.FollowMode == BattleVfxFollowMode.FollowAnchor
+                ? anchor
+                : null;
+
+        BattleVfxInstance instance;
+
+        if (definition.UsePooling)
+        {
+            pool.Prewarm(
+                definition.EffectPrefab,
+                definition.PrewarmCount,
+                definition.MaxPoolSize);
+
+            instance = pool.Acquire(
                 definition.EffectPrefab,
                 position,
-                rotation);
+                rotation,
+                parent,
+                definition.MaxPoolSize);
+        }
+        else
+        {
+            GameObject created = Instantiate(
+                definition.EffectPrefab,
+                position,
+                rotation,
+                parent);
+
+            instance = created.GetComponent<BattleVfxInstance>();
+
+            if (instance == null)
+                instance = created.AddComponent<BattleVfxInstance>();
+
+            instance.Configure(null, new BattleVfxPoolKey(definition.EffectPrefab), 0);
+            instance.PrepareForUse(position, rotation, parent);
+        }
 
         if (instance == null)
-            return;
+            return null;
 
         if (!context.CanPlayVfx())
         {
-            Destroy(instance);
-            return;
+            instance.Release();
+            return null;
         }
 
         context.TrackSpawnedVfx(instance);
+        instance.transform.localScale = definition.Scale;
 
-        instance.transform.localScale =
-            definition.Scale;
-
-        if (definition.FollowMode == BattleVfxFollowMode.FollowAnchor &&
-            anchor != null)
+        BattleVfxPlayData playData = new BattleVfxPlayData
         {
-            instance.transform.SetParent(
-                anchor,
-                true);
-        }
+            Definition = definition,
+            Context = context,
+            Instance = instance.gameObject,
+            PooledInstance = instance,
+            Anchor = anchor,
+            Position = position,
+            Rotation = rotation,
+            Lifetime = definition.Lifetime,
+            Color = definition.Color,
+            Intensity = definition.Intensity,
+            Radius = definition.Radius
+        };
 
-        BattleVfxPlayData playData =
-            new BattleVfxPlayData
-            {
-                Definition = definition,
-                Context = context,
-                Instance = instance,
-                Anchor = anchor,
-                Position = position,
-                Rotation = rotation,
-                Lifetime = definition.Lifetime,
-                Color = definition.Color,
-                Intensity = definition.Intensity,
-                Radius = definition.Radius
-            };
-
-        bool playedByCustomPlayer =
-            TryPlayWithCustomPlayer(
-                instance,
-                playData);
-
-        if (!context.CanPlayVfx())
-            return;
+        bool playedByCustomPlayer = TryPlayWithCustomPlayer(instance.gameObject, playData);
 
         if (!playedByCustomPlayer)
-        {
-            TryPlayAsVfxGraphFallback(
-                instance,
-                definition);
-        }
+            TryPlayAsVfxGraphFallback(instance.gameObject, definition);
 
-        if (definition.LogSpawn)
+        if (definition.LogSpawn || logDebug)
         {
             Debug.Log(
                 $"[BattleVfxManager] Effect Spawn / " +
                 $"Definition={definition.name}, " +
                 $"Prefab={definition.EffectPrefab.name}, " +
                 $"Anchor={anchorType}, " +
+                $"Pooled={definition.UsePooling}, " +
+                $"Request={context.SourceAction?.ActionId ?? 0}, " +
+                $"Hit={context.HitIndex}, " +
                 $"CustomPlayer={playedByCustomPlayer}");
         }
 
         if (definition.DestroyAfterLifetime)
         {
-            Destroy(
-                instance,
-                definition.Lifetime);
+            instance.ReleaseAfter(
+                definition.Lifetime,
+                definition.UseUnscaledLifetime);
         }
+
+        return instance;
+    }
+
+    private bool TryResolveSpawnPose(
+        BattleVfxDefinition definition,
+        Transform anchor,
+        BattleVfxAnchorType anchorType,
+        BattleVfxContext context,
+        out Vector3 position,
+        out Quaternion rotation)
+    {
+        if (anchor != null)
+        {
+            position = anchor.position;
+            rotation = anchor.rotation;
+        }
+        else if (context.HasWorldPosition)
+        {
+            position = context.WorldPosition;
+            rotation = Quaternion.identity;
+        }
+        else if (context.Target != null)
+        {
+            position = context.Target.transform.position;
+            rotation = context.Target.transform.rotation;
+        }
+        else if (context.Attacker != null)
+        {
+            position = context.Attacker.transform.position;
+            rotation = context.Attacker.transform.rotation;
+        }
+        else
+        {
+            position = Vector3.zero;
+            rotation = Quaternion.identity;
+
+            Debug.LogWarning(
+                $"[BattleVfxManager] VFX 위치를 결정할 수 없습니다. " +
+                $"Definition={definition.name}, Anchor={anchorType}",
+                this);
+
+            return false;
+        }
+
+        position += rotation * definition.PositionOffset;
+        rotation *= Quaternion.Euler(definition.RotationOffset);
+        return true;
     }
 
     private bool TryPlayWithCustomPlayer(
@@ -206,36 +252,23 @@ public class BattleVfxManager : MonoBehaviour
         if (instance == null)
             return false;
 
-        List<MonoBehaviour> searchBuffer =
-            GetPlayableSearchBuffer();
-
+        List<MonoBehaviour> searchBuffer = GetPlayableSearchBuffer();
         bool played = false;
 
         try
         {
-            instance.GetComponentsInChildren(
-                true,
-                searchBuffer);
+            instance.GetComponentsInChildren(true, searchBuffer);
 
             foreach (MonoBehaviour behaviour in searchBuffer)
             {
-                if (playData.Context != null &&
-                    !playData.Context.CanPlayVfx())
-                {
+                if (playData.Context != null && !playData.Context.CanPlayVfx())
                     break;
-                }
 
                 if (behaviour is not IBattleVfxPlayable playable)
                     continue;
 
                 playable.Play(playData);
                 played = true;
-
-                if (playData.Context != null &&
-                    !playData.Context.CanPlayVfx())
-                {
-                    break;
-                }
             }
         }
         finally
@@ -253,8 +286,7 @@ public class BattleVfxManager : MonoBehaviour
             : new List<MonoBehaviour>();
     }
 
-    private void ReleasePlayableSearchBuffer(
-        List<MonoBehaviour> searchBuffer)
+    private void ReleasePlayableSearchBuffer(List<MonoBehaviour> searchBuffer)
     {
         if (searchBuffer == null)
             return;
@@ -263,77 +295,58 @@ public class BattleVfxManager : MonoBehaviour
         playableSearchBufferPool.Push(searchBuffer);
     }
 
-    private void TryPlayAsVfxGraphFallback(
+    private static void TryPlayAsVfxGraphFallback(
         GameObject instance,
         BattleVfxDefinition definition)
     {
-        if (instance == null ||
-            definition == null)
+        if (instance == null || definition == null)
             return;
 
-        VisualEffect visualEffect =
-            instance.GetComponentInChildren<VisualEffect>(true);
+        VisualEffect visualEffect = instance.GetComponentInChildren<VisualEffect>(true);
 
         if (visualEffect == null)
             return;
 
+        visualEffect.Reinit();
+
         if (!string.IsNullOrEmpty(definition.PlayEventName))
-        {
-            visualEffect.SendEvent(
-                definition.PlayEventName);
-        }
+            visualEffect.SendEvent(definition.PlayEventName);
         else
-        {
             visualEffect.Play();
-        }
     }
 
-    private Transform ResolveAnchor(
+    private static Transform ResolveAnchor(
         BattleVfxAnchorType anchorType,
         BattleVfxContext context)
     {
         if (context == null)
             return null;
 
-        switch (anchorType)
+        return anchorType switch
         {
-            case BattleVfxAnchorType.AttackerRoot:
-                return context.Attacker != null
-                    ? context.Attacker.transform
-                    : null;
-
-            case BattleVfxAnchorType.TargetRoot:
-                return context.Target != null
-                    ? context.Target.transform
-                    : null;
-
-            case BattleVfxAnchorType.AttackerBodyPart:
-                return BattleCameraTargetResolver.GetTargetPartAnchor(
+            BattleVfxAnchorType.AttackerRoot =>
+                context.Attacker != null ? context.Attacker.transform : null,
+            BattleVfxAnchorType.TargetRoot =>
+                context.Target != null ? context.Target.transform : null,
+            BattleVfxAnchorType.AttackerBodyPart =>
+                BattleCameraTargetResolver.GetTargetPartAnchor(
                     context.Attacker,
                     context.AttackerPart,
-                    context.AttackerView);
-
-            case BattleVfxAnchorType.TargetBodyPart:
-                return BattleCameraTargetResolver.GetTargetPartAnchor(
+                    context.AttackerView),
+            BattleVfxAnchorType.TargetBodyPart =>
+                BattleCameraTargetResolver.GetTargetPartAnchor(
                     context.Target,
                     context.TargetPart,
-                    context.TargetView);
-
-            case BattleVfxAnchorType.AttackerLookAt:
-                return BattleCameraTargetResolver.GetLookAtTarget(
+                    context.TargetView),
+            BattleVfxAnchorType.AttackerLookAt =>
+                BattleCameraTargetResolver.GetLookAtTarget(
                     context.Attacker,
-                    context.AttackerView);
-
-            case BattleVfxAnchorType.TargetLookAt:
-                return BattleCameraTargetResolver.GetLookAtTarget(
+                    context.AttackerView),
+            BattleVfxAnchorType.TargetLookAt =>
+                BattleCameraTargetResolver.GetLookAtTarget(
                     context.Target,
-                    context.TargetView);
-
-            case BattleVfxAnchorType.WorldPosition:
-                return null;
-        }
-
-        return null;
+                    context.TargetView),
+            _ => null
+        };
     }
-
 }

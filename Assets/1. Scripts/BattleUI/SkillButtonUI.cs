@@ -3,7 +3,7 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-public class SkillButtonUI : MonoBehaviour
+public sealed class SkillButtonUI : MonoBehaviour
 {
     [SerializeField] private Button button;
     [SerializeField] private TMP_Text buttonText;
@@ -12,15 +12,13 @@ public class SkillButtonUI : MonoBehaviour
     private int boundActionIndex;
     private Action<Skill, int> onClicked;
 
+    public Skill BoundSkill => boundSkill;
     public int BoundActionIndex => boundActionIndex;
 
     private void Awake()
     {
-        if (button == null)
-            button = GetComponent<Button>();
-
-        if (buttonText == null)
-            buttonText = GetComponentInChildren<TMP_Text>(true);
+        button ??= GetComponent<Button>();
+        buttonText ??= GetComponentInChildren<TMP_Text>(true);
     }
 
     public void Bind(
@@ -52,22 +50,30 @@ public class SkillButtonUI : MonoBehaviour
         onClicked = clickCallback;
 
         if (buttonText != null)
+        {
+            buttonText.richText = true;
             buttonText.text = label;
+        }
 
         if (button == null)
             return;
 
         button.onClick.RemoveAllListeners();
-        button.interactable = interactable;
+        button.interactable = interactable && boundSkill != null;
 
-        button.onClick.AddListener(() =>
-        {
-            if (boundSkill == null)
-                return;
+        if (!button.interactable)
+            return;
 
-            onClicked?.Invoke(
-                boundSkill,
-                boundActionIndex);
-        });
+        button.onClick.AddListener(InvokeBoundSkill);
+    }
+
+    private void InvokeBoundSkill()
+    {
+        if (boundSkill == null)
+            return;
+
+        onClicked?.Invoke(
+            boundSkill,
+            boundActionIndex);
     }
 }

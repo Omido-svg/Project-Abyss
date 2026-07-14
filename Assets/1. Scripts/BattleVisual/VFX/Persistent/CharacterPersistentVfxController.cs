@@ -7,6 +7,7 @@ public class CharacterPersistentVfxController : MonoBehaviour
     [Header("References")]
     [SerializeField] private Character character;
     [SerializeField] private CharacterView characterView;
+    [SerializeField] private BattleVfxPool pool;
 
     [Header("Initial VFX")]
     [SerializeField] private List<PersistentBattleVfxDefinition> initialVfx = new();
@@ -14,21 +15,11 @@ public class CharacterPersistentVfxController : MonoBehaviour
     [Header("Debug")]
     [SerializeField] private bool logDebug;
 
-    private readonly Dictionary<string, ActivePersistentVfx> activeVfx =
-        new Dictionary<string, ActivePersistentVfx>();
+    private readonly Dictionary<string, ActivePersistentVfx> activeVfx = new();
 
     private void Awake()
     {
-        if (character == null)
-            character = GetComponentInParent<Character>();
-
-        if (characterView == null)
-        {
-            characterView =
-                character != null
-                    ? BattleCameraTargetResolver.GetView(character)
-                    : GetComponentInChildren<CharacterView>(true);
-        }
+        ResolveReferences();
     }
 
     private void OnEnable()
@@ -41,117 +32,96 @@ public class CharacterPersistentVfxController : MonoBehaviour
         StopAll();
     }
 
-    private void PlayInitialVfx()
+    public void Play(PersistentBattleVfxDefinition definition)
     {
-        if (initialVfx == null)
+        if (definition == null || definition.Prefab == null)
             return;
 
-        foreach (PersistentBattleVfxDefinition definition in initialVfx)
-        {
-            if (definition == null)
-                continue;
+        ResolveReferences();
 
-            Play(definition);
-        }
-    }
-
-    public void Play(
-        PersistentBattleVfxDefinition definition)
-    {
-        if (definition == null)
-            return;
-
-        if (definition.Prefab == null)
-        {
-            Debug.LogWarning(
-                $"[CharacterPersistentVfxController] Prefab 없음 / Definition={definition.name}");
-
-            return;
-        }
-
-        string key =
-            string.IsNullOrEmpty(definition.Key)
-                ? definition.name
-                : definition.Key;
+        string key = ResolveKey(definition);
 
         if (activeVfx.ContainsKey(key))
             return;
 
-        Transform anchor =
-            ResolveAnchor(definition);
+        Transform anchor = ResolveAnchor(definition);
 
         if (anchor == null)
         {
             Debug.LogWarning(
-                $"[CharacterPersistentVfxController] Anchor 없음 / Definition={definition.name}");
-
+                $"[CharacterPersistentVfxController] Anchor 없음 / Definition={definition.name}",
+                this);
             return;
         }
 
-        GameObject instance =
-            Instantiate(
-                definition.Prefab,
-                anchor.position,
-                anchor.rotation);
+        Quaternion rotation =
+            anchor.rotation * Quaternion.Euler(definition.LocalEulerOffset);
 
-        if (definition.ParentToAnchor)
+        Vector3 position =
+            anchor.position + anchor.rotation * definition.LocalPositionOffset;
+
+        BattleVfxInstance pooledInstance;
+
+        if (definition.UsePooling)
         {
-            instance.transform.SetParent(
-                anchor,
-                worldPositionStays: false);
-
-            instance.transform.localPosition =
-                definition.LocalPositionOffset;
-
-            instance.transform.localRotation =
-                Quaternion.Euler(
-                    definition.LocalEulerOffset);
+            pooledInstance = pool.Acquire(
+                definition.Prefab,
+                position,
+                rotation,
+                definition.ParentToAnchor ? anchor : null,
+                definition.MaxPoolSize);
         }
         else
         {
-            instance.transform.position =
-                anchor.position +
-                definition.LocalPositionOffset;
+            GameObject created = Instantiate(
+                definition.Prefab,
+                position,
+                rotation,
+                definition.ParentToAnchor ? anchor : null);
 
-            instance.transform.rotation =
-                anchor.rotation *
-                Quaternion.Euler(
-                    definition.LocalEulerOffset);
+            pooledInstance = created.GetComponent<BattleVfxInstance>();
+
+            if (pooledInstance == null)
+                pooledInstance = created.AddComponent<BattleVfxInstance>();
+
+            pooledInstance.Configure(null, new BattleVfxPoolKey(definition.Prefab), 0);
+            pooledInstance.PrepareForUse(position, rotation, definition.ParentToAnchor ? anchor : null);
         }
 
-        instance.transform.localScale =
-            definition.LocalScale;
+        if (pooledInstance == null)
+            return;
 
-        ActivePersistentVfx activeInstance =
-            new ActivePersistentVfx(instance);
+        if (definition.ParentToAnchor)
+        {
+            pooledInstance.transform.localPosition = definition.LocalPositionOffset;
+            pooledInstance.transform.localRotation = Quaternion.Euler(definition.LocalEulerOffset);
+        }
 
-        activeVfx[key] = activeInstance;
+        pooledInstance.transform.localScale = definition.LocalScale;
+
+        ActivePersistentVfx active = new ActivePersistentVfx(pooledInstance);
+        activeVfx.Add(key, active);
 
         if (definition.PlayOnSpawn)
-        {
-            PlayAllEffects(activeInstance);
-        }
+            PlayAllEffects(active);
 
         if (logDebug)
         {
             Debug.Log(
-                $"[CharacterPersistentVfxController] Persistent VFX Play / " +
-                $"Character={character?.Data.CharacterName}, Key={key}, Prefab={definition.Prefab.name}");
+                $"[CharacterPersistentVfxController] Play / " +
+                $"Character={character?.Data?.CharacterName}, Key={key}, Pooled={definition.UsePooling}");
         }
     }
 
-    public void Stop(
-        PersistentBattleVfxDefinition definition)
+    public void Stop(PersistentBattleVfxDefinition definition)
     {
         if (definition == null)
             return;
 
-        string key =
-            string.IsNullOrEmpty(definition.Key)
-                ? definition.name
-                : definition.Key;
-
-        Stop(key, definition.StopParticleSystemsOnRemove, definition.DestroyDelay);
+        Stop(
+            ResolveKey(definition),
+            definition.StopParticleSystemsOnRemove,
+            definition.DestroyDelay);
     }
 
     public void Stop(
@@ -159,174 +129,141 @@ public class CharacterPersistentVfxController : MonoBehaviour
         bool stopParticles = true,
         float destroyDelay = 0.5f)
     {
-        if (string.IsNullOrEmpty(key))
+        if (string.IsNullOrEmpty(key) ||
+            !activeVfx.TryGetValue(key, out ActivePersistentVfx active))
+        {
             return;
-
-        if (!activeVfx.TryGetValue(
-                key,
-                out ActivePersistentVfx activeInstance))
-            return;
+        }
 
         activeVfx.Remove(key);
 
-        StopInstance(
-            activeInstance,
-            stopParticles,
-            destroyDelay);
+        if (stopParticles)
+            StopAllEffects(active);
+
+        active.Instance?.ReleaseAfter(Mathf.Max(0f, destroyDelay));
 
         if (logDebug)
         {
             Debug.Log(
-                $"[CharacterPersistentVfxController] Persistent VFX Stop / " +
-                $"Character={character?.Data.CharacterName}, Key={key}");
+                $"[CharacterPersistentVfxController] Stop / " +
+                $"Character={character?.Data?.CharacterName}, Key={key}");
         }
     }
 
     public void StopAll()
     {
-        foreach (ActivePersistentVfx activeInstance in activeVfx.Values)
-        {
-            StopInstance(
-                activeInstance,
-                stopParticles: true,
-                destroyDelay: 0f);
-        }
+        if (activeVfx.Count == 0)
+            return;
 
+        ActivePersistentVfx[] snapshot = new ActivePersistentVfx[activeVfx.Count];
+        activeVfx.Values.CopyTo(snapshot, 0);
         activeVfx.Clear();
+
+        foreach (ActivePersistentVfx active in snapshot)
+        {
+            StopAllEffects(active);
+            active.Instance?.Release();
+        }
     }
 
-    private Transform ResolveAnchor(
-        PersistentBattleVfxDefinition definition)
+    private void PlayInitialVfx()
+    {
+        if (initialVfx == null)
+            return;
+
+        foreach (PersistentBattleVfxDefinition definition in initialVfx)
+            Play(definition);
+    }
+
+    private void ResolveReferences()
+    {
+        if (character == null)
+            character = GetComponentInParent<Character>();
+
+        if (characterView == null)
+        {
+            characterView = character != null
+                ? BattleCameraTargetResolver.GetView(character)
+                : GetComponentInChildren<CharacterView>(true);
+        }
+
+        if (pool == null)
+            pool = BattleVfxPool.GetOrCreate();
+    }
+
+    private Transform ResolveAnchor(PersistentBattleVfxDefinition definition)
     {
         if (definition == null)
             return transform;
 
         if (characterView == null)
+            ResolveReferences();
+
+        return definition.AnchorType switch
         {
-            characterView =
-                character != null
-                    ? BattleCameraTargetResolver.GetView(character)
-                    : GetComponentInChildren<CharacterView>(true);
-        }
-
-        switch (definition.AnchorType)
-        {
-            case CharacterPersistentVfxAnchorType.CharacterRoot:
-                if (character != null)
-                    return character.transform;
-
-                return transform;
-
-            case CharacterPersistentVfxAnchorType.ViewRoot:
-                if (characterView != null)
-                    return characterView.transform;
-
-                return transform;
-
-            case CharacterPersistentVfxAnchorType.LookAtPoint:
-                if (characterView != null &&
-                    characterView.LookAtPoint != null)
-                {
-                    return characterView.LookAtPoint;
-                }
-
-                return transform;
-
-            case CharacterPersistentVfxAnchorType.BodyPartAnchor:
-                if (characterView != null)
-                {
-                    Transform anchor =
-                        characterView.GetBodyPartAnchor(
-                            definition.BodyPartType);
-
-                    if (anchor != null)
-                        return anchor;
-                }
-
-                return transform;
-        }
-
-        return transform;
+            CharacterPersistentVfxAnchorType.CharacterRoot =>
+                character != null ? character.transform : transform,
+            CharacterPersistentVfxAnchorType.ViewRoot =>
+                characterView != null ? characterView.transform : transform,
+            CharacterPersistentVfxAnchorType.LookAtPoint =>
+                characterView != null && characterView.LookAtPoint != null
+                    ? characterView.LookAtPoint
+                    : transform,
+            CharacterPersistentVfxAnchorType.BodyPartAnchor =>
+                characterView != null
+                    ? characterView.GetBodyPartAnchor(definition.BodyPartType)
+                    : transform,
+            _ => transform
+        };
     }
 
-    private void PlayAllEffects(
-        ActivePersistentVfx activeInstance)
+    private static string ResolveKey(PersistentBattleVfxDefinition definition)
     {
-        if (activeInstance == null ||
-            activeInstance.Instance == null)
-            return;
-
-        activeInstance.RefreshEffects();
-
-        foreach (ParticleSystem particle in activeInstance.Particles)
-        {
-            if (particle != null)
-                particle.Play(true);
-        }
-
-        foreach (VisualEffect visualEffect in activeInstance.VisualEffects)
-        {
-            if (visualEffect != null)
-                visualEffect.Play();
-        }
+        return string.IsNullOrWhiteSpace(definition.Key)
+            ? definition.name
+            : definition.Key.Trim();
     }
 
-    private void StopAllEffects(
-        ActivePersistentVfx activeInstance)
+    private static void PlayAllEffects(ActivePersistentVfx active)
     {
-        if (activeInstance == null ||
-            activeInstance.Instance == null)
+        active?.RefreshEffects();
+
+        if (active == null)
             return;
 
-        activeInstance.RefreshEffects();
+        foreach (ParticleSystem particle in active.Particles)
+            particle?.Play(true);
 
-        foreach (ParticleSystem particle in activeInstance.Particles)
+        foreach (VisualEffect visualEffect in active.VisualEffects)
+            visualEffect?.Play();
+    }
+
+    private static void StopAllEffects(ActivePersistentVfx active)
+    {
+        active?.RefreshEffects();
+
+        if (active == null)
+            return;
+
+        foreach (ParticleSystem particle in active.Particles)
         {
-            if (particle == null)
-                continue;
-
-            particle.Stop(
+            particle?.Stop(
                 true,
                 ParticleSystemStopBehavior.StopEmitting);
         }
 
-        foreach (VisualEffect visualEffect in activeInstance.VisualEffects)
-        {
-            if (visualEffect != null)
-                visualEffect.Stop();
-        }
-    }
-
-    private void StopInstance(
-        ActivePersistentVfx activeInstance,
-        bool stopParticles,
-        float destroyDelay)
-    {
-        if (activeInstance == null ||
-            activeInstance.Instance == null)
-        {
-            return;
-        }
-
-        if (stopParticles)
-            StopAllEffects(activeInstance);
-
-        Destroy(
-            activeInstance.Instance,
-            Mathf.Max(0f, destroyDelay));
+        foreach (VisualEffect visualEffect in active.VisualEffects)
+            visualEffect?.Stop();
     }
 
     private sealed class ActivePersistentVfx
     {
-        public ActivePersistentVfx(
-            GameObject instance)
+        public ActivePersistentVfx(BattleVfxInstance instance)
         {
             Instance = instance;
-
         }
 
-        public GameObject Instance { get; }
-
+        public BattleVfxInstance Instance { get; }
         public List<ParticleSystem> Particles { get; } = new();
         public List<VisualEffect> VisualEffects { get; } = new();
 
@@ -338,13 +275,8 @@ public class CharacterPersistentVfxController : MonoBehaviour
             if (Instance == null)
                 return;
 
-            Instance.GetComponentsInChildren(
-                true,
-                Particles);
-
-            Instance.GetComponentsInChildren(
-                true,
-                VisualEffects);
+            Instance.GetComponentsInChildren(true, Particles);
+            Instance.GetComponentsInChildren(true, VisualEffects);
         }
     }
 }

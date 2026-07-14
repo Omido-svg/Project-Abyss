@@ -1,8 +1,14 @@
 using UnityEngine;
 
-public class OlafImmortalFuryMechanic : CombatMechanic, IBodyPartBreakImmediateReaction
+public class OlafImmortalFuryMechanic :
+    CombatMechanic,
+    IBodyPartBreakImmediateReaction
 {
-    public override string MechanicName => "불사의 분노";
+    public override string MechanicName =>
+        "불사의 분노";
+
+    private const int Duration = 3;
+    private const int SelfDamagePerTurn = 5;
 
     private bool isActive;
     private int turnsLeft;
@@ -10,194 +16,133 @@ public class OlafImmortalFuryMechanic : CombatMechanic, IBodyPartBreakImmediateR
     public bool IsActive => isActive;
     public int TurnsLeft => turnsLeft;
 
-    private const int Duration = 3;
-    private const int SelfDamagePerTurn = 5;
-
-    //------------------------------------------------
-    // 등록 / 해제
-    //------------------------------------------------
-
     public override void OnRegister()
     {
-        if (battleEvent == null)
-            return;
-
-        battleEvent.OnTurnEnd += OnTurnEnd;
+        SubscribeToBattleEvent(
+            () => battleEvent.OnTurnEnd += OnTurnEnd,
+            () => battleEvent.OnTurnEnd -= OnTurnEnd,
+            "OnTurnEnd");
     }
 
     public override void OnUnregister()
     {
-        if (battleEvent == null)
-            return;
-
-        battleEvent.OnTurnEnd -= OnTurnEnd;
+        isActive = false;
+        turnsLeft = 0;
     }
 
-    //------------------------------------------------
-    // 부위 파괴 감지
-    //------------------------------------------------
+    // 마지막에서 두 번째 부위가 파괴된 직후,
+    // CharacterLifeController의 사망 판정보다 먼저 호출된다.
     public void OnBodyPartBrokenBeforeDeath(
         BodyPartBreakEventContext context)
     {
-        if (context == null ||
-            context.Target == null ||
-            context.Part == null)
+        if (context?.Target != owner ||
+            context.Part == null ||
+            owner == null ||
+            owner.IsDead)
         {
             return;
         }
 
-        if (context.Target != owner)
-            return;
-
         TryEnterImmortalFury();
     }
 
-    //------------------------------------------------
-    // 불사의 분노 진입
-    //------------------------------------------------
-
     private void TryEnterImmortalFury()
     {
-        if (isActive)
+        if (isActive || owner == null)
             return;
 
-        if (owner == null)
-            return;
-
-        int alivePartCount =
-            CountAliveParts();
-
-        if (alivePartCount != 1)
+        if (CountAliveParts() != 1)
             return;
 
         isActive = true;
         turnsLeft = Duration;
 
-        OlafMadnessMechanic madness =
-            owner.GetMechanic<OlafMadnessMechanic>();
-
-        if (madness != null)
-        {
-            madness.SetMadnessToMax();
-        }
+        owner.GetMechanic<OlafMadnessMechanic>()
+            ?.SetMadnessToMax();
 
         Debug.Log(
             $"{owner.Data.CharacterName} 불사의 분노 발동! " +
             $"{turnsLeft}턴 동안 사망하지 않음");
     }
 
-    //------------------------------------------------
-    // 불사의 분노 중 행동 슬롯 정책
-    //------------------------------------------------
-
     public override void ModifyActionSlotPolicy(
         ActionSlotPolicyContext context)
     {
-        if (context == null)
+        if (context == null ||
+            context.Owner != owner ||
+            !isActive ||
+            context.Part == null ||
+            context.Part.IsBroken)
+        {
             return;
+        }
 
-        if (context.Owner != owner)
-            return;
-
-        if (!isActive)
-            return;
-
-        if (context.Part == null)
-            return;
-
-        if (context.Part.IsBroken)
-            return;
-
-        // 불사의 분노 중에는 남은 1개 부위로 2회 행동 가능
         context.MaxSlots =
             Mathf.Max(
                 context.MaxSlots,
                 2);
     }
 
-    //------------------------------------------------
-    // 불사의 분노 중 사망 방지
-    //------------------------------------------------
-
     public override bool CanOwnerDie()
     {
-        if (!isActive)
-            return true;
-
-        // 불사의 분노 중에는 HP가 0이어도 죽지 않음
-        return false;
+        return !isActive;
     }
-
-    //------------------------------------------------
-    // 턴 종료 처리
-    //------------------------------------------------
 
     private void OnTurnEnd(int turn)
     {
-        if (!isActive)
+        if (!isActive ||
+            owner == null ||
+            owner.IsDead)
+        {
             return;
+        }
 
-        if (owner == null)
-            return;
+        owner.GetMechanic<OlafMadnessMechanic>()
+            ?.SetMadnessToMax();
 
-        if (owner.IsDead)
-            return;
-
-        BattleEffectResolver resolver =
-            owner.BattleContext?.EffectResolver;
-
-        if (resolver == null)
-            return;
-
-        OlafMadnessMechanic madness =
-            owner.GetMechanic<OlafMadnessMechanic>();
-
-        if (madness != null)
-            madness.SetMadnessToMax();
-
-        resolver.ApplyTrueDamage(
-            EffectRequest.TrueDamage(
+        // 자해도 DamageRequest → DamageContext → 이벤트 경로를 탄다.
+        OlafCombatPipeline.ApplyDamage(
+            owner,
+            DamageRequest.SelfCost(
                 owner,
-                owner,
-                SelfDamagePerTurn,
-                null));
+                SelfDamagePerTurn));
 
-        turnsLeft--;
+        turnsLeft =
+            Mathf.Max(0, turnsLeft - 1);
 
         Debug.Log(
             $"{owner.Data.CharacterName} 불사의 분노 지속 중 : " +
             $"남은 턴 {turnsLeft}");
 
-        if (turnsLeft <= 0)
-        {
-            Debug.Log(
-                $"{owner.Data.CharacterName} 불사의 분노 종료 : 강제 사망");
+        if (turnsLeft > 0)
+            return;
 
-            isActive = false;
+        Debug.Log(
+            $"{owner.Data.CharacterName} 불사의 분노 종료 : 강제 사망");
 
-            resolver.ForceKill(
-                EffectRequest.ForceKill(
-                    owner,
-                    owner));
-        }
+        // 먼저 비활성화해야 CanOwnerDie()가 true가 된다.
+        isActive = false;
+
+        owner.BattleContext?.EffectResolver?.ForceKill(
+            EffectRequest.ForceKill(
+                owner,
+                owner));
     }
-
-    //------------------------------------------------
 
     private int CountAliveParts()
     {
-        if (owner == null)
+        if (owner?.BodyParts == null)
             return 0;
 
         int count = 0;
 
         foreach (BodyPart part in owner.BodyParts)
         {
-            if (part == null)
-                continue;
-
-            if (!part.IsBroken)
+            if (part != null &&
+                !part.IsBroken)
+            {
                 count++;
+            }
         }
 
         return count;

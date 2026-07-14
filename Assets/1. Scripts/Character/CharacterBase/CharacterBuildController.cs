@@ -1,9 +1,22 @@
+using System;
 using System.Collections.Generic;
+using System.Reflection;
+using UnityEngine;
 
-public class CharacterBuildController
+public sealed class CharacterBuildController
 {
-    private readonly Character owner;
+    private static readonly Type[] CanApplyItemSignature =
+    {
+        typeof(Character)
+    };
 
+    private static readonly Type[] CreateItemMechanicsSignature =
+    {
+        typeof(CharacterBuildMechanicContext),
+        typeof(List<CombatMechanic>)
+    };
+
+    private readonly Character owner;
     private readonly List<CharacterItem> equippedItems;
     private readonly List<CharacterAugment> equippedAugments;
 
@@ -19,58 +32,49 @@ public class CharacterBuildController
         List<CharacterAugment> equippedAugments)
     {
         this.owner = owner;
-        this.equippedItems = equippedItems;
-        this.equippedAugments = equippedAugments;
-    }
 
-    //------------------------------------------------
-    // 아이템 추가
-    //------------------------------------------------
+        this.equippedItems =
+            equippedItems ??
+            new List<CharacterItem>();
+
+        this.equippedAugments =
+            equippedAugments ??
+            new List<CharacterAugment>();
+    }
 
     public void AddItem(CharacterItem item)
     {
-        if (item == null)
+        if (item == null ||
+            equippedItems.Contains(item))
+        {
             return;
-
-        if (equippedItems == null)
-            return;
-
-        if (equippedItems.Contains(item))
-            return;
+        }
 
         equippedItems.Add(item);
     }
 
-    //------------------------------------------------
-    // 증강 추가
-    //------------------------------------------------
-
     public void AddAugment(CharacterAugment augment)
     {
-        if (augment == null)
+        if (augment == null ||
+            equippedAugments.Contains(augment))
+        {
             return;
-
-        if (equippedAugments == null)
-            return;
-
-        if (equippedAugments.Contains(augment))
-            return;
+        }
 
         equippedAugments.Add(augment);
     }
 
-    //------------------------------------------------
-    // 아이템이 스킬 목록 수정
-    //------------------------------------------------
-
     public void ApplyItemSkillModifiers(
         IReadOnlyList<BodyPart> bodyParts)
     {
-        if (owner == null)
+        if (owner == null ||
+            bodyParts == null)
+        {
             return;
+        }
 
-        if (bodyParts == null)
-            return;
+        CharacterItem[] itemSnapshot =
+            equippedItems.ToArray();
 
         foreach (BodyPart part in bodyParts)
         {
@@ -78,134 +82,392 @@ public class CharacterBuildController
                 continue;
 
             List<Skill> skills =
-                new List<Skill>(part.AvailableSkills);
+                new(part.AvailableSkills);
 
-            foreach (CharacterItem item in equippedItems)
+            foreach (CharacterItem item in itemSnapshot)
             {
-                if (item == null)
+                if (!CanApply(item))
                     continue;
 
-                item.ModifySkills(
-                    owner,
-                    part,
-                    skills);
+                TryExecuteBuildStep(
+                    () => item.ModifySkills(
+                        owner,
+                        part,
+                        skills),
+                    $"Item={GetItemName(item)}, Step=ModifySkills, Part={part.Type}");
             }
 
             part.ReplaceSkills(skills);
         }
     }
 
-    //------------------------------------------------
-    // 아이템 / 증강이 캐릭터 스탯 수정
-    //------------------------------------------------
-
     public void ApplyStatusModifiers(
         CurrentStatus currentStatus)
     {
-        if (owner == null)
-            return;
-
-        if (currentStatus == null)
-            return;
-
-        foreach (CharacterItem item in equippedItems)
+        if (owner == null ||
+            currentStatus == null)
         {
-            if (item == null)
-                continue;
-
-            item.ModifyStatus(
-                owner,
-                currentStatus);
+            return;
         }
 
-        foreach (CharacterAugment augment in equippedAugments)
+        foreach (CharacterItem item in equippedItems.ToArray())
         {
-            if (augment == null)
+            if (!CanApply(item))
                 continue;
 
-            augment.ModifyStatus(
-                owner,
-                currentStatus);
+            TryExecuteBuildStep(
+                () => item.ModifyStatus(
+                    owner,
+                    currentStatus),
+                $"Item={GetItemName(item)}, Step=ModifyStatus");
         }
+
+        foreach (CharacterAugment augment in equippedAugments.ToArray())
+        {
+            if (!CanApply(augment))
+                continue;
+
+            TryExecuteBuildStep(
+                () => augment.ModifyStatus(
+                    owner,
+                    currentStatus),
+                $"Augment={augment.AugmentName}, Step=ModifyStatus");
+        }
+
+        currentStatus.Clamp();
     }
-
-    //------------------------------------------------
-    // 아이템 / 증강이 부위 수정
-    //------------------------------------------------
 
     public void ApplyBodyPartModifiers(
         IReadOnlyList<BodyPart> bodyParts)
     {
-        if (owner == null)
+        if (owner == null ||
+            bodyParts == null)
+        {
             return;
+        }
 
-        if (bodyParts == null)
-            return;
+        CharacterItem[] items =
+            equippedItems.ToArray();
+
+        CharacterAugment[] augments =
+            equippedAugments.ToArray();
 
         foreach (BodyPart part in bodyParts)
         {
             if (part == null)
                 continue;
 
-            foreach (CharacterAugment augment in equippedAugments)
+            foreach (CharacterAugment augment in augments)
             {
-                if (augment == null)
+                if (!CanApply(augment))
                     continue;
 
-                augment.ModifyBodyPart(
-                    owner,
-                    part);
+                TryExecuteBuildStep(
+                    () => augment.ModifyBodyPart(
+                        owner,
+                        part),
+                    $"Augment={augment.AugmentName}, Step=ModifyBodyPart, Part={part.Type}");
             }
 
-            foreach (CharacterItem item in equippedItems)
+            foreach (CharacterItem item in items)
             {
-                if (item == null)
+                if (!CanApply(item))
                     continue;
 
-                item.ModifyBodyPart(
-                    owner,
-                    part);
+                TryExecuteBuildStep(
+                    () => item.ModifyBodyPart(
+                        owner,
+                        part),
+                    $"Item={GetItemName(item)}, Step=ModifyBodyPart, Part={part.Type}");
             }
         }
     }
 
-    //------------------------------------------------
-    // 아이템 / 증강 메커닉 생성
-    //------------------------------------------------
-
     public List<CombatMechanic> CreateMechanics()
     {
         List<CombatMechanic> result =
-            new List<CombatMechanic>();
+            new();
 
-        foreach (CharacterItem item in equippedItems)
+        HashSet<CombatMechanic> unique =
+            new();
+
+        List<CombatMechanic> buffer =
+            new();
+
+        foreach (CharacterItem item in equippedItems.ToArray())
         {
-            if (item == null)
+            if (!CanApply(item))
                 continue;
 
-            CombatMechanic mechanic =
-                item.CreateMechanic();
+            buffer.Clear();
 
-            if (mechanic == null)
-                continue;
+            CharacterBuildMechanicContext context =
+                CharacterBuildMechanicContext.ForItem(
+                    owner,
+                    item);
 
-            result.Add(mechanic);
+            TryExecuteBuildStep(
+                () => CreateItemMechanicsCompatible(
+                    item,
+                    context,
+                    buffer),
+                $"Item={GetItemName(item)}, Step=CreateMechanics");
+
+            AppendMechanics(
+                buffer,
+                unique,
+                result,
+                context);
         }
 
-        foreach (CharacterAugment augment in equippedAugments)
+        foreach (CharacterAugment augment in equippedAugments.ToArray())
         {
-            if (augment == null)
+            if (!CanApply(augment))
                 continue;
 
-            CombatMechanic mechanic =
-                augment.CreateMechanic();
+            buffer.Clear();
 
-            if (mechanic == null)
-                continue;
+            CharacterBuildMechanicContext context =
+                CharacterBuildMechanicContext.ForAugment(
+                    owner,
+                    augment);
 
-            result.Add(mechanic);
+            TryExecuteBuildStep(
+                () => augment.CreateMechanics(
+                    context,
+                    buffer),
+                $"Augment={augment.AugmentName}, Step=CreateMechanics");
+
+            AppendMechanics(
+                buffer,
+                unique,
+                result,
+                context);
         }
 
         return result;
+    }
+
+    /// <summary>
+    /// P16 CharacterItem 신형 API가 존재하면 사용한다.
+    /// 프로젝트가 구형 CharacterItem을 참조 중이면 기존 CreateMechanic()으로 폴백한다.
+    /// </summary>
+    private static void CreateItemMechanicsCompatible(
+        CharacterItem item,
+        CharacterBuildMechanicContext context,
+        List<CombatMechanic> output)
+    {
+        if (item == null ||
+            output == null)
+        {
+            return;
+        }
+
+        MethodInfo createManyMethod =
+            item.GetType().GetMethod(
+                "CreateMechanics",
+                BindingFlags.Instance |
+                BindingFlags.Public,
+                null,
+                CreateItemMechanicsSignature,
+                null);
+
+        if (createManyMethod != null)
+        {
+            createManyMethod.Invoke(
+                item,
+                new object[]
+                {
+                    context,
+                    output
+                });
+
+            return;
+        }
+
+        CombatMechanic mechanic =
+            item.CreateMechanic();
+
+        if (mechanic != null)
+            output.Add(mechanic);
+    }
+
+    /// <summary>
+    /// P16 CharacterItem 신형 CanApplyTo API가 존재하면 사용한다.
+    /// 구형 CharacterItem이면 기존 동작과 동일하게 owner가 있을 때 적용한다.
+    /// </summary>
+    private bool CanApply(CharacterItem item)
+    {
+        if (item == null ||
+            owner == null)
+        {
+            return false;
+        }
+
+        try
+        {
+            MethodInfo canApplyMethod =
+                item.GetType().GetMethod(
+                    "CanApplyTo",
+                    BindingFlags.Instance |
+                    BindingFlags.Public,
+                    null,
+                    CanApplyItemSignature,
+                    null);
+
+            if (canApplyMethod == null)
+                return true;
+
+            object result =
+                canApplyMethod.Invoke(
+                    item,
+                    new object[]
+                    {
+                        owner
+                    });
+
+            return result is bool canApply &&
+                   canApply;
+        }
+        catch (TargetInvocationException exception)
+        {
+            LogBuildException(
+                $"Item={GetItemName(item)}, Step=CanApplyTo",
+                exception.InnerException ?? exception);
+
+            return false;
+        }
+        catch (Exception exception)
+        {
+            LogBuildException(
+                $"Item={GetItemName(item)}, Step=CanApplyTo",
+                exception);
+
+            return false;
+        }
+    }
+
+    private bool CanApply(CharacterAugment augment)
+    {
+        if (augment == null ||
+            owner == null)
+        {
+            return false;
+        }
+
+        try
+        {
+            return augment.CanApplyTo(owner);
+        }
+        catch (Exception exception)
+        {
+            LogBuildException(
+                $"Augment={augment.AugmentName}, Step=CanApplyTo",
+                exception);
+
+            return false;
+        }
+    }
+
+    private void AppendMechanics(
+        IReadOnlyList<CombatMechanic> source,
+        HashSet<CombatMechanic> unique,
+        List<CombatMechanic> output,
+        CharacterBuildMechanicContext context)
+    {
+        if (source == null ||
+            unique == null ||
+            output == null)
+        {
+            return;
+        }
+
+        for (int i = 0; i < source.Count; i++)
+        {
+            CombatMechanic mechanic =
+                source[i];
+
+            if (mechanic == null)
+                continue;
+
+            if (mechanic.IsInitialized ||
+                mechanic.IsRegistered)
+            {
+                Debug.LogWarning(
+                    $"[CharacterBuildController] 이미 사용 중인 CombatMechanic 인스턴스 거부 / " +
+                    $"Owner={GetOwnerName()}, " +
+                    $"Source={context.SourceType}:{context.SourceName}, " +
+                    $"Mechanic={mechanic.MechanicName}");
+
+                continue;
+            }
+
+            if (!unique.Add(mechanic))
+            {
+                Debug.LogWarning(
+                    $"[CharacterBuildController] 중복 CombatMechanic 인스턴스 무시 / " +
+                    $"Owner={GetOwnerName()}, " +
+                    $"Source={context.SourceType}:{context.SourceName}, " +
+                    $"Mechanic={mechanic.MechanicName}");
+
+                continue;
+            }
+
+            output.Add(mechanic);
+        }
+    }
+
+    private void TryExecuteBuildStep(
+        Action action,
+        string label)
+    {
+        if (action == null)
+            return;
+
+        try
+        {
+            action.Invoke();
+        }
+        catch (TargetInvocationException exception)
+        {
+            LogBuildException(
+                label,
+                exception.InnerException ?? exception);
+        }
+        catch (Exception exception)
+        {
+            LogBuildException(
+                label,
+                exception);
+        }
+    }
+
+    private void LogBuildException(
+        string label,
+        Exception exception)
+    {
+        Debug.LogError(
+            $"[CharacterBuildController] 빌드 효과 실행 실패 / " +
+            $"Owner={GetOwnerName()}, {label}");
+
+        Debug.LogException(exception);
+    }
+
+    private static string GetItemName(
+        CharacterItem item)
+    {
+        if (item == null)
+            return "NULL_ITEM";
+
+        return string.IsNullOrWhiteSpace(item.ItemName)
+            ? item.name
+            : item.ItemName;
+    }
+
+    private string GetOwnerName()
+    {
+        return owner?.Data?.CharacterName ??
+               owner?.name ??
+               "NULL_OWNER";
     }
 }

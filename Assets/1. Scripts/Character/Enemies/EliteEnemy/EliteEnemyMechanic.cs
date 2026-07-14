@@ -1,6 +1,5 @@
 using UnityEngine;
 
-
 public class EliteEnemyMechanic : CombatMechanic
 {
     public override string MechanicName => "엘리트 본능";
@@ -9,52 +8,41 @@ public class EliteEnemyMechanic : CombatMechanic
     private const int SelfPartWeakenedPrestigeGain = 15;
     private const int SelfPartDestroyedPrestigeGain = 25;
 
-    //------------------------------------------------
-    // 등록 / 해제
-    //------------------------------------------------
-
     public override void OnRegister()
     {
-        if (battleEvent == null)
-            return;
+        SubscribeToBattleEvent(
+            () => battleEvent.OnClashWin += OnClashWin,
+            () => battleEvent.OnClashWin -= OnClashWin,
+            "OnClashWin");
 
-        battleEvent.OnClashWin += OnClashWin;
-        battleEvent.OnBodyPartWeakened += OnBodyPartWeakened;
-        battleEvent.OnBodyPartDestroyed += OnBodyPartDestroyed;
+        SubscribeToBattleEvent(
+            () => battleEvent.OnBodyPartWeakenResolved += OnBodyPartWeakenResolved,
+            () => battleEvent.OnBodyPartWeakenResolved -= OnBodyPartWeakenResolved,
+            "OnBodyPartWeakenResolved");
+
+        SubscribeToBattleEvent(
+            () => battleEvent.OnBodyPartBreakResolved += OnBodyPartBreakResolved,
+            () => battleEvent.OnBodyPartBreakResolved -= OnBodyPartBreakResolved,
+            "OnBodyPartBreakResolved");
     }
 
     public override void OnUnregister()
     {
-        if (battleEvent == null)
-            return;
-
-        battleEvent.OnClashWin -= OnClashWin;
-        battleEvent.OnBodyPartWeakened -= OnBodyPartWeakened;
-        battleEvent.OnBodyPartDestroyed -= OnBodyPartDestroyed;
     }
-
-    //------------------------------------------------
-    // 합 승리
-    //------------------------------------------------
 
     private void OnClashWin(
         BattleAction winnerAction,
         BattleAction loserAction)
     {
-        if (winnerAction == null)
+        if (winnerAction?.Owner != owner ||
+            winnerAction.Target == null ||
+            winnerAction.Target.IsDead)
+        {
             return;
-
-        if (winnerAction.Owner != owner)
-            return;
-
-        if (winnerAction.Target == null)
-            return;
-
-        if (winnerAction.TargetPart == null)
-            return;
+        }
 
         BattleEffectResolver resolver =
-            owner.BattleContext?.EffectResolver;
+            owner?.BattleContext?.EffectResolver;
 
         if (resolver == null)
             return;
@@ -65,77 +53,102 @@ public class EliteEnemyMechanic : CombatMechanic
                 owner,
                 ClashWinPrestigeGain));
 
-        resolver.ApplyBodyPartStatus(
-            EffectRequest.BodyPartStatus(
-                owner,
-                winnerAction.Target,
-                winnerAction.TargetPart,
-                new Bleeding(1)));
+        Bleeding bleeding =
+            new Bleeding(1);
+
+        if (winnerAction.TargetPart != null)
+        {
+            resolver.ApplyBodyPartStatus(
+                EffectRequest.BodyPartStatus(
+                    owner,
+                    winnerAction.Target,
+                    winnerAction.TargetPart,
+                    bleeding));
+        }
+        else
+        {
+            resolver.ApplyCharacterStatus(
+                EffectRequest.CharacterStatus(
+                    owner,
+                    winnerAction.Target,
+                    bleeding));
+        }
 
         Debug.Log(
-            $"{owner.Data.CharacterName} 메커닉 발동 : {MechanicName} / " +
-            $"합 승리 위세 +{ClashWinPrestigeGain}, 출혈 1");
+            $"{GetOwnerName()} 메커닉 발동 : {MechanicName} / " +
+            $"합 승리 위세 +{ClashWinPrestigeGain}, 출혈 1, " +
+            $"Target={GetTargetName(winnerAction)}");
     }
 
-    //------------------------------------------------
-    // 자신의 부위 약화
-    //------------------------------------------------
-
-    private void OnBodyPartWeakened(
-        Character target,
-        BodyPart part)
+    private void OnBodyPartWeakenResolved(
+        BodyPartWeakenEventContext context)
     {
-        if (target == null || part == null)
+        if (context?.Target != owner ||
+            context.Part == null)
+        {
             return;
+        }
 
-        if (target != owner)
-            return;
-
-        BattleEffectResolver resolver =
-            owner.BattleContext?.EffectResolver;
-
-        if (resolver == null)
-            return;
-
-        resolver.AddPrestige(
-            EffectRequest.Prestige(
-                owner,
-                owner,
-                SelfPartWeakenedPrestigeGain));
+        AddPrestige(
+            SelfPartWeakenedPrestigeGain);
 
         Debug.Log(
-            $"{owner.Data.CharacterName} 메커닉 발동 : {MechanicName} / " +
-            $"{part.Type} 약화로 위세 +{SelfPartWeakenedPrestigeGain}");
+            $"{GetOwnerName()} 메커닉 발동 : {MechanicName} / " +
+            $"{context.Part.Type} 약화로 위세 " +
+            $"+{SelfPartWeakenedPrestigeGain}");
     }
 
-    //------------------------------------------------
-    // 자신의 부위 파괴
-    //------------------------------------------------
-
-    private void OnBodyPartDestroyed(
-        Character target,
-        BodyPart part)
+    private void OnBodyPartBreakResolved(
+        BodyPartBreakEventContext context)
     {
-        if (target == null || part == null)
+        if (context?.Target != owner ||
+            context.Part == null)
+        {
             return;
+        }
 
-        if (target != owner)
-            return;
-
-        BattleEffectResolver resolver =
-            owner.BattleContext?.EffectResolver;
-
-        if (resolver == null)
-            return;
-
-        resolver.AddPrestige(
-            EffectRequest.Prestige(
-                owner,
-                owner,
-                SelfPartDestroyedPrestigeGain));
+        AddPrestige(
+            SelfPartDestroyedPrestigeGain);
 
         Debug.Log(
-            $"{owner.Data.CharacterName} 메커닉 발동 : {MechanicName} / " +
-            $"{part.Type} 파괴로 위세 +{SelfPartDestroyedPrestigeGain}");
+            $"{GetOwnerName()} 메커닉 발동 : {MechanicName} / " +
+            $"{context.Part.Type} 파괴로 위세 " +
+            $"+{SelfPartDestroyedPrestigeGain}");
+    }
+
+    private void AddPrestige(
+        int amount)
+    {
+        if (amount <= 0)
+            return;
+
+        owner?.BattleContext?.EffectResolver?
+            .AddPrestige(
+                EffectRequest.Prestige(
+                    owner,
+                    owner,
+                    amount));
+    }
+
+    private string GetOwnerName()
+    {
+        return owner?.Data?.CharacterName ??
+               owner?.name ??
+               "NULL";
+    }
+
+    private string GetTargetName(
+        BattleAction action)
+    {
+        if (action?.Target == null)
+            return "NULL";
+
+        string characterName =
+            action.Target.Data?.CharacterName ??
+            action.Target.name;
+
+        return action.TargetPart == null
+            ? $"{characterName}/SINGLE_HP"
+            : $"{characterName}/{action.TargetPart.Type}";
     }
 }

@@ -1,16 +1,12 @@
 using System.Collections;
 using Unity.Cinemachine;
 using UnityEngine;
-using UnityEngine.Serialization;
 
+[DisallowMultipleComponent]
 public class BattleCameraDirector : MonoBehaviour
 {
-    [Header("Cinemachine")]
+    [Header("Cinemachine 3 Rig")]
     [SerializeField] private BattleCinemachineRig rig;
-
-    [Header("Legacy Scene Compatibility")]
-    [FormerlySerializedAs("cameraController")]
-    [SerializeField] private CameraController legacyCameraController;
 
     [Header("Interaction Camera")]
     [SerializeField, Min(0.01f)]
@@ -25,37 +21,79 @@ public class BattleCameraDirector : MonoBehaviour
     [SerializeField, Min(0.01f)]
     private float interactionArriveAngle = 0.1f;
 
+    [Header("Fallback Framing")]
+    [SerializeField, Min(0.1f)]
+    private float defaultGroupSideDistance = 7f;
+
+    [SerializeField]
+    private float defaultGroupHeight = 2.4f;
+
+    [SerializeField]
+    private float defaultGroupLookAtHeight = 1.4f;
+
     [Header("Debug")]
     [SerializeField] private bool logDebug = true;
 
     private BattleCinemachineTargetGroupBinder groupBinder;
+    private Coroutine restoreBlendRoutine;
+
     private bool interactionCameraActive;
-    private bool interactionCameraReturning;
     private Vector3 interactionTargetPosition;
     private Quaternion interactionTargetRotation;
-    private CinemachineBlendDefinition interactionPreviousBrainBlend;
-    private bool hasInteractionPreviousBrainBlend;
+
+    public bool IsAvailable => rig != null && rig.IsCoreReady;
+
+    public bool IsMoving
+    {
+        get
+        {
+            bool interactionMoving =
+                interactionCameraActive &&
+                rig != null &&
+                rig.PoseCamera != null &&
+                !HasInteractionCameraArrived(rig.PoseCamera.transform);
+
+            bool brainBlending =
+                rig != null &&
+                rig.Brain != null &&
+                rig.Brain.ActiveBlend != null;
+
+            return interactionMoving || brainBlending;
+        }
+    }
 
     private void Awake()
     {
         ResolveReferences();
+        BuildGroupBinder();
 
-        if (rig != null &&
-            rig.TargetGroup != null)
+        if (!IsAvailable)
         {
-            groupBinder =
-                new BattleCinemachineTargetGroupBinder(
-                    rig.TargetGroup);
-        }
-
-        if (rig == null &&
-            legacyCameraController == null)
-        {
-            Debug.LogWarning(
-                "[BattleCameraDirector] BattleCinemachineRig 또는 " +
-                "CameraController를 찾지 못했습니다. 카메라 연출을 실행할 수 없습니다.",
+            Debug.LogError(
+                "[BattleCameraDirector] Cinemachine 3 BattleCinemachineRig 구성이 유효하지 않습니다. " +
+                "전투 씬에서는 CameraController 폴백을 사용하지 않습니다.",
                 this);
         }
+    }
+
+    private void OnDisable()
+    {
+        StopAllCoroutines();
+        restoreBlendRoutine = null;
+        interactionCameraActive = false;
+        groupBinder?.Clear();
+        rig?.RestoreBaseBlend();
+    }
+
+    private void OnDestroy()
+    {
+        groupBinder?.Dispose();
+        groupBinder = null;
+    }
+
+    private void Update()
+    {
+        UpdateInteractionCamera();
     }
 
     private void ResolveReferences()
@@ -63,120 +101,72 @@ public class BattleCameraDirector : MonoBehaviour
         if (rig == null)
             rig = FindFirstObjectByType<BattleCinemachineRig>();
 
-        if (legacyCameraController == null)
-            legacyCameraController = FindFirstObjectByType<CameraController>();
+        rig?.ResolveReferences();
     }
 
-    private void Update()
+    private void BuildGroupBinder()
     {
-        if (!interactionCameraActive ||
-            rig == null ||
-            rig.PoseCamera == null)
+        groupBinder?.Dispose();
+        groupBinder = null;
+
+        if (rig != null && rig.TargetGroup != null)
         {
-            return;
-        }
-
-        Transform cameraTransform =
-            rig.PoseCamera.transform;
-
-        cameraTransform.position =
-            Vector3.MoveTowards(
-                cameraTransform.position,
-                interactionTargetPosition,
-                Mathf.Max(0.01f, interactionMoveSpeed) * Time.deltaTime);
-
-        cameraTransform.rotation =
-            Quaternion.RotateTowards(
-                cameraTransform.rotation,
-                interactionTargetRotation,
-                Mathf.Max(0.01f, interactionRotationSpeed) * Time.deltaTime);
-
-        if (interactionCameraReturning &&
-            HasInteractionCameraArrived(cameraTransform))
-        {
-            CompleteInteractionReturn();
+            groupBinder =
+                new BattleCinemachineTargetGroupBinder(
+                    rig.TargetGroup);
         }
     }
 
-    public void FocusBetween(
-        Character a,
-        Character b)
+    public void FocusBetween(Character a, Character b)
     {
         StopInteractionFocus();
 
-        if (rig == null ||
-            rig.GroupCamera == null ||
-            groupBinder == null)
-        {
-            if (legacyCameraController != null)
-            {
-                legacyCameraController.FocusBetween(a, b);
-
-                if (logDebug)
-                {
-                    Debug.Log(
-                        $"[BattleCameraDirector] Legacy FocusBetween / " +
-                        $"A={a?.Data.CharacterName}, B={b?.Data.CharacterName}");
-                }
-            }
-
+        if (!EnsureRig("FocusBetween"))
             return;
-        }
 
-        Transform aTarget =
-            BattleCameraTargetResolver.GetLookAtTarget(a);
+        Transform aTarget = BattleCameraTargetResolver.GetLookAtTarget(a);
+        Transform bTarget = BattleCameraTargetResolver.GetLookAtTarget(b);
 
-        Transform bTarget =
-            BattleCameraTargetResolver.GetLookAtTarget(b);
+        if (aTarget == null && bTarget == null)
+            return;
 
-        groupBinder.BindTwoTargets(
-            aTarget,
-            bTarget,
-            1f,
-            1f,
-            1f,
-            1f);
-
-        PlaceGroupCameraSideView(
-            aTarget,
-            bTarget,
-            7f,
-            2.4f,
-            1.4f,
-            false);
-
-        rig.SetLive(
-            rig.GroupCamera);
-
-        if (logDebug)
+        if (a == b || aTarget == bTarget)
         {
-            Debug.Log(
-                $"[BattleCameraDirector] FocusBetween / " +
-                $"A={a?.Data.CharacterName}, B={b?.Data.CharacterName}");
+            FocusSingleTargetWithGroupCamera(
+                aTarget != null ? aTarget : bTarget,
+                defaultGroupSideDistance,
+                defaultGroupHeight,
+                defaultGroupLookAtHeight);
         }
+        else
+        {
+            groupBinder?.BindTwoTargets(
+                aTarget,
+                bTarget,
+                1f,
+                1f,
+                1f,
+                1f);
+
+            PlaceGroupCameraSideView(
+                aTarget,
+                bTarget,
+                defaultGroupSideDistance,
+                defaultGroupHeight,
+                defaultGroupLookAtHeight,
+                false);
+
+            rig.SetLive(BattleCameraRigSlot.Group);
+        }
+
+        Log(
+            $"FocusBetween / A={GetCharacterName(a)}, B={GetCharacterName(b)}");
     }
 
-    public void Focus(
-        Vector3 worldPosition,
-        float distance)
+    public void Focus(Vector3 worldPosition, float distance)
     {
-        if (rig == null ||
-            rig.PoseCamera == null)
-        {
-            if (legacyCameraController != null)
-            {
-                legacyCameraController.Focus(worldPosition);
-
-                if (logDebug)
-                {
-                    Debug.Log(
-                        $"[BattleCameraDirector] Legacy Focus / " +
-                        $"Position={worldPosition}");
-                }
-            }
-
+        if (!EnsurePoseCamera("Focus"))
             return;
-        }
 
         Vector3 referenceForward =
             rig.OverviewCamera != null
@@ -186,37 +176,146 @@ public class BattleCameraDirector : MonoBehaviour
         if (referenceForward.sqrMagnitude <= 0.0001f)
             referenceForward = Vector3.forward;
 
-        float safeDistance =
-            Mathf.Max(
-                0.1f,
-                distance);
+        float safeDistance = Mathf.Max(0.1f, distance);
 
         Vector3 cameraPosition =
             worldPosition -
             referenceForward.normalized * safeDistance;
 
-        Quaternion cameraRotation =
-            Quaternion.LookRotation(
-                worldPosition - cameraPosition,
-                Vector3.up);
+        Quaternion cameraRotation = CreateLookRotation(
+            worldPosition - cameraPosition,
+            rig.PoseCamera.transform.rotation);
+
+        BeginInteractionFocus();
 
         interactionTargetPosition = cameraPosition;
         interactionTargetRotation = cameraRotation;
+        interactionCameraActive = true;
 
-        if (!interactionCameraActive)
-            BeginInteractionFocus();
+        Log($"Focus / Position={worldPosition}, Distance={safeDistance}");
+    }
 
-        interactionCameraReturning = false;
+    public void FocusCharacter(
+        Character character,
+        Vector3 positionOffset,
+        Vector3 lookAtOffset,
+        float distance)
+    {
+        if (character == null || !EnsurePoseCamera("FocusCharacter"))
+            return;
+
+        StopInteractionFocus();
+
+        Transform focusTarget = BattleCameraTargetResolver.GetLookAtTarget(character);
+
+        if (focusTarget == null)
+            return;
+
+        Vector3 lookAtPosition =
+            focusTarget.position +
+            focusTarget.TransformDirection(lookAtOffset);
+
+        Vector3 offset =
+            focusTarget.TransformDirection(positionOffset);
+
+        if (offset.sqrMagnitude <= 0.0001f)
+        {
+            Vector3 referenceForward =
+                rig.OverviewCamera != null
+                    ? rig.OverviewCamera.transform.forward
+                    : -focusTarget.forward;
+
+            offset =
+                -referenceForward.normalized *
+                Mathf.Max(0.1f, distance);
+        }
+
+        SetPoseCamera(
+            lookAtPosition + offset,
+            lookAtPosition,
+            null);
+
+        Log(
+            $"FocusCharacter / Character={GetCharacterName(character)}");
+    }
+
+    public void FocusFromTransform(
+        Transform cameraPoint,
+        Transform lookAtPoint,
+        bool useCameraPointRotation)
+    {
+        if (cameraPoint == null || !EnsurePoseCamera("FocusFromTransform"))
+            return;
+
+        StopInteractionFocus();
+
+        Quaternion rotation;
+
+        if (useCameraPointRotation || lookAtPoint == null)
+        {
+            rotation = cameraPoint.rotation;
+        }
+        else
+        {
+            rotation = CreateLookRotation(
+                lookAtPoint.position - cameraPoint.position,
+                cameraPoint.rotation);
+        }
+
+        rig.PoseCamera.transform.SetPositionAndRotation(
+            cameraPoint.position,
+            rotation);
+
+        rig.SetLive(BattleCameraRigSlot.Pose);
+    }
+
+    public void ShowPrestige()
+    {
+        StopInteractionFocus();
+
+        if (!EnsureRig("ShowPrestige"))
+            return;
 
         rig.SetLive(
-            rig.PoseCamera);
+            rig.PrestigeCamera != null
+                ? BattleCameraRigSlot.Prestige
+                : BattleCameraRigSlot.Overview);
+    }
 
-        if (logDebug)
-        {
-            Debug.Log(
-                $"[BattleCameraDirector] Focus / " +
-                $"Position={worldPosition}, Distance={safeDistance}");
-        }
+    public void SnapToOverview()
+    {
+        StopInteractionFocus();
+        groupBinder?.Clear();
+        CancelBlendRestore();
+        rig?.RestoreBaseBlend();
+        rig?.SetLive(BattleCameraRigSlot.Overview);
+    }
+
+    public void SnapToFocus(Vector3 worldPosition, float distance = 5f)
+    {
+        if (!EnsurePoseCamera("SnapToFocus"))
+            return;
+
+        Vector3 referenceForward =
+            rig.OverviewCamera != null
+                ? rig.OverviewCamera.transform.forward
+                : rig.PoseCamera.transform.forward;
+
+        if (referenceForward.sqrMagnitude <= 0.0001f)
+            referenceForward = Vector3.forward;
+
+        Vector3 cameraPosition =
+            worldPosition -
+            referenceForward.normalized * Mathf.Max(0.1f, distance);
+
+        rig.PoseCamera.transform.SetPositionAndRotation(
+            cameraPosition,
+            CreateLookRotation(
+                worldPosition - cameraPosition,
+                rig.PoseCamera.transform.rotation));
+
+        interactionCameraActive = false;
+        rig.SetLive(BattleCameraRigSlot.Pose);
     }
 
     public void Return()
@@ -226,136 +325,103 @@ public class BattleCameraDirector : MonoBehaviour
 
     public void ReturnFromInteraction()
     {
-        if (interactionCameraActive &&
-            rig != null &&
-            rig.PoseCamera != null &&
-            rig.OverviewCamera != null)
+        ReturnInternal();
+    }
+
+    public void Return(SkillCameraDefinition definition)
+    {
+        if (definition != null && definition.OverrideReturnBrainBlend)
         {
-            interactionTargetPosition =
-                rig.OverviewCamera.transform.position;
-
-            interactionTargetRotation =
-                rig.OverviewCamera.transform.rotation;
-
-            interactionCameraReturning = true;
-            return;
+            ApplyBlendForNextTransition(
+                definition.ReturnBlendStyle,
+                definition.ReturnBlendTime);
         }
 
-        ReturnInternal();
+        ReturnInternal(false);
     }
 
-    public void Return(
-        SkillCameraDefinition definition)
+    public void Return(SkillCameraShot shot)
     {
-        ApplyReturnBrainBlend(
-            definition);
+        if (shot != null && shot.OverrideBrainBlend)
+        {
+            ApplyBlendForNextTransition(
+                shot.BlendStyle,
+                shot.BlendTime);
+        }
 
-        ReturnInternal();
-    }
-
-    public void Return(
-        SkillCameraShot shot)
-    {
-        ApplyBrainBlend(
-            shot);
-
-        ReturnInternal();
+        ReturnInternal(false);
     }
 
     public void Return(
         CinemachineBlendDefinition.Styles blendStyle,
         float blendTime)
     {
-        ApplyBrainBlend(
-            blendStyle,
-            blendTime);
-
-        ReturnInternal();
+        ApplyBlendForNextTransition(blendStyle, blendTime);
+        ReturnInternal(false);
     }
 
-    private void ReturnInternal()
+    private void ReturnInternal(bool restoreBaseBlend = true)
     {
         StopInteractionFocus();
+        groupBinder?.Clear();
 
-        if (rig != null)
-        {
-            rig.SetLive(
-                rig.OverviewCamera);
-        }
-        else if (legacyCameraController != null)
-        {
-            legacyCameraController.Return();
-        }
-        else
-        {
+        if (restoreBaseBlend)
+            rig?.RestoreBaseBlend();
+
+        if (rig == null || !rig.SetLive(BattleCameraRigSlot.Overview))
             return;
-        }
 
-        if (logDebug)
-        {
-            Debug.Log(
-                "[BattleCameraDirector] Return Overview");
-        }
+        Log("Return Overview");
     }
 
-    public IEnumerator WaitUntilArrived(
-        float timeout)
+    public IEnumerator WaitUntilArrived(float timeout)
     {
-        if (rig != null &&
-            rig.Brain != null)
-        {
-            float elapsed = 0f;
-
-            while (elapsed < timeout)
-            {
-                elapsed += Time.deltaTime;
-
-                if (rig.Brain.ActiveBlend == null)
-                    yield break;
-
-                yield return null;
-            }
-
+        if (timeout <= 0f)
             yield break;
-        }
 
-        if (legacyCameraController != null)
-        {
-            yield return legacyCameraController.WaitUntilArrived(timeout);
-            yield break;
-        }
+        float elapsed = 0f;
 
-        if (timeout > 0f)
+        // CinemachineBrain이 같은 프레임 LateUpdate에서 Blend를 시작할 수 있으므로
+        // 최소 한 프레임 기다린 뒤 상태를 검사한다.
+        yield return null;
+
+        while (elapsed < timeout)
         {
-            yield return new WaitForSeconds(timeout);
+            if (!IsMoving)
+                yield break;
+
+            elapsed += Time.deltaTime;
+            yield return null;
         }
     }
 
-    public void PlayShake(
-        BattleCameraShakeSettings settings)
+    public void PlayShake(BattleCameraShakeSettings settings)
     {
         if (settings == null)
         {
-            Debug.LogWarning("[BattleCameraDirector] Shake 실패 : settings가 null입니다.");
+            Debug.LogWarning(
+                "[BattleCameraDirector] Shake 실패: settings가 null입니다.",
+                this);
             return;
         }
 
-        if (rig == null ||
-            rig.ImpulseSource == null ||
-            !settings.UseImpulse)
+        settings.Sanitize();
+
+        if (!settings.CanPlay)
+            return;
+
+        if (rig == null || rig.ImpulseSource == null)
         {
+            Debug.LogWarning(
+                "[BattleCameraDirector] CinemachineImpulseSource가 없습니다.",
+                this);
             return;
         }
 
-        rig.ImpulseSource.GenerateImpulseWithForce(
-            settings.ImpulseForce);
+        float force = settings.GetSafeImpulseForce();
+        rig.ImpulseSource.GenerateImpulseWithForce(force);
 
-        if (logDebug)
-        {
-            Debug.Log(
-                $"[BattleCameraDirector] Cinemachine Impulse / " +
-                $"Force={settings.ImpulseForce}");
-        }
+        Log($"Cinemachine Impulse / Force={force}");
     }
 
     public IEnumerator PlayShotsByTiming(
@@ -363,24 +429,15 @@ public class BattleCameraDirector : MonoBehaviour
         SkillCameraDefinition definition,
         SkillCameraShotTiming timing)
     {
-        if (request == null)
-            yield break;
-
-        if (definition == null ||
-            definition.Shots == null)
+        if (request == null || definition?.Shots == null)
             yield break;
 
         foreach (SkillCameraShot shot in definition.Shots)
         {
-            if (shot == null)
+            if (shot == null || shot.Timing != timing)
                 continue;
 
-            if (shot.Timing != timing)
-                continue;
-
-            yield return PlayShot(
-                request,
-                shot);
+            yield return PlayShot(request, shot);
         }
     }
 
@@ -388,333 +445,320 @@ public class BattleCameraDirector : MonoBehaviour
         BattleVisualRequest request,
         SkillCameraShot shot)
     {
-        if (request == null ||
-            shot == null)
-        {
+        if (request == null || shot == null || !EnsureRig("PlayShot"))
             yield break;
-        }
-
-        if (rig == null &&
-            legacyCameraController == null)
-        {
-            yield break;
-        }
 
         StopInteractionFocus();
-            
-        ApplyBrainBlend(shot);
+
+        if (shot.OverrideBrainBlend)
+        {
+            ApplyBlendForNextTransition(
+                shot.BlendStyle,
+                shot.BlendTime);
+        }
+
+        bool shotStarted = false;
 
         if (shot.UseSceneCameraPoint)
+            shotStarted = PlaySceneCameraPoint(request, shot);
+
+        if (!shotStarted)
         {
-            bool success =
-                PlaySceneCameraPoint(
-                    request,
-                    shot);
-
-            if (success)
+            switch (shot.ShotType)
             {
-                yield return WaitAndShake(
-                    shot);
+                case SkillCameraShotType.FocusBetween:
+                case SkillCameraShotType.ClashWide:
+                    shotStarted = PlayGroupShot(request, shot);
+                    break;
 
-                yield break;
+                case SkillCameraShotType.AttackerClose:
+                case SkillCameraShotType.AttackerOverShoulder:
+                    shotStarted = PlayCharacterPoseShot(
+                        request.Attacker,
+                        request.Target,
+                        shot);
+                    break;
+
+                case SkillCameraShotType.TargetClose:
+                case SkillCameraShotType.TargetOverShoulder:
+                case SkillCameraShotType.HitImpact:
+                    shotStarted = PlayCharacterPoseShot(
+                        request.Target,
+                        request.Attacker,
+                        shot);
+                    break;
+
+                case SkillCameraShotType.ReturnOverview:
+                    Return(shot);
+                    shotStarted = true;
+                    break;
             }
         }
 
-        switch (shot.ShotType)
+        if (!shotStarted)
         {
-            case SkillCameraShotType.FocusBetween:
-            case SkillCameraShotType.ClashWide:
-                PlayGroupShot(
-                    request,
-                    shot);
-                break;
-
-            case SkillCameraShotType.AttackerClose:
-            case SkillCameraShotType.AttackerOverShoulder:
-                PlayCharacterPoseShot(
-                    request.Attacker,
-                    request.Target,
-                    shot);
-                break;
-
-            case SkillCameraShotType.TargetClose:
-            case SkillCameraShotType.TargetOverShoulder:
-            case SkillCameraShotType.HitImpact:
-                PlayCharacterPoseShot(
-                    request.Target,
-                    request.Attacker,
-                    shot);
-                break;
-            case SkillCameraShotType.ReturnOverview:
-                Return(shot);
-                break;
+            Debug.LogWarning(
+                $"[BattleCameraDirector] Camera Shot을 시작하지 못했습니다. " +
+                $"Type={shot.ShotType}, Timing={shot.Timing}",
+                this);
+            yield break;
         }
 
-        yield return WaitAndShake(
-            shot);
+        yield return WaitAndShake(shot);
     }
 
-    private IEnumerator WaitAndShake(
-        SkillCameraShot shot)
+    private IEnumerator WaitAndShake(SkillCameraShot shot)
     {
         if (shot == null)
             yield break;
 
         if (shot.BlendWaitTime > 0f)
-        {
-            yield return WaitUntilArrived(
-                shot.BlendWaitTime);
-        }
+            yield return WaitUntilArrived(shot.BlendWaitTime);
 
         if (shot.UseShake)
-        {
-            PlayShake(
-                shot.Shake);
-        }
+            PlayShake(shot.Shake);
 
         if (shot.Duration > 0f)
-        {
-            yield return new WaitForSeconds(
-                shot.Duration);
-        }
+            yield return new WaitForSeconds(shot.Duration);
     }
 
-    private void PlayGroupShot(
+    private bool PlayGroupShot(
         BattleVisualRequest request,
         SkillCameraShot shot)
     {
-        if (rig == null ||
-            rig.GroupCamera == null ||
-            groupBinder == null)
-        {
-            if (legacyCameraController != null)
-            {
-                legacyCameraController.FocusBetween(
-                    request.Attacker,
-                    request.Target);
-
-                if (logDebug)
-                {
-                    Debug.Log(
-                        $"[BattleCameraDirector] Legacy Group Shot / " +
-                        $"Timing={shot.Timing}, Type={shot.ShotType}");
-                }
-            }
-
-            return;
-        }
+        if (request == null || shot == null || rig?.GroupCamera == null)
+            return false;
 
         Transform attackerTarget =
-            BattleCameraTargetResolver.GetLookAtTarget(
-                request.Attacker);
+            BattleCameraTargetResolver.GetLookAtTarget(request.Attacker);
 
         Transform targetTarget =
-            BattleCameraTargetResolver.GetLookAtTarget(
-                request.Target);
+            BattleCameraTargetResolver.GetLookAtTarget(request.Target);
 
-        groupBinder.BindTwoTargets(
-            attackerTarget,
-            targetTarget,
-            shot.AttackerWeight,
-            shot.TargetWeight,
-            shot.AttackerRadius,
-            shot.TargetRadius);
+        if (attackerTarget == null && targetTarget == null)
+            return false;
 
-        if (shot.UseSideViewPlacement)
+        if (attackerTarget == targetTarget)
         {
-            PlaceGroupCameraSideView(
+            groupBinder?.BindOneTarget(
                 attackerTarget,
-                targetTarget,
+                Mathf.Max(shot.AttackerWeight, shot.TargetWeight),
+                Mathf.Max(shot.AttackerRadius, shot.TargetRadius));
+
+            PlaceSingleTargetGroupCamera(
+                attackerTarget,
                 shot.SideDistance,
                 shot.SideHeight,
                 shot.LookAtHeight,
                 shot.FlipSide);
         }
-
-        rig.SetLive(
-            rig.GroupCamera);
-
-        if (logDebug)
+        else
         {
-            Debug.Log(
-                $"[BattleCameraDirector] Group Shot / " +
-                $"Timing={shot.Timing}, " +
-                $"Type={shot.ShotType}, " +
-                $"Attacker={request.Attacker?.Data.CharacterName}, " +
-                $"Target={request.Target?.Data.CharacterName}");
+            groupBinder?.BindTwoTargets(
+                attackerTarget,
+                targetTarget,
+                shot.AttackerWeight,
+                shot.TargetWeight,
+                shot.AttackerRadius,
+                shot.TargetRadius);
+
+            if (shot.UseSideViewPlacement)
+            {
+                PlaceGroupCameraSideView(
+                    attackerTarget,
+                    targetTarget,
+                    shot.SideDistance,
+                    shot.SideHeight,
+                    shot.LookAtHeight,
+                    shot.FlipSide);
+            }
         }
+
+        if (!rig.SetLive(BattleCameraRigSlot.Group))
+            return false;
+
+        Log(
+            $"Group Shot / Timing={shot.Timing}, Type={shot.ShotType}, " +
+            $"Attacker={GetCharacterName(request.Attacker)}, " +
+            $"Target={GetCharacterName(request.Target)}");
+
+        return true;
     }
 
-    private void PlayCharacterPoseShot(
+    private bool PlayCharacterPoseShot(
         Character focusCharacter,
         Character lookCharacter,
         SkillCameraShot shot)
     {
-        if (focusCharacter == null)
-        {
-            return;
-        }
-
-        if (rig == null ||
-            rig.PoseCamera == null)
-        {
-            if (legacyCameraController != null)
-            {
-                legacyCameraController.FocusCharacter(
-                    focusCharacter,
-                    shot.PositionOffset,
-                    shot.LookAtOffset,
-                    shot.FocusDistance);
-
-                if (logDebug)
-                {
-                    Debug.Log(
-                        $"[BattleCameraDirector] Legacy Character Pose Shot / " +
-                        $"Character={focusCharacter.Data.CharacterName}, " +
-                        $"ShotType={shot.ShotType}");
-                }
-            }
-
-            return;
-        }
+        if (focusCharacter == null || shot == null || !EnsurePoseCamera("PlayCharacterPoseShot"))
+            return false;
 
         Transform focusTarget =
-            BattleCameraTargetResolver.GetLookAtTarget(
-                focusCharacter);
+            BattleCameraTargetResolver.GetLookAtTarget(focusCharacter);
 
         Transform lookTarget =
-            BattleCameraTargetResolver.GetLookAtTarget(
-                lookCharacter);
+            BattleCameraTargetResolver.GetLookAtTarget(lookCharacter);
 
         if (focusTarget == null)
-            return;
+            return false;
 
         Vector3 lookAtPosition =
             focusTarget.position +
-            focusTarget.TransformDirection(
-                shot.LookAtOffset);
+            focusTarget.TransformDirection(shot.LookAtOffset);
 
         Vector3 positionOffset =
-            focusTarget.TransformDirection(
-                shot.PositionOffset);
+            focusTarget.TransformDirection(shot.PositionOffset);
 
         if (positionOffset.sqrMagnitude <= 0.0001f)
         {
             Vector3 fallbackDirection =
                 lookTarget != null
-                    ? (focusTarget.position - lookTarget.position).normalized
+                    ? focusTarget.position - lookTarget.position
                     : -focusTarget.forward;
 
+            if (fallbackDirection.sqrMagnitude <= 0.0001f)
+                fallbackDirection = Vector3.back;
+
             positionOffset =
-                fallbackDirection *
+                fallbackDirection.normalized *
                 Mathf.Max(1f, shot.FocusDistance);
         }
 
-        Vector3 cameraPosition =
-            lookAtPosition + positionOffset;
+        SetPoseCamera(
+            lookAtPosition + positionOffset,
+            lookAtPosition,
+            null);
 
-        Quaternion cameraRotation =
-            Quaternion.LookRotation(
-                lookAtPosition - cameraPosition,
-                Vector3.up);
+        Log(
+            $"Character Pose Shot / Character={GetCharacterName(focusCharacter)}, " +
+            $"ShotType={shot.ShotType}");
 
-        rig.PoseCamera.transform.SetPositionAndRotation(
-            cameraPosition,
-            cameraRotation);
-
-        rig.SetLive(
-            rig.PoseCamera);
-
-        if (logDebug)
-        {
-            Debug.Log(
-                $"[BattleCameraDirector] Character Pose Shot / " +
-                $"Character={focusCharacter.Data.CharacterName}, " +
-                $"ShotType={shot.ShotType}");
-        }
+        return true;
     }
 
     private bool PlaySceneCameraPoint(
         BattleVisualRequest request,
         SkillCameraShot shot)
     {
-        Transform cameraPoint =
-            BattleCameraTargetResolver.ResolveCameraPoint(
-                request,
-                shot.CameraPoint);
+        if (request == null || shot == null || !EnsurePoseCamera("PlaySceneCameraPoint"))
+            return false;
 
-        Transform lookAtPoint =
-            BattleCameraTargetResolver.ResolveCameraPoint(
+        if (!BattleCameraTargetResolver.TryResolveCameraPoint(
                 request,
-                shot.LookAtPoint);
-
-        if (cameraPoint == null)
+                shot.CameraPoint,
+                out Transform cameraPoint,
+                out string cameraFailure))
         {
             Debug.LogWarning(
-                $"[BattleCameraDirector] CameraPoint 찾기 실패 / " +
-                $"Owner={shot.CameraPoint.Owner}, Key={shot.CameraPoint.Key}");
-
+                $"[BattleCameraDirector] CameraPoint 찾기 실패 / {cameraFailure}",
+                this);
             return false;
         }
 
-        if (rig == null ||
-            rig.PoseCamera == null)
+        Transform lookAtPoint = null;
+
+        if (shot.RotationMode == SkillCameraRotationMode.LookAtPoint)
         {
-            if (legacyCameraController == null)
-                return false;
-
-            legacyCameraController.FocusFromTransform(
-                cameraPoint,
-                lookAtPoint,
-                shot.RotationMode == SkillCameraRotationMode.CameraPointRotation);
-
-            if (logDebug)
+            if (!BattleCameraTargetResolver.TryResolveCameraPoint(
+                    request,
+                    shot.LookAtPoint,
+                    out lookAtPoint,
+                    out string lookFailure))
             {
-                Debug.Log(
-                    $"[BattleCameraDirector] Legacy Scene CameraPoint Shot / " +
-                    $"CameraPoint={cameraPoint.name}");
+                Character fallbackCharacter =
+                    BattleCameraTargetResolver.ResolveOwner(
+                        request,
+                        shot.LookAtPoint != null
+                            ? shot.LookAtPoint.Owner
+                            : SkillCameraPointOwner.Target);
+
+                lookAtPoint =
+                    BattleCameraTargetResolver.GetLookAtTarget(
+                        fallbackCharacter);
+
+                if (lookAtPoint == null)
+                {
+                    Debug.LogWarning(
+                        $"[BattleCameraDirector] LookAtPoint 찾기 실패 / {lookFailure}",
+                        this);
+                }
             }
-
-            return true;
         }
 
-        Quaternion rotation;
-
-        if (shot.RotationMode == SkillCameraRotationMode.CameraPointRotation ||
-            lookAtPoint == null)
-        {
-            rotation =
-                cameraPoint.rotation;
-        }
-        else
-        {
-            Vector3 lookDirection =
-                lookAtPoint.position - cameraPoint.position;
-
-            if (lookDirection.sqrMagnitude <= 0.0001f)
-                lookDirection = cameraPoint.forward;
-
-            rotation =
-                Quaternion.LookRotation(
-                    lookDirection.normalized,
-                    Vector3.up);
-        }
+        Quaternion rotation =
+            shot.RotationMode == SkillCameraRotationMode.CameraPointRotation ||
+            lookAtPoint == null
+                ? cameraPoint.rotation
+                : CreateLookRotation(
+                    lookAtPoint.position - cameraPoint.position,
+                    cameraPoint.rotation);
 
         rig.PoseCamera.transform.SetPositionAndRotation(
             cameraPoint.position,
             rotation);
 
-        rig.SetLive(
-            rig.PoseCamera);
+        if (!rig.SetLive(BattleCameraRigSlot.Pose))
+            return false;
 
-        if (logDebug)
-        {
-            Debug.Log(
-                $"[BattleCameraDirector] Scene CameraPoint Shot / " +
-                $"CameraPoint={cameraPoint.name}");
-        }
+        Log(
+            $"Scene CameraPoint Shot / CameraPoint={cameraPoint.name}");
 
         return true;
+    }
+
+    private void FocusSingleTargetWithGroupCamera(
+        Transform target,
+        float sideDistance,
+        float height,
+        float lookAtHeight)
+    {
+        if (target == null || rig?.GroupCamera == null)
+            return;
+
+        groupBinder?.BindOneTarget(target, 1f, 1f);
+
+        PlaceSingleTargetGroupCamera(
+            target,
+            sideDistance,
+            height,
+            lookAtHeight,
+            false);
+
+        rig.SetLive(BattleCameraRigSlot.Group);
+    }
+
+    private void PlaceSingleTargetGroupCamera(
+        Transform target,
+        float sideDistance,
+        float height,
+        float lookAtHeight,
+        bool flipSide)
+    {
+        if (target == null || rig?.GroupCamera == null)
+            return;
+
+        Vector3 side = target.right;
+
+        if (side.sqrMagnitude <= 0.0001f)
+            side = Vector3.right;
+
+        if (flipSide)
+            side = -side;
+
+        Vector3 cameraPosition =
+            target.position +
+            side.normalized * Mathf.Max(0.1f, sideDistance) +
+            Vector3.up * height;
+
+        Vector3 lookAtPosition =
+            target.position +
+            Vector3.up * lookAtHeight;
+
+        rig.GroupCamera.transform.SetPositionAndRotation(
+            cameraPosition,
+            CreateLookRotation(
+                lookAtPosition - cameraPosition,
+                rig.GroupCamera.transform.rotation));
     }
 
     private void PlaceGroupCameraSideView(
@@ -725,27 +769,14 @@ public class BattleCameraDirector : MonoBehaviour
         float lookAtHeight,
         bool flipSide)
     {
-        if (rig.GroupCamera == null)
+        if (rig?.GroupCamera == null || attackerTarget == null || targetTarget == null)
             return;
 
-        if (attackerTarget == null ||
-            targetTarget == null)
-        {
-            return;
-        }
+        Vector3 attackerPosition = attackerTarget.position;
+        Vector3 targetPosition = targetTarget.position;
+        Vector3 center = (attackerPosition + targetPosition) * 0.5f;
 
-        Vector3 attackerPosition =
-            attackerTarget.position;
-
-        Vector3 targetPosition =
-            targetTarget.position;
-
-        Vector3 center =
-            (attackerPosition + targetPosition) * 0.5f;
-
-        Vector3 line =
-            targetPosition - attackerPosition;
-
+        Vector3 line = targetPosition - attackerPosition;
         line.y = 0f;
 
         if (line.sqrMagnitude <= 0.0001f)
@@ -753,10 +784,7 @@ public class BattleCameraDirector : MonoBehaviour
 
         line.Normalize();
 
-        Vector3 side =
-            Vector3.Cross(
-                Vector3.up,
-                line).normalized;
+        Vector3 side = Vector3.Cross(Vector3.up, line).normalized;
 
         if (flipSide)
             side = -side;
@@ -770,159 +798,205 @@ public class BattleCameraDirector : MonoBehaviour
             center +
             Vector3.up * lookAtHeight;
 
-        Quaternion cameraRotation =
-            Quaternion.LookRotation(
-                lookAtPosition - cameraPosition,
-                Vector3.up);
-
         rig.GroupCamera.transform.SetPositionAndRotation(
             cameraPosition,
-            cameraRotation);
-    }
-    
-    private void ApplyBrainBlend(
-        SkillCameraShot shot)
-    {
-        if (shot == null)
-            return;
-
-        if (!shot.OverrideBrainBlend)
-            return;
-
-        ApplyBrainBlend(
-            shot.BlendStyle,
-            shot.BlendTime);
+            CreateLookRotation(
+                lookAtPosition - cameraPosition,
+                rig.GroupCamera.transform.rotation));
     }
 
-    private void ApplyReturnBrainBlend(
-        SkillCameraDefinition definition)
+    private void SetPoseCamera(
+        Vector3 position,
+        Vector3 lookAtPosition,
+        Quaternion? explicitRotation)
     {
-        if (definition == null)
+        if (rig?.PoseCamera == null)
             return;
 
-        if (!definition.OverrideReturnBrainBlend)
-            return;
+        Quaternion rotation =
+            explicitRotation ??
+            CreateLookRotation(
+                lookAtPosition - position,
+                rig.PoseCamera.transform.rotation);
 
-        ApplyBrainBlend(
-            definition.ReturnBlendStyle,
-            definition.ReturnBlendTime);
-    }
-
-    private void ApplyBrainBlend(
-        CinemachineBlendDefinition.Styles blendStyle,
-        float blendTime)
-    {
-        if (rig == null ||
-            rig.Brain == null)
-            return;
-
-        rig.Brain.DefaultBlend =
-            new CinemachineBlendDefinition(
-                blendStyle,
-                Mathf.Max(0f, blendTime));
-
-        if (logDebug)
-        {
-            Debug.Log(
-                $"[BattleCameraDirector] Brain Blend 변경 / " +
-                $"Style={blendStyle}, Time={Mathf.Max(0f, blendTime)}");
-        }
-    }
-
-    private void StopInteractionFocus()
-    {
-        interactionCameraActive = false;
-        interactionCameraReturning = false;
-
-        if (hasInteractionPreviousBrainBlend &&
-            rig != null &&
-            rig.Brain != null)
-        {
-            rig.Brain.DefaultBlend =
-                interactionPreviousBrainBlend;
-        }
-
-        hasInteractionPreviousBrainBlend = false;
+        rig.PoseCamera.transform.SetPositionAndRotation(position, rotation);
+        rig.SetLive(BattleCameraRigSlot.Pose);
     }
 
     private void BeginInteractionFocus()
     {
-        if (rig == null ||
-            rig.PoseCamera == null)
-        {
+        if (!EnsurePoseCamera("BeginInteractionFocus"))
             return;
-        }
 
         Transform sourceTransform =
             Camera.main != null
                 ? Camera.main.transform
-                : rig.OverviewCamera != null
-                    ? rig.OverviewCamera.transform
-                    : rig.PoseCamera.transform;
+                : rig.ActiveCamera != null
+                    ? rig.ActiveCamera.transform
+                    : rig.OverviewCamera != null
+                        ? rig.OverviewCamera.transform
+                        : rig.PoseCamera.transform;
 
         rig.PoseCamera.transform.SetPositionAndRotation(
             sourceTransform.position,
             sourceTransform.rotation);
 
-        if (rig.Brain != null)
-        {
-            interactionPreviousBrainBlend =
-                rig.Brain.DefaultBlend;
-
-            hasInteractionPreviousBrainBlend = true;
-
-            rig.Brain.DefaultBlend =
-                new CinemachineBlendDefinition(
-                    CinemachineBlendDefinition.Styles.Cut,
-                    0f);
-        }
-
-        interactionCameraActive = true;
-        interactionCameraReturning = false;
+        ApplyBlendForNextTransition(
+            CinemachineBlendDefinition.Styles.Cut,
+            0f);
+        rig.SetLive(BattleCameraRigSlot.Pose);
     }
 
-    private bool HasInteractionCameraArrived(
-        Transform cameraTransform)
+    private void UpdateInteractionCamera()
+    {
+        if (!interactionCameraActive || rig?.PoseCamera == null)
+            return;
+
+        Transform cameraTransform = rig.PoseCamera.transform;
+        float deltaTime = Time.deltaTime;
+
+        cameraTransform.position =
+            Vector3.MoveTowards(
+                cameraTransform.position,
+                interactionTargetPosition,
+                Mathf.Max(0.01f, interactionMoveSpeed) * deltaTime);
+
+        cameraTransform.rotation =
+            Quaternion.RotateTowards(
+                cameraTransform.rotation,
+                interactionTargetRotation,
+                Mathf.Max(0.01f, interactionRotationSpeed) * deltaTime);
+
+        if (HasInteractionCameraArrived(cameraTransform))
+            interactionCameraActive = false;
+    }
+
+    private bool HasInteractionCameraArrived(Transform cameraTransform)
     {
         if (cameraTransform == null)
             return true;
 
-        float positionDistance =
+        return
             Vector3.Distance(
                 cameraTransform.position,
-                interactionTargetPosition);
-
-        float rotationDistance =
+                interactionTargetPosition) <= interactionArriveDistance &&
             Quaternion.Angle(
                 cameraTransform.rotation,
-                interactionTargetRotation);
-
-        return positionDistance <= interactionArriveDistance &&
-               rotationDistance <= interactionArriveAngle;
+                interactionTargetRotation) <= interactionArriveAngle;
     }
 
-    private void CompleteInteractionReturn()
+    private void StopInteractionFocus()
     {
-        if (rig == null ||
-            rig.PoseCamera == null)
-        {
-            StopInteractionFocus();
+        interactionCameraActive = false;
+    }
+
+    private void ApplyBlendForNextTransition(
+        CinemachineBlendDefinition.Styles style,
+        float time)
+    {
+        if (rig?.Brain == null)
             return;
-        }
 
-        rig.PoseCamera.transform.SetPositionAndRotation(
-            interactionTargetPosition,
-            interactionTargetRotation);
+        CancelBlendRestore();
+        rig.ApplyBrainBlend(style, time);
 
-        rig.SetLive(
-            rig.OverviewCamera);
+        restoreBlendRoutine =
+            StartCoroutine(
+                RestoreBaseBlendAfterTransitionStarts());
 
-        StopInteractionFocus();
+        Log(
+            $"Brain Blend 변경 / Style={style}, Time={Mathf.Max(0f, time)}");
+    }
 
-        if (logDebug)
+    private IEnumerator RestoreBaseBlendAfterTransitionStarts()
+    {
+        int waitFrames = 0;
+
+        while (waitFrames < 3)
         {
-            Debug.Log(
-                "[BattleCameraDirector] Interaction Return Overview");
+            waitFrames++;
+            yield return null;
+
+            if (rig == null || rig.Brain == null)
+                yield break;
+
+            if (rig.Brain.ActiveBlend != null)
+                break;
         }
+
+        rig?.RestoreBaseBlend();
+        restoreBlendRoutine = null;
+    }
+
+    private void CancelBlendRestore()
+    {
+        if (restoreBlendRoutine == null)
+            return;
+
+        StopCoroutine(restoreBlendRoutine);
+        restoreBlendRoutine = null;
+    }
+
+    private bool EnsureRig(string operation)
+    {
+        if (rig != null && rig.IsCoreReady)
+            return true;
+
+        ResolveReferences();
+
+        if (rig != null && rig.IsCoreReady)
+        {
+            if (groupBinder == null)
+                BuildGroupBinder();
+
+            return true;
+        }
+
+        Debug.LogWarning(
+            $"[BattleCameraDirector] {operation} 실패: BattleCinemachineRig가 준비되지 않았습니다.",
+            this);
+        return false;
+    }
+
+    private bool EnsurePoseCamera(string operation)
+    {
+        if (!EnsureRig(operation))
+            return false;
+
+        if (rig.PoseCamera != null)
+            return true;
+
+        Debug.LogWarning(
+            $"[BattleCameraDirector] {operation} 실패: PoseCamera가 없습니다.",
+            this);
+        return false;
+    }
+
+    private static Quaternion CreateLookRotation(
+        Vector3 direction,
+        Quaternion fallback)
+    {
+        if (direction.sqrMagnitude <= 0.0001f)
+            return fallback;
+
+        return Quaternion.LookRotation(
+            direction.normalized,
+            Vector3.up);
+    }
+
+    private static string GetCharacterName(Character character)
+    {
+        if (character == null)
+            return "NULL";
+
+        return character.Data != null
+            ? character.Data.CharacterName
+            : character.name;
+    }
+
+    private void Log(string message)
+    {
+        if (logDebug)
+            Debug.Log($"[BattleCameraDirector] {message}", this);
     }
 }

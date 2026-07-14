@@ -25,12 +25,14 @@ public class StatusPopup : MonoBehaviour
     [Header("Popup")]
     [SerializeField] private Vector3 focusOffset = new Vector3(0f, 2f, 0f);
     [SerializeField, Min(0.1f)] private float focusDistance = 5f;
+    [SerializeField, Min(0.02f)] private float refreshInterval = 0.1f;
 
     private Camera mainCamera;
     private BattleCameraDirector battleCameraDirector;
     private CameraController cameraController;
 
     private bool isSelected;
+    private float nextRefreshTime;
 
     //--------------------------------------------------
 
@@ -83,7 +85,13 @@ public class StatusPopup : MonoBehaviour
 
         FaceCamera();
 
-        Refresh();
+        if (Time.unscaledTime >= nextRefreshTime)
+        {
+            nextRefreshTime =
+                Time.unscaledTime + refreshInterval;
+
+            Refresh();
+        }
     }
 
     //--------------------------------------------------
@@ -192,6 +200,7 @@ public class StatusPopup : MonoBehaviour
         if (popupRoot != null)
             popupRoot.SetActive(true);
 
+        nextRefreshTime = 0f;
         Refresh();
 
         outline?.EnableOutline();
@@ -345,15 +354,15 @@ public class StatusPopup : MonoBehaviour
         return battleManager.SpeedManager.GetSpeed(part);
     }
 
-    private ActionSlot GetCurrentSlot(BodyPart part)
+    private List<ActionSlot> GetCurrentSlots(BodyPart part)
     {
-        if (battleManager == null)
-            return null;
+        if (battleManager?.ActionManager == null ||
+            character == null)
+        {
+            return new List<ActionSlot>();
+        }
 
-        if (battleManager.ActionManager == null)
-            return null;
-
-        return battleManager.ActionManager.FindSlot(
+        return battleManager.ActionManager.FindSlots(
             character,
             part);
     }
@@ -486,13 +495,8 @@ public class StatusPopup : MonoBehaviour
         if (string.IsNullOrEmpty(partEffects))
             partEffects = "-";
 
-        ActionSlot slot =
-            GetCurrentSlot(part);
-
-        string skillName = "-";
-
-        if (slot != null && slot.Skill != null)
-            skillName = slot.Skill.SkillName;
+        List<ActionSlot> slots =
+            GetCurrentSlots(part);
 
         sb.AppendLine(
             $"- <b>{part.Type}</b> " +
@@ -500,8 +504,39 @@ public class StatusPopup : MonoBehaviour
             $"HP {part.PartHP:0}/{part.MaxPartHP:0} " +
             $"SPD {speed}");
 
-        sb.AppendLine(
-            $"  Skill : {skillName}");
+        if (slots.Count == 0)
+        {
+            sb.AppendLine("  Skill : -");
+        }
+        else
+        {
+            foreach (ActionSlot slot in slots)
+            {
+                if (slot == null)
+                    continue;
+
+                string skillName =
+                    slot.Skill == null
+                        ? "-"
+                        : slot.Skill.SkillName;
+
+                string targetName =
+                    slot.TargetCharacter == null
+                        ? "대상 없음"
+                        : slot.TargetCharacter.Data == null
+                            ? slot.TargetCharacter.name
+                            : slot.TargetCharacter.Data.CharacterName;
+
+                string targetPartName =
+                    slot.TargetPart == null
+                        ? "SINGLE HP"
+                        : slot.TargetPart.Type.ToString();
+
+                sb.AppendLine(
+                    $"  [#{slot.ActionIndex + 1}] {skillName} " +
+                    $"→ {targetName}/{targetPartName}");
+            }
+        }
 
         sb.AppendLine(
             $"  Status: {partEffects}");

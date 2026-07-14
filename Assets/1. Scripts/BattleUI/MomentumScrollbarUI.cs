@@ -2,7 +2,7 @@ using System.Collections;
 using UnityEngine;
 using UnityEngine.UI;
 
-public class MomentumScrollbarUI : MonoBehaviour
+public sealed class MomentumScrollbarUI : MonoBehaviour
 {
     [SerializeField] private BattleManager battleManager;
     [SerializeField] private Slider momentumSlider;
@@ -15,7 +15,8 @@ public class MomentumScrollbarUI : MonoBehaviour
     [SerializeField] private float maxMomentum = 100f;
 
     [Header("Animation")]
-    [SerializeField] private float animateDuration = 0.35f;
+    [SerializeField, Min(0f)] private float animateDuration = 0.35f;
+    [SerializeField] private bool useUnscaledTime = true;
 
     [Header("Debug")]
     [SerializeField] private bool logMomentumAnimation = true;
@@ -26,11 +27,8 @@ public class MomentumScrollbarUI : MonoBehaviour
 
     private void Awake()
     {
-        if (battleManager == null)
-            battleManager = FindFirstObjectByType<BattleManager>();
-
-        if (momentumSlider == null)
-            momentumSlider = GetComponent<Slider>();
+        ResolveReferences();
+        NormalizeRange();
 
         if (momentumSlider != null)
         {
@@ -38,29 +36,32 @@ public class MomentumScrollbarUI : MonoBehaviour
             momentumSlider.maxValue = 1f;
         }
 
-        displayedMomentum = GetRealMomentum();
-        ApplySlider(displayedMomentum);
+        ForceRefresh();
+    }
+
+    private void OnDisable()
+    {
+        StopAnimation();
+        isLocked = false;
     }
 
     private void Update()
     {
-        if (isLocked)
+        if (isLocked || animateRoutine != null)
             return;
 
-        if (animateRoutine != null)
+        float real = GetRealMomentum();
+
+        if (Mathf.Approximately(real, displayedMomentum))
             return;
 
-        displayedMomentum = GetRealMomentum();
+        displayedMomentum = real;
         ApplySlider(displayedMomentum);
     }
 
     public void LockCurrentDisplay()
     {
-        if (animateRoutine != null)
-        {
-            StopCoroutine(animateRoutine);
-            animateRoutine = null;
-        }
+        StopAnimation();
 
         displayedMomentum =
             GetDisplayedMomentumFromSlider();
@@ -70,72 +71,51 @@ public class MomentumScrollbarUI : MonoBehaviour
         if (logMomentumAnimation)
         {
             Debug.Log(
-                $"[MomentumScrollbarUI] Lock / Displayed={displayedMomentum}, Real={GetRealMomentum()}");
+                $"[MomentumScrollbarUI] Lock / " +
+                $"Displayed={displayedMomentum}, Real={GetRealMomentum()}");
         }
     }
 
     public void ReleaseAndAnimateToRealMomentum()
     {
-        if (animateRoutine != null)
-            StopCoroutine(animateRoutine);
-
-        animateRoutine =
-            StartCoroutine(
-                ReleaseAndAnimateToRealMomentumRoutine());
+        StopAnimation();
+        animateRoutine = StartCoroutine(
+            ReleaseAndAnimateToRealMomentumRoutine());
     }
 
     public IEnumerator ReleaseAndAnimateToRealMomentumRoutine()
     {
-        if (animateRoutine != null)
-        {
-            StopCoroutine(animateRoutine);
-            animateRoutine = null;
-        }
-
         isLocked = false;
 
-        float from =
-            displayedMomentum;
-
-        float to =
-            GetRealMomentum();
+        float from = displayedMomentum;
+        float to = GetRealMomentum();
 
         if (logMomentumAnimation)
         {
             Debug.Log(
-                $"[MomentumScrollbarUI] Release Routine / From={from}, To={to}");
+                $"[MomentumScrollbarUI] Release Routine / " +
+                $"From={from}, To={to}");
         }
 
-        yield return AnimateMomentum(
-            from,
-            to);
+        yield return AnimateMomentum(from, to);
     }
 
     public void ForceRefresh()
     {
-        if (animateRoutine != null)
-        {
-            StopCoroutine(animateRoutine);
-            animateRoutine = null;
-        }
-
+        StopAnimation();
         isLocked = false;
-
         displayedMomentum = GetRealMomentum();
         ApplySlider(displayedMomentum);
     }
 
-    private IEnumerator AnimateMomentum(
-        float from,
-        float to)
+    private IEnumerator AnimateMomentum(float from, float to)
     {
-        if (Mathf.Approximately(from, to))
+        if (animateDuration <= 0f ||
+            Mathf.Approximately(from, to))
         {
             displayedMomentum = to;
             ApplySlider(displayedMomentum);
-
             animateRoutine = null;
-
             yield break;
         }
 
@@ -143,24 +123,16 @@ public class MomentumScrollbarUI : MonoBehaviour
 
         while (elapsed < animateDuration)
         {
-            elapsed += Time.deltaTime;
+            elapsed += useUnscaledTime
+                ? Time.unscaledDeltaTime
+                : Time.deltaTime;
 
-            float t =
-                Mathf.Clamp01(
-                    elapsed / animateDuration);
+            float t = Mathf.Clamp01(
+                elapsed / animateDuration);
 
-            float eased =
-                Mathf.SmoothStep(
-                    0f,
-                    1f,
-                    t);
+            float eased = Mathf.SmoothStep(0f, 1f, t);
 
-            displayedMomentum =
-                Mathf.Lerp(
-                    from,
-                    to,
-                    eased);
-
+            displayedMomentum = Mathf.Lerp(from, to, eased);
             ApplySlider(displayedMomentum);
 
             yield return null;
@@ -168,37 +140,58 @@ public class MomentumScrollbarUI : MonoBehaviour
 
         displayedMomentum = to;
         ApplySlider(displayedMomentum);
+        animateRoutine = null;
+    }
 
+    private void ResolveReferences()
+    {
+        if (battleManager == null)
+            battleManager = FindFirstObjectByType<BattleManager>();
+
+        if (momentumSlider == null)
+            momentumSlider = GetComponent<Slider>();
+    }
+
+    private void NormalizeRange()
+    {
+        if (maxMomentum > minMomentum)
+            return;
+
+        maxMomentum = minMomentum + 1f;
+    }
+
+    private void StopAnimation()
+    {
+        if (animateRoutine == null)
+            return;
+
+        StopCoroutine(animateRoutine);
         animateRoutine = null;
     }
 
     private float GetRealMomentum()
     {
-        if (battleManager == null)
-            return 0f;
+        ResolveReferences();
 
-        if (battleManager.MomentumManager == null)
-            return 0f;
-
-        return battleManager.MomentumManager.CurrentMomentum;
+        return battleManager?.MomentumManager == null
+            ? 0f
+            : battleManager.MomentumManager.CurrentMomentum;
     }
 
-    private void ApplySlider(
-        float momentum)
+    private void ApplySlider(float momentum)
     {
         if (momentumSlider == null)
             return;
 
-        float normalized =
-            Mathf.InverseLerp(
-                minMomentum,
-                maxMomentum,
-                momentum);
+        float normalized = Mathf.InverseLerp(
+            minMomentum,
+            maxMomentum,
+            momentum);
 
         if (!playerAdvantageIsRight)
             normalized = 1f - normalized;
 
-        momentumSlider.value = normalized;
+        momentumSlider.SetValueWithoutNotify(normalized);
     }
 
     private float GetDisplayedMomentumFromSlider()
@@ -206,8 +199,7 @@ public class MomentumScrollbarUI : MonoBehaviour
         if (momentumSlider == null)
             return displayedMomentum;
 
-        float normalized =
-            momentumSlider.value;
+        float normalized = momentumSlider.value;
 
         if (!playerAdvantageIsRight)
             normalized = 1f - normalized;

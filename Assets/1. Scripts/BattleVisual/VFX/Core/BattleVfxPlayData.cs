@@ -6,6 +6,7 @@ public class BattleVfxPlayData
     public BattleVfxContext Context;
 
     public GameObject Instance;
+    public BattleVfxInstance PooledInstance;
     public Transform Anchor;
 
     public Vector3 Position;

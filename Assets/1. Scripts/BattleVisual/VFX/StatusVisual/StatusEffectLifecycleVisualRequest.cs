@@ -9,6 +9,7 @@ public enum StatusEffectVisualPhase
 
 public class StatusEffectLifecycleVisualRequest
 {
+    public Character Source;
     public Character Target;
     public BodyPart TargetPart;
 
@@ -19,4 +20,5 @@ public class StatusEffectLifecycleVisualRequest
     public int Duration;
 
     public StatusEffectRemoveReason RemoveReason;
+    public DamageContext DamageContext;
 }

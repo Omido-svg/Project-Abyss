@@ -13,6 +13,7 @@ public class DamageNumberUI : MonoBehaviour
     [SerializeField] private float duration = 0.8f;
     [SerializeField] private float startScale = 1.4f;
     [SerializeField] private float endScale = 1f;
+    [SerializeField] private bool useUnscaledTime = false;
 
     private RectTransform rectTransform;
     private Sequence sequence;
@@ -51,6 +52,7 @@ public class DamageNumberUI : MonoBehaviour
             Vector3.one * startScale;
 
         sequence = DOTween.Sequence();
+        sequence.SetUpdate(useUnscaledTime);
 
         sequence.Join(
             transform.DOScale(
@@ -104,6 +106,12 @@ public class DamageNumberUI : MonoBehaviour
 
         if (damageText == null)
             damageText = GetComponentInChildren<TMP_Text>(true);
+
+        if (damageText != null)
+        {
+            damageText.richText = true;
+            damageText.overflowMode = TextOverflowModes.Overflow;
+        }
     }
 
     private void CompletePlayback()

@@ -16,6 +16,52 @@ public class CharacterStatusController
         this.owner = owner;
     }
 
+    public void ClearAll(
+        StatusEffectRemoveReason reason =
+            StatusEffectRemoveReason.Cleared,
+        bool raiseEvents = false)
+    {
+        foreach (StatusEffect effect in characterStatuses.ToArray())
+        {
+            if (effect == null)
+                continue;
+
+            if (raiseEvents)
+            {
+                RemoveStatus(effect, reason);
+                continue;
+            }
+
+            effect.PrepareRemoval(reason);
+            effect.OnRemove();
+            characterStatuses.Remove(effect);
+        }
+
+        if (owner?.BodyParts == null)
+            return;
+
+        foreach (BodyPart part in owner.BodyParts)
+        {
+            if (part == null)
+                continue;
+
+            foreach (StatusEffect effect in part.StatusEffects.ToArray())
+            {
+                if (effect == null)
+                    continue;
+
+                if (raiseEvents)
+                {
+                    RemovePartStatus(part, effect, reason);
+                    continue;
+                }
+
+                effect.PrepareRemoval(reason);
+                part.RemoveStatus(effect);
+            }
+        }
+    }
+
     public StatusEffectApplyResult AddStatus(
         StatusEffect effect,
         Character source)
@@ -33,6 +79,13 @@ public class CharacterStatusController
     {
         if (owner == null || effect == null)
             return Rejected(effect, part);
+
+        if (part != null &&
+            part.Owner != null &&
+            part.Owner != owner)
+        {
+            return Rejected(effect, part);
+        }
 
         // Single HP 대상 또는 이미 파괴된 부위는 캐릭터 상태로 받는다.
         if (part == null || part.IsBroken)
@@ -545,3 +598,4 @@ public class CharacterStatusController
                "NULL";
     }
 }
+

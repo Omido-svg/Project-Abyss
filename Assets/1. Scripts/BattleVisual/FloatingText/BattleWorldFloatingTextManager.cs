@@ -4,8 +4,10 @@ using UnityEngine;
 
 public class BattleWorldFloatingTextManager : MonoBehaviour
 {
-    private const int MaxPoolSize = 4;
     private const string TieText = "동률";
+
+    [Header("Pool")]
+    [SerializeField, Min(0)] private int maxPoolSize = 4;
 
     [Header("References")]
     [SerializeField] private Camera worldCamera;
@@ -201,12 +203,29 @@ public class BattleWorldFloatingTextManager : MonoBehaviour
 
                 SetPairColor(pair, normalColor);
 
+                if (logDebug)
+                {
+                    Debug.Log(
+                        $"[BattleWorldFloatingTextManager] 합 표시 / " +
+                        $"Round={step.RoundIndex}, " +
+                        $"AttackerFinal={step.AttackerFinalPower}, " +
+                        $"AttackerSpeed={step.AttackerSpeedModifier}, " +
+                        $"AttackerMomentum={step.AttackerMomentumModifier}, " +
+                        $"AttackerClash={step.AttackerValue}, " +
+                        $"TargetFinal={step.TargetFinalPower}, " +
+                        $"TargetSpeed={step.TargetSpeedModifier}, " +
+                        $"TargetMomentum={step.TargetMomentumModifier}, " +
+                        $"TargetClash={step.TargetValue}");
+                }
+
                 yield return RunPairInParallel(
                     pair.Attacker,
                     pair.Attacker.RollToClashResult(
                         step.AttackerRollResult,
                         step.AttackerValue,
                         step.AttackerSpeedModifier,
+                        step.AttackerMomentumModifier,
+                        step.AttackerCritical,
                         rollDuration,
                         tickInterval,
                         randomMin,
@@ -216,6 +235,8 @@ public class BattleWorldFloatingTextManager : MonoBehaviour
                         step.TargetRollResult,
                         step.TargetValue,
                         step.TargetSpeedModifier,
+                        step.TargetMomentumModifier,
+                        step.TargetCritical,
                         rollDuration,
                         tickInterval,
                         randomMin,
@@ -497,7 +518,7 @@ public class BattleWorldFloatingTextManager : MonoBehaviour
 
         ui.ResetForPool();
 
-        if (isShuttingDown || textPool.Count >= MaxPoolSize)
+        if (isShuttingDown || textPool.Count >= maxPoolSize)
         {
             Destroy(ui.gameObject);
             return;

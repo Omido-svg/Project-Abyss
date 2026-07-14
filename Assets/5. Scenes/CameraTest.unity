@@ -735,6 +735,14 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   battleManager: {fileID: 1453355684}
   battleUIManager: {fileID: 605390726}
+  configureLogger: 1
+  enabledLogCategories: 225
+  minimumLogLevel: 1
+  includeRealtimeInLog: 0
+  includeFrameInLog: 1
+  captureRecentLogs: 1
+  recentLogCapacity: 250
+  clearRecentLogsOnStart: 1
   liveApply: 1
   refreshUIAfterApply: 1
   refreshCharacterViewAfterApply: 1
@@ -1639,11 +1647,13 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   uiManager: {fileID: 605390726}
+  registry: {fileID: 0}
   buttonText: {fileID: 1971725357}
   buttonImage: {fileID: 0}
   ownerSelectedColor: {r: 0.25, g: 0.65, b: 1, a: 1}
   targetSelectedColor: {r: 1, g: 0.25, b: 0.25, a: 1}
   weakenedColor: {r: 1, g: 0.85, b: 0.1, a: 1}
+  brokenColor: {r: 0.45, g: 0.15, b: 0.15, a: 1}
 --- !u!1 &537395235
 GameObject:
   m_ObjectHideFlags: 0
@@ -1825,6 +1835,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   battleManager: {fileID: 1453355684}
   skillSelectPanel: {fileID: 1299797369}
+  bodyPartButtonRegistry: {fileID: 0}
+  targetButtonRegistry: {fileID: 0}
 --- !u!4 &605390727
 Transform:
   m_ObjectHideFlags: 0
@@ -3107,11 +3119,13 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   uiManager: {fileID: 605390726}
+  registry: {fileID: 0}
   buttonText: {fileID: 1806438817}
   buttonImage: {fileID: 0}
   ownerSelectedColor: {r: 0.25, g: 0.65, b: 1, a: 1}
   targetSelectedColor: {r: 1, g: 0.25, b: 0.25, a: 1}
   weakenedColor: {r: 1, g: 0.85, b: 0.1, a: 1}
+  brokenColor: {r: 0.45, g: 0.15, b: 0.15, a: 1}
 --- !u!114 &1091805359
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3489,11 +3503,13 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   uiManager: {fileID: 605390726}
+  registry: {fileID: 0}
   buttonText: {fileID: 1445933611}
   buttonImage: {fileID: 0}
   ownerSelectedColor: {r: 0.25, g: 0.65, b: 1, a: 1}
   targetSelectedColor: {r: 1, g: 0.25, b: 0.25, a: 1}
   weakenedColor: {r: 1, g: 0.85, b: 0.1, a: 1}
+  brokenColor: {r: 0.45, g: 0.15, b: 0.15, a: 1}
 --- !u!1 &1244269855
 GameObject:
   m_ObjectHideFlags: 0
@@ -3625,6 +3641,7 @@ MonoBehaviour:
   mouseButtonDeselect: 1
   focusOffset: {x: 0, y: 2, z: 0}
   focusDistance: 5
+  refreshInterval: 0.1
 --- !u!114 &1244269864
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3778,6 +3795,8 @@ MonoBehaviour:
   battleManager: {fileID: 1453355684}
   canvas: {fileID: 253689328}
   arrowRoot: {fileID: 1289930840}
+  bodyPartButtonRegistry: {fileID: 0}
+  targetButtonRegistry: {fileID: 0}
   showPlayerArrows: 1
   showEnemyTargetArrows: 1
   showEnemySideOnClash: 1
@@ -4422,11 +4441,13 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   uiManager: {fileID: 605390726}
+  registry: {fileID: 0}
   buttonText: {fileID: 872342652}
   buttonImage: {fileID: 0}
   ownerSelectedColor: {r: 0.25, g: 0.65, b: 1, a: 1}
   targetSelectedColor: {r: 1, g: 0.25, b: 0.25, a: 1}
   weakenedColor: {r: 1, g: 0.85, b: 0.1, a: 1}
+  brokenColor: {r: 0.45, g: 0.15, b: 0.15, a: 1}
 --- !u!114 &1582033876
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -4699,11 +4720,13 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   uiManager: {fileID: 605390726}
+  registry: {fileID: 0}
   buttonText: {fileID: 1793331189}
   buttonImage: {fileID: 0}
   ownerSelectedColor: {r: 0.25, g: 0.65, b: 1, a: 1}
   targetSelectedColor: {r: 1, g: 0.25, b: 0.25, a: 1}
   weakenedColor: {r: 1, g: 0.85, b: 0.1, a: 1}
+  brokenColor: {r: 0.45, g: 0.15, b: 0.15, a: 1}
 --- !u!1 &1624683885 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 1451491642465541091, guid: 8773a60b5fbd4d94fa89250f6c909818, type: 3}
@@ -4856,11 +4879,13 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   uiManager: {fileID: 605390726}
+  registry: {fileID: 0}
   buttonText: {fileID: 204596918}
   buttonImage: {fileID: 0}
   ownerSelectedColor: {r: 0.25, g: 0.65, b: 1, a: 1}
   targetSelectedColor: {r: 1, g: 0.25, b: 0.25, a: 1}
   weakenedColor: {r: 1, g: 0.85, b: 0.1, a: 1}
+  brokenColor: {r: 0.45, g: 0.15, b: 0.15, a: 1}
 --- !u!1 &1653399051
 GameObject:
   m_ObjectHideFlags: 0
@@ -4914,10 +4939,13 @@ MonoBehaviour:
   OverviewCamera: {fileID: 2044571732}
   GroupCamera: {fileID: 1467957320}
   PoseCamera: {fileID: 1401397434}
+  PrestigeCamera: {fileID: 0}
   TargetGroup: {fileID: 1855348349}
   ImpulseSource: {fileID: 1857554064}
   ActivePriority: 100
   InactivePriority: 0
+  activateOverviewOnStart: 1
+  validateOnAwake: 1
 --- !u!1 &1665027744
 GameObject:
   m_ObjectHideFlags: 0
@@ -5586,6 +5614,7 @@ MonoBehaviour:
   minMomentum: -100
   maxMomentum: 100
   animateDuration: 0.35
+  useUnscaledTime: 1
   logMomentumAnimation: 1
 --- !u!114 &1805580446
 MonoBehaviour:
@@ -5807,10 +5836,10 @@ RectTransform:
   m_Children: []
   m_Father: {fileID: 382454537}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 0}
-  m_AnchorMax: {x: 0, y: 0}
+  m_AnchorMin: {x: 0, y: 1}
+  m_AnchorMax: {x: 0, y: 1}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 0, y: 0}
+  m_SizeDelta: {x: 58.54001, y: 36.21}
   m_Pivot: {x: 0, y: 1}
 --- !u!114 &1824034224
 MonoBehaviour:
@@ -6122,11 +6151,13 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   uiManager: {fileID: 605390726}
+  registry: {fileID: 0}
   buttonText: {fileID: 1994860953}
   buttonImage: {fileID: 0}
   ownerSelectedColor: {r: 0.25, g: 0.65, b: 1, a: 1}
   targetSelectedColor: {r: 1, g: 0.25, b: 0.25, a: 1}
   weakenedColor: {r: 1, g: 0.85, b: 0.1, a: 1}
+  brokenColor: {r: 0.45, g: 0.15, b: 0.15, a: 1}
 --- !u!114 &1854957848
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -6807,6 +6838,7 @@ MonoBehaviour:
     Point: {fileID: 435227556}
   - Key: SideCameraPoint
     Point: {fileID: 826883480}
+  warnDuplicateKeys: 1
 --- !u!114 &1940607340
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -6821,6 +6853,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   character: {fileID: 2094296668}
   characterView: {fileID: 2094296671}
+  pool: {fileID: 0}
   initialVfx: []
   logDebug: 0
 --- !u!1001 &1942539578
@@ -7057,6 +7090,7 @@ MonoBehaviour:
     Point: {fileID: 537395236}
   - Key: SideCameraPoint
     Point: {fileID: 618856361}
+  warnDuplicateKeys: 1
 --- !u!114 &1942539585
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -7071,6 +7105,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   character: {fileID: 1244269864}
   characterView: {fileID: 1244269866}
+  pool: {fileID: 0}
   initialVfx: []
   logDebug: 0
 --- !u!1 &1969176755
@@ -8154,11 +8189,13 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   uiManager: {fileID: 605390726}
+  registry: {fileID: 0}
   buttonText: {fileID: 1842025270}
   buttonImage: {fileID: 0}
   ownerSelectedColor: {r: 0.25, g: 0.65, b: 1, a: 1}
   targetSelectedColor: {r: 1, g: 0.25, b: 0.25, a: 1}
   weakenedColor: {r: 1, g: 0.85, b: 0.1, a: 1}
+  brokenColor: {r: 0.45, g: 0.15, b: 0.15, a: 1}
 --- !u!114 &2090521074
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -8400,6 +8437,7 @@ MonoBehaviour:
   mouseButtonDeselect: 1
   focusOffset: {x: 0, y: 2, z: 0}
   focusDistance: 5
+  refreshInterval: 0.1
 --- !u!114 &2094296671
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -8522,11 +8560,13 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   rig: {fileID: 1653399053}
-  legacyCameraController: {fileID: 0}
   interactionMoveSpeed: 8
   interactionRotationSpeed: 360
   interactionArriveDistance: 0.01
   interactionArriveAngle: 0.1
+  defaultGroupSideDistance: 7
+  defaultGroupHeight: 2.4
+  defaultGroupLookAtHeight: 1.4
   logDebug: 1
 --- !u!1 &2109434802
 GameObject:
@@ -8697,6 +8737,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2cfa013f8964a9946bff0da64143c99a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  maxPoolSize: 4
   worldCamera: {fileID: 1747701452}
   floatingTextPrefab: {fileID: 5792704604769117625, guid: 85e5e55b60b75ee40bad9e08a72ba63e, type: 3}
   clashTextOffset: {x: 0, y: 0.45, z: 0}
@@ -8764,6 +8805,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 85846d6ee54abf24cb0256607b9b00e0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  pool: {fileID: 0}
   logDebug: 0
 --- !u!114 &2113237155
 MonoBehaviour:
@@ -8780,7 +8822,8 @@ MonoBehaviour:
   visualDatabase: {fileID: 11400000, guid: 3df8e79963eace64f8997302530d5791, type: 2}
   vfxManager: {fileID: 2113237154}
   damageNumberManager: {fileID: 2113237156}
-  delayBetweenTicks: 0.15
+  delayBetweenRequests: 0.15
+  useUnscaledTime: 0
   logDebug: 0
 --- !u!114 &2113237156
 MonoBehaviour:
@@ -8794,6 +8837,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 80124e18ff158d6478df74a8580f2e20, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  maxPoolSize: 16
   damageNumberPrefab: {fileID: -8666099174865364457, guid: ed044f4e748240f48a9952e3b1a935d7, type: 3}
   canvas: {fileID: 253689328}
   worldCamera: {fileID: 1747701452}

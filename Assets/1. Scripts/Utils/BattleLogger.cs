@@ -1,83 +1,77 @@
 using System.Collections.Generic;
 using System.Text;
-using UnityEngine;
 
 public class BattleLogger
 {
-    private readonly List<string> logs = new();
+    private readonly List<string> logs =
+        new();
 
-    public IReadOnlyList<string> Logs => logs;
+    private readonly List<BattleLogEntry> entries =
+        new();
 
-    //------------------------------------------------
+    private int nextSequence = 1;
+
+    public IReadOnlyList<string> Logs =>
+        logs;
+
+    public IReadOnlyList<BattleLogEntry> Entries =>
+        entries;
 
     public void Clear()
     {
         logs.Clear();
+        entries.Clear();
+        nextSequence = 1;
     }
-
-    //------------------------------------------------
-    // PRETURN / FORESIGHT / 단순 행동 로그
-    //------------------------------------------------
 
     public void LogAction(
         BattleAction action,
         BattleLogType type)
     {
-        string log =
+        AddEntry(
             BattleLogEntry.Create(action)
                 .SetType(type)
-                .Build()
-                .ToString();
-
-        logs.Add(log);
+                .SetCategory(
+                    BattleLogCategory.Combat)
+                .Build());
     }
-
-    //------------------------------------------------
-    // 일방공격
-    //------------------------------------------------
 
     public void LogOneSideResult(
         BattleAction action,
         int damage,
         int beforeHP,
         int afterHP,
-        bool targetPartWasBrokenBeforeDamage = false)
+        bool targetPartWasBrokenBeforeDamage =
+            false)
     {
         if (action == null)
             return;
 
-        StringBuilder builder =
-            new StringBuilder();
+        BattleLogCategory category =
+            BattleLogCategory.Combat;
 
-        builder.AppendLine("====================================");
+        if (damage > 0)
+            category |= BattleLogCategory.Damage;
 
-        builder.AppendLine(
-            $"{action.Owner.Data.CharacterName} ({action.OwnerPart.Type})");
-
-        builder.AppendLine(
-            $" -> {action.Target.Data.CharacterName} ({action.TargetPart.Type})");
-
-        builder.AppendLine($"Skill : {action.Skill.SkillName}");
-        builder.AppendLine($"Type  : {action.ActionType}");
-        builder.AppendLine($"Speed : {action.Speed}");
-        builder.AppendLine($"Power : {action.RolledPower}");
-
-        AppendDamageLog(
-            builder,
-            damage,
-            beforeHP,
-            afterHP,
-            targetPartWasBrokenBeforeDamage);
-
-        builder.AppendLine();
-        builder.AppendLine("----------------------------------");
-
-        logs.Add(builder.ToString());
+        AddEntry(
+            BattleLogEntry.Create(action)
+                .SetType(
+                    ResolveType(action))
+                .SetCategory(category)
+                .SetDamage(
+                    damage,
+                    beforeHP,
+                    afterHP)
+                .SetTargetPartWasBrokenBeforeDamage(
+                    targetPartWasBrokenBeforeDamage)
+                .SetBroken(
+                    action.TargetPart != null &&
+                    action.TargetPart.IsBroken)
+                .SetDead(
+                    action.Target != null &&
+                    action.Target.IsDead)
+                .Build());
     }
-
-    //------------------------------------------------
-    // 일반 데미지
-    //------------------------------------------------
 
     public void LogDamage(
         BattleAction action,
@@ -86,25 +80,25 @@ public class BattleLogger
         int beforeHP,
         int afterHP)
     {
-        string log =
+        AddEntry(
             BattleLogEntry.Create(action)
                 .SetType(type)
-                .SetDamage(damage, beforeHP, afterHP)
-                .SetBroken(action != null &&
-                           action.TargetPart != null &&
-                           action.TargetPart.IsBroken)
-                .SetDead(action != null &&
-                         action.Target != null &&
-                         action.Target.IsDead)
-                .Build()
-                .ToString();
-
-        logs.Add(log);
+                .SetCategory(
+                    BattleLogCategory.Damage)
+                .SetDamage(
+                    damage,
+                    beforeHP,
+                    afterHP)
+                .SetBroken(
+                    action != null &&
+                    action.TargetPart != null &&
+                    action.TargetPart.IsBroken)
+                .SetDead(
+                    action != null &&
+                    action.Target != null &&
+                    action.Target.IsDead)
+                .Build());
     }
-
-    //------------------------------------------------
-    // 합 결과
-    //------------------------------------------------
 
     public void LogClashResult(
         BattleAction action,
@@ -115,98 +109,158 @@ public class BattleLogger
         int prestigeGain = 0,
         int beforeHP = 0,
         int afterHP = 0,
-        bool targetPartWasBrokenBeforeDamage = false)
+        bool targetPartWasBrokenBeforeDamage =
+            false)
     {
         if (action == null)
             return;
 
-        StringBuilder builder =
-            new StringBuilder();
+        BattleLogCategory category =
+            BattleLogCategory.Combat;
 
-        builder.AppendLine("====================================");
+        if (damage > 0)
+            category |= BattleLogCategory.Damage;
 
-        builder.AppendLine(
-            $"{action.Owner.Data.CharacterName} ({action.OwnerPart.Type})");
-
-        builder.AppendLine(
-            $" -> {action.Target.Data.CharacterName} ({action.TargetPart.Type})");
-
-        builder.AppendLine($"Skill : {action.Skill.SkillName}");
-        builder.AppendLine($"Type  : {action.ActionType}");
-        builder.AppendLine($"Speed : {action.Speed}");
-        builder.AppendLine($"Power : {action.RolledPower}");
-
-        builder.AppendLine($"Clash : {myClash} vs {enemyClash}");
-        builder.AppendLine(isWin ? "WIN" : "LOSE");
-
-        AppendDamageLog(
-            builder,
-            damage,
-            beforeHP,
-            afterHP,
-            targetPartWasBrokenBeforeDamage);
-
-        if (prestigeGain > 0)
-        {
-            builder.AppendLine($"Prestige : +{prestigeGain}");
-        }
-
-        builder.AppendLine();
-        builder.AppendLine("----------------------------------");
-
-        logs.Add(builder.ToString());
+        AddEntry(
+            BattleLogEntry.Create(action)
+                .SetClash(
+                    myClash,
+                    enemyClash)
+                .SetCategory(category)
+                .SetWinner(isWin)
+                .SetDamage(
+                    damage,
+                    beforeHP,
+                    afterHP)
+                .SetPrestige(
+                    prestigeGain)
+                .SetTargetPartWasBrokenBeforeDamage(
+                    targetPartWasBrokenBeforeDamage)
+                .SetBroken(
+                    action.TargetPart != null &&
+                    action.TargetPart.IsBroken)
+                .SetDead(
+                    action.Target != null &&
+                    action.Target.IsDead)
+                .Build());
     }
 
-    //------------------------------------------------
+    public List<BattleLogEntry> GetEntries(
+        BattleLogCategory categories,
+        BattleLogLevel minimumLevel =
+            BattleLogLevel.Trace)
+    {
+        List<BattleLogEntry> result =
+            new();
+
+        if (categories == BattleLogCategory.None)
+            categories = BattleLogCategory.All;
+
+        foreach (BattleLogEntry entry in entries)
+        {
+            if (entry == null)
+                continue;
+
+            if (entry.Level < minimumLevel)
+                continue;
+
+            if ((entry.Category & categories) == 0)
+                continue;
+
+            result.Add(entry);
+        }
+
+        return result;
+    }
 
     public void PrintTurn(int turn)
     {
-        StringBuilder sb =
-            new StringBuilder();
+        StringBuilder builder =
+            new();
 
-        sb.AppendLine("==================================");
-        sb.AppendLine($"TURN {turn} RESULT");
-        sb.AppendLine("==================================");
+        builder.AppendLine(
+            "==================================");
 
-        foreach (string log in logs)
+        builder.AppendLine(
+            $"TURN {turn} RESULT");
+
+        builder.AppendLine(
+            "==================================");
+
+        BattleLogCategory visibleCategories =
+            BattleLogCategory.None;
+
+        int visibleCount = 0;
+
+        foreach (BattleLogEntry entry in entries)
         {
-            if (string.IsNullOrEmpty(log))
+            if (entry == null)
                 continue;
 
-            sb.AppendLine(log);
+            if (entry.TurnNumber <= 0)
+                entry.TurnNumber = turn;
+
+            if (!BattleDebugLog.IsEnabled(
+                    entry.Category,
+                    entry.Level))
+            {
+                continue;
+            }
+
+            visibleCategories |=
+                entry.Category;
+
+            builder.AppendLine(
+                entry.ToString());
+
+            visibleCount++;
         }
 
-        sb.AppendLine("==================================");
+        builder.AppendLine(
+            "==================================");
 
-        Debug.Log(sb.ToString());
+        if (visibleCount > 0)
+        {
+            BattleDebugLog.Log(
+                visibleCategories,
+                builder.ToString(),
+                BattleLogLevel.Info);
+        }
 
-        logs.Clear();
+        Clear();
     }
 
-    //------------------------------------------------
-
-    private void AppendDamageLog(
-        StringBuilder builder,
-        int damage,
-        int beforeHP,
-        int afterHP,
-        bool targetPartWasBrokenBeforeDamage)
+    private void AddEntry(
+        BattleLogEntry entry)
     {
-        if (builder == null)
+        if (entry == null)
             return;
 
-        if (damage <= 0)
-            return;
+        entry.Sequence =
+            nextSequence++;
 
-        if (targetPartWasBrokenBeforeDamage)
+        entry.CaptureActionSnapshot();
+
+        entries.Add(entry);
+        logs.Add(entry.ToString());
+    }
+
+    private static BattleLogType ResolveType(
+        BattleAction action)
+    {
+        if (action == null)
+            return BattleLogType.Normal;
+
+        switch (action.ActionType)
         {
-            builder.AppendLine("Target Part : Broken");
-            builder.AppendLine($"Damage : {damage}");
-            builder.AppendLine("Damage Type : Direct");
-            return;
-        }
+            case ActionType.Preparation:
+                return BattleLogType.Preparation;
 
-        builder.AppendLine($"Damage : {damage}");
-        builder.AppendLine($"HP : {beforeHP} -> {afterHP}");
+            case ActionType.Prestige:
+                return BattleLogType.Prestige;
+
+            default:
+                return BattleLogType.Normal;
+        }
     }
 }

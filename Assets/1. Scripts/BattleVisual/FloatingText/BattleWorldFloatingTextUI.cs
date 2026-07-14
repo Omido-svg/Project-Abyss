@@ -13,6 +13,13 @@ public class BattleWorldFloatingTextUI : MonoBehaviour
     [SerializeField] private bool faceCamera = true;
     [SerializeField] private Vector3 rotationOffset = Vector3.zero;
 
+    [Header("TMP Icon Compatibility")]
+    [SerializeField] private BattleVisualIconMode iconMode = BattleVisualIconMode.PlainText;
+    [SerializeField] private TMP_SpriteAsset iconSpriteAsset;
+    [SerializeField] private string diceSpriteName = "dice";
+    [SerializeField] private string coinSpriteName = "coin";
+    [SerializeField] private string slotSpriteName = "slot";
+
     [Header("Debug")]
     [SerializeField] private bool logDebug;
 
@@ -40,7 +47,11 @@ public class BattleWorldFloatingTextUI : MonoBehaviour
         {
             text.overflowMode = TextOverflowModes.Overflow;
             text.alignment = TextAlignmentOptions.Center;
-            text.richText = true;
+
+            BattleVisualTextUtility.ConfigureTmp(
+                text,
+                iconSpriteAsset,
+                iconMode);
         }
     }
 
@@ -99,7 +110,12 @@ public class BattleWorldFloatingTextUI : MonoBehaviour
         if (text == null)
             return;
 
-        text.text = value;
+        text.text = BattleVisualTextUtility.FormatRollText(
+            value,
+            iconMode,
+            diceSpriteName,
+            coinSpriteName,
+            slotSpriteName);
     }
 
     public void SetColor(Color color)
@@ -151,10 +167,34 @@ public class BattleWorldFloatingTextUI : MonoBehaviour
         SetText(finalValue.ToString());
     }
     
+    // 기존 호출부 호환.
     public IEnumerator RollToClashResult(
         RollResult rollResult,
         int finalClashValue,
         int speedModifier,
+        float rollDuration,
+        float tickInterval,
+        int randomMin,
+        int randomMax)
+    {
+        yield return RollToClashResult(
+            rollResult,
+            finalClashValue,
+            speedModifier,
+            rollResult?.MomentumModifier ?? 0,
+            rollResult?.IsCritical ?? false,
+            rollDuration,
+            tickInterval,
+            randomMin,
+            randomMax);
+    }
+
+    public IEnumerator RollToClashResult(
+        RollResult rollResult,
+        int finalClashValue,
+        int speedModifier,
+        int momentumModifier,
+        bool critical,
         float rollDuration,
         float tickInterval,
         int randomMin,
@@ -167,10 +207,12 @@ public class BattleWorldFloatingTextUI : MonoBehaviour
                 $"Type={rollResult?.ResolverType}, " +
                 $"Display={rollResult?.GetShortDisplayText()}, " +
                 $"FinalPower={rollResult?.FinalPower}, " +
-                $"FinalClash={finalClashValue}, " +
-                $"SpeedModifier={speedModifier}");
+                $"SpeedModifier={speedModifier}, " +
+                $"MomentumModifier={momentumModifier}, " +
+                $"ClashPower={finalClashValue}, " +
+                $"Critical={critical}");
         }
-            
+
         if (rollResult == null)
         {
             yield return RollToValue(
@@ -185,24 +227,17 @@ public class BattleWorldFloatingTextUI : MonoBehaviour
 
         SetAlpha(1f);
 
-        float elapsed =
-            0f;
-
-        float tickTimer =
-            0f;
+        float elapsed = 0f;
+        float tickTimer = 0f;
 
         while (elapsed < rollDuration)
         {
-            elapsed +=
-                Time.deltaTime;
-
-            tickTimer +=
-                Time.deltaTime;
+            elapsed += Time.deltaTime;
+            tickTimer += Time.deltaTime;
 
             if (tickTimer >= tickInterval)
             {
-                tickTimer =
-                    0f;
+                tickTimer = 0f;
 
                 SetText(
                     CreateRollingPreviewText(
@@ -218,9 +253,11 @@ public class BattleWorldFloatingTextUI : MonoBehaviour
             CreateFinalRollText(
                 rollResult,
                 finalClashValue,
-                speedModifier));
+                speedModifier,
+                momentumModifier,
+                critical));
     }
-    
+
     private string CreateRollingPreviewText(
         RollResult rollResult,
         int randomMin,
@@ -303,7 +340,9 @@ public class BattleWorldFloatingTextUI : MonoBehaviour
     private string CreateFinalRollText(
         RollResult rollResult,
         int finalClashValue,
-        int speedModifier)
+        int speedModifier,
+        int momentumModifier,
+        bool critical)
     {
         if (rollResult == null)
             return finalClashValue.ToString();
@@ -312,34 +351,44 @@ public class BattleWorldFloatingTextUI : MonoBehaviour
             rollResult.GetShortDisplayText();
 
         string powerText =
-            $"기본 {rollResult.BasePower} + 굴림 {rollResult.ModifiedValue}";
+            rollResult.GetPurePowerBreakdown();
 
-        if (rollResult.ExternalModifier != 0)
-        {
-            powerText +=
-                rollResult.ExternalModifier > 0
-                    ? $" + 보정 {rollResult.ExternalModifier}"
-                    : $" - 보정 {Mathf.Abs(rollResult.ExternalModifier)}";
-        }
+        AppendModifier(
+            ref powerText,
+            "속도",
+            speedModifier);
+
+        AppendModifier(
+            ref powerText,
+            "기세",
+            momentumModifier);
 
         powerText +=
-            $" = {rollResult.FinalPower}";
+            $" / 합 {finalClashValue}";
 
-        if (speedModifier != 0)
+        if (critical)
         {
             powerText +=
-                speedModifier > 0
-                    ? $" / 속도 +{speedModifier}"
-                    : $" / 속도 {speedModifier}";
+                " / <color=#FFD166><b>[CRITICAL]</b></color>";
         }
 
-        if (finalClashValue != rollResult.FinalPower)
-        {
-            powerText +=
-                $" / 합 {finalClashValue}";
-        }
+        return
+            $"{baseText}\n" +
+            $"<size=70%>{powerText}</size>";
+    }
 
-        return $"{baseText}\n<size=70%>{powerText}</size>";
+    private static void AppendModifier(
+        ref string textValue,
+        string label,
+        int modifier)
+    {
+        if (modifier == 0)
+            return;
+
+        textValue +=
+            modifier > 0
+                ? $" / {label} +{modifier}"
+                : $" / {label} {modifier}";
     }
 
     public IEnumerator FadeAndDestroy(float fadeDuration)
@@ -418,3 +467,5 @@ public class BattleWorldFloatingTextUI : MonoBehaviour
             Quaternion.Euler(rotationOffset);
     }
 }
+
+

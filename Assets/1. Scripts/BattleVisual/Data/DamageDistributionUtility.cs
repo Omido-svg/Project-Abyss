@@ -7,114 +7,116 @@ public static class DamageDistributionUtility
         int totalDamage,
         int hitCount)
     {
-        List<int> result =
-            new List<int>(Mathf.Max(0, hitCount));
+        if (hitCount <= 0)
+            return new List<int>();
 
-        if (totalDamage <= 0)
-            return result;
-
-        if (hitCount <= 1)
-        {
-            result.Add(totalDamage);
-            return result;
-        }
-
-        int weightSum =
-            hitCount * (hitCount + 1) / 2;
-
-        int allocated = 0;
+        List<int> weights = new List<int>(hitCount);
 
         for (int i = 1; i <= hitCount; i++)
-        {
-            int damage;
+            weights.Add(i);
 
-            if (i == hitCount)
-            {
-                damage =
-                    totalDamage - allocated;
-            }
-            else
-            {
-                damage =
-                    Mathf.FloorToInt(
-                        totalDamage * (i / (float)weightSum));
-            }
-
-            result.Add(damage);
-            allocated += damage;
-        }
-
-        return result;
+        return DistributeByWeights(totalDamage, weights, hitCount);
     }
 
     public static List<int> DistributeByWeights(
         int totalDamage,
         IReadOnlyList<int> weights)
     {
-        int weightCount =
-            weights != null
-                ? weights.Count
-                : 0;
+        int count = weights?.Count ?? 0;
 
-        List<int> result =
-            new List<int>(weightCount);
-
-        if (totalDamage <= 0)
-            return result;
-
-        if (weightCount == 0)
+        if (count <= 0)
         {
-            result.Add(totalDamage);
-            return result;
+            return totalDamage > 0
+                ? new List<int> { totalDamage }
+                : new List<int>();
         }
 
-        int weightSum = 0;
-        int lastPositiveWeightIndex = -1;
+        return DistributeByWeights(totalDamage, weights, count);
+    }
 
-        for (int i = 0; i < weightCount; i++)
+    public static List<int> DistributeByWeights(
+        int totalDamage,
+        IReadOnlyList<int> weights,
+        int expectedHitCount)
+    {
+        int count = Mathf.Max(0, expectedHitCount);
+        List<int> result = new List<int>(count);
+
+        if (count == 0)
+            return result;
+
+        for (int i = 0; i < count; i++)
+            result.Add(0);
+
+        int safeDamage = Mathf.Max(0, totalDamage);
+
+        if (safeDamage == 0)
+            return result;
+
+        long weightSum = 0;
+        int lastPositiveIndex = -1;
+
+        for (int i = 0; i < count; i++)
         {
-            int weight = Mathf.Max(0, weights[i]);
+            int weight = weights != null && i < weights.Count
+                ? Mathf.Max(0, weights[i])
+                : 1;
+
             weightSum += weight;
 
             if (weight > 0)
-                lastPositiveWeightIndex = i;
+                lastPositiveIndex = i;
         }
 
-        if (weightSum <= 0)
+        if (weightSum <= 0 || lastPositiveIndex < 0)
         {
-            result.Add(totalDamage);
+            result[count - 1] = safeDamage;
             return result;
         }
 
-        int remainingDamage = totalDamage;
+        int allocated = 0;
 
-        for (int i = 0; i < weightCount; i++)
+        for (int i = 0; i < count; i++)
         {
-            int splitDamage;
+            int weight = weights != null && i < weights.Count
+                ? Mathf.Max(0, weights[i])
+                : 1;
 
-            if (i == lastPositiveWeightIndex)
+            int split;
+
+            if (i == lastPositiveIndex)
             {
-                splitDamage = remainingDamage;
+                split = safeDamage - allocated;
+            }
+            else if (weight <= 0)
+            {
+                split = 0;
             }
             else
             {
-                int weight = Mathf.Max(0, weights[i]);
+                split = Mathf.FloorToInt(
+                    safeDamage * (weight / (float)weightSum));
 
-                splitDamage =
-                    Mathf.FloorToInt(
-                        totalDamage * (float)weight / weightSum);
-
-                splitDamage =
-                    Mathf.Clamp(
-                        splitDamage,
-                        0,
-                        remainingDamage);
+                split = Mathf.Clamp(split, 0, safeDamage - allocated);
             }
 
-            result.Add(splitDamage);
-            remainingDamage -= splitDamage;
+            result[i] = split;
+            allocated += split;
         }
 
         return result;
+    }
+
+    public static int Sum(IReadOnlyList<int> values)
+    {
+        if (values == null)
+            return 0;
+
+        int total = 0;
+
+        for (int i = 0; i < values.Count; i++)
+            total += Mathf.Max(0, values[i]);
+
+        return total;
     }
 }

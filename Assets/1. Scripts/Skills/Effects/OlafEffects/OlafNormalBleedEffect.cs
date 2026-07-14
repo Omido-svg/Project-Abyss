@@ -1,75 +1,74 @@
 using UnityEngine;
 
 [CreateAssetMenu(
-    menuName = "Battle/Skill Effect/Olaf/Break Own Part",
-    fileName = "OlafBreakOwnPartEffect")]
-public class OlafBreakOwnPartEffect : SkillEffectDefinition
+    menuName = "Battle/Skill Effect/Olaf/Normal Bleed",
+    fileName = "OlafNormalBleedEffect")]
+public class OlafNormalBleedEffect : SkillEffectDefinition
 {
-    public PartType[] PriorityParts;
+    [SerializeField, Min(1)]
+    private int duration = 3;
 
     public override void Apply(
         SkillEffectContext context)
     {
-        if (context?.Owner == null ||
-            context.Resolver == null)
+        if (context?.Owner is not Olaf ||
+            context.Target == null ||
+            context.Resolver == null ||
+            context.Action?.ActionType !=
+                ActionType.NormalAttack)
         {
             return;
         }
 
-        BodyPart part =
-            FindPartToBreak(context.Owner);
-
-        if (part == null)
+        // SO Timing을 AfterDamage로 설정한 경우에는
+        // 실제 피해를 준 공격에서만 출혈을 부여한다.
+        if (context.Timing ==
+                SkillEffectTiming.AfterDamage &&
+            (context.DamageContext == null ||
+             context.DamageContext.GetDisplayDamage() <= 0))
         {
-            Debug.LogWarning(
-                $"{context.Owner.Data.CharacterName} 도사림 실패 : " +
-                "파괴 가능한 부위 없음");
             return;
         }
+
+        OlafMadnessMechanic madness =
+            context.Owner.GetMechanic<OlafMadnessMechanic>();
+
+        int bleedAmount =
+            madness?.GetNormalAttackBleedAmount() ?? 1;
+
+        Bleeding bleeding =
+            new Bleeding(
+                bleedAmount,
+                duration);
+
+        bool applied;
+
+        if (context.TargetPart != null &&
+            !context.TargetPart.IsBroken)
+        {
+            applied =
+                context.Resolver.ApplyBodyPartStatus(
+                    EffectRequest.BodyPartStatus(
+                        context.Owner,
+                        context.Target,
+                        context.TargetPart,
+                        bleeding));
+        }
+        else
+        {
+            applied =
+                context.Resolver.ApplyCharacterStatus(
+                    EffectRequest.CharacterStatus(
+                        context.Owner,
+                        context.Target,
+                        bleeding));
+        }
+
+        if (!applied)
+            return;
 
         Debug.Log(
-            $"{context.Owner.Data.CharacterName} 도사림 : " +
-            $"{part.Type} 부위 파괴");
-
-        EffectRequest request =
-            EffectRequest.ForceBreak(
-                context.Owner,
-                context.Owner,
-                part);
-
-        request.SourceAction = context.Action;
-
-        context.Resolver.ForceBreakPart(request);
-    }
-
-    private BodyPart FindPartToBreak(
-        Character character)
-    {
-        if (character?.BodyParts == null)
-            return null;
-
-        if (PriorityParts != null)
-        {
-            foreach (PartType type in PriorityParts)
-            {
-                foreach (BodyPart part in character.BodyParts)
-                {
-                    if (part != null &&
-                        !part.IsBroken &&
-                        part.Type == type)
-                    {
-                        return part;
-                    }
-                }
-            }
-        }
-
-        foreach (BodyPart part in character.BodyParts)
-        {
-            if (part != null && !part.IsBroken)
-                return part;
-        }
-
-        return null;
+            $"{context.Owner.Data.CharacterName} 일반공격 효과 : " +
+            $"출혈 {bleedAmount}, {duration}턴 부여");
     }
 }

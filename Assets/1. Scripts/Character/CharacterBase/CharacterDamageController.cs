@@ -1,6 +1,6 @@
 using UnityEngine;
 
-public class CharacterDamageController
+public sealed class CharacterDamageController
 {
     private readonly Character owner;
     private readonly CharacterBodyPartController bodyPartController;
@@ -12,10 +12,6 @@ public class CharacterDamageController
         this.owner = owner;
         this.bodyPartController = bodyPartController;
     }
-
-    //------------------------------------------------
-    // 기존 외부 호출 유지
-    //------------------------------------------------
 
     public void TakeDamage(
         BodyPart targetPart,
@@ -64,10 +60,6 @@ public class CharacterDamageController
                 sourceAction));
     }
 
-    //------------------------------------------------
-    // 피해 타입 라우터
-    //------------------------------------------------
-
     private void ApplyDamage(DamageRequest request)
     {
         if (!CanReceiveDamage(request))
@@ -76,6 +68,9 @@ public class CharacterDamageController
         switch (request.Type)
         {
             case DamageType.SkillPart:
+            case DamageType.Counter:
+            case DamageType.Prestige:
+            case DamageType.BleedExplosion:
                 ApplySkillPartDamage(request);
                 break;
 
@@ -83,77 +78,66 @@ public class CharacterDamageController
                 ApplyStatusPartDamage(request);
                 break;
 
-            case DamageType.Direct:
-                ApplyDirectDamage(request);
-                break;
-
             case DamageType.True:
                 ApplyTrueDamage(request);
+                break;
+
+            case DamageType.Direct:
+            case DamageType.SelfCost:
+            case DamageType.Execution:
+            default:
+                ApplyDirectDamage(request);
                 break;
         }
     }
 
-    //------------------------------------------------
-    // 공통 검증
-    //------------------------------------------------
-
     private bool CanReceiveDamage(DamageRequest request)
     {
-        if (owner == null)
+        if (owner == null ||
+            owner.RuntimeStatus == null ||
+            owner.IsDead ||
+            request.Damage <= 0)
+        {
             return false;
+        }
 
-        if (owner.IsDead)
-            return false;
+        BodyPart part = request.TargetPart;
 
-        if (request.Damage <= 0)
+        if (part != null &&
+            part.Owner != null &&
+            part.Owner != owner)
+        {
             return false;
+        }
 
         return true;
     }
 
-    //------------------------------------------------
-    // 1. 일반 스킬 부위 피해
-    //------------------------------------------------
-    // 규칙:
-    // - targetPart == null      -> 직접 피해
-    // - targetPart Broken      -> 직접 피해
-    // - targetPart Weakened    -> 직접 피해
-    //      - CanBreakPart true면 약화 부위 파괴 가능
-    // - targetPart Normal      -> 부위 HP 감소
-    //      - HP 0 이하가 되면 Weakened
-    //      - Normal 상태에서 바로 Broken은 불가능
-    //------------------------------------------------
-
     private void ApplySkillPartDamage(DamageRequest request)
     {
-        BodyPart targetPart =
-            request.TargetPart;
+        BodyPart targetPart = request.TargetPart;
 
-        if (targetPart == null)
+        if (targetPart == null || targetPart.IsBroken)
         {
-            ApplyDirectDamage(
-                DamageRequest.Direct(request.Damage));
-
-            return;
-        }
-
-        if (targetPart.IsBroken)
-        {
-            ApplyDirectDamage(
-                DamageRequest.Direct(request.Damage));
-
+            ApplyDirectDamage(request);
             return;
         }
 
         if (targetPart.IsWeakened)
         {
+            // 약화 부위 타격은 캐릭터 직접 피해다.
+            // 파괴 가능 공격이면 사망 판정보다 먼저 부위 파괴를 완료해
+            // 불사의 분노 등의 즉시 반응이 개입할 수 있게 한다.
             ApplyDirectDamage(
-                DamageRequest.Direct(request.Damage));
+                request,
+                checkDead: false);
 
             if (request.CanBreakPart)
             {
-                bodyPartController.TryBreakWeakenedPart(
-                    targetPart);
+                bodyPartController?.TryBreakWeakenedPart(
+                    targetPart,
+                    owner.ActiveDamageContext?.Attacker,
+                    owner.ActiveDamageContext?.Action);
             }
 
             owner.CheckDead();
@@ -167,23 +151,15 @@ public class CharacterDamageController
         owner.CheckDead();
     }
 
-    //------------------------------------------------
-    // 2. 상태이상 부위 피해
-    //------------------------------------------------
-    // 규칙:
-    // - 상태이상 피해는 Normal 부위를 Weakened로 만들 수 있음
-    // - 상태이상 피해는 Broken을 만들 수 없음
-    // - 이미 Weakened면 추가 파괴 없음
-    // - Broken 부위에는 적용하지 않음
-    //------------------------------------------------
-
     private void ApplyStatusPartDamage(DamageRequest request)
     {
-        BodyPart targetPart =
-            request.TargetPart;
+        BodyPart targetPart = request.TargetPart;
 
         if (targetPart == null)
+        {
+            ApplyDirectDamage(request);
             return;
+        }
 
         if (targetPart.IsBroken)
             return;
@@ -191,128 +167,112 @@ public class CharacterDamageController
         if (targetPart.IsWeakened)
         {
             Debug.Log(
-                $"{owner.Data.CharacterName} {targetPart.Type} 부위는 이미 약화 상태입니다. " +
+                $"{OwnerName()} {targetPart.Type} 부위는 이미 약화 상태입니다. " +
                 $"{request.SourceEffect?.Name} 피해로 파괴되지 않습니다.");
-
             return;
         }
 
-        int actualDamage =
-            Mathf.Min(
-                request.Damage,
-                Mathf.CeilToInt(targetPart.PartHP));
+        int beforePartHP = Mathf.Max(
+            0,
+            Mathf.CeilToInt(targetPart.PartHP));
+
+        int actualDamage = targetPart.ApplyDamage(
+            request.Damage);
 
         if (actualDamage <= 0)
             return;
 
-        float beforePartHP =
-            targetPart.PartHP;
-
-        targetPart.PartHP =
-            Mathf.Max(
-                targetPart.PartHP - actualDamage,
-                0f);
-
-        owner.ReduceCurrentHP(
-            actualDamage);
+        owner.ReduceCurrentHP(actualDamage);
 
         Debug.Log(
-            $"{owner.Data.CharacterName}의 {targetPart.Type} 부위에 " +
+            $"{OwnerName()}의 {targetPart.Type} 부위에 " +
             $"{request.SourceEffect?.Name} 피해 {actualDamage} " +
-            $"HP : {beforePartHP:0} -> {targetPart.PartHP:0}");
+            $"HP : {beforePartHP} -> {targetPart.PartHP:0}");
 
         if (targetPart.PartHP <= 0f)
         {
-            bodyPartController.WeakenPart(
-                targetPart);
+            bodyPartController?.WeakenPart(
+                targetPart,
+                owner.ActiveDamageContext?.Attacker,
+                owner.ActiveDamageContext?.Action);
         }
 
         owner.CheckDead();
     }
 
-    //------------------------------------------------
-    // 3. 직접 피해
-    //------------------------------------------------
-    // 규칙:
-    // - 부위 상태와 무관하게 캐릭터 현재 HP 감소
-    // - Broken 부위 타격, Weakened 부위 타격의 결과로도 사용됨
-    //------------------------------------------------
-
     private void ApplyDirectDamage(
-        DamageRequest request)
+        DamageRequest request,
+        bool checkDead = true)
     {
-        int beforeHp =
-            owner.CurrentHP;
+        int beforeHp = owner.CurrentHP;
 
-        owner.ReduceCurrentHP(
-            request.Damage);
+        owner.ReduceCurrentHP(request.Damage);
 
-        int applied =
-            Mathf.Max(
-                0,
-                beforeHp - owner.CurrentHP);
+        int applied = Mathf.Max(
+            0,
+            beforeHp - owner.CurrentHP);
 
         Debug.Log(
-            $"{owner.Data.CharacterName}이 직접 피해 {applied}를 받음 " +
+            $"{OwnerName()}이 직접 피해 {applied}를 받음 " +
+            $"HP : {beforeHp} -> {owner.CurrentHP}");
+
+        if (checkDead)
+            owner.CheckDead();
+    }
+
+    private void ApplyTrueDamage(DamageRequest request)
+    {
+        int beforeHp = owner.CurrentHP;
+        owner.ReduceCurrentHP(request.Damage);
+
+        int applied = Mathf.Max(
+            0,
+            beforeHp - owner.CurrentHP);
+
+        Debug.Log(
+            $"{OwnerName()}이 고정 피해 {applied}를 받음 " +
             $"HP : {beforeHp} -> {owner.CurrentHP}");
 
         owner.CheckDead();
     }
 
-    //------------------------------------------------
-    // 4. 고정 피해
-    //------------------------------------------------
-    // 규칙:
-    // - 캐릭터 현재 HP 직접 감소
-    // - 상태이상 고정 피해, 특수 피해 등에 사용
-    // - Direct와 분리해둔 이유:
-    //   나중에 방어도, 저항, 피해 감소를 구분하기 위함
-    //------------------------------------------------
-
-    private void ApplyTrueDamage(DamageRequest request)
-    {
-        owner.ReduceCurrentHP(
-            request.Damage);
-
-        Debug.Log(
-            $"{owner.Data.CharacterName}이 고정 피해 {request.Damage}를 받음");
-
-        owner.CheckDead();
-    }
-
-    //------------------------------------------------
-    // 일반 부위 HP 감소
-    //------------------------------------------------
-
     private void ApplyNormalPartDamage(
         BodyPart targetPart,
         int damage)
     {
-        if (targetPart == null)
+        if (targetPart == null || damage <= 0)
             return;
 
-        if (damage <= 0)
+        int beforePartHP = Mathf.Max(
+            0,
+            Mathf.CeilToInt(targetPart.PartHP));
+
+        // Normal 부위 피해는 실제 남은 부위 HP까지만 전체 HP에서 차감한다.
+        // 초과분은 약화 부위 직접 피해 규칙을 우회해 넘기지 않는다.
+        int actualDamage = targetPart.ApplyDamage(damage);
+
+        if (actualDamage <= 0)
             return;
 
-        owner.ReduceCurrentHP(
-            damage);
-
-        float beforePartHP =
-            targetPart.PartHP;
-
-        targetPart.PartHP =
-            Mathf.Max(
-                targetPart.PartHP - damage,
-                0f);
+        owner.ReduceCurrentHP(actualDamage);
 
         Debug.Log(
-            $"{owner.Data.CharacterName}의 {targetPart.Type} 부위에 {damage} 피해 " +
-            $"HP : {beforePartHP:0} -> {targetPart.PartHP:0}");
+            $"{OwnerName()}의 {targetPart.Type} 부위에 {actualDamage} 피해 " +
+            $"HP : {beforePartHP} -> {targetPart.PartHP:0}");
 
         if (targetPart.PartHP <= 0f)
         {
-            bodyPartController.WeakenPart(
-                targetPart);
+            bodyPartController?.WeakenPart(
+                targetPart,
+                owner.ActiveDamageContext?.Attacker,
+                owner.ActiveDamageContext?.Action);
         }
+    }
+
+    private string OwnerName()
+    {
+        return owner?.Data?.CharacterName ??
+               owner?.name ??
+               "NULL";
     }
 }

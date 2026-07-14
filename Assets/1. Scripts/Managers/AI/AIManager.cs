@@ -5,6 +5,7 @@ public class AIManager
 {
     private readonly BattleContext battleContext;
     private readonly ActionManager actionManager;
+    private readonly AIActionPlanner actionPlanner;
 
     public AIManager(
         BattleContext battleContext,
@@ -12,6 +13,20 @@ public class AIManager
     {
         this.battleContext = battleContext;
         this.actionManager = actionManager;
+
+        AITargetSelector targetSelector =
+            new AITargetSelector(actionManager);
+
+        AISkillSelector skillSelector =
+            new AISkillSelector(targetSelector);
+
+        AISlotPlanner slotPlanner =
+            new AISlotPlanner();
+
+        actionPlanner =
+            new AIActionPlanner(
+                slotPlanner,
+                skillSelector);
     }
 
     public void DecideEnemyActions()
@@ -24,24 +39,25 @@ public class AIManager
 
         foreach (Character character in battleContext.Enemies)
         {
-            if (character is not Enemy enemy)
+            if (character is not Enemy enemy ||
+                enemy.IsDead ||
+                !enemy.IsInitialized)
+            {
                 continue;
+            }
 
-            if (enemy.IsDead)
-                continue;
+            // 이전 계획이 남아 있으면 부위 파괴나 슬롯 수 변경 뒤에도
+            // stale slot이 실행될 수 있으므로 적 단위로 먼저 정리한다.
+            actionManager.RemoveSlotsByOwner(enemy);
 
             List<ActionSlot> plannedSlots =
-                enemy.DecideSlots(battleContext);
-
-            if (plannedSlots == null)
-                continue;
+                actionPlanner.PlanEnemy(
+                    enemy,
+                    battleContext);
 
             foreach (ActionSlot slot in plannedSlots)
             {
-                if (slot == null)
-                    continue;
-
-                if (!TryNormalizeEnemyActionIndex(enemy, slot))
+                if (!IsValidFinalSlot(enemy, slot))
                     continue;
 
                 actionManager.AddOrReplaceSlot(slot);
@@ -49,67 +65,78 @@ public class AIManager
         }
     }
 
-    private bool TryNormalizeEnemyActionIndex(
+    private bool IsValidFinalSlot(
         Enemy enemy,
         ActionSlot slot)
     {
-        if (slot.Owner == null)
-            slot.Owner = enemy;
-
-        int maxSlots =
-            GetMaxSlots(slot.Owner, slot.Part);
-
-        if (maxSlots <= 0)
+        if (enemy == null ||
+            slot == null ||
+            slot.Owner != enemy ||
+            slot.Skill == null ||
+            slot.TargetCharacter == null)
         {
-            Debug.LogWarning(
-                $"[AI SLOT SKIP] 사용할 수 없는 행동 원천입니다. " +
-                $"Owner={GetCharacterName(slot.Owner)}, " +
-                $"Part={GetPartName(slot.Part)}");
             return false;
         }
 
-        bool exactIndexOccupied =
-            slot.ActionIndex < 0 ||
-            actionManager.FindSlot(
-                slot.Owner,
-                slot.Part,
-                slot.ActionIndex) != null;
-
-        if (exactIndexOccupied)
+        if (slot.Owner.IsDead ||
+            slot.TargetCharacter.IsDead)
         {
-            slot.ActionIndex =
-                actionManager.GetNextAvailableActionIndex(
-                    slot.Owner,
-                    slot.Part);
+            return false;
         }
 
-        if (slot.ActionIndex >= maxSlots)
+        if (slot.Part != null)
+        {
+            if (slot.Part.Owner != null &&
+                slot.Part.Owner != enemy)
+            {
+                return false;
+            }
+
+            if (slot.Part.IsBroken)
+                return false;
+        }
+        else if (!enemy.IsSingleHpTarget)
+        {
+            return false;
+        }
+
+        int maxSlots =
+            Mathf.Max(
+                0,
+                enemy.GetMaxActionSlotsForPart(
+                    slot.Part));
+
+        if (slot.ActionIndex < 0 ||
+            slot.ActionIndex >= maxSlots)
         {
             Debug.LogWarning(
-                $"[AI SLOT SKIP] 최대 슬롯 수 초과. " +
-                $"Owner={GetCharacterName(slot.Owner)}, " +
+                $"[AI SLOT SKIP] 최대 슬롯 수 초과 / " +
+                $"Owner={GetCharacterName(enemy)}, " +
                 $"Part={GetPartName(slot.Part)}, " +
                 $"Index={slot.ActionIndex}, Max={maxSlots}");
+
+            return false;
+        }
+
+        if (!enemy.CanUseSkill(
+                slot.Part,
+                slot.Skill))
+        {
+            return false;
+        }
+
+        bool allowBrokenTarget =
+            AITargetSelector.ShouldIncludeBrokenTargets(
+                slot.Skill);
+
+        if (!slot.TargetCharacter.IsValidTargetPart(
+                slot.TargetPart,
+                allowBrokenTarget))
+        {
             return false;
         }
 
         return true;
-    }
-
-    private int GetMaxSlots(
-        Character owner,
-        BodyPart part)
-    {
-        if (owner == null)
-            return 0;
-
-        // 이후 일반몹의 OwnerPart == null 행동을 허용한다.
-        if (part == null)
-            return 1;
-
-        return Mathf.Max(
-            0,
-            owner.GetMaxActionSlotsForPart(part));
     }
 
     private string GetCharacterName(
