@@ -19,6 +19,18 @@ public class BodyPartButton : MonoBehaviour, IPointerClickHandler
     private Color originalColor;
     private bool originalColorSaved;
 
+    [SerializeField, HideInInspector]
+    private bool isTemplate;
+
+    [SerializeField, HideInInspector]
+    private bool isRuntimeGenerated;
+
+    [SerializeField, HideInInspector]
+    private BattleParticipantSide participantSide;
+
+    [SerializeField, HideInInspector]
+    private int participantIndex = -1;
+
     private Character owner;
     private BodyPart bodyPart;
     private RectTransform rectTransform;
@@ -30,6 +42,11 @@ public class BodyPartButton : MonoBehaviour, IPointerClickHandler
     public Character Owner => owner;
     public BodyPart BodyPart => bodyPart;
     public RectTransform RectTransform => rectTransform;
+
+    public bool IsTemplate => isTemplate;
+    public bool IsRuntimeGenerated => isRuntimeGenerated;
+    public BattleParticipantSide ParticipantSide => participantSide;
+    public int ParticipantIndex => participantIndex;
 
     public bool IsCharacterTargetButton =>
         owner != null && bodyPart == null;
@@ -45,7 +62,9 @@ public class BodyPartButton : MonoBehaviour, IPointerClickHandler
     private void OnEnable()
     {
         EnsureReferences();
-        registry?.Register(this);
+
+        if (!isTemplate)
+            registry?.Register(this);
     }
 
     private void Start()
@@ -110,8 +129,47 @@ public class BodyPartButton : MonoBehaviour, IPointerClickHandler
         button.onClick.RemoveAllListeners();
         button.onClick.AddListener(OnClick);
 
-        registry?.NotifyBindingChanged(this);
+        if (!isTemplate)
+            registry?.NotifyBindingChanged(this);
+
         Refresh();
+    }
+
+    public void ConfigureAsTemplate()
+    {
+        EnsureReferences();
+
+        isTemplate = true;
+        isRuntimeGenerated = false;
+        participantIndex = -1;
+
+        owner = null;
+        bodyPart = null;
+
+        registry?.Unregister(this);
+
+        if (gameObject.activeSelf)
+            gameObject.SetActive(false);
+    }
+
+    public void ConfigureRuntime(
+        BattleUIManager manager,
+        BodyPartButtonRegistry targetRegistry,
+        BattleParticipantSide side,
+        int index)
+    {
+        isTemplate = false;
+        isRuntimeGenerated = true;
+        participantSide = side;
+        participantIndex = index;
+
+        if (manager != null)
+            uiManager = manager;
+
+        if (targetRegistry != null)
+            registry = targetRegistry;
+
+        EnsureReferences();
     }
 
     public void Refresh()

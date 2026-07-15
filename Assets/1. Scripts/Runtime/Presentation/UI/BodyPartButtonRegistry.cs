@@ -196,8 +196,11 @@ public sealed class BodyPartButtonRegistry : MonoBehaviour
 
     private bool RegisterInternal(BodyPartButton button)
     {
-        if (button == null)
+        if (button == null ||
+            button.IsTemplate)
+        {
             return false;
+        }
 
         bool changed = false;
 
@@ -233,8 +236,11 @@ public sealed class BodyPartButtonRegistry : MonoBehaviour
         BodyPartButton button,
         bool requireActive)
     {
-        if (button == null)
+        if (button == null ||
+            button.IsTemplate)
+        {
             return false;
+        }
 
         if (!requireActive)
             return true;

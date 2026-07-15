@@ -10,6 +10,10 @@ public class BattleUIManager : MonoBehaviour
     [SerializeField] private BodyPartButtonRegistry bodyPartButtonRegistry;
     [SerializeField] private BattleTargetButtonRegistry targetButtonRegistry;
 
+    [Header("Dynamic Participant Buttons")]
+    [SerializeField]
+    private BattleParticipantButtonFactory participantButtonFactory;
+
     private readonly TargetSelectionViewModel selection = new();
     private readonly List<BodyPartButton> buttonScratch = new();
 
@@ -40,25 +44,100 @@ public class BattleUIManager : MonoBehaviour
 
     private void Awake()
     {
+        EnsureReferences();
+        SyncSelectionViewModel();
+    }
+
+    private void EnsureReferences()
+    {
         if (battleManager == null)
-            battleManager = FindFirstObjectByType<BattleManager>();
+        {
+            battleManager =
+                FindFirstObjectByType<BattleManager>();
+        }
 
         if (skillSelectPanel == null)
-            skillSelectPanel = FindFirstObjectByType<SkillSelectPanelUI>();
+        {
+            skillSelectPanel =
+                FindFirstObjectByType<SkillSelectPanelUI>();
+        }
 
         if (bodyPartButtonRegistry == null)
-            bodyPartButtonRegistry = FindFirstObjectByType<BodyPartButtonRegistry>();
+        {
+            bodyPartButtonRegistry =
+                FindFirstObjectByType<BodyPartButtonRegistry>();
+        }
 
         if (bodyPartButtonRegistry == null)
-            bodyPartButtonRegistry = gameObject.AddComponent<BodyPartButtonRegistry>();
+        {
+            bodyPartButtonRegistry =
+                gameObject.AddComponent<BodyPartButtonRegistry>();
+        }
 
         if (targetButtonRegistry == null)
-            targetButtonRegistry = FindFirstObjectByType<BattleTargetButtonRegistry>();
+        {
+            targetButtonRegistry =
+                FindFirstObjectByType<BattleTargetButtonRegistry>();
+        }
 
         if (targetButtonRegistry == null)
-            targetButtonRegistry = gameObject.AddComponent<BattleTargetButtonRegistry>();
+        {
+            targetButtonRegistry =
+                gameObject.AddComponent<BattleTargetButtonRegistry>();
+        }
 
-        SyncSelectionViewModel();
+        if (participantButtonFactory == null)
+        {
+            participantButtonFactory =
+                GetComponent<BattleParticipantButtonFactory>();
+        }
+
+        if (participantButtonFactory == null)
+        {
+            participantButtonFactory =
+                gameObject.AddComponent<BattleParticipantButtonFactory>();
+        }
+    }
+
+    public void AssignParticipantButtonFactory(
+        BattleParticipantButtonFactory factory)
+    {
+        participantButtonFactory = factory;
+        EnsureReferences();
+    }
+
+    public void BuildParticipantButtons(
+        BattleContext context,
+        IReadOnlyList<BodyPartButton> legacyPlayerButtons,
+        IReadOnlyList<BodyPartButton> legacyEnemyButtons)
+    {
+        EnsureReferences();
+
+        participantButtonFactory?.ConfigureFromLegacy(
+            legacyPlayerButtons,
+            legacyEnemyButtons);
+
+        ClearSelection();
+
+        participantButtonFactory?.Rebuild(
+            context,
+            this,
+            bodyPartButtonRegistry);
+
+        RefreshAllBodyPartButtons();
+    }
+
+    public void ClearParticipantButtons()
+    {
+        participantButtonFactory?.ClearGeneratedButtons();
+        bodyPartButtonRegistry?.RebuildFromScene();
+        ClearSelection();
+    }
+
+    public BodyPartButtonRegistry GetButtonRegistry()
+    {
+        EnsureReferences();
+        return bodyPartButtonRegistry;
     }
 
     private void Start()
@@ -141,9 +220,10 @@ public class BattleUIManager : MonoBehaviour
 
         return new BodyPartButtonViewModel
         {
-            PartText = characterTarget
-                ? $"<color=#86EFAC><b>{GetCharacterName(owner)} [SINGLE HP]</b></color>"
-                : GetPartText(part),
+            PartText =
+                GetPartText(
+                    owner,
+                    part),
 
             HpText =
                 GetHpText(button),
@@ -400,10 +480,22 @@ public class BattleUIManager : MonoBehaviour
         return false;
     }
 
-    private string GetPartText(BodyPart part)
+    private string GetPartText(
+        Character owner,
+        BodyPart part)
     {
-        if (part == null)
+        if (owner == null)
             return "NULL";
+
+        string characterName =
+            GetCharacterName(owner);
+
+        if (part == null)
+        {
+            return
+                $"<size=72%>{characterName}</size>\n" +
+                "<color=#86EFAC><b>SINGLE HP</b></color>";
+        }
 
         string stateColor =
             part.State switch
@@ -415,7 +507,10 @@ public class BattleUIManager : MonoBehaviour
             };
 
         return
-            $"<color={stateColor}><b>{part.Type} [{part.State}]</b></color>";
+            $"<size=72%>{characterName}</size>\n" +
+            $"<color={stateColor}><b>" +
+            $"{part.Type} [{part.State}]" +
+            "</b></color>";
     }
 
     private string GetHpText(

@@ -1,10 +1,10 @@
 PROJECT_ABYSS_SCRIPT_EXPORT
 FORMAT_VERSION: 1
 PURPOSE: AI_CODE_ANALYSIS
-GENERATED_AT_UTC: 2026-07-15T05:26:25.1861727Z
+GENERATED_AT_UTC: 2026-07-15T06:22:29.4894750Z
 UNITY_PROJECT_ROOT: F:/GitCorp/Project-Abyss
 SOURCE_ROOT: Assets/1. Scripts
-SCRIPT_COUNT: 228
+SCRIPT_COUNT: 232
 ENCODING: UTF-8_NO_BOM
 NEWLINE: LF
 SORT_ORDER: ASSET_PATH_ORDINAL_ASCENDING
@@ -20,239 +20,699 @@ AI_READING_GUIDE:
 
 ================================================================================
 TABLE_OF_CONTENTS_BEGIN
-0001 | Assets/1. Scripts/Editor/Diagnostics/BattleDebugTunerEditor.cs
-0002 | Assets/1. Scripts/Editor/Tools/ProjectAbyssHierarchyExporter.cs
-0003 | Assets/1. Scripts/Editor/Tools/ProjectAbyssScriptExporter.cs
-0004 | Assets/1. Scripts/Editor/Visual/BattleVfxImpactTimingMigration.cs
-0005 | Assets/1. Scripts/Runtime/Battle/ActionPhase.cs
-0006 | Assets/1. Scripts/Runtime/Battle/ActionSlot.cs
-0007 | Assets/1. Scripts/Runtime/Battle/BattleAction.cs
-0008 | Assets/1. Scripts/Runtime/Battle/BattleContext.cs
-0009 | Assets/1. Scripts/Runtime/Battle/BattleEffectResolver.cs
-0010 | Assets/1. Scripts/Runtime/Battle/ClashResultContext.cs
-0011 | Assets/1. Scripts/Runtime/Battle/Damage/BodyPartBreakEventContext.cs
-0012 | Assets/1. Scripts/Runtime/Battle/Damage/BodyPartWeakenEventContext.cs
-0013 | Assets/1. Scripts/Runtime/Battle/Damage/DamageCalculator.cs
-0014 | Assets/1. Scripts/Runtime/Battle/Damage/DamageContext.cs
-0015 | Assets/1. Scripts/Runtime/Battle/Damage/DamageEventDispatcher.cs
-0016 | Assets/1. Scripts/Runtime/Battle/Damage/DamageEventResult.cs
-0017 | Assets/1. Scripts/Runtime/Battle/Damage/DamageRequest.cs
-0018 | Assets/1. Scripts/Runtime/Battle/Damage/DamageResult.cs
-0019 | Assets/1. Scripts/Runtime/Battle/Damage/DamageSnapshot.cs
-0020 | Assets/1. Scripts/Runtime/Battle/Damage/DamageStage.cs
-0021 | Assets/1. Scripts/Runtime/Battle/Damage/DamageType.cs
-0022 | Assets/1. Scripts/Runtime/Battle/Damage/KillEventContext.cs
-0023 | Assets/1. Scripts/Runtime/Battle/EffectRequest.cs
-0024 | Assets/1. Scripts/Runtime/Battle/Events/BattleEvent.cs
-0025 | Assets/1. Scripts/Runtime/Battle/Events/BattleEventSubscriptionGroup.cs
-0026 | Assets/1. Scripts/Runtime/Battle/Events/IBattleEventListener.cs
-0027 | Assets/1. Scripts/Runtime/Battle/Roll/CoinResolver.cs
-0028 | Assets/1. Scripts/Runtime/Battle/Roll/DiceResolver.cs
-0029 | Assets/1. Scripts/Runtime/Battle/Roll/RollResult.cs
-0030 | Assets/1. Scripts/Runtime/Battle/Roll/SkillResolver.cs
-0031 | Assets/1. Scripts/Runtime/Battle/Roll/SlotResolver.cs
-0032 | Assets/1. Scripts/Runtime/Battle/StatusEffectTickContext.cs
-0033 | Assets/1. Scripts/Runtime/Battle/Targeting/BattleTargetValidator.cs
-0034 | Assets/1. Scripts/Runtime/Battle/Targeting/TargetPoint.cs
-0035 | Assets/1. Scripts/Runtime/Battle/Targeting/TargetSelectionRule.cs
-0036 | Assets/1. Scripts/Runtime/Characters/BodyParts/BodyPart.cs
-0037 | Assets/1. Scripts/Runtime/Characters/Build/Augments/BattleInstinctAugment.cs
-0038 | Assets/1. Scripts/Runtime/Characters/Build/Augments/CharacterAugment.cs
-0039 | Assets/1. Scripts/Runtime/Characters/Build/Augments/ToughBodyAugment.cs
-0040 | Assets/1. Scripts/Runtime/Characters/Build/Items/CharacterItem.cs
-0041 | Assets/1. Scripts/Runtime/Characters/CharacterBase/BodyPartTargetModel.cs
-0042 | Assets/1. Scripts/Runtime/Characters/CharacterBase/Character.cs
-0043 | Assets/1. Scripts/Runtime/Characters/CharacterBase/CharacterBodyPartController.cs
-0044 | Assets/1. Scripts/Runtime/Characters/CharacterBase/CharacterBuildController.cs
-0045 | Assets/1. Scripts/Runtime/Characters/CharacterBase/CharacterBuildMechanicContext.cs
-0046 | Assets/1. Scripts/Runtime/Characters/CharacterBase/CharacterCombatState.cs
-0047 | Assets/1. Scripts/Runtime/Characters/CharacterBase/CharacterDamageController.cs
-0048 | Assets/1. Scripts/Runtime/Characters/CharacterBase/CharacterData.cs
-0049 | Assets/1. Scripts/Runtime/Characters/CharacterBase/CharacterEventBinder.cs
-0050 | Assets/1. Scripts/Runtime/Characters/CharacterBase/CharacterLifeController.cs
-0051 | Assets/1. Scripts/Runtime/Characters/CharacterBase/CharacterMechanicController.cs
-0052 | Assets/1. Scripts/Runtime/Characters/CharacterBase/CharacterResourceController.cs
-0053 | Assets/1. Scripts/Runtime/Characters/CharacterBase/CharacterRuntimeSnapshot.cs
-0054 | Assets/1. Scripts/Runtime/Characters/CharacterBase/CharacterStatusController.cs
-0055 | Assets/1. Scripts/Runtime/Characters/CharacterBase/CharacterTargetModel.cs
-0056 | Assets/1. Scripts/Runtime/Characters/CharacterBase/IBodyPartBreakImmediateReaction.cs
-0057 | Assets/1. Scripts/Runtime/Characters/CharacterBase/ICombatTargetModel.cs
-0058 | Assets/1. Scripts/Runtime/Characters/CharacterBase/ReactiveCombatMechanic.cs
-0059 | Assets/1. Scripts/Runtime/Characters/CharacterBase/SingleHpTargetModel.cs
-0060 | Assets/1. Scripts/Runtime/Characters/CombatMechanic.cs
-0061 | Assets/1. Scripts/Runtime/Characters/CombatResourceBank.cs
-0062 | Assets/1. Scripts/Runtime/Characters/Enemies/Base/Enemy.cs
-0063 | Assets/1. Scripts/Runtime/Characters/Enemies/EliteEnemy/EliteEnemy.cs
-0064 | Assets/1. Scripts/Runtime/Characters/Enemies/EliteEnemy/EliteEnemyMechanic.cs
-0065 | Assets/1. Scripts/Runtime/Characters/Enemies/EliteEnemy/EliteEnemySkillSet.cs
-0066 | Assets/1. Scripts/Runtime/Characters/Enemies/NormalEnemy/NormalEnemy.cs
-0067 | Assets/1. Scripts/Runtime/Characters/Enemies/NormalEnemy/NormalEnemyBloodScentMechanic.cs
-0068 | Assets/1. Scripts/Runtime/Characters/Enemies/NormalEnemy/NormalEnemySkillSet.cs
-0069 | Assets/1. Scripts/Runtime/Characters/Olaf/Items/OlafBloodyAxeItem.cs
-0070 | Assets/1. Scripts/Runtime/Characters/Olaf/Mechanics/OlafBloodyAxeMechanic.cs
-0071 | Assets/1. Scripts/Runtime/Characters/Olaf/Mechanics/OlafImmortalFuryMechanic.cs
-0072 | Assets/1. Scripts/Runtime/Characters/Olaf/Mechanics/OlafMadnessMechanic.cs
-0073 | Assets/1. Scripts/Runtime/Characters/Olaf/Olaf.cs
-0074 | Assets/1. Scripts/Runtime/Characters/Olaf/OlafCombatPipeline.cs
-0075 | Assets/1. Scripts/Runtime/Characters/Olaf/OlafSkillSet.cs
-0076 | Assets/1. Scripts/Runtime/Characters/Status.cs
-0077 | Assets/1. Scripts/Runtime/Diagnostics/Debug/BattleDebugLog.cs
-0078 | Assets/1. Scripts/Runtime/Diagnostics/Debug/BattleDebugTuner.cs
-0079 | Assets/1. Scripts/Runtime/Diagnostics/Debug/DebugBattleUI.cs
-0080 | Assets/1. Scripts/Runtime/Diagnostics/Logging/BattleLogBuilder.cs
-0081 | Assets/1. Scripts/Runtime/Diagnostics/Logging/BattleLogEntry.cs
-0082 | Assets/1. Scripts/Runtime/Diagnostics/Logging/BattleLogger.cs
-0083 | Assets/1. Scripts/Runtime/Presentation/Camera/CameraController.cs
-0084 | Assets/1. Scripts/Runtime/Presentation/Camera/CharacterCameraPointSet.cs
-0085 | Assets/1. Scripts/Runtime/Presentation/UI/ActionSlotButtonUI.cs
-0086 | Assets/1. Scripts/Runtime/Presentation/UI/ActionSlotViewModel.cs
-0087 | Assets/1. Scripts/Runtime/Presentation/UI/BattleActionAnnounceUI.cs
-0088 | Assets/1. Scripts/Runtime/Presentation/UI/BattleInputMode.cs
-0089 | Assets/1. Scripts/Runtime/Presentation/UI/BattleTargetButtonRegistry.cs
-0090 | Assets/1. Scripts/Runtime/Presentation/UI/BattleUIEventBinder.cs
-0091 | Assets/1. Scripts/Runtime/Presentation/UI/BattleUIManager.cs
-0092 | Assets/1. Scripts/Runtime/Presentation/UI/BattleUIRefreshScheduler.cs
-0093 | Assets/1. Scripts/Runtime/Presentation/UI/BodyPartButton.cs
-0094 | Assets/1. Scripts/Runtime/Presentation/UI/BodyPartButtonRegistry.cs
-0095 | Assets/1. Scripts/Runtime/Presentation/UI/BodyPartButtonViewModel.cs
-0096 | Assets/1. Scripts/Runtime/Presentation/UI/MomentumScrollbarUI.cs
-0097 | Assets/1. Scripts/Runtime/Presentation/UI/OutlineController.cs
-0098 | Assets/1. Scripts/Runtime/Presentation/UI/SkillButtonUI.cs
-0099 | Assets/1. Scripts/Runtime/Presentation/UI/SkillSelectPanelUI.cs
-0100 | Assets/1. Scripts/Runtime/Presentation/UI/StatusPopUp.cs
-0101 | Assets/1. Scripts/Runtime/Presentation/UI/TargetArrowUI.cs
-0102 | Assets/1. Scripts/Runtime/Presentation/UI/TargetSelectionViewModel.cs
-0103 | Assets/1. Scripts/Runtime/Presentation/Visual/Camera/BattleCameraShakeSettings.cs
-0104 | Assets/1. Scripts/Runtime/Presentation/Visual/Camera/BattleCameraTargetResolver.cs
-0105 | Assets/1. Scripts/Runtime/Presentation/Visual/Camera/BattleCinemachineRig.cs
-0106 | Assets/1. Scripts/Runtime/Presentation/Visual/Camera/BattleCinemachineTargetGroupBinder.cs
-0107 | Assets/1. Scripts/Runtime/Presentation/Visual/CharacterView/AnimationEventRelay.cs
-0108 | Assets/1. Scripts/Runtime/Presentation/Visual/CharacterView/BodyPartAnchor.cs
-0109 | Assets/1. Scripts/Runtime/Presentation/Visual/CharacterView/CharacterActionMoveSettings.cs
-0110 | Assets/1. Scripts/Runtime/Presentation/Visual/CharacterView/CharacterActionMover.cs
-0111 | Assets/1. Scripts/Runtime/Presentation/Visual/CharacterView/CharacterActionStartPositionMode.cs
-0112 | Assets/1. Scripts/Runtime/Presentation/Visual/CharacterView/CharacterActionTargetPointType.cs
-0113 | Assets/1. Scripts/Runtime/Presentation/Visual/CharacterView/CharacterFacingController.cs
-0114 | Assets/1. Scripts/Runtime/Presentation/Visual/CharacterView/CharacterView.cs
-0115 | Assets/1. Scripts/Runtime/Presentation/Visual/CharacterView/CharacterViewEventBinder.cs
-0116 | Assets/1. Scripts/Runtime/Presentation/Visual/CharacterView/CharacterVisualState.cs
-0117 | Assets/1. Scripts/Runtime/Presentation/Visual/DamageNumber/DamageNumberManager.cs
-0118 | Assets/1. Scripts/Runtime/Presentation/Visual/DamageNumber/DamageNumberUI.cs
-0119 | Assets/1. Scripts/Runtime/Presentation/Visual/Data/BattleVisualRequest.cs
-0120 | Assets/1. Scripts/Runtime/Presentation/Visual/Data/BattleVisualRequestBuilder.cs
-0121 | Assets/1. Scripts/Runtime/Presentation/Visual/Data/ClashRollVisualStep.cs
-0122 | Assets/1. Scripts/Runtime/Presentation/Visual/Data/DamageDistributionUtility.cs
-0123 | Assets/1. Scripts/Runtime/Presentation/Visual/Data/SkillCameraDefinition.cs
-0124 | Assets/1. Scripts/Runtime/Presentation/Visual/Data/SkillCameraShot.cs
-0125 | Assets/1. Scripts/Runtime/Presentation/Visual/Data/SkillVisualDefinition.cs
-0126 | Assets/1. Scripts/Runtime/Presentation/Visual/Data/SkillVisualProfile.cs
-0127 | Assets/1. Scripts/Runtime/Presentation/Visual/Director/BattleAnimationDirector.cs
-0128 | Assets/1. Scripts/Runtime/Presentation/Visual/Director/BattleCameraDirector.cs
-0129 | Assets/1. Scripts/Runtime/Presentation/Visual/Director/BattleStatusVisualDirector.cs
-0130 | Assets/1. Scripts/Runtime/Presentation/Visual/Director/BattleVisualDamagePresenter.cs
-0131 | Assets/1. Scripts/Runtime/Presentation/Visual/Director/BattleVisualPlaybackState.cs
-0132 | Assets/1. Scripts/Runtime/Presentation/Visual/FloatingText/BattleWorldFloatingTextManager.cs
-0133 | Assets/1. Scripts/Runtime/Presentation/Visual/FloatingText/BattleWorldFloatingTextUI.cs
-0134 | Assets/1. Scripts/Runtime/Presentation/Visual/Interface/IVisualSkill.cs
-0135 | Assets/1. Scripts/Runtime/Presentation/Visual/Text/BattleVisualTextUtility.cs
-0136 | Assets/1. Scripts/Runtime/Presentation/Visual/VFX/Core/BattleVfxAnchorType.cs
-0137 | Assets/1. Scripts/Runtime/Presentation/Visual/VFX/Core/BattleVfxContext.cs
-0138 | Assets/1. Scripts/Runtime/Presentation/Visual/VFX/Core/BattleVfxCue.cs
-0139 | Assets/1. Scripts/Runtime/Presentation/Visual/VFX/Core/BattleVfxDefinition.cs
-0140 | Assets/1. Scripts/Runtime/Presentation/Visual/VFX/Core/BattleVfxInstance.cs
-0141 | Assets/1. Scripts/Runtime/Presentation/Visual/VFX/Core/BattleVfxManager.cs
-0142 | Assets/1. Scripts/Runtime/Presentation/Visual/VFX/Core/BattleVfxPlayData.cs
-0143 | Assets/1. Scripts/Runtime/Presentation/Visual/VFX/Core/BattleVfxPool.cs
-0144 | Assets/1. Scripts/Runtime/Presentation/Visual/VFX/Core/BattleVfxPoolKey.cs
-0145 | Assets/1. Scripts/Runtime/Presentation/Visual/VFX/Core/BattleVfxTiming.cs
-0146 | Assets/1. Scripts/Runtime/Presentation/Visual/VFX/Core/IBattleVfxPlayable.cs
-0147 | Assets/1. Scripts/Runtime/Presentation/Visual/VFX/Persistent/CharacterPersistentVfxAnchorType.cs
-0148 | Assets/1. Scripts/Runtime/Presentation/Visual/VFX/Persistent/CharacterPersistentVfxController.cs
-0149 | Assets/1. Scripts/Runtime/Presentation/Visual/VFX/Persistent/PersistentBattleVfxDefinition.cs
-0150 | Assets/1. Scripts/Runtime/Presentation/Visual/VFX/Players/BloodSplatterParticleEffectPlayer.cs
-0151 | Assets/1. Scripts/Runtime/Presentation/Visual/VFX/Players/ScriptedParticleEffectPlayer.cs
-0152 | Assets/1. Scripts/Runtime/Presentation/Visual/VFX/Players/ShaderMaterialEffectPlayer.cs
-0153 | Assets/1. Scripts/Runtime/Presentation/Visual/VFX/Players/VfxGraphEffectPlayer.cs
-0154 | Assets/1. Scripts/Runtime/Presentation/Visual/VFX/StatusVisual/StatusDamageVisualRequest.cs
-0155 | Assets/1. Scripts/Runtime/Presentation/Visual/VFX/StatusVisual/StatusEffectLifecycleVisualRequest.cs
-0156 | Assets/1. Scripts/Runtime/Presentation/Visual/VFX/StatusVisual/StatusEffectVisualDatabase.cs
-0157 | Assets/1. Scripts/Runtime/Presentation/Visual/VFX/StatusVisual/StatusEffectVisualDefinition.cs
-0158 | Assets/1. Scripts/Runtime/Presentation/Visual/Validation/AnimatorStateValidator.cs
-0159 | Assets/1. Scripts/Runtime/Presentation/Visual/Validation/BattleVisualValidator.cs
-0160 | Assets/1. Scripts/Runtime/Presentation/Visual/Validation/SkillCameraDefinitionValidator.cs
-0161 | Assets/1. Scripts/Runtime/Presentation/Visual/Validation/VfxDefinitionValidator.cs
-0162 | Assets/1. Scripts/Runtime/Shared/Utils.cs
-0163 | Assets/1. Scripts/Runtime/Skills/Base/DuelSkill.cs
-0164 | Assets/1. Scripts/Runtime/Skills/Base/NormalSkill.cs
-0165 | Assets/1. Scripts/Runtime/Skills/Base/PreparationSkill.cs
-0166 | Assets/1. Scripts/Runtime/Skills/Base/PrestigeSkill.cs
-0167 | Assets/1. Scripts/Runtime/Skills/Base/Skill.cs
-0168 | Assets/1. Scripts/Runtime/Skills/DataDriven/DataDuelSkill.cs
-0169 | Assets/1. Scripts/Runtime/Skills/DataDriven/DataNormalSkill.cs
-0170 | Assets/1. Scripts/Runtime/Skills/DataDriven/DataPreparationSkill.cs
-0171 | Assets/1. Scripts/Runtime/Skills/DataDriven/DataPrestigeSkill.cs
-0172 | Assets/1. Scripts/Runtime/Skills/DataDriven/SkillDefinition.cs
-0173 | Assets/1. Scripts/Runtime/Skills/DataDriven/SkillEffectContext.cs
-0174 | Assets/1. Scripts/Runtime/Skills/Effects/Common/AddBodyPartStatusEffect.cs
-0175 | Assets/1. Scripts/Runtime/Skills/Effects/Common/ApplyRolledPartDamageEffect.cs
-0176 | Assets/1. Scripts/Runtime/Skills/Effects/Common/ApplyStatusIfConditionEffect.cs
-0177 | Assets/1. Scripts/Runtime/Skills/Effects/Common/ConditionalDamageEffect.cs
-0178 | Assets/1. Scripts/Runtime/Skills/Effects/Common/ForceBreakOwnPartEffect.cs
-0179 | Assets/1. Scripts/Runtime/Skills/Effects/Common/GainCustomResourceEffect.cs
-0180 | Assets/1. Scripts/Runtime/Skills/Effects/Common/GainPrestigeEffect.cs
-0181 | Assets/1. Scripts/Runtime/Skills/Effects/Common/ModifyResourceEffect.cs
-0182 | Assets/1. Scripts/Runtime/Skills/Effects/Common/SkillResourceAccess.cs
-0183 | Assets/1. Scripts/Runtime/Skills/Effects/Common/StatusEffectFactory.cs
-0184 | Assets/1. Scripts/Runtime/Skills/Effects/OlafEffects/OlafBreakOwnPartEffect.cs
-0185 | Assets/1. Scripts/Runtime/Skills/Effects/OlafEffects/OlafNormalBleedEffect.cs
-0186 | Assets/1. Scripts/Runtime/Skills/Effects/OlafEffects/OlafPrestigeEffect.cs
-0187 | Assets/1. Scripts/Runtime/Skills/Effects/SkillEffectCondition.cs
-0188 | Assets/1. Scripts/Runtime/Skills/Effects/SkillEffectDefinition.cs
-0189 | Assets/1. Scripts/Runtime/Skills/Effects/SkillEffectResult.cs
-0190 | Assets/1. Scripts/Runtime/Skills/Effects/SkillEffectTargetSelector.cs
-0191 | Assets/1. Scripts/Runtime/Skills/Effects/SkillEffectTiming.cs
-0192 | Assets/1. Scripts/Runtime/Status/CrowdControl/CrowdControlStatus.cs
-0193 | Assets/1. Scripts/Runtime/Status/CrowdControl/Stun.cs
-0194 | Assets/1. Scripts/Runtime/Status/DamageOverTime/Bleeding.cs
-0195 | Assets/1. Scripts/Runtime/Status/DamageOverTime/Burn.cs
-0196 | Assets/1. Scripts/Runtime/Status/DamageOverTime/DamageStatus.cs
-0197 | Assets/1. Scripts/Runtime/Status/PartBroken/BrokenArm.cs
-0198 | Assets/1. Scripts/Runtime/Status/PartBroken/BrokenHead.cs
-0199 | Assets/1. Scripts/Runtime/Status/PartBroken/BrokenLegs.cs
-0200 | Assets/1. Scripts/Runtime/Status/PartBroken/BrokenPartStatus.cs
-0201 | Assets/1. Scripts/Runtime/Status/PartDisabled/ArmDisabled.cs
-0202 | Assets/1. Scripts/Runtime/Status/PartDisabled/HeadDisabled.cs
-0203 | Assets/1. Scripts/Runtime/Status/PartDisabled/LegsDisabled.cs
-0204 | Assets/1. Scripts/Runtime/Status/PartDisabled/PartDisabledStatus.cs
-0205 | Assets/1. Scripts/Runtime/Status/StatusEffect.cs
-0206 | Assets/1. Scripts/Runtime/Status/StatusEffectApplyResult.cs
-0207 | Assets/1. Scripts/Runtime/Status/StatusEffectDurationPolicy.cs
-0208 | Assets/1. Scripts/Runtime/Status/StatusEffectRemoveReason.cs
-0209 | Assets/1. Scripts/Runtime/Status/StatusEffectStackPolicy.cs
-0210 | Assets/1. Scripts/Runtime/Systems/AI/AIActionPlanner.cs
-0211 | Assets/1. Scripts/Runtime/Systems/AI/AIManager.cs
-0212 | Assets/1. Scripts/Runtime/Systems/AI/AISkillSelector.cs
-0213 | Assets/1. Scripts/Runtime/Systems/AI/AISlotPlanner.cs
-0214 | Assets/1. Scripts/Runtime/Systems/AI/AITargetSelector.cs
-0215 | Assets/1. Scripts/Runtime/Systems/BattleFlow/ActionManager.cs
-0216 | Assets/1. Scripts/Runtime/Systems/BattleFlow/BattleLifecycleGuard.cs
-0217 | Assets/1. Scripts/Runtime/Systems/BattleFlow/BattleManager.cs
-0218 | Assets/1. Scripts/Runtime/Systems/BattleFlow/TurnManager.cs
-0219 | Assets/1. Scripts/Runtime/Systems/Resolution/ActionExecutionQueue.cs
-0220 | Assets/1. Scripts/Runtime/Systems/Resolution/ActionPairingResult.cs
-0221 | Assets/1. Scripts/Runtime/Systems/Resolution/ActionPhaseSorter.cs
-0222 | Assets/1. Scripts/Runtime/Systems/Resolution/ActionResolver.cs
-0223 | Assets/1. Scripts/Runtime/Systems/Resolution/ClashBuilder.cs
-0224 | Assets/1. Scripts/Runtime/Systems/Resolution/ClashManager.cs
-0225 | Assets/1. Scripts/Runtime/Systems/Resolution/ClashMatchPolicy.cs
-0226 | Assets/1. Scripts/Runtime/Systems/Resolution/DamageManager.cs
-0227 | Assets/1. Scripts/Runtime/Systems/Stats/MomentumManager.cs
-0228 | Assets/1. Scripts/Runtime/Systems/Stats/SpeedManager.cs
+0001 | Assets/1. Scripts/Editor/Battle/BattleDynamicRosterSetupTool.cs
+0002 | Assets/1. Scripts/Editor/Battle/BattleParticipantUILayoutSetupTool.cs
+0003 | Assets/1. Scripts/Editor/Diagnostics/BattleDebugTunerEditor.cs
+0004 | Assets/1. Scripts/Editor/Tools/ProjectAbyssHierarchyExporter.cs
+0005 | Assets/1. Scripts/Editor/Tools/ProjectAbyssScriptExporter.cs
+0006 | Assets/1. Scripts/Editor/Visual/BattleVfxImpactTimingMigration.cs
+0007 | Assets/1. Scripts/Runtime/Battle/ActionPhase.cs
+0008 | Assets/1. Scripts/Runtime/Battle/ActionSlot.cs
+0009 | Assets/1. Scripts/Runtime/Battle/BattleAction.cs
+0010 | Assets/1. Scripts/Runtime/Battle/BattleContext.cs
+0011 | Assets/1. Scripts/Runtime/Battle/BattleEffectResolver.cs
+0012 | Assets/1. Scripts/Runtime/Battle/ClashResultContext.cs
+0013 | Assets/1. Scripts/Runtime/Battle/Damage/BodyPartBreakEventContext.cs
+0014 | Assets/1. Scripts/Runtime/Battle/Damage/BodyPartWeakenEventContext.cs
+0015 | Assets/1. Scripts/Runtime/Battle/Damage/DamageCalculator.cs
+0016 | Assets/1. Scripts/Runtime/Battle/Damage/DamageContext.cs
+0017 | Assets/1. Scripts/Runtime/Battle/Damage/DamageEventDispatcher.cs
+0018 | Assets/1. Scripts/Runtime/Battle/Damage/DamageEventResult.cs
+0019 | Assets/1. Scripts/Runtime/Battle/Damage/DamageRequest.cs
+0020 | Assets/1. Scripts/Runtime/Battle/Damage/DamageResult.cs
+0021 | Assets/1. Scripts/Runtime/Battle/Damage/DamageSnapshot.cs
+0022 | Assets/1. Scripts/Runtime/Battle/Damage/DamageStage.cs
+0023 | Assets/1. Scripts/Runtime/Battle/Damage/DamageType.cs
+0024 | Assets/1. Scripts/Runtime/Battle/Damage/KillEventContext.cs
+0025 | Assets/1. Scripts/Runtime/Battle/EffectRequest.cs
+0026 | Assets/1. Scripts/Runtime/Battle/Events/BattleEvent.cs
+0027 | Assets/1. Scripts/Runtime/Battle/Events/BattleEventSubscriptionGroup.cs
+0028 | Assets/1. Scripts/Runtime/Battle/Events/IBattleEventListener.cs
+0029 | Assets/1. Scripts/Runtime/Battle/Roll/CoinResolver.cs
+0030 | Assets/1. Scripts/Runtime/Battle/Roll/DiceResolver.cs
+0031 | Assets/1. Scripts/Runtime/Battle/Roll/RollResult.cs
+0032 | Assets/1. Scripts/Runtime/Battle/Roll/SkillResolver.cs
+0033 | Assets/1. Scripts/Runtime/Battle/Roll/SlotResolver.cs
+0034 | Assets/1. Scripts/Runtime/Battle/StatusEffectTickContext.cs
+0035 | Assets/1. Scripts/Runtime/Battle/Targeting/BattleTargetValidator.cs
+0036 | Assets/1. Scripts/Runtime/Battle/Targeting/TargetPoint.cs
+0037 | Assets/1. Scripts/Runtime/Battle/Targeting/TargetSelectionRule.cs
+0038 | Assets/1. Scripts/Runtime/Characters/BodyParts/BodyPart.cs
+0039 | Assets/1. Scripts/Runtime/Characters/Build/Augments/BattleInstinctAugment.cs
+0040 | Assets/1. Scripts/Runtime/Characters/Build/Augments/CharacterAugment.cs
+0041 | Assets/1. Scripts/Runtime/Characters/Build/Augments/ToughBodyAugment.cs
+0042 | Assets/1. Scripts/Runtime/Characters/Build/Items/CharacterItem.cs
+0043 | Assets/1. Scripts/Runtime/Characters/CharacterBase/BodyPartTargetModel.cs
+0044 | Assets/1. Scripts/Runtime/Characters/CharacterBase/Character.cs
+0045 | Assets/1. Scripts/Runtime/Characters/CharacterBase/CharacterBodyPartController.cs
+0046 | Assets/1. Scripts/Runtime/Characters/CharacterBase/CharacterBuildController.cs
+0047 | Assets/1. Scripts/Runtime/Characters/CharacterBase/CharacterBuildMechanicContext.cs
+0048 | Assets/1. Scripts/Runtime/Characters/CharacterBase/CharacterCombatState.cs
+0049 | Assets/1. Scripts/Runtime/Characters/CharacterBase/CharacterDamageController.cs
+0050 | Assets/1. Scripts/Runtime/Characters/CharacterBase/CharacterData.cs
+0051 | Assets/1. Scripts/Runtime/Characters/CharacterBase/CharacterEventBinder.cs
+0052 | Assets/1. Scripts/Runtime/Characters/CharacterBase/CharacterLifeController.cs
+0053 | Assets/1. Scripts/Runtime/Characters/CharacterBase/CharacterMechanicController.cs
+0054 | Assets/1. Scripts/Runtime/Characters/CharacterBase/CharacterResourceController.cs
+0055 | Assets/1. Scripts/Runtime/Characters/CharacterBase/CharacterRuntimeSnapshot.cs
+0056 | Assets/1. Scripts/Runtime/Characters/CharacterBase/CharacterStatusController.cs
+0057 | Assets/1. Scripts/Runtime/Characters/CharacterBase/CharacterTargetModel.cs
+0058 | Assets/1. Scripts/Runtime/Characters/CharacterBase/IBodyPartBreakImmediateReaction.cs
+0059 | Assets/1. Scripts/Runtime/Characters/CharacterBase/ICombatTargetModel.cs
+0060 | Assets/1. Scripts/Runtime/Characters/CharacterBase/ReactiveCombatMechanic.cs
+0061 | Assets/1. Scripts/Runtime/Characters/CharacterBase/SingleHpTargetModel.cs
+0062 | Assets/1. Scripts/Runtime/Characters/CombatMechanic.cs
+0063 | Assets/1. Scripts/Runtime/Characters/CombatResourceBank.cs
+0064 | Assets/1. Scripts/Runtime/Characters/Enemies/Base/Enemy.cs
+0065 | Assets/1. Scripts/Runtime/Characters/Enemies/EliteEnemy/EliteEnemy.cs
+0066 | Assets/1. Scripts/Runtime/Characters/Enemies/EliteEnemy/EliteEnemyMechanic.cs
+0067 | Assets/1. Scripts/Runtime/Characters/Enemies/EliteEnemy/EliteEnemySkillSet.cs
+0068 | Assets/1. Scripts/Runtime/Characters/Enemies/NormalEnemy/NormalEnemy.cs
+0069 | Assets/1. Scripts/Runtime/Characters/Enemies/NormalEnemy/NormalEnemyBloodScentMechanic.cs
+0070 | Assets/1. Scripts/Runtime/Characters/Enemies/NormalEnemy/NormalEnemySkillSet.cs
+0071 | Assets/1. Scripts/Runtime/Characters/Olaf/Items/OlafBloodyAxeItem.cs
+0072 | Assets/1. Scripts/Runtime/Characters/Olaf/Mechanics/OlafBloodyAxeMechanic.cs
+0073 | Assets/1. Scripts/Runtime/Characters/Olaf/Mechanics/OlafImmortalFuryMechanic.cs
+0074 | Assets/1. Scripts/Runtime/Characters/Olaf/Mechanics/OlafMadnessMechanic.cs
+0075 | Assets/1. Scripts/Runtime/Characters/Olaf/Olaf.cs
+0076 | Assets/1. Scripts/Runtime/Characters/Olaf/OlafCombatPipeline.cs
+0077 | Assets/1. Scripts/Runtime/Characters/Olaf/OlafSkillSet.cs
+0078 | Assets/1. Scripts/Runtime/Characters/Status.cs
+0079 | Assets/1. Scripts/Runtime/Diagnostics/Debug/BattleDebugLog.cs
+0080 | Assets/1. Scripts/Runtime/Diagnostics/Debug/BattleDebugTuner.cs
+0081 | Assets/1. Scripts/Runtime/Diagnostics/Debug/DebugBattleUI.cs
+0082 | Assets/1. Scripts/Runtime/Diagnostics/Logging/BattleLogBuilder.cs
+0083 | Assets/1. Scripts/Runtime/Diagnostics/Logging/BattleLogEntry.cs
+0084 | Assets/1. Scripts/Runtime/Diagnostics/Logging/BattleLogger.cs
+0085 | Assets/1. Scripts/Runtime/Presentation/Camera/CameraController.cs
+0086 | Assets/1. Scripts/Runtime/Presentation/Camera/CharacterCameraPointSet.cs
+0087 | Assets/1. Scripts/Runtime/Presentation/UI/ActionSlotButtonUI.cs
+0088 | Assets/1. Scripts/Runtime/Presentation/UI/ActionSlotViewModel.cs
+0089 | Assets/1. Scripts/Runtime/Presentation/UI/BattleActionAnnounceUI.cs
+0090 | Assets/1. Scripts/Runtime/Presentation/UI/BattleInputMode.cs
+0091 | Assets/1. Scripts/Runtime/Presentation/UI/BattleParticipantButtonFactory.cs
+0092 | Assets/1. Scripts/Runtime/Presentation/UI/BattleTargetButtonRegistry.cs
+0093 | Assets/1. Scripts/Runtime/Presentation/UI/BattleUIEventBinder.cs
+0094 | Assets/1. Scripts/Runtime/Presentation/UI/BattleUIManager.cs
+0095 | Assets/1. Scripts/Runtime/Presentation/UI/BattleUIRefreshScheduler.cs
+0096 | Assets/1. Scripts/Runtime/Presentation/UI/BodyPartButton.cs
+0097 | Assets/1. Scripts/Runtime/Presentation/UI/BodyPartButtonRegistry.cs
+0098 | Assets/1. Scripts/Runtime/Presentation/UI/BodyPartButtonViewModel.cs
+0099 | Assets/1. Scripts/Runtime/Presentation/UI/MomentumScrollbarUI.cs
+0100 | Assets/1. Scripts/Runtime/Presentation/UI/OutlineController.cs
+0101 | Assets/1. Scripts/Runtime/Presentation/UI/SkillButtonUI.cs
+0102 | Assets/1. Scripts/Runtime/Presentation/UI/SkillSelectPanelUI.cs
+0103 | Assets/1. Scripts/Runtime/Presentation/UI/StatusPopUp.cs
+0104 | Assets/1. Scripts/Runtime/Presentation/UI/TargetArrowUI.cs
+0105 | Assets/1. Scripts/Runtime/Presentation/UI/TargetSelectionViewModel.cs
+0106 | Assets/1. Scripts/Runtime/Presentation/Visual/Camera/BattleCameraShakeSettings.cs
+0107 | Assets/1. Scripts/Runtime/Presentation/Visual/Camera/BattleCameraTargetResolver.cs
+0108 | Assets/1. Scripts/Runtime/Presentation/Visual/Camera/BattleCinemachineRig.cs
+0109 | Assets/1. Scripts/Runtime/Presentation/Visual/Camera/BattleCinemachineTargetGroupBinder.cs
+0110 | Assets/1. Scripts/Runtime/Presentation/Visual/CharacterView/AnimationEventRelay.cs
+0111 | Assets/1. Scripts/Runtime/Presentation/Visual/CharacterView/BodyPartAnchor.cs
+0112 | Assets/1. Scripts/Runtime/Presentation/Visual/CharacterView/CharacterActionMoveSettings.cs
+0113 | Assets/1. Scripts/Runtime/Presentation/Visual/CharacterView/CharacterActionMover.cs
+0114 | Assets/1. Scripts/Runtime/Presentation/Visual/CharacterView/CharacterActionStartPositionMode.cs
+0115 | Assets/1. Scripts/Runtime/Presentation/Visual/CharacterView/CharacterActionTargetPointType.cs
+0116 | Assets/1. Scripts/Runtime/Presentation/Visual/CharacterView/CharacterFacingController.cs
+0117 | Assets/1. Scripts/Runtime/Presentation/Visual/CharacterView/CharacterView.cs
+0118 | Assets/1. Scripts/Runtime/Presentation/Visual/CharacterView/CharacterViewEventBinder.cs
+0119 | Assets/1. Scripts/Runtime/Presentation/Visual/CharacterView/CharacterVisualState.cs
+0120 | Assets/1. Scripts/Runtime/Presentation/Visual/DamageNumber/DamageNumberManager.cs
+0121 | Assets/1. Scripts/Runtime/Presentation/Visual/DamageNumber/DamageNumberUI.cs
+0122 | Assets/1. Scripts/Runtime/Presentation/Visual/Data/BattleVisualRequest.cs
+0123 | Assets/1. Scripts/Runtime/Presentation/Visual/Data/BattleVisualRequestBuilder.cs
+0124 | Assets/1. Scripts/Runtime/Presentation/Visual/Data/ClashRollVisualStep.cs
+0125 | Assets/1. Scripts/Runtime/Presentation/Visual/Data/DamageDistributionUtility.cs
+0126 | Assets/1. Scripts/Runtime/Presentation/Visual/Data/SkillCameraDefinition.cs
+0127 | Assets/1. Scripts/Runtime/Presentation/Visual/Data/SkillCameraShot.cs
+0128 | Assets/1. Scripts/Runtime/Presentation/Visual/Data/SkillVisualDefinition.cs
+0129 | Assets/1. Scripts/Runtime/Presentation/Visual/Data/SkillVisualProfile.cs
+0130 | Assets/1. Scripts/Runtime/Presentation/Visual/Director/BattleAnimationDirector.cs
+0131 | Assets/1. Scripts/Runtime/Presentation/Visual/Director/BattleCameraDirector.cs
+0132 | Assets/1. Scripts/Runtime/Presentation/Visual/Director/BattleStatusVisualDirector.cs
+0133 | Assets/1. Scripts/Runtime/Presentation/Visual/Director/BattleVisualDamagePresenter.cs
+0134 | Assets/1. Scripts/Runtime/Presentation/Visual/Director/BattleVisualPlaybackState.cs
+0135 | Assets/1. Scripts/Runtime/Presentation/Visual/FloatingText/BattleWorldFloatingTextManager.cs
+0136 | Assets/1. Scripts/Runtime/Presentation/Visual/FloatingText/BattleWorldFloatingTextUI.cs
+0137 | Assets/1. Scripts/Runtime/Presentation/Visual/Interface/IVisualSkill.cs
+0138 | Assets/1. Scripts/Runtime/Presentation/Visual/Text/BattleVisualTextUtility.cs
+0139 | Assets/1. Scripts/Runtime/Presentation/Visual/VFX/Core/BattleVfxAnchorType.cs
+0140 | Assets/1. Scripts/Runtime/Presentation/Visual/VFX/Core/BattleVfxContext.cs
+0141 | Assets/1. Scripts/Runtime/Presentation/Visual/VFX/Core/BattleVfxCue.cs
+0142 | Assets/1. Scripts/Runtime/Presentation/Visual/VFX/Core/BattleVfxDefinition.cs
+0143 | Assets/1. Scripts/Runtime/Presentation/Visual/VFX/Core/BattleVfxInstance.cs
+0144 | Assets/1. Scripts/Runtime/Presentation/Visual/VFX/Core/BattleVfxManager.cs
+0145 | Assets/1. Scripts/Runtime/Presentation/Visual/VFX/Core/BattleVfxPlayData.cs
+0146 | Assets/1. Scripts/Runtime/Presentation/Visual/VFX/Core/BattleVfxPool.cs
+0147 | Assets/1. Scripts/Runtime/Presentation/Visual/VFX/Core/BattleVfxPoolKey.cs
+0148 | Assets/1. Scripts/Runtime/Presentation/Visual/VFX/Core/BattleVfxTiming.cs
+0149 | Assets/1. Scripts/Runtime/Presentation/Visual/VFX/Core/IBattleVfxPlayable.cs
+0150 | Assets/1. Scripts/Runtime/Presentation/Visual/VFX/Persistent/CharacterPersistentVfxAnchorType.cs
+0151 | Assets/1. Scripts/Runtime/Presentation/Visual/VFX/Persistent/CharacterPersistentVfxController.cs
+0152 | Assets/1. Scripts/Runtime/Presentation/Visual/VFX/Persistent/PersistentBattleVfxDefinition.cs
+0153 | Assets/1. Scripts/Runtime/Presentation/Visual/VFX/Players/BloodSplatterParticleEffectPlayer.cs
+0154 | Assets/1. Scripts/Runtime/Presentation/Visual/VFX/Players/ScriptedParticleEffectPlayer.cs
+0155 | Assets/1. Scripts/Runtime/Presentation/Visual/VFX/Players/ShaderMaterialEffectPlayer.cs
+0156 | Assets/1. Scripts/Runtime/Presentation/Visual/VFX/Players/VfxGraphEffectPlayer.cs
+0157 | Assets/1. Scripts/Runtime/Presentation/Visual/VFX/StatusVisual/StatusDamageVisualRequest.cs
+0158 | Assets/1. Scripts/Runtime/Presentation/Visual/VFX/StatusVisual/StatusEffectLifecycleVisualRequest.cs
+0159 | Assets/1. Scripts/Runtime/Presentation/Visual/VFX/StatusVisual/StatusEffectVisualDatabase.cs
+0160 | Assets/1. Scripts/Runtime/Presentation/Visual/VFX/StatusVisual/StatusEffectVisualDefinition.cs
+0161 | Assets/1. Scripts/Runtime/Presentation/Visual/Validation/AnimatorStateValidator.cs
+0162 | Assets/1. Scripts/Runtime/Presentation/Visual/Validation/BattleVisualValidator.cs
+0163 | Assets/1. Scripts/Runtime/Presentation/Visual/Validation/SkillCameraDefinitionValidator.cs
+0164 | Assets/1. Scripts/Runtime/Presentation/Visual/Validation/VfxDefinitionValidator.cs
+0165 | Assets/1. Scripts/Runtime/Shared/Utils.cs
+0166 | Assets/1. Scripts/Runtime/Skills/Base/DuelSkill.cs
+0167 | Assets/1. Scripts/Runtime/Skills/Base/NormalSkill.cs
+0168 | Assets/1. Scripts/Runtime/Skills/Base/PreparationSkill.cs
+0169 | Assets/1. Scripts/Runtime/Skills/Base/PrestigeSkill.cs
+0170 | Assets/1. Scripts/Runtime/Skills/Base/Skill.cs
+0171 | Assets/1. Scripts/Runtime/Skills/DataDriven/DataDuelSkill.cs
+0172 | Assets/1. Scripts/Runtime/Skills/DataDriven/DataNormalSkill.cs
+0173 | Assets/1. Scripts/Runtime/Skills/DataDriven/DataPreparationSkill.cs
+0174 | Assets/1. Scripts/Runtime/Skills/DataDriven/DataPrestigeSkill.cs
+0175 | Assets/1. Scripts/Runtime/Skills/DataDriven/SkillDefinition.cs
+0176 | Assets/1. Scripts/Runtime/Skills/DataDriven/SkillEffectContext.cs
+0177 | Assets/1. Scripts/Runtime/Skills/Effects/Common/AddBodyPartStatusEffect.cs
+0178 | Assets/1. Scripts/Runtime/Skills/Effects/Common/ApplyRolledPartDamageEffect.cs
+0179 | Assets/1. Scripts/Runtime/Skills/Effects/Common/ApplyStatusIfConditionEffect.cs
+0180 | Assets/1. Scripts/Runtime/Skills/Effects/Common/ConditionalDamageEffect.cs
+0181 | Assets/1. Scripts/Runtime/Skills/Effects/Common/ForceBreakOwnPartEffect.cs
+0182 | Assets/1. Scripts/Runtime/Skills/Effects/Common/GainCustomResourceEffect.cs
+0183 | Assets/1. Scripts/Runtime/Skills/Effects/Common/GainPrestigeEffect.cs
+0184 | Assets/1. Scripts/Runtime/Skills/Effects/Common/ModifyResourceEffect.cs
+0185 | Assets/1. Scripts/Runtime/Skills/Effects/Common/SkillResourceAccess.cs
+0186 | Assets/1. Scripts/Runtime/Skills/Effects/Common/StatusEffectFactory.cs
+0187 | Assets/1. Scripts/Runtime/Skills/Effects/OlafEffects/OlafBreakOwnPartEffect.cs
+0188 | Assets/1. Scripts/Runtime/Skills/Effects/OlafEffects/OlafNormalBleedEffect.cs
+0189 | Assets/1. Scripts/Runtime/Skills/Effects/OlafEffects/OlafPrestigeEffect.cs
+0190 | Assets/1. Scripts/Runtime/Skills/Effects/SkillEffectCondition.cs
+0191 | Assets/1. Scripts/Runtime/Skills/Effects/SkillEffectDefinition.cs
+0192 | Assets/1. Scripts/Runtime/Skills/Effects/SkillEffectResult.cs
+0193 | Assets/1. Scripts/Runtime/Skills/Effects/SkillEffectTargetSelector.cs
+0194 | Assets/1. Scripts/Runtime/Skills/Effects/SkillEffectTiming.cs
+0195 | Assets/1. Scripts/Runtime/Status/CrowdControl/CrowdControlStatus.cs
+0196 | Assets/1. Scripts/Runtime/Status/CrowdControl/Stun.cs
+0197 | Assets/1. Scripts/Runtime/Status/DamageOverTime/Bleeding.cs
+0198 | Assets/1. Scripts/Runtime/Status/DamageOverTime/Burn.cs
+0199 | Assets/1. Scripts/Runtime/Status/DamageOverTime/DamageStatus.cs
+0200 | Assets/1. Scripts/Runtime/Status/PartBroken/BrokenArm.cs
+0201 | Assets/1. Scripts/Runtime/Status/PartBroken/BrokenHead.cs
+0202 | Assets/1. Scripts/Runtime/Status/PartBroken/BrokenLegs.cs
+0203 | Assets/1. Scripts/Runtime/Status/PartBroken/BrokenPartStatus.cs
+0204 | Assets/1. Scripts/Runtime/Status/PartDisabled/ArmDisabled.cs
+0205 | Assets/1. Scripts/Runtime/Status/PartDisabled/HeadDisabled.cs
+0206 | Assets/1. Scripts/Runtime/Status/PartDisabled/LegsDisabled.cs
+0207 | Assets/1. Scripts/Runtime/Status/PartDisabled/PartDisabledStatus.cs
+0208 | Assets/1. Scripts/Runtime/Status/StatusEffect.cs
+0209 | Assets/1. Scripts/Runtime/Status/StatusEffectApplyResult.cs
+0210 | Assets/1. Scripts/Runtime/Status/StatusEffectDurationPolicy.cs
+0211 | Assets/1. Scripts/Runtime/Status/StatusEffectRemoveReason.cs
+0212 | Assets/1. Scripts/Runtime/Status/StatusEffectStackPolicy.cs
+0213 | Assets/1. Scripts/Runtime/Systems/AI/AIActionPlanner.cs
+0214 | Assets/1. Scripts/Runtime/Systems/AI/AIManager.cs
+0215 | Assets/1. Scripts/Runtime/Systems/AI/AISkillSelector.cs
+0216 | Assets/1. Scripts/Runtime/Systems/AI/AISlotPlanner.cs
+0217 | Assets/1. Scripts/Runtime/Systems/AI/AITargetSelector.cs
+0218 | Assets/1. Scripts/Runtime/Systems/BattleFlow/ActionManager.cs
+0219 | Assets/1. Scripts/Runtime/Systems/BattleFlow/BattleLifecycleGuard.cs
+0220 | Assets/1. Scripts/Runtime/Systems/BattleFlow/BattleManager.cs
+0221 | Assets/1. Scripts/Runtime/Systems/BattleFlow/BattleRosterController.cs
+0222 | Assets/1. Scripts/Runtime/Systems/BattleFlow/TurnManager.cs
+0223 | Assets/1. Scripts/Runtime/Systems/Resolution/ActionExecutionQueue.cs
+0224 | Assets/1. Scripts/Runtime/Systems/Resolution/ActionPairingResult.cs
+0225 | Assets/1. Scripts/Runtime/Systems/Resolution/ActionPhaseSorter.cs
+0226 | Assets/1. Scripts/Runtime/Systems/Resolution/ActionResolver.cs
+0227 | Assets/1. Scripts/Runtime/Systems/Resolution/ClashBuilder.cs
+0228 | Assets/1. Scripts/Runtime/Systems/Resolution/ClashManager.cs
+0229 | Assets/1. Scripts/Runtime/Systems/Resolution/ClashMatchPolicy.cs
+0230 | Assets/1. Scripts/Runtime/Systems/Resolution/DamageManager.cs
+0231 | Assets/1. Scripts/Runtime/Systems/Stats/MomentumManager.cs
+0232 | Assets/1. Scripts/Runtime/Systems/Stats/SpeedManager.cs
 TABLE_OF_CONTENTS_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 1/228
+FILE_INDEX: 1/232
+FILE_PATH: Assets/1. Scripts/Editor/Battle/BattleDynamicRosterSetupTool.cs
+FILE_NAME: BattleDynamicRosterSetupTool.cs
+FILE_GUID: 754b01c95f17b22469c39d1bdcdb48d4
+LANGUAGE: CSharp
+LINE_COUNT: 352
+UTF8_BYTE_COUNT: 9547
+SHA256: bb0d376f28b3ed83f9b0d9593a060508e5da3ab027d2702221792604025badb6
+READ_STATUS: OK
+CONTENT_BEGIN
+#if UNITY_EDITOR
+
+using System.Collections.Generic;
+using UnityEditor;
+using UnityEditor.SceneManagement;
+using UnityEngine;
+
+public static class BattleDynamicRosterSetupTool
+{
+    private const string MenuPath =
+        "Tools/Project Abyss/Battle/" +
+        "Convert Current Scene To Dynamic Roster";
+
+    [MenuItem(MenuPath, priority = 2100)]
+    public static void ConvertCurrentScene()
+    {
+        BattleManager battleManager =
+            Object.FindFirstObjectByType<BattleManager>();
+
+        BattleUIManager uiManager =
+            Object.FindFirstObjectByType<BattleUIManager>();
+
+        if (battleManager == null ||
+            uiManager == null)
+        {
+            EditorUtility.DisplayDialog(
+                "Dynamic Roster Setup",
+                "BattleManager와 BattleUIManager가 모두 필요합니다.",
+                "확인");
+
+            return;
+        }
+
+        Character legacyPlayer =
+            battleManager.LegacyPlayerForMigration;
+
+        List<Character> legacyEnemies =
+            CopyCharacters(
+                battleManager.LegacyEnemiesForMigration);
+
+        if (legacyPlayer == null ||
+            legacyEnemies.Count == 0)
+        {
+            EditorUtility.DisplayDialog(
+                "Dynamic Roster Setup",
+                "기존 Player 또는 Enemy 연결을 찾지 못했습니다.",
+                "확인");
+
+            return;
+        }
+
+        BodyPartButton playerTemplate =
+            FindFirstButton(
+                battleManager.LegacyPlayerButtonsForMigration);
+
+        BodyPartButton enemyTemplate =
+            FindFirstButton(
+                battleManager.LegacyEnemyButtonsForMigration);
+
+        if (playerTemplate == null ||
+            enemyTemplate == null)
+        {
+            EditorUtility.DisplayDialog(
+                "Dynamic Roster Setup",
+                "기존 Player/Enemy BodyPartButton Template을 찾지 못했습니다.",
+                "확인");
+
+            return;
+        }
+
+        RectTransform playerContainer =
+            playerTemplate.transform.parent as RectTransform;
+
+        RectTransform enemyContainer =
+            enemyTemplate.transform.parent as RectTransform;
+
+        if (playerContainer == null ||
+            enemyContainer == null)
+        {
+            EditorUtility.DisplayDialog(
+                "Dynamic Roster Setup",
+                "Button Container는 RectTransform이어야 합니다.",
+                "확인");
+
+            return;
+        }
+
+        Undo.IncrementCurrentGroup();
+        int undoGroup = Undo.GetCurrentGroup();
+
+        Undo.SetCurrentGroupName(
+            "Convert Battle To Dynamic Roster");
+
+        try
+        {
+            BattleRosterController rosterController =
+                GetOrAddComponent<BattleRosterController>(
+                    battleManager.gameObject);
+
+            BattleParticipantButtonFactory buttonFactory =
+                GetOrAddComponent<BattleParticipantButtonFactory>(
+                    uiManager.gameObject);
+
+            Transform setupRoot =
+                FindOrCreateChild(
+                    battleManager.transform,
+                    "BattleRuntimeSetup");
+
+            Transform spawnRoot =
+                FindOrCreateChild(
+                    setupRoot,
+                    "SpawnPoints");
+
+            Transform runtimeRoot =
+                FindOrCreateChild(
+                    setupRoot,
+                    "RuntimeParticipants");
+
+            Transform playerSpawn =
+                FindOrCreateSpawnPoint(
+                    spawnRoot,
+                    "PlayerSpawn",
+                    legacyPlayer.transform);
+
+            List<Transform> enemySpawns = new();
+
+            for (int i = 0; i < legacyEnemies.Count; i++)
+            {
+                enemySpawns.Add(
+                    FindOrCreateSpawnPoint(
+                        spawnRoot,
+                        $"EnemySpawn_{i}",
+                        legacyEnemies[i].transform));
+            }
+
+            Undo.RecordObject(
+                rosterController,
+                "Configure Battle Roster");
+
+            rosterController.ConfigureSceneRoster(
+                legacyPlayer,
+                legacyEnemies,
+                playerSpawn,
+                enemySpawns,
+                runtimeRoot);
+
+            Undo.RecordObject(
+                buttonFactory,
+                "Configure Dynamic Buttons");
+
+            buttonFactory.Configure(
+                playerTemplate,
+                enemyTemplate,
+                playerContainer,
+                enemyContainer);
+
+            RemoveExtraButtons(
+                playerContainer,
+                playerTemplate);
+
+            RemoveExtraButtons(
+                enemyContainer,
+                enemyTemplate);
+
+            Undo.RecordObject(
+                battleManager,
+                "Assign Battle Roster Controller");
+
+            battleManager.AssignRosterController(
+                rosterController);
+
+            battleManager.SetAutoLifecycle(
+                initializeOnAwake: true,
+                startAutomatically: true);
+
+            battleManager.ClearLegacyMigrationData();
+
+            Undo.RecordObject(
+                uiManager,
+                "Assign Participant Button Factory");
+
+            uiManager.AssignParticipantButtonFactory(
+                buttonFactory);
+
+            EditorUtility.SetDirty(rosterController);
+            EditorUtility.SetDirty(buttonFactory);
+            EditorUtility.SetDirty(battleManager);
+            EditorUtility.SetDirty(uiManager);
+
+            EditorSceneManager.MarkSceneDirty(
+                battleManager.gameObject.scene);
+
+            Undo.CollapseUndoOperations(undoGroup);
+
+            Selection.activeGameObject =
+                battleManager.gameObject;
+
+            EditorUtility.DisplayDialog(
+                "Dynamic Roster Setup Complete",
+                "현재 Player/Enemy 연결과 버튼 Template을 " +
+                "동적 Roster 구조로 변환했습니다.\n\n" +
+                "이제 BattleRosterController에서 Scene Character 또는 " +
+                "Character Prefab을 교체할 수 있습니다.",
+                "확인");
+        }
+        catch
+        {
+            Undo.RevertAllDownToGroup(undoGroup);
+            throw;
+        }
+    }
+
+    private static T GetOrAddComponent<T>(
+        GameObject gameObject)
+        where T : Component
+    {
+        T component = gameObject.GetComponent<T>();
+
+        if (component != null)
+            return component;
+
+        return Undo.AddComponent<T>(gameObject);
+    }
+
+    private static Transform FindOrCreateChild(
+        Transform parent,
+        string childName)
+    {
+        Transform existing = parent.Find(childName);
+
+        if (existing != null)
+            return existing;
+
+        GameObject child = new(childName);
+
+        Undo.RegisterCreatedObjectUndo(
+            child,
+            $"Create {childName}");
+
+        child.transform.SetParent(
+            parent,
+            worldPositionStays: false);
+
+        return child.transform;
+    }
+
+    private static Transform FindOrCreateSpawnPoint(
+        Transform parent,
+        string pointName,
+        Transform sourceTransform)
+    {
+        Transform point = parent.Find(pointName);
+
+        if (point == null)
+        {
+            GameObject child = new(pointName);
+
+            Undo.RegisterCreatedObjectUndo(
+                child,
+                $"Create {pointName}");
+
+            point = child.transform;
+
+            point.SetParent(
+                parent,
+                worldPositionStays: false);
+        }
+
+        if (sourceTransform != null)
+        {
+            Undo.RecordObject(
+                point,
+                $"Position {pointName}");
+
+            point.SetPositionAndRotation(
+                sourceTransform.position,
+                sourceTransform.rotation);
+
+            point.localScale = Vector3.one;
+        }
+
+        return point;
+    }
+
+    private static void RemoveExtraButtons(
+        RectTransform container,
+        BodyPartButton template)
+    {
+        BodyPartButton[] buttons =
+            container.GetComponentsInChildren<BodyPartButton>(true);
+
+        foreach (BodyPartButton button in buttons)
+        {
+            if (button == null || button == template)
+                continue;
+
+            Undo.DestroyObjectImmediate(button.gameObject);
+        }
+
+        Undo.RecordObject(
+            template,
+            "Configure Button Template");
+
+        Undo.RecordObject(
+            template.gameObject,
+            "Configure Button Template GameObject");
+
+        template.name =
+            container.name +
+            "_ButtonTemplate";
+
+        template.ConfigureAsTemplate();
+
+        EditorUtility.SetDirty(template);
+    }
+
+    private static BodyPartButton FindFirstButton(
+        IReadOnlyList<BodyPartButton> buttons)
+    {
+        if (buttons == null)
+            return null;
+
+        for (int i = 0; i < buttons.Count; i++)
+        {
+            if (buttons[i] != null)
+                return buttons[i];
+        }
+
+        return null;
+    }
+
+    private static List<Character> CopyCharacters(
+        IReadOnlyList<Character> source)
+    {
+        List<Character> result = new();
+
+        if (source == null)
+            return result;
+
+        for (int i = 0; i < source.Count; i++)
+        {
+            Character character = source[i];
+
+            if (character != null)
+                result.Add(character);
+        }
+
+        return result;
+    }
+}
+
+#endif
+CONTENT_END
+FILE_END
+================================================================================
+
+FILE_BEGIN
+FILE_INDEX: 2/232
+FILE_PATH: Assets/1. Scripts/Editor/Battle/BattleParticipantUILayoutSetupTool.cs
+FILE_NAME: BattleParticipantUILayoutSetupTool.cs
+FILE_GUID: 398b7b83229b2044f931fd16d555e18e
+LANGUAGE: CSharp
+LINE_COUNT: 74
+UTF8_BYTE_COUNT: 2094
+SHA256: 82b577a995ff1b5236e942156faa7a10dee4004d9b13435dcc1d5591bffd41c1
+READ_STATUS: OK
+CONTENT_BEGIN
+#if UNITY_EDITOR
+
+using UnityEditor;
+using UnityEditor.SceneManagement;
+using UnityEngine;
+
+public static class BattleParticipantUILayoutSetupTool
+{
+    private const string MenuPath =
+        "Tools/Project Abyss/Battle/" +
+        "Apply Right Side Participant Button Layout";
+
+    [MenuItem(MenuPath, priority = 2110)]
+    public static void ApplyCurrentSceneLayout()
+    {
+        BattleParticipantButtonFactory factory =
+            Object.FindFirstObjectByType<
+                BattleParticipantButtonFactory>(
+                    FindObjectsInactive.Include);
+
+        if (factory == null)
+        {
+            EditorUtility.DisplayDialog(
+                "Participant Button Layout",
+                "BattleParticipantButtonFactory를 찾지 못했습니다.\n" +
+                "먼저 Dynamic Roster 변환 메뉴를 실행하세요.",
+                "확인");
+
+            return;
+        }
+
+        Undo.RecordObject(
+            factory,
+            "Apply Participant Button Layout");
+
+        if (factory.PlayerContainer != null)
+        {
+            Undo.RecordObject(
+                factory.PlayerContainer,
+                "Move Player Button Container");
+        }
+
+        if (factory.EnemyContainer != null)
+        {
+            Undo.RecordObject(
+                factory.EnemyContainer,
+                "Move Enemy Button Container");
+        }
+
+        factory.ApplyContainerLayoutNow();
+
+        EditorUtility.SetDirty(factory);
+
+        if (factory.PlayerContainer != null)
+            EditorUtility.SetDirty(factory.PlayerContainer);
+
+        if (factory.EnemyContainer != null)
+            EditorUtility.SetDirty(factory.EnemyContainer);
+
+        EditorSceneManager.MarkSceneDirty(
+            factory.gameObject.scene);
+
+        Selection.activeGameObject =
+            factory.gameObject;
+
+        EditorUtility.DisplayDialog(
+            "Participant Button Layout",
+            "적 버튼 컨테이너를 오른쪽 위,\n" +
+            "플레이어 버튼 컨테이너를 오른쪽 아래에 배치했습니다.",
+            "확인");
+    }
+}
+
+#endif
+CONTENT_END
+FILE_END
+================================================================================
+
+FILE_BEGIN
+FILE_INDEX: 3/232
 FILE_PATH: Assets/1. Scripts/Editor/Diagnostics/BattleDebugTunerEditor.cs
 FILE_NAME: BattleDebugTunerEditor.cs
 FILE_GUID: 505d4b072b0429d4eb67f83ef033ddfe
@@ -996,7 +1456,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 2/228
+FILE_INDEX: 4/232
 FILE_PATH: Assets/1. Scripts/Editor/Tools/ProjectAbyssHierarchyExporter.cs
 FILE_NAME: ProjectAbyssHierarchyExporter.cs
 FILE_GUID: 8b9462079589b0140a782b5af6fa88b3
@@ -2963,7 +3423,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 3/228
+FILE_INDEX: 5/232
 FILE_PATH: Assets/1. Scripts/Editor/Tools/ProjectAbyssScriptExporter.cs
 FILE_NAME: ProjectAbyssScriptExporter.cs
 FILE_GUID: 38c6397f5743d4347aa000117134f6db
@@ -3771,7 +4231,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 4/228
+FILE_INDEX: 6/232
 FILE_PATH: Assets/1. Scripts/Editor/Visual/BattleVfxImpactTimingMigration.cs
 FILE_NAME: BattleVfxImpactTimingMigration.cs
 FILE_GUID: d9e52f8787c4d65419beb41ed2af5a07
@@ -4100,7 +4560,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 5/228
+FILE_INDEX: 7/232
 FILE_PATH: Assets/1. Scripts/Runtime/Battle/ActionPhase.cs
 FILE_NAME: ActionPhase.cs
 FILE_GUID: 53a23284e5347844b956290165ee6319
@@ -4121,7 +4581,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 6/228
+FILE_INDEX: 8/232
 FILE_PATH: Assets/1. Scripts/Runtime/Battle/ActionSlot.cs
 FILE_NAME: ActionSlot.cs
 FILE_GUID: 0c13d0ea0314051418c4b7ae7d9f0f9b
@@ -4193,7 +4653,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 7/228
+FILE_INDEX: 9/232
 FILE_PATH: Assets/1. Scripts/Runtime/Battle/BattleAction.cs
 FILE_NAME: BattleAction.cs
 FILE_GUID: bfa72eb8db630a248b2af886fe29716e
@@ -4439,7 +4899,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 8/228
+FILE_INDEX: 10/232
 FILE_PATH: Assets/1. Scripts/Runtime/Battle/BattleContext.cs
 FILE_NAME: BattleContext.cs
 FILE_GUID: 758f2655bf4cadc488d7ca823491a243
@@ -4493,7 +4953,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 9/228
+FILE_INDEX: 11/232
 FILE_PATH: Assets/1. Scripts/Runtime/Battle/BattleEffectResolver.cs
 FILE_NAME: BattleEffectResolver.cs
 FILE_GUID: 49d263d43dde1394f99dfc3d7d71594f
@@ -5025,7 +5485,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 10/228
+FILE_INDEX: 12/232
 FILE_PATH: Assets/1. Scripts/Runtime/Battle/ClashResultContext.cs
 FILE_NAME: ClashResultContext.cs
 FILE_GUID: 1fcb3f5c5310db848a761deafc7a5d3d
@@ -5087,7 +5547,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 11/228
+FILE_INDEX: 13/232
 FILE_PATH: Assets/1. Scripts/Runtime/Battle/Damage/BodyPartBreakEventContext.cs
 FILE_NAME: BodyPartBreakEventContext.cs
 FILE_GUID: 886335f517ec02c47a746393bf0ad3b2
@@ -5184,7 +5644,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 12/228
+FILE_INDEX: 14/232
 FILE_PATH: Assets/1. Scripts/Runtime/Battle/Damage/BodyPartWeakenEventContext.cs
 FILE_NAME: BodyPartWeakenEventContext.cs
 FILE_GUID: 42c7810989b576342af167f6b0430380
@@ -5281,7 +5741,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 13/228
+FILE_INDEX: 15/232
 FILE_PATH: Assets/1. Scripts/Runtime/Battle/Damage/DamageCalculator.cs
 FILE_NAME: DamageCalculator.cs
 FILE_GUID: c3cfb5647ca691c4fa7cfc77df110fea
@@ -5667,7 +6127,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 14/228
+FILE_INDEX: 16/232
 FILE_PATH: Assets/1. Scripts/Runtime/Battle/Damage/DamageContext.cs
 FILE_NAME: DamageContext.cs
 FILE_GUID: f2be539d875f05041a5895ef89ebd982
@@ -5911,7 +6371,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 15/228
+FILE_INDEX: 17/232
 FILE_PATH: Assets/1. Scripts/Runtime/Battle/Damage/DamageEventDispatcher.cs
 FILE_NAME: DamageEventDispatcher.cs
 FILE_GUID: 08f1b7a4e4b1e564cbe38c5da33a03e8
@@ -6036,7 +6496,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 16/228
+FILE_INDEX: 18/232
 FILE_PATH: Assets/1. Scripts/Runtime/Battle/Damage/DamageEventResult.cs
 FILE_NAME: DamageEventResult.cs
 FILE_GUID: 63f7085d709989f4faa4760da5993cc7
@@ -6092,7 +6552,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 17/228
+FILE_INDEX: 19/232
 FILE_PATH: Assets/1. Scripts/Runtime/Battle/Damage/DamageRequest.cs
 FILE_NAME: DamageRequest.cs
 FILE_GUID: c469c244a333dfb44959f6225445e317
@@ -6469,7 +6929,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 18/228
+FILE_INDEX: 20/232
 FILE_PATH: Assets/1. Scripts/Runtime/Battle/Damage/DamageResult.cs
 FILE_NAME: DamageResult.cs
 FILE_GUID: 39d9c840b9412624a971ca2e8b933c0e
@@ -6576,7 +7036,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 19/228
+FILE_INDEX: 21/232
 FILE_PATH: Assets/1. Scripts/Runtime/Battle/Damage/DamageSnapshot.cs
 FILE_NAME: DamageSnapshot.cs
 FILE_GUID: 7153f5e7f670c1348988acef3f5b5ab9
@@ -6637,7 +7097,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 20/228
+FILE_INDEX: 22/232
 FILE_PATH: Assets/1. Scripts/Runtime/Battle/Damage/DamageStage.cs
 FILE_NAME: DamageStage.cs
 FILE_GUID: 102459857f80c424da044b026ffae16f
@@ -6667,7 +7127,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 21/228
+FILE_INDEX: 23/232
 FILE_PATH: Assets/1. Scripts/Runtime/Battle/Damage/DamageType.cs
 FILE_NAME: DamageType.cs
 FILE_GUID: 5faa47da268846d49b159f61cce76a94
@@ -6695,7 +7155,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 22/228
+FILE_INDEX: 24/232
 FILE_PATH: Assets/1. Scripts/Runtime/Battle/Damage/KillEventContext.cs
 FILE_NAME: KillEventContext.cs
 FILE_GUID: 928232e481b454a45b647ead4c46edd3
@@ -6787,7 +7247,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 23/228
+FILE_INDEX: 25/232
 FILE_PATH: Assets/1. Scripts/Runtime/Battle/EffectRequest.cs
 FILE_NAME: EffectRequest.cs
 FILE_GUID: aaa711c1f14feeb47a4dbae53f875882
@@ -7033,7 +7493,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 24/228
+FILE_INDEX: 26/232
 FILE_PATH: Assets/1. Scripts/Runtime/Battle/Events/BattleEvent.cs
 FILE_NAME: BattleEvent.cs
 FILE_GUID: 5417ddd19b831af48ba0bd263bfd497b
@@ -7791,7 +8251,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 25/228
+FILE_INDEX: 27/232
 FILE_PATH: Assets/1. Scripts/Runtime/Battle/Events/BattleEventSubscriptionGroup.cs
 FILE_NAME: BattleEventSubscriptionGroup.cs
 FILE_GUID: cb2b72b5438bf654ebddab6ee43e7f7c
@@ -7919,7 +8379,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 26/228
+FILE_INDEX: 28/232
 FILE_PATH: Assets/1. Scripts/Runtime/Battle/Events/IBattleEventListener.cs
 FILE_NAME: IBattleEventListener.cs
 FILE_GUID: 72bc543e11a537e4d8c2598ec8c2af0a
@@ -7941,7 +8401,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 27/228
+FILE_INDEX: 29/232
 FILE_PATH: Assets/1. Scripts/Runtime/Battle/Roll/CoinResolver.cs
 FILE_NAME: CoinResolver.cs
 FILE_GUID: e2d2feab54948f44da35ad3c0459c8e8
@@ -8016,7 +8476,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 28/228
+FILE_INDEX: 30/232
 FILE_PATH: Assets/1. Scripts/Runtime/Battle/Roll/DiceResolver.cs
 FILE_NAME: DiceResolver.cs
 FILE_GUID: f8fea58d96af08746ba66e25c9bd377d
@@ -8072,7 +8532,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 29/228
+FILE_INDEX: 31/232
 FILE_PATH: Assets/1. Scripts/Runtime/Battle/Roll/RollResult.cs
 FILE_NAME: RollResult.cs
 FILE_GUID: bf6b5413a48868c4aa794b3ae574cb89
@@ -8332,7 +8792,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 30/228
+FILE_INDEX: 32/232
 FILE_PATH: Assets/1. Scripts/Runtime/Battle/Roll/SkillResolver.cs
 FILE_NAME: SkillResolver.cs
 FILE_GUID: 4d7f46493e5c46f4f9f0cde7f485e587
@@ -8391,7 +8851,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 31/228
+FILE_INDEX: 33/232
 FILE_PATH: Assets/1. Scripts/Runtime/Battle/Roll/SlotResolver.cs
 FILE_NAME: SlotResolver.cs
 FILE_GUID: 00554ffba7ebbe84cbe4786b3b881fb0
@@ -8441,7 +8901,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 32/228
+FILE_INDEX: 34/232
 FILE_PATH: Assets/1. Scripts/Runtime/Battle/StatusEffectTickContext.cs
 FILE_NAME: StatusEffectTickContext.cs
 FILE_GUID: cba9635988d1a1a4586bf6bee29ff3a4
@@ -8585,7 +9045,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 33/228
+FILE_INDEX: 35/232
 FILE_PATH: Assets/1. Scripts/Runtime/Battle/Targeting/BattleTargetValidator.cs
 FILE_NAME: BattleTargetValidator.cs
 FILE_GUID: 7d113ce0538567e46a9304b5de170831
@@ -8765,7 +9225,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 34/228
+FILE_INDEX: 36/232
 FILE_PATH: Assets/1. Scripts/Runtime/Battle/Targeting/TargetPoint.cs
 FILE_NAME: TargetPoint.cs
 FILE_GUID: e133ad21d3882624681551fbd56cfb7e
@@ -8839,7 +9299,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 35/228
+FILE_INDEX: 37/232
 FILE_PATH: Assets/1. Scripts/Runtime/Battle/Targeting/TargetSelectionRule.cs
 FILE_NAME: TargetSelectionRule.cs
 FILE_GUID: 4d793a97b7fe48b4787b6775e06706ee
@@ -8875,7 +9335,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 36/228
+FILE_INDEX: 38/232
 FILE_PATH: Assets/1. Scripts/Runtime/Characters/BodyParts/BodyPart.cs
 FILE_NAME: BodyPart.cs
 FILE_GUID: 6d6372ed5465ac44e84505f4ad2bfe3a
@@ -9182,7 +9642,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 37/228
+FILE_INDEX: 39/232
 FILE_PATH: Assets/1. Scripts/Runtime/Characters/Build/Augments/BattleInstinctAugment.cs
 FILE_NAME: BattleInstinctAugment.cs
 FILE_GUID: 1eeee832cde21fd4a889464ece49bba3
@@ -9229,7 +9689,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 38/228
+FILE_INDEX: 40/232
 FILE_PATH: Assets/1. Scripts/Runtime/Characters/Build/Augments/CharacterAugment.cs
 FILE_NAME: CharacterAugment.cs
 FILE_GUID: 22157c6577c05384495716637e01b224
@@ -9321,7 +9781,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 39/228
+FILE_INDEX: 41/232
 FILE_PATH: Assets/1. Scripts/Runtime/Characters/Build/Augments/ToughBodyAugment.cs
 FILE_NAME: ToughBodyAugment.cs
 FILE_GUID: 89dd2526ef9c79e43bcb5979e0c0aef0
@@ -9381,7 +9841,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 40/228
+FILE_INDEX: 42/232
 FILE_PATH: Assets/1. Scripts/Runtime/Characters/Build/Items/CharacterItem.cs
 FILE_NAME: CharacterItem.cs
 FILE_GUID: 40f37463601d5cd409cbc2de7008f8f9
@@ -9445,7 +9905,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 41/228
+FILE_INDEX: 43/232
 FILE_PATH: Assets/1. Scripts/Runtime/Characters/CharacterBase/BodyPartTargetModel.cs
 FILE_NAME: BodyPartTargetModel.cs
 FILE_GUID: 54981011eaef39145bdbfe8e3b2cfed4
@@ -9585,7 +10045,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 42/228
+FILE_INDEX: 44/232
 FILE_PATH: Assets/1. Scripts/Runtime/Characters/CharacterBase/Character.cs
 FILE_NAME: Character.cs
 FILE_GUID: 5f56d719ac8e2444d8866af90e582dbc
@@ -10914,7 +11374,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 43/228
+FILE_INDEX: 45/232
 FILE_PATH: Assets/1. Scripts/Runtime/Characters/CharacterBase/CharacterBodyPartController.cs
 FILE_NAME: CharacterBodyPartController.cs
 FILE_GUID: 87b1c7da8c20f294dad07207324639ba
@@ -11235,7 +11695,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 44/228
+FILE_INDEX: 46/232
 FILE_PATH: Assets/1. Scripts/Runtime/Characters/CharacterBase/CharacterBuildController.cs
 FILE_NAME: CharacterBuildController.cs
 FILE_GUID: 0641855dc92e34941a95ed112c4a066b
@@ -11723,7 +12183,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 45/228
+FILE_INDEX: 47/232
 FILE_PATH: Assets/1. Scripts/Runtime/Characters/CharacterBase/CharacterBuildMechanicContext.cs
 FILE_NAME: CharacterBuildMechanicContext.cs
 FILE_GUID: 2985882258239c44d8669c94539bdef5
@@ -11806,7 +12266,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 46/228
+FILE_INDEX: 48/232
 FILE_PATH: Assets/1. Scripts/Runtime/Characters/CharacterBase/CharacterCombatState.cs
 FILE_NAME: CharacterCombatState.cs
 FILE_GUID: 07ba8079580082849bc51b58eb176965
@@ -11951,7 +12411,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 47/228
+FILE_INDEX: 49/232
 FILE_PATH: Assets/1. Scripts/Runtime/Characters/CharacterBase/CharacterDamageController.cs
 FILE_NAME: CharacterDamageController.cs
 FILE_GUID: 5d9ec0d9c054d234ebce951f30053440
@@ -12244,7 +12704,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 48/228
+FILE_INDEX: 50/232
 FILE_PATH: Assets/1. Scripts/Runtime/Characters/CharacterBase/CharacterData.cs
 FILE_NAME: CharacterData.cs
 FILE_GUID: 02f75a7e990b2b34480f808c74726683
@@ -12309,7 +12769,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 49/228
+FILE_INDEX: 51/232
 FILE_PATH: Assets/1. Scripts/Runtime/Characters/CharacterBase/CharacterEventBinder.cs
 FILE_NAME: CharacterEventBinder.cs
 FILE_GUID: add88c35edf8cb142903f83139585d38
@@ -12439,7 +12899,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 50/228
+FILE_INDEX: 52/232
 FILE_PATH: Assets/1. Scripts/Runtime/Characters/CharacterBase/CharacterLifeController.cs
 FILE_NAME: CharacterLifeController.cs
 FILE_GUID: 581f684da890cab4caba079bed3ca5b7
@@ -12564,7 +13024,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 51/228
+FILE_INDEX: 53/232
 FILE_PATH: Assets/1. Scripts/Runtime/Characters/CharacterBase/CharacterMechanicController.cs
 FILE_NAME: CharacterMechanicController.cs
 FILE_GUID: f423969a536b7c345912b31afef08f5c
@@ -12895,7 +13355,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 52/228
+FILE_INDEX: 54/232
 FILE_PATH: Assets/1. Scripts/Runtime/Characters/CharacterBase/CharacterResourceController.cs
 FILE_NAME: CharacterResourceController.cs
 FILE_GUID: f1f0552de61d4d0418e06582f28dd65d
@@ -13039,7 +13499,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 53/228
+FILE_INDEX: 55/232
 FILE_PATH: Assets/1. Scripts/Runtime/Characters/CharacterBase/CharacterRuntimeSnapshot.cs
 FILE_NAME: CharacterRuntimeSnapshot.cs
 FILE_GUID: 7d28ebf77df2a924aa89265ac494dda7
@@ -13155,7 +13615,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 54/228
+FILE_INDEX: 56/232
 FILE_PATH: Assets/1. Scripts/Runtime/Characters/CharacterBase/CharacterStatusController.cs
 FILE_NAME: CharacterStatusController.cs
 FILE_GUID: 32525ea969c97d0418bb9225529c7bda
@@ -13771,7 +14231,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 55/228
+FILE_INDEX: 57/232
 FILE_PATH: Assets/1. Scripts/Runtime/Characters/CharacterBase/CharacterTargetModel.cs
 FILE_NAME: CharacterTargetModel.cs
 FILE_GUID: 35a75f9bfbf89ae4a80bda4dcd9aff45
@@ -13899,7 +14359,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 56/228
+FILE_INDEX: 58/232
 FILE_PATH: Assets/1. Scripts/Runtime/Characters/CharacterBase/IBodyPartBreakImmediateReaction.cs
 FILE_NAME: IBodyPartBreakImmediateReaction.cs
 FILE_GUID: 3408a0d57f6aa0d4db84e32c1dba8d7d
@@ -13919,7 +14379,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 57/228
+FILE_INDEX: 59/232
 FILE_PATH: Assets/1. Scripts/Runtime/Characters/CharacterBase/ICombatTargetModel.cs
 FILE_NAME: ICombatTargetModel.cs
 FILE_GUID: 2251d14ac86adce42a95b99d186c32f5
@@ -13955,7 +14415,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 58/228
+FILE_INDEX: 60/232
 FILE_PATH: Assets/1. Scripts/Runtime/Characters/CharacterBase/ReactiveCombatMechanic.cs
 FILE_NAME: ReactiveCombatMechanic.cs
 FILE_GUID: 2adbb94e37996404b92686aa24b992ea
@@ -14247,7 +14707,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 59/228
+FILE_INDEX: 61/232
 FILE_PATH: Assets/1. Scripts/Runtime/Characters/CharacterBase/SingleHpTargetModel.cs
 FILE_NAME: SingleHpTargetModel.cs
 FILE_GUID: 926359bac060a45448cf99ff0bf82ba8
@@ -14327,7 +14787,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 60/228
+FILE_INDEX: 62/232
 FILE_PATH: Assets/1. Scripts/Runtime/Characters/CombatMechanic.cs
 FILE_NAME: CombatMechanic.cs
 FILE_GUID: e19defce519ea674485f9f7af44dc09a
@@ -14541,7 +15001,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 61/228
+FILE_INDEX: 63/232
 FILE_PATH: Assets/1. Scripts/Runtime/Characters/CombatResourceBank.cs
 FILE_NAME: CombatResourceBank.cs
 FILE_GUID: 15f9dcfdd05445946884547086fc3e91
@@ -14802,7 +15262,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 62/228
+FILE_INDEX: 64/232
 FILE_PATH: Assets/1. Scripts/Runtime/Characters/Enemies/Base/Enemy.cs
 FILE_NAME: Enemy.cs
 FILE_GUID: fc52837e61b859f4092c0c64cca14977
@@ -15273,7 +15733,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 63/228
+FILE_INDEX: 65/232
 FILE_PATH: Assets/1. Scripts/Runtime/Characters/Enemies/EliteEnemy/EliteEnemy.cs
 FILE_NAME: EliteEnemy.cs
 FILE_GUID: 9b796a59e5a507944945202de8d5051e
@@ -15459,7 +15919,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 64/228
+FILE_INDEX: 66/232
 FILE_PATH: Assets/1. Scripts/Runtime/Characters/Enemies/EliteEnemy/EliteEnemyMechanic.cs
 FILE_NAME: EliteEnemyMechanic.cs
 FILE_GUID: 2437694b9a76a6e4b89e4a93948889a4
@@ -15628,7 +16088,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 65/228
+FILE_INDEX: 67/232
 FILE_PATH: Assets/1. Scripts/Runtime/Characters/Enemies/EliteEnemy/EliteEnemySkillSet.cs
 FILE_NAME: EliteEnemySkillSet.cs
 FILE_GUID: 09657d9e4006e6d49a96037e2740139b
@@ -15769,7 +16229,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 66/228
+FILE_INDEX: 68/232
 FILE_PATH: Assets/1. Scripts/Runtime/Characters/Enemies/NormalEnemy/NormalEnemy.cs
 FILE_NAME: NormalEnemy.cs
 FILE_GUID: b23d90337d582234fb09b41f67dd8d11
@@ -15882,7 +16342,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 67/228
+FILE_INDEX: 69/232
 FILE_PATH: Assets/1. Scripts/Runtime/Characters/Enemies/NormalEnemy/NormalEnemyBloodScentMechanic.cs
 FILE_NAME: NormalEnemyBloodScentMechanic.cs
 FILE_GUID: fbffa3ccea78c9140ab93b56c9e09eee
@@ -15980,7 +16440,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 68/228
+FILE_INDEX: 70/232
 FILE_PATH: Assets/1. Scripts/Runtime/Characters/Enemies/NormalEnemy/NormalEnemySkillSet.cs
 FILE_NAME: NormalEnemySkillSet.cs
 FILE_GUID: 920512c00a01a524f84524cdb889dbd1
@@ -16106,7 +16566,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 69/228
+FILE_INDEX: 71/232
 FILE_PATH: Assets/1. Scripts/Runtime/Characters/Olaf/Items/OlafBloodyAxeItem.cs
 FILE_NAME: OlafBloodyAxeItem.cs
 FILE_GUID: 49d0145207ae98e479835fe43892bbf6
@@ -16172,7 +16632,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 70/228
+FILE_INDEX: 72/232
 FILE_PATH: Assets/1. Scripts/Runtime/Characters/Olaf/Mechanics/OlafBloodyAxeMechanic.cs
 FILE_NAME: OlafBloodyAxeMechanic.cs
 FILE_GUID: b13f1a5f05e704443aefb6e4c4fd24e1
@@ -16412,7 +16872,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 71/228
+FILE_INDEX: 73/232
 FILE_PATH: Assets/1. Scripts/Runtime/Characters/Olaf/Mechanics/OlafImmortalFuryMechanic.cs
 FILE_NAME: OlafImmortalFuryMechanic.cs
 FILE_GUID: a627d4c4fdec30145bc8f2d8954616b5
@@ -16577,7 +17037,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 72/228
+FILE_INDEX: 74/232
 FILE_PATH: Assets/1. Scripts/Runtime/Characters/Olaf/Mechanics/OlafMadnessMechanic.cs
 FILE_NAME: OlafMadnessMechanic.cs
 FILE_GUID: eb8c9ad02d1c4cd48b5f09501e8624af
@@ -17132,7 +17592,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 73/228
+FILE_INDEX: 75/232
 FILE_PATH: Assets/1. Scripts/Runtime/Characters/Olaf/Olaf.cs
 FILE_NAME: Olaf.cs
 FILE_GUID: b26ae18e92120cf45b2cd8f9c87133bf
@@ -17297,7 +17757,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 74/228
+FILE_INDEX: 76/232
 FILE_PATH: Assets/1. Scripts/Runtime/Characters/Olaf/OlafCombatPipeline.cs
 FILE_NAME: OlafCombatPipeline.cs
 FILE_GUID: df1e403a006506449ac0e891bf1fd6bd
@@ -17429,7 +17889,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 75/228
+FILE_INDEX: 77/232
 FILE_PATH: Assets/1. Scripts/Runtime/Characters/Olaf/OlafSkillSet.cs
 FILE_NAME: OlafSkillSet.cs
 FILE_GUID: 42024a28d0568ac4cb807da56889fd57
@@ -17599,7 +18059,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 76/228
+FILE_INDEX: 78/232
 FILE_PATH: Assets/1. Scripts/Runtime/Characters/Status.cs
 FILE_NAME: Status.cs
 FILE_GUID: a5c2965340367b94d8d7cea1f4ba9157
@@ -17706,7 +18166,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 77/228
+FILE_INDEX: 79/232
 FILE_PATH: Assets/1. Scripts/Runtime/Diagnostics/Debug/BattleDebugLog.cs
 FILE_NAME: BattleDebugLog.cs
 FILE_GUID: 3c923ec555f0ab64cbff828acbb28d18
@@ -18404,7 +18864,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 78/228
+FILE_INDEX: 80/232
 FILE_PATH: Assets/1. Scripts/Runtime/Diagnostics/Debug/BattleDebugTuner.cs
 FILE_NAME: BattleDebugTuner.cs
 FILE_GUID: 021ef66e9cf03514aa4ffc9875458f06
@@ -20501,7 +20961,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 79/228
+FILE_INDEX: 81/232
 FILE_PATH: Assets/1. Scripts/Runtime/Diagnostics/Debug/DebugBattleUI.cs
 FILE_NAME: DebugBattleUI.cs
 FILE_GUID: b35fa31bbbe367144b06974287f1b454
@@ -21483,7 +21943,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 80/228
+FILE_INDEX: 82/232
 FILE_PATH: Assets/1. Scripts/Runtime/Diagnostics/Logging/BattleLogBuilder.cs
 FILE_NAME: BattleLogBuilder.cs
 FILE_GUID: 402613a49d4cecc4b992200892e80b3c
@@ -21641,7 +22101,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 81/228
+FILE_INDEX: 83/232
 FILE_PATH: Assets/1. Scripts/Runtime/Diagnostics/Logging/BattleLogEntry.cs
 FILE_NAME: BattleLogEntry.cs
 FILE_GUID: b74e6f973b2e92248ae4111fd754292e
@@ -21931,7 +22391,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 82/228
+FILE_INDEX: 84/232
 FILE_PATH: Assets/1. Scripts/Runtime/Diagnostics/Logging/BattleLogger.cs
 FILE_NAME: BattleLogger.cs
 FILE_GUID: c8e6942d0160be74f82847f38d343251
@@ -22212,7 +22672,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 83/228
+FILE_INDEX: 85/232
 FILE_PATH: Assets/1. Scripts/Runtime/Presentation/Camera/CameraController.cs
 FILE_NAME: CameraController.cs
 FILE_GUID: b2879f4e81bcfd34abdd22216b139b67
@@ -22381,7 +22841,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 84/228
+FILE_INDEX: 86/232
 FILE_PATH: Assets/1. Scripts/Runtime/Presentation/Camera/CharacterCameraPointSet.cs
 FILE_NAME: CharacterCameraPointSet.cs
 FILE_GUID: 375611975d798554db3ffd340204b69b
@@ -22659,7 +23119,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 85/228
+FILE_INDEX: 87/232
 FILE_PATH: Assets/1. Scripts/Runtime/Presentation/UI/ActionSlotButtonUI.cs
 FILE_NAME: ActionSlotButtonUI.cs
 FILE_GUID: 482c75cb2a9562447aa1636588563518
@@ -22744,7 +23204,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 86/228
+FILE_INDEX: 88/232
 FILE_PATH: Assets/1. Scripts/Runtime/Presentation/UI/ActionSlotViewModel.cs
 FILE_NAME: ActionSlotViewModel.cs
 FILE_GUID: 6e354cc236266ed4a8a328e4801d60d2
@@ -22826,7 +23286,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 87/228
+FILE_INDEX: 89/232
 FILE_PATH: Assets/1. Scripts/Runtime/Presentation/UI/BattleActionAnnounceUI.cs
 FILE_NAME: BattleActionAnnounceUI.cs
 FILE_GUID: 96d92fe66a817214d919e01542caa851
@@ -23010,7 +23470,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 88/228
+FILE_INDEX: 90/232
 FILE_PATH: Assets/1. Scripts/Runtime/Presentation/UI/BattleInputMode.cs
 FILE_NAME: BattleInputMode.cs
 FILE_GUID: 3020c6afc576fc449a844f2507ed1894
@@ -23031,14 +23491,609 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 89/228
+FILE_INDEX: 91/232
+FILE_PATH: Assets/1. Scripts/Runtime/Presentation/UI/BattleParticipantButtonFactory.cs
+FILE_NAME: BattleParticipantButtonFactory.cs
+FILE_GUID: 21b1d73422b10354f9f4138896b1cb75
+LANGUAGE: CSharp
+LINE_COUNT: 580
+UTF8_BYTE_COUNT: 15369
+SHA256: b9ec1295b7c103b03835b54a7ecbe3b3e4982836d4854590a35847ec0fa28f88
+READ_STATUS: OK
+CONTENT_BEGIN
+using System.Collections.Generic;
+using UnityEngine;
+using UnityEngine.UI;
+
+public enum BattleParticipantSide
+{
+    Player,
+    Enemy
+}
+
+public sealed class BattleParticipantButtonFactory : MonoBehaviour
+{
+    [Header("Containers")]
+    [SerializeField] private RectTransform playerContainer;
+    [SerializeField] private RectTransform enemyContainer;
+
+    [Header("Templates")]
+    [Tooltip(
+        "Scene의 비활성 Template 또는 BodyPartButton Prefab을 사용할 수 있습니다.")]
+    [SerializeField] private BodyPartButton playerButtonTemplate;
+    [SerializeField] private BodyPartButton enemyButtonTemplate;
+
+    [Header("Runtime Cleanup")]
+    [SerializeField] private bool removeLegacyButtonsOnBuild = true;
+
+    [Header("Automatic Grid Layout")]
+    [SerializeField] private bool configureGridLayout = true;
+    [SerializeField] private Vector2 cellSize = new(150f, 120f);
+    [SerializeField] private Vector2 spacing = new(10f, 10f);
+    [SerializeField, Min(1)] private int playerColumns = 4;
+    [SerializeField, Min(1)] private int enemyColumns = 4;
+
+    [SerializeField]
+    private bool fitContainerHeightToGeneratedRows = true;
+
+    [Header("Automatic Screen Placement")]
+    [SerializeField]
+    private bool autoPositionContainers = true;
+
+    [SerializeField, Min(0f)]
+    private float rightMargin = 40f;
+
+    [SerializeField, Min(0f)]
+    private float enemyTopMargin = 40f;
+
+    [SerializeField, Min(0f)]
+    private float playerBottomMargin = 40f;
+
+    [Tooltip(
+        "켜면 Cell Size와 Column 수를 사용해서 컨테이너 폭을 자동 계산합니다.")]
+    [SerializeField]
+    private bool fitContainerWidthToColumns = true;
+
+    [SerializeField, Min(1f)]
+    private float fallbackContainerWidth = 640f;
+
+    private readonly List<BodyPartButton> generatedButtons = new();
+
+    public IReadOnlyList<BodyPartButton> GeneratedButtons =>
+        generatedButtons;
+
+    public RectTransform PlayerContainer => playerContainer;
+    public RectTransform EnemyContainer => enemyContainer;
+    public BodyPartButton PlayerTemplate => playerButtonTemplate;
+    public BodyPartButton EnemyTemplate => enemyButtonTemplate;
+
+    public bool IsConfigured =>
+        playerContainer != null &&
+        enemyContainer != null &&
+        playerButtonTemplate != null &&
+        ResolveEnemyTemplate() != null;
+
+    public void Configure(
+        BodyPartButton newPlayerTemplate,
+        BodyPartButton newEnemyTemplate,
+        RectTransform newPlayerContainer,
+        RectTransform newEnemyContainer)
+    {
+        playerButtonTemplate = newPlayerTemplate;
+        enemyButtonTemplate = newEnemyTemplate;
+        playerContainer = newPlayerContainer;
+        enemyContainer = newEnemyContainer;
+
+        PrepareTemplates();
+    }
+
+    public void ConfigureFromLegacy(
+        IReadOnlyList<BodyPartButton> playerButtons,
+        IReadOnlyList<BodyPartButton> enemyButtons)
+    {
+        if (playerButtonTemplate == null)
+            playerButtonTemplate = FindFirstValid(playerButtons);
+
+        if (enemyButtonTemplate == null)
+            enemyButtonTemplate = FindFirstValid(enemyButtons);
+
+        if (playerContainer == null &&
+            playerButtonTemplate != null)
+        {
+            playerContainer =
+                playerButtonTemplate.transform.parent as RectTransform;
+        }
+
+        if (enemyContainer == null &&
+            enemyButtonTemplate != null)
+        {
+            enemyContainer =
+                enemyButtonTemplate.transform.parent as RectTransform;
+        }
+
+        PrepareTemplates();
+    }
+
+    public bool Rebuild(
+        BattleContext context,
+        BattleUIManager uiManager,
+        BodyPartButtonRegistry registry)
+    {
+        if (context == null || context.Player == null)
+        {
+            Debug.LogError(
+                "[BattleParticipantButtonFactory] " +
+                "BattleContext 또는 Player가 없습니다.");
+
+            return false;
+        }
+
+        PrepareTemplates();
+
+        if (!IsConfigured)
+        {
+            Debug.LogError(
+                "[BattleParticipantButtonFactory] " +
+                "Container와 Button Template 연결이 필요합니다.");
+
+            return false;
+        }
+
+        ClearGeneratedButtons();
+
+        if (removeLegacyButtonsOnBuild)
+        {
+            RemoveNonTemplateButtons(
+                playerContainer,
+                playerButtonTemplate);
+
+            RemoveNonTemplateButtons(
+                enemyContainer,
+                ResolveEnemyTemplate());
+        }
+
+        ConfigureLayout(
+            playerContainer,
+            playerColumns,
+            BattleParticipantSide.Player);
+
+        ConfigureLayout(
+            enemyContainer,
+            enemyColumns,
+            BattleParticipantSide.Enemy);
+
+        BuildCharacterButtons(
+            context.Player,
+            BattleParticipantSide.Player,
+            0,
+            playerContainer,
+            playerButtonTemplate,
+            uiManager,
+            registry);
+
+        if (context.Enemies != null)
+        {
+            for (int enemyIndex = 0;
+                 enemyIndex < context.Enemies.Count;
+                 enemyIndex++)
+            {
+                Character enemy = context.Enemies[enemyIndex];
+
+                if (enemy == null)
+                    continue;
+
+                BuildCharacterButtons(
+                    enemy,
+                    BattleParticipantSide.Enemy,
+                    enemyIndex,
+                    enemyContainer,
+                    ResolveEnemyTemplate(),
+                    uiManager,
+                    registry);
+            }
+        }
+
+        registry?.RebuildFromScene();
+
+        LayoutRebuilder.ForceRebuildLayoutImmediate(
+            playerContainer);
+
+        LayoutRebuilder.ForceRebuildLayoutImmediate(
+            enemyContainer);
+
+        BattleDebugLog.UI(
+            "[BattleParticipantButtonFactory] " +
+            $"Generated Buttons={generatedButtons.Count}",
+            BattleLogLevel.Info,
+            this);
+
+        return true;
+    }
+
+    [ContextMenu("Apply Right Side Container Layout")]
+    public void ApplyContainerLayoutNow()
+    {
+        ConfigureLayout(
+            playerContainer,
+            playerColumns,
+            BattleParticipantSide.Player);
+
+        ConfigureLayout(
+            enemyContainer,
+            enemyColumns,
+            BattleParticipantSide.Enemy);
+
+        if (playerContainer != null)
+        {
+            LayoutRebuilder.ForceRebuildLayoutImmediate(
+                playerContainer);
+        }
+
+        if (enemyContainer != null)
+        {
+            LayoutRebuilder.ForceRebuildLayoutImmediate(
+                enemyContainer);
+        }
+    }
+
+    public void ClearGeneratedButtons()
+    {
+        for (int i = generatedButtons.Count - 1;
+             i >= 0;
+             i--)
+        {
+            BodyPartButton button = generatedButtons[i];
+
+            if (button == null)
+                continue;
+
+            button.Bind(null, null);
+            button.gameObject.SetActive(false);
+
+            if (Application.isPlaying)
+                Destroy(button.gameObject);
+            else
+                DestroyImmediate(button.gameObject);
+        }
+
+        generatedButtons.Clear();
+    }
+
+    public void PrepareTemplates()
+    {
+        playerButtonTemplate?.ConfigureAsTemplate();
+
+        if (enemyButtonTemplate != null &&
+            enemyButtonTemplate != playerButtonTemplate)
+        {
+            enemyButtonTemplate.ConfigureAsTemplate();
+        }
+    }
+
+    private void BuildCharacterButtons(
+        Character character,
+        BattleParticipantSide side,
+        int participantIndex,
+        RectTransform container,
+        BodyPartButton template,
+        BattleUIManager uiManager,
+        BodyPartButtonRegistry registry)
+    {
+        if (character == null ||
+            container == null ||
+            template == null)
+        {
+            return;
+        }
+
+        if (character.IsSingleHpTarget)
+        {
+            CreateButton(
+                character,
+                null,
+                side,
+                participantIndex,
+                container,
+                template,
+                uiManager,
+                registry);
+
+            if (side == BattleParticipantSide.Player)
+            {
+                Debug.LogWarning(
+                    "[BattleParticipantButtonFactory] " +
+                    "단일 HP 캐릭터가 Player에 배치되었습니다. " +
+                    "현재 플레이어 행동 선택은 부위형 Character를 권장합니다.");
+            }
+
+            return;
+        }
+
+        if (character.BodyParts == null)
+            return;
+
+        foreach (BodyPart part in character.BodyParts)
+        {
+            if (part == null)
+                continue;
+
+            CreateButton(
+                character,
+                part,
+                side,
+                participantIndex,
+                container,
+                template,
+                uiManager,
+                registry);
+        }
+    }
+
+    private void CreateButton(
+        Character owner,
+        BodyPart part,
+        BattleParticipantSide side,
+        int participantIndex,
+        RectTransform container,
+        BodyPartButton template,
+        BattleUIManager uiManager,
+        BodyPartButtonRegistry registry)
+    {
+        BodyPartButton button =
+            Instantiate(
+                template,
+                container);
+
+        button.ConfigureRuntime(
+            uiManager,
+            registry,
+            side,
+            participantIndex);
+
+        button.name =
+            BuildButtonName(
+                owner,
+                part,
+                side,
+                participantIndex);
+
+        button.Bind(owner, part);
+        button.gameObject.SetActive(true);
+
+        generatedButtons.Add(button);
+    }
+
+    private static string BuildButtonName(
+        Character owner,
+        BodyPart part,
+        BattleParticipantSide side,
+        int participantIndex)
+    {
+        string characterName =
+            owner?.Data?.CharacterName ??
+            owner?.name ??
+            "NULL";
+
+        string targetName =
+            part == null
+                ? "SINGLE_HP"
+                : part.Type.ToString();
+
+        return
+            $"{side}_{participantIndex}_" +
+            $"{characterName}_{targetName}";
+    }
+
+    private BodyPartButton ResolveEnemyTemplate()
+    {
+        return enemyButtonTemplate != null
+            ? enemyButtonTemplate
+            : playerButtonTemplate;
+    }
+
+    private void RemoveNonTemplateButtons(
+        RectTransform container,
+        BodyPartButton template)
+    {
+        if (container == null)
+            return;
+
+        BodyPartButton[] buttons =
+            container.GetComponentsInChildren<BodyPartButton>(true);
+
+        foreach (BodyPartButton button in buttons)
+        {
+            if (button == null ||
+                button == template ||
+                generatedButtons.Contains(button))
+            {
+                continue;
+            }
+
+            button.Bind(null, null);
+            button.gameObject.SetActive(false);
+
+            if (Application.isPlaying)
+                Destroy(button.gameObject);
+            else
+                DestroyImmediate(button.gameObject);
+        }
+    }
+
+    private void ConfigureLayout(
+        RectTransform container,
+        int columnCount,
+        BattleParticipantSide side)
+    {
+        if (container == null)
+            return;
+
+        int safeColumnCount =
+            Mathf.Max(
+                1,
+                columnCount);
+
+        if (autoPositionContainers)
+        {
+            ConfigureContainerPlacement(
+                container,
+                safeColumnCount,
+                side);
+        }
+
+        if (!configureGridLayout)
+            return;
+
+        GridLayoutGroup grid =
+            container.GetComponent<GridLayoutGroup>();
+
+        if (grid == null)
+        {
+            grid =
+                container.gameObject
+                    .AddComponent<GridLayoutGroup>();
+        }
+
+        grid.cellSize = cellSize;
+        grid.spacing = spacing;
+        grid.startAxis = GridLayoutGroup.Axis.Horizontal;
+        grid.constraint =
+            GridLayoutGroup.Constraint.FixedColumnCount;
+        grid.constraintCount = safeColumnCount;
+
+        if (side == BattleParticipantSide.Enemy)
+        {
+            grid.startCorner =
+                GridLayoutGroup.Corner.UpperRight;
+
+            grid.childAlignment =
+                TextAnchor.UpperRight;
+        }
+        else
+        {
+            grid.startCorner =
+                GridLayoutGroup.Corner.LowerRight;
+
+            grid.childAlignment =
+                TextAnchor.LowerRight;
+        }
+
+        if (!fitContainerHeightToGeneratedRows)
+            return;
+
+        ContentSizeFitter fitter =
+            container.GetComponent<ContentSizeFitter>();
+
+        if (fitter == null)
+        {
+            fitter =
+                container.gameObject
+                    .AddComponent<ContentSizeFitter>();
+        }
+
+        fitter.horizontalFit =
+            ContentSizeFitter.FitMode.Unconstrained;
+
+        fitter.verticalFit =
+            ContentSizeFitter.FitMode.PreferredSize;
+    }
+
+    private void ConfigureContainerPlacement(
+        RectTransform container,
+        int columnCount,
+        BattleParticipantSide side)
+    {
+        Vector2 anchor =
+            side == BattleParticipantSide.Enemy
+                ? new Vector2(1f, 1f)
+                : new Vector2(1f, 0f);
+
+        container.anchorMin = anchor;
+        container.anchorMax = anchor;
+        container.pivot = anchor;
+
+        container.anchoredPosition =
+            side == BattleParticipantSide.Enemy
+                ? new Vector2(
+                    -Mathf.Max(0f, rightMargin),
+                    -Mathf.Max(0f, enemyTopMargin))
+                : new Vector2(
+                    -Mathf.Max(0f, rightMargin),
+                    Mathf.Max(0f, playerBottomMargin));
+
+        float width =
+            fitContainerWidthToColumns
+                ? CalculateContainerWidth(columnCount)
+                : Mathf.Max(
+                    1f,
+                    fallbackContainerWidth);
+
+        container.SetSizeWithCurrentAnchors(
+            RectTransform.Axis.Horizontal,
+            width);
+
+        container.localScale =
+            Vector3.one;
+    }
+
+    private float CalculateContainerWidth(
+        int columnCount)
+    {
+        int safeColumnCount =
+            Mathf.Max(
+                1,
+                columnCount);
+
+        float cellsWidth =
+            Mathf.Max(
+                1f,
+                cellSize.x) *
+            safeColumnCount;
+
+        float spacingWidth =
+            Mathf.Max(
+                0f,
+                spacing.x) *
+            Mathf.Max(
+                0,
+                safeColumnCount - 1);
+
+        return cellsWidth + spacingWidth;
+    }
+
+    private static BodyPartButton FindFirstValid(
+        IReadOnlyList<BodyPartButton> source)
+    {
+        if (source == null)
+            return null;
+
+        for (int i = 0; i < source.Count; i++)
+        {
+            if (source[i] != null)
+                return source[i];
+        }
+
+        return null;
+    }
+
+    private void OnDestroy()
+    {
+        ClearGeneratedButtons();
+    }
+}
+CONTENT_END
+FILE_END
+================================================================================
+
+FILE_BEGIN
+FILE_INDEX: 92/232
 FILE_PATH: Assets/1. Scripts/Runtime/Presentation/UI/BattleTargetButtonRegistry.cs
 FILE_NAME: BattleTargetButtonRegistry.cs
 FILE_GUID: d1b6d71627c01f047a7b0f00f64cf4c4
 LANGUAGE: CSharp
 LINE_COUNT: 81
-UTF8_BYTE_COUNT: 1808
-SHA256: 2b592da44aa0f317dedbe8b0b0e8526258519abcadc30d4ddf49eb81f5f5a3f2
+UTF8_BYTE_COUNT: 1807
+SHA256: 311d7dd3020a78f862db16bd958d7db1eaed896c96d6d0c3b1f91e8270307233
 READ_STATUS: OK
 CONTENT_BEGIN
 using System.Collections.Generic;
@@ -23127,7 +24182,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 90/228
+FILE_INDEX: 93/232
 FILE_PATH: Assets/1. Scripts/Runtime/Presentation/UI/BattleUIEventBinder.cs
 FILE_NAME: BattleUIEventBinder.cs
 FILE_GUID: 8dd86e3731e762c40b56f3872b7a5c8c
@@ -23497,14 +24552,14 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 91/228
+FILE_INDEX: 94/232
 FILE_PATH: Assets/1. Scripts/Runtime/Presentation/UI/BattleUIManager.cs
 FILE_NAME: BattleUIManager.cs
 FILE_GUID: 950e7639e3f4acf4f96d599f6d673e3f
 LANGUAGE: CSharp
-LINE_COUNT: 1796
-UTF8_BYTE_COUNT: 45292
-SHA256: 9631650b357cc2a4a442304e11db81a5ff8fa0a324946dad3d90694e25214117
+LINE_COUNT: 1891
+UTF8_BYTE_COUNT: 47426
+SHA256: 57852b5b116d45b0048d9009c00e3e548e372c1425215c9dddfe35774e063680
 READ_STATUS: OK
 CONTENT_BEGIN
 using System.Collections.Generic;
@@ -23518,6 +24573,10 @@ public class BattleUIManager : MonoBehaviour
     [SerializeField] private SkillSelectPanelUI skillSelectPanel;
     [SerializeField] private BodyPartButtonRegistry bodyPartButtonRegistry;
     [SerializeField] private BattleTargetButtonRegistry targetButtonRegistry;
+
+    [Header("Dynamic Participant Buttons")]
+    [SerializeField]
+    private BattleParticipantButtonFactory participantButtonFactory;
 
     private readonly TargetSelectionViewModel selection = new();
     private readonly List<BodyPartButton> buttonScratch = new();
@@ -23549,25 +24608,100 @@ public class BattleUIManager : MonoBehaviour
 
     private void Awake()
     {
+        EnsureReferences();
+        SyncSelectionViewModel();
+    }
+
+    private void EnsureReferences()
+    {
         if (battleManager == null)
-            battleManager = FindFirstObjectByType<BattleManager>();
+        {
+            battleManager =
+                FindFirstObjectByType<BattleManager>();
+        }
 
         if (skillSelectPanel == null)
-            skillSelectPanel = FindFirstObjectByType<SkillSelectPanelUI>();
+        {
+            skillSelectPanel =
+                FindFirstObjectByType<SkillSelectPanelUI>();
+        }
 
         if (bodyPartButtonRegistry == null)
-            bodyPartButtonRegistry = FindFirstObjectByType<BodyPartButtonRegistry>();
+        {
+            bodyPartButtonRegistry =
+                FindFirstObjectByType<BodyPartButtonRegistry>();
+        }
 
         if (bodyPartButtonRegistry == null)
-            bodyPartButtonRegistry = gameObject.AddComponent<BodyPartButtonRegistry>();
+        {
+            bodyPartButtonRegistry =
+                gameObject.AddComponent<BodyPartButtonRegistry>();
+        }
 
         if (targetButtonRegistry == null)
-            targetButtonRegistry = FindFirstObjectByType<BattleTargetButtonRegistry>();
+        {
+            targetButtonRegistry =
+                FindFirstObjectByType<BattleTargetButtonRegistry>();
+        }
 
         if (targetButtonRegistry == null)
-            targetButtonRegistry = gameObject.AddComponent<BattleTargetButtonRegistry>();
+        {
+            targetButtonRegistry =
+                gameObject.AddComponent<BattleTargetButtonRegistry>();
+        }
 
-        SyncSelectionViewModel();
+        if (participantButtonFactory == null)
+        {
+            participantButtonFactory =
+                GetComponent<BattleParticipantButtonFactory>();
+        }
+
+        if (participantButtonFactory == null)
+        {
+            participantButtonFactory =
+                gameObject.AddComponent<BattleParticipantButtonFactory>();
+        }
+    }
+
+    public void AssignParticipantButtonFactory(
+        BattleParticipantButtonFactory factory)
+    {
+        participantButtonFactory = factory;
+        EnsureReferences();
+    }
+
+    public void BuildParticipantButtons(
+        BattleContext context,
+        IReadOnlyList<BodyPartButton> legacyPlayerButtons,
+        IReadOnlyList<BodyPartButton> legacyEnemyButtons)
+    {
+        EnsureReferences();
+
+        participantButtonFactory?.ConfigureFromLegacy(
+            legacyPlayerButtons,
+            legacyEnemyButtons);
+
+        ClearSelection();
+
+        participantButtonFactory?.Rebuild(
+            context,
+            this,
+            bodyPartButtonRegistry);
+
+        RefreshAllBodyPartButtons();
+    }
+
+    public void ClearParticipantButtons()
+    {
+        participantButtonFactory?.ClearGeneratedButtons();
+        bodyPartButtonRegistry?.RebuildFromScene();
+        ClearSelection();
+    }
+
+    public BodyPartButtonRegistry GetButtonRegistry()
+    {
+        EnsureReferences();
+        return bodyPartButtonRegistry;
     }
 
     private void Start()
@@ -23650,9 +24784,10 @@ public class BattleUIManager : MonoBehaviour
 
         return new BodyPartButtonViewModel
         {
-            PartText = characterTarget
-                ? $"<color=#86EFAC><b>{GetCharacterName(owner)} [SINGLE HP]</b></color>"
-                : GetPartText(part),
+            PartText =
+                GetPartText(
+                    owner,
+                    part),
 
             HpText =
                 GetHpText(button),
@@ -23909,10 +25044,22 @@ public class BattleUIManager : MonoBehaviour
         return false;
     }
 
-    private string GetPartText(BodyPart part)
+    private string GetPartText(
+        Character owner,
+        BodyPart part)
     {
-        if (part == null)
+        if (owner == null)
             return "NULL";
+
+        string characterName =
+            GetCharacterName(owner);
+
+        if (part == null)
+        {
+            return
+                $"<size=72%>{characterName}</size>\n" +
+                "<color=#86EFAC><b>SINGLE HP</b></color>";
+        }
 
         string stateColor =
             part.State switch
@@ -23924,7 +25071,10 @@ public class BattleUIManager : MonoBehaviour
             };
 
         return
-            $"<color={stateColor}><b>{part.Type} [{part.State}]</b></color>";
+            $"<size=72%>{characterName}</size>\n" +
+            $"<color={stateColor}><b>" +
+            $"{part.Type} [{part.State}]" +
+            "</b></color>";
     }
 
     private string GetHpText(
@@ -25308,7 +26458,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 92/228
+FILE_INDEX: 95/232
 FILE_PATH: Assets/1. Scripts/Runtime/Presentation/UI/BattleUIRefreshScheduler.cs
 FILE_NAME: BattleUIRefreshScheduler.cs
 FILE_GUID: 229bb378abc3bd54ca3b5b66cff3d8c1
@@ -25424,14 +26574,14 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 93/228
+FILE_INDEX: 96/232
 FILE_PATH: Assets/1. Scripts/Runtime/Presentation/UI/BodyPartButton.cs
 FILE_NAME: BodyPartButton.cs
 FILE_GUID: 0dabe4f21c417e64f870aed41bc5db5f
 LANGUAGE: CSharp
-LINE_COUNT: 239
-UTF8_BYTE_COUNT: 5894
-SHA256: 6984b1199b9255b700496c5b26adf3a3bdb20fc4ec17450aa0f64c7d81ea6360
+LINE_COUNT: 297
+UTF8_BYTE_COUNT: 7303
+SHA256: 350a307f01cf9d82713243f21ea92d9d9b70701925a6cf5f19bbff0843e29e08
 READ_STATUS: OK
 CONTENT_BEGIN
 using TMPro;
@@ -25455,6 +26605,18 @@ public class BodyPartButton : MonoBehaviour, IPointerClickHandler
     private Color originalColor;
     private bool originalColorSaved;
 
+    [SerializeField, HideInInspector]
+    private bool isTemplate;
+
+    [SerializeField, HideInInspector]
+    private bool isRuntimeGenerated;
+
+    [SerializeField, HideInInspector]
+    private BattleParticipantSide participantSide;
+
+    [SerializeField, HideInInspector]
+    private int participantIndex = -1;
+
     private Character owner;
     private BodyPart bodyPart;
     private RectTransform rectTransform;
@@ -25466,6 +26628,11 @@ public class BodyPartButton : MonoBehaviour, IPointerClickHandler
     public Character Owner => owner;
     public BodyPart BodyPart => bodyPart;
     public RectTransform RectTransform => rectTransform;
+
+    public bool IsTemplate => isTemplate;
+    public bool IsRuntimeGenerated => isRuntimeGenerated;
+    public BattleParticipantSide ParticipantSide => participantSide;
+    public int ParticipantIndex => participantIndex;
 
     public bool IsCharacterTargetButton =>
         owner != null && bodyPart == null;
@@ -25481,7 +26648,9 @@ public class BodyPartButton : MonoBehaviour, IPointerClickHandler
     private void OnEnable()
     {
         EnsureReferences();
-        registry?.Register(this);
+
+        if (!isTemplate)
+            registry?.Register(this);
     }
 
     private void Start()
@@ -25546,8 +26715,47 @@ public class BodyPartButton : MonoBehaviour, IPointerClickHandler
         button.onClick.RemoveAllListeners();
         button.onClick.AddListener(OnClick);
 
-        registry?.NotifyBindingChanged(this);
+        if (!isTemplate)
+            registry?.NotifyBindingChanged(this);
+
         Refresh();
+    }
+
+    public void ConfigureAsTemplate()
+    {
+        EnsureReferences();
+
+        isTemplate = true;
+        isRuntimeGenerated = false;
+        participantIndex = -1;
+
+        owner = null;
+        bodyPart = null;
+
+        registry?.Unregister(this);
+
+        if (gameObject.activeSelf)
+            gameObject.SetActive(false);
+    }
+
+    public void ConfigureRuntime(
+        BattleUIManager manager,
+        BodyPartButtonRegistry targetRegistry,
+        BattleParticipantSide side,
+        int index)
+    {
+        isTemplate = false;
+        isRuntimeGenerated = true;
+        participantSide = side;
+        participantIndex = index;
+
+        if (manager != null)
+            uiManager = manager;
+
+        if (targetRegistry != null)
+            registry = targetRegistry;
+
+        EnsureReferences();
     }
 
     public void Refresh()
@@ -25678,14 +26886,14 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 94/228
+FILE_INDEX: 97/232
 FILE_PATH: Assets/1. Scripts/Runtime/Presentation/UI/BodyPartButtonRegistry.cs
 FILE_NAME: BodyPartButtonRegistry.cs
 FILE_GUID: fd83c1b255ad9a44ab4639ebf23ce704
 LANGUAGE: CSharp
-LINE_COUNT: 269
-UTF8_BYTE_COUNT: 6123
-SHA256: 4127021f2fca9532628458d0cf83f11ef400a1ee2a737affc57610803ab965ef
+LINE_COUNT: 275
+UTF8_BYTE_COUNT: 6228
+SHA256: 83f9d724b46a712087cc7d7f2a10c108c843aafebe6316aa4c0eaacf534799b6
 READ_STATUS: OK
 CONTENT_BEGIN
 using System;
@@ -25886,8 +27094,11 @@ public sealed class BodyPartButtonRegistry : MonoBehaviour
 
     private bool RegisterInternal(BodyPartButton button)
     {
-        if (button == null)
+        if (button == null ||
+            button.IsTemplate)
+        {
             return false;
+        }
 
         bool changed = false;
 
@@ -25923,8 +27134,11 @@ public sealed class BodyPartButtonRegistry : MonoBehaviour
         BodyPartButton button,
         bool requireActive)
     {
-        if (button == null)
+        if (button == null ||
+            button.IsTemplate)
+        {
             return false;
+        }
 
         if (!requireActive)
             return true;
@@ -25962,7 +27176,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 95/228
+FILE_INDEX: 98/232
 FILE_PATH: Assets/1. Scripts/Runtime/Presentation/UI/BodyPartButtonViewModel.cs
 FILE_NAME: BodyPartButtonViewModel.cs
 FILE_GUID: 213c5fb62d2d3114a88bb5c171307936
@@ -25997,7 +27211,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 96/228
+FILE_INDEX: 99/232
 FILE_PATH: Assets/1. Scripts/Runtime/Presentation/UI/MomentumScrollbarUI.cs
 FILE_NAME: MomentumScrollbarUI.cs
 FILE_GUID: 979f2d3bca3e8b64597645375a5b17a5
@@ -26224,7 +27438,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 97/228
+FILE_INDEX: 100/232
 FILE_PATH: Assets/1. Scripts/Runtime/Presentation/UI/OutlineController.cs
 FILE_NAME: OutlineController.cs
 FILE_GUID: b8c950b7064a28d49984264a980ae964
@@ -26277,7 +27491,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 98/228
+FILE_INDEX: 101/232
 FILE_PATH: Assets/1. Scripts/Runtime/Presentation/UI/SkillButtonUI.cs
 FILE_NAME: SkillButtonUI.cs
 FILE_GUID: 4abc4e017caee8f47a5b663d4e1844d3
@@ -26371,7 +27585,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 99/228
+FILE_INDEX: 102/232
 FILE_PATH: Assets/1. Scripts/Runtime/Presentation/UI/SkillSelectPanelUI.cs
 FILE_NAME: SkillSelectPanelUI.cs
 FILE_GUID: 792096fbfda436d4f8f9584f9553029e
@@ -26554,7 +27768,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 100/228
+FILE_INDEX: 103/232
 FILE_PATH: Assets/1. Scripts/Runtime/Presentation/UI/StatusPopUp.cs
 FILE_NAME: StatusPopUp.cs
 FILE_GUID: 92f3087b424726149b6cfa1041a77f91
@@ -27185,7 +28399,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 101/228
+FILE_INDEX: 104/232
 FILE_PATH: Assets/1. Scripts/Runtime/Presentation/UI/TargetArrowUI.cs
 FILE_NAME: TargetArrowUI.cs
 FILE_GUID: 33c98caffbc161a4fa9b59a3e9a873ec
@@ -28890,7 +30104,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 102/228
+FILE_INDEX: 105/232
 FILE_PATH: Assets/1. Scripts/Runtime/Presentation/UI/TargetSelectionViewModel.cs
 FILE_NAME: TargetSelectionViewModel.cs
 FILE_GUID: 5207d1fb2533d9947b8353a9e5174eda
@@ -29028,7 +30242,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 103/228
+FILE_INDEX: 106/232
 FILE_PATH: Assets/1. Scripts/Runtime/Presentation/Visual/Camera/BattleCameraShakeSettings.cs
 FILE_NAME: BattleCameraShakeSettings.cs
 FILE_GUID: a0d4a57d65250ab42a0df85d6b4b9e18
@@ -29084,7 +30298,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 104/228
+FILE_INDEX: 107/232
 FILE_PATH: Assets/1. Scripts/Runtime/Presentation/Visual/Camera/BattleCameraTargetResolver.cs
 FILE_NAME: BattleCameraTargetResolver.cs
 FILE_GUID: 62ab4959c3d54114db2575b956e1632a
@@ -29319,7 +30533,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 105/228
+FILE_INDEX: 108/232
 FILE_PATH: Assets/1. Scripts/Runtime/Presentation/Visual/Camera/BattleCinemachineRig.cs
 FILE_NAME: BattleCinemachineRig.cs
 FILE_GUID: f895579b0d51b2646a3ad6143969b420
@@ -29685,7 +30899,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 106/228
+FILE_INDEX: 109/232
 FILE_PATH: Assets/1. Scripts/Runtime/Presentation/Visual/Camera/BattleCinemachineTargetGroupBinder.cs
 FILE_NAME: BattleCinemachineTargetGroupBinder.cs
 FILE_GUID: ff22a0aa5b2a1894ea9aa605567ba8cd
@@ -29819,7 +31033,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 107/228
+FILE_INDEX: 110/232
 FILE_PATH: Assets/1. Scripts/Runtime/Presentation/Visual/CharacterView/AnimationEventRelay.cs
 FILE_NAME: AnimationEventRelay.cs
 FILE_GUID: aef701c4dfff52649b1070bcafe238b7
@@ -29858,7 +31072,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 108/228
+FILE_INDEX: 111/232
 FILE_PATH: Assets/1. Scripts/Runtime/Presentation/Visual/CharacterView/BodyPartAnchor.cs
 FILE_NAME: BodyPartAnchor.cs
 FILE_GUID: 19145f68f496cec439082881bfc24dd0
@@ -29882,7 +31096,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 109/228
+FILE_INDEX: 112/232
 FILE_PATH: Assets/1. Scripts/Runtime/Presentation/Visual/CharacterView/CharacterActionMoveSettings.cs
 FILE_NAME: CharacterActionMoveSettings.cs
 FILE_GUID: 83e8669d0630679479e285502404e8d1
@@ -29938,7 +31152,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 110/228
+FILE_INDEX: 113/232
 FILE_PATH: Assets/1. Scripts/Runtime/Presentation/Visual/CharacterView/CharacterActionMover.cs
 FILE_NAME: CharacterActionMover.cs
 FILE_GUID: 54ba4ad85576cf7408e032b39b9b1601
@@ -30329,7 +31543,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 111/228
+FILE_INDEX: 114/232
 FILE_PATH: Assets/1. Scripts/Runtime/Presentation/Visual/CharacterView/CharacterActionStartPositionMode.cs
 FILE_NAME: CharacterActionStartPositionMode.cs
 FILE_GUID: ce275058a89016f4d971fb9f025d45e4
@@ -30360,7 +31574,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 112/228
+FILE_INDEX: 115/232
 FILE_PATH: Assets/1. Scripts/Runtime/Presentation/Visual/CharacterView/CharacterActionTargetPointType.cs
 FILE_NAME: CharacterActionTargetPointType.cs
 FILE_GUID: d63cfbcb94e95ca47ad3aaa5b61bc1d2
@@ -30381,7 +31595,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 113/228
+FILE_INDEX: 116/232
 FILE_PATH: Assets/1. Scripts/Runtime/Presentation/Visual/CharacterView/CharacterFacingController.cs
 FILE_NAME: CharacterFacingController.cs
 FILE_GUID: 7a81adb916902d34794c4fa0a09a34ff
@@ -30530,7 +31744,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 114/228
+FILE_INDEX: 117/232
 FILE_PATH: Assets/1. Scripts/Runtime/Presentation/Visual/CharacterView/CharacterView.cs
 FILE_NAME: CharacterView.cs
 FILE_GUID: 988553d5f4cb31e4998ccab2210805e0
@@ -31008,7 +32222,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 115/228
+FILE_INDEX: 118/232
 FILE_PATH: Assets/1. Scripts/Runtime/Presentation/Visual/CharacterView/CharacterViewEventBinder.cs
 FILE_NAME: CharacterViewEventBinder.cs
 FILE_GUID: 99a1cca862ed409409b7d122190f7b26
@@ -31263,7 +32477,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 116/228
+FILE_INDEX: 119/232
 FILE_PATH: Assets/1. Scripts/Runtime/Presentation/Visual/CharacterView/CharacterVisualState.cs
 FILE_NAME: CharacterVisualState.cs
 FILE_GUID: 28318d0feb4a3b84aa0652c77343ada7
@@ -31284,7 +32498,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 117/228
+FILE_INDEX: 120/232
 FILE_PATH: Assets/1. Scripts/Runtime/Presentation/Visual/DamageNumber/DamageNumberManager.cs
 FILE_NAME: DamageNumberManager.cs
 FILE_GUID: 80124e18ff158d6478df74a8580f2e20
@@ -31505,7 +32719,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 118/228
+FILE_INDEX: 121/232
 FILE_PATH: Assets/1. Scripts/Runtime/Presentation/Visual/DamageNumber/DamageNumberUI.cs
 FILE_NAME: DamageNumberUI.cs
 FILE_GUID: 77970ff5a7f577b4fbe152130ed4d439
@@ -31679,7 +32893,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 119/228
+FILE_INDEX: 122/232
 FILE_PATH: Assets/1. Scripts/Runtime/Presentation/Visual/Data/BattleVisualRequest.cs
 FILE_NAME: BattleVisualRequest.cs
 FILE_GUID: c61a355f639086941ae4e5043b2dc169
@@ -31851,7 +33065,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 120/228
+FILE_INDEX: 123/232
 FILE_PATH: Assets/1. Scripts/Runtime/Presentation/Visual/Data/BattleVisualRequestBuilder.cs
 FILE_NAME: BattleVisualRequestBuilder.cs
 FILE_GUID: 3b1c0a699a830e54d95eb647956792d4
@@ -32082,7 +33296,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 121/228
+FILE_INDEX: 124/232
 FILE_PATH: Assets/1. Scripts/Runtime/Presentation/Visual/Data/ClashRollVisualStep.cs
 FILE_NAME: ClashRollVisualStep.cs
 FILE_GUID: 946250c986e58ad45b6497d0de949d4c
@@ -32222,7 +33436,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 122/228
+FILE_INDEX: 125/232
 FILE_PATH: Assets/1. Scripts/Runtime/Presentation/Visual/Data/DamageDistributionUtility.cs
 FILE_NAME: DamageDistributionUtility.cs
 FILE_GUID: 6e3c2e86aa60c034da0d60bc62b60ee9
@@ -32359,7 +33573,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 123/228
+FILE_INDEX: 126/232
 FILE_PATH: Assets/1. Scripts/Runtime/Presentation/Visual/Data/SkillCameraDefinition.cs
 FILE_NAME: SkillCameraDefinition.cs
 FILE_GUID: c7b56c43dceefc044a06e1e7f964052c
@@ -32397,7 +33611,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 124/228
+FILE_INDEX: 127/232
 FILE_PATH: Assets/1. Scripts/Runtime/Presentation/Visual/Data/SkillCameraShot.cs
 FILE_NAME: SkillCameraShot.cs
 FILE_GUID: 12a05c5340db9f444a02993911973873
@@ -32517,7 +33731,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 125/228
+FILE_INDEX: 128/232
 FILE_PATH: Assets/1. Scripts/Runtime/Presentation/Visual/Data/SkillVisualDefinition.cs
 FILE_NAME: SkillVisualDefinition.cs
 FILE_GUID: ece12a8468b693e4d8d7c4a5eff000ca
@@ -32617,7 +33831,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 126/228
+FILE_INDEX: 129/232
 FILE_PATH: Assets/1. Scripts/Runtime/Presentation/Visual/Data/SkillVisualProfile.cs
 FILE_NAME: SkillVisualProfile.cs
 FILE_GUID: 3c31426d8cc0fa34981701869d2c6f4f
@@ -32676,7 +33890,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 127/228
+FILE_INDEX: 130/232
 FILE_PATH: Assets/1. Scripts/Runtime/Presentation/Visual/Director/BattleAnimationDirector.cs
 FILE_NAME: BattleAnimationDirector.cs
 FILE_GUID: c120877fcc44b454287923c382a3a52e
@@ -34148,7 +35362,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 128/228
+FILE_INDEX: 131/232
 FILE_PATH: Assets/1. Scripts/Runtime/Presentation/Visual/Director/BattleCameraDirector.cs
 FILE_NAME: BattleCameraDirector.cs
 FILE_GUID: 2488ec217d69a3d4cb2352d0c8303833
@@ -35165,7 +36379,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 129/228
+FILE_INDEX: 132/232
 FILE_PATH: Assets/1. Scripts/Runtime/Presentation/Visual/Director/BattleStatusVisualDirector.cs
 FILE_NAME: BattleStatusVisualDirector.cs
 FILE_GUID: 6236cb03cd40474409d98fbbf4f6572c
@@ -35413,7 +36627,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 130/228
+FILE_INDEX: 133/232
 FILE_PATH: Assets/1. Scripts/Runtime/Presentation/Visual/Director/BattleVisualDamagePresenter.cs
 FILE_NAME: BattleVisualDamagePresenter.cs
 FILE_GUID: f2479de4ec6c409e909a7c8a739035e9
@@ -35695,7 +36909,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 131/228
+FILE_INDEX: 134/232
 FILE_PATH: Assets/1. Scripts/Runtime/Presentation/Visual/Director/BattleVisualPlaybackState.cs
 FILE_NAME: BattleVisualPlaybackState.cs
 FILE_GUID: 01e6c07ea3964b94aa4e7c2ec33457c8
@@ -35760,7 +36974,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 132/228
+FILE_INDEX: 135/232
 FILE_PATH: Assets/1. Scripts/Runtime/Presentation/Visual/FloatingText/BattleWorldFloatingTextManager.cs
 FILE_NAME: BattleWorldFloatingTextManager.cs
 FILE_GUID: 2cfa013f8964a9946bff0da64143c99a
@@ -36576,7 +37790,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 133/228
+FILE_INDEX: 136/232
 FILE_PATH: Assets/1. Scripts/Runtime/Presentation/Visual/FloatingText/BattleWorldFloatingTextUI.cs
 FILE_NAME: BattleWorldFloatingTextUI.cs
 FILE_GUID: 217e25357219b2e45bd815aa0c0391ec
@@ -37385,7 +38599,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 134/228
+FILE_INDEX: 137/232
 FILE_PATH: Assets/1. Scripts/Runtime/Presentation/Visual/Interface/IVisualSkill.cs
 FILE_NAME: IVisualSkill.cs
 FILE_GUID: 58f948e0fb8e5fe4f8bde97c1c1ffd9c
@@ -37404,7 +38618,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 135/228
+FILE_INDEX: 138/232
 FILE_PATH: Assets/1. Scripts/Runtime/Presentation/Visual/Text/BattleVisualTextUtility.cs
 FILE_NAME: BattleVisualTextUtility.cs
 FILE_GUID: 1a8171268c9337e40b0f1d6cca947d66
@@ -37475,7 +38689,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 136/228
+FILE_INDEX: 139/232
 FILE_PATH: Assets/1. Scripts/Runtime/Presentation/Visual/VFX/Core/BattleVfxAnchorType.cs
 FILE_NAME: BattleVfxAnchorType.cs
 FILE_GUID: 59f470d558c624142838220438b30f9b
@@ -37509,7 +38723,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 137/228
+FILE_INDEX: 140/232
 FILE_PATH: Assets/1. Scripts/Runtime/Presentation/Visual/VFX/Core/BattleVfxContext.cs
 FILE_NAME: BattleVfxContext.cs
 FILE_GUID: d5c9bdd9e13bf714f874696fa209598c
@@ -37709,7 +38923,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 138/228
+FILE_INDEX: 141/232
 FILE_PATH: Assets/1. Scripts/Runtime/Presentation/Visual/VFX/Core/BattleVfxCue.cs
 FILE_NAME: BattleVfxCue.cs
 FILE_GUID: 41da7dcd785c9e949af2b22b561d03a6
@@ -37842,7 +39056,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 139/228
+FILE_INDEX: 142/232
 FILE_PATH: Assets/1. Scripts/Runtime/Presentation/Visual/VFX/Core/BattleVfxDefinition.cs
 FILE_NAME: BattleVfxDefinition.cs
 FILE_GUID: 500e8a6276f78a94e9b03147ee7cd830
@@ -37909,7 +39123,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 140/228
+FILE_INDEX: 143/232
 FILE_PATH: Assets/1. Scripts/Runtime/Presentation/Visual/VFX/Core/BattleVfxInstance.cs
 FILE_NAME: BattleVfxInstance.cs
 FILE_GUID: 08a1a236e8afe444cb939a71758b919d
@@ -38090,7 +39304,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 141/228
+FILE_INDEX: 144/232
 FILE_PATH: Assets/1. Scripts/Runtime/Presentation/Visual/VFX/Core/BattleVfxManager.cs
 FILE_NAME: BattleVfxManager.cs
 FILE_GUID: 85846d6ee54abf24cb0256607b9b00e0
@@ -38457,7 +39671,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 142/228
+FILE_INDEX: 145/232
 FILE_PATH: Assets/1. Scripts/Runtime/Presentation/Visual/VFX/Core/BattleVfxPlayData.cs
 FILE_NAME: BattleVfxPlayData.cs
 FILE_GUID: 3adc7a4e4502282498b4632803220ec3
@@ -38491,7 +39705,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 143/228
+FILE_INDEX: 146/232
 FILE_PATH: Assets/1. Scripts/Runtime/Presentation/Visual/VFX/Core/BattleVfxPool.cs
 FILE_NAME: BattleVfxPool.cs
 FILE_GUID: 97bb876ecdd6e0f42bbd841c6d893fb1
@@ -38702,7 +39916,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 144/228
+FILE_INDEX: 147/232
 FILE_PATH: Assets/1. Scripts/Runtime/Presentation/Visual/VFX/Core/BattleVfxPoolKey.cs
 FILE_NAME: BattleVfxPoolKey.cs
 FILE_GUID: 2c0bb76e311d8df4daaf02d82184d977
@@ -38759,7 +39973,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 145/228
+FILE_INDEX: 148/232
 FILE_PATH: Assets/1. Scripts/Runtime/Presentation/Visual/VFX/Core/BattleVfxTiming.cs
 FILE_NAME: BattleVfxTiming.cs
 FILE_GUID: 1864518edd41817429fe03d4b7e238cf
@@ -38798,7 +40012,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 146/228
+FILE_INDEX: 149/232
 FILE_PATH: Assets/1. Scripts/Runtime/Presentation/Visual/VFX/Core/IBattleVfxPlayable.cs
 FILE_NAME: IBattleVfxPlayable.cs
 FILE_GUID: 4a231df53dde5414096628e24464be83
@@ -38823,7 +40037,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 147/228
+FILE_INDEX: 150/232
 FILE_PATH: Assets/1. Scripts/Runtime/Presentation/Visual/VFX/Persistent/CharacterPersistentVfxAnchorType.cs
 FILE_NAME: CharacterPersistentVfxAnchorType.cs
 FILE_GUID: c80642ae2162ed74e8879091ee809f3c
@@ -38845,7 +40059,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 148/228
+FILE_INDEX: 151/232
 FILE_PATH: Assets/1. Scripts/Runtime/Presentation/Visual/VFX/Persistent/CharacterPersistentVfxController.cs
 FILE_NAME: CharacterPersistentVfxController.cs
 FILE_GUID: 435640b372780a84c941fcc8573369cc
@@ -39142,7 +40356,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 149/228
+FILE_INDEX: 152/232
 FILE_PATH: Assets/1. Scripts/Runtime/Presentation/Visual/VFX/Persistent/PersistentBattleVfxDefinition.cs
 FILE_NAME: PersistentBattleVfxDefinition.cs
 FILE_GUID: 1a5b1c9de2c1b6d489b3b7670035393a
@@ -39200,7 +40414,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 150/228
+FILE_INDEX: 153/232
 FILE_PATH: Assets/1. Scripts/Runtime/Presentation/Visual/VFX/Players/BloodSplatterParticleEffectPlayer.cs
 FILE_NAME: BloodSplatterParticleEffectPlayer.cs
 FILE_GUID: 31e27c7e90a19b44eb4f14d5e8e6e8eb
@@ -39445,7 +40659,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 151/228
+FILE_INDEX: 154/232
 FILE_PATH: Assets/1. Scripts/Runtime/Presentation/Visual/VFX/Players/ScriptedParticleEffectPlayer.cs
 FILE_NAME: ScriptedParticleEffectPlayer.cs
 FILE_GUID: becbbeecdd2a9af4892b586a94f7c87e
@@ -39565,7 +40779,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 152/228
+FILE_INDEX: 155/232
 FILE_PATH: Assets/1. Scripts/Runtime/Presentation/Visual/VFX/Players/ShaderMaterialEffectPlayer.cs
 FILE_NAME: ShaderMaterialEffectPlayer.cs
 FILE_GUID: ed17ecb0a4408b54a8dfbed38db61205
@@ -39701,7 +40915,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 153/228
+FILE_INDEX: 156/232
 FILE_PATH: Assets/1. Scripts/Runtime/Presentation/Visual/VFX/Players/VfxGraphEffectPlayer.cs
 FILE_NAME: VfxGraphEffectPlayer.cs
 FILE_GUID: ae4c4175dc1eecc40a994ce8bf64aa3e
@@ -39779,7 +40993,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 154/228
+FILE_INDEX: 157/232
 FILE_PATH: Assets/1. Scripts/Runtime/Presentation/Visual/VFX/StatusVisual/StatusDamageVisualRequest.cs
 FILE_NAME: StatusDamageVisualRequest.cs
 FILE_GUID: a11670fc16fcc744c9d5c22d175ee244
@@ -39810,7 +41024,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 155/228
+FILE_INDEX: 158/232
 FILE_PATH: Assets/1. Scripts/Runtime/Presentation/Visual/VFX/StatusVisual/StatusEffectLifecycleVisualRequest.cs
 FILE_NAME: StatusEffectLifecycleVisualRequest.cs
 FILE_GUID: 65a99a438072f084c8e31d0f8f461ad6
@@ -39849,7 +41063,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 156/228
+FILE_INDEX: 159/232
 FILE_PATH: Assets/1. Scripts/Runtime/Presentation/Visual/VFX/StatusVisual/StatusEffectVisualDatabase.cs
 FILE_NAME: StatusEffectVisualDatabase.cs
 FILE_GUID: a0b7bf03154589a4d8beae47bdfb9bc8
@@ -39948,7 +41162,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 157/228
+FILE_INDEX: 160/232
 FILE_PATH: Assets/1. Scripts/Runtime/Presentation/Visual/VFX/StatusVisual/StatusEffectVisualDefinition.cs
 FILE_NAME: StatusEffectVisualDefinition.cs
 FILE_GUID: 2f1a7452d6236534faba554ddcd7f9d5
@@ -40000,7 +41214,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 158/228
+FILE_INDEX: 161/232
 FILE_PATH: Assets/1. Scripts/Runtime/Presentation/Visual/Validation/AnimatorStateValidator.cs
 FILE_NAME: AnimatorStateValidator.cs
 FILE_GUID: ceaadc8fd20426e4d85def1b425dab4b
@@ -40074,7 +41288,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 159/228
+FILE_INDEX: 162/232
 FILE_PATH: Assets/1. Scripts/Runtime/Presentation/Visual/Validation/BattleVisualValidator.cs
 FILE_NAME: BattleVisualValidator.cs
 FILE_GUID: 42b46e1282f2b544a9697e3b5b55edec
@@ -40250,7 +41464,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 160/228
+FILE_INDEX: 163/232
 FILE_PATH: Assets/1. Scripts/Runtime/Presentation/Visual/Validation/SkillCameraDefinitionValidator.cs
 FILE_NAME: SkillCameraDefinitionValidator.cs
 FILE_GUID: 373362a79ed18f44a92dbc8aa299bd24
@@ -40470,7 +41684,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 161/228
+FILE_INDEX: 164/232
 FILE_PATH: Assets/1. Scripts/Runtime/Presentation/Visual/Validation/VfxDefinitionValidator.cs
 FILE_NAME: VfxDefinitionValidator.cs
 FILE_GUID: 51ebb056d6ffa3442baec3f439aff02f
@@ -40551,7 +41765,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 162/228
+FILE_INDEX: 165/232
 FILE_PATH: Assets/1. Scripts/Runtime/Shared/Utils.cs
 FILE_NAME: Utils.cs
 FILE_GUID: 6743233227420b54ab3d02cb4b869990
@@ -41215,7 +42429,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 163/228
+FILE_INDEX: 166/232
 FILE_PATH: Assets/1. Scripts/Runtime/Skills/Base/DuelSkill.cs
 FILE_NAME: DuelSkill.cs
 FILE_GUID: 8db1a44b74e2aeb4a9f7d022c37d24e3
@@ -41235,7 +42449,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 164/228
+FILE_INDEX: 167/232
 FILE_PATH: Assets/1. Scripts/Runtime/Skills/Base/NormalSkill.cs
 FILE_NAME: NormalSkill.cs
 FILE_GUID: 8e92595180e6e8d4db6e560d5bcae69e
@@ -41255,7 +42469,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 165/228
+FILE_INDEX: 168/232
 FILE_PATH: Assets/1. Scripts/Runtime/Skills/Base/PreparationSkill.cs
 FILE_NAME: PreparationSkill.cs
 FILE_GUID: b51716e8872308f4e8a2910afd5a381a
@@ -41278,7 +42492,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 166/228
+FILE_INDEX: 169/232
 FILE_PATH: Assets/1. Scripts/Runtime/Skills/Base/PrestigeSkill.cs
 FILE_NAME: PrestigeSkill.cs
 FILE_GUID: 6203f3dd7cc27be43bdb2d587d0259f0
@@ -41301,7 +42515,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 167/228
+FILE_INDEX: 170/232
 FILE_PATH: Assets/1. Scripts/Runtime/Skills/Base/Skill.cs
 FILE_NAME: Skill.cs
 FILE_GUID: c818239f167064348b9807c868eb9ade
@@ -41913,7 +43127,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 168/228
+FILE_INDEX: 171/232
 FILE_PATH: Assets/1. Scripts/Runtime/Skills/DataDriven/DataDuelSkill.cs
 FILE_NAME: DataDuelSkill.cs
 FILE_GUID: e413049a71c34c846a295b750e4b7239
@@ -41973,7 +43187,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 169/228
+FILE_INDEX: 172/232
 FILE_PATH: Assets/1. Scripts/Runtime/Skills/DataDriven/DataNormalSkill.cs
 FILE_NAME: DataNormalSkill.cs
 FILE_GUID: f2e4adea165d99845be798505dacb7ef
@@ -42033,7 +43247,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 170/228
+FILE_INDEX: 173/232
 FILE_PATH: Assets/1. Scripts/Runtime/Skills/DataDriven/DataPreparationSkill.cs
 FILE_NAME: DataPreparationSkill.cs
 FILE_GUID: c0b5fc7c7371a3a45963d07217e9e64a
@@ -42093,7 +43307,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 171/228
+FILE_INDEX: 174/232
 FILE_PATH: Assets/1. Scripts/Runtime/Skills/DataDriven/DataPrestigeSkill.cs
 FILE_NAME: DataPrestigeSkill.cs
 FILE_GUID: ccee1f0ca5ed44d4fb0200963c9600a7
@@ -42153,7 +43367,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 172/228
+FILE_INDEX: 175/232
 FILE_PATH: Assets/1. Scripts/Runtime/Skills/DataDriven/SkillDefinition.cs
 FILE_NAME: SkillDefinition.cs
 FILE_GUID: a85a262093fed2b45a6f05cb3a256be9
@@ -42263,7 +43477,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 173/228
+FILE_INDEX: 176/232
 FILE_PATH: Assets/1. Scripts/Runtime/Skills/DataDriven/SkillEffectContext.cs
 FILE_NAME: SkillEffectContext.cs
 FILE_GUID: 060860b556e33874684e5ceb613e153f
@@ -42546,7 +43760,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 174/228
+FILE_INDEX: 177/232
 FILE_PATH: Assets/1. Scripts/Runtime/Skills/Effects/Common/AddBodyPartStatusEffect.cs
 FILE_NAME: AddBodyPartStatusEffect.cs
 FILE_GUID: 4906b606a957a0e4185c8bb42174098e
@@ -42609,7 +43823,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 175/228
+FILE_INDEX: 178/232
 FILE_PATH: Assets/1. Scripts/Runtime/Skills/Effects/Common/ApplyRolledPartDamageEffect.cs
 FILE_NAME: ApplyRolledPartDamageEffect.cs
 FILE_GUID: 04c19803c8cddf44c82d701bf782987b
@@ -42717,7 +43931,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 176/228
+FILE_INDEX: 179/232
 FILE_PATH: Assets/1. Scripts/Runtime/Skills/Effects/Common/ApplyStatusIfConditionEffect.cs
 FILE_NAME: ApplyStatusIfConditionEffect.cs
 FILE_GUID: 080044694903a20468043d9f5c91446d
@@ -42784,7 +43998,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 177/228
+FILE_INDEX: 180/232
 FILE_PATH: Assets/1. Scripts/Runtime/Skills/Effects/Common/ConditionalDamageEffect.cs
 FILE_NAME: ConditionalDamageEffect.cs
 FILE_GUID: af8810a3921add3418240a1ad95586ec
@@ -42880,7 +44094,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 178/228
+FILE_INDEX: 181/232
 FILE_PATH: Assets/1. Scripts/Runtime/Skills/Effects/Common/ForceBreakOwnPartEffect.cs
 FILE_NAME: ForceBreakOwnPartEffect.cs
 FILE_GUID: 51cc397acfe473341ad2510fa462c2bd
@@ -42970,7 +44184,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 179/228
+FILE_INDEX: 182/232
 FILE_PATH: Assets/1. Scripts/Runtime/Skills/Effects/Common/GainCustomResourceEffect.cs
 FILE_NAME: GainCustomResourceEffect.cs
 FILE_GUID: a0a2d2003810c2d49ba1fd1035c6d139
@@ -43023,7 +44237,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 180/228
+FILE_INDEX: 183/232
 FILE_PATH: Assets/1. Scripts/Runtime/Skills/Effects/Common/GainPrestigeEffect.cs
 FILE_NAME: GainPrestigeEffect.cs
 FILE_GUID: cdeaf3a70b5776542aae61943e22c72a
@@ -43073,7 +44287,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 181/228
+FILE_INDEX: 184/232
 FILE_PATH: Assets/1. Scripts/Runtime/Skills/Effects/Common/ModifyResourceEffect.cs
 FILE_NAME: ModifyResourceEffect.cs
 FILE_GUID: 017176ec266251841bb8bcb9ea8781fa
@@ -43139,7 +44353,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 182/228
+FILE_INDEX: 185/232
 FILE_PATH: Assets/1. Scripts/Runtime/Skills/Effects/Common/SkillResourceAccess.cs
 FILE_NAME: SkillResourceAccess.cs
 FILE_GUID: 496bccb97b6d0704cb994a6b03853885
@@ -43359,7 +44573,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 183/228
+FILE_INDEX: 186/232
 FILE_PATH: Assets/1. Scripts/Runtime/Skills/Effects/Common/StatusEffectFactory.cs
 FILE_NAME: StatusEffectFactory.cs
 FILE_GUID: b8cc4e8db42874c439d50b8637d9c510
@@ -43419,7 +44633,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 184/228
+FILE_INDEX: 187/232
 FILE_PATH: Assets/1. Scripts/Runtime/Skills/Effects/OlafEffects/OlafBreakOwnPartEffect.cs
 FILE_NAME: OlafBreakOwnPartEffect.cs
 FILE_GUID: 6050321b3b466914eae868a806615ebd
@@ -43529,7 +44743,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 185/228
+FILE_INDEX: 188/232
 FILE_PATH: Assets/1. Scripts/Runtime/Skills/Effects/OlafEffects/OlafNormalBleedEffect.cs
 FILE_NAME: OlafNormalBleedEffect.cs
 FILE_GUID: e635dccda8beaec45b6130d36287a173
@@ -43618,7 +44832,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 186/228
+FILE_INDEX: 189/232
 FILE_PATH: Assets/1. Scripts/Runtime/Skills/Effects/OlafEffects/OlafPrestigeEffect.cs
 FILE_NAME: OlafPrestigeEffect.cs
 FILE_GUID: 404cac770ab99b346805bd23692e54dd
@@ -43858,7 +45072,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 187/228
+FILE_INDEX: 190/232
 FILE_PATH: Assets/1. Scripts/Runtime/Skills/Effects/SkillEffectCondition.cs
 FILE_NAME: SkillEffectCondition.cs
 FILE_GUID: 11125d343cfcce247b8f6dfb5282adaf
@@ -44071,7 +45285,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 188/228
+FILE_INDEX: 191/232
 FILE_PATH: Assets/1. Scripts/Runtime/Skills/Effects/SkillEffectDefinition.cs
 FILE_NAME: SkillEffectDefinition.cs
 FILE_GUID: 2adf7c444cc2472488ae53220a02a2b0
@@ -44186,7 +45400,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 189/228
+FILE_INDEX: 192/232
 FILE_PATH: Assets/1. Scripts/Runtime/Skills/Effects/SkillEffectResult.cs
 FILE_NAME: SkillEffectResult.cs
 FILE_GUID: 08f190ec87ed7074db4902ff1f264c16
@@ -44288,7 +45502,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 190/228
+FILE_INDEX: 193/232
 FILE_PATH: Assets/1. Scripts/Runtime/Skills/Effects/SkillEffectTargetSelector.cs
 FILE_NAME: SkillEffectTargetSelector.cs
 FILE_GUID: 771ea2e9bbc6dbe4a9b243fdbfbbf278
@@ -44316,7 +45530,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 191/228
+FILE_INDEX: 194/232
 FILE_PATH: Assets/1. Scripts/Runtime/Skills/Effects/SkillEffectTiming.cs
 FILE_NAME: SkillEffectTiming.cs
 FILE_GUID: e55b25e674dcc144387308c7faec5e15
@@ -44342,7 +45556,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 192/228
+FILE_INDEX: 195/232
 FILE_PATH: Assets/1. Scripts/Runtime/Status/CrowdControl/CrowdControlStatus.cs
 FILE_NAME: CrowdControlStatus.cs
 FILE_GUID: 98f441bddd784084fbf23b1183dc4ccd
@@ -44373,7 +45587,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 193/228
+FILE_INDEX: 196/232
 FILE_PATH: Assets/1. Scripts/Runtime/Status/CrowdControl/Stun.cs
 FILE_NAME: Stun.cs
 FILE_GUID: 42284450d1b381e49b1c63a5de3168b8
@@ -44400,7 +45614,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 194/228
+FILE_INDEX: 197/232
 FILE_PATH: Assets/1. Scripts/Runtime/Status/DamageOverTime/Bleeding.cs
 FILE_NAME: Bleeding.cs
 FILE_GUID: 3886d8482554e6949b9f283b8432238c
@@ -44444,7 +45658,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 195/228
+FILE_INDEX: 198/232
 FILE_PATH: Assets/1. Scripts/Runtime/Status/DamageOverTime/Burn.cs
 FILE_NAME: Burn.cs
 FILE_GUID: f3854e148389b1b439575525bcc009cf
@@ -44484,7 +45698,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 196/228
+FILE_INDEX: 199/232
 FILE_PATH: Assets/1. Scripts/Runtime/Status/DamageOverTime/DamageStatus.cs
 FILE_NAME: DamageStatus.cs
 FILE_GUID: b1fa5f1406134674e9125939cc38b7f5
@@ -44587,7 +45801,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 197/228
+FILE_INDEX: 200/232
 FILE_PATH: Assets/1. Scripts/Runtime/Status/PartBroken/BrokenArm.cs
 FILE_NAME: BrokenArm.cs
 FILE_GUID: 5677403aa3720364d8678e01d07e6d7a
@@ -44642,7 +45856,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 198/228
+FILE_INDEX: 201/232
 FILE_PATH: Assets/1. Scripts/Runtime/Status/PartBroken/BrokenHead.cs
 FILE_NAME: BrokenHead.cs
 FILE_GUID: ff69b2c02fa0f4b46b2fd79fc20eff34
@@ -44687,7 +45901,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 199/228
+FILE_INDEX: 202/232
 FILE_PATH: Assets/1. Scripts/Runtime/Status/PartBroken/BrokenLegs.cs
 FILE_NAME: BrokenLegs.cs
 FILE_GUID: bbb8f00df7401c84a8d2e413aaafdad1
@@ -44732,7 +45946,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 200/228
+FILE_INDEX: 203/232
 FILE_PATH: Assets/1. Scripts/Runtime/Status/PartBroken/BrokenPartStatus.cs
 FILE_NAME: BrokenPartStatus.cs
 FILE_GUID: 94fd045221564d34ba38d0ca61c4f633
@@ -44779,7 +45993,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 201/228
+FILE_INDEX: 204/232
 FILE_PATH: Assets/1. Scripts/Runtime/Status/PartDisabled/ArmDisabled.cs
 FILE_NAME: ArmDisabled.cs
 FILE_GUID: d2a8bfd86a38ff546abbf54f957f7595
@@ -44846,7 +46060,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 202/228
+FILE_INDEX: 205/232
 FILE_PATH: Assets/1. Scripts/Runtime/Status/PartDisabled/HeadDisabled.cs
 FILE_NAME: HeadDisabled.cs
 FILE_GUID: cd00788317715544e96c6b302cff82c6
@@ -44899,7 +46113,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 203/228
+FILE_INDEX: 206/232
 FILE_PATH: Assets/1. Scripts/Runtime/Status/PartDisabled/LegsDisabled.cs
 FILE_NAME: LegsDisabled.cs
 FILE_GUID: 524833dcdb98a31429f7da0ff161e107
@@ -44963,7 +46177,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 204/228
+FILE_INDEX: 207/232
 FILE_PATH: Assets/1. Scripts/Runtime/Status/PartDisabled/PartDisabledStatus.cs
 FILE_NAME: PartDisabledStatus.cs
 FILE_GUID: 78776ef9e45e68f4f9496d8becfa9066
@@ -44998,7 +46212,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 205/228
+FILE_INDEX: 208/232
 FILE_PATH: Assets/1. Scripts/Runtime/Status/StatusEffect.cs
 FILE_NAME: StatusEffect.cs
 FILE_GUID: 0223b74db9151fe4a97718f2f0cd08cf
@@ -45316,7 +46530,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 206/228
+FILE_INDEX: 209/232
 FILE_PATH: Assets/1. Scripts/Runtime/Status/StatusEffectApplyResult.cs
 FILE_NAME: StatusEffectApplyResult.cs
 FILE_GUID: 789c56fc6b80be74998b3c659accc01a
@@ -45369,7 +46583,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 207/228
+FILE_INDEX: 210/232
 FILE_PATH: Assets/1. Scripts/Runtime/Status/StatusEffectDurationPolicy.cs
 FILE_NAME: StatusEffectDurationPolicy.cs
 FILE_GUID: 21bc7e996c8e23249b9c452765200e86
@@ -45391,7 +46605,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 208/228
+FILE_INDEX: 211/232
 FILE_PATH: Assets/1. Scripts/Runtime/Status/StatusEffectRemoveReason.cs
 FILE_NAME: StatusEffectRemoveReason.cs
 FILE_GUID: d27ca707c28dd5f4d88eceb51a2ac5b8
@@ -45417,7 +46631,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 209/228
+FILE_INDEX: 212/232
 FILE_PATH: Assets/1. Scripts/Runtime/Status/StatusEffectStackPolicy.cs
 FILE_NAME: StatusEffectStackPolicy.cs
 FILE_GUID: 3aeff958076aa1e4fbd8de161be4535a
@@ -45440,7 +46654,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 210/228
+FILE_INDEX: 213/232
 FILE_PATH: Assets/1. Scripts/Runtime/Systems/AI/AIActionPlanner.cs
 FILE_NAME: AIActionPlanner.cs
 FILE_GUID: eef814d91a97274418454f24ab01b72a
@@ -45677,7 +46891,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 211/228
+FILE_INDEX: 214/232
 FILE_PATH: Assets/1. Scripts/Runtime/Systems/AI/AIManager.cs
 FILE_NAME: AIManager.cs
 FILE_GUID: d1130a46c435e3c4ea9e7aada098e39d
@@ -45852,7 +47066,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 212/228
+FILE_INDEX: 215/232
 FILE_PATH: Assets/1. Scripts/Runtime/Systems/AI/AISkillSelector.cs
 FILE_NAME: AISkillSelector.cs
 FILE_GUID: fef428d849e122146a47858de6e717ce
@@ -46035,7 +47249,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 213/228
+FILE_INDEX: 216/232
 FILE_PATH: Assets/1. Scripts/Runtime/Systems/AI/AISlotPlanner.cs
 FILE_NAME: AISlotPlanner.cs
 FILE_GUID: 84f804b6ed2b2d0489b093d372b14e69
@@ -46185,7 +47399,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 214/228
+FILE_INDEX: 217/232
 FILE_PATH: Assets/1. Scripts/Runtime/Systems/AI/AITargetSelector.cs
 FILE_NAME: AITargetSelector.cs
 FILE_GUID: b1331f6c796978d42a6997c4c8e57543
@@ -46566,7 +47780,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 215/228
+FILE_INDEX: 218/232
 FILE_PATH: Assets/1. Scripts/Runtime/Systems/BattleFlow/ActionManager.cs
 FILE_NAME: ActionManager.cs
 FILE_GUID: b1c5da04c098fb74ca05b7f0b0345f11
@@ -47231,7 +48445,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 216/228
+FILE_INDEX: 219/232
 FILE_PATH: Assets/1. Scripts/Runtime/Systems/BattleFlow/BattleLifecycleGuard.cs
 FILE_NAME: BattleLifecycleGuard.cs
 FILE_GUID: 82cc9e40a344e9149ac36857c94b19d2
@@ -47373,32 +48587,48 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 217/228
+FILE_INDEX: 220/232
 FILE_PATH: Assets/1. Scripts/Runtime/Systems/BattleFlow/BattleManager.cs
 FILE_NAME: BattleManager.cs
 FILE_GUID: 8671775e3a562fb458508ea68fd4f4b3
 LANGUAGE: CSharp
-LINE_COUNT: 669
-UTF8_BYTE_COUNT: 16206
-SHA256: ec8e42b3cdafa2685e1d6ac41a5a556b5b5f7316952ef52960e02367018638a4
+LINE_COUNT: 671
+UTF8_BYTE_COUNT: 17723
+SHA256: 1de948c4a04370db409e1eff9e552ff1d2fef8d4aac9838439de70223abf9594
 READ_STATUS: OK
 CONTENT_BEGIN
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 public class BattleManager : MonoBehaviour
 {
-    [Header("Debug")]
-    [SerializeField] private Character player;
-    [SerializeField] private List<Character> enemies = new();
+    [Header("Battle Roster")]
+    [SerializeField] private BattleRosterController rosterController;
+    [SerializeField] private bool autoInitializeOnAwake = true;
+    [SerializeField] private bool autoStartBattle = true;
 
-    [Header("Buttons")]
-    [SerializeField] private List<BodyPartButton> playerButtons = new();
-    [SerializeField] private List<BodyPartButton> enemyButtons = new();
+    [Header("Legacy Scene Roster Fallback")]
+    [FormerlySerializedAs("player")]
+    [SerializeField, HideInInspector]
+    private Character legacyPlayer;
 
-    [Header("BattleUIManager")]
+    [FormerlySerializedAs("enemies")]
+    [SerializeField, HideInInspector]
+    private List<Character> legacyEnemies = new();
+
+    [Header("Legacy Button Migration")]
+    [FormerlySerializedAs("playerButtons")]
+    [SerializeField, HideInInspector]
+    private List<BodyPartButton> legacyPlayerButtons = new();
+
+    [FormerlySerializedAs("enemyButtons")]
+    [SerializeField, HideInInspector]
+    private List<BodyPartButton> legacyEnemyButtons = new();
+
+    [Header("Battle UI")]
     [SerializeField] private BattleUIManager battleUIManager;
 
     [Header("Animation")]
@@ -47406,7 +48636,6 @@ public class BattleManager : MonoBehaviour
     [SerializeField] private SkillVisualProfile defaultVisualProfile;
 
     public BattleContext BattleContext { get; private set; }
-
     public Character SelectedCharacter { get; set; }
 
     public TurnManager TurnManager { get; private set; }
@@ -47414,17 +48643,30 @@ public class BattleManager : MonoBehaviour
     public MomentumManager MomentumManager { get; private set; }
     public BattleLogger BattleLogger { get; private set; }
     public SpeedManager SpeedManager { get; private set; }
-
-    // UI 미리보기와 테스트가 실제 전투와 같은 계산기를 사용하도록
-    // 읽기 전용으로 공개한다.
     public DamageManager DamageManager { get; private set; }
     public ClashManager ClashManager { get; private set; }
     public ActionResolver ActionResolver { get; private set; }
     public ClashBuilder ClashBuilder { get; private set; }
     public AIManager AIManager { get; private set; }
 
+    public BattleRosterController RosterController => rosterController;
+    public BattleUIManager BattleUIManager => battleUIManager;
+
+    public Character LegacyPlayerForMigration => legacyPlayer;
+    public IReadOnlyList<Character> LegacyEnemiesForMigration => legacyEnemies;
+    public IReadOnlyList<BodyPartButton> LegacyPlayerButtonsForMigration =>
+        legacyPlayerButtons;
+    public IReadOnlyList<BodyPartButton> LegacyEnemyButtonsForMigration =>
+        legacyEnemyButtons;
+
+    public bool IsInitialized => initializedSuccessfully;
+    public bool IsEndingOrEnded => endingOrEnded;
+
+    public event Action<BattleContext> BattlePrepared;
+
     private readonly BattleLifecycleGuard lifecycleGuard = new();
 
+    private bool initializationStarted;
     private bool charactersCleanedUp;
     private bool initializedSuccessfully;
     private bool endingOrEnded;
@@ -47432,43 +48674,18 @@ public class BattleManager : MonoBehaviour
 
     private void Awake()
     {
-        try
-        {
-            InitializeContext();
+        ResolveSceneReferences();
 
-            if (battleUIManager == null)
-            {
-                battleUIManager =
-                    FindFirstObjectByType<BattleUIManager>();
-            }
-
-            CreateManagers();
-            InitializeCharacters();
-            BindButtons();
-
-            SelectedCharacter = player;
-
-            if (!lifecycleGuard.MarkReady())
-            {
-                throw new InvalidOperationException(
-                    "BattleLifecycleGuard를 Ready 상태로 전환하지 못했습니다.");
-            }
-
-            initializedSuccessfully = true;
-
-            Debug.Log("===== Battle Ready =====");
-        }
-        catch (Exception exception)
-        {
-            HandleInitializationFailure(exception);
-        }
+        if (autoInitializeOnAwake)
+            InitializeBattle();
     }
 
     private IEnumerator Start()
     {
         yield return null;
 
-        if (!initializedSuccessfully ||
+        if (!autoStartBattle ||
+            !initializedSuccessfully ||
             endingOrEnded ||
             destroyed)
         {
@@ -47479,40 +48696,200 @@ public class BattleManager : MonoBehaviour
         StartBattle();
     }
 
-    private void OnDisable()
+    public bool InitializeBattle()
     {
-        if (!Application.isPlaying ||
-            destroyed ||
-            !initializedSuccessfully ||
+        if (initializedSuccessfully)
+            return true;
+
+        if (initializationStarted ||
             endingOrEnded ||
-            TurnManager == null ||
-            !TurnManager.IsBattleRunning)
+            destroyed)
         {
-            return;
+            return false;
         }
 
-        EndBattleInternal(
-            "BattleManager disabled");
+        initializationStarted = true;
+
+        try
+        {
+            ResolveSceneReferences();
+
+            if (!TryResolveRoster(
+                    out Character player,
+                    out List<Character> enemies))
+            {
+                throw new InvalidOperationException(
+                    "Battle Roster를 구성하지 못했습니다.");
+            }
+
+            ValidateRoster(player, enemies);
+            InitializeContext(player, enemies);
+            CreateManagers();
+            InitializeCharacters();
+
+            battleUIManager?.BuildParticipantButtons(
+                BattleContext,
+                legacyPlayerButtons,
+                legacyEnemyButtons);
+
+            SelectedCharacter = BattleContext.Player;
+
+            if (!lifecycleGuard.MarkReady())
+            {
+                throw new InvalidOperationException(
+                    "BattleLifecycleGuard를 Ready 상태로 전환하지 못했습니다.");
+            }
+
+            initializedSuccessfully = true;
+
+            BattlePrepared?.Invoke(BattleContext);
+
+            Debug.Log("===== Battle Ready =====");
+            return true;
+        }
+        catch (Exception exception)
+        {
+            HandleInitializationFailure(exception);
+            return false;
+        }
     }
 
-    private void OnDestroy()
+    public bool ConfigureRoster(
+        Character playerSource,
+        IReadOnlyList<Character> enemySources,
+        bool instantiateCopies = true)
     {
-        if (destroyed)
-            return;
-
-        destroyed = true;
-
-        if (!endingOrEnded)
+        if (initializationStarted || initializedSuccessfully)
         {
-            EndBattleInternal(
-                "BattleManager destroyed");
+            Debug.LogWarning(
+                "[BattleManager] Roster는 InitializeBattle 이전에만 변경할 수 있습니다.");
+
+            return false;
         }
 
-        ActionManager?.Dispose();
-        lifecycleGuard.Dispose();
+        if (rosterController == null)
+        {
+            rosterController =
+                GetComponent<BattleRosterController>();
+
+            if (rosterController == null)
+                rosterController = gameObject.AddComponent<BattleRosterController>();
+        }
+
+        rosterController.ConfigureSources(
+            playerSource,
+            enemySources,
+            instantiateCopies);
+
+        return true;
     }
 
-    private void InitializeContext()
+    public void AssignRosterController(
+        BattleRosterController controller)
+    {
+        if (initializationStarted)
+            return;
+
+        rosterController = controller;
+    }
+
+    public void ClearLegacyMigrationData()
+    {
+        if (initializationStarted)
+            return;
+
+        legacyPlayer = null;
+        legacyEnemies?.Clear();
+        legacyPlayerButtons?.Clear();
+        legacyEnemyButtons?.Clear();
+    }
+
+    public void SetAutoLifecycle(
+        bool initializeOnAwake,
+        bool startAutomatically)
+    {
+        if (initializationStarted)
+            return;
+
+        autoInitializeOnAwake = initializeOnAwake;
+        autoStartBattle = startAutomatically;
+    }
+
+    private bool TryResolveRoster(
+        out Character player,
+        out List<Character> enemies)
+    {
+        player = null;
+        enemies = new List<Character>();
+
+        if (rosterController != null &&
+            rosterController.HasConfiguredPlayer)
+        {
+            if (!rosterController.TryBuildRoster(
+                    out BattleRosterSnapshot snapshot))
+            {
+                return false;
+            }
+
+            player = snapshot.Player;
+            enemies.AddRange(snapshot.Enemies);
+            return true;
+        }
+
+        player = legacyPlayer;
+
+        if (legacyEnemies != null)
+        {
+            foreach (Character enemy in legacyEnemies)
+            {
+                if (enemy != null)
+                    enemies.Add(enemy);
+            }
+        }
+
+        return player != null;
+    }
+
+    private static void ValidateRoster(
+        Character player,
+        IReadOnlyList<Character> enemies)
+    {
+        if (player == null)
+            throw new InvalidOperationException("Player가 없습니다.");
+
+        if (enemies == null || enemies.Count == 0)
+            throw new InvalidOperationException("Enemy가 하나도 없습니다.");
+
+        HashSet<Character> unique = new() { player };
+
+        foreach (Character enemy in enemies)
+        {
+            if (enemy == null)
+            {
+                throw new InvalidOperationException(
+                    "Enemy 목록에 null이 포함되어 있습니다.");
+            }
+
+            if (!unique.Add(enemy))
+            {
+                throw new InvalidOperationException(
+                    "같은 Character Instance가 여러 전투 슬롯에 중복 등록되었습니다.");
+            }
+        }
+    }
+
+    private void ResolveSceneReferences()
+    {
+        if (rosterController == null)
+            rosterController = GetComponent<BattleRosterController>();
+
+        if (battleUIManager == null)
+            battleUIManager = FindFirstObjectByType<BattleUIManager>();
+    }
+
+    private void InitializeContext(
+        Character player,
+        List<Character> enemies)
     {
         BattleContext =
             new BattleContext
@@ -47523,74 +48900,56 @@ public class BattleManager : MonoBehaviour
             };
 
         BattleContext.EffectResolver =
-            new BattleEffectResolver(
-                BattleContext);
+            new BattleEffectResolver(BattleContext);
     }
 
     private void CreateManagers()
     {
         BattleLogger = new BattleLogger();
         ActionManager = new ActionManager();
+        MomentumManager = new MomentumManager(BattleContext);
+        SpeedManager = new SpeedManager(BattleContext);
+        DamageManager = new DamageManager(BattleContext, MomentumManager);
+        ClashManager = new ClashManager(
+            BattleContext,
+            DamageManager,
+            MomentumManager);
 
-        MomentumManager =
-            new MomentumManager(
-                BattleContext);
+        ActionResolver = new ActionResolver(
+            BattleContext,
+            ClashManager,
+            battleAnimationDirector,
+            defaultVisualProfile);
 
-        SpeedManager =
-            new SpeedManager(
-                BattleContext);
+        ClashBuilder = new ClashBuilder();
+        AIManager = new AIManager(BattleContext, ActionManager);
 
-        DamageManager =
-            new DamageManager(
-                BattleContext,
-                MomentumManager);
-
-        ClashManager =
-            new ClashManager(
-                BattleContext,
-                DamageManager,
-                MomentumManager);
-
-        ActionResolver =
-            new ActionResolver(
-                BattleContext,
-                ClashManager,
-                battleAnimationDirector,
-                defaultVisualProfile);
-
-        ClashBuilder =
-            new ClashBuilder();
-
-        AIManager =
-            new AIManager(
-                BattleContext,
-                ActionManager);
-
-        TurnManager =
-            new TurnManager(
-                BattleContext,
-                ActionManager,
-                AIManager,
-                SpeedManager,
-                ActionResolver,
-                MomentumManager,
-                ClashBuilder,
-                lifecycleGuard,
-                HandleTurnFatalError);
+        TurnManager = new TurnManager(
+            BattleContext,
+            ActionManager,
+            AIManager,
+            SpeedManager,
+            ActionResolver,
+            MomentumManager,
+            ClashBuilder,
+            lifecycleGuard,
+            HandleTurnFatalError);
     }
 
     private void InitializeCharacters()
     {
+        Character player = BattleContext?.Player;
+
         if (player != null)
         {
             player.Initialize(BattleContext);
             player.ForceRecalculateHP();
         }
 
-        if (enemies == null)
+        if (BattleContext?.Enemies == null)
             return;
 
-        foreach (Character enemy in enemies)
+        foreach (Character enemy in BattleContext.Enemies)
         {
             if (enemy == null)
                 continue;
@@ -47600,169 +48959,19 @@ public class BattleManager : MonoBehaviour
         }
     }
 
-    private void BindButtons()
-    {
-        BindPlayerButtons();
-        BindEnemyButtons();
-    }
-
-    private void BindPlayerButtons()
-    {
-        if (playerButtons == null)
-            return;
-
-        int count = 0;
-
-        if (player != null &&
-            player.BodyParts != null)
-        {
-            count =
-                Mathf.Min(
-                    playerButtons.Count,
-                    player.BodyParts.Count);
-
-            for (int i = 0; i < count; i++)
-            {
-                if (playerButtons[i] == null ||
-                    player.BodyParts[i] == null)
-                {
-                    continue;
-                }
-
-                playerButtons[i]
-                    .gameObject
-                    .SetActive(true);
-
-                playerButtons[i].Bind(
-                    player,
-                    player.BodyParts[i]);
-            }
-        }
-
-        for (int i = count;
-             i < playerButtons.Count;
-             i++)
-        {
-            if (playerButtons[i] == null)
-                continue;
-
-            playerButtons[i].Bind(
-                null,
-                null);
-
-            playerButtons[i]
-                .gameObject
-                .SetActive(false);
-        }
-    }
-
-    private void BindEnemyButtons()
-    {
-        if (enemyButtons == null)
-            return;
-
-        int buttonIndex = 0;
-
-        if (enemies != null)
-        {
-            foreach (Character enemy in enemies)
-            {
-                if (enemy == null)
-                    continue;
-
-                if (enemy.IsSingleHpTarget)
-                {
-                    if (!TryBindEnemyButton(
-                            ref buttonIndex,
-                            enemy,
-                            null))
-                    {
-                        return;
-                    }
-
-                    continue;
-                }
-
-                if (enemy.BodyParts == null)
-                    continue;
-
-                foreach (BodyPart part
-                         in enemy.BodyParts)
-                {
-                    if (part == null)
-                        continue;
-
-                    if (!TryBindEnemyButton(
-                            ref buttonIndex,
-                            enemy,
-                            part))
-                    {
-                        return;
-                    }
-                }
-            }
-        }
-
-        for (int i = buttonIndex;
-             i < enemyButtons.Count;
-             i++)
-        {
-            BodyPartButton button =
-                enemyButtons[i];
-
-            if (button == null)
-                continue;
-
-            button.Bind(
-                null,
-                null);
-
-            button.gameObject.SetActive(
-                false);
-        }
-    }
-
-    private bool TryBindEnemyButton(
-        ref int buttonIndex,
-        Character enemy,
-        BodyPart part)
-    {
-        if (buttonIndex >=
-            enemyButtons.Count)
-        {
-            Debug.LogWarning(
-                "Enemy BodyPartButton 수가 부족합니다. " +
-                "일반몹은 캐릭터당 1개, " +
-                "부위형 적은 부위당 1개의 버튼이 필요합니다.");
-
-            return false;
-        }
-
-        BodyPartButton button =
-            enemyButtons[buttonIndex];
-
-        if (button != null)
-        {
-            button.gameObject.SetActive(
-                true);
-
-            button.Bind(
-                enemy,
-                part);
-        }
-
-        buttonIndex++;
-        return true;
-    }
-
     public void StartBattle()
     {
-        if (!initializedSuccessfully ||
-            endingOrEnded ||
-            destroyed)
+        if (!initializedSuccessfully &&
+            !InitializeBattle())
+        {
+            return;
+        }
+
+        if (endingOrEnded || destroyed)
         {
             Debug.LogWarning(
-                "[BattleManager] 초기화되지 않았거나 종료된 전투는 시작할 수 없습니다.");
+                "[BattleManager] 종료되었거나 파괴된 전투는 시작할 수 없습니다.");
+
             return;
         }
 
@@ -47770,17 +48979,17 @@ public class BattleManager : MonoBehaviour
         {
             Debug.LogWarning(
                 "BattleManager : TurnManager가 없습니다.");
+
             return;
         }
 
-        BattleEvent battleEvent =
-            BattleContext?._battleEvent;
+        BattleEvent battleEvent = BattleContext?._battleEvent;
 
-        if (battleEvent == null ||
-            battleEvent.IsDisposed)
+        if (battleEvent == null || battleEvent.IsDisposed)
         {
             Debug.LogWarning(
                 "[BattleManager] BattleEvent가 없거나 이미 Dispose되었습니다.");
+
             return;
         }
 
@@ -47788,10 +48997,8 @@ public class BattleManager : MonoBehaviour
 
         TurnManager.StartBattle();
 
-        if (!TurnManager.IsBattleRunning)
-            return;
-
-        battleUIManager?.RefreshAllBodyPartButtons();
+        if (TurnManager.IsBattleRunning)
+            battleUIManager?.RefreshAllBodyPartButtons();
     }
 
     public void NextTurn()
@@ -47813,8 +49020,7 @@ public class BattleManager : MonoBehaviour
         }
 
         int playerSlotCount =
-            ActionManager.CountSlots(
-                BattleContext.Player);
+            ActionManager.CountSlots(BattleContext.Player);
 
         if (playerSlotCount <= 0)
         {
@@ -47828,11 +49034,8 @@ public class BattleManager : MonoBehaviour
             return;
         }
 
-        ActionManager.PrintSlots(
-            "BEFORE RESOLVE");
-
-        TurnManager.ResolveTurn(
-            OnTurnResolved);
+        ActionManager.PrintSlots("BEFORE RESOLVE");
+        TurnManager.ResolveTurn(OnTurnResolved);
     }
 
     private void OnTurnResolved()
@@ -47853,7 +49056,6 @@ public class BattleManager : MonoBehaviour
         }
 
         TurnManager.NextTurn();
-
         battleUIManager?.RefreshAllBodyPartButtons();
 
         if (CheckBattleEnd())
@@ -47868,12 +49070,9 @@ public class BattleManager : MonoBehaviour
             return;
         }
 
-        ActionManager.RemoveSlotsByOwner(
-            BattleContext.Player);
+        ActionManager.RemoveSlotsByOwner(BattleContext.Player);
 
-        Debug.Log(
-            "[BATTLE] Player actions reset.");
-
+        Debug.Log("[BATTLE] Player actions reset.");
         battleUIManager?.RefreshAllBodyPartButtons();
     }
 
@@ -47891,14 +49090,10 @@ public class BattleManager : MonoBehaviour
             return true;
         }
 
-        foreach (Character enemy
-                 in BattleContext.Enemies)
+        foreach (Character enemy in BattleContext.Enemies)
         {
-            if (enemy != null &&
-                !enemy.IsDead)
-            {
+            if (enemy != null && !enemy.IsDead)
                 return false;
-            }
         }
 
         return true;
@@ -47906,20 +49101,16 @@ public class BattleManager : MonoBehaviour
 
     public void EndBattle()
     {
-        EndBattleInternal(
-            "Battle completed");
+        EndBattleInternal("Battle completed");
     }
 
-    private void EndBattleInternal(
-        string reason)
+    private void EndBattleInternal(string reason)
     {
         if (endingOrEnded)
             return;
 
         endingOrEnded = true;
-
-        BattleEvent battleEvent =
-            BattleContext?._battleEvent;
+        BattleEvent battleEvent = BattleContext?._battleEvent;
 
         try
         {
@@ -47927,7 +49118,6 @@ public class BattleManager : MonoBehaviour
                 "TurnManager.EndBattle",
                 () => TurnManager?.EndBattle());
 
-            // UI와 View Binder가 먼저 스스로 구독을 해제한다.
             RunCleanupStep(
                 "BattleEvent.RaiseBattleEnded",
                 () => battleEvent?.RaiseBattleEnded());
@@ -47950,16 +49140,43 @@ public class BattleManager : MonoBehaviour
         }
         finally
         {
-            // 알려지지 않은 구독자까지 참조를 남기지 않도록
-            // 전투 단위 Event Bus를 마지막에 폐기한다.
             RunCleanupStep(
                 "BattleEvent.Dispose",
                 () => battleEvent?.Dispose());
         }
     }
 
-    private void HandleTurnFatalError(
-        Exception exception)
+    private void OnDisable()
+    {
+        if (!Application.isPlaying ||
+            destroyed ||
+            !initializedSuccessfully ||
+            endingOrEnded ||
+            TurnManager == null ||
+            !TurnManager.IsBattleRunning)
+        {
+            return;
+        }
+
+        EndBattleInternal("BattleManager disabled");
+    }
+
+    private void OnDestroy()
+    {
+        if (destroyed)
+            return;
+
+        destroyed = true;
+
+        if (!endingOrEnded)
+            EndBattleInternal("BattleManager destroyed");
+
+        ActionManager?.Dispose();
+        lifecycleGuard.Dispose();
+        rosterController?.ReleaseSpawnedRoster();
+    }
+
+    private void HandleTurnFatalError(Exception exception)
     {
         if (endingOrEnded)
             return;
@@ -47970,12 +49187,10 @@ public class BattleManager : MonoBehaviour
         if (exception != null)
             Debug.LogException(exception);
 
-        EndBattleInternal(
-            "Turn processing failure");
+        EndBattleInternal("Turn processing failure");
     }
 
-    private void HandleInitializationFailure(
-        Exception exception)
+    private void HandleInitializationFailure(Exception exception)
     {
         initializedSuccessfully = false;
         endingOrEnded = true;
@@ -47996,6 +49211,8 @@ public class BattleManager : MonoBehaviour
         {
             BattleContext?._battleEvent?.Dispose();
             ActionManager?.Dispose();
+            battleUIManager?.ClearParticipantButtons();
+            rosterController?.ReleaseSpawnedRoster();
             enabled = false;
         }
     }
@@ -48031,8 +49248,7 @@ public class BattleManager : MonoBehaviour
 
         charactersCleanedUp = true;
 
-        foreach (Character character
-                 in BattleContext.AllCharacters)
+        foreach (Character character in BattleContext.AllCharacters)
         {
             if (character == null)
                 continue;
@@ -48057,7 +49273,464 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 218/228
+FILE_INDEX: 221/232
+FILE_PATH: Assets/1. Scripts/Runtime/Systems/BattleFlow/BattleRosterController.cs
+FILE_NAME: BattleRosterController.cs
+FILE_GUID: dd8dd65a4cc072f4ab01008970cae92f
+LANGUAGE: CSharp
+LINE_COUNT: 442
+UTF8_BYTE_COUNT: 12143
+SHA256: 27dfc8f97591942f2ff64b68ef9a8f43199c04a3176829f3d9d9075b9f55be32
+READ_STATUS: OK
+CONTENT_BEGIN
+using System;
+using System.Collections.Generic;
+using UnityEngine;
+
+public enum BattleParticipantSourceMode
+{
+    Auto,
+    UseSceneInstance,
+    InstantiateCopy
+}
+
+[Serializable]
+public sealed class BattleParticipantSource
+{
+    [SerializeField] private bool enabled = true;
+    [SerializeField] private Character source;
+    [SerializeField] private BattleParticipantSourceMode mode =
+        BattleParticipantSourceMode.Auto;
+    [SerializeField] private Transform spawnPoint;
+    [SerializeField] private bool snapToSpawnPoint = true;
+    [SerializeField] private bool parentSpawnedCopyToRuntimeRoot = true;
+    [SerializeField] private string runtimeNameOverride;
+
+    public bool Enabled => enabled;
+    public Character Source => source;
+    public Transform SpawnPoint => spawnPoint;
+    public bool IsConfigured => enabled && source != null;
+
+    public void Configure(
+        Character character,
+        BattleParticipantSourceMode sourceMode,
+        Transform targetSpawnPoint = null)
+    {
+        source = character;
+        mode = sourceMode;
+        spawnPoint = targetSpawnPoint;
+    }
+
+    public Character Resolve(
+        Transform runtimeRoot,
+        List<Character> spawnedInstances)
+    {
+        if (!IsConfigured)
+            return null;
+
+        bool sourceIsSceneInstance =
+            source.gameObject.scene.IsValid();
+
+        bool instantiateCopy =
+            mode switch
+            {
+                BattleParticipantSourceMode.UseSceneInstance => false,
+                BattleParticipantSourceMode.InstantiateCopy => true,
+                _ => !sourceIsSceneInstance
+            };
+
+        if (!instantiateCopy && !sourceIsSceneInstance)
+        {
+            Debug.LogWarning(
+                "[BattleRosterController] Prefab Asset은 Scene Instance로 " +
+                "직접 사용할 수 없어 InstantiateCopy로 전환합니다. " +
+                $"Source={source.name}");
+
+            instantiateCopy = true;
+        }
+
+        Character result =
+            instantiateCopy
+                ? CreateCopy(runtimeRoot)
+                : source;
+
+        if (result == null)
+            return null;
+
+        if (!instantiateCopy &&
+            snapToSpawnPoint &&
+            spawnPoint != null)
+        {
+            result.transform.SetPositionAndRotation(
+                spawnPoint.position,
+                spawnPoint.rotation);
+        }
+
+        if (!string.IsNullOrWhiteSpace(runtimeNameOverride))
+            result.name = runtimeNameOverride.Trim();
+
+        result.gameObject.SetActive(true);
+
+        if (instantiateCopy)
+            spawnedInstances?.Add(result);
+
+        return result;
+    }
+
+    private Character CreateCopy(Transform runtimeRoot)
+    {
+        Transform parent =
+            parentSpawnedCopyToRuntimeRoot
+                ? runtimeRoot
+                : null;
+
+        Vector3 position =
+            spawnPoint != null
+                ? spawnPoint.position
+                : source.transform.position;
+
+        Quaternion rotation =
+            spawnPoint != null
+                ? spawnPoint.rotation
+                : source.transform.rotation;
+
+        Character copy =
+            UnityEngine.Object.Instantiate(
+                source,
+                position,
+                rotation,
+                parent);
+
+        if (copy != null)
+            copy.transform.localScale = source.transform.localScale;
+
+        return copy;
+    }
+}
+
+public sealed class BattleRosterSnapshot
+{
+    public Character Player { get; }
+    public List<Character> Enemies { get; }
+
+    public BattleRosterSnapshot(
+        Character player,
+        List<Character> enemies)
+    {
+        Player = player;
+        Enemies = enemies ?? new List<Character>();
+    }
+}
+
+public sealed class BattleRosterController : MonoBehaviour
+{
+    [Header("Player")]
+    [SerializeField] private BattleParticipantSource player = new();
+
+    [Header("Enemies")]
+    [SerializeField]
+    private List<BattleParticipantSource> enemies = new();
+
+    [Header("Runtime Spawn")]
+    [SerializeField] private Transform runtimeRoot;
+    [SerializeField] private bool destroySpawnedCopiesOnRelease = true;
+
+    [Header("Managed Scene Characters")]
+    [Tooltip(
+        "현재 Roster에서 선택되지 않은 Scene Character를 " +
+        "자동으로 비활성화할 때 사용하는 후보 목록입니다.")]
+    [SerializeField]
+    private List<Character> managedSceneCharacters = new();
+
+    [SerializeField]
+    private bool deactivateUnselectedManagedCharacters = true;
+
+    [Header("Validation")]
+    [SerializeField]
+    private bool rejectDuplicateCharacterInstances = true;
+
+    private readonly List<Character> spawnedInstances = new();
+    private readonly List<Character> resolvedCharacters = new();
+
+    private BattleRosterSnapshot currentSnapshot;
+
+    public BattleParticipantSource PlayerSource => player;
+    public IReadOnlyList<BattleParticipantSource> EnemySources => enemies;
+    public BattleRosterSnapshot CurrentSnapshot => currentSnapshot;
+
+    public bool HasConfiguredPlayer =>
+        player != null &&
+        player.IsConfigured;
+
+    public bool TryBuildRoster(out BattleRosterSnapshot snapshot)
+    {
+        ReleaseSpawnedRoster();
+        resolvedCharacters.Clear();
+
+        Character resolvedPlayer =
+            player?.Resolve(
+                runtimeRoot,
+                spawnedInstances);
+
+        if (resolvedPlayer == null)
+        {
+            snapshot = null;
+
+            Debug.LogError(
+                "[BattleRosterController] 플레이어를 생성하거나 찾지 못했습니다.");
+
+            return false;
+        }
+
+        resolvedCharacters.Add(resolvedPlayer);
+
+        List<Character> resolvedEnemies = new();
+
+        if (enemies != null)
+        {
+            for (int i = 0; i < enemies.Count; i++)
+            {
+                BattleParticipantSource source = enemies[i];
+
+                if (source == null || !source.Enabled)
+                    continue;
+
+                Character enemy =
+                    source.Resolve(
+                        runtimeRoot,
+                        spawnedInstances);
+
+                if (enemy == null)
+                {
+                    Debug.LogWarning(
+                        "[BattleRosterController] " +
+                        $"Enemy Slot {i}를 해석하지 못했습니다.");
+
+                    continue;
+                }
+
+                if (rejectDuplicateCharacterInstances &&
+                    resolvedCharacters.Contains(enemy))
+                {
+                    Debug.LogError(
+                        "[BattleRosterController] 같은 Character Instance가 " +
+                        "두 슬롯에 등록되었습니다. " +
+                        $"Character={enemy.name}");
+
+                    ReleaseSpawnedRoster();
+                    snapshot = null;
+                    return false;
+                }
+
+                resolvedCharacters.Add(enemy);
+                resolvedEnemies.Add(enemy);
+            }
+        }
+
+        if (resolvedEnemies.Count == 0)
+        {
+            Debug.LogError(
+                "[BattleRosterController] 활성화된 적이 하나도 없습니다.");
+
+            ReleaseSpawnedRoster();
+            snapshot = null;
+            return false;
+        }
+
+        ApplyManagedCharacterActivation(resolvedCharacters);
+
+        currentSnapshot =
+            new BattleRosterSnapshot(
+                resolvedPlayer,
+                resolvedEnemies);
+
+        snapshot = currentSnapshot;
+
+        BattleDebugLog.Event(
+            "[BattleRosterController] Roster Built / " +
+            $"Player={GetCharacterName(resolvedPlayer)}, " +
+            $"Enemies={resolvedEnemies.Count}",
+            BattleLogLevel.Info,
+            this);
+
+        return true;
+    }
+
+    public void ConfigureSources(
+        Character playerSource,
+        IReadOnlyList<Character> enemySources,
+        bool instantiateCopies)
+    {
+        BattleParticipantSourceMode sourceMode =
+            instantiateCopies
+                ? BattleParticipantSourceMode.InstantiateCopy
+                : BattleParticipantSourceMode.Auto;
+
+        player ??= new BattleParticipantSource();
+
+        player.Configure(
+            playerSource,
+            sourceMode);
+
+        enemies ??= new List<BattleParticipantSource>();
+        enemies.Clear();
+
+        if (enemySources == null)
+            return;
+
+        foreach (Character source in enemySources)
+        {
+            if (source == null)
+                continue;
+
+            BattleParticipantSource slot = new();
+
+            slot.Configure(
+                source,
+                sourceMode);
+
+            enemies.Add(slot);
+        }
+    }
+
+    public void ConfigureSceneRoster(
+        Character playerInstance,
+        IReadOnlyList<Character> enemyInstances,
+        Transform playerSpawnPoint,
+        IReadOnlyList<Transform> enemySpawnPoints,
+        Transform spawnedRuntimeRoot)
+    {
+        runtimeRoot = spawnedRuntimeRoot;
+
+        player ??= new BattleParticipantSource();
+
+        player.Configure(
+            playerInstance,
+            BattleParticipantSourceMode.Auto,
+            playerSpawnPoint);
+
+        enemies ??= new List<BattleParticipantSource>();
+        enemies.Clear();
+
+        managedSceneCharacters ??= new List<Character>();
+        managedSceneCharacters.Clear();
+
+        if (playerInstance != null)
+            managedSceneCharacters.Add(playerInstance);
+
+        if (enemyInstances == null)
+            return;
+
+        for (int i = 0; i < enemyInstances.Count; i++)
+        {
+            Character enemy = enemyInstances[i];
+
+            if (enemy == null)
+                continue;
+
+            Transform spawnPoint =
+                enemySpawnPoints != null &&
+                i < enemySpawnPoints.Count
+                    ? enemySpawnPoints[i]
+                    : null;
+
+            BattleParticipantSource slot = new();
+
+            slot.Configure(
+                enemy,
+                BattleParticipantSourceMode.Auto,
+                spawnPoint);
+
+            enemies.Add(slot);
+
+            if (!managedSceneCharacters.Contains(enemy))
+                managedSceneCharacters.Add(enemy);
+        }
+    }
+
+    public void ReleaseSpawnedRoster()
+    {
+        if (destroySpawnedCopiesOnRelease)
+        {
+            foreach (Character character in spawnedInstances)
+            {
+                if (character == null)
+                    continue;
+
+                character.gameObject.SetActive(false);
+
+                if (Application.isPlaying)
+                    Destroy(character.gameObject);
+                else
+                    DestroyImmediate(character.gameObject);
+            }
+        }
+
+        spawnedInstances.Clear();
+        resolvedCharacters.Clear();
+        currentSnapshot = null;
+    }
+
+    private void ApplyManagedCharacterActivation(
+        IReadOnlyList<Character> activeCharacters)
+    {
+        if (!deactivateUnselectedManagedCharacters ||
+            managedSceneCharacters == null)
+        {
+            return;
+        }
+
+        foreach (Character character in managedSceneCharacters)
+        {
+            if (character == null ||
+                !character.gameObject.scene.IsValid())
+            {
+                continue;
+            }
+
+            character.gameObject.SetActive(
+                ContainsReference(
+                    activeCharacters,
+                    character));
+        }
+    }
+
+    private static bool ContainsReference(
+        IReadOnlyList<Character> characters,
+        Character target)
+    {
+        if (characters == null || target == null)
+            return false;
+
+        for (int i = 0; i < characters.Count; i++)
+        {
+            if (ReferenceEquals(characters[i], target))
+                return true;
+        }
+
+        return false;
+    }
+
+    private static string GetCharacterName(Character character)
+    {
+        if (character == null)
+            return "NULL";
+
+        return character.Data?.CharacterName ??
+               character.name;
+    }
+
+    private void OnDestroy()
+    {
+        ReleaseSpawnedRoster();
+    }
+}
+CONTENT_END
+FILE_END
+================================================================================
+
+FILE_BEGIN
+FILE_INDEX: 222/232
 FILE_PATH: Assets/1. Scripts/Runtime/Systems/BattleFlow/TurnManager.cs
 FILE_NAME: TurnManager.cs
 FILE_GUID: 8d079a77fd3703142b07b2b9f264c55e
@@ -48626,7 +50299,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 219/228
+FILE_INDEX: 223/232
 FILE_PATH: Assets/1. Scripts/Runtime/Systems/Resolution/ActionExecutionQueue.cs
 FILE_NAME: ActionExecutionQueue.cs
 FILE_GUID: 50802fb8c26a5b742984a7c5ca956346
@@ -48663,7 +50336,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 220/228
+FILE_INDEX: 224/232
 FILE_PATH: Assets/1. Scripts/Runtime/Systems/Resolution/ActionPairingResult.cs
 FILE_NAME: ActionPairingResult.cs
 FILE_GUID: 5933eba8ada291840af4ae55ce87ea33
@@ -48781,7 +50454,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 221/228
+FILE_INDEX: 225/232
 FILE_PATH: Assets/1. Scripts/Runtime/Systems/Resolution/ActionPhaseSorter.cs
 FILE_NAME: ActionPhaseSorter.cs
 FILE_GUID: 00bd25f3731d83d44b553760f4310778
@@ -48861,7 +50534,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 222/228
+FILE_INDEX: 226/232
 FILE_PATH: Assets/1. Scripts/Runtime/Systems/Resolution/ActionResolver.cs
 FILE_NAME: ActionResolver.cs
 FILE_GUID: a90452fff5688ce40ba72260ebb21bfd
@@ -49187,7 +50860,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 223/228
+FILE_INDEX: 227/232
 FILE_PATH: Assets/1. Scripts/Runtime/Systems/Resolution/ClashBuilder.cs
 FILE_NAME: ClashBuilder.cs
 FILE_GUID: 77336c047f69229468d83a26020479f6
@@ -49475,7 +51148,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 224/228
+FILE_INDEX: 228/232
 FILE_PATH: Assets/1. Scripts/Runtime/Systems/Resolution/ClashManager.cs
 FILE_NAME: ClashManager.cs
 FILE_GUID: ad679a4b0be1a4245ac89643cd87dc3b
@@ -50224,7 +51897,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 225/228
+FILE_INDEX: 229/232
 FILE_PATH: Assets/1. Scripts/Runtime/Systems/Resolution/ClashMatchPolicy.cs
 FILE_NAME: ClashMatchPolicy.cs
 FILE_GUID: 47ce0ae873d277d439a69c02943da7f2
@@ -50395,7 +52068,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 226/228
+FILE_INDEX: 230/232
 FILE_PATH: Assets/1. Scripts/Runtime/Systems/Resolution/DamageManager.cs
 FILE_NAME: DamageManager.cs
 FILE_GUID: 82f69b1357f0ee545b38eb7d950591a7
@@ -50856,7 +52529,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 227/228
+FILE_INDEX: 231/232
 FILE_PATH: Assets/1. Scripts/Runtime/Systems/Stats/MomentumManager.cs
 FILE_NAME: MomentumManager.cs
 FILE_GUID: ee51bcd359554334fbe4503d7020adb1
@@ -51158,7 +52831,7 @@ FILE_END
 ================================================================================
 
 FILE_BEGIN
-FILE_INDEX: 228/228
+FILE_INDEX: 232/232
 FILE_PATH: Assets/1. Scripts/Runtime/Systems/Stats/SpeedManager.cs
 FILE_NAME: SpeedManager.cs
 FILE_GUID: 11b38fbf4a4d84548a342481b9734f11
@@ -51517,7 +53190,7 @@ FILE_END
 ================================================================================
 
 EXPORT_SUMMARY_BEGIN
-SCRIPT_COUNT: 228
+SCRIPT_COUNT: 232
 READ_ERROR_COUNT: 0
 EXPORT_SUMMARY_END
 PROJECT_ABYSS_SCRIPT_EXPORT_END
