@@ -396,8 +396,6 @@ public class TurnManager
 
         RunCharacterTurnEnd();
 
-        momentumManager?.DecayMomentum();
-
         battleContext?._battleEvent?
             .RaiseTurnEnd(CurrentTurn);
 

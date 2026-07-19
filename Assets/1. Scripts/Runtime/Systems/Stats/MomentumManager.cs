@@ -2,286 +2,321 @@ using UnityEngine;
 
 public enum MomentumState
 {
-    LastStand,      // -100 ~ -70
-    Disadvantage,   // -69 ~ -31
-    Balance,        // -30 ~ +30
-    Advantage,      // +31 ~ +69
-    Overwhelm       // +70 ~ +100
+    LastStand,
+    Disadvantage,
+    Balance,
+    Advantage,
+    Overwhelm
+}
+
+public enum MomentumShiftReason
+{
+    Hit,
+    DuelVictory,
+    Skill,
+    Debug
+}
+
+public readonly struct MomentumShiftResult
+{
+    public readonly int Before;
+    public readonly int After;
+    public readonly int SignedShift;
+    public readonly MomentumShiftReason Reason;
+
+    public bool Changed => Before != After;
+
+    public MomentumShiftResult(
+        int before,
+        int after,
+        int signedShift,
+        MomentumShiftReason reason)
+    {
+        Before = before;
+        After = after;
+        SignedShift = signedShift;
+        Reason = reason;
+    }
 }
 
 public class MomentumManager
 {
     private readonly BattleContext battleContext;
-
-    public MomentumManager(BattleContext battleContext)
-    {
-        this.battleContext = battleContext;
-    }
-
-    //------------------------------------------------
-    // 설정
-    //------------------------------------------------
+    private readonly MomentumRuleSettings settings;
 
     public const int MaxMomentum = 100;
     public const int MinMomentum = -100;
 
-    public const int LastStandBonus = 5;
-
-    private const int LowDecayAmount = 5;
-    private const int HighDecayAmount = 12;
-
-    //------------------------------------------------
-
     public int CurrentMomentum { get; private set; }
 
-    //------------------------------------------------
+    public MomentumRuleSettings Settings => settings;
+
+    public MomentumManager(
+        BattleContext battleContext)
+    {
+        this.battleContext = battleContext;
+        settings = battleContext?.Rules?.Momentum ??
+                   new MomentumRuleSettings();
+        settings.Normalize();
+    }
 
     public void Reset()
     {
         CurrentMomentum = 0;
     }
 
-    //------------------------------------------------
-    // 상태
-    //------------------------------------------------
-
-    public MomentumState GetState(Character owner)
+    public MomentumState GetState(
+        Character owner)
     {
-        if (owner == null)
-            return MomentumState.Balance;
+        int value = GetPerspectiveValue(owner);
 
-        int value =
-            IsPlayerSide(owner)
-                ? CurrentMomentum
-                : -CurrentMomentum;
-
-        if (value <= -70)
+        if (value <= settings.LastStandThreshold)
             return MomentumState.LastStand;
 
-        if (value < -30)
+        if (value < settings.DisadvantageThreshold)
             return MomentumState.Disadvantage;
 
-        if (value <= 30)
+        if (value <= settings.AdvantageThreshold)
             return MomentumState.Balance;
 
-        if (value < 70)
+        if (value < settings.OverwhelmThreshold)
             return MomentumState.Advantage;
 
         return MomentumState.Overwhelm;
     }
 
-    //------------------------------------------------
-
-    private bool IsPlayerSide(Character character)
+    public int GetPerspectiveValue(
+        Character owner)
     {
-        return character == battleContext.Player;
+        if (owner == null)
+            return 0;
+
+        return IsPlayerSide(owner)
+            ? CurrentMomentum
+            : -CurrentMomentum;
     }
 
-    //------------------------------------------------
+    public bool IsLastStand(Character character) =>
+        GetState(character) == MomentumState.LastStand;
 
-    public bool IsLastStand(Character character)
+    public bool IsOverwhelm(Character character) =>
+        GetState(character) == MomentumState.Overwhelm;
+
+    public bool CanStandardBreakPart(
+        Character attacker) =>
+        IsOverwhelm(attacker);
+
+    /// <summary>
+    /// 새 설계에서 전투 피해에 허용되는 유일한 곱연산.
+    /// 공격자 관점 기세 구간만 읽으며 대상 쪽 배율을 다시 곱하지 않는다.
+    /// </summary>
+    public float GetDamageMultiplier(
+        Character attacker)
     {
-        return GetState(character) == MomentumState.LastStand;
-    }
+        int perspective =
+            GetPerspectiveValue(attacker);
 
-    public bool IsOverwhelm(Character character)
-    {
-        return GetState(character) == MomentumState.Overwhelm;
-    }
-
-    //------------------------------------------------
-    // 데미지
-    //------------------------------------------------
-
-    public float GetDamageMultiplier(Character attacker)
-    {
         switch (GetState(attacker))
         {
             case MomentumState.LastStand:
-                return 0.4f;
+                return settings.LastStandMultiplier;
 
             case MomentumState.Disadvantage:
-                return 0.4f;
+                return settings.DisadvantageMultiplier;
 
             case MomentumState.Balance:
-                return 0.4f;
+                return settings.BalanceMultiplier;
 
             case MomentumState.Advantage:
-                return 1.0f;
+                return settings.AdvantageMultiplier;
 
             case MomentumState.Overwhelm:
-                return 2.0f;
+            {
+                float t = Mathf.InverseLerp(
+                    settings.OverwhelmThreshold,
+                    settings.Maximum,
+                    perspective);
+
+                return Mathf.Lerp(
+                    settings.OverwhelmMultiplier,
+                    settings.MaximumOverwhelmMultiplier,
+                    t);
+            }
 
             default:
-                return 1.0f;
+                return 1f;
         }
     }
 
-    //------------------------------------------------
+    // 기존 호출부 호환. 새 설계에서는 대상 측 배율을 별도로 곱하지 않는다.
+    public float GetDamageTakenMultiplier(
+        Character target) => 1f;
 
-    public float GetDamageTakenMultiplier(Character target)
+    /// <summary>
+    /// 성공한 교환 또는 일방 공격 한 번의 히트 이동.
+    /// 발악 구간에서는 히트 이동량만 배수 적용한다.
+    /// </summary>
+    public MomentumShiftResult ApplyHit(
+        Character attacker)
     {
-        switch (GetState(target))
+        int amount = settings.HitShift;
+
+        if (IsLastStand(attacker))
         {
-            case MomentumState.LastStand:
-                return 2.0f;
-
-            case MomentumState.Disadvantage:
-                return 1.0f;
-
-            case MomentumState.Balance:
-                return 0.4f;
-
-            case MomentumState.Advantage:
-                return 0.4f;
-
-            case MomentumState.Overwhelm:
-                return 0.4f;
-
-            default:
-                return 1.0f;
+            amount *=
+                settings.LastStandHitShiftMultiplier;
         }
+
+        return ApplyShift(
+            attacker,
+            amount,
+            MomentumShiftReason.Hit);
     }
 
-    //------------------------------------------------
-    // 턴 종료 감쇄
-    //------------------------------------------------
+    /// <summary>
+    /// 결투 대 결투의 최종 다수결 승자에게 주는 추가 푸시.
+    /// 교환별 히트 이동과 별개로 한 번만 적용한다.
+    /// </summary>
+    public MomentumShiftResult ApplyDuelVictory(
+        Character winner,
+        int skillBonus = 0)
+    {
+        int amount =
+            settings.DuelVictoryShift +
+            Mathf.Max(0, skillBonus);
 
+        return ApplyShift(
+            winner,
+            amount,
+            MomentumShiftReason.DuelVictory);
+    }
+
+    public MomentumShiftResult ApplySkillShift(
+        Character pusher,
+        int amount)
+    {
+        return ApplyShift(
+            pusher,
+            amount,
+            MomentumShiftReason.Skill);
+    }
+
+    public MomentumShiftResult ApplyShift(
+        Character pusher,
+        int amount,
+        MomentumShiftReason reason)
+    {
+        int before = CurrentMomentum;
+
+        if (pusher == null || amount <= 0)
+        {
+            return new MomentumShiftResult(
+                before,
+                before,
+                0,
+                reason);
+        }
+
+        int signed = IsPlayerSide(pusher)
+            ? amount
+            : -amount;
+
+        CurrentMomentum = Mathf.Clamp(
+            CurrentMomentum + signed,
+            settings.Minimum,
+            settings.Maximum);
+
+        int applied = CurrentMomentum - before;
+
+        if (applied != 0)
+        {
+            Debug.Log(
+                $"[Momentum] " +
+                $"Reason={reason}, " +
+                $"Pusher={pusher.Data?.CharacterName}, " +
+                $"Before={before}, Shift={applied}, " +
+                $"After={CurrentMomentum}");
+        }
+
+        return new MomentumShiftResult(
+            before,
+            CurrentMomentum,
+            applied,
+            reason);
+    }
+
+    private bool IsPlayerSide(
+        Character character)
+    {
+        return character != null &&
+               character == battleContext?.Player;
+    }
+
+    // -------------------------------------------------
+    // Legacy compatibility APIs
+    // -------------------------------------------------
+
+    /// <summary>
+    /// 기세는 스스로 중앙으로 돌아오지 않는다.
+    /// 과거 호출부가 남아 있어도 아무 변화가 없도록 유지한다.
+    /// </summary>
     public void DecayMomentum()
     {
-        int decayAmount = GetDecayAmount();
-
-        if (CurrentMomentum > 0)
-        {
-            CurrentMomentum =
-                Mathf.Max(
-                    0,
-                    CurrentMomentum - decayAmount);
-        }
-        else if (CurrentMomentum < 0)
-        {
-            CurrentMomentum =
-                Mathf.Min(
-                    0,
-                    CurrentMomentum + decayAmount);
-        }
     }
 
-    //------------------------------------------------
-
-    private int GetDecayAmount()
-    {
-        int abs = Mathf.Abs(CurrentMomentum);
-
-        if (abs >= 30)
-            return HighDecayAmount;
-
-        return LowDecayAmount;
-    }
-
-    //------------------------------------------------
-    // 발악
-    //------------------------------------------------
-
-    public int ApplyLastStand(Character owner, int power)
-    {
-        if (IsLastStand(owner))
-            return power + LastStandBonus;
-
-        return power;
-    }
-
-    //------------------------------------------------
-    // 기세 이동
-    //------------------------------------------------
+    /// <summary>
+    /// 발악은 더 이상 합 위력 보너스가 아니다.
+    /// 히트의 기세 이동량을 두 배로 만드는 규칙이다.
+    /// </summary>
+    public int ApplyLastStand(
+        Character owner,
+        int power) => power;
 
     public bool ApplyClashResult(
         Character winner,
         int clashGap,
         int bonusShift = 0)
     {
-        if (winner == null)
-            return false;
+        MomentumState before = GetState(winner);
 
-        MomentumState before =
-            GetState(winner);
+        MomentumShiftResult result =
+            ApplySkillShift(
+                winner,
+                CalculateMomentumShift(clashGap) +
+                Mathf.Max(0, bonusShift));
 
-        int shift =
-            CalculateMomentumShift(clashGap);
-
-        shift += Mathf.Max(0, bonusShift);
-
-        if (shift <= 0)
-            return false;
-
-        if (IsPlayerSide(winner))
-        {
-            CurrentMomentum += shift;
-
-            Debug.Log(
-                $"{shift} 만큼 플레이어가 기세를 밀어냄");
-        }
-        else
-        {
-            CurrentMomentum -= shift;
-
-            Debug.Log(
-                $"{shift} 만큼 적들이 기세를 밀어냄");
-        }
-
-        CurrentMomentum =
-            Mathf.Clamp(
-                CurrentMomentum,
-                MinMomentum,
-                MaxMomentum);
-
-        MomentumState after =
-            GetState(winner);
-
-        return before != MomentumState.Overwhelm &&
-            after == MomentumState.Overwhelm;
+        return result.Changed &&
+               before != MomentumState.Overwhelm &&
+               GetState(winner) == MomentumState.Overwhelm;
     }
 
-    //------------------------------------------------
-    // 합 차이에 따른 기세 이동량
-    //------------------------------------------------
-
-    public int CalculateMomentumShift(int gap)
+    public int CalculateMomentumShift(
+        int gap)
     {
-        if (gap >= 20)
-            return 40;
-
-        if (gap >= 10)
-            return 25;
-
-        if (gap >= 1)
-            return 10;
-
-        return 0;
+        return gap > 0
+            ? settings.HitShift
+            : 0;
     }
 
-    //------------------------------------------------
-    // 합 차이에 따른 위세 획득량
-    //------------------------------------------------
-
-    public int CalculatePrestigeGain(int gap)
+    public int CalculatePrestigeGain(
+        int gap)
     {
-        if (gap >= 20)
-            return 40;
-
-        if (gap >= 10)
-            return 25;
-
-        if (gap >= 1)
-            return 10;
-
-        return 0;
+        return gap > 0
+            ? battleContext?.Rules?.Prestige
+                ?.ClashVictoryCharge ?? 0
+            : 0;
     }
-    
-    public void SetMomentumForDebug(float value)
-    {
-        CurrentMomentum = (int)Mathf.Clamp(value, -100f, 100f);
 
-        Debug.Log($"[DEBUG TUNER] Momentum set : {CurrentMomentum}");
+    public void SetMomentumForDebug(
+        float value)
+    {
+        CurrentMomentum = Mathf.Clamp(
+            Mathf.RoundToInt(value),
+            settings.Minimum,
+            settings.Maximum);
+
+        Debug.Log(
+            $"[DEBUG TUNER] Momentum set : " +
+            $"{CurrentMomentum}");
     }
 }

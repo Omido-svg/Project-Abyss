@@ -21,6 +21,12 @@ public struct ClashRollVisualStep
     public bool AttackerCritical;
     public bool TargetCritical;
 
+    // 굴림 소모전 메타데이터.
+    public bool IsOneSided;
+    public bool WasCancelled;
+    public int AttackerDamage;
+    public int TargetDamage;
+
     public int AttackerFinalPower =>
         AttackerRollResult?.FinalPower ??
         AttackerValue -
@@ -105,6 +111,10 @@ public struct ClashRollVisualStep
         TargetMomentumModifier = targetMomentumModifier;
         AttackerCritical = attackerCritical;
         TargetCritical = targetCritical;
+        IsOneSided = false;
+        WasCancelled = false;
+        AttackerDamage = 0;
+        TargetDamage = 0;
     }
 
     public ClashRollVisualStep Swapped()
@@ -120,6 +130,12 @@ public struct ClashRollVisualStep
             TargetMomentumModifier,
             AttackerMomentumModifier,
             TargetCritical,
-            AttackerCritical);
+            AttackerCritical)
+        {
+            IsOneSided = IsOneSided,
+            WasCancelled = WasCancelled,
+            AttackerDamage = TargetDamage,
+            TargetDamage = AttackerDamage
+        };
     }
 }

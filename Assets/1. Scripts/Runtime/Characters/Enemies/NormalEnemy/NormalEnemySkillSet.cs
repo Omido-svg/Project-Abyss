@@ -99,7 +99,18 @@ public class NormalEnemySkillSet : ScriptableObject
             return false;
 
         if (definition.ActionType == expectedType)
+        {
+            if (definition.ResolverType !=
+                SkillResolverType.Dice)
+            {
+                Debug.LogWarning(
+                    $"[{name}] 일반 적은 균등 주사위 Resolver가 표준입니다. " +
+                    $"Field={fieldName}, Resolver={definition.ResolverType}",
+                    this);
+            }
+
             return true;
+        }
 
         Debug.LogWarning(
             $"[{name}] {fieldName} ActionType 불일치 / " +

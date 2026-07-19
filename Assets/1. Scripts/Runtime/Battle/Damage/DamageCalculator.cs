@@ -3,11 +3,17 @@ using UnityEngine;
 public sealed class DamageCalculator
 {
     private readonly MomentumManager momentumManager;
+    private readonly BattleRuleSettings battleRules;
 
     public DamageCalculator(
-        MomentumManager momentumManager)
+        MomentumManager momentumManager,
+        BattleRuleSettings battleRules = null)
     {
         this.momentumManager = momentumManager;
+        this.battleRules =
+            battleRules ??
+            new BattleRuleSettings();
+        this.battleRules.Normalize();
     }
 
     public void Calculate(
@@ -36,13 +42,18 @@ public sealed class DamageCalculator
             DamageStage.RawPower,
             context.RawPower);
 
+        bool useLegacyStats =
+            battleRules.UseLegacyAttackDefenseStats;
+
         context.FlatDamageBonus =
+            useLegacyStats &&
             request.ApplyFlatDamageBonus &&
             context.Attacker?.CurrentStatus != null
                 ? context.Attacker.CurrentStatus.flatDamageBonus
                 : 0;
 
         context.OwnerDamageMultiplier =
+            useLegacyStats &&
             request.ApplyOwnerMultiplier &&
             context.Attacker?.CurrentStatus != null
                 ? context.Attacker.CurrentStatus.damageMultiplier
@@ -128,7 +139,10 @@ public sealed class DamageCalculator
         int damage =
             context.AttackerModifiedDamage;
 
-        if (context.WasCritical)
+        // 새 설계의 크리티컬은 Resolver가 높은 위력을 직접 반환한다.
+        // 별도 곱연산은 구식 수치 호환 모드에서만 허용한다.
+        if (battleRules.UseLegacyAttackDefenseStats &&
+            context.WasCritical)
         {
             damage =
                 Mathf.Max(
@@ -154,7 +168,8 @@ public sealed class DamageCalculator
         int incomingDamage =
             context.DamageAfterCritical;
 
-        if (!context.Request.ApplyDefense ||
+        if (!battleRules.UseLegacyAttackDefenseStats ||
+            !context.Request.ApplyDefense ||
             incomingDamage <= 0 ||
             context.Target?.CurrentStatus == null)
         {

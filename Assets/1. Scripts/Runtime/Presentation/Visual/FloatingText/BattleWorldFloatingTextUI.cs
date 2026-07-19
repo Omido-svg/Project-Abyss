@@ -306,7 +306,7 @@ public class BattleWorldFloatingTextUI : MonoBehaviour
 
         SetText(finalValue.ToString());
     }
-    
+
     // 기존 호출부 호환.
     public IEnumerator RollToClashResult(
         RollResult rollResult,
@@ -469,6 +469,14 @@ public class BattleWorldFloatingTextUI : MonoBehaviour
 
                 return $"🎰 {a} × {b}";
             }
+
+            case SkillResolverType.Chinchiro:
+            {
+                int a = Random.Range(1, 7);
+                int b = Random.Range(1, 7);
+                int c = Random.Range(1, 7);
+                return $"🎲 {a}·{b}·{c}";
+            }
         }
 
         return Random.Range(
@@ -476,7 +484,7 @@ public class BattleWorldFloatingTextUI : MonoBehaviour
                 randomMax + 1)
             .ToString();
     }
-    
+
     private string CreateFinalRollText(
         RollResult rollResult,
         int finalClashValue,
@@ -791,4 +799,3 @@ public class BattleWorldFloatingTextUI : MonoBehaviour
             Quaternion.Euler(rotationOffset);
     }
 }
-

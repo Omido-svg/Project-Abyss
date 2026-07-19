@@ -7,42 +7,21 @@ public class RollResult
 {
     public SkillResolverType ResolverType;
 
-    //--------------------------------
-    // 순수 굴림 결과
-    //--------------------------------
-
     public int BasePower;
-
     public int RawValue;
     public int ModifiedValue;
-
-    // 장비/패시브처럼 순수 위력 자체를 변경하는 보정만 저장한다.
-    // 속도와 기세 보정은 여기에 포함하지 않는다.
     public int ExternalModifier;
-
-    // 피해 계산이 읽는 순수 위력.
-    // BasePower + ModifiedValue + ExternalModifier
     public int FinalPower;
-
-    //--------------------------------
-    // 합 전용 결과
-    //--------------------------------
 
     public int SpeedModifier;
     public int MomentumModifier;
-
-    // FinalPower + SpeedModifier + MomentumModifier
     public int ClashPower;
-
-    //--------------------------------
-    // 판정 메타데이터
-    //--------------------------------
 
     public bool IsMax;
     public bool IsCritical;
     public bool WasRerolled;
+    public bool WasReused;
 
-    // 이름이 더 명확한 읽기 전용 별칭.
     public bool Critical => IsCritical;
 
     public int DiceMin;
@@ -50,10 +29,15 @@ public class RollResult
     public List<int> DiceValues = new();
 
     public List<bool> CoinFaces = new();
+    public List<int> CoinValues = new();
 
     public int SlotA;
     public int SlotB;
     public int SlotValue;
+
+    public ChinchiroCombination ChinchiroCombination;
+    public int ChinchiroBonus;
+    public int ChinchiroSelfDamage;
 
     public void SetModifiedValue(int modifiedValue)
     {
@@ -67,9 +51,6 @@ public class RollResult
         RecalculateFinalPower();
     }
 
-    // 기존 호출부 호환.
-    // 이 메서드는 순수 FinalPower를 바꾸는 용도로만 사용해야 한다.
-    // 합 전용 기세 보정은 SetClashModifiers를 사용한다.
     public void ApplyExternalFinalPower(int newFinalPower)
     {
         ExternalModifier =
@@ -111,6 +92,21 @@ public class RollResult
             MomentumModifier;
     }
 
+    public RollResult Clone()
+    {
+        RollResult clone = (RollResult)MemberwiseClone();
+        clone.DiceValues = DiceValues == null
+            ? new List<int>()
+            : new List<int>(DiceValues);
+        clone.CoinFaces = CoinFaces == null
+            ? new List<bool>()
+            : new List<bool>(CoinFaces);
+        clone.CoinValues = CoinValues == null
+            ? new List<int>()
+            : new List<int>(CoinValues);
+        return clone;
+    }
+
     public string GetShortDisplayText()
     {
         switch (ResolverType)
@@ -123,6 +119,9 @@ public class RollResult
 
             case SkillResolverType.Slot:
                 return GetSlotDisplayText();
+
+            case SkillResolverType.Chinchiro:
+                return GetChinchiroDisplayText();
         }
 
         return FinalPower.ToString();
@@ -130,23 +129,23 @@ public class RollResult
 
     public string GetDetailDisplayText()
     {
-        string rollText =
-            GetShortDisplayText();
+        string criticalText = IsCritical
+            ? " / [CRITICAL]"
+            : string.Empty;
 
-        string criticalText =
-            IsCritical
-                ? " / [CRITICAL]"
-                : string.Empty;
+        string reuseText = WasReused
+            ? " / [REUSE]"
+            : string.Empty;
 
         return
-            $"{rollText}\n" +
-            $"<size=70%>{GetPurePowerBreakdown()}{criticalText}</size>";
+            $"{GetShortDisplayText()}\n" +
+            $"<size=70%>{GetPurePowerBreakdown()}" +
+            $"{criticalText}{reuseText}</size>";
     }
 
     public string GetClashDetailDisplayText()
     {
-        StringBuilder builder =
-            new StringBuilder();
+        StringBuilder builder = new();
 
         builder.Append(GetShortDisplayText());
         builder.Append("\n<size=70%>");
@@ -157,27 +156,33 @@ public class RollResult
             "속도",
             SpeedModifier);
 
-        AppendSignedModifier(
-            builder,
-            "기세",
-            MomentumModifier);
+        // 새 설계에서 기세는 합 수치 보정이 아니다.
+        if (MomentumModifier != 0)
+        {
+            AppendSignedModifier(
+                builder,
+                "기세(구식)",
+                MomentumModifier);
+        }
 
         builder.Append($" = 합 {ClashPower}");
 
         if (IsCritical)
             builder.Append(" / [CRITICAL]");
 
-        builder.Append("</size>");
+        if (WasReused)
+            builder.Append(" / [REUSE]");
 
+        builder.Append("</size>");
         return builder.ToString();
     }
 
     public string GetPurePowerBreakdown()
     {
-        StringBuilder builder =
-            new StringBuilder();
+        StringBuilder builder = new();
 
-        builder.Append($"기본 {BasePower} + 굴림 {ModifiedValue}");
+        builder.Append(
+            $"기본 {BasePower} + 굴림 {ModifiedValue}");
 
         AppendSignedModifier(
             builder,
@@ -185,7 +190,6 @@ public class RollResult
             ExternalModifier);
 
         builder.Append($" = 순수 {FinalPower}");
-
         return builder.ToString();
     }
 
@@ -219,17 +223,18 @@ public class RollResult
         if (CoinFaces == null || CoinFaces.Count == 0)
             return $"🪙 {RawValue}";
 
-        StringBuilder builder =
-            new StringBuilder();
-
+        StringBuilder builder = new();
         builder.Append("🪙 ");
 
         for (int i = 0; i < CoinFaces.Count; i++)
         {
-            builder.Append(
-                CoinFaces[i]
-                    ? "앞"
-                    : "뒤");
+            builder.Append(CoinFaces[i] ? "앞" : "뒤");
+
+            if (CoinValues != null &&
+                i < CoinValues.Count)
+            {
+                builder.Append($"({CoinValues[i]})");
+            }
 
             if (i < CoinFaces.Count - 1)
                 builder.Append(" ");
@@ -241,5 +246,17 @@ public class RollResult
     private string GetSlotDisplayText()
     {
         return $"🎰 {SlotA} × {SlotB} = {SlotValue}";
+    }
+
+    private string GetChinchiroDisplayText()
+    {
+        string diceText = DiceValues == null
+            ? string.Empty
+            : string.Join("·", DiceValues);
+
+        return
+            $"🎲 {diceText} / " +
+            $"{ChinchiroCombination} " +
+            $"({ChinchiroBonus:+#;-#;0})";
     }
 }

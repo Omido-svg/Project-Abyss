@@ -36,6 +36,10 @@ public class DiceResolver : SkillResolver
         result.DiceMax = max;
         result.DiceValues.Add(value);
 
+        // 균등 주사위의 최대 눈은 단순 최대값이다.
+        // 유진 코인처럼 명시적인 규칙이 없는 한 크리티컬이 아니다.
+        result.IsCritical = false;
+
         return result;
     }
 }

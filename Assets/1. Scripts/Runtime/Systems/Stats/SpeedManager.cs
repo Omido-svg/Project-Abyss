@@ -54,8 +54,6 @@ public class SpeedManager
         if (character.BodyParts == null)
             return;
 
-        List<BodyPart> activeParts = new();
-
         foreach (BodyPart part in character.BodyParts)
         {
             if (part == null)
@@ -67,29 +65,10 @@ public class SpeedManager
                 continue;
             }
 
-            activeParts.Add(part);
-        }
-
-        List<int> rolledSpeeds = new();
-
-        for (int i = 0;
-             i < activeParts.Count;
-             i++)
-        {
-            rolledSpeeds.Add(
-                RollSpeed(character));
-        }
-
-        rolledSpeeds.Sort(
-            (first, second) =>
-                second.CompareTo(first));
-
-        for (int i = 0;
-             i < activeParts.Count;
-             i++)
-        {
-            speedByPart[activeParts[i]] =
-                rolledSpeeds[i];
+            // 각 부위 슬롯은 독립적으로 속도를 굴린다.
+            // 굴린 값을 정렬해서 특정 부위에 재배치하지 않는다.
+            speedByPart[part] =
+                RollSpeed(character);
         }
     }
 

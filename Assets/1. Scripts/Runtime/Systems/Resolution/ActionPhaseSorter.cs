@@ -1,8 +1,8 @@
 using System.Collections.Generic;
 
 /// <summary>
-/// ActionSlot을 페이즈별로 분리하고,
-/// 같은 페이즈 안에서는 속도 -> ActionIndex -> ActionId 순으로 정렬한다.
+/// PRETURN(위세) -> FORESIGHT(도사림) -> COMBAT 순서를 만든다.
+/// PRETURN과 FORESIGHT는 속도를 무시하며 COMBAT만 속도순이다.
 /// </summary>
 public sealed class ActionPhaseSorter
 {
@@ -17,10 +17,7 @@ public sealed class ActionPhaseSorter
 
         foreach (ActionSlot slot in slots)
         {
-            if (slot == null)
-                continue;
-
-            if (slot.Phase != phase)
+            if (slot == null || slot.Phase != phase)
                 continue;
 
             result.Add(slot);
@@ -43,14 +40,22 @@ public sealed class ActionPhaseSorter
         if (b == null)
             return -1;
 
-        // 높은 속도가 먼저 실행된다.
-        int speedCompare =
-            b.Speed.CompareTo(a.Speed);
+        int phaseCompare =
+            a.Phase.CompareTo(b.Phase);
 
-        if (speedCompare != 0)
-            return speedCompare;
+        if (phaseCompare != 0)
+            return phaseCompare;
 
-        // 같은 부위의 추가 행동은 낮은 ActionIndex가 먼저다.
+        // 위세와 도사림은 속도 바깥에서 처리한다.
+        if (a.Phase == ActionPhase.COMBAT)
+        {
+            int speedCompare =
+                b.Speed.CompareTo(a.Speed);
+
+            if (speedCompare != 0)
+                return speedCompare;
+        }
+
         int actionIndexCompare =
             a.ActionIndex.CompareTo(
                 b.ActionIndex);
@@ -58,8 +63,6 @@ public sealed class ActionPhaseSorter
         if (actionIndexCompare != 0)
             return actionIndexCompare;
 
-        // 완전 동률에서는 ActionId로 순서를 고정한다.
-        return a.ActionId.CompareTo(
-            b.ActionId);
+        return a.ActionId.CompareTo(b.ActionId);
     }
 }

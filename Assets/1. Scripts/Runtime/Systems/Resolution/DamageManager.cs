@@ -17,7 +17,8 @@ public class DamageManager
 
         calculator =
             new DamageCalculator(
-                momentumManager);
+                momentumManager,
+                battleContext?.Rules);
 
         eventDispatcher =
             new DamageEventDispatcher(
@@ -440,7 +441,7 @@ public class DamageManager
         if (momentumManager == null)
             return false;
 
-        return momentumManager.IsOverwhelm(
+        return momentumManager.CanStandardBreakPart(
             action.Owner);
     }
 }

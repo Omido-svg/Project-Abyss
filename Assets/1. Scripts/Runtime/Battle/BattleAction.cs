@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 public enum ActionType
@@ -12,49 +13,23 @@ public class BattleAction
 {
     public ActionSlot Slot;
 
-    public long ActionId =>
-        Slot == null ? 0 : Slot.ActionId;
-
-    public int ActionIndex =>
-        Slot == null ? 0 : Slot.ActionIndex;
-
-    public Character Owner =>
-        Slot == null ? null : Slot.Owner;
-
-    public Character Target =>
-        Slot == null ? null : Slot.TargetCharacter;
-
-    public BodyPart OwnerPart =>
-        Slot == null ? null : Slot.Part;
-
-    public BodyPart TargetPart =>
-        Slot == null ? null : Slot.TargetPart;
-
-    public Skill Skill =>
-        Slot == null ? null : Slot.Skill;
-
-    public int Speed =>
-        Slot == null ? 0 : Slot.Speed;
-
-    public ActionPhase Phase =>
-        Slot == null ? ActionPhase.COMBAT : Slot.Phase;
+    public long ActionId => Slot == null ? 0 : Slot.ActionId;
+    public int ActionIndex => Slot == null ? 0 : Slot.ActionIndex;
+    public Character Owner => Slot == null ? null : Slot.Owner;
+    public Character Target => Slot == null ? null : Slot.TargetCharacter;
+    public BodyPart OwnerPart => Slot == null ? null : Slot.Part;
+    public BodyPart TargetPart => Slot == null ? null : Slot.TargetPart;
+    public Skill Skill => Slot == null ? null : Slot.Skill;
+    public int Speed => Slot == null ? 0 : Slot.Speed;
+    public ActionPhase Phase => Slot == null ? ActionPhase.COMBAT : Slot.Phase;
 
     public ActionType ActionType =>
         Skill == null
             ? ActionType.NormalAttack
             : Skill.ActionType;
 
-    //--------------------------------
-    // 위력 계약
-    //--------------------------------
-
-    // 순수 굴림 위력.
-    // 피해 계산은 이 값만 읽어야 한다.
     public int RolledPower;
-
-    // 합 판정 전용 최종값.
     public int ClashPower;
-
     public int SpeedModifier;
     public int MomentumModifier;
 
@@ -62,8 +37,6 @@ public class BattleAction
         LastRollResult != null &&
         LastRollResult.IsCritical;
 
-    // 기존 호출부 호환용 필드.
-    // 이제 합 수치가 아니라 순수 굴림 위력만 저장한다.
     public int finalPower;
 
     public int FinalPower
@@ -73,7 +46,6 @@ public class BattleAction
         {
             finalPower = value;
             RolledPower = value;
-
             ClashPower =
                 value +
                 SpeedModifier +
@@ -82,12 +54,12 @@ public class BattleAction
     }
 
     public bool HasRolled;
-
     public RollResult LastRollResult;
 
-    //--------------------------------
-    // 로그 및 연출용 최종 적용 피해
-    //--------------------------------
+    public List<RollResult> RollHistory { get; } = new();
+    public List<DamageContext> DamageContexts { get; } = new();
+
+    private RollResult cachedActionRollResult;
 
     public bool HasDamageLog;
     public int LoggedDamage;
@@ -98,53 +70,104 @@ public class BattleAction
     public DamageResult LastDamageResult;
     public DamageEventResult LastDamageEventResult;
 
+    public int TotalResolvedDamage
+    {
+        get
+        {
+            int total = 0;
+
+            foreach (DamageContext context in DamageContexts)
+            {
+                total += context?.GetDisplayDamage() ?? 0;
+            }
+
+            return total;
+        }
+    }
+
+    public void BeginResolutionSequence()
+    {
+        ResetCurrentRollState();
+        RollHistory.Clear();
+        DamageContexts.Clear();
+        cachedActionRollResult = null;
+
+        HasDamageLog = false;
+        LoggedDamage = 0;
+        LoggedBeforeHP = 0;
+        LoggedAfterHP = 0;
+        LastDamageContext = null;
+        LastDamageResult = null;
+        LastDamageEventResult = null;
+    }
+
     public int RollPower()
     {
-        ResetRollState();
+        return RollPowerForExchange(
+            RollHistory.Count);
+    }
+
+    public int RollPowerForExchange(
+        int exchangeIndex)
+    {
+        ResetCurrentRollState();
 
         if (Skill == null)
             return 0;
 
-        LastRollResult =
-            Skill.RollPowerResult();
+        bool reuse =
+            Skill.RollReusePolicy ==
+                SkillRollReusePolicy.OncePerAction &&
+            cachedActionRollResult != null;
+
+        LastRollResult = reuse
+            ? cachedActionRollResult.Clone()
+            : Skill.RollPowerResult();
 
         if (LastRollResult == null)
         {
-            SetPurePower(
-                Skill.BasePower);
-
+            SetPurePower(Skill.BasePower);
             HasRolled = true;
             return RolledPower;
         }
 
-        int modifiedRoll =
-            LastRollResult.RawValue;
-
-        if (Owner != null)
+        if (reuse)
         {
-            modifiedRoll =
-                Owner.ModifyRoll(
+            LastRollResult.WasReused = true;
+            LastRollResult.ClearClashModifiers();
+            SetPurePower(LastRollResult.FinalPower);
+        }
+        else
+        {
+            int modifiedRoll = LastRollResult.RawValue;
+
+            if (Owner != null)
+            {
+                modifiedRoll = Owner.ModifyRoll(
                     this,
                     LastRollResult.RawValue);
+            }
+
+            LastRollResult.BasePower = Skill.BasePower;
+            LastRollResult.SetModifiedValue(modifiedRoll);
+            LastRollResult.ClearClashModifiers();
+            SetPurePower(LastRollResult.FinalPower);
+
+            if (Skill.RollReusePolicy ==
+                SkillRollReusePolicy.OncePerAction)
+            {
+                cachedActionRollResult =
+                    LastRollResult.Clone();
+            }
         }
 
-        LastRollResult.BasePower =
-            Skill.BasePower;
-
-        LastRollResult.SetModifiedValue(
-            modifiedRoll);
-
-        LastRollResult.ClearClashModifiers();
-
-        SetPurePower(
-            LastRollResult.FinalPower);
-
         HasRolled = true;
+        RollHistory.Add(LastRollResult.Clone());
 
         Debug.Log(
-            $"[BattleAction] RollPower / " +
+            $"[BattleAction] Exchange Roll / " +
             $"ActionId={ActionId}, " +
-            $"ActionIndex={ActionIndex}, " +
+            $"Exchange={exchangeIndex}, " +
             $"Owner={Owner?.Data?.CharacterName}, " +
             $"Skill={Skill?.SkillName}, " +
             $"Type={LastRollResult.ResolverType}, " +
@@ -152,6 +175,7 @@ public class BattleAction
             $"Modified={LastRollResult.ModifiedValue}, " +
             $"FinalPower={RolledPower}, " +
             $"Critical={Critical}, " +
+            $"Reused={LastRollResult.WasReused}, " +
             $"Display={LastRollResult.GetShortDisplayText()}");
 
         return RolledPower;
@@ -179,10 +203,7 @@ public class BattleAction
         ApplyClashModifiers(0, 0);
     }
 
-    public int GetDamagePower()
-    {
-        return RolledPower;
-    }
+    public int GetDamagePower() => RolledPower;
 
     private void SetPurePower(int power)
     {
@@ -191,7 +212,7 @@ public class BattleAction
         ClashPower = power;
     }
 
-    private void ResetRollState()
+    private void ResetCurrentRollState()
     {
         RolledPower = 0;
         finalPower = 0;
@@ -208,8 +229,11 @@ public class BattleAction
         int afterHP)
     {
         HasDamageLog = true;
-        LoggedDamage = Mathf.Max(0, damage);
-        LoggedBeforeHP = Mathf.Max(0, beforeHP);
+        LoggedDamage += Mathf.Max(0, damage);
+
+        if (DamageContexts.Count <= 1)
+            LoggedBeforeHP = Mathf.Max(0, beforeHP);
+
         LoggedAfterHP = Mathf.Max(0, afterHP);
     }
 
@@ -222,6 +246,9 @@ public class BattleAction
 
         if (context == null)
             return;
+
+        if (!DamageContexts.Contains(context))
+            DamageContexts.Add(context);
 
         SetDamageLog(
             context.GetDisplayDamage(),

@@ -31,7 +31,11 @@ public abstract class SkillResolver
                 ModifiedValue = rawValue,
                 ExternalModifier = 0,
                 IsMax = isMaximum,
-                IsCritical = isMaximum,
+
+                // 최대값과 크리티컬은 서로 다른 메타데이터다.
+                // 크리티컬 여부는 CoinResolver처럼 명시적으로
+                // 크리티컬 규칙을 가진 Resolver가 설정한다.
+                IsCritical = false,
                 SpeedModifier = 0,
                 MomentumModifier = 0
             };

@@ -59,7 +59,7 @@ public struct DamageRequest
             CriticalMultiplier = 1f,
 
             CanBreakPart = canBreakPart,
-            WasCritical = false,
+            WasCritical = action?.Critical == true,
 
             IsClashDamage = isClashDamage,
             TargetLostClash = targetLostClash,
@@ -173,6 +173,8 @@ public struct DamageRequest
                 applyProtection: true);
 
         request.SourceAction = sourceAction;
+        request.WasCritical =
+            sourceAction?.Critical == true;
         request.ApplyFlatDamageBonus =
             sourceAction != null;
         request.ApplyOwnerMultiplier =
@@ -294,7 +296,8 @@ public struct DamageRequest
             CriticalMultiplier = 1f,
 
             CanBreakPart = canBreakPart,
-            WasCritical = false,
+            WasCritical =
+                sourceAction?.Critical == true,
 
             ApplyFlatDamageBonus =
                 sourceAction != null,

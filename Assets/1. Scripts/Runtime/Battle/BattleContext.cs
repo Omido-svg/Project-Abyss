@@ -15,12 +15,14 @@ public class BattleContext
     public List<Character> Enemies = new();
 
     public BattleEvent _battleEvent = new();
-    
+
     public BattleEffectResolver EffectResolver { get; set; }
-    
+
     public BattleManager battleManager;
     public readonly List<IBattleRule> BattleRules = new();
 
+    public BattleRuleSettings Rules { get; set; } =
+        new BattleRuleSettings();
 
     public List<Character> AllCharacters
     {
@@ -31,7 +33,8 @@ public class BattleContext
             if (Player != null)
                 result.Add(Player);
 
-            result.AddRange(Enemies);
+            if (Enemies != null)
+                result.AddRange(Enemies);
 
             return result;
         }

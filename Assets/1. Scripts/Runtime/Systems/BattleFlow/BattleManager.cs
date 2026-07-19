@@ -29,6 +29,10 @@ public class BattleManager : MonoBehaviour
     [SerializeField, HideInInspector]
     private List<BodyPartButton> legacyEnemyButtons = new();
 
+    [Header("Battle Rules")]
+    [SerializeField]
+    private BattleRuleSettings battleRuleSettings = new();
+
     [Header("Battle UI")]
     [SerializeField] private BattleUIManager battleUIManager;
 
@@ -52,6 +56,7 @@ public class BattleManager : MonoBehaviour
 
     public BattleRosterController RosterController => rosterController;
     public BattleUIManager BattleUIManager => battleUIManager;
+    public BattleRuleSettings BattleRules => battleRuleSettings;
 
     public Character LegacyPlayerForMigration => legacyPlayer;
     public IReadOnlyList<Character> LegacyEnemiesForMigration => legacyEnemies;
@@ -292,12 +297,17 @@ public class BattleManager : MonoBehaviour
         Character player,
         List<Character> enemies)
     {
+        battleRuleSettings ??=
+            new BattleRuleSettings();
+        battleRuleSettings.Normalize();
+
         BattleContext =
             new BattleContext
             {
                 battleManager = this,
                 Player = player,
-                Enemies = enemies
+                Enemies = enemies,
+                Rules = battleRuleSettings
             };
 
         BattleContext.EffectResolver =

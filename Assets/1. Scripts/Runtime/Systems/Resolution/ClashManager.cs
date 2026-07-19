@@ -6,8 +6,8 @@ public class ClashManager
     private readonly DamageManager damageManager;
     private readonly MomentumManager momentumManager;
     private readonly BattleContext battleContext;
-
-    private const int SpeedWeight = 1;
+    private readonly PrestigeChargeService prestigeChargeService;
+    private readonly ClashRuleSettings clashRules;
 
     public ClashManager(
         BattleContext battleContext,
@@ -17,13 +17,19 @@ public class ClashManager
         this.battleContext = battleContext;
         this.damageManager = damageManager;
         this.momentumManager = momentumManager;
+
+        prestigeChargeService =
+            new PrestigeChargeService(battleContext);
+
+        clashRules = battleContext?.Rules?.Clash ??
+                     new ClashRuleSettings();
+        clashRules.Normalize();
     }
 
     public List<ClashResultContext> Resolve(
         Queue<ClashPair> clashQueue)
     {
-        List<ClashResultContext> results =
-            new();
+        List<ClashResultContext> results = new();
 
         if (clashQueue == null)
             return results;
@@ -31,8 +37,7 @@ public class ClashManager
         while (clashQueue.Count > 0)
         {
             ClashResultContext context =
-                ResolvePair(
-                    clashQueue.Dequeue());
+                ResolvePair(clashQueue.Dequeue());
 
             if (context != null)
                 results.Add(context);
@@ -48,12 +53,10 @@ public class ClashManager
             return null;
 
         BattleAction firstAction =
-            CreateValidBattleAction(
-                pair.First);
+            CreateValidBattleAction(pair.First);
 
         BattleAction secondAction =
-            CreateValidBattleAction(
-                pair.Second);
+            CreateValidBattleAction(pair.Second);
 
         bool firstStarted = false;
         bool secondStarted = false;
@@ -62,18 +65,24 @@ public class ClashManager
         {
             if (CanExecuteAction(firstAction))
             {
+                firstAction.BeginResolutionSequence();
                 battleContext._battleEvent
                     .RaiseActionStart(firstAction);
-
                 firstStarted = true;
+
+                if (clashRules.ConsumeResourceOnActionStart)
+                    ConsumeResource(firstAction);
             }
 
             if (CanExecuteAction(secondAction))
             {
+                secondAction.BeginResolutionSequence();
                 battleContext._battleEvent
                     .RaiseActionStart(secondAction);
-
                 secondStarted = true;
+
+                if (clashRules.ConsumeResourceOnActionStart)
+                    ConsumeResource(secondAction);
             }
 
             if (pair.IsClash)
@@ -83,8 +92,7 @@ public class ClashManager
                     secondAction);
             }
 
-            return ResolveOneSide(
-                firstAction);
+            return ResolveOneSide(firstAction);
         }
         finally
         {
@@ -108,14 +116,10 @@ public class ClashManager
         if (!IsValidSlot(slot))
             return null;
 
-        return new BattleAction
-        {
-            Slot = slot
-        };
+        return new BattleAction { Slot = slot };
     }
 
-    private bool IsValidSlot(
-        ActionSlot slot)
+    private bool IsValidSlot(ActionSlot slot)
     {
         if (slot == null ||
             slot.Owner == null ||
@@ -139,14 +143,6 @@ public class ClashManager
             return false;
         }
 
-        // OwnerPart == null:
-        // 독립 위세와 이후 일반몹 행동을 위해 허용한다.
-        //
-        // TargetPart == null:
-        // 단일 HP 대상을 위해 허용한다.
-        //
-        // TargetPart.IsBroken:
-        // 파괴 부위 재공격 규칙 때문에 허용한다.
         return true;
     }
 
@@ -154,185 +150,212 @@ public class ClashManager
         BattleAction first,
         BattleAction second)
     {
-        bool canA =
-            CanExecuteAction(first);
+        bool canFirst = CanContinueRoll(first);
+        bool canSecond = CanContinueRoll(second);
 
-        bool canB =
-            CanExecuteAction(second);
-
-        if (!canA && !canB)
-        {
-            Debug.Log(
-                "[CLASH SKIP] 양쪽 행동 모두 실행 불가");
-
+        if (!canFirst && !canSecond)
             return null;
-        }
 
-        if (canA && !canB)
-        {
-            Debug.Log(
-                $"[CLASH -> ONESIDE] " +
-                $"{GetActionName(first)} 행동만 실행");
-
+        if (canFirst && !canSecond)
             return ResolveOneSide(first);
-        }
 
-        if (!canA && canB)
-        {
-            Debug.Log(
-                $"[CLASH -> ONESIDE] " +
-                $"{GetActionName(second)} 행동만 실행");
-
+        if (!canFirst && canSecond)
             return ResolveOneSide(second);
-        }
 
-        battleContext._battleEvent
-            .RaiseClashStart(
+        battleContext._battleEvent.RaiseClashStart(
+            first.Owner,
+            second.Owner);
+
+        int firstStartPrestige =
+            prestigeChargeService.ChargeClashStart(
                 first.Owner,
-                second.Owner);
+                second.Owner,
+                first);
 
-        List<ClashRollVisualStep> steps =
-            new();
-
-        int firstClash;
-        int secondClash;
-        int roundIndex = 0;
-
-        do
-        {
-            roundIndex++;
-
-            RollClashPower(
-                first,
-                second,
-                roundIndex > 1);
-
-            RollClashPower(
-                second,
-                first,
-                roundIndex > 1);
-
-            firstClash =
-                CalculateClashPower(first);
-
-            secondClash =
-                CalculateClashPower(second);
-
-            Debug.Log(
-                $"[ClashManager] Clash Step / " +
-                $"Round={roundIndex}, " +
-                $"First={first.Owner?.Data?.CharacterName}, " +
-                $"FirstRoll={first.LastRollResult?.GetShortDisplayText()}, " +
-                $"FirstFinal={first.RolledPower}, " +
-                $"FirstSpeed={first.SpeedModifier}, " +
-                $"FirstMomentum={first.MomentumModifier}, " +
-                $"FirstClash={firstClash}, " +
-                $"FirstCritical={first.Critical}, " +
-                $"Second={second.Owner?.Data?.CharacterName}, " +
-                $"SecondRoll={second.LastRollResult?.GetShortDisplayText()}, " +
-                $"SecondFinal={second.RolledPower}, " +
-                $"SecondSpeed={second.SpeedModifier}, " +
-                $"SecondMomentum={second.MomentumModifier}, " +
-                $"SecondClash={secondClash}, " +
-                $"SecondCritical={second.Critical}");
-
-            steps.Add(
-                new ClashRollVisualStep(
-                    roundIndex,
-                    firstClash,
-                    secondClash,
-                    first.LastRollResult,
-                    second.LastRollResult,
-                    first.SpeedModifier,
-                    second.SpeedModifier,
-                    first.MomentumModifier,
-                    second.MomentumModifier,
-                    first.Critical,
-                    second.Critical));
-
-        } while (firstClash == secondClash);
-
-        bool firstWin =
-            firstClash > secondClash;
-
-        BattleAction winner =
-            firstWin ? first : second;
-
-        BattleAction loser =
-            firstWin ? second : first;
-
-        int winnerClash =
-            firstWin ? firstClash : secondClash;
-
-        int loserClash =
-            firstWin ? secondClash : firstClash;
+        int secondStartPrestige =
+            prestigeChargeService.ChargeClashStart(
+                second.Owner,
+                first.Owner,
+                second);
 
         ClashResultContext result =
-            new()
+            new ClashResultContext
             {
                 IsClash = true,
-                WinnerAction = winner,
-                LoserAction = loser,
-                WinnerClashPower = winnerClash,
-                LoserClashPower = loserClash,
-                Gap = Mathf.Abs(
-                    winnerClash -
-                    loserClash),
-                WinnerWasCritical = winner.Critical,
-                LoserWasCritical = loser.Critical
+                FirstAction = first,
+                SecondAction = second,
+                PrestigeGain =
+                    firstStartPrestige +
+                    secondStartPrestige
             };
 
-        foreach (ClashRollVisualStep step in steps)
+        int firstRemaining =
+            Mathf.Max(1, first.Skill.ExchangeRollCount);
+        int secondRemaining =
+            Mathf.Max(1, second.Skill.ExchangeRollCount);
+
+        int exchangeIndex = 0;
+        bool firstSkillExecuted = false;
+        bool secondSkillExecuted = false;
+
+        while (firstRemaining > 0 ||
+               secondRemaining > 0)
         {
-            result.ClashSteps.Add(
-                firstWin
-                    ? step
-                    : step.Swapped());
+            bool firstCanRoll =
+                firstRemaining > 0 &&
+                CanContinueRoll(first);
+
+            bool secondCanRoll =
+                secondRemaining > 0 &&
+                CanContinueRoll(second);
+
+            if (!firstCanRoll && !secondCanRoll)
+                break;
+
+            if (firstCanRoll && secondCanRoll)
+            {
+                ClashExchangeResult exchange =
+                    ResolvePairedExchange(
+                        first,
+                        second,
+                        exchangeIndex,
+                        ref firstSkillExecuted,
+                        ref secondSkillExecuted);
+
+                firstRemaining--;
+                secondRemaining--;
+                result.PairedExchangeCount++;
+
+                AddExchangeResult(result, exchange);
+
+                if (exchange.WinnerAction == first)
+                    result.FirstExchangeWins++;
+                else if (exchange.WinnerAction == second)
+                    result.SecondExchangeWins++;
+
+                exchangeIndex++;
+                continue;
+            }
+
+            BattleAction oneSideAction =
+                firstCanRoll ? first : second;
+
+            ref bool oneSideSkillExecuted = ref
+                (firstCanRoll
+                    ? ref firstSkillExecuted
+                    : ref secondSkillExecuted);
+
+            ClashExchangeResult oneSideExchange =
+                ResolveOneSideExchange(
+                    oneSideAction,
+                    oneSideAction == first
+                        ? second
+                        : first,
+                    exchangeIndex,
+                    ref oneSideSkillExecuted,
+                    cameFromClash: true);
+
+            if (firstCanRoll)
+                firstRemaining--;
+            else
+                secondRemaining--;
+
+            if (oneSideExchange != null &&
+                !oneSideExchange.WasCancelled &&
+                oneSideExchange.WinnerAction != null)
+            {
+                result.OneSidedHitCount++;
+            }
+
+            AddExchangeResult(
+                result,
+                oneSideExchange);
+
+            exchangeIndex++;
         }
 
-        battleContext._battleEvent
-            .RaiseClashWin(
-                winner,
-                loser);
+        FinalizeClashMajority(
+            result,
+            first,
+            second);
 
         battleContext._battleEvent
-            .RaiseClashLose(
-                loser,
-                winner);
+            .RaiseClashResolved(result);
 
-        // 속도와 합 전용 기세 보정은 기세 이동량/위세 획득량에도
-        // 직접 섞지 않는다. 기존 밸런스를 유지하며 순수 위력 차이만 사용한다.
-        int purePowerGap =
-            Mathf.Abs(
-                first.RolledPower -
-                second.RolledPower);
+        return result;
+    }
 
-        bool wasOverwhelm =
-            momentumManager.IsOverwhelm(
-                winner.Owner);
+    private ClashExchangeResult ResolvePairedExchange(
+        BattleAction first,
+        BattleAction second,
+        int exchangeIndex,
+        ref bool firstSkillExecuted,
+        ref bool secondSkillExecuted)
+    {
+        RollClashPower(
+            first,
+            second,
+            exchangeIndex);
 
-        int momentumBonus =
-            winner.Skill == null
-                ? 0
-                : winner.Skill
-                    .GetMomentumPushBonus(
-                        winner);
+        RollClashPower(
+            second,
+            first,
+            exchangeIndex);
 
-        momentumManager.ApplyClashResult(
-            winner.Owner,
-            purePowerGap,
-            momentumBonus);
+        // OnExecute는 첫 교환에서 이긴 쪽만의 보상이 아니다.
+        // 양쪽 행동이 실제로 굴림을 시작했다면 승패 비교 전에
+        // 각각 정확히 한 번 실행되어야 한다.
+        ExecuteSkillOnce(
+            first,
+            ref firstSkillExecuted);
 
-        int prestigeGain =
-            ApplyPrestigeGain(
-                winner,
-                purePowerGap,
-                wasOverwhelm);
+        ExecuteSkillOnce(
+            second,
+            ref secondSkillExecuted);
 
-        result.PrestigeGain =
-            prestigeGain;
+        int firstPower = first.ClashPower;
+        int secondPower = second.ClashPower;
 
-        ExecuteSkill(winner);
+        ClashExchangeResult exchange =
+            new ClashExchangeResult
+            {
+                ExchangeIndex = exchangeIndex,
+                FirstAction = first,
+                SecondAction = second,
+                FirstClashPower = firstPower,
+                SecondClashPower = secondPower,
+                FirstRollResult =
+                    first.LastRollResult?.Clone(),
+                SecondRollResult =
+                    second.LastRollResult?.Clone(),
+                IsTie = firstPower == secondPower
+            };
+
+        Debug.Log(
+            $"[Clash Exchange] Index={exchangeIndex}, " +
+            $"First={GetActionName(first)} / {firstPower}, " +
+            $"Second={GetActionName(second)} / {secondPower}");
+
+        // 히후미 자해나 OnExecute 효과로 행동자/대상이 사망하거나
+        // 행동 부위가 파괴되었다면 이미 만든 굴림만 소모하고
+        // 이번 교환의 피해·기세·승리 수는 발생시키지 않는다.
+        if (!CanContinueRoll(first) ||
+            !CanContinueRoll(second))
+        {
+            exchange.WasCancelled = true;
+            return exchange;
+        }
+
+        if (exchange.IsTie)
+        {
+            first.Skill?.NotifyClashDraw(first, second);
+            second.Skill?.NotifyClashDraw(second, first);
+            return exchange;
+        }
+
+        bool firstWon = firstPower > secondPower;
+        BattleAction winner = firstWon ? first : second;
+        BattleAction loser = firstWon ? second : first;
 
         DamageContext damageContext =
             damageManager.ApplyDamageContext(
@@ -340,74 +363,126 @@ public class ClashManager
                 isClashDamage: true,
                 targetLostClash: true);
 
-        winner.SetDamageContext(
+        winner.SetDamageContext(damageContext);
+
+        MomentumShiftResult momentum =
+            momentumManager.ApplyHit(winner.Owner);
+
+        int dealtGain =
+            prestigeChargeService.ChargeHitDealt(
+                winner.Owner,
+                loser.Owner,
+                winner);
+
+        int takenGain =
+            prestigeChargeService.ChargeHitTaken(
+                loser.Owner,
+                winner.Owner,
+                winner);
+
+        exchange.WinnerAction = winner;
+        exchange.LoserAction = loser;
+        exchange.DamageContext = damageContext;
+        exchange.MomentumShift = momentum.SignedShift;
+        exchange.PrestigeDealtGain = dealtGain;
+        exchange.PrestigeTakenGain = takenGain;
+
+        winner.Skill?.NotifyExchangeWin(
+            winner,
+            loser,
             damageContext);
 
-        FillDamageResult(
-            result,
+        loser.Skill?.NotifyExchangeLose(
+            loser,
+            winner,
             damageContext);
 
-        battleContext._battleEvent
-            .RaiseClashResolved(result);
+        LogExchange(
+            exchange,
+            isClash: true);
 
-        int beforeHP =
-            damageContext?.GetPrimaryHpBefore() ?? 0;
-
-        int afterHP =
-            damageContext?.GetPrimaryHpAfter() ?? 0;
-
-        int damage =
-            damageContext?.GetDisplayDamage() ?? 0;
-
-        bool targetPartWasBrokenBeforeDamage =
-            damageContext != null &&
-            damageContext.HasTargetPartSnapshot &&
-            damageContext.TargetPartStateBefore ==
-                BodyPartState.Broken;
-
-        battleContext.battleManager
-            .BattleLogger
-            .LogClashResult(
-                winner,
-                true,
-                winnerClash,
-                loserClash,
-                damage,
-                prestigeGain,
-                beforeHP,
-                afterHP,
-                targetPartWasBrokenBeforeDamage);
-
-        battleContext.battleManager
-            .BattleLogger
-            .LogClashResult(
-                loser,
-                false,
-                loserClash,
-                winnerClash);
-
-        return result;
+        return exchange;
     }
 
     private ClashResultContext ResolveOneSide(
         BattleAction action)
     {
-        if (!CanExecuteAction(action))
-        {
-            Debug.Log(
-                $"[ONESIDE SKIP] " +
-                $"{GetActionName(action)} 실행 불가");
-
+        if (!CanContinueRoll(action))
             return null;
+
+        ClashResultContext result =
+            new ClashResultContext
+            {
+                IsClash = false,
+                FirstAction = action,
+                WinnerAction = action
+            };
+
+        int rollCount = Mathf.Max(
+            1,
+            action.Skill.ExchangeRollCount);
+
+        bool skillExecuted = false;
+
+        for (int i = 0; i < rollCount; i++)
+        {
+            if (!CanContinueRoll(action))
+                break;
+
+            ClashExchangeResult exchange =
+                ResolveOneSideExchange(
+                    action,
+                    null,
+                    i,
+                    ref skillExecuted,
+                    cameFromClash: false);
+
+            if (exchange != null &&
+                !exchange.WasCancelled &&
+                exchange.WinnerAction != null)
+            {
+                result.OneSidedHitCount++;
+            }
+
+            AddExchangeResult(result, exchange);
         }
 
-        if (!action.HasRolled)
-            action.RollPower();
+        if (result.OneSidedHitCount <= 0)
+            result.WinnerAction = null;
 
-        // 일방 공격에는 합 전용 속도/기세 보정을 적용하지 않는다.
+        FinalizeCompatibilityFields(result);
+        return result;
+    }
+
+    private ClashExchangeResult ResolveOneSideExchange(
+        BattleAction action,
+        BattleAction exhaustedOpponent,
+        int exchangeIndex,
+        ref bool skillExecuted,
+        bool cameFromClash)
+    {
+        action.RollPowerForExchange(exchangeIndex);
         action.ClearClashModifiers();
 
-        ExecuteSkill(action);
+        ExecuteSkillOnce(
+            action,
+            ref skillExecuted);
+
+        if (!CanContinueRoll(action))
+        {
+            return new ClashExchangeResult
+            {
+                ExchangeIndex = exchangeIndex,
+                FirstAction = action,
+                SecondAction = exhaustedOpponent,
+                IsOneSided = true,
+                WasCancelled = true,
+                FirstClashPower = action.RolledPower,
+                SecondClashPower = 0,
+                FirstRollResult =
+                    action.LastRollResult?.Clone()
+            };
+        }
 
         DamageContext damageContext =
             damageManager.ApplyDamageContext(
@@ -415,197 +490,341 @@ public class ClashManager
                 isClashDamage: false,
                 targetLostClash: false);
 
-        action.SetDamageContext(
-            damageContext);
+        action.SetDamageContext(damageContext);
 
-        int damage =
-            damageContext?.GetDisplayDamage() ?? 0;
+        MomentumShiftResult momentum =
+            momentumManager.ApplyHit(action.Owner);
 
-        int beforeHP =
-            damageContext?.GetPrimaryHpBefore() ?? 0;
+        Character target = action.Target;
 
-        int afterHP =
-            damageContext?.GetPrimaryHpAfter() ?? 0;
+        int dealtGain =
+            prestigeChargeService.ChargeHitDealt(
+                action.Owner,
+                target,
+                action);
 
-        bool targetPartWasBrokenBeforeDamage =
-            damageContext != null &&
-            damageContext.HasTargetPartSnapshot &&
-            damageContext.TargetPartStateBefore ==
-                BodyPartState.Broken;
+        int takenGain =
+            prestigeChargeService.ChargeHitTaken(
+                target,
+                action.Owner,
+                action);
 
-        battleContext.battleManager
-            .BattleLogger
-            .LogOneSideResult(
-                action,
-                damage,
-                beforeHP,
-                afterHP,
-                targetPartWasBrokenBeforeDamage);
-
-        ClashResultContext result =
-            new()
+        ClashExchangeResult exchange =
+            new ClashExchangeResult
             {
-                IsClash = false,
+                ExchangeIndex = exchangeIndex,
+                FirstAction = action,
+                SecondAction = exhaustedOpponent,
+                IsOneSided = true,
+                FirstClashPower = action.RolledPower,
+                SecondClashPower = 0,
+                FirstRollResult =
+                    action.LastRollResult?.Clone(),
                 WinnerAction = action,
-                WinnerClashPower =
-                    action.RolledPower,
-                LoserClashPower = 0,
-                Gap = 0,
-                WinnerWasCritical = action.Critical,
-                LoserWasCritical = false
+                LoserAction = exhaustedOpponent,
+                DamageContext = damageContext,
+                MomentumShift = momentum.SignedShift,
+                PrestigeDealtGain = dealtGain,
+                PrestigeTakenGain = takenGain
             };
 
-        FillDamageResult(
-            result,
+        action.Skill?.NotifyOneSideHit(
+            action,
             damageContext);
 
-        return result;
+        LogExchange(
+            exchange,
+            isClash: cameFromClash);
+
+        return exchange;
     }
 
-    private void FillDamageResult(
+    private void FinalizeClashMajority(
         ClashResultContext result,
-        DamageContext damageContext)
+        BattleAction first,
+        BattleAction second)
     {
         if (result == null)
             return;
 
-        result.DamageContext =
-            damageContext;
-
-        result.DamageResult =
-            damageContext?.Result;
-
-        result.DamageEventResult =
-            damageContext?.EventResult;
-
-        int displayDamage =
-            damageContext?.GetDisplayDamage() ?? 0;
-
-        if (displayDamage > 0)
+        if (result.FirstExchangeWins ==
+            result.SecondExchangeWins)
         {
-            result.HitDamages.Add(
-                displayDamage);
+            result.IsDraw = true;
+            result.WinnerAction = null;
+            result.LoserAction = null;
+            FinalizeCompatibilityFields(result);
+            return;
         }
 
-        if (damageContext == null)
+        bool firstWon =
+            result.FirstExchangeWins >
+            result.SecondExchangeWins;
+
+        BattleAction winner = firstWon
+            ? first
+            : second;
+        BattleAction loser = firstWon
+            ? second
+            : first;
+
+        result.WinnerAction = winner;
+        result.LoserAction = loser;
+        result.IsDraw = false;
+        result.Gap = Mathf.Abs(
+            result.FirstExchangeWins -
+            result.SecondExchangeWins);
+
+        result.WinnerMomentumStateBefore =
+            momentumManager.GetState(winner.Owner);
+
+        // 다수결 기록상 승자여도 남은 일방 공격이나 자해로
+        // 사망했다면 승리 보상·결투 푸시·승패 이벤트를 받지 않는다.
+        if (!CanReceiveClashVictoryEffects(winner))
+        {
+            result.WinnerMomentumStateAfter =
+                result.WinnerMomentumStateBefore;
+
+            FinalizeCompatibilityFields(result);
+            return;
+        }
+
+        int victoryPrestige =
+            prestigeChargeService.ChargeClashVictory(
+                winner.Owner,
+                loser.Owner,
+                winner);
+
+        result.PrestigeGain += victoryPrestige;
+
+        bool duelVsDuel =
+            winner.ActionType == ActionType.Duel &&
+            loser.ActionType == ActionType.Duel;
+
+        if (duelVsDuel)
+        {
+            int skillBonus =
+                winner.Skill?.GetMomentumPushBonus(
+                    winner) ?? 0;
+
+            MomentumShiftResult push =
+                momentumManager.ApplyDuelVictory(
+                    winner.Owner,
+                    skillBonus);
+
+            result.MomentumShift +=
+                push.SignedShift;
+        }
+
+        result.WinnerMomentumStateAfter =
+            momentumManager.GetState(winner.Owner);
+
+        battleContext._battleEvent.RaiseClashWin(
+            winner,
+            loser);
+
+        battleContext._battleEvent.RaiseClashLose(
+            loser,
+            winner);
+
+        FinalizeCompatibilityFields(result);
+    }
+
+    private void AddExchangeResult(
+        ClashResultContext result,
+        ClashExchangeResult exchange)
+    {
+        if (result == null || exchange == null)
             return;
 
-        result.FinalHpDamage =
-            damageContext.FinalHpDamage;
+        result.Exchanges.Add(exchange);
 
-        result.PartHpDamage =
-            damageContext.PartHpDamage;
+        BattleAction perspective =
+            exchange.WinnerAction ??
+            exchange.FirstAction;
 
-        result.DirectHpDamage =
-            damageContext.DirectHpDamage;
+        result.ClashSteps.Add(
+            exchange.CreateVisualStep(perspective));
 
-        result.WasCritical =
-            damageContext.WasCritical;
+        result.MomentumShift +=
+            exchange.MomentumShift;
 
-        result.WasKilled =
-            damageContext.WasKilled;
+        result.PrestigeGain +=
+            exchange.PrestigeDealtGain +
+            exchange.PrestigeTakenGain;
 
-        result.BrokePart =
-            damageContext.BrokePart;
+        if (exchange.DamageContext == null)
+            return;
 
-        result.WeakenedPart =
-            damageContext.WeakenedPart;
+        result.DamageContexts.Add(
+            exchange.DamageContext);
+
+        int damage = exchange.Damage;
+
+        if (damage > 0)
+            result.HitDamages.Add(damage);
+
+        ApplyDamageAggregate(
+            result,
+            exchange.DamageContext);
+    }
+
+    private void ApplyDamageAggregate(
+        ClashResultContext result,
+        DamageContext context)
+    {
+        if (result == null || context == null)
+            return;
+
+        result.DamageContext = context;
+        result.DamageResult = context.Result;
+        result.DamageEventResult = context.EventResult;
+
+        result.FinalHpDamage += context.FinalHpDamage;
+        result.PartHpDamage += context.PartHpDamage;
+        result.DirectHpDamage += context.DirectHpDamage;
+
+        result.WasCritical |= context.WasCritical;
+        result.WasKilled |= context.WasKilled;
+        result.BrokePart |= context.BrokePart;
+        result.WeakenedPart |= context.WeakenedPart;
 
         result.HasTargetCharacterHpSnapshot = true;
-        result.TargetCharacterHpBefore =
-            damageContext.TargetHpBefore;
-        result.TargetCharacterHpAfter =
-            damageContext.TargetHpAfter;
 
-        if (!damageContext.HasTargetPartSnapshot)
+        if (result.DamageContexts.Count == 1)
+            result.TargetCharacterHpBefore = context.TargetHpBefore;
+
+        result.TargetCharacterHpAfter = context.TargetHpAfter;
+
+        if (!context.HasTargetPartSnapshot)
             return;
 
+        if (!result.HasTargetPartHpSnapshot)
+            result.TargetPartHpBefore = context.TargetPartHpBefore;
+
         result.HasTargetPartHpSnapshot = true;
-        result.TargetPartHpBefore =
-            damageContext.TargetPartHpBefore;
-        result.TargetPartHpAfter =
-            damageContext.TargetPartHpAfter;
+        result.TargetPartHpAfter = context.TargetPartHpAfter;
     }
 
-    private int ApplyPrestigeGain(
-        BattleAction winner,
-        int purePowerGap,
-        bool wasOverwhelm)
+    private void FinalizeCompatibilityFields(
+        ClashResultContext result)
     {
-        int prestigeGain = 0;
+        if (result == null)
+            return;
 
-        if (winner.Skill != null &&
-            winner.Skill.GainPrestige)
+        int firstTotal = 0;
+        int secondTotal = 0;
+
+        foreach (ClashExchangeResult exchange
+                 in result.Exchanges)
         {
-            prestigeGain =
-                momentumManager
-                    .CalculatePrestigeGain(
-                        purePowerGap);
-
-            prestigeGain +=
-                winner.Skill
-                    .GetPrestigeGainBonus(
-                        winner);
-
-            if (prestigeGain > 0)
-            {
-                AddPrestigeThroughResolver(
-                    winner.Owner,
-                    winner.Owner,
-                    prestigeGain);
-            }
+            firstTotal += exchange?.FirstClashPower ?? 0;
+            secondTotal += exchange?.SecondClashPower ?? 0;
         }
 
-        if (!wasOverwhelm &&
-            momentumManager.IsOverwhelm(
-                winner.Owner))
+        bool winnerIsFirst =
+            result.WinnerAction != null &&
+            result.WinnerAction == result.FirstAction;
+
+        result.WinnerClashPower = winnerIsFirst
+            ? firstTotal
+            : secondTotal;
+
+        result.LoserClashPower = winnerIsFirst
+            ? secondTotal
+            : firstTotal;
+
+        if (result.WinnerAction == null)
         {
-            SetPrestigeToMaxThroughResolver(
-                winner.Owner,
-                winner.Owner);
+            result.WinnerClashPower = firstTotal;
+            result.LoserClashPower = secondTotal;
         }
 
-        return prestigeGain;
+        result.WinnerWasCritical =
+            result.WinnerAction?.RollHistory.Exists(
+                roll => roll != null && roll.IsCritical) == true;
+
+        result.LoserWasCritical =
+            result.LoserAction?.RollHistory.Exists(
+                roll => roll != null && roll.IsCritical) == true;
     }
 
-    private int CalculateClashPower(
-        BattleAction action)
+    private void RollClashPower(
+        BattleAction action,
+        BattleAction opponent,
+        int exchangeIndex)
     {
-        return action?.ClashPower ?? 0;
+        if (action == null)
+            return;
+
+        action.RollPowerForExchange(exchangeIndex);
+
+        int speedModifier =
+            CalculateSpeedModifier(
+                action,
+                opponent);
+
+        // 기세는 합 수치가 아니라 피해 배율과 히트 이동에만 사용한다.
+        action.ApplyClashModifiers(
+            speedModifier,
+            0);
     }
 
     private int CalculateSpeedModifier(
         BattleAction self,
         BattleAction opponent)
     {
-        if (self == null ||
-            opponent == null)
-        {
+        if (self == null || opponent == null)
             return 0;
-        }
 
-        return
-            (self.Speed -
-             opponent.Speed) *
-            SpeedWeight;
+        int speedGap = Mathf.Max(
+            0,
+            self.Speed - opponent.Speed);
+
+        // 양쪽에 +gap / -gap을 동시에 주면 실제 비교 차이가
+        // 두 배가 된다. 빠른 쪽만 상대 속도와의 차이를 보정받는다.
+        return speedGap * clashRules.SpeedWeight;
     }
 
-    private void ExecuteSkill(
-        BattleAction action)
+    private void ExecuteSkillOnce(
+        BattleAction action,
+        ref bool executed)
     {
-        if (!CanExecuteAction(action) ||
-            action.Skill == null)
+        if (executed ||
+            action?.Skill == null)
         {
             return;
         }
 
-        action.Skill.Execute(action);
+        if (!clashRules.ConsumeResourceOnActionStart)
+            ConsumeResource(action);
 
-        action.Skill.ConsumeResource(
+        action.Skill.Execute(action);
+        executed = true;
+    }
+
+    private static bool CanReceiveClashVictoryEffects(
+        BattleAction action)
+    {
+        return action?.Owner != null &&
+               !action.Owner.IsDead &&
+               action.Skill != null;
+    }
+
+    private void ConsumeResource(
+        BattleAction action)
+    {
+        action?.Skill?.ConsumeResource(
             action.Owner);
     }
 
     private bool CanExecuteAction(
+        BattleAction action)
+    {
+        return CanContinueRoll(action);
+    }
+
+    private bool CanContinueRoll(
         BattleAction action)
     {
         if (action == null ||
@@ -627,84 +846,76 @@ public class ClashManager
         if (action.OwnerPart != null &&
             action.OwnerPart.IsBroken)
         {
-            Debug.Log(
-                $"[ACTION INVALID - BROKEN OWNER PART] " +
-                $"ActionId={action.ActionId}, " +
-                $"{action.Owner.Data?.CharacterName} / " +
-                $"{action.OwnerPart.Type} / " +
-                $"{action.Skill?.SkillName}");
-
             return false;
         }
 
         return true;
     }
 
-    private void RollClashPower(
-        BattleAction action,
-        BattleAction opponent,
-        bool wasRerolled)
+    private void LogExchange(
+        ClashExchangeResult exchange,
+        bool isClash)
     {
-        if (action == null)
+        if (exchange?.WinnerAction == null)
             return;
 
-        int finalPower =
-            action.RollPower();
+        DamageContext context =
+            exchange.DamageContext;
 
-        if (action.LastRollResult != null)
-            action.LastRollResult.WasRerolled = wasRerolled;
+        int before =
+            context?.GetPrimaryHpBefore() ?? 0;
+        int after =
+            context?.GetPrimaryHpAfter() ?? 0;
+        int damage =
+            context?.GetDisplayDamage() ?? 0;
 
-        int afterMomentum =
-            momentumManager.ApplyLastStand(
-                action.Owner,
-                finalPower);
+        bool wasBroken =
+            context?.BrokePart == true;
 
-        int momentumModifier =
-            afterMomentum - finalPower;
+        BattleLogger logger =
+            battleContext?.battleManager?.BattleLogger;
 
-        int speedModifier =
-            CalculateSpeedModifier(
-                action,
-                opponent);
+        if (logger == null)
+            return;
 
-        action.ApplyClashModifiers(
-            speedModifier,
-            momentumModifier);
-    }
-
-    private void AddPrestigeThroughResolver(
-        Character source,
-        Character target,
-        int amount)
-    {
-        if (source == null ||
-            target == null ||
-            amount <= 0)
+        if (!isClash || exchange.IsOneSided)
         {
+            logger.LogOneSideResult(
+                exchange.WinnerAction,
+                damage,
+                before,
+                after,
+                wasBroken);
             return;
         }
 
-        battleContext?.EffectResolver?.AddPrestige(
-                EffectRequest.Prestige(
-                    source,
-                    target,
-                    amount));
-    }
+        logger.LogClashResult(
+            exchange.WinnerAction,
+            true,
+            exchange.WinnerAction == exchange.FirstAction
+                ? exchange.FirstClashPower
+                : exchange.SecondClashPower,
+            exchange.WinnerAction == exchange.FirstAction
+                ? exchange.SecondClashPower
+                : exchange.FirstClashPower,
+            damage,
+            exchange.PrestigeDealtGain,
+            before,
+            after,
+            wasBroken);
 
-    private void SetPrestigeToMaxThroughResolver(
-        Character source,
-        Character target)
-    {
-        if (source == null ||
-            target == null)
+        if (exchange.LoserAction != null)
         {
-            return;
+            logger.LogClashResult(
+                exchange.LoserAction,
+                false,
+                exchange.LoserAction == exchange.FirstAction
+                    ? exchange.FirstClashPower
+                    : exchange.SecondClashPower,
+                exchange.LoserAction == exchange.FirstAction
+                    ? exchange.SecondClashPower
+                    : exchange.FirstClashPower);
         }
-
-        battleContext?.EffectResolver?.SetPrestigeToMax(
-                EffectRequest.PrestigeToMax(
-                    source,
-                    target));
     }
 
     private string GetActionName(
@@ -713,22 +924,11 @@ public class ClashManager
         if (action == null)
             return "NULL";
 
-        string ownerName =
-            action.Owner?.Data?.CharacterName ??
-            "NULL_OWNER";
-
-        string partName =
-            action.OwnerPart == null
-                ? "NONE"
-                : action.OwnerPart.Type.ToString();
-
-        string skillName =
-            action.Skill?.SkillName ??
-            "NULL_SKILL";
-
         return
             $"Id={action.ActionId}, " +
             $"Index={action.ActionIndex}, " +
-            $"{ownerName} {partName} / {skillName}";
+            $"{action.Owner?.Data?.CharacterName} " +
+            $"{action.OwnerPart?.Type.ToString() ?? "NONE"} / " +
+            $"{action.Skill?.SkillName}";
     }
 }

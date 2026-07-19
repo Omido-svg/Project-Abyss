@@ -9,6 +9,12 @@ public enum PrestigeUsePolicy
     Unlimited
 }
 
+public enum SkillRollReusePolicy
+{
+    RollEachExchange,
+    OncePerAction
+}
+
 public abstract class Skill
 {
     public string SkillName { get; protected set; }
@@ -27,17 +33,64 @@ public abstract class Skill
 
     public virtual bool CanBreakPart => false;
 
-    public virtual ActionPhase DefaultPhase =>
-        ActionType switch
+    public virtual int ExchangeRollCount
+    {
+        get
         {
-            ActionType.Prestige => ActionPhase.PRETURN,
-            ActionType.Preparation => ActionPhase.FORESIGHT,
-            _ => ActionPhase.COMBAT
-        };
+            SkillDefinition definition = RuntimeDefinition;
 
-    public virtual bool CanClash =>
-        ActionType == ActionType.NormalAttack ||
-        ActionType == ActionType.Duel;
+            if (definition != null)
+                return Mathf.Max(1, definition.ExchangeRollCount);
+
+            int fallback =
+                owner?.BattleContext?.Rules?.Clash
+                    ?.DefaultExchangeRollCount ?? 3;
+
+            return ActionType == ActionType.NormalAttack ||
+                   ActionType == ActionType.Duel
+                ? Mathf.Max(1, fallback)
+                : 1;
+        }
+    }
+
+    public virtual SkillRollReusePolicy RollReusePolicy =>
+        RuntimeDefinition?.RollReusePolicy ??
+        SkillRollReusePolicy.RollEachExchange;
+
+    public virtual ActionPhase DefaultPhase
+    {
+        get
+        {
+            SkillDefinition definition = RuntimeDefinition;
+
+            if (ActionType == ActionType.Prestige &&
+                definition?.ResolvePrestigeInCombat == true)
+            {
+                return ActionPhase.COMBAT;
+            }
+
+            return ActionType switch
+            {
+                ActionType.Prestige => ActionPhase.PRETURN,
+                ActionType.Preparation => ActionPhase.FORESIGHT,
+                _ => ActionPhase.COMBAT
+            };
+        }
+    }
+
+    public virtual bool CanClash
+    {
+        get
+        {
+            SkillDefinition definition = RuntimeDefinition;
+
+            if (definition?.OverrideCanClash == true)
+                return definition.CanClashValue;
+
+            return ActionType == ActionType.NormalAttack ||
+                   ActionType == ActionType.Duel;
+        }
+    }
 
     public virtual bool GainPrestige =>
         ActionType == ActionType.Duel;
@@ -323,6 +376,51 @@ public abstract class Skill
             activeEffectDispatches.Remove(
                 dispatchKey);
         }
+    }
+
+    public void NotifyExchangeWin(
+        BattleAction action,
+        BattleAction opponentAction,
+        DamageContext damageContext)
+    {
+        ExecuteDefinitionEffects(
+            action,
+            SkillEffectTiming.OnExchangeWin,
+            opponentAction,
+            damageContext);
+    }
+
+    public void NotifyExchangeLose(
+        BattleAction action,
+        BattleAction opponentAction,
+        DamageContext damageContext)
+    {
+        ExecuteDefinitionEffects(
+            action,
+            SkillEffectTiming.OnExchangeLose,
+            opponentAction,
+            damageContext);
+    }
+
+    public void NotifyOneSideHit(
+        BattleAction action,
+        DamageContext damageContext)
+    {
+        ExecuteDefinitionEffects(
+            action,
+            SkillEffectTiming.OnOneSideHit,
+            null,
+            damageContext);
+    }
+
+    public void NotifyClashDraw(
+        BattleAction action,
+        BattleAction opponentAction)
+    {
+        ExecuteDefinitionEffects(
+            action,
+            SkillEffectTiming.OnClashDraw,
+            opponentAction);
     }
 
     private object GetUsageIdentity()

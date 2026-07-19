@@ -2,6 +2,9 @@ using System.Collections.Generic;
 
 public class ClashResultContext
 {
+    public BattleAction FirstAction;
+    public BattleAction SecondAction;
+
     public BattleAction WinnerAction;
     public BattleAction LoserAction;
 
@@ -18,11 +21,18 @@ public class ClashResultContext
     public MomentumState WinnerMomentumStateBefore;
     public MomentumState WinnerMomentumStateAfter;
 
-    // 실제 합인지, 일방 공격 결과인지 구분한다.
     public bool IsClash;
+    public bool IsDraw;
 
+    public int FirstExchangeWins;
+    public int SecondExchangeWins;
+    public int PairedExchangeCount;
+    public int OneSidedHitCount;
+
+    public List<ClashExchangeResult> Exchanges = new();
     public List<ClashRollVisualStep> ClashSteps = new();
     public List<int> HitDamages = new();
+    public List<DamageContext> DamageContexts = new();
 
     public DamageContext DamageContext;
     public DamageResult DamageResult;
@@ -44,4 +54,17 @@ public class ClashResultContext
     public bool HasTargetCharacterHpSnapshot;
     public int TargetCharacterHpBefore;
     public int TargetCharacterHpAfter;
+
+    public int TotalDamage
+    {
+        get
+        {
+            int total = 0;
+
+            foreach (int damage in HitDamages)
+                total += damage;
+
+            return total;
+        }
+    }
 }
