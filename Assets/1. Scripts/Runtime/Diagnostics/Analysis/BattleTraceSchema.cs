@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 public static class BattleTraceSchema
 {
-    public const string Version = "1.0.0";
+    public const string Version = "1.2.0";
     public const string ConsolePrefix = "[PA_TRACE]";
 }
 
@@ -30,6 +30,7 @@ public sealed class BattleTraceRecord
     public BattleTraceClash clash;
     public BattleTraceDamage damage;
     public BattleTraceStatus status;
+    public BattleTraceResource resource;
     public BattleTraceStateSnapshot snapshot;
 }
 
@@ -84,6 +85,8 @@ public sealed class BattleTraceCharacterState
     public int maxHp;
     public int prestige;
     public int maxPrestige;
+    public int energy;
+    public int maxEnergy;
 
     public List<BattleTraceBodyPartState> parts = new();
     public List<BattleTraceStatusState> statuses = new();
@@ -136,8 +139,10 @@ public sealed class BattleTraceAction
     public int clashPower;
     public int speedModifier;
     public int momentumModifier;
+    public int preparationModifier;
     public bool critical;
     public int exchangeRollCount;
+    public int energyCost;
 }
 
 [Serializable]
@@ -151,6 +156,7 @@ public sealed class BattleTraceRoll
     public int finalPower;
     public int speedModifier;
     public int momentumModifier;
+    public int preparationModifier;
     public int clashPower;
     public bool isMax;
     public bool critical;
@@ -273,6 +279,22 @@ public sealed class BattleTraceStatus
 }
 
 [Serializable]
+public sealed class BattleTraceResource
+{
+    public string ownerId;
+    public string ownerName;
+    public string ownerSide;
+    public string key;
+    public int before;
+    public int after;
+    public int maximum;
+    public int delta;
+    public string reason;
+    public long sourceActionId;
+    public string sourceSkill;
+}
+
+[Serializable]
 public sealed class BattleTraceSessionSummary
 {
     public string schemaVersion = BattleTraceSchema.Version;
@@ -289,5 +311,7 @@ public sealed class BattleTraceSessionSummary
     public int clashes;
     public int playerKills;
     public int enemyKills;
+    public int playerEnergySpent;
+    public int enemyEnergySpent;
     public string eventsFile;
 }

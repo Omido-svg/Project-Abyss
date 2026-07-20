@@ -5,6 +5,7 @@ public sealed class AIPlanningState
 {
     private readonly List<ActionSlot> plannedSlots = new();
     private int plannedPrestigeCount;
+    private int plannedEnergyCost;
 
     public AIPlanningState(
         Enemy owner,
@@ -17,6 +18,41 @@ public sealed class AIPlanningState
     public Enemy Owner { get; }
     public BattleContext Context { get; }
     public IReadOnlyList<ActionSlot> PlannedSlots => plannedSlots;
+    public int PlannedEnergyCost => plannedEnergyCost;
+    public int RemainingEnergy =>
+        Mathf.Max(0, (Owner?.CurrentEnergy ?? 0) - plannedEnergyCost);
+
+    public bool CanPlanCombatSlot(Skill skill)
+    {
+        if (Owner == null || skill == null)
+            return false;
+
+        if (skill.DefaultPhase != ActionPhase.COMBAT)
+            return true;
+
+        return CountCombatSlots() < Owner.GetMaxCombatActionSlots();
+    }
+
+    public int CountCombatSlots()
+    {
+        int count = 0;
+        foreach (ActionSlot slot in plannedSlots)
+        {
+            if (slot?.Phase == ActionPhase.COMBAT)
+                count++;
+        }
+        return count;
+    }
+
+    public bool CanPlanEnergy(Skill skill)
+    {
+        if (Owner == null || skill == null)
+            return false;
+
+        return plannedEnergyCost +
+               Mathf.Max(0, skill.EnergyCost) <=
+               Owner.CurrentEnergy;
+    }
 
     public bool CanPlanPrestige(
         Skill skill)
@@ -44,6 +80,8 @@ public sealed class AIPlanningState
             return;
 
         plannedSlots.Add(slot);
+        plannedEnergyCost +=
+            Mathf.Max(0, slot.Skill?.EnergyCost ?? 0);
 
         if (slot.Skill?.ActionType ==
             ActionType.Prestige)
@@ -160,6 +198,9 @@ public sealed class AIActionPlanner
                     $"Skill={decision.Skill.SkillName}, " +
                     $"Target={decision.TargetPoint}, " +
                     $"Speed={slot.Speed}, " +
+                    $"EnergyCost={decision.Skill.EnergyCost}, " +
+                    $"PlannedEnergy={state.PlannedEnergyCost}/" +
+                    $"{enemy.CurrentEnergy}, " +
                     $"Score={decision.Score:0.0}");
             }
         }

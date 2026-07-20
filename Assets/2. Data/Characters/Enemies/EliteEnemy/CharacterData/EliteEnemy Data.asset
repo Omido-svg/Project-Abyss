@@ -13,8 +13,12 @@ MonoBehaviour:
   m_Name: EliteEnemy Data
   m_EditorClassIdentifier: 
   CharacterName: "\uC815\uC608 \uBAB9"
+  TargetMode: 0
+  SingleHpMax: 1
   maxPrestige: 100
+  maxEnergy: 2
   damageMultiplier: 1
   defensePenetration: 0
   minSpeed: 5
   maxSpeed: 16
+  InitialResources: []

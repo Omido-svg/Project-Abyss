@@ -3,6 +3,14 @@ using UnityEngine;
 
 public static class BattleVisualValidator
 {
+    private static readonly HashSet<string> LoggedDuplicateCueWarnings = new();
+    [RuntimeInitializeOnLoadMethod(
+        RuntimeInitializeLoadType.SubsystemRegistration)]
+    private static void ResetStaticState()
+    {
+        LoggedDuplicateCueWarnings.Clear();
+    }
+
     public static bool ValidateRequest(
         BattleVisualRequest request,
         bool logWarnings = true)
@@ -80,16 +88,36 @@ public static class BattleVisualValidator
                 if (string.IsNullOrEmpty(cue.CueKey))
                     continue;
 
-                if (cueKeys.Add(cue.CueKey))
+                string collisionIdentity =
+                    BuildCollisionIdentity(cue);
+
+                if (cueKeys.Add(collisionIdentity))
                     continue;
+
+                if (CanAutoDistributeDuplicateHitCue(
+                        visual,
+                        cue,
+                        i))
+                {
+                    continue;
+                }
 
                 valid = false;
 
                 if (logWarnings)
                 {
-                    Debug.LogWarning(
-                        $"[BATTLE VISUAL VALIDATION] 중복 CueKey / Visual={visual.name}, Key={cue.CueKey}",
-                        visual);
+                    string warningKey =
+                        visual.GetInstanceID() + "|" + collisionIdentity;
+
+                    if (LoggedDuplicateCueWarnings.Add(warningKey))
+                    {
+                        Debug.LogWarning(
+                            $"[BATTLE VISUAL VALIDATION] 실제 충돌하는 VFX Cue / " +
+                            $"Visual={visual.name}, Key={cue.CueKey}, " +
+                            $"Timing={cue.Timing}, HitFilter=" +
+                            $"{(cue.UseHitIndexFilter ? cue.HitIndex.ToString() : "NONE")}",
+                            visual);
+                    }
                 }
             }
         }
@@ -105,6 +133,51 @@ public static class BattleVisualValidator
         }
 
         return valid;
+    }
+
+    private static string BuildCollisionIdentity(
+        BattleVfxCue cue)
+    {
+        if (cue == null)
+            return string.Empty;
+
+        return
+            cue.CueKey + "|" +
+            cue.Timing + "|" +
+            cue.RepeatMode + "|" +
+            (cue.UseHitIndexFilter
+                ? "FILTER:" + cue.HitIndex
+                : "NO_FILTER") + "|" +
+            (cue.RequiredAttackerData != null
+                ? cue.RequiredAttackerData.GetInstanceID().ToString()
+                : "ANY_ATTACKER") + "|" +
+            (cue.RequiredSkillNameContains ?? string.Empty) + "|" +
+            cue.RequirePositiveDamage + "|" +
+            cue.RequirePositiveResolvedDamage;
+    }
+
+    private static bool CanAutoDistributeDuplicateHitCue(
+        SkillVisualDefinition visual,
+        BattleVfxCue cue,
+        int cueIndex)
+    {
+        if (visual?.VfxCues == null ||
+            cue == null ||
+            cueIndex < 0 ||
+            cueIndex >= visual.VfxCues.Count)
+        {
+            return false;
+        }
+
+        for (int i = 0; i < cueIndex; i++)
+        {
+            BattleVfxCue previous = visual.VfxCues[i];
+
+            if (cue.CanAutoDistributeByHitIndexWith(previous))
+                return true;
+        }
+
+        return false;
     }
 
     public static bool ValidateProfile(

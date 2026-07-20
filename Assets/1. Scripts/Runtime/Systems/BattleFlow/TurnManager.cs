@@ -391,9 +391,6 @@ public class TurnManager
 
     private void EndTurnInternal()
     {
-        Debug.Log(
-            $"===== TURN {CurrentTurn} END =====");
-
         RunCharacterTurnEnd();
 
         battleContext?._battleEvent?
@@ -402,6 +399,9 @@ public class TurnManager
         battleContext?.battleManager?
             .BattleLogger?
             .PrintTurn(CurrentTurn);
+
+        Debug.Log(
+            $"===== TURN {CurrentTurn} END =====");
 
         CurrentTurn++;
     }

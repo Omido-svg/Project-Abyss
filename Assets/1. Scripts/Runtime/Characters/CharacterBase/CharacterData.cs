@@ -18,6 +18,11 @@ public class CharacterData : ScriptableObject
     [Min(0)]
     public int maxPrestige = 100;
 
+    [Header("Energy")]
+    [Tooltip("매 턴 시작 시 전량 회복되는 행동 코스트 자원의 기본 최대치입니다.")]
+    [Min(0)]
+    public int maxEnergy = 2;
+
     [Header("Damage")]
     [Min(0f)]
     public float damageMultiplier = 1f;
@@ -37,6 +42,7 @@ public class CharacterData : ScriptableObject
     {
         SingleHpMax = Mathf.Max(1, SingleHpMax);
         maxPrestige = Mathf.Max(0, maxPrestige);
+        maxEnergy = Mathf.Max(0, maxEnergy);
         damageMultiplier = Mathf.Max(0f, damageMultiplier);
         defensePenetration = Mathf.Clamp01(defensePenetration);
 

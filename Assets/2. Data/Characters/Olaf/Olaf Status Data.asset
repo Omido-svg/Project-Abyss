@@ -13,8 +13,12 @@ MonoBehaviour:
   m_Name: Olaf Status Data
   m_EditorClassIdentifier: 
   CharacterName: Olaf
+  TargetMode: 0
+  SingleHpMax: 1
   maxPrestige: 100
+  maxEnergy: 2
   damageMultiplier: 1
   defensePenetration: 0
   minSpeed: 7
   maxSpeed: 15
+  InitialResources: []

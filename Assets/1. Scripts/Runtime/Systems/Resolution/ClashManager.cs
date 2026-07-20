@@ -60,6 +60,8 @@ public class ClashManager
 
         bool firstStarted = false;
         bool secondStarted = false;
+        bool firstReady = false;
+        bool secondReady = false;
 
         try
         {
@@ -70,8 +72,9 @@ public class ClashManager
                     .RaiseActionStart(firstAction);
                 firstStarted = true;
 
-                if (clashRules.ConsumeResourceOnActionStart)
-                    ConsumeResource(firstAction);
+                firstReady =
+                    !clashRules.ConsumeResourceOnActionStart ||
+                    TryConsumeResource(firstAction);
             }
 
             if (CanExecuteAction(secondAction))
@@ -81,18 +84,25 @@ public class ClashManager
                     .RaiseActionStart(secondAction);
                 secondStarted = true;
 
-                if (clashRules.ConsumeResourceOnActionStart)
-                    ConsumeResource(secondAction);
+                secondReady =
+                    !clashRules.ConsumeResourceOnActionStart ||
+                    TryConsumeResource(secondAction);
             }
+
+            BattleAction resolvedFirst =
+                firstReady ? firstAction : null;
+
+            BattleAction resolvedSecond =
+                secondReady ? secondAction : null;
 
             if (pair.IsClash)
             {
                 return ResolveClash(
-                    firstAction,
-                    secondAction);
+                    resolvedFirst,
+                    resolvedSecond);
             }
 
-            return ResolveOneSide(firstAction);
+            return ResolveOneSide(resolvedFirst);
         }
         finally
         {
@@ -305,11 +315,11 @@ public class ClashManager
         // OnExecute는 첫 교환에서 이긴 쪽만의 보상이 아니다.
         // 양쪽 행동이 실제로 굴림을 시작했다면 승패 비교 전에
         // 각각 정확히 한 번 실행되어야 한다.
-        ExecuteSkillOnce(
+        bool firstExecuted = ExecuteSkillOnce(
             first,
             ref firstSkillExecuted);
 
-        ExecuteSkillOnce(
+        bool secondExecuted = ExecuteSkillOnce(
             second,
             ref secondSkillExecuted);
 
@@ -339,7 +349,9 @@ public class ClashManager
         // 히후미 자해나 OnExecute 효과로 행동자/대상이 사망하거나
         // 행동 부위가 파괴되었다면 이미 만든 굴림만 소모하고
         // 이번 교환의 피해·기세·승리 수는 발생시키지 않는다.
-        if (!CanContinueRoll(first) ||
+        if (!firstExecuted ||
+            !secondExecuted ||
+            !CanContinueRoll(first) ||
             !CanContinueRoll(second))
         {
             exchange.WasCancelled = true;
@@ -464,11 +476,12 @@ public class ClashManager
         action.RollPowerForExchange(exchangeIndex);
         action.ClearClashModifiers();
 
-        ExecuteSkillOnce(
+        bool executed = ExecuteSkillOnce(
             action,
             ref skillExecuted);
 
-        if (!CanContinueRoll(action))
+        if (!executed ||
+            !CanContinueRoll(action))
         {
             return new ClashExchangeResult
             {
@@ -764,10 +777,15 @@ public class ClashManager
                 action,
                 opponent);
 
+        int preparationModifier =
+            action.Owner?.TurnClashPowerBonus ?? 0;
+
         // 기세는 합 수치가 아니라 피해 배율과 히트 이동에만 사용한다.
+        // 도사림은 같은 턴 전체 합에 flat 보정으로 적용한다.
         action.ApplyClashModifiers(
             speedModifier,
-            0);
+            0,
+            preparationModifier);
     }
 
     private int CalculateSpeedModifier(
@@ -786,21 +804,25 @@ public class ClashManager
         return speedGap * clashRules.SpeedWeight;
     }
 
-    private void ExecuteSkillOnce(
+    private bool ExecuteSkillOnce(
         BattleAction action,
         ref bool executed)
     {
-        if (executed ||
-            action?.Skill == null)
-        {
-            return;
-        }
+        if (executed)
+            return true;
 
-        if (!clashRules.ConsumeResourceOnActionStart)
-            ConsumeResource(action);
+        if (action?.Skill == null)
+            return false;
+
+        if (!clashRules.ConsumeResourceOnActionStart &&
+            !TryConsumeResource(action))
+        {
+            return false;
+        }
 
         action.Skill.Execute(action);
         executed = true;
+        return true;
     }
 
     private static bool CanReceiveClashVictoryEffects(
@@ -811,11 +833,28 @@ public class ClashManager
                action.Skill != null;
     }
 
-    private void ConsumeResource(
+    private bool TryConsumeResource(
         BattleAction action)
     {
-        action?.Skill?.ConsumeResource(
-            action.Owner);
+        if (action?.Skill == null || action.Owner == null)
+            return false;
+
+        bool consumed =
+            action.Skill.TryConsumeResource(
+                action.Owner,
+                action);
+
+        if (!consumed)
+        {
+            Debug.LogWarning(
+                $"[ClashManager] 행동 비용 부족으로 실행 취소 / " +
+                $"Owner={action.Owner.Data?.CharacterName ?? action.Owner.name}, " +
+                $"Skill={action.Skill.SkillName}, " +
+                $"Energy={action.Owner.CurrentEnergy}/" +
+                $"{action.Owner.MaxEnergy}, Cost={action.Skill.EnergyCost}");
+        }
+
+        return consumed;
     }
 
     private bool CanExecuteAction(

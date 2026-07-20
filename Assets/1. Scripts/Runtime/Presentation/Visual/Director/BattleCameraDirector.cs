@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Collections.Generic;
 using Unity.Cinemachine;
 using UnityEngine;
 
@@ -36,6 +37,10 @@ public class BattleCameraDirector : MonoBehaviour
 
     private BattleCinemachineTargetGroupBinder groupBinder;
     private Coroutine restoreBlendRoutine;
+
+    private readonly HashSet<string>
+        reportedCameraPointFallbacks =
+            new();
 
     private bool interactionCameraActive;
     private Vector3 interactionTargetPosition;
@@ -649,9 +654,12 @@ public class BattleCameraDirector : MonoBehaviour
                 out Transform cameraPoint,
                 out string cameraFailure))
         {
-            Debug.LogWarning(
-                $"[BattleCameraDirector] CameraPoint 찾기 실패 / {cameraFailure}",
-                this);
+            ReportCameraPointFallbackOnce(
+                shot,
+                cameraFailure);
+
+            // PlayShot()이 ShotType에 맞는 Group/Character Pose Shot으로
+            // 즉시 폴백한다.
             return false;
         }
 
@@ -992,6 +1000,27 @@ public class BattleCameraDirector : MonoBehaviour
         return character.Data != null
             ? character.Data.CharacterName
             : character.name;
+    }
+
+    private void ReportCameraPointFallbackOnce(
+        SkillCameraShot shot,
+        string failure)
+    {
+        string safeFailure =
+            string.IsNullOrWhiteSpace(failure)
+                ? "UNKNOWN"
+                : failure;
+
+        string key =
+            $"{shot?.CameraPoint}:{shot?.ShotType}:{safeFailure}";
+
+        if (!reportedCameraPointFallbacks.Add(key))
+            return;
+
+        Log(
+            $"CameraPoint 폴백 / " +
+            $"ShotType={shot?.ShotType}, " +
+            $"{safeFailure}");
     }
 
     private void Log(string message)

@@ -777,6 +777,7 @@ public sealed class BattleDebugTuner : MonoBehaviour
     private const int CurrentSerializedVersion = 2;
 
     private float liveApplyTimer;
+    private bool liveApplyPendingAfterResolution;
 
     public bool IsRuntimeReady =>
         IsReady();
@@ -824,6 +825,35 @@ public sealed class BattleDebugTuner : MonoBehaviour
         if (!Application.isPlaying ||
             !liveApply)
         {
+            liveApplyPendingAfterResolution = false;
+            return;
+        }
+
+        bool isResolving =
+            battleManager?.TurnManager?.IsResolving == true;
+
+        if (isResolving)
+        {
+            // Live Apply는 턴 해석 중 전투 상태를 건드리지 않는다.
+            // 반복 적용과 반복 경고 대신 해석 종료 후 한 번만 적용한다.
+            liveApplyPendingAfterResolution = true;
+            liveApplyTimer =
+                Mathf.Max(
+                    0.05f,
+                    liveApplyInterval);
+            return;
+        }
+
+        if (liveApplyPendingAfterResolution)
+        {
+            liveApplyPendingAfterResolution = false;
+            liveApplyTimer =
+                Mathf.Max(
+                    0.05f,
+                    liveApplyInterval);
+
+            ApplyBalanceInternal(
+                logSummary: false);
             return;
         }
 

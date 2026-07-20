@@ -30,6 +30,9 @@ public class CharacterView : MonoBehaviour, ISerializationCallbackReceiver
     [Header("Debug")]
     [SerializeField] private bool logDebug;
 
+    private bool missingAnimatorWarningLogged;
+    private bool missingHitStateWarningLogged;
+
     public void PlayHit()
     {
         if (animator == null)
@@ -47,19 +50,25 @@ public class CharacterView : MonoBehaviour, ISerializationCallbackReceiver
                 $"ViewObject={name}, " +
                 $"Root={transform.root.name}");
         }
-        
+
         if (animator == null)
         {
-            Debug.LogWarning($"{name} Animator 없음 - Hit 재생 불가");
+            if (!missingAnimatorWarningLogged)
+            {
+                missingAnimatorWarningLogged = true;
+
+                Debug.LogWarning(
+                    $"{name} Animator 없음 - Hit 재생 불가",
+                    this);
+            }
+
             return;
         }
 
-        int hitStateHash =
-            Animator.StringToHash(hitStateName);
-
         animator.ResetTrigger(HitHash);
 
-        if (animator.HasState(baseLayerIndex, hitStateHash))
+        if (TryResolveHitStateHash(
+                out int hitStateHash))
         {
             animator.CrossFadeInFixedTime(
                 hitStateHash,
@@ -68,15 +77,73 @@ public class CharacterView : MonoBehaviour, ISerializationCallbackReceiver
                 0f);
 
             if (logDebug)
-                Debug.Log($"{name} Hit 상태 직접 재생 : {hitStateName}");
+            {
+                Debug.Log(
+                    $"{name} Hit 상태 직접 재생 : " +
+                    $"{hitStateName}",
+                    this);
+            }
+
             return;
         }
 
-        Debug.LogWarning(
-            $"{name} Animator에 Hit State를 찾을 수 없음 : {hitStateName} / " +
-            $"Trigger 방식으로 대체 실행");
+        if (!missingHitStateWarningLogged)
+        {
+            missingHitStateWarningLogged = true;
+
+            Debug.LogWarning(
+                $"{name} Animator에 Hit State를 찾을 수 없음 : " +
+                $"{hitStateName} / Trigger 방식으로 대체 실행 " +
+                "(이 경고는 한 번만 출력됩니다.)",
+                this);
+        }
 
         animator.SetTrigger(HitHash);
+    }
+
+    private bool TryResolveHitStateHash(
+        out int stateHash)
+    {
+        stateHash = 0;
+
+        if (animator == null ||
+            string.IsNullOrWhiteSpace(hitStateName) ||
+            baseLayerIndex < 0 ||
+            baseLayerIndex >= animator.layerCount)
+        {
+            return false;
+        }
+
+        int shortNameHash =
+            Animator.StringToHash(hitStateName);
+
+        if (animator.HasState(
+                baseLayerIndex,
+                shortNameHash))
+        {
+            stateHash = shortNameHash;
+            return true;
+        }
+
+        string layerName =
+            animator.GetLayerName(baseLayerIndex);
+
+        if (string.IsNullOrWhiteSpace(layerName))
+            return false;
+
+        int fullPathHash =
+            Animator.StringToHash(
+                $"{layerName}.{hitStateName}");
+
+        if (!animator.HasState(
+                baseLayerIndex,
+                fullPathHash))
+        {
+            return false;
+        }
+
+        stateHash = fullPathHash;
+        return true;
     }
 
     private Action hitFrameCallback;

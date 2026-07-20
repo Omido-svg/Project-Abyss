@@ -8,13 +8,8 @@ public class OlafMadnessMechanic : CombatMechanic
     private const int DuelLoseMadnessGain = 2;
     private const int PartBreakMadnessGain = 1;
 
-    private const int NormalBleedAmount = 1;
-    private const int MaxMadnessNormalBleedAmount = 2;
-    private const int DuelWinBleedAmount = 2;
-    private const int ImmortalFuryBleedBonus = 2;
-
-    private const int DuelPushBonus = 10;
-    private const int DuelPushPerMadness = 2;
+    private const int ExchangeBleedAmount = 1;
+    private const int DuelPartBreakBleedThreshold = 5;
 
     private const int BleedExplosionDamagePerStack = 5;
     private const int DefaultPrestigeDamagePerMadness = 5;
@@ -39,6 +34,11 @@ public class OlafMadnessMechanic : CombatMechanic
             () => battleEvent.OnClashWin += OnClashWin,
             () => battleEvent.OnClashWin -= OnClashWin,
             "OnClashWin");
+
+        SubscribeToBattleEvent(
+            () => battleEvent.OnDamageResolved += OnDamageResolved,
+            () => battleEvent.OnDamageResolved -= OnDamageResolved,
+            "OnDamageResolved");
 
         SubscribeToBattleEvent(
             () => battleEvent.OnClashLose += OnClashLose,
@@ -74,7 +74,8 @@ public class OlafMadnessMechanic : CombatMechanic
     {
         if (winnerAction?.Owner != owner ||
             winnerAction.Skill == null ||
-            winnerAction.ActionType != ActionType.Duel)
+            winnerAction.ActionType != ActionType.Duel ||
+            loserAction?.ActionType != ActionType.Duel)
         {
             return;
         }
@@ -87,31 +88,67 @@ public class OlafMadnessMechanic : CombatMechanic
         BattleAction action)
     {
         if (action?.Target == null ||
+            action.TargetPart == null ||
+            action.TargetPart.IsBroken ||
             owner?.BattleContext?.EffectResolver == null)
         {
             return;
         }
 
-        int bleedAmount =
-            GetDuelWinBleedAmount();
+        Bleeding bleeding =
+            action.Target.GetPartStatus<Bleeding>(
+                action.TargetPart);
 
-        ApplyBleeding(
+        int stacks = Mathf.Max(0, bleeding?.Stack ?? 0);
+        if (stacks < DuelPartBreakBleedThreshold)
+            return;
+
+        EffectRequest request = EffectRequest.ForceBreak(
+            owner,
+            action.Target,
+            action.TargetPart);
+        request.SourceAction = action;
+
+        bool broke = owner.BattleContext.EffectResolver
+            .ForceBreakPart(request);
+
+        if (!broke)
+            return;
+
+        RemoveBleeding(
             action.Target,
             action.TargetPart,
-            bleedAmount);
-
-        string targetPoint =
-            action.TargetPart == null
-                ? "SINGLE_HP"
-                : action.TargetPart.Type.ToString();
+            bleeding);
 
         Debug.Log(
-            $"{owner.Data.CharacterName} 결투 승리 효과 : " +
-            $"{action.Target.Data.CharacterName} {targetPoint}에 " +
-            $"출혈 {bleedAmount} 부여");
+            $"{owner.Data?.CharacterName} 고유 파괴 루트 / " +
+            $"출혈 {stacks} + 결투 승리로 " +
+            $"{action.Target.Data?.CharacterName} {action.TargetPart.Type} 파괴");
+    }
 
-        TryExplodeBleedingByDuel(
-            action);
+    private void OnDamageResolved(DamageContext context)
+    {
+        if (context?.Attacker != owner ||
+            context.Action == null ||
+            !context.IsClashDamage ||
+            context.Target == null ||
+            context.Target.IsDead)
+        {
+            return;
+        }
+
+        if (context.Action.ActionType != ActionType.NormalAttack &&
+            context.Action.ActionType != ActionType.Duel)
+        {
+            return;
+        }
+
+        // 합에서 이긴 교환 한 번마다 출혈 1스택.
+        // 피해가 방어도에 전부 흡수되어도 교환 승리 자체가 연료다.
+        ApplyBleeding(
+            context.Target,
+            context.TargetPart,
+            ExchangeBleedAmount);
     }
 
     private void OnClashLose(
@@ -385,35 +422,11 @@ public class OlafMadnessMechanic : CombatMechanic
         return recoveredCount;
     }
 
-    public int GetNormalAttackBleedAmount()
-    {
-        int amount =
-            IsMaxMadness()
-                ? MaxMadnessNormalBleedAmount
-                : NormalBleedAmount;
+    public int GetNormalAttackBleedAmount() => ExchangeBleedAmount;
 
-        if (IsImmortalFuryActive())
-            amount += ImmortalFuryBleedBonus;
+    public int GetDuelWinBleedAmount() => 0;
 
-        return amount;
-    }
-
-    public int GetDuelWinBleedAmount()
-    {
-        int amount =
-            DuelWinBleedAmount;
-
-        if (IsImmortalFuryActive())
-            amount += ImmortalFuryBleedBonus;
-
-        return amount;
-    }
-
-    public int GetDuelPushBonus()
-    {
-        return DuelPushBonus +
-               madness * DuelPushPerMadness;
-    }
+    public int GetDuelPushBonus() => 0;
 
     public int ConsumeMadnessForPrestigeDamage()
     {

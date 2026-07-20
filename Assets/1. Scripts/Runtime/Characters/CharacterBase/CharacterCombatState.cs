@@ -40,9 +40,12 @@ public sealed class CharacterCombatState
             : damageResolutionStack[
                 damageResolutionStack.Count - 1];
 
+    public int TurnClashPowerBonus { get; private set; }
+
     public void BeginInitialization()
     {
         damageResolutionStack.Clear();
+        TurnClashPowerBonus = 0;
         InitializationVersion++;
         Phase = CharacterCombatPhase.Initializing;
     }
@@ -122,9 +125,20 @@ public sealed class CharacterCombatState
         damageResolutionStack.Clear();
     }
 
+    public void AddTurnClashPowerBonus(int amount)
+    {
+        TurnClashPowerBonus += amount;
+    }
+
+    public void ClearTurnModifiers()
+    {
+        TurnClashPowerBonus = 0;
+    }
+
     public void Dispose()
     {
         damageResolutionStack.Clear();
+        TurnClashPowerBonus = 0;
         Phase = CharacterCombatPhase.Disposed;
     }
 }

@@ -106,6 +106,12 @@ public sealed class AISkillSelector
             return false;
         }
 
+        if (!state.CanPlanCombatSlot(skill))
+            return false;
+
+        if (!state.CanPlanEnergy(skill))
+            return false;
+
         if (skill.ActionType == ActionType.Prestige &&
             !state.CanPlanPrestige(skill))
         {

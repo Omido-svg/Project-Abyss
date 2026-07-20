@@ -13,7 +13,12 @@ MonoBehaviour:
   m_Name: Normal EN Data 2
   m_EditorClassIdentifier: 
   CharacterName: Normal Enemy 2
-  maxHP: 100
+  TargetMode: 0
+  SingleHpMax: 1
   maxPrestige: 100
+  maxEnergy: 2
   damageMultiplier: 1
   defensePenetration: 0
+  minSpeed: 3
+  maxSpeed: 8
+  InitialResources: []

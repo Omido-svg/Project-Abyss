@@ -1198,6 +1198,15 @@ public class BattleUIManager : MonoBehaviour
         if (!selectedOwner.CanUseSkill(part, skill))
             return false;
 
+        if (!battleManager.ActionManager.CanReserveEnergy(
+                selectedOwner,
+                skill,
+                part,
+                selectedActionIndex))
+        {
+            return false;
+        }
+
         if (skill.ActionType == ActionType.Prestige)
         {
             if (!IsPrestigeReady(selectedOwner))
@@ -1368,9 +1377,16 @@ public class BattleUIManager : MonoBehaviour
                 TargetSlot = null
             };
 
-        battleManager.ActionManager
-            .AddOrReplaceSlot(
-                newSlot);
+        bool registered =
+            battleManager.ActionManager
+                .TryAddOrReplaceSlot(newSlot);
+
+        if (!registered)
+        {
+            Debug.LogWarning(
+                "ActionSlot 생성 실패 : 에너지 예산 또는 슬롯 계약을 만족하지 못했습니다.");
+            return false;
+        }
 
         if (isPreparation)
         {
@@ -1598,7 +1614,34 @@ public class BattleUIManager : MonoBehaviour
         }
 
         if (!selectedOwner.CanUseSkill(part, skill))
+        {
+            if (!selectedOwner.CanAffordEnergy(skill.EnergyCost))
+            {
+                return
+                    $"에너지 부족 " +
+                    $"({selectedOwner.CurrentEnergy}/{skill.EnergyCost})";
+            }
+
             return "조건 또는 자원 부족";
+        }
+
+        if (!battleManager.ActionManager.CanReserveEnergy(
+                selectedOwner,
+                skill,
+                part,
+                selectedActionIndex))
+        {
+            int remaining =
+                battleManager.ActionManager
+                    .GetRemainingEnergyAfterPlan(
+                        selectedOwner,
+                        part,
+                        selectedActionIndex);
+
+            return
+                $"계획 에너지 부족 " +
+                $"({remaining}/{skill.EnergyCost})";
+        }
 
         if (skill.ActionType == ActionType.Prestige &&
             skill.PrestigeUsePolicy == PrestigeUsePolicy.OncePerTurn &&

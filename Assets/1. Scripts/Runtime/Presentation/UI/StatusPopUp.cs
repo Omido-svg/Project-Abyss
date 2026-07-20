@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Text;
 using TMPro;
@@ -25,7 +26,7 @@ public class StatusPopup : MonoBehaviour
     [Header("Popup")]
     [SerializeField] private Vector3 focusOffset = new Vector3(0f, 2f, 0f);
     [SerializeField, Min(0.1f)] private float focusDistance = 5f;
-    [SerializeField, Min(0.02f)] private float refreshInterval = 0.1f;
+    [SerializeField, Min(0.05f)] private float refreshInterval = 0.25f;
 
     private Camera mainCamera;
     private BattleCameraDirector battleCameraDirector;
@@ -33,6 +34,8 @@ public class StatusPopup : MonoBehaviour
 
     private bool isSelected;
     private float nextRefreshTime;
+    private readonly StringBuilder statusBuilder = new(512);
+    private string lastRenderedText = string.Empty;
 
     //--------------------------------------------------
 
@@ -202,6 +205,7 @@ public class StatusPopup : MonoBehaviour
 
         nextRefreshTime = 0f;
         Refresh();
+        nextRefreshTime = Time.unscaledTime + refreshInterval;
 
         outline?.EnableOutline();
 
@@ -297,20 +301,23 @@ public class StatusPopup : MonoBehaviour
 
     private void Refresh()
     {
-        if (character == null)
+        if (character == null || statusText == null)
             return;
 
-        if (statusText == null)
+        statusBuilder.Clear();
+
+        AppendHeader(statusBuilder);
+        AppendCompactCharacterStatus(statusBuilder);
+        AppendCompactEffects(statusBuilder);
+        AppendCompactBodyParts(statusBuilder);
+
+        string nextText = statusBuilder.ToString();
+
+        if (string.Equals(lastRenderedText, nextText, StringComparison.Ordinal))
             return;
 
-        StringBuilder sb = new();
-
-        AppendHeader(sb);
-        AppendCompactCharacterStatus(sb);
-        AppendCompactEffects(sb);
-        AppendCompactBodyParts(sb);
-
-        statusText.text = sb.ToString();
+        lastRenderedText = nextText;
+        statusText.SetText(nextText);
     }
 
     //--------------------------------------------------

@@ -27,6 +27,11 @@ public class SkillDefinition : ScriptableObject
     public bool OverrideCanClash;
     public bool CanClashValue;
 
+    [Header("Preparation")]
+    [Tooltip(
+        "약한 도사림은 에너지 0, 강한 캐릭터 고유 도사림은 에너지 1이 기본입니다.")]
+    public PreparationTier PreparationTier = PreparationTier.Weak;
+
     [Header("Resolver")]
     public SkillResolverType ResolverType;
     public int DiceMin;
@@ -50,7 +55,17 @@ public class SkillDefinition : ScriptableObject
     [Header("Effects")]
     public List<SkillEffectDefinition> Effects = new();
 
-    [Header("Resource Rules")]
+    [Header("Energy Cost")]
+    [Tooltip(
+        "false면 ActionType과 PreparationTier의 기본 비용을 사용합니다. " +
+        "평타 0 / 결투 1 / 약한 도사림 0 / 강한 도사림 1 / 위세 0입니다. " +
+        "예외 비용이 필요할 때만 true로 설정합니다.")]
+    public bool OverrideEnergyCost;
+
+    [Min(0)]
+    public int EnergyCost;
+
+    [Header("Other Resource Rules")]
     [Tooltip("false면 기존 위세 규칙을 그대로 사용합니다.")]
     public bool OverrideResourceRules;
 
@@ -126,6 +141,7 @@ public class SkillDefinition : ScriptableObject
     private void OnValidate()
     {
         ExchangeRollCount = Mathf.Max(1, ExchangeRollCount);
+        EnergyCost = Mathf.Max(0, EnergyCost);
         CoinCount = Mathf.Max(1, CoinCount);
         CoinFrontChance = Mathf.Clamp01(CoinFrontChance);
 
@@ -139,6 +155,12 @@ public class SkillDefinition : ScriptableObject
         {
             ResolvePrestigeInCombat = false;
         }
+
+        if (ActionType != ActionType.Preparation)
+            PreparationTier = PreparationTier.Weak;
+
+        if (ResolverType == SkillResolverType.Chinchiro)
+            RollReusePolicy = SkillRollReusePolicy.OncePerAction;
     }
 #endif
 

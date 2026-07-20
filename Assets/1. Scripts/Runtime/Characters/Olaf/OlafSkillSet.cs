@@ -36,9 +36,17 @@ public class OlafSkillSet : ScriptableObject
 
     public Skill CreatePreparationSkill()
     {
-        return CreateExpectedSkill(
-            PreparationSkill,
-            ActionType.Preparation);
+        if (!IsExpectedType(
+                PreparationSkill,
+                ActionType.Preparation))
+        {
+            return null;
+        }
+
+        // 올라프의 고유 도사림은 확정 강한 도사림이다.
+        // SO 마이그레이션 누락과 무관하게 에너지 기본 비용 1을 사용한다.
+        return new OlafPreparationRuntimeSkill(
+            PreparationSkill);
     }
 
     public Skill CreatePrestigeSkill()
@@ -138,18 +146,25 @@ public sealed class OlafDuelRuntimeSkill : DataDuelSkill
     public override int GetMomentumPushBonus(
         BattleAction action)
     {
-        if (action?.Owner is not Olaf olaf)
-            return 0;
-
-        OlafMadnessMechanic madness =
-            olaf.MadnessMechanic;
-
-        int bonus =
-            madness?.GetDuelPushBonus() ?? 0;
-
-        Debug.Log(
-            $"{olaf.Data.CharacterName} 결투 푸시 보너스 : +{bonus}");
-
-        return bonus;
+        // 결투 푸시는 전역 규칙의 고정값만 사용한다.
+        // 캐릭터 고유 강화가 필요하면 별도 SkillEffect/Augment에서 명시한다.
+        return 0;
     }
 }
+
+/// <summary>
+/// 올라프 고유 도사림의 런타임 계약.
+/// PreparationTier.Strong이므로 별도 OverrideEnergyCost가 없으면 에너지 1을 소비한다.
+/// </summary>
+public sealed class OlafPreparationRuntimeSkill : DataPreparationSkill
+{
+    public OlafPreparationRuntimeSkill(
+        SkillDefinition definition)
+        : base(definition)
+    {
+    }
+
+    public override PreparationTier PreparationTier =>
+        PreparationTier.Strong;
+}
+

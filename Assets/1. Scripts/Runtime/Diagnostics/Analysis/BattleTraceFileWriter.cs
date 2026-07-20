@@ -25,6 +25,16 @@ public sealed class BattleTraceFileWriter : IDisposable
 
         Directory.CreateDirectory(SessionDirectory);
 
+        File.WriteAllText(
+            Path.Combine(rootDirectory, "latest_session.txt"),
+            SessionDirectory,
+            new UTF8Encoding(false));
+
+        File.WriteAllText(
+            Path.Combine(SessionDirectory, "output_location.txt"),
+            SessionDirectory,
+            new UTF8Encoding(false));
+
         EventsPath = Path.Combine(
             SessionDirectory,
             "events.jsonl");

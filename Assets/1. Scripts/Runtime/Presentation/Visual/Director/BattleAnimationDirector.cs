@@ -529,11 +529,60 @@ public class BattleAnimationDirector : MonoBehaviour
             if (cue == null || cue.Timing != timing)
                 continue;
 
+            if (!ShouldPlayAutoDistributedHitCue(
+                    visual,
+                    cue,
+                    i,
+                    hitIndex))
+            {
+                continue;
+            }
+
             vfxManager.PlayCue(
                 cue,
                 context,
                 i);
         }
+    }
+
+    private static bool ShouldPlayAutoDistributedHitCue(
+        SkillVisualDefinition visual,
+        BattleVfxCue cue,
+        int cueIndex,
+        int hitIndex)
+    {
+        if (visual?.VfxCues == null ||
+            cue == null ||
+            hitIndex < 0 ||
+            cue.Timing != BattleVfxTiming.OnHitFrame ||
+            cue.UseHitIndexFilter)
+        {
+            return true;
+        }
+
+        int matchingCueCount = 0;
+        int matchingCueOrdinal = -1;
+
+        for (int i = 0; i < visual.VfxCues.Count; i++)
+        {
+            BattleVfxCue candidate = visual.VfxCues[i];
+
+            if (!cue.CanAutoDistributeByHitIndexWith(candidate))
+                continue;
+
+            if (i == cueIndex)
+                matchingCueOrdinal = matchingCueCount;
+
+            matchingCueCount++;
+        }
+
+        if (matchingCueCount <= 1 || matchingCueOrdinal < 0)
+            return true;
+
+        // HitIndex 0에는 첫 Cue, HitIndex 1에는 두 번째 Cue를 배정한다.
+        // 따라서 Duel 2히트의 복제된 BloodSplash가 첫 타격에 겹쳐 나오거나
+        // 두 번째 타격에서 재생 기록 충돌로 사라지는 문제를 동시에 막는다.
+        return matchingCueOrdinal == hitIndex;
     }
 
     private IEnumerator PlayMomentumRefreshAtVisualEnd(
@@ -1454,4 +1503,3 @@ public class BattleAnimationDirector : MonoBehaviour
         public CharacterActionMover AttackerMover;
     }
 }
-

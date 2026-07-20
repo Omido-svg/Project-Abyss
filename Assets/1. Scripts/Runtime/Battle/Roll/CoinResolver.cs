@@ -89,9 +89,11 @@ public class CoinResolver : SkillResolver
         result.IsMax =
             coinCount > 0 &&
             sum >= MaxValue;
-        result.IsCritical = frontIsCritical
-            ? frontCount > 0
-            : result.IsMax;
+        // 크리티컬은 코인 앞면 규칙에 명시된 경우에만 발생한다.
+        // 최대값을 자동 크리티컬로 승격하지 않는다.
+        result.IsCritical =
+            frontIsCritical &&
+            frontCount > 0;
         result.RecalculateFinalPower();
 
         return result;

@@ -203,6 +203,25 @@ public class BattleEvent : IDisposable
     }
 
     //-----------------------------------
+    // Combat resources
+    //-----------------------------------
+
+    public event Action<CombatResourceChangeContext>
+        OnCombatResourceChanged;
+
+    public void RaiseCombatResourceChanged(
+        CombatResourceChangeContext context)
+    {
+        if (IsDisposed || context == null)
+            return;
+
+        InvokeSafely(
+            OnCombatResourceChanged,
+            context,
+            nameof(OnCombatResourceChanged));
+    }
+
+    //-----------------------------------
     // Status
     //-----------------------------------
 
@@ -554,6 +573,8 @@ public class BattleEvent : IDisposable
         OnDamageDealt = null;
         OnDamageResolved = null;
         OnDamageEventResolved = null;
+
+        OnCombatResourceChanged = null;
 
         OnStatusApplied = null;
         OnStatusRemoved = null;

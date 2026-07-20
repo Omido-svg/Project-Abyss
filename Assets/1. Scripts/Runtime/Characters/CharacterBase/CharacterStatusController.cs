@@ -401,13 +401,24 @@ public class CharacterStatusController
 
         owner.BattleEvent?.RaiseStatusTicked(context);
 
-        Debug.Log(
-            $"[STATUS TICK] {GetOwnerName()} / " +
-            $"Status={effect.Name}, " +
-            $"Part={(part == null ? "NONE" : part.Type.ToString())}, " +
-            $"Stack={context.StackBefore}->{context.StackAfter}, " +
-            $"Duration={context.DurationBefore}->{context.DurationAfter}, " +
-            $"Damage={context.AppliedDamage}");
+        bool hasMeaningfulChange =
+            context.DidApplyDamage ||
+            context.AppliedDamage > 0 ||
+            context.StackBefore != context.StackAfter ||
+            context.DurationBefore != context.DurationAfter ||
+            context.ExpiredAfterTick;
+
+        if (hasMeaningfulChange)
+        {
+            Debug.Log(
+                $"[STATUS TICK] {GetOwnerName()} / " +
+                $"Timing={timing}, " +
+                $"Status={effect.Name}, " +
+                $"Part={(part == null ? "NONE" : part.Type.ToString())}, " +
+                $"Stack={context.StackBefore}->{context.StackAfter}, " +
+                $"Duration={context.DurationBefore}->{context.DurationAfter}, " +
+                $"Damage={context.AppliedDamage}");
+        }
 
         if (!effect.IsExpired)
             return;
@@ -598,4 +609,3 @@ public class CharacterStatusController
                "NULL";
     }
 }
-

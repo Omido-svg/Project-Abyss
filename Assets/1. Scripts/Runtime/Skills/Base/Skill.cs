@@ -15,6 +15,12 @@ public enum SkillRollReusePolicy
     OncePerAction
 }
 
+public enum PreparationTier
+{
+    Weak = 0,
+    Strong = 1
+}
+
 public abstract class Skill
 {
     public string SkillName { get; protected set; }
@@ -53,9 +59,24 @@ public abstract class Skill
         }
     }
 
-    public virtual SkillRollReusePolicy RollReusePolicy =>
-        RuntimeDefinition?.RollReusePolicy ??
-        SkillRollReusePolicy.RollEachExchange;
+    public virtual SkillRollReusePolicy RollReusePolicy
+    {
+        get
+        {
+            SkillDefinition definition = RuntimeDefinition;
+
+            // 친치로는 행동 시작 시 한 번 굴린 값을 해당 행동의 모든 교환에 재사용한다.
+            if (definition?.ResolverType == SkillResolverType.Chinchiro)
+                return SkillRollReusePolicy.OncePerAction;
+
+            return definition?.RollReusePolicy ??
+                   SkillRollReusePolicy.RollEachExchange;
+        }
+    }
+
+    public virtual PreparationTier PreparationTier =>
+        RuntimeDefinition?.PreparationTier ??
+        PreparationTier.Weak;
 
     public virtual ActionPhase DefaultPhase
     {
@@ -95,6 +116,29 @@ public abstract class Skill
     public virtual bool GainPrestige =>
         ActionType == ActionType.Duel;
 
+    public virtual int EnergyCost
+    {
+        get
+        {
+            SkillDefinition definition = RuntimeDefinition;
+
+            if (definition?.OverrideEnergyCost == true)
+                return Mathf.Max(0, definition.EnergyCost);
+
+            return ActionType switch
+            {
+                ActionType.Duel => 1,
+                ActionType.NormalAttack => 0,
+                ActionType.Preparation =>
+                    PreparationTier == PreparationTier.Strong
+                        ? 1
+                        : 0,
+                ActionType.Prestige => 0,
+                _ => 0
+            };
+        }
+    }
+
     public virtual float IgnoreBlock => 0f;
 
     public virtual PrestigeUsePolicy PrestigeUsePolicy
@@ -126,6 +170,9 @@ public abstract class Skill
     public virtual bool CanUseByResource(Character character)
     {
         if (character == null)
+            return false;
+
+        if (!character.CanAffordEnergy(EnergyCost))
             return false;
 
         SkillDefinition definition = RuntimeDefinition;
@@ -184,10 +231,25 @@ public abstract class Skill
                character.CurrentStatus.maxPrestige;
     }
 
-    public virtual void ConsumeResource(Character character)
+    public virtual bool TryConsumeResource(
+        Character character,
+        BattleAction sourceAction = null)
     {
-        if (character == null)
-            return;
+        if (character == null ||
+            !CanUseByResource(character))
+        {
+            return false;
+        }
+
+        // 모든 비용의 충족 여부를 먼저 검증한 뒤 실제 차감한다.
+        // 에너지가 부족한 행동은 효과 실행 전에 취소된다.
+        if (!character.TryConsumeEnergy(
+                EnergyCost,
+                sourceAction,
+                this))
+        {
+            return false;
+        }
 
         SkillDefinition definition = RuntimeDefinition;
 
@@ -231,19 +293,32 @@ public abstract class Skill
                 }
             }
 
-            return;
+            return true;
         }
 
-        if (ActionType != ActionType.Prestige ||
-            character.RuntimeStatus == null)
+        if (ActionType == ActionType.Prestige &&
+            character.RuntimeStatus != null)
         {
-            return;
+            character.RuntimeStatus.currentPrestige = 0;
+
+            Debug.Log(
+                $"{character.Data?.CharacterName ?? character.name} " +
+                "위세 게이지 소모 : 0");
         }
 
-        character.RuntimeStatus.currentPrestige = 0;
+        return true;
+    }
 
-        Debug.Log(
-            $"{character.Data.CharacterName} 위세 게이지 소모 : 0");
+    // 기존 호출부 호환. 신규 해결 파이프라인은 TryConsumeResource의 반환값을 확인한다.
+    public virtual void ConsumeResource(Character character)
+    {
+        if (!TryConsumeResource(character))
+        {
+            Debug.LogWarning(
+                $"[Skill Resource] 비용 소비 실패 / " +
+                $"Owner={character?.Data?.CharacterName ?? character?.name}, " +
+                $"Skill={SkillName}, EnergyCost={EnergyCost}");
+        }
     }
 
     public virtual bool CanAIUse(

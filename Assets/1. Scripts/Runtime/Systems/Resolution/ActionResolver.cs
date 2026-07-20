@@ -68,7 +68,8 @@ public class ActionResolver
 
                 actionStarted = true;
 
-                ExecuteSkill(action);
+                if (!ExecuteSkill(action))
+                    continue;
 
                 BattleLogType type =
                     action.Phase switch
@@ -276,16 +277,27 @@ public class ActionResolver
         return result;
     }
 
-    private void ExecuteSkill(
+    private bool ExecuteSkill(
         BattleAction action)
     {
-        if (action?.Skill == null)
-            return;
+        if (action?.Skill == null || action.Owner == null)
+            return false;
+
+        if (!action.Skill.TryConsumeResource(
+                action.Owner,
+                action))
+        {
+            Debug.LogWarning(
+                $"[ActionResolver] 행동 비용 부족으로 실행 취소 / " +
+                $"Owner={action.Owner.Data?.CharacterName ?? action.Owner.name}, " +
+                $"Skill={action.Skill.SkillName}, " +
+                $"Energy={action.Owner.CurrentEnergy}/" +
+                $"{action.Owner.MaxEnergy}, Cost={action.Skill.EnergyCost}");
+            return false;
+        }
 
         action.Skill.Execute(action);
-
-        action.Skill.ConsumeResource(
-            action.Owner);
+        return true;
     }
 
     private BattleAction CreateBattleAction(

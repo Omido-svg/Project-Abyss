@@ -4,7 +4,9 @@ using UnityEngine;
 public class CharacterBodyPartController
 {
     private readonly Character owner;
-    private const bool VerboseLog = false;
+    // const false를 사용하면 아래 로그 분기가 컴파일 타임에 도달 불가 코드가 된다.
+    // readonly로 두어 기본 OFF 상태를 유지하면서 CS0162를 방지한다.
+    private static readonly bool VerboseLog = false;
 
     public CharacterBodyPartController(Character owner)
     {
@@ -303,4 +305,3 @@ public class CharacterBodyPartController
             Debug.LogWarning(message);
     }
 }
-

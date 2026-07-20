@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Text;
 using TMPro;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class DebugBattleUI : MonoBehaviour
 {
@@ -34,8 +35,8 @@ public class DebugBattleUI : MonoBehaviour
     [SerializeField] private int maxActionSlotsToShow = 12;
 
     [Header("Update Options")]
-    [SerializeField] private bool updateEveryFrame = true;
-    [SerializeField] private float refreshInterval = 0.15f;
+    [SerializeField] private bool updateEveryFrame = false;
+    [SerializeField, Min(0.05f)] private float refreshInterval = 0.25f;
 
     private readonly StringBuilder sb = new();
     
@@ -84,8 +85,28 @@ public class DebugBattleUI : MonoBehaviour
     }
 
     private float refreshTimer;
+    private LayoutElement cachedLayoutElement;
+    private string lastRenderedText = string.Empty;
+    private bool hasVisibilityState;
+    private bool lastVisibility;
+
+    private static bool loggedUpdateEveryFrameCorrection;
+
+    [RuntimeInitializeOnLoadMethod(
+        RuntimeInitializeLoadType.SubsystemRegistration)]
+    private static void ResetStaticState()
+    {
+        loggedUpdateEveryFrameCorrection = false;
+    }
 
     //--------------------------------------------------
+
+    private void OnValidate()
+    {
+        // 런타임에서 매번 고치는 대신 Scene/Prefab에 저장되는 값 자체를 안전하게 유지한다.
+        if (updateEveryFrame)
+            updateEveryFrame = false;
+    }
 
     private void Awake()
     {
@@ -95,6 +116,26 @@ public class DebugBattleUI : MonoBehaviour
         if (text == null)
             text = GetComponentInChildren<TMP_Text>(true);
 
+        if (text != null)
+            cachedLayoutElement = text.GetComponent<LayoutElement>();
+
+        // 씬에 저장된 예전 updateEveryFrame=true 값도 런타임에서 안전하게 차단한다.
+        if (updateEveryFrame)
+        {
+            updateEveryFrame = false;
+
+            if (!loggedUpdateEveryFrameCorrection &&
+                !BattleSimulationRuntime.IsBatchSimulation)
+            {
+                loggedUpdateEveryFrameCorrection = true;
+
+                Debug.LogWarning(
+                    "[DebugBattleUI] updateEveryFrame를 비활성화했습니다. " +
+                    "캐릭터 선택 중 TMP와 Layout을 매 프레임 재빌드하면 큰 프레임 저하가 발생합니다.",
+                    this);
+            }
+        }
+
         if (viewRoot != null && viewCanvasGroup == null)
             viewCanvasGroup = viewRoot.GetComponent<CanvasGroup>();
 
@@ -103,9 +144,7 @@ public class DebugBattleUI : MonoBehaviour
 
         SetupText();
 
-        if (text != null)
-            text.text = "";
-
+        ClearTextIfNeeded();
         SetViewVisible(false);
     }
 
@@ -119,9 +158,7 @@ public class DebugBattleUI : MonoBehaviour
                 battleManager.SelectedCharacter = null;
             }
 
-            if (text != null)
-                text.text = "";
-
+            ClearTextIfNeeded();
             SetViewVisible(false);
             return;
         }
@@ -136,26 +173,21 @@ public class DebugBattleUI : MonoBehaviour
             battleManager != null &&
             battleManager.SelectedCharacter == null)
         {
-            if (text != null)
-                text.text = "";
-
+            ClearTextIfNeeded();
             SetViewVisible(false);
             return;
         }
 
-        if (updateEveryFrame)
-        {
-            RefreshNow();
-            return;
-        }
+        // updateEveryFrame는 이전 직렬화 데이터 호환용으로만 남긴다.
+        // 실제 갱신은 최소 간격을 두어 TMP / Canvas / Layout 재빌드 폭주를 막는다.
+        refreshTimer += Time.unscaledDeltaTime;
 
-        refreshTimer += Time.deltaTime;
+        float safeInterval = Mathf.Max(0.05f, refreshInterval);
 
-        if (refreshTimer < refreshInterval)
+        if (refreshTimer < safeInterval)
             return;
 
         refreshTimer = 0f;
-
         RefreshNow();
     }
 
@@ -168,7 +200,7 @@ public class DebugBattleUI : MonoBehaviour
 
         text.richText = true;
 
-        text.enableWordWrapping = true;
+        text.textWrappingMode = TextWrappingModes.Normal;
         text.overflowMode = TextOverflowModes.Overflow;
 
         text.alignment = TextAlignmentOptions.TopLeft;
@@ -200,7 +232,7 @@ public class DebugBattleUI : MonoBehaviour
 
         if (context == null)
         {
-            text.text = "";
+            ClearTextIfNeeded();
             SetViewVisible(false);
             return;
         }
@@ -210,7 +242,7 @@ public class DebugBattleUI : MonoBehaviour
 
         if (showOnlyWhenCharacterSelected && selected == null)
         {
-            text.text = "";
+            ClearTextIfNeeded();
             SetViewVisible(false);
             return;
         }
@@ -222,6 +254,12 @@ public class DebugBattleUI : MonoBehaviour
     
     private void SetViewVisible(bool visible)
     {
+        if (hasVisibilityState && lastVisibility == visible)
+            return;
+
+        hasVisibilityState = true;
+        lastVisibility = visible;
+
         if (viewCanvasGroup != null)
         {
             viewCanvasGroup.alpha = visible ? 1f : 0f;
@@ -280,8 +318,8 @@ public class DebugBattleUI : MonoBehaviour
         compactMode = true;
         maxActionSlotsToShow = 12;
 
-        updateEveryFrame = true;
-        refreshInterval = 0.15f;
+        updateEveryFrame = false;
+        refreshInterval = 0.25f;
 
         showOnlyWhenCharacterSelected = true;
         forceAllViewOptionsOnStart = true;
@@ -303,37 +341,72 @@ public class DebugBattleUI : MonoBehaviour
         if (showAllActionSlots)
             AppendAllActionSlots();
 
-        text.text = sb.ToString();
-
-        ResizeTextHeight();
+        ApplyTextIfChanged(sb.ToString());
     }
 
     //--------------------------------------------------
     // Layout
     //--------------------------------------------------
 
-    private void ResizeTextHeight()
+    private void ApplyTextIfChanged(string value)
     {
-        if (!autoResizeTextHeight)
+        value ??= string.Empty;
+
+        if (text == null ||
+            string.Equals(lastRenderedText, value, System.StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        lastRenderedText = value;
+        text.SetText(value);
+        ResizeTextHeight(value);
+    }
+
+    private void ClearTextIfNeeded()
+    {
+        if (text == null ||
+            string.IsNullOrEmpty(lastRenderedText) && string.IsNullOrEmpty(text.text))
+        {
+            return;
+        }
+
+        lastRenderedText = string.Empty;
+        text.SetText(string.Empty);
+    }
+
+    private void ResizeTextHeight(string value)
+    {
+        if (!autoResizeTextHeight || text == null)
             return;
 
-        if (text == null)
-            return;
-
-        RectTransform rect =
-            text.rectTransform;
+        RectTransform rect = text.rectTransform;
 
         if (rect == null)
             return;
 
-        text.ForceMeshUpdate();
+        // ForceMeshUpdate + RectTransform 직접 변경을 매 프레임 반복하면
+        // LayoutGroup / ContentSizeFitter와 연쇄 재빌드가 발생한다.
+        // 문자열이 실제로 바뀐 경우에만 preferred size를 계산한다.
+        float availableWidth = Mathf.Max(1f, rect.rect.width);
+        float preferredHeight = Mathf.Max(
+            text.GetPreferredValues(value, availableWidth, 0f).y + 30f,
+            100f);
 
-        float preferredHeight =
-            text.preferredHeight + 30f;
+        if (cachedLayoutElement != null)
+        {
+            if (Mathf.Abs(cachedLayoutElement.preferredHeight - preferredHeight) > 0.5f)
+                cachedLayoutElement.preferredHeight = preferredHeight;
 
-        rect.SetSizeWithCurrentAnchors(
-            RectTransform.Axis.Vertical,
-            Mathf.Max(preferredHeight, 100f));
+            return;
+        }
+
+        if (Mathf.Abs(rect.rect.height - preferredHeight) > 0.5f)
+        {
+            rect.SetSizeWithCurrentAnchors(
+                RectTransform.Axis.Vertical,
+                preferredHeight);
+        }
     }
 
     //--------------------------------------------------

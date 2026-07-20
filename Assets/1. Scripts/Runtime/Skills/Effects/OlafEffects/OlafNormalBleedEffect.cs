@@ -33,8 +33,13 @@ public class OlafNormalBleedEffect : SkillEffectDefinition
         OlafMadnessMechanic madness =
             context.Owner.GetMechanic<OlafMadnessMechanic>();
 
-        int bleedAmount =
-            madness?.GetNormalAttackBleedAmount() ?? 1;
+        // 새 규칙은 OlafMadnessMechanic이 합에서 이긴 교환마다
+        // 출혈을 직접 부여한다. 기존 SO가 OnExecute/AfterDamage 어느 타이밍으로
+        // 남아 있어도 중복 또는 일방 공격 출혈이 생기지 않도록 완전히 위임한다.
+        if (madness != null)
+            return;
+
+        int bleedAmount = 1;
 
         Bleeding bleeding =
             new Bleeding(

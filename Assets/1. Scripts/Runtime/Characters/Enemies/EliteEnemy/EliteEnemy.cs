@@ -7,6 +7,13 @@ public class EliteEnemy : Enemy
     [SerializeField]
     private EliteEnemySkillSet skillSet;
 
+    [Header("Posture")]
+    [SerializeField]
+    private bool usePostureRotation = true;
+
+    [SerializeField]
+    private EnemyPostureSettings postureSettings = new();
+
     private readonly List<BodyPart> bodyParts = new();
 
     public override IReadOnlyList<BodyPart> BodyParts => bodyParts;
@@ -120,6 +127,20 @@ public class EliteEnemy : Enemy
 
         AddMechanic(
             new EliteEnemyMechanic());
+
+        if (usePostureRotation)
+        {
+            AddMechanic(
+                new EnemyPostureMechanic(postureSettings));
+        }
+    }
+
+    public override int GetMaxCombatActionSlots()
+    {
+        EnemyPostureMechanic posture =
+            GetMechanic<EnemyPostureMechanic>();
+
+        return posture?.CurrentAttackSlotLimit ?? 3;
     }
 
     //--------------------------------

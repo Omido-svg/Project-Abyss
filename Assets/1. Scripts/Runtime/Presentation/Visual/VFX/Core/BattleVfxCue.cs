@@ -86,8 +86,16 @@ public class BattleVfxCue
         BattleVfxContext context)
     {
         string baseKey = !string.IsNullOrEmpty(CueKey)
-            ? CueKey
-            : $"{Vfx?.name ?? "NULL"}:{cueIndex}:{Timing}";
+            ? $"{CueKey}:{Timing}"
+            : $"{Vfx?.name ?? "NULL"}:{Timing}";
+
+        // 같은 CueKey를 가진 다중 타격 Cue가 서로의 재생 기록을 덮어쓰지 않도록
+        // SkillVisualDefinition 내부의 실제 리스트 인덱스를 런타임 키에 포함한다.
+        if (cueIndex >= 0)
+            baseKey += $":CUE:{cueIndex}";
+
+        if (UseHitIndexFilter)
+            baseKey += $":FILTER:{HitIndex}";
 
         return RepeatMode switch
         {
@@ -99,6 +107,37 @@ public class BattleVfxCue
 
             _ => baseKey
         };
+    }
+
+    public bool CanAutoDistributeByHitIndexWith(
+        BattleVfxCue other)
+    {
+        if (other == null ||
+            Timing != BattleVfxTiming.OnHitFrame ||
+            other.Timing != BattleVfxTiming.OnHitFrame ||
+            UseHitIndexFilter ||
+            other.UseHitIndexFilter ||
+            string.IsNullOrEmpty(CueKey) ||
+            !string.Equals(
+                CueKey,
+                other.CueKey,
+                StringComparison.Ordinal))
+        {
+            return false;
+        }
+
+        // 같은 논리 CueKey와 동일한 런타임 조건을 가진 OnHitFrame Cue는
+        // 리스트 순서대로 HitIndex에 배정할 수 있다.
+        // VFX/Anchor/Delay는 타격별 연출 차이를 허용하기 위해 비교하지 않는다.
+        return RepeatMode == other.RepeatMode &&
+               RequiredAttackerData == other.RequiredAttackerData &&
+               string.Equals(
+                   RequiredSkillNameContains,
+                   other.RequiredSkillNameContains,
+                   StringComparison.Ordinal) &&
+               RequirePositiveDamage == other.RequirePositiveDamage &&
+               RequirePositiveResolvedDamage ==
+                   other.RequirePositiveResolvedDamage;
     }
 
     private static int ResolveTotalDamage(

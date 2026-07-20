@@ -7,6 +7,7 @@ public sealed class BattleAnalysisDebugPanel : MonoBehaviour
     [SerializeField] private Button winRateButton;
     [SerializeField] private Button damageButton;
     [SerializeField] private Button stopButton;
+    [SerializeField] private Button openFolderButton;
     [SerializeField] private TMP_Text statusText;
 
     private BattleBatchSimulationRunner runner;
@@ -17,9 +18,25 @@ public sealed class BattleAnalysisDebugPanel : MonoBehaviour
         Button stop,
         TMP_Text status)
     {
+        Configure(
+            winRate,
+            damage,
+            stop,
+            null,
+            status);
+    }
+
+    public void Configure(
+        Button winRate,
+        Button damage,
+        Button stop,
+        Button openFolder,
+        TMP_Text status)
+    {
         winRateButton = winRate;
         damageButton = damage;
         stopButton = stop;
+        openFolderButton = openFolder;
         statusText = status;
     }
 
@@ -28,10 +45,20 @@ public sealed class BattleAnalysisDebugPanel : MonoBehaviour
         BindButtons();
     }
 
+    private void OnEnable()
+    {
+        BindButtons();
+        ResolveAndRegisterRunner();
+    }
+
     private void Start()
     {
-        ResolveRunner();
-        runner?.RegisterPanel(this);
+        ResolveAndRegisterRunner();
+    }
+
+    private void OnDisable()
+    {
+        UnbindButtons();
     }
 
     private void OnDestroy()
@@ -51,6 +78,9 @@ public sealed class BattleAnalysisDebugPanel : MonoBehaviour
 
         stopButton?.onClick.AddListener(
             StopAnalysis);
+
+        openFolderButton?.onClick.AddListener(
+            OpenOutputFolder);
     }
 
     private void UnbindButtons()
@@ -63,30 +93,71 @@ public sealed class BattleAnalysisDebugPanel : MonoBehaviour
 
         stopButton?.onClick.RemoveListener(
             StopAnalysis);
+
+        openFolderButton?.onClick.RemoveListener(
+            OpenOutputFolder);
     }
 
-    private void ResolveRunner()
+    private BattleBatchSimulationRunner ResolveRunner()
     {
         runner =
             BattleBatchSimulationRunner.GetOrCreate();
+
+        return runner;
+    }
+
+    private void ResolveAndRegisterRunner()
+    {
+        BattleBatchSimulationRunner resolved =
+            ResolveRunner();
+
+        resolved?.RegisterPanel(this);
     }
 
     public void RunWinRateAnalysis()
     {
-        ResolveRunner();
-        runner?.RunWinRateAnalysis();
+        BattleBatchSimulationRunner resolved =
+            ResolveRunner();
+
+        if (resolved == null)
+        {
+            SetStatus("배치 분석 Runner를 생성하지 못했습니다.");
+            return;
+        }
+
+        resolved.RegisterPanel(this);
+        resolved.RunWinRateAnalysis();
     }
 
     public void RunDamageAnalysis()
     {
-        ResolveRunner();
-        runner?.RunDamageAnalysis();
+        BattleBatchSimulationRunner resolved =
+            ResolveRunner();
+
+        if (resolved == null)
+        {
+            SetStatus("배치 분석 Runner를 생성하지 못했습니다.");
+            return;
+        }
+
+        resolved.RegisterPanel(this);
+        resolved.RunDamageAnalysis();
     }
 
     public void StopAnalysis()
     {
-        ResolveRunner();
-        runner?.StopAnalysis();
+        BattleBatchSimulationRunner resolved =
+            ResolveRunner();
+
+        resolved?.StopAnalysis();
+    }
+
+    public void OpenOutputFolder()
+    {
+        BattleBatchSimulationRunner resolved =
+            ResolveRunner();
+
+        resolved?.OpenOutputFolder();
     }
 
     public void SetStatus(string value)

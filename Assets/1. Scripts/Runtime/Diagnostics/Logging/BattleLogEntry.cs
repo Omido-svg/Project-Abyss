@@ -61,6 +61,7 @@ public class BattleLogEntry
     public int ClashPower;
     public int SpeedModifier;
     public int MomentumModifier;
+    public int PreparationModifier;
     public bool Critical;
 
     private bool snapshotCaptured;
@@ -137,6 +138,9 @@ public class BattleLogEntry
         MomentumModifier =
             Action.MomentumModifier;
 
+        PreparationModifier =
+            Action.PreparationModifier;
+
         Critical =
             Action.Critical;
     }
@@ -187,6 +191,7 @@ public class BattleLogEntry
                 $"{PurePower} " +
                 $"{FormatSigned("Speed", SpeedModifier)} " +
                 $"{FormatSigned("Momentum", MomentumModifier)} " +
+                $"{FormatSigned("Preparation", PreparationModifier)} " +
                 $"= {ClashPower}");
 
             builder.AppendLine(

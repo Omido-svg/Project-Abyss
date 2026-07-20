@@ -71,7 +71,11 @@ public class MomentumManager
         int value = GetPerspectiveValue(owner);
 
         if (value <= settings.LastStandThreshold)
-            return MomentumState.LastStand;
+        {
+            return owner?.SupportsLastStand == false
+                ? MomentumState.Disadvantage
+                : MomentumState.LastStand;
+        }
 
         if (value < settings.DisadvantageThreshold)
             return MomentumState.Disadvantage;

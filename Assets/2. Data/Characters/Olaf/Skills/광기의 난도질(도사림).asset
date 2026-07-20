@@ -17,10 +17,36 @@ MonoBehaviour:
   BasePower: 0
   CanBreakPart: 0
   GainPrestige: 1
+  ExchangeRollCount: 3
+  RollReusePolicy: 0
+  ResolvePrestigeInCombat: 0
+  OverrideCanClash: 0
+  CanClashValue: 0
+  PreparationTier: 0
   ResolverType: 0
   DiceMin: 0
   DiceMax: 0
-  CoinCount: 0
+  CoinCount: 1
+  CoinFrontChance: 0.5
+  CoinFrontValue: 1
+  CoinBackValue: 0
+  CoinFrontIsCritical: 0
+  ChinchiroArashiBonus: 6
+  ChinchiroShigoroBonus: 6
+  ChinchiroHifumiPenalty: 1
+  ChinchiroHifumiSelfDamage: 1
   Effects:
   - {fileID: 11400000, guid: ab33108d62432d2408fe236c46580b07, type: 2}
+  - {fileID: 11400000, guid: f5fd01df0145e1746a194b796bcd8bf5, type: 2}
+  OverrideEnergyCost: 0
+  EnergyCost: 0
+  OverrideResourceRules: 0
+  RequireFullPrestige: 0
+  PrestigeCost: 0
+  ConsumeAllPrestige: 0
+  CustomResourceKey: 
+  CustomResourceCost: 0
+  ConsumeAllCustomResource: 0
+  OverridePrestigeUsePolicy: 0
+  PrestigeUsePolicy: 1
   VisualDefinition: {fileID: 11400000, guid: 39165c1b463ebf74c825f6f456ae62d6, type: 2}

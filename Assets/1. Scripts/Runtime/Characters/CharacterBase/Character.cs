@@ -131,6 +131,19 @@ public abstract class Character : MonoBehaviour
         }
     }
 
+    public int CurrentEnergy =>
+        resourceController?.CurrentEnergy ?? 0;
+
+    public int MaxEnergy =>
+        resourceController?.MaxEnergy ??
+        CurrentStatus?.maxEnergy ??
+        Data?.maxEnergy ?? 0;
+
+    public int TurnClashPowerBonus =>
+        combatState?.TurnClashPowerBonus ?? 0;
+
+    public virtual bool SupportsLastStand => true;
+
     public bool IsDead
     {
         get
@@ -243,6 +256,10 @@ public abstract class Character : MonoBehaviour
 
             buildController.ApplyStatusModifiers(
                 CurrentStatus);
+
+            resourceController.ConfigureEnergy(
+                CurrentStatus?.maxEnergy ?? data?.maxEnergy ?? 0,
+                fillToMaximum: true);
 
             buildController.ApplyBodyPartModifiers(
                 BodyParts);
@@ -433,6 +450,12 @@ public abstract class Character : MonoBehaviour
 
     //------------------------------------------------
 
+    public virtual int GetMaxCombatActionSlots()
+    {
+        // 플레이어의 공격 가능 부위는 머리 + 양팔이므로 시스템 상한은 3이다.
+        return 3;
+    }
+
     public virtual int GetMaxActionSlotsForPart(BodyPart part)
     {
         if (part == null)
@@ -541,6 +564,13 @@ public abstract class Character : MonoBehaviour
     {
         if (!IsInitialized || IsDead)
             return;
+
+        // 도사림의 그 턴 한정 합 보정은 다음 턴 시작 전에 초기화한다.
+        combatState?.ClearTurnModifiers();
+
+        // 에너지는 매 턴 시작 시 최대치까지 전량 회복된다.
+        // 도사림/합 계획 전에 복구되어 UI와 AI가 같은 예산을 본다.
+        resourceController?.RestoreEnergyToFull();
 
         statusController?.OnTurnStart();
     }
@@ -778,6 +808,29 @@ public abstract class Character : MonoBehaviour
                 CalculateInitialHP(),
                 0,
                 MaxCombatHP);
+    }
+
+    public void WeakenPart(
+        BodyPart part,
+        Character source = null,
+        BattleAction sourceAction = null)
+    {
+        bodyPartController?.WeakenPart(
+            part,
+            source ?? this,
+            sourceAction);
+    }
+
+    public void AddTurnClashPowerBonus(int amount)
+    {
+        if (amount == 0)
+            return;
+
+        combatState?.AddTurnClashPowerBonus(amount);
+
+        Debug.Log(
+            $"{Data?.CharacterName ?? name} 이번 턴 합 위력 " +
+            $"{amount:+#;-#;0} / 누적 {TurnClashPowerBonus:+#;-#;0}");
     }
 
     public bool TryBreakWeakenedPart(BodyPart part)
@@ -1066,6 +1119,38 @@ public abstract class Character : MonoBehaviour
                resourceController.TryConsumeResource(
                    key,
                    amount);
+    }
+
+    public bool CanAffordEnergy(int amount)
+    {
+        return resourceController != null &&
+               resourceController.CanAffordEnergy(amount);
+    }
+
+    public bool TryConsumeEnergy(
+        int amount,
+        BattleAction sourceAction = null,
+        Skill sourceSkill = null)
+    {
+        return resourceController != null &&
+               resourceController.TryConsumeEnergy(
+                   amount,
+                   sourceAction,
+                   sourceSkill);
+    }
+
+    public void AddEnergy(
+        int amount,
+        CombatResourceChangeReason reason =
+            CombatResourceChangeReason.SkillEffect,
+        BattleAction sourceAction = null,
+        Skill sourceSkill = null)
+    {
+        resourceController?.AddEnergy(
+            amount,
+            reason,
+            sourceAction,
+            sourceSkill);
     }
 
     public CharacterRuntimeSnapshot CaptureRuntimeSnapshot()

@@ -32,6 +32,7 @@ public class BattleAction
     public int ClashPower;
     public int SpeedModifier;
     public int MomentumModifier;
+    public int PreparationModifier;
 
     public bool Critical =>
         LastRollResult != null &&
@@ -49,7 +50,8 @@ public class BattleAction
             ClashPower =
                 value +
                 SpeedModifier +
-                MomentumModifier;
+                MomentumModifier +
+                PreparationModifier;
         }
     }
 
@@ -183,19 +185,23 @@ public class BattleAction
 
     public void ApplyClashModifiers(
         int speedModifier,
-        int momentumModifier)
+        int momentumModifier,
+        int preparationModifier = 0)
     {
         SpeedModifier = speedModifier;
         MomentumModifier = momentumModifier;
+        PreparationModifier = preparationModifier;
 
         ClashPower =
             RolledPower +
             SpeedModifier +
-            MomentumModifier;
+            MomentumModifier +
+            PreparationModifier;
 
         LastRollResult?.SetClashModifiers(
             SpeedModifier,
-            MomentumModifier);
+            MomentumModifier,
+            PreparationModifier);
     }
 
     public void ClearClashModifiers()
@@ -219,6 +225,7 @@ public class BattleAction
         ClashPower = 0;
         SpeedModifier = 0;
         MomentumModifier = 0;
+        PreparationModifier = 0;
         HasRolled = false;
         LastRollResult = null;
     }

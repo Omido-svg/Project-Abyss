@@ -15,6 +15,7 @@ public class RollResult
 
     public int SpeedModifier;
     public int MomentumModifier;
+    public int PreparationModifier;
     public int ClashPower;
 
     public bool IsMax;
@@ -72,10 +73,12 @@ public class RollResult
 
     public void SetClashModifiers(
         int speedModifier,
-        int momentumModifier)
+        int momentumModifier,
+        int preparationModifier = 0)
     {
         SpeedModifier = speedModifier;
         MomentumModifier = momentumModifier;
+        PreparationModifier = preparationModifier;
         RecalculateClashPower();
     }
 
@@ -89,7 +92,8 @@ public class RollResult
         ClashPower =
             FinalPower +
             SpeedModifier +
-            MomentumModifier;
+            MomentumModifier +
+            PreparationModifier;
     }
 
     public RollResult Clone()
@@ -164,6 +168,11 @@ public class RollResult
                 "기세(구식)",
                 MomentumModifier);
         }
+
+        AppendSignedModifier(
+            builder,
+            "도사림",
+            PreparationModifier);
 
         builder.Append($" = 합 {ClashPower}");
 

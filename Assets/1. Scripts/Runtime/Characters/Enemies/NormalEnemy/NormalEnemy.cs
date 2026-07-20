@@ -20,6 +20,10 @@ public class NormalEnemy : Enemy
     public IReadOnlyList<Skill> CharacterSkills =>
         characterSkills;
 
+    public override bool SupportsLastStand => false;
+
+    public override int GetMaxCombatActionSlots() => 1;
+
     protected override void BuildBodyParts()
     {
         // 일반몹은 가짜 HEAD를 만들지 않는다.
@@ -70,7 +74,7 @@ public class NormalEnemy : Enemy
             return;
 
         Skill skill =
-            definition.CreateRuntimeSkill();
+            NormalEnemyRuntimeSkill.Create(definition);
 
         if (skill != null)
             characterSkills.Add(skill);
@@ -95,4 +99,81 @@ public class NormalEnemy : Enemy
     {
         return null;
     }
+}
+
+
+internal static class NormalEnemyRuntimeSkill
+{
+    public static Skill Create(SkillDefinition definition)
+    {
+        if (definition == null)
+            return null;
+
+        return definition.ActionType switch
+        {
+            ActionType.NormalAttack => new NormalEnemyNormalSkill(definition),
+            ActionType.Duel => new NormalEnemyDuelSkill(definition),
+            ActionType.Prestige => new NormalEnemyPrestigeSkill(definition),
+            _ => definition.CreateRuntimeSkill()
+        };
+    }
+
+    private sealed class NormalEnemyNormalSkill : DataNormalSkill
+    {
+        public NormalEnemyNormalSkill(SkillDefinition definition)
+            : base(definition)
+        {
+            Resolver = CreateUniformDice(definition);
+        }
+
+        public override int ExchangeRollCount => 3;
+        public override SkillRollReusePolicy RollReusePolicy => SkillRollReusePolicy.RollEachExchange;
+    }
+
+    private sealed class NormalEnemyDuelSkill : DataDuelSkill
+    {
+        public NormalEnemyDuelSkill(SkillDefinition definition)
+            : base(definition)
+        {
+            Resolver = CreateUniformDice(definition);
+        }
+
+        public override int ExchangeRollCount => 3;
+        public override SkillRollReusePolicy RollReusePolicy => SkillRollReusePolicy.RollEachExchange;
+    }
+
+    private sealed class NormalEnemyPrestigeSkill : DataPrestigeSkill
+    {
+        public NormalEnemyPrestigeSkill(SkillDefinition definition)
+            : base(definition)
+        {
+            Resolver = CreateUniformDice(definition);
+        }
+
+        public override int ExchangeRollCount => 3;
+        public override SkillRollReusePolicy RollReusePolicy => SkillRollReusePolicy.RollEachExchange;
+    }
+
+    private static SkillResolver CreateUniformDice(
+        SkillDefinition definition)
+    {
+        int minimum = definition?.DiceMin ?? 1;
+        int maximum = definition?.DiceMax ?? 6;
+
+        // 기존 비-Dice 에셋에서 주사위 범위가 비어 있으면
+        // 일반 적 기준선인 균등 D6으로 안전하게 복구한다.
+        if (minimum == 0 && maximum == 0)
+        {
+            minimum = 1;
+            maximum = 6;
+        }
+
+        if (maximum < minimum)
+            (minimum, maximum) = (maximum, minimum);
+
+        return new DiceResolver(
+            minimum,
+            maximum);
+    }
+
 }

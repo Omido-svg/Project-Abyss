@@ -145,15 +145,24 @@ public sealed class SkillSelectPanelUI : MonoBehaviour
         {
             label = $"{defaultName}\n<없음>";
         }
-        else if (!usable)
-        {
-            label = string.IsNullOrEmpty(reason)
-                ? $"{skill.SkillName}\n<비활성화>"
-                : $"{skill.SkillName}\n<color=#FCA5A5>{reason}</color>";
-        }
         else
         {
-            label = skill.SkillName;
+            string energyLabel =
+                skill.EnergyCost <= 0
+                    ? "<color=#A7F3D0>에너지 0</color>"
+                    : $"<color=#FDE68A>에너지 {skill.EnergyCost}</color>";
+
+            if (!usable)
+            {
+                label = string.IsNullOrEmpty(reason)
+                    ? $"{skill.SkillName}\n{energyLabel} · <비활성화>"
+                    : $"{skill.SkillName}\n{energyLabel} · " +
+                      $"<color=#FCA5A5>{reason}</color>";
+            }
+            else
+            {
+                label = $"{skill.SkillName}\n{energyLabel}";
+            }
         }
 
         skillButton.Bind(

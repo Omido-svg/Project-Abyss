@@ -15,6 +15,16 @@ public sealed class BattleAverageAIPlanner
         public BattleContext Context;
         public readonly List<ActionSlot> Planned = new();
         public int PrestigeCount;
+        public int PlannedEnergyCost;
+
+        public bool CanPlanEnergy(Skill skill)
+        {
+            return Owner != null &&
+                   skill != null &&
+                   PlannedEnergyCost +
+                   Mathf.Max(0, skill.EnergyCost) <=
+                   Owner.CurrentEnergy;
+        }
 
         public int CountSkill(Skill skill)
         {
@@ -122,8 +132,12 @@ public sealed class BattleAverageAIPlanner
                     TargetSlot = null
                 };
 
-                actionManager.AddOrReplaceSlot(slot);
+                if (!actionManager.TryAddOrReplaceSlot(slot))
+                    continue;
+
                 state.Planned.Add(slot);
+                state.PlannedEnergyCost +=
+                    Mathf.Max(0, decision.Skill.EnergyCost);
 
                 if (decision.Skill.ActionType == ActionType.Prestige)
                     state.PrestigeCount++;
@@ -213,6 +227,9 @@ public sealed class BattleAverageAIPlanner
         {
             return false;
         }
+
+        if (!state.CanPlanEnergy(skill))
+            return false;
 
         if (skill.ActionType != ActionType.Prestige)
             return true;

@@ -15,8 +15,10 @@ public sealed class BattleDynamicAnalysisRecorder : MonoBehaviour
     [SerializeField] private bool captureUnityWarningsAndErrors = true;
     [SerializeField] private bool captureBattleDebugMessages = true;
     [SerializeField] private bool echoJsonToConsole;
-    [SerializeField] private string outputSubdirectory =
-        "ProjectAbyss/BattleAnalysis";
+
+    // Assets/BattleAnalysis 아래에 세션 폴더를 만든다.
+    public string OutputRootDirectory =>
+        BattleAnalysisOutputPaths.BattleAnalysisDirectory;
 
     public string CurrentSessionDirectory =>
         writer?.SessionDirectory;
@@ -51,6 +53,84 @@ public sealed class BattleDynamicAnalysisRecorder : MonoBehaviour
         battleManager = manager;
     }
 
+
+    /// <summary>
+    /// 배치 분석 버튼을 누르기 전에 일반 동적 Recorder가 만든 대기 세션을 정리한다.
+    /// 실제 행동/피해가 하나라도 있었다면 세션을 보존하고, 아무 행동도 없었다면
+    /// 폴더 자체를 삭제해 ABORTED_OR_DRAW 노이즈를 남기지 않는다.
+    /// </summary>
+    public static void PrepareForBatchSimulation()
+    {
+        BattleDynamicAnalysisRecorder[] recorders =
+            FindObjectsByType<BattleDynamicAnalysisRecorder>(
+                FindObjectsInactive.Include,
+                FindObjectsSortMode.None);
+
+        foreach (BattleDynamicAnalysisRecorder recorder in recorders)
+            recorder?.PrepareCurrentSessionForBatch();
+    }
+
+    private void PrepareCurrentSessionForBatch()
+    {
+        if (writer == null)
+            return;
+
+        bool meaningful = HasMeaningfulCombatData();
+        Unbind();
+
+        if (meaningful)
+        {
+            CloseSession("BATCH_STARTED");
+            return;
+        }
+
+        DiscardCurrentSession();
+    }
+
+    private bool HasMeaningfulCombatData()
+    {
+        if (summary == null)
+            return false;
+
+        return summary.playerActions > 0 ||
+               summary.enemyActions > 0 ||
+               summary.clashes > 0 ||
+               summary.playerDamageDealt > 0 ||
+               summary.playerDamageTaken > 0 ||
+               summary.playerKills > 0 ||
+               summary.enemyKills > 0 ||
+               summary.playerEnergySpent > 0 ||
+               summary.enemyEnergySpent > 0;
+    }
+
+    private void DiscardCurrentSession()
+    {
+        BattleTraceFileWriter discardedWriter = writer;
+        string discardedDirectory = discardedWriter?.SessionDirectory;
+
+        writer = null;
+        summary = null;
+        sessionClosed = true;
+
+        try
+        {
+            discardedWriter?.Dispose();
+
+            if (!string.IsNullOrWhiteSpace(discardedDirectory) &&
+                Directory.Exists(discardedDirectory))
+            {
+                Directory.Delete(discardedDirectory, true);
+            }
+        }
+        catch (Exception exception)
+        {
+            Debug.LogWarning(
+                "[BattleDynamicAnalysisRecorder] 빈 사전 세션 폴더 삭제 실패\n" +
+                discardedDirectory + "\n" + exception.Message,
+                this);
+        }
+    }
+
     private void Awake()
     {
         ResolveBattleManager();
@@ -58,6 +138,11 @@ public sealed class BattleDynamicAnalysisRecorder : MonoBehaviour
 
     private void Start()
     {
+        if (BattleSimulationRuntime.ConsumeSuppressNextDynamicAnalysisSession())
+        {
+            return;
+        }
+
         if (!recordAutomatically ||
             BattleSimulationRuntime.SuppressDetailedTrace)
         {
@@ -133,7 +218,21 @@ public sealed class BattleDynamicAnalysisRecorder : MonoBehaviour
             return;
 
         BuildCharacterIds();
-        OpenSession();
+
+        try
+        {
+            OpenSession();
+        }
+        catch (Exception exception)
+        {
+            Debug.LogError(
+                "[BattleDynamicAnalysisRecorder] JSONL 세션 생성 실패\n" +
+                "대상 경로: " + OutputRootDirectory + "\n" +
+                exception,
+                this);
+            return;
+        }
+
         SubscribeEvents();
         bound = true;
 
@@ -158,6 +257,7 @@ public sealed class BattleDynamicAnalysisRecorder : MonoBehaviour
         battleEvent.OnClashStart += HandleClashStart;
         battleEvent.OnClashResolved += HandleClashResolved;
         battleEvent.OnDamageEventResolved += HandleDamageResolved;
+        battleEvent.OnCombatResourceChanged += HandleResourceChanged;
         battleEvent.OnStatusApplyResolved += HandleStatusApplied;
         battleEvent.OnStatusTicked += HandleStatusTicked;
         battleEvent.OnStatusRemovedDetailed += HandleStatusRemoved;
@@ -196,6 +296,7 @@ public sealed class BattleDynamicAnalysisRecorder : MonoBehaviour
             battleEvent.OnClashStart -= HandleClashStart;
             battleEvent.OnClashResolved -= HandleClashResolved;
             battleEvent.OnDamageEventResolved -= HandleDamageResolved;
+            battleEvent.OnCombatResourceChanged -= HandleResourceChanged;
             battleEvent.OnStatusApplyResolved -= HandleStatusApplied;
             battleEvent.OnStatusTicked -= HandleStatusTicked;
             battleEvent.OnStatusRemovedDetailed -= HandleStatusRemoved;
@@ -221,12 +322,8 @@ public sealed class BattleDynamicAnalysisRecorder : MonoBehaviour
             DateTime.UtcNow.ToString("yyyyMMdd_HHmmss_fff") +
             "_" + Guid.NewGuid().ToString("N").Substring(0, 8);
 
-        string root = Path.Combine(
-            Application.persistentDataPath,
-            outputSubdirectory);
-
         writer = new BattleTraceFileWriter(
-            root,
+            OutputRootDirectory,
             sessionId);
 
         summary = new BattleTraceSessionSummary
@@ -238,6 +335,11 @@ public sealed class BattleDynamicAnalysisRecorder : MonoBehaviour
 
         nextSequence = 1;
         sessionClosed = false;
+
+        Debug.Log(
+            "[BattleTrace] events.jsonl created: " +
+            writer.EventsPath,
+            this);
     }
 
     private void CloseSession(string fallbackOutcome)
@@ -246,25 +348,39 @@ public sealed class BattleDynamicAnalysisRecorder : MonoBehaviour
             return;
 
         sessionClosed = true;
+        BattleTraceFileWriter closingWriter = writer;
 
-        if (summary != null)
+        try
         {
-            if (string.IsNullOrWhiteSpace(summary.outcome))
-                summary.outcome = fallbackOutcome;
+            if (summary != null)
+            {
+                if (string.IsNullOrWhiteSpace(summary.outcome))
+                    summary.outcome = fallbackOutcome;
 
-            summary.endedUtc = DateTime.UtcNow.ToString("O");
-            summary.completedTurns = currentTurn;
-            summary.totalEvents =
-                Mathf.Max(0, (int)nextSequence - 1);
+                summary.endedUtc = DateTime.UtcNow.ToString("O");
+                summary.completedTurns = currentTurn;
+                summary.totalEvents =
+                    Mathf.Max(0, (int)nextSequence - 1);
 
-            writer.WriteSummary(summary);
+                closingWriter.WriteSummary(summary);
+            }
+
+            LastCompletedSessionDirectory =
+                closingWriter.SessionDirectory;
         }
-
-        LastCompletedSessionDirectory =
-            writer.SessionDirectory;
-
-        writer.Dispose();
-        writer = null;
+        catch (Exception exception)
+        {
+            Debug.LogError(
+                "[BattleDynamicAnalysisRecorder] summary.json 저장 실패\n" +
+                "세션 경로: " + closingWriter.SessionDirectory + "\n" +
+                exception,
+                this);
+        }
+        finally
+        {
+            closingWriter.Dispose();
+            writer = null;
+        }
     }
 
     private void HandleBattleStarted()
@@ -420,6 +536,32 @@ public sealed class BattleDynamicAnalysisRecorder : MonoBehaviour
             nameof(BattleEvent.OnDamageEventResolved),
             action: CreateAction(damage?.Action),
             damage: CreateDamage(damage),
+            snapshot: CreateStateSnapshot(false));
+    }
+
+    private void HandleResourceChanged(
+        CombatResourceChangeContext change)
+    {
+        if (change == null)
+            return;
+
+        if (summary != null &&
+            change.ResourceKey == CombatResourceKeys.Energy &&
+            change.Delta < 0)
+        {
+            int spent = -change.Delta;
+
+            if (change.Owner == context?.Player)
+                summary.playerEnergySpent += spent;
+            else
+                summary.enemyEnergySpent += spent;
+        }
+
+        Emit(
+            "RESOURCE_CHANGED",
+            nameof(BattleEvent.OnCombatResourceChanged),
+            action: CreateAction(change.SourceAction),
+            resource: CreateResource(change),
             snapshot: CreateStateSnapshot(false));
     }
 
@@ -581,6 +723,7 @@ public sealed class BattleDynamicAnalysisRecorder : MonoBehaviour
         BattleTraceClash clash = null,
         BattleTraceDamage damage = null,
         BattleTraceStatus status = null,
+        BattleTraceResource resource = null,
         BattleTraceStateSnapshot snapshot = null,
         BattleTraceRuleSnapshot rules = null,
         string message = null)
@@ -609,6 +752,7 @@ public sealed class BattleDynamicAnalysisRecorder : MonoBehaviour
                 clash = clash,
                 damage = damage,
                 status = status,
+                resource = resource,
                 snapshot = snapshot
             };
 
@@ -689,6 +833,28 @@ public sealed class BattleDynamicAnalysisRecorder : MonoBehaviour
             : "ENEMY";
     }
 
+    private BattleTraceResource CreateResource(
+        CombatResourceChangeContext change)
+    {
+        if (change == null)
+            return null;
+
+        return new BattleTraceResource
+        {
+            ownerId = GetCharacterId(change.Owner),
+            ownerName = GetCharacterName(change.Owner),
+            ownerSide = GetSide(change.Owner),
+            key = change.ResourceKey,
+            before = change.Before,
+            after = change.After,
+            maximum = change.Maximum,
+            delta = change.Delta,
+            reason = change.Reason.ToString(),
+            sourceActionId = change.SourceAction?.ActionId ?? 0,
+            sourceSkill = change.SourceSkill?.SkillName ?? "NONE"
+        };
+    }
+
     private BattleTraceAction CreateAction(
         BattleAction action)
     {
@@ -725,9 +891,12 @@ public sealed class BattleDynamicAnalysisRecorder : MonoBehaviour
             clashPower = resolvedAction?.ClashPower ?? 0,
             speedModifier = resolvedAction?.SpeedModifier ?? 0,
             momentumModifier = resolvedAction?.MomentumModifier ?? 0,
+            preparationModifier =
+                resolvedAction?.PreparationModifier ?? 0,
             critical = resolvedAction?.Critical ?? false,
             exchangeRollCount =
-                slot.Skill?.ExchangeRollCount ?? 0
+                slot.Skill?.ExchangeRollCount ?? 0,
+            energyCost = slot.Skill?.EnergyCost ?? 0
         };
     }
 
@@ -787,7 +956,9 @@ public sealed class BattleDynamicAnalysisRecorder : MonoBehaviour
                 prestige =
                     character.RuntimeStatus?.currentPrestige ?? 0,
                 maxPrestige =
-                    character.CurrentStatus?.maxPrestige ?? 0
+                    character.CurrentStatus?.maxPrestige ?? 0,
+                energy = character.CurrentEnergy,
+                maxEnergy = character.MaxEnergy
             };
 
         if (character.StatusEffects != null)
@@ -923,6 +1094,7 @@ public sealed class BattleDynamicAnalysisRecorder : MonoBehaviour
             finalPower = result.FinalPower,
             speedModifier = result.SpeedModifier,
             momentumModifier = result.MomentumModifier,
+            preparationModifier = result.PreparationModifier,
             clashPower = result.ClashPower,
             isMax = result.IsMax,
             critical = result.IsCritical,
