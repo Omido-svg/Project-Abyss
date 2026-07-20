@@ -18,6 +18,7 @@ internal sealed class BattleVisualDamagePresenter
         BattleVisualPlaybackState playback,
         SkillVisualDefinition visual)
     {
+        ResetCurrentDamageState(playback);
         PrepareHitDamages(playback, visual);
         BeginHpOverride(playback);
     }
@@ -56,28 +57,43 @@ internal sealed class BattleVisualDamagePresenter
         if (playback == null)
             return;
 
-        BattleVisualRequest request = playback.Request;
-        bool hadVisualHpOverride = playback.HasVisualHpOverride;
-
         ResolveBattleUiManager();
 
-        if (hadVisualHpOverride &&
-            battleUIManager != null &&
-            request?.Target != null)
+        if (battleUIManager != null)
         {
-            battleUIManager.ClearTargetHpOverride(
-                request.Target,
-                request.TargetPart);
+            foreach (BattleVisualHpOverrideTarget target
+                     in playback.HpOverrideTargets)
+            {
+                if (target.Character == null)
+                    continue;
+
+                battleUIManager.ClearTargetHpOverride(
+                    target.Character,
+                    target.Part);
+
+                battleUIManager.RefreshTargetUI(
+                    target.Character,
+                    target.Part);
+            }
         }
+
+        playback.HpOverrideTargets.Clear();
+        ResetCurrentDamageState(playback);
+
+        Canvas.ForceUpdateCanvases();
+    }
+
+    private static void ResetCurrentDamageState(
+        BattleVisualPlaybackState playback)
+    {
+        if (playback == null)
+            return;
 
         playback.HasVisualHpOverride = false;
         playback.VisualHpStart = 0;
         playback.VisualHpFinal = 0;
         playback.VisualDamageAccumulated = 0;
         playback.HitDamages.Clear();
-
-        if (hadVisualHpOverride)
-            RefreshBattleUi(request, -1, 0);
     }
 
     private static void PrepareHitDamages(
@@ -133,6 +149,9 @@ internal sealed class BattleVisualDamagePresenter
         playback.VisualHpFinal = visualFinalHp;
         playback.VisualDamageAccumulated = 0;
         playback.HasVisualHpOverride = true;
+        playback.TrackHpOverride(
+            request.Target,
+            request.TargetPart);
 
         ResolveBattleUiManager();
 

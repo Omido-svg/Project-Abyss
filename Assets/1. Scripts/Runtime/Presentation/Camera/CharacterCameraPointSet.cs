@@ -37,6 +37,9 @@ public class CharacterCameraPointSet : MonoBehaviour
 
     private void OnValidate()
     {
+        if (cameraPointsRoot == null)
+            cameraPointsRoot = FindCameraPointsRoot();
+
         lookupReady = false;
     }
 
@@ -56,15 +59,27 @@ public class CharacterCameraPointSet : MonoBehaviour
 
         EnsureLookup();
 
-        if (!lookup.TryGetValue(key, out point))
+        if (lookup.TryGetValue(key, out point))
+        {
+            if (point != null)
+                return true;
+
+            lookup.Remove(key);
+            point = null;
+        }
+
+        if (!TryFindHierarchyPoint(
+                key,
+                out point))
+        {
             return false;
+        }
 
-        if (point != null)
-            return true;
+        AddLookupEntry(
+            key,
+            point);
 
-        lookup.Remove(key);
-        point = null;
-        return false;
+        return true;
     }
 
     public bool ContainsKey(string key)
@@ -83,28 +98,23 @@ public class CharacterCameraPointSet : MonoBehaviour
         lookup.Clear();
         duplicateKeys.Clear();
 
+        if (cameraPointsRoot == null)
+            cameraPointsRoot = FindCameraPointsRoot();
+
         if (points != null)
         {
             foreach (CharacterCameraPointEntry entry in points)
             {
-                if (entry == null ||
-                    string.IsNullOrEmpty(entry.Key) ||
-                    entry.Point == null)
-                {
+                if (entry == null)
                     continue;
-                }
 
-                if (lookup.ContainsKey(entry.Key))
-                {
-                    if (!duplicateKeys.Contains(entry.Key))
-                        duplicateKeys.Add(entry.Key);
-
-                    continue;
-                }
-
-                lookup.Add(entry.Key, entry.Point);
+                AddLookupEntry(
+                    entry.Key,
+                    entry.Point);
             }
         }
+
+        AddHierarchyPointsToLookup();
 
         lookupReady = true;
 
@@ -138,14 +148,14 @@ public class CharacterCameraPointSet : MonoBehaviour
         if (duplicateKeys.Count > 0)
             valid = false;
 
-        if (points == null || points.Count == 0)
+        if (lookup.Count == 0)
         {
             valid = false;
 
             if (log)
             {
                 Debug.LogWarning(
-                    $"[CharacterCameraPointSet] 등록된 CameraPoint가 없습니다. Object={name}",
+                    $"[CharacterCameraPointSet] 사용할 수 있는 CameraPoint가 없습니다. Object={name}",
                     this);
             }
         }
@@ -230,6 +240,101 @@ public class CharacterCameraPointSet : MonoBehaviour
                 Key = point.name,
                 Point = point
             });
+    }
+
+    private void AddHierarchyPointsToLookup()
+    {
+        if (cameraPointsRoot == null)
+            return;
+
+        Transform[] children =
+            cameraPointsRoot.GetComponentsInChildren<Transform>(
+                true);
+
+        foreach (Transform child in children)
+        {
+            if (child == null ||
+                child == cameraPointsRoot)
+            {
+                continue;
+            }
+
+            AddLookupEntry(
+                child.name,
+                child);
+        }
+    }
+
+    private void AddLookupEntry(
+        string key,
+        Transform point)
+    {
+        if (string.IsNullOrEmpty(key) ||
+            point == null)
+        {
+            return;
+        }
+
+        if (lookup.TryGetValue(
+                key,
+                out Transform existing))
+        {
+            // Inspector 등록과 자동 탐색이 같은 Transform을 가리키면
+            // 정상적인 중복 등록으로 보고 경고하지 않는다.
+            if (existing == point)
+                return;
+
+            if (!duplicateKeys.Contains(key))
+                duplicateKeys.Add(key);
+
+            return;
+        }
+
+        lookup.Add(
+            key,
+            point);
+    }
+
+    private bool TryFindHierarchyPoint(
+        string key,
+        out Transform point)
+    {
+        point = null;
+
+        if (string.IsNullOrEmpty(key))
+            return false;
+
+        if (cameraPointsRoot == null)
+            cameraPointsRoot = FindCameraPointsRoot();
+
+        if (cameraPointsRoot == null)
+            return false;
+
+        Transform[] children =
+            cameraPointsRoot.GetComponentsInChildren<Transform>(
+                true);
+
+        foreach (Transform child in children)
+        {
+            if (child == null ||
+                child == cameraPointsRoot)
+            {
+                continue;
+            }
+
+            if (!string.Equals(
+                    child.name,
+                    key,
+                    StringComparison.Ordinal))
+            {
+                continue;
+            }
+
+            point = child;
+            return true;
+        }
+
+        return false;
     }
 
     private Transform FindCameraPointsRoot()

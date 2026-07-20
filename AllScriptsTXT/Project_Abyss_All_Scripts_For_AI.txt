@@ -1,7 +1,7 @@
 PROJECT_ABYSS_SCRIPT_EXPORT
 FORMAT_VERSION: 1
 PURPOSE: AI_CODE_ANALYSIS
-GENERATED_AT_UTC: 2026-07-20T06:20:46.1136774Z
+GENERATED_AT_UTC: 2026-07-20T07:56:31.8312510Z
 UNITY_PROJECT_ROOT: F:/GitCorp/Project-Abyss
 SOURCE_ROOT: Assets/1. Scripts
 SCRIPT_COUNT: 253
@@ -11338,9 +11338,9 @@ FILE_PATH: Assets/1. Scripts/Runtime/Characters/CharacterBase/CharacterBodyPartC
 FILE_NAME: CharacterBodyPartController.cs
 FILE_GUID: 87b1c7da8c20f294dad07207324639ba
 LANGUAGE: CSharp
-LINE_COUNT: 306
-UTF8_BYTE_COUNT: 8075
-SHA256: bcd4edda154649a9bfb9982495be77929f6a625c253022838112ee41f3b35568
+LINE_COUNT: 307
+UTF8_BYTE_COUNT: 8282
+SHA256: 5218ac7dda8292b31e990519c01fa28a505e8d8818748234ea282f72db06e0a8
 READ_STATUS: OK
 CONTENT_BEGIN
 using System.Collections.Generic;
@@ -11349,7 +11349,9 @@ using UnityEngine;
 public class CharacterBodyPartController
 {
     private readonly Character owner;
-    private const bool VerboseLog = false;
+    // const false를 사용하면 아래 로그 분기가 컴파일 타임에 도달 불가 코드가 된다.
+    // readonly로 두어 기본 OFF 상태를 유지하면서 CS0162를 방지한다.
+    private static readonly bool VerboseLog = false;
 
     public CharacterBodyPartController(Character owner)
     {
@@ -11648,7 +11650,6 @@ public class CharacterBodyPartController
             Debug.LogWarning(message);
     }
 }
-
 CONTENT_END
 FILE_END
 ================================================================================
@@ -13793,9 +13794,9 @@ FILE_PATH: Assets/1. Scripts/Runtime/Characters/CharacterBase/CharacterStatusCon
 FILE_NAME: CharacterStatusController.cs
 FILE_GUID: 32525ea969c97d0418bb9225529c7bda
 LANGUAGE: CSharp
-LINE_COUNT: 601
-UTF8_BYTE_COUNT: 14763
-SHA256: 3e3b8a529ed1402422d4205a3796a4a047cbb67fffdacab4a3db8621223a5d2a
+LINE_COUNT: 611
+UTF8_BYTE_COUNT: 15155
+SHA256: babaa2e0db0424d60e384535a8a1100e0c8468f8931fea9f7c4021381262f1fa
 READ_STATUS: OK
 CONTENT_BEGIN
 using System.Collections.Generic;
@@ -14201,13 +14202,24 @@ public class CharacterStatusController
 
         owner.BattleEvent?.RaiseStatusTicked(context);
 
-        Debug.Log(
-            $"[STATUS TICK] {GetOwnerName()} / " +
-            $"Status={effect.Name}, " +
-            $"Part={(part == null ? "NONE" : part.Type.ToString())}, " +
-            $"Stack={context.StackBefore}->{context.StackAfter}, " +
-            $"Duration={context.DurationBefore}->{context.DurationAfter}, " +
-            $"Damage={context.AppliedDamage}");
+        bool hasMeaningfulChange =
+            context.DidApplyDamage ||
+            context.AppliedDamage > 0 ||
+            context.StackBefore != context.StackAfter ||
+            context.DurationBefore != context.DurationAfter ||
+            context.ExpiredAfterTick;
+
+        if (hasMeaningfulChange)
+        {
+            Debug.Log(
+                $"[STATUS TICK] {GetOwnerName()} / " +
+                $"Timing={timing}, " +
+                $"Status={effect.Name}, " +
+                $"Part={(part == null ? "NONE" : part.Type.ToString())}, " +
+                $"Stack={context.StackBefore}->{context.StackAfter}, " +
+                $"Duration={context.DurationBefore}->{context.DurationAfter}, " +
+                $"Damage={context.AppliedDamage}");
+        }
 
         if (!effect.IsExpired)
             return;
@@ -14398,7 +14410,6 @@ public class CharacterStatusController
                "NULL";
     }
 }
-
 CONTENT_END
 FILE_END
 ================================================================================
@@ -18656,37 +18667,45 @@ FILE_PATH: Assets/1. Scripts/Runtime/Diagnostics/Analysis/BattleAnalysisOutputPa
 FILE_NAME: BattleAnalysisOutputPaths.cs
 FILE_GUID: 2eb258ec77cb08e449cbd7ef2820efdb
 LANGUAGE: CSharp
-LINE_COUNT: 37
-UTF8_BYTE_COUNT: 1038
-SHA256: 3673eda158e1d92e3607371ba41753dc25996e0b860690e2203dbb19ae19a73f
+LINE_COUNT: 45
+UTF8_BYTE_COUNT: 1367
+SHA256: 400551819ca4a1f3fce9708c23e129100de9f85edefa9ebdb97d4f48fd28ff9b
 READ_STATUS: OK
 CONTENT_BEGIN
 using System.IO;
 using UnityEngine;
 
 /// <summary>
-/// 동적 분석 결과의 프로젝트 내부 저장 위치를 한 곳에서 관리한다.
-/// Unity Editor에서 Application.dataPath는 프로젝트의 Assets 절대 경로다.
+/// 런타임 분석 결과의 저장 위치를 관리한다.
+///
+/// 분석 도중 Assets 아래에 JSON을 반복 기록하면 Unity AssetDatabase가
+/// 매 실행마다 파일과 .meta를 Import할 수 있다. 배치 분석이 멈춘 것처럼
+/// 보이는 Editor stall을 피하기 위해 persistentDataPath를 사용한다.
 /// </summary>
 public static class BattleAnalysisOutputPaths
 {
+    public const string DiagnosticsRootFolderName =
+        "ProjectAbyssDiagnostics";
+
     public const string BattleAnalysisFolderName =
         "BattleAnalysis";
 
     public const string BattleSimulationFolderName =
         "BattleSimulation";
 
-    public static string AssetsRootDirectory =>
-        Application.dataPath;
+    public static string DiagnosticsRootDirectory =>
+        Path.Combine(
+            Application.persistentDataPath,
+            DiagnosticsRootFolderName);
 
     public static string BattleAnalysisDirectory =>
         Path.Combine(
-            AssetsRootDirectory,
+            DiagnosticsRootDirectory,
             BattleAnalysisFolderName);
 
     public static string BattleSimulationDirectory =>
         Path.Combine(
-            AssetsRootDirectory,
+            DiagnosticsRootDirectory,
             BattleSimulationFolderName);
 
     public static void EnsureDirectories()
@@ -18708,9 +18727,9 @@ FILE_PATH: Assets/1. Scripts/Runtime/Diagnostics/Analysis/BattleDynamicAnalysisR
 FILE_NAME: BattleDynamicAnalysisRecorder.cs
 FILE_GUID: 89cd04f02cd597d458f17412dfa624f2
 LANGUAGE: CSharp
-LINE_COUNT: 1274
-UTF8_BYTE_COUNT: 40004
-SHA256: 7c941bb9db58d87c66ec1e602e42de014321311dab89b9723f4d572dd2602fe0
+LINE_COUNT: 1352
+UTF8_BYTE_COUNT: 42383
+SHA256: caad5fbe457b257b1790fd27b9961e78b14c1c2b3f2068064c808f42fb984831
 READ_STATUS: OK
 CONTENT_BEGIN
 using System;
@@ -18766,6 +18785,84 @@ public sealed class BattleDynamicAnalysisRecorder : MonoBehaviour
     public void Configure(BattleManager manager)
     {
         battleManager = manager;
+    }
+
+
+    /// <summary>
+    /// 배치 분석 버튼을 누르기 전에 일반 동적 Recorder가 만든 대기 세션을 정리한다.
+    /// 실제 행동/피해가 하나라도 있었다면 세션을 보존하고, 아무 행동도 없었다면
+    /// 폴더 자체를 삭제해 ABORTED_OR_DRAW 노이즈를 남기지 않는다.
+    /// </summary>
+    public static void PrepareForBatchSimulation()
+    {
+        BattleDynamicAnalysisRecorder[] recorders =
+            FindObjectsByType<BattleDynamicAnalysisRecorder>(
+                FindObjectsInactive.Include,
+                FindObjectsSortMode.None);
+
+        foreach (BattleDynamicAnalysisRecorder recorder in recorders)
+            recorder?.PrepareCurrentSessionForBatch();
+    }
+
+    private void PrepareCurrentSessionForBatch()
+    {
+        if (writer == null)
+            return;
+
+        bool meaningful = HasMeaningfulCombatData();
+        Unbind();
+
+        if (meaningful)
+        {
+            CloseSession("BATCH_STARTED");
+            return;
+        }
+
+        DiscardCurrentSession();
+    }
+
+    private bool HasMeaningfulCombatData()
+    {
+        if (summary == null)
+            return false;
+
+        return summary.playerActions > 0 ||
+               summary.enemyActions > 0 ||
+               summary.clashes > 0 ||
+               summary.playerDamageDealt > 0 ||
+               summary.playerDamageTaken > 0 ||
+               summary.playerKills > 0 ||
+               summary.enemyKills > 0 ||
+               summary.playerEnergySpent > 0 ||
+               summary.enemyEnergySpent > 0;
+    }
+
+    private void DiscardCurrentSession()
+    {
+        BattleTraceFileWriter discardedWriter = writer;
+        string discardedDirectory = discardedWriter?.SessionDirectory;
+
+        writer = null;
+        summary = null;
+        sessionClosed = true;
+
+        try
+        {
+            discardedWriter?.Dispose();
+
+            if (!string.IsNullOrWhiteSpace(discardedDirectory) &&
+                Directory.Exists(discardedDirectory))
+            {
+                Directory.Delete(discardedDirectory, true);
+            }
+        }
+        catch (Exception exception)
+        {
+            Debug.LogWarning(
+                "[BattleDynamicAnalysisRecorder] 빈 사전 세션 폴더 삭제 실패\n" +
+                discardedDirectory + "\n" + exception.Message,
+                this);
+        }
     }
 
     private void Awake()
@@ -21136,9 +21233,9 @@ FILE_PATH: Assets/1. Scripts/Runtime/Diagnostics/Debug/BattleDebugTuner.cs
 FILE_NAME: BattleDebugTuner.cs
 FILE_GUID: 021ef66e9cf03514aa4ffc9875458f06
 LANGUAGE: CSharp
-LINE_COUNT: 2082
-UTF8_BYTE_COUNT: 49110
-SHA256: 47b40b3b5e7fd1ed504818a49a04749932fde24e8f4df1bd053f438667f36010
+LINE_COUNT: 2112
+UTF8_BYTE_COUNT: 50056
+SHA256: a3113ddff6dfc59a80d3f24562181fd0f777317e435b3d77efb7c6db2a5b0f97
 READ_STATUS: OK
 CONTENT_BEGIN
 using System;
@@ -21920,6 +22017,7 @@ public sealed class BattleDebugTuner : MonoBehaviour
     private const int CurrentSerializedVersion = 2;
 
     private float liveApplyTimer;
+    private bool liveApplyPendingAfterResolution;
 
     public bool IsRuntimeReady =>
         IsReady();
@@ -21967,6 +22065,35 @@ public sealed class BattleDebugTuner : MonoBehaviour
         if (!Application.isPlaying ||
             !liveApply)
         {
+            liveApplyPendingAfterResolution = false;
+            return;
+        }
+
+        bool isResolving =
+            battleManager?.TurnManager?.IsResolving == true;
+
+        if (isResolving)
+        {
+            // Live Apply는 턴 해석 중 전투 상태를 건드리지 않는다.
+            // 반복 적용과 반복 경고 대신 해석 종료 후 한 번만 적용한다.
+            liveApplyPendingAfterResolution = true;
+            liveApplyTimer =
+                Mathf.Max(
+                    0.05f,
+                    liveApplyInterval);
+            return;
+        }
+
+        if (liveApplyPendingAfterResolution)
+        {
+            liveApplyPendingAfterResolution = false;
+            liveApplyTimer =
+                Mathf.Max(
+                    0.05f,
+                    liveApplyInterval);
+
+            ApplyBalanceInternal(
+                logSummary: false);
             return;
         }
 
@@ -23234,8 +23361,8 @@ FILE_NAME: DebugBattleUI.cs
 FILE_GUID: b35fa31bbbe367144b06974287f1b454
 LANGUAGE: CSharp
 LINE_COUNT: 1040
-UTF8_BYTE_COUNT: 28828
-SHA256: 83276450e9fd0080bb2fbaa8ddc65b1b2580b946b958622c56717bd4e7c3b423
+UTF8_BYTE_COUNT: 28846
+SHA256: 270089cbb4d0285d39d6d945013c14036fb459e78fe9f71060c306796f56c14f
 READ_STATUS: OK
 CONTENT_BEGIN
 using System.Collections.Generic;
@@ -23440,7 +23567,7 @@ public class DebugBattleUI : MonoBehaviour
 
         text.richText = true;
 
-        text.enableWordWrapping = true;
+        text.textWrappingMode = TextWrappingModes.Normal;
         text.overflowMode = TextOverflowModes.Overflow;
 
         text.alignment = TextAlignmentOptions.TopLeft;
@@ -24446,9 +24573,9 @@ FILE_PATH: Assets/1. Scripts/Runtime/Diagnostics/Logging/BattleLogEntry.cs
 FILE_NAME: BattleLogEntry.cs
 FILE_GUID: b74e6f973b2e92248ae4111fd754292e
 LANGUAGE: CSharp
-LINE_COUNT: 275
-UTF8_BYTE_COUNT: 6179
-SHA256: 5d6dc8b2caa78baad25acdc13f45717f81a8fcdc732f197fd7ae45112c8ceff7
+LINE_COUNT: 280
+UTF8_BYTE_COUNT: 6358
+SHA256: 0cff0b4f100e1035b3cc52195ecee527fbfb13116348a23c6307a4caa19abaf5
 READ_STATUS: OK
 CONTENT_BEGIN
 using System.Text;
@@ -24514,6 +24641,7 @@ public class BattleLogEntry
     public int ClashPower;
     public int SpeedModifier;
     public int MomentumModifier;
+    public int PreparationModifier;
     public bool Critical;
 
     private bool snapshotCaptured;
@@ -24590,6 +24718,9 @@ public class BattleLogEntry
         MomentumModifier =
             Action.MomentumModifier;
 
+        PreparationModifier =
+            Action.PreparationModifier;
+
         Critical =
             Action.Critical;
     }
@@ -24640,6 +24771,7 @@ public class BattleLogEntry
                 $"{PurePower} " +
                 $"{FormatSigned("Speed", SpeedModifier)} " +
                 $"{FormatSigned("Momentum", MomentumModifier)} " +
+                $"{FormatSigned("Preparation", PreparationModifier)} " +
                 $"= {ClashPower}");
 
             builder.AppendLine(
@@ -25017,9 +25149,9 @@ FILE_PATH: Assets/1. Scripts/Runtime/Diagnostics/Performance/BattlePerformanceDi
 FILE_NAME: BattlePerformanceDiagnostics.cs
 FILE_GUID: 9af71a2bec9066c4cb4db65a471d58c2
 LANGUAGE: CSharp
-LINE_COUNT: 737
-UTF8_BYTE_COUNT: 25202
-SHA256: fab5c27774644282779191f1ea641707e6ea904f9fce4362b4514a1c9f04ccd7
+LINE_COUNT: 847
+UTF8_BYTE_COUNT: 28763
+SHA256: a5326e7aecc8533f9b26d827a7243fb7658ab358d82c0619bd976116510e06ce
 READ_STATUS: OK
 CONTENT_BEGIN
 using System;
@@ -25045,6 +25177,11 @@ public sealed class BattlePerformanceDiagnostics : MonoBehaviour
     [SerializeField, Min(0.1f)] private float lowFpsWarningDelay = 0.75f;
     [SerializeField, Min(1)] private int lowFpsWarningWarmupFrames = 30;
     [SerializeField] private bool ignoreWarningsDuringBatchSimulation = true;
+    [SerializeField] private bool ignoreWarningsWhenApplicationUnfocused = true;
+    [SerializeField] private bool ignoreWarningsWhileTimeScaleIsZero = true;
+
+    [Tooltip("이 값보다 긴 단일 프레임은 실제 게임 병목이 아니라 Scene Load, Editor 정지, 창 전환으로 간주합니다.")]
+    [SerializeField, Min(0.1f)] private float maximumTrustedFrameDeltaSeconds = 0.25f;
 
     [Header("Hotkeys")]
     [SerializeField] private KeyCode toggleOverlayKey = KeyCode.F4;
@@ -25054,12 +25191,16 @@ public sealed class BattlePerformanceDiagnostics : MonoBehaviour
     [SerializeField] private KeyCode toggleWorldCanvasKey = KeyCode.F7;
     [SerializeField] private KeyCode toggleOutlineKey = KeyCode.F5;
 
-    // v1: 성능 Overlay 토글을 F8에서 F4로 이동. 기존 Scene 직렬화 값도 한 번만 마이그레이션한다.
-    private const int CurrentHotkeyLayoutVersion = 1;
+    // v1: 성능 Overlay 토글을 F8에서 F4로 이동.
+    // v2: Performance Diagnostics Overlay의 Play Mode 시작 상태를 기본 숨김으로 변경.
+    // v3: Scene Load, Editor 정지, 포커스 이탈 프레임을 성능 경고에서 제외.
+    private const int CurrentHotkeyLayoutVersion = 3;
     [SerializeField, HideInInspector] private int hotkeyLayoutVersion;
 
     [Header("Overlay")]
-    [SerializeField] private bool showOverlay = true;
+    [Tooltip("Play Mode에 진입할 때 Performance Diagnostics Overlay를 표시할지 결정합니다.")]
+    [SerializeField] private bool startOverlayVisible;
+    [SerializeField, HideInInspector] private bool showOverlay;
     [SerializeField] private Vector2 overlayPosition = new(12f, 12f);
     [SerializeField] private Vector2 overlaySize = new(520f, 330f);
     [SerializeField] private bool showPersistentToggleButton = true;
@@ -25100,7 +25241,12 @@ public sealed class BattlePerformanceDiagnostics : MonoBehaviour
 
     private void Awake()
     {
-        MigrateHotkeyLayout();
+        MigrateSettings();
+
+        // Scene에 과거 showOverlay=true 값이 남아 있어도
+        // Play Mode 진입 시에는 명시적인 시작 옵션만 사용한다.
+        showOverlay = startOverlayVisible;
+
         ResolveReferences();
         StartRecorders();
         CacheIsolationTargets();
@@ -25110,41 +25256,77 @@ public sealed class BattlePerformanceDiagnostics : MonoBehaviour
 
     private void OnValidate()
     {
-        MigrateHotkeyLayout();
+        MigrateSettings();
+
+        // Edit Mode에서도 Inspector에 설정된 시작 상태와
+        // 런타임 표시 상태가 서로 어긋나지 않게 유지한다.
+        if (!Application.isPlaying)
+            showOverlay = startOverlayVisible;
     }
 
-    private void MigrateHotkeyLayout()
+    private void MigrateSettings()
     {
-        if (hotkeyLayoutVersion >= CurrentHotkeyLayoutVersion)
-            return;
+        if (hotkeyLayoutVersion < 1)
+        {
+            // 이전 패치에서 F8이 Scene/Prefab에 저장되어 있어도
+            // 동적 분석 도구와 겹치지 않도록 자동 변경한다.
+            if (toggleOverlayKey == KeyCode.F8)
+                toggleOverlayKey = KeyCode.F4;
+        }
 
-        // 이전 패치에서 F8이 Scene/Prefab에 저장되어 있어도 동적 분석 도구와 겹치지 않게 자동 변경한다.
-        if (toggleOverlayKey == KeyCode.F8)
-            toggleOverlayKey = KeyCode.F4;
+        if (hotkeyLayoutVersion < 2)
+        {
+            // 기존 Scene에는 showOverlay=true가 직렬화되어 있었다.
+            // v2부터는 Play Mode 시작 시 Performance Overlay를 기본 숨김으로 한다.
+            startOverlayVisible = false;
+            showOverlay = false;
+        }
+
+        if (hotkeyLayoutVersion < 3)
+        {
+            ignoreWarningsWhenApplicationUnfocused = true;
+            ignoreWarningsWhileTimeScaleIsZero = true;
+            maximumTrustedFrameDeltaSeconds = 0.25f;
+        }
 
         hotkeyLayoutVersion = CurrentHotkeyLayoutVersion;
     }
 
     private void OnEnable()
     {
-        nextSampleTime = Time.unscaledTime;
-        lowFpsWarningsEnabledFromFrame =
-            Time.frameCount + Mathf.Max(1, lowFpsWarningWarmupFrames);
-
-        resetSmoothedFrameTimeAfterWarmup = true;
-        ResetLowFpsWarningState();
+        ResetAfterUntrustedFrame();
     }
 
     private void Update()
     {
+        if (!IsCurrentFrameTrusted())
+        {
+            ResetAfterUntrustedFrame();
+            return;
+        }
+
         UpdateSmoothedFrameTime();
         UpdateLowFpsWarning();
 
         if (Time.unscaledTime < nextSampleTime)
             return;
 
-        nextSampleTime = Time.unscaledTime + Mathf.Max(0.1f, sampleInterval);
+        nextSampleTime =
+            Time.unscaledTime + Mathf.Max(0.1f, sampleInterval);
+
         CaptureSample();
+    }
+
+    private void OnApplicationFocus(bool hasFocus)
+    {
+        // 탐색기 자동 열기, 창 전환, Editor 포커스 복귀 직후의 긴 Delta가
+        // 실제 게임 프레임 평균에 섞이지 않도록 재워밍업한다.
+        ResetAfterUntrustedFrame();
+    }
+
+    private void OnApplicationPause(bool pauseStatus)
+    {
+        ResetAfterUntrustedFrame();
     }
 
     private void OnGUI()
@@ -25265,8 +25447,8 @@ public sealed class BattlePerformanceDiagnostics : MonoBehaviour
         float y = Mathf.Max(0f, toggleButtonMargin.y);
 
         string label = showOverlay
-            ? $"Hide Analysis Panel [{toggleOverlayKey}]"
-            : $"Show Analysis Panel [{toggleOverlayKey}]";
+            ? $"Hide Performance [{toggleOverlayKey}]"
+            : $"Show Performance [{toggleOverlayKey}]";
 
         if (GUI.Button(new Rect(x, y, width, height), label, toggleButtonStyle))
             ToggleOverlayVisibility();
@@ -25296,10 +25478,69 @@ public sealed class BattlePerformanceDiagnostics : MonoBehaviour
         SetOverlayVisible(false);
     }
 
+    [ContextMenu("Reset Performance Overlay To Startup State")]
+    private void ResetPerformanceOverlayToStartupState()
+    {
+        SetOverlayVisible(startOverlayVisible);
+    }
+
     private void ToggleCapture()
     {
         captureEnabled = !captureEnabled;
         Debug.Log($"[BattlePerformanceDiagnostics] CSV capture: {captureEnabled}", this);
+    }
+
+    private bool IsCurrentFrameTrusted()
+    {
+        float delta = Time.unscaledDeltaTime;
+
+        if (float.IsNaN(delta) ||
+            float.IsInfinity(delta) ||
+            delta <= 0f ||
+            delta > Mathf.Max(0.1f, maximumTrustedFrameDeltaSeconds))
+        {
+            return false;
+        }
+
+        if (ignoreWarningsDuringBatchSimulation &&
+            BattleSimulationRuntime.IsBatchSimulation)
+        {
+            return false;
+        }
+
+        if (ignoreWarningsWhenApplicationUnfocused &&
+            !Application.isFocused)
+        {
+            return false;
+        }
+
+        if (ignoreWarningsWhileTimeScaleIsZero &&
+            Mathf.Approximately(Time.timeScale, 0f))
+        {
+            return false;
+        }
+
+        if (battleManager != null &&
+            !battleManager.isActiveAndEnabled)
+        {
+            return false;
+        }
+
+        return true;
+    }
+
+    private void ResetAfterUntrustedFrame()
+    {
+        smoothedFrameMs = 0f;
+        resetSmoothedFrameTimeAfterWarmup = true;
+
+        lowFpsWarningsEnabledFromFrame =
+            Time.frameCount + Mathf.Max(1, lowFpsWarningWarmupFrames);
+
+        nextSampleTime =
+            Time.unscaledTime + Mathf.Max(0.1f, sampleInterval);
+
+        ResetLowFpsWarningState();
     }
 
     private void UpdateSmoothedFrameTime()
@@ -25338,7 +25579,8 @@ public sealed class BattlePerformanceDiagnostics : MonoBehaviour
 
         if (fps > 0f && fps < lowFpsThreshold)
         {
-            lowFpsDuration += Time.unscaledDeltaTime;
+            // 한 번의 긴 Editor 정지 프레임이 경고 지연 시간을 단숨에 채우지 않게 한다.
+            lowFpsDuration += Mathf.Min(Time.unscaledDeltaTime, 0.1f);
 
             if (!warnedForCurrentDrop && lowFpsDuration >= lowFpsWarningDelay)
             {
@@ -26806,9 +27048,9 @@ FILE_PATH: Assets/1. Scripts/Runtime/Diagnostics/Simulation/BattleBatchSimulatio
 FILE_NAME: BattleBatchSimulationRunner.cs
 FILE_GUID: 0e9b1176127f7a741997f179a9660ca0
 LANGUAGE: CSharp
-LINE_COUNT: 911
-UTF8_BYTE_COUNT: 26473
-SHA256: e3aa1593f686f6b9c419661f2c3764d51dac5cd5911f809ead6ea304b315fc4d
+LINE_COUNT: 1013
+UTF8_BYTE_COUNT: 30756
+SHA256: 40c084420f8867ab5fd030dcf21dc159108f0a901800df7b1042b5827df4fcf8
 READ_STATUS: OK
 CONTENT_BEGIN
 using System;
@@ -26832,12 +27074,15 @@ public sealed class BattleBatchSimulationRunner : MonoBehaviour
     [SerializeField] private bool recordDetailedTraceDuringBatch;
     [SerializeField] private bool writeProgressAfterEveryRun = true;
     [SerializeField] private bool openOutputFolderWhenComplete;
+    [SerializeField, Min(2f)] private float sceneLoadTimeoutSeconds = 20f;
+    [SerializeField, Min(2f)] private float battleReadyTimeoutSeconds = 10f;
+    [SerializeField, Min(2f)] private float noProgressTimeoutSeconds = 15f;
 
     public static BattleBatchSimulationRunner Instance { get; private set; }
 
     public bool IsRunning => batchRoutine != null;
 
-    // Assets/BattleSimulation 아래에 배치 실행 폴더를 만든다.
+    // persistentDataPath/ProjectAbyssDiagnostics/BattleSimulation 아래에 저장한다.
     public string OutputRootDirectory =>
         BattleAnalysisOutputPaths.BattleSimulationDirectory;
     public string LastOutputDirectory { get; private set; }
@@ -26865,6 +27110,8 @@ public sealed class BattleBatchSimulationRunner : MonoBehaviour
     private string runsJsonlPath;
     private string batchEventsJsonlPath;
     private long nextBatchEventSequence = 1;
+    private bool lastSceneLoadSucceeded;
+    private string lastSceneLoadError;
 
     public static BattleBatchSimulationRunner GetOrCreate()
     {
@@ -27040,6 +27287,10 @@ public sealed class BattleBatchSimulationRunner : MonoBehaviour
         sourceSceneName = scene.name;
         stopRequested = false;
 
+        // Play Mode 진입 후 아무 행동도 하지 않은 일반 BattleAnalysis 세션은
+        // 배치 시작 전에 제거한다. 실제 전투 데이터가 있으면 보존한다.
+        BattleDynamicAnalysisRecorder.PrepareForBatchSimulation();
+
         LastSummary = new BattleSimulationSummary
         {
             mode = mode.ToString(),
@@ -27128,6 +27379,11 @@ public sealed class BattleBatchSimulationRunner : MonoBehaviour
                     $"{mode} 분석 중... {runIndex}/{runCount}\n" +
                     "씬을 새로 불러 실제 전투 코드를 자동 실행합니다.");
 
+                AppendBatchEvent(
+                    "RUN_STARTED",
+                    $"Run={runIndex}",
+                    runIndex);
+
                 yield return LoadSourceScene();
 
                 BattleSimulationRunResult result =
@@ -27135,6 +27391,25 @@ public sealed class BattleBatchSimulationRunner : MonoBehaviour
                     {
                         runIndex = runIndex
                     };
+
+                if (!lastSceneLoadSucceeded)
+                {
+                    FailRun(
+                        result,
+                        string.IsNullOrWhiteSpace(lastSceneLoadError)
+                            ? "전투 씬 로드 실패"
+                            : lastSceneLoadError);
+
+                    LastSummary.runs.Add(result);
+                    LastSummary.Recalculate();
+                    AppendRunResult(result);
+                    AppendBatchEvent(
+                        "RUN_FAILED",
+                        $"Run={runIndex}, Reason={result.failureMessage}",
+                        runIndex);
+                    PersistSummary("RUNNING");
+                    break;
+                }
 
                 yield return RunCurrentSceneBattle(result);
 
@@ -27215,48 +27490,88 @@ public sealed class BattleBatchSimulationRunner : MonoBehaviour
     {
         EnsurePersistentRoot();
 
+        lastSceneLoadSucceeded = false;
+        lastSceneLoadError = string.Empty;
+
+        AppendBatchEvent(
+            "SCENE_LOAD_STARTED",
+            $"BuildIndex={sourceSceneBuildIndex}");
+
         AsyncOperation operation =
             SceneManager.LoadSceneAsync(
                 sourceSceneBuildIndex,
                 LoadSceneMode.Single);
 
         if (operation == null)
+        {
+            lastSceneLoadError =
+                "SceneManager.LoadSceneAsync가 null을 반환했습니다.";
             yield break;
+        }
+
+        float startedAt = Time.realtimeSinceStartup;
 
         while (!operation.isDone)
-            yield return null;
+        {
+            if (Time.realtimeSinceStartup - startedAt >
+                sceneLoadTimeoutSeconds)
+            {
+                lastSceneLoadError =
+                    $"씬 로드가 {sceneLoadTimeoutSeconds:0.0}초를 초과했습니다.";
+                AppendBatchEvent(
+                    "SCENE_LOAD_TIMEOUT",
+                    lastSceneLoadError);
+                yield break;
+            }
 
-        // Awake/Start 및 BattleManager의 한 프레임 지연 자동 시작을 기다린다.
+            yield return null;
+        }
+
+        // Awake/Start 및 한 프레임 지연 자동 시작을 기다린다.
         yield return null;
         yield return null;
+
+        lastSceneLoadSucceeded = true;
+        AppendBatchEvent(
+            "SCENE_LOAD_COMPLETED",
+            $"Scene={SceneManager.GetActiveScene().name}");
     }
 
     private IEnumerator RunCurrentSceneBattle(
         BattleSimulationRunResult result)
     {
-        activeManager =
-            FindFirstObjectByType<BattleManager>();
+        float readyStartedAt = Time.realtimeSinceStartup;
 
-        if (activeManager == null)
+        while (true)
         {
-            FailRun(result, "BattleManager를 찾지 못했습니다.");
-            yield break;
-        }
+            activeManager =
+                FindFirstObjectByType<BattleManager>();
 
-        if (!activeManager.IsInitialized &&
-            !activeManager.InitializeBattle())
-        {
-            FailRun(result, "BattleManager.InitializeBattle 실패");
-            yield break;
-        }
+            if (activeManager != null)
+            {
+                if (!activeManager.IsInitialized)
+                    activeManager.InitializeBattle();
 
-        activeContext = activeManager.BattleContext;
+                activeContext = activeManager.BattleContext;
 
-        if (activeContext?.Player == null ||
-            activeManager.TurnManager == null)
-        {
-            FailRun(result, "BattleContext 또는 Player가 없습니다.");
-            yield break;
+                if (activeManager.IsInitialized &&
+                    activeContext?.Player != null &&
+                    activeManager.TurnManager != null)
+                {
+                    break;
+                }
+            }
+
+            if (Time.realtimeSinceStartup - readyStartedAt >
+                battleReadyTimeoutSeconds)
+            {
+                FailRun(
+                    result,
+                    $"BattleManager 준비가 {battleReadyTimeoutSeconds:0.0}초 안에 완료되지 않았습니다.");
+                yield break;
+            }
+
+            yield return null;
         }
 
         result.playerMaxHp =
@@ -27269,7 +27584,9 @@ public sealed class BattleBatchSimulationRunner : MonoBehaviour
             activeManager.StartBattle();
 
         int lastSubmittedTurn = -1;
-        int noProgressFrames = 0;
+        int lastObservedTurn = activeManager.TurnManager.CurrentTurn;
+        bool lastObservedResolving = activeManager.TurnManager.IsResolving;
+        float lastProgressAt = Time.realtimeSinceStartup;
         activeBattleEnded = false;
 
         while (!activeBattleEnded &&
@@ -27291,6 +27608,14 @@ public sealed class BattleBatchSimulationRunner : MonoBehaviour
             {
                 FailRun(result, "TurnManager가 사라졌습니다.");
                 break;
+            }
+
+            if (turnManager.CurrentTurn != lastObservedTurn ||
+                turnManager.IsResolving != lastObservedResolving)
+            {
+                lastObservedTurn = turnManager.CurrentTurn;
+                lastObservedResolving = turnManager.IsResolving;
+                lastProgressAt = Time.realtimeSinceStartup;
             }
 
             if (turnManager.CurrentTurn >
@@ -27322,17 +27647,16 @@ public sealed class BattleBatchSimulationRunner : MonoBehaviour
                     turnManager.CurrentTurn;
 
                 activeManager.NextTurn();
-                noProgressFrames = 0;
-            }
-            else
-            {
-                noProgressFrames++;
+                lastProgressAt = Time.realtimeSinceStartup;
             }
 
-            if (noProgressFrames > 36000)
+            if (Time.realtimeSinceStartup - lastProgressAt >
+                noProgressTimeoutSeconds)
             {
                 result.timedOut = true;
-                result.outcome = "FRAME_TIMEOUT_DRAW";
+                result.outcome = "NO_PROGRESS_TIMEOUT";
+                result.failureMessage =
+                    $"전투 상태가 {noProgressTimeoutSeconds:0.0}초 동안 진행되지 않았습니다.";
                 activeManager.EndBattle();
                 break;
             }
@@ -27349,6 +27673,15 @@ public sealed class BattleBatchSimulationRunner : MonoBehaviour
 
         result.playerRemainingHp =
             activeContext?.Player?.CurrentHP ?? 0;
+
+        result.playerNetHpLoss = Mathf.Max(
+            0,
+            result.playerMaxHp - result.playerRemainingHp);
+
+        result.playerEstimatedHealingReceived = Mathf.Max(
+            0,
+            result.playerCharacterHpDamageTaken -
+            result.playerNetHpLoss);
 
         UnsubscribeActiveBattle();
         activeManager = null;
@@ -27399,17 +27732,28 @@ public sealed class BattleBatchSimulationRunner : MonoBehaviour
         if (damage == null)
             return;
 
-        int amount = damage.GetDisplayDamage();
+        int displayDamage = damage.GetDisplayDamage();
+        int characterHpDamage = Mathf.Max(0, damage.FinalHpDamage);
+        int partDamage = Mathf.Max(0, damage.PartHpDamage);
+        int directHpDamage = Mathf.Max(0, damage.DirectHpDamage);
         Character player = activeContext.Player;
 
         if (damage.Attacker == player &&
             damage.Target != player)
         {
-            activeRun.playerDamageDealt += amount;
+            activeRun.playerDamageDealt += displayDamage;
+            activeRun.playerCharacterHpDamageDealt += characterHpDamage;
+            activeRun.playerPartDamageDealt += partDamage;
+            activeRun.playerDirectHpDamageDealt += directHpDamage;
         }
 
         if (damage.Target == player)
-            activeRun.playerDamageTaken += amount;
+        {
+            activeRun.playerDamageTaken += displayDamage;
+            activeRun.playerCharacterHpDamageTaken += characterHpDamage;
+            activeRun.playerPartDamageTaken += partDamage;
+            activeRun.playerDirectHpDamageTaken += directHpDamage;
+        }
     }
 
     private void HandleActionStart(BattleAction action)
@@ -27794,9 +28138,9 @@ FILE_PATH: Assets/1. Scripts/Runtime/Diagnostics/Simulation/BattleSimulationSumm
 FILE_NAME: BattleSimulationSummary.cs
 FILE_GUID: a3bea7032a6629f4fbb00801f68cc1a1
 LANGUAGE: CSharp
-LINE_COUNT: 184
-UTF8_BYTE_COUNT: 5541
-SHA256: d6338b4f9311e9555cb5cf7aac5ad4729040c44f4873f3194e4df7d7f54e71f8
+LINE_COUNT: 254
+UTF8_BYTE_COUNT: 8429
+SHA256: c594b2320d6fae3c3291457fde1be5da1c0b64dbe8c4a1ca65f877b23425adfd
 READ_STATUS: OK
 CONTENT_BEGIN
 using System;
@@ -27812,7 +28156,7 @@ public enum BattleSimulationMode
 [Serializable]
 public sealed class BattleSimulationBatchEvent
 {
-    public string schemaVersion = "1.2.0";
+    public string schemaVersion = "1.3.0";
     public long sequence;
     public string utcTimestamp;
     public string eventType;
@@ -27833,8 +28177,23 @@ public sealed class BattleSimulationRunResult
     public string failureMessage;
 
     public int turns;
+
+    // 기존 호환 필드: 화면에 표시되는 대표 피해량.
     public int playerDamageDealt;
     public int playerDamageTaken;
+
+    // 실제 피해 경로별 수치.
+    public int playerCharacterHpDamageDealt;
+    public int playerCharacterHpDamageTaken;
+    public int playerPartDamageDealt;
+    public int playerPartDamageTaken;
+    public int playerDirectHpDamageDealt;
+    public int playerDirectHpDamageTaken;
+
+    // 전투 시작/종료 HP로 계산한 순손실과 누적 HP 피해와의 차이.
+    public int playerNetHpLoss;
+    public int playerEstimatedHealingReceived;
+
     public int playerActions;
     public int enemyActions;
     public int playerEnergySpent;
@@ -27847,7 +28206,7 @@ public sealed class BattleSimulationRunResult
 [Serializable]
 public sealed class BattleSimulationSummary
 {
-    public string schemaVersion = "1.2.0";
+    public string schemaVersion = "1.3.0";
     public string status;
     public string mode;
     public string scene;
@@ -27857,6 +28216,7 @@ public sealed class BattleSimulationSummary
     public string completedUtc;
     public int requestedRuns;
     public int completedRuns;
+    public int successfulRuns;
     public int wins;
     public int losses;
     public int draws;
@@ -27864,12 +28224,23 @@ public sealed class BattleSimulationSummary
 
     public float winRate;
     public float averageTurns;
+
+    // 기존 호환 지표: 표시 피해량.
     public float averagePlayerDamageDealt;
     public float averagePlayerDamageTaken;
     public float averagePlayerDamagePerTurn;
     public float averageEnemyDamagePerTurn;
     public float averageDamagePerPlayerAction;
     public float averageDamagePerEnemyAction;
+
+    // 실제 피해 경로별 지표.
+    public float averagePlayerCharacterHpDamageDealt;
+    public float averagePlayerCharacterHpDamageTaken;
+    public float averagePlayerPartDamageDealt;
+    public float averagePlayerPartDamageTaken;
+    public float averagePlayerNetHpLoss;
+    public float averagePlayerEstimatedHealingReceived;
+
     public float averagePlayerEnergySpent;
     public float averageEnemyEnergySpent;
 
@@ -27878,14 +28249,21 @@ public sealed class BattleSimulationSummary
     public void Recalculate()
     {
         completedRuns = runs?.Count ?? 0;
+        successfulRuns = 0;
         wins = 0;
         losses = 0;
         draws = 0;
         failures = 0;
 
         long turns = 0;
-        long dealt = 0;
-        long taken = 0;
+        long displayDealt = 0;
+        long displayTaken = 0;
+        long hpDealt = 0;
+        long hpTaken = 0;
+        long partDealt = 0;
+        long partTaken = 0;
+        long netHpLoss = 0;
+        long estimatedHealing = 0;
         long playerActions = 0;
         long enemyActions = 0;
         long playerEnergy = 0;
@@ -27897,6 +28275,14 @@ public sealed class BattleSimulationSummary
             {
                 if (run == null)
                     continue;
+
+                if (run.failed)
+                {
+                    failures++;
+                    continue;
+                }
+
+                successfulRuns++;
 
                 switch (run.outcome)
                 {
@@ -27911,12 +28297,15 @@ public sealed class BattleSimulationSummary
                         break;
                 }
 
-                if (run.failed)
-                    failures++;
-
                 turns += run.turns;
-                dealt += run.playerDamageDealt;
-                taken += run.playerDamageTaken;
+                displayDealt += run.playerDamageDealt;
+                displayTaken += run.playerDamageTaken;
+                hpDealt += run.playerCharacterHpDamageDealt;
+                hpTaken += run.playerCharacterHpDamageTaken;
+                partDealt += run.playerPartDamageDealt;
+                partTaken += run.playerPartDamageTaken;
+                netHpLoss += run.playerNetHpLoss;
+                estimatedHealing += run.playerEstimatedHealingReceived;
                 playerActions += run.playerActions;
                 enemyActions += run.enemyActions;
                 playerEnergy += run.playerEnergySpent;
@@ -27924,23 +28313,31 @@ public sealed class BattleSimulationSummary
             }
         }
 
-        int validRuns = Math.Max(1, completedRuns);
+        int validRuns = Math.Max(1, successfulRuns);
         winRate = 100f * wins / validRuns;
         averageTurns = (float)turns / validRuns;
-        averagePlayerDamageDealt = (float)dealt / validRuns;
-        averagePlayerDamageTaken = (float)taken / validRuns;
+        averagePlayerDamageDealt = (float)displayDealt / validRuns;
+        averagePlayerDamageTaken = (float)displayTaken / validRuns;
+        averagePlayerCharacterHpDamageDealt = (float)hpDealt / validRuns;
+        averagePlayerCharacterHpDamageTaken = (float)hpTaken / validRuns;
+        averagePlayerPartDamageDealt = (float)partDealt / validRuns;
+        averagePlayerPartDamageTaken = (float)partTaken / validRuns;
+        averagePlayerNetHpLoss = (float)netHpLoss / validRuns;
+        averagePlayerEstimatedHealingReceived =
+            (float)estimatedHealing / validRuns;
+
         averagePlayerDamagePerTurn = turns <= 0
             ? 0f
-            : (float)dealt / turns;
+            : (float)displayDealt / turns;
         averageEnemyDamagePerTurn = turns <= 0
             ? 0f
-            : (float)taken / turns;
+            : (float)displayTaken / turns;
         averageDamagePerPlayerAction = playerActions <= 0
             ? 0f
-            : (float)dealt / playerActions;
+            : (float)displayDealt / playerActions;
         averageDamagePerEnemyAction = enemyActions <= 0
             ? 0f
-            : (float)taken / enemyActions;
+            : (float)displayTaken / enemyActions;
         averagePlayerEnergySpent =
             (float)playerEnergy / validRuns;
         averageEnemyEnergySpent =
@@ -27952,33 +28349,50 @@ public sealed class BattleSimulationSummary
         Recalculate();
 
         StringBuilder builder = new();
-        string headline = status == "RUNNING"
-            ? "분석 진행"
-            : "분석 완료";
-        builder.AppendLine($"{headline}: {completedRuns}/{requestedRuns}회");
+        string headline = status switch
+        {
+            "RUNNING" => "분석 진행",
+            "COMPLETED" => "분석 완료",
+            "STOPPED" => "분석 중단",
+            "PLAY_MODE_STOPPED" => "Play Mode 종료로 분석 중단",
+            _ => "분석 비정상 종료"
+        };
+
+        builder.AppendLine(
+            $"{headline}: {completedRuns}/{requestedRuns}회 " +
+            $"(유효 {successfulRuns} / 실패 {failures})");
         builder.AppendLine(
             $"승 {wins} / 패 {losses} / 무·타임아웃 {draws}");
-        builder.AppendLine($"승률: {winRate:0.0}%");
+        builder.AppendLine($"유효 실행 기준 승률: {winRate:0.0}%");
         builder.AppendLine($"평균 턴: {averageTurns:0.00}");
         builder.AppendLine(
-            $"플레이어 평균 가한 피해: {averagePlayerDamageDealt:0.00}");
+            $"표시 피해 가함/받음: " +
+            $"{averagePlayerDamageDealt:0.00} / " +
+            $"{averagePlayerDamageTaken:0.00}");
         builder.AppendLine(
-            $"플레이어 평균 받은 피해: {averagePlayerDamageTaken:0.00}");
+            $"실제 캐릭터 HP 피해 가함/받음: " +
+            $"{averagePlayerCharacterHpDamageDealt:0.00} / " +
+            $"{averagePlayerCharacterHpDamageTaken:0.00}");
         builder.AppendLine(
-            $"턴당 가한/받은 피해: " +
+            $"부위 피해 가함/받음: " +
+            $"{averagePlayerPartDamageDealt:0.00} / " +
+            $"{averagePlayerPartDamageTaken:0.00}");
+        builder.AppendLine(
+            $"플레이어 순 HP 손실/추정 회복: " +
+            $"{averagePlayerNetHpLoss:0.00} / " +
+            $"{averagePlayerEstimatedHealingReceived:0.00}");
+        builder.AppendLine(
+            $"표시 피해 턴당 가함/받음: " +
             $"{averagePlayerDamagePerTurn:0.00} / " +
             $"{averageEnemyDamagePerTurn:0.00}");
         builder.AppendLine(
-            $"행동당 가한/받은 피해: " +
+            $"표시 피해 행동당 가함/받음: " +
             $"{averageDamagePerPlayerAction:0.00} / " +
             $"{averageDamagePerEnemyAction:0.00}");
         builder.AppendLine(
             $"전투당 에너지 소비(플레이어/적): " +
             $"{averagePlayerEnergySpent:0.00} / " +
             $"{averageEnemyEnergySpent:0.00}");
-
-        if (failures > 0)
-            builder.AppendLine($"실패한 실행: {failures}");
 
         return builder.ToString();
     }
@@ -33982,9 +34396,9 @@ FILE_PATH: Assets/1. Scripts/Runtime/Presentation/UI/TMPKoreanFontBootstrap.cs
 FILE_NAME: TMPKoreanFontBootstrap.cs
 FILE_GUID: 6f0bcce18c2993149be3216423036bf5
 LANGUAGE: CSharp
-LINE_COUNT: 185
-UTF8_BYTE_COUNT: 6175
-SHA256: 9f14bf28e999c9e3ffaf662689a8f54faf3519ccba9de7f488078b96cf36e65f
+LINE_COUNT: 212
+UTF8_BYTE_COUNT: 7042
+SHA256: c8001e8779f960eb719c18cb9285e6aeab2cdff55731d4f9fc72e69c979a839c
 READ_STATUS: OK
 CONTENT_BEGIN
 using System.Collections.Generic;
@@ -34040,20 +34454,26 @@ public sealed class TMPKoreanFontBootstrap : MonoBehaviour
 
         if (koreanFontAsset.atlasPopulationMode == TMPro.AtlasPopulationMode.Dynamic)
         {
-            if (PrewarmedFontAssets.Add(fontInstanceId) &&
-                !string.IsNullOrEmpty(prewarmCharacters) &&
-                !koreanFontAsset.TryAddCharacters(
-                    prewarmCharacters,
-                    out string missingCharacters,
-                    true) &&
-                !string.IsNullOrEmpty(missingCharacters) &&
-                ReportedPrewarmFailures.Add(fontInstanceId))
+            koreanFontAsset.isMultiAtlasTexturesEnabled = true;
+
+            if (PrewarmedFontAssets.Add(fontInstanceId))
             {
-                Debug.LogWarning(
-                    "[TMPKoreanFontBootstrap] 일부 글리프를 Dynamic Atlas에 추가하지 못했습니다. " +
-                    "TMP Font Asset의 Source Font File, Atlas Population Mode, Multi Atlas 설정을 확인하세요.\n" +
-                    "추가 실패 문자: " + missingCharacters,
-                    koreanFontAsset);
+                string charactersToAdd =
+                    BuildCharactersMissingFromAtlas(prewarmCharacters);
+
+                if (!string.IsNullOrEmpty(charactersToAdd) &&
+                    !koreanFontAsset.TryAddCharacters(
+                        charactersToAdd,
+                        out string missingCharacters,
+                        true) &&
+                    !string.IsNullOrEmpty(missingCharacters) &&
+                    ReportedPrewarmFailures.Add(fontInstanceId))
+                {
+                    Debug.LogWarning(
+                        "[TMPKoreanFontBootstrap] 현재 Atlas와 Source Font 모두에서 찾지 못한 글자가 있습니다.\n" +
+                        "실제 누락 문자: " + missingCharacters,
+                        koreanFontAsset);
+                }
             }
         }
         else if (ReportedPrewarmFailures.Add(fontInstanceId))
@@ -34118,6 +34538,27 @@ public sealed class TMPKoreanFontBootstrap : MonoBehaviour
             result.Append(character);
 
         return result.ToString();
+    }
+
+    private string BuildCharactersMissingFromAtlas(string value)
+    {
+        if (string.IsNullOrEmpty(value) || koreanFontAsset == null)
+            return string.Empty;
+
+        StringBuilder missing = new();
+
+        foreach (char character in value)
+        {
+            if (char.IsControl(character))
+                continue;
+
+            // 이미 현재 Atlas에 존재하는 글자는 TryAddCharacters에 다시 넘기지 않는다.
+            // 기존 구현은 존재하는 글자까지 전부 재추가해 거대한 실패 목록을 만들 수 있었다.
+            if (!koreanFontAsset.HasCharacter(character))
+                missing.Append(character);
+        }
+
+        return missing.ToString();
     }
 
     private static void AddCharacters(HashSet<char> destination, string value)
@@ -37527,9 +37968,9 @@ FILE_PATH: Assets/1. Scripts/Runtime/Presentation/Visual/CharacterView/Character
 FILE_NAME: CharacterView.cs
 FILE_GUID: 988553d5f4cb31e4998ccab2210805e0
 LANGUAGE: CSharp
-LINE_COUNT: 463
-UTF8_BYTE_COUNT: 11420
-SHA256: 13273b107177f5205186c16d26a5475303a5e6620764ea6c7e66d160c6fc6b17
+LINE_COUNT: 530
+UTF8_BYTE_COUNT: 12984
+SHA256: 4e84c173c592270430af155ef301d044382570eec9e3f46ddf55f334d21efcaa
 READ_STATUS: OK
 CONTENT_BEGIN
 using System;
@@ -37564,6 +38005,9 @@ public class CharacterView : MonoBehaviour, ISerializationCallbackReceiver
     [Header("Debug")]
     [SerializeField] private bool logDebug;
 
+    private bool missingAnimatorWarningLogged;
+    private bool missingHitStateWarningLogged;
+
     public void PlayHit()
     {
         if (animator == null)
@@ -37581,19 +38025,25 @@ public class CharacterView : MonoBehaviour, ISerializationCallbackReceiver
                 $"ViewObject={name}, " +
                 $"Root={transform.root.name}");
         }
-        
+
         if (animator == null)
         {
-            Debug.LogWarning($"{name} Animator 없음 - Hit 재생 불가");
+            if (!missingAnimatorWarningLogged)
+            {
+                missingAnimatorWarningLogged = true;
+
+                Debug.LogWarning(
+                    $"{name} Animator 없음 - Hit 재생 불가",
+                    this);
+            }
+
             return;
         }
 
-        int hitStateHash =
-            Animator.StringToHash(hitStateName);
-
         animator.ResetTrigger(HitHash);
 
-        if (animator.HasState(baseLayerIndex, hitStateHash))
+        if (TryResolveHitStateHash(
+                out int hitStateHash))
         {
             animator.CrossFadeInFixedTime(
                 hitStateHash,
@@ -37602,15 +38052,73 @@ public class CharacterView : MonoBehaviour, ISerializationCallbackReceiver
                 0f);
 
             if (logDebug)
-                Debug.Log($"{name} Hit 상태 직접 재생 : {hitStateName}");
+            {
+                Debug.Log(
+                    $"{name} Hit 상태 직접 재생 : " +
+                    $"{hitStateName}",
+                    this);
+            }
+
             return;
         }
 
-        Debug.LogWarning(
-            $"{name} Animator에 Hit State를 찾을 수 없음 : {hitStateName} / " +
-            $"Trigger 방식으로 대체 실행");
+        if (!missingHitStateWarningLogged)
+        {
+            missingHitStateWarningLogged = true;
+
+            Debug.LogWarning(
+                $"{name} Animator에 Hit State를 찾을 수 없음 : " +
+                $"{hitStateName} / Trigger 방식으로 대체 실행 " +
+                "(이 경고는 한 번만 출력됩니다.)",
+                this);
+        }
 
         animator.SetTrigger(HitHash);
+    }
+
+    private bool TryResolveHitStateHash(
+        out int stateHash)
+    {
+        stateHash = 0;
+
+        if (animator == null ||
+            string.IsNullOrWhiteSpace(hitStateName) ||
+            baseLayerIndex < 0 ||
+            baseLayerIndex >= animator.layerCount)
+        {
+            return false;
+        }
+
+        int shortNameHash =
+            Animator.StringToHash(hitStateName);
+
+        if (animator.HasState(
+                baseLayerIndex,
+                shortNameHash))
+        {
+            stateHash = shortNameHash;
+            return true;
+        }
+
+        string layerName =
+            animator.GetLayerName(baseLayerIndex);
+
+        if (string.IsNullOrWhiteSpace(layerName))
+            return false;
+
+        int fullPathHash =
+            Animator.StringToHash(
+                $"{layerName}.{hitStateName}");
+
+        if (!animator.HasState(
+                baseLayerIndex,
+                fullPathHash))
+        {
+            return false;
+        }
+
+        stateHash = fullPathHash;
+        return true;
     }
 
     private Action hitFrameCallback;
@@ -39689,9 +40197,9 @@ FILE_PATH: Assets/1. Scripts/Runtime/Presentation/Visual/Director/BattleAnimatio
 FILE_NAME: BattleAnimationDirector.cs
 FILE_GUID: c120877fcc44b454287923c382a3a52e
 LANGUAGE: CSharp
-LINE_COUNT: 1457
-UTF8_BYTE_COUNT: 38349
-SHA256: 02254f5ecf43f24b57d7e7fff3eaed9efef9e775cf88815d2258e99bbed96481
+LINE_COUNT: 1505
+UTF8_BYTE_COUNT: 39804
+SHA256: 21b638f9e7b8ff452654bff77887bea8d8f424cf7f72ab8a8912dacb7f81bd85
 READ_STATUS: OK
 CONTENT_BEGIN
 using System;
@@ -40225,11 +40733,60 @@ public class BattleAnimationDirector : MonoBehaviour
             if (cue == null || cue.Timing != timing)
                 continue;
 
+            if (!ShouldPlayAutoDistributedHitCue(
+                    visual,
+                    cue,
+                    i,
+                    hitIndex))
+            {
+                continue;
+            }
+
             vfxManager.PlayCue(
                 cue,
                 context,
                 i);
         }
+    }
+
+    private static bool ShouldPlayAutoDistributedHitCue(
+        SkillVisualDefinition visual,
+        BattleVfxCue cue,
+        int cueIndex,
+        int hitIndex)
+    {
+        if (visual?.VfxCues == null ||
+            cue == null ||
+            hitIndex < 0 ||
+            cue.Timing != BattleVfxTiming.OnHitFrame ||
+            cue.UseHitIndexFilter)
+        {
+            return true;
+        }
+
+        int matchingCueCount = 0;
+        int matchingCueOrdinal = -1;
+
+        for (int i = 0; i < visual.VfxCues.Count; i++)
+        {
+            BattleVfxCue candidate = visual.VfxCues[i];
+
+            if (!cue.CanAutoDistributeByHitIndexWith(candidate))
+                continue;
+
+            if (i == cueIndex)
+                matchingCueOrdinal = matchingCueCount;
+
+            matchingCueCount++;
+        }
+
+        if (matchingCueCount <= 1 || matchingCueOrdinal < 0)
+            return true;
+
+        // HitIndex 0에는 첫 Cue, HitIndex 1에는 두 번째 Cue를 배정한다.
+        // 따라서 Duel 2히트의 복제된 BloodSplash가 첫 타격에 겹쳐 나오거나
+        // 두 번째 타격에서 재생 기록 충돌로 사라지는 문제를 동시에 막는다.
+        return matchingCueOrdinal == hitIndex;
     }
 
     private IEnumerator PlayMomentumRefreshAtVisualEnd(
@@ -41150,7 +41707,6 @@ public class BattleAnimationDirector : MonoBehaviour
         public CharacterActionMover AttackerMover;
     }
 }
-
 CONTENT_END
 FILE_END
 ================================================================================
@@ -41161,12 +41717,13 @@ FILE_PATH: Assets/1. Scripts/Runtime/Presentation/Visual/Director/BattleCameraDi
 FILE_NAME: BattleCameraDirector.cs
 FILE_GUID: 2488ec217d69a3d4cb2352d0c8303833
 LANGUAGE: CSharp
-LINE_COUNT: 1002
-UTF8_BYTE_COUNT: 27778
-SHA256: ea4c333624340cd68d400f3bec3aa3cbf44d998c5bbcb01f59340064d96a7ef3
+LINE_COUNT: 1031
+UTF8_BYTE_COUNT: 28518
+SHA256: 05ca9bd226faf8e5b24e46be342328e85c8c2400be453e2b3aea38472ac7adbf
 READ_STATUS: OK
 CONTENT_BEGIN
 using System.Collections;
+using System.Collections.Generic;
 using Unity.Cinemachine;
 using UnityEngine;
 
@@ -41204,6 +41761,10 @@ public class BattleCameraDirector : MonoBehaviour
 
     private BattleCinemachineTargetGroupBinder groupBinder;
     private Coroutine restoreBlendRoutine;
+
+    private readonly HashSet<string>
+        reportedCameraPointFallbacks =
+            new();
 
     private bool interactionCameraActive;
     private Vector3 interactionTargetPosition;
@@ -41817,9 +42378,12 @@ public class BattleCameraDirector : MonoBehaviour
                 out Transform cameraPoint,
                 out string cameraFailure))
         {
-            Debug.LogWarning(
-                $"[BattleCameraDirector] CameraPoint 찾기 실패 / {cameraFailure}",
-                this);
+            ReportCameraPointFallbackOnce(
+                shot,
+                cameraFailure);
+
+            // PlayShot()이 ShotType에 맞는 Group/Character Pose Shot으로
+            // 즉시 폴백한다.
             return false;
         }
 
@@ -42160,6 +42724,27 @@ public class BattleCameraDirector : MonoBehaviour
         return character.Data != null
             ? character.Data.CharacterName
             : character.name;
+    }
+
+    private void ReportCameraPointFallbackOnce(
+        SkillCameraShot shot,
+        string failure)
+    {
+        string safeFailure =
+            string.IsNullOrWhiteSpace(failure)
+                ? "UNKNOWN"
+                : failure;
+
+        string key =
+            $"{shot?.CameraPoint}:{shot?.ShotType}:{safeFailure}";
+
+        if (!reportedCameraPointFallbacks.Add(key))
+            return;
+
+        Log(
+            $"CameraPoint 폴백 / " +
+            $"ShotType={shot?.ShotType}, " +
+            $"{safeFailure}");
     }
 
     private void Log(string message)
@@ -44729,9 +45314,9 @@ FILE_PATH: Assets/1. Scripts/Runtime/Presentation/Visual/VFX/Core/BattleVfxCue.c
 FILE_NAME: BattleVfxCue.cs
 FILE_GUID: 41da7dcd785c9e949af2b22b561d03a6
 LANGUAGE: CSharp
-LINE_COUNT: 118
-UTF8_BYTE_COUNT: 3337
-SHA256: 916077011413e22773cf7cbaffc4bc5a6978e7a66f29d72e56a21e2603652f55
+LINE_COUNT: 157
+UTF8_BYTE_COUNT: 4944
+SHA256: c47abec4a4584ccb55d336e278bdf754252b368012cce10e53cb93e94b1271f5
 READ_STATUS: OK
 CONTENT_BEGIN
 using System;
@@ -44822,8 +45407,16 @@ public class BattleVfxCue
         BattleVfxContext context)
     {
         string baseKey = !string.IsNullOrEmpty(CueKey)
-            ? CueKey
-            : $"{Vfx?.name ?? "NULL"}:{cueIndex}:{Timing}";
+            ? $"{CueKey}:{Timing}"
+            : $"{Vfx?.name ?? "NULL"}:{Timing}";
+
+        // 같은 CueKey를 가진 다중 타격 Cue가 서로의 재생 기록을 덮어쓰지 않도록
+        // SkillVisualDefinition 내부의 실제 리스트 인덱스를 런타임 키에 포함한다.
+        if (cueIndex >= 0)
+            baseKey += $":CUE:{cueIndex}";
+
+        if (UseHitIndexFilter)
+            baseKey += $":FILTER:{HitIndex}";
 
         return RepeatMode switch
         {
@@ -44835,6 +45428,37 @@ public class BattleVfxCue
 
             _ => baseKey
         };
+    }
+
+    public bool CanAutoDistributeByHitIndexWith(
+        BattleVfxCue other)
+    {
+        if (other == null ||
+            Timing != BattleVfxTiming.OnHitFrame ||
+            other.Timing != BattleVfxTiming.OnHitFrame ||
+            UseHitIndexFilter ||
+            other.UseHitIndexFilter ||
+            string.IsNullOrEmpty(CueKey) ||
+            !string.Equals(
+                CueKey,
+                other.CueKey,
+                StringComparison.Ordinal))
+        {
+            return false;
+        }
+
+        // 같은 논리 CueKey와 동일한 런타임 조건을 가진 OnHitFrame Cue는
+        // 리스트 순서대로 HitIndex에 배정할 수 있다.
+        // VFX/Anchor/Delay는 타격별 연출 차이를 허용하기 위해 비교하지 않는다.
+        return RepeatMode == other.RepeatMode &&
+               RequiredAttackerData == other.RequiredAttackerData &&
+               string.Equals(
+                   RequiredSkillNameContains,
+                   other.RequiredSkillNameContains,
+                   StringComparison.Ordinal) &&
+               RequirePositiveDamage == other.RequirePositiveDamage &&
+               RequirePositiveResolvedDamage ==
+                   other.RequirePositiveResolvedDamage;
     }
 
     private static int ResolveTotalDamage(
@@ -47094,9 +47718,9 @@ FILE_PATH: Assets/1. Scripts/Runtime/Presentation/Visual/Validation/BattleVisual
 FILE_NAME: BattleVisualValidator.cs
 FILE_GUID: 42b46e1282f2b544a9697e3b5b55edec
 LANGUAGE: CSharp
-LINE_COUNT: 175
-UTF8_BYTE_COUNT: 5127
-SHA256: 56574e4e245b8031fc15200f288dc418b67baad9d81511abc223e334f1f4b9cb
+LINE_COUNT: 234
+UTF8_BYTE_COUNT: 6927
+SHA256: 66f96036c5865d90241c19e3f6b510b1ea9004a81b993920ad0a0c91a8db8940
 READ_STATUS: OK
 CONTENT_BEGIN
 using System.Collections.Generic;
@@ -47189,20 +47813,34 @@ public static class BattleVisualValidator
                 if (string.IsNullOrEmpty(cue.CueKey))
                     continue;
 
-                if (cueKeys.Add(cue.CueKey))
+                string collisionIdentity =
+                    BuildCollisionIdentity(cue);
+
+                if (cueKeys.Add(collisionIdentity))
                     continue;
+
+                if (CanAutoDistributeDuplicateHitCue(
+                        visual,
+                        cue,
+                        i))
+                {
+                    continue;
+                }
 
                 valid = false;
 
                 if (logWarnings)
                 {
                     string warningKey =
-                        visual.GetInstanceID() + "|" + cue.CueKey;
+                        visual.GetInstanceID() + "|" + collisionIdentity;
 
                     if (LoggedDuplicateCueWarnings.Add(warningKey))
                     {
                         Debug.LogWarning(
-                            $"[BATTLE VISUAL VALIDATION] 중복 CueKey / Visual={visual.name}, Key={cue.CueKey}",
+                            $"[BATTLE VISUAL VALIDATION] 실제 충돌하는 VFX Cue / " +
+                            $"Visual={visual.name}, Key={cue.CueKey}, " +
+                            $"Timing={cue.Timing}, HitFilter=" +
+                            $"{(cue.UseHitIndexFilter ? cue.HitIndex.ToString() : "NONE")}",
                             visual);
                     }
                 }
@@ -47220,6 +47858,51 @@ public static class BattleVisualValidator
         }
 
         return valid;
+    }
+
+    private static string BuildCollisionIdentity(
+        BattleVfxCue cue)
+    {
+        if (cue == null)
+            return string.Empty;
+
+        return
+            cue.CueKey + "|" +
+            cue.Timing + "|" +
+            cue.RepeatMode + "|" +
+            (cue.UseHitIndexFilter
+                ? "FILTER:" + cue.HitIndex
+                : "NO_FILTER") + "|" +
+            (cue.RequiredAttackerData != null
+                ? cue.RequiredAttackerData.GetInstanceID().ToString()
+                : "ANY_ATTACKER") + "|" +
+            (cue.RequiredSkillNameContains ?? string.Empty) + "|" +
+            cue.RequirePositiveDamage + "|" +
+            cue.RequirePositiveResolvedDamage;
+    }
+
+    private static bool CanAutoDistributeDuplicateHitCue(
+        SkillVisualDefinition visual,
+        BattleVfxCue cue,
+        int cueIndex)
+    {
+        if (visual?.VfxCues == null ||
+            cue == null ||
+            cueIndex < 0 ||
+            cueIndex >= visual.VfxCues.Count)
+        {
+            return false;
+        }
+
+        for (int i = 0; i < cueIndex; i++)
+        {
+            BattleVfxCue previous = visual.VfxCues[i];
+
+            if (cue.CanAutoDistributeByHitIndexWith(previous))
+                return true;
+        }
+
+        return false;
     }
 
     public static bool ValidateProfile(
@@ -51077,22 +51760,12 @@ FILE_PATH: Assets/1. Scripts/Runtime/Skills/Effects/OlafEffects/OlafPrestigeEffe
 FILE_NAME: OlafPrestigeEffect.cs
 FILE_GUID: 404cac770ab99b346805bd23692e54dd
 LANGUAGE: CSharp
-LINE_COUNT: 186
-UTF8_BYTE_COUNT: 5102
-SHA256: aa5606533a290beaca5c440d4c30d61a3db329ef9f2d3417ec82f4496b820602
+LINE_COUNT: 150
+UTF8_BYTE_COUNT: 4067
+SHA256: 7aed933561e047216d9e607d6a9bc755fd4a36a3954f536917b698a349b49539
 READ_STATUS: OK
 CONTENT_BEGIN
 using UnityEngine;
-using UnityEngine.Serialization;
-
-public enum OlafPrestigeBreakPolicy
-{
-    // 기존 SO에 새 필드가 추가되어도 안전한 기본값이 되도록 0을 유지한다.
-    WeakenedOnly = 0,
-    WeakenedOrBleedingThreshold = 1,
-    Always = 2,
-    Never = 3
-}
 
 [CreateAssetMenu(
     menuName = "Battle/Skill Effect/Olaf/Prestige Effect",
@@ -51113,15 +51786,9 @@ public class OlafPrestigeEffect : SkillEffectDefinition
     [SerializeField, Min(0)]
     private int damagePerMadness = 2;
 
-    [Header("Break")]
-    [FormerlySerializedAs("forceBreakTargetPart")]
-    [SerializeField]
-    private bool enablePartBreak = true;
-
-    [SerializeField]
-    private OlafPrestigeBreakPolicy breakPolicy =
-        OlafPrestigeBreakPolicy.WeakenedOnly;
-
+    // 부위 파괴는 이 효과에서 처리하지 않는다.
+    // 확정된 고유 파괴 루트:
+    // 출혈 5스택 + 결투 대 결투에서 올라프가 최종 승리했을 때만 별도 전투 규칙이 처리한다.
     public override void Apply(
         SkillEffectContext context)
     {
@@ -51192,13 +51859,6 @@ public class OlafPrestigeEffect : SkillEffectDefinition
                     request);
         }
 
-        bool breakApplied =
-            TryBreakTargetPart(
-                context,
-                target,
-                targetPart,
-                consumedBleedingStacks);
-
         string targetPoint =
             targetPart == null
                 ? "SINGLE_HP"
@@ -51210,8 +51870,7 @@ public class OlafPrestigeEffect : SkillEffectDefinition
             $"출혈 피해={bleedingDamage}, " +
             $"광기 피해={madnessDamage}, " +
             $"실제 피해={damageContext?.GetDisplayDamage() ?? totalExtraDamage}, " +
-            $"부위 파괴={breakApplied}, " +
-            $"정책={breakPolicy}");
+            "부위 파괴=위세 효과에서 미수행");
     }
 
     private int ConsumeBleedingIfNeeded(
@@ -51255,18 +51914,6 @@ public class OlafPrestigeEffect : SkillEffectDefinition
         return stack;
     }
 
-    private bool TryBreakTargetPart(
-        SkillEffectContext context,
-        Character target,
-        BodyPart targetPart,
-        int bleedingStacks)
-    {
-        // 2026-07-20 확정 규칙:
-        // 올라프의 고유 파괴 루트는 오직 "출혈 5스택 + 결투 vs 결투 최종 승리"다.
-        // 위세 효과가 ForceBreakPart를 직접 호출하면 고유 루트가 중복되므로,
-        // 기존 직렬화 필드는 호환용으로 남기되 강제 파괴는 수행하지 않는다.
-        return false;
-    }
 }
 CONTENT_END
 FILE_END
@@ -56184,7 +56831,7 @@ FILE_GUID: 8d079a77fd3703142b07b2b9f264c55e
 LANGUAGE: CSharp
 LINE_COUNT: 552
 UTF8_BYTE_COUNT: 13739
-SHA256: 55fa2b63c189a073100c8970f28a6c265fc403afcb546daa67c1ed16d2199be9
+SHA256: 5e1da261e00c8c9d73c73c4ac1f13cb2a50f63c7cbb4d0020fd98ac14a92ce38
 READ_STATUS: OK
 CONTENT_BEGIN
 using System;
@@ -56580,9 +57227,6 @@ public class TurnManager
 
     private void EndTurnInternal()
     {
-        Debug.Log(
-            $"===== TURN {CurrentTurn} END =====");
-
         RunCharacterTurnEnd();
 
         battleContext?._battleEvent?
@@ -56591,6 +57235,9 @@ public class TurnManager
         battleContext?.battleManager?
             .BattleLogger?
             .PrintTurn(CurrentTurn);
+
+        Debug.Log(
+            $"===== TURN {CurrentTurn} END =====");
 
         CurrentTurn++;
     }

@@ -7248,10 +7248,10 @@ RectTransform:
   m_Children: []
   m_Father: {fileID: 382454537}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 0}
-  m_AnchorMax: {x: 0, y: 0}
+  m_AnchorMin: {x: 0, y: 1}
+  m_AnchorMax: {x: 0, y: 1}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 0, y: 0}
+  m_SizeDelta: {x: 58.53, y: 36.21}
   m_Pivot: {x: 0, y: 1}
 --- !u!114 &1824034224
 MonoBehaviour:
@@ -10026,6 +10026,14 @@ MonoBehaviour:
   vfxManager: {fileID: 2113237154}
   logMissingReferences: 1
   logDebug: 0
+  clashInitialAnimationSpeed: 1
+  clashAnimationSpeedStep: 0.12
+  clashMaximumAnimationSpeed: 1.5
+  clashBaseExchangeGap: 0.16
+  clashExchangeGapMultiplier: 0.78
+  clashMinimumExchangeGap: 0.04
+  clashBaseRollHold: 0.28
+  clashMinimumRollHold: 0.06
   battleUIManager: {fileID: 605390726}
   actionAnnounceUI: {fileID: 1883356089}
 --- !u!4 &2113237153

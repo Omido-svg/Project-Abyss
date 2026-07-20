@@ -150,6 +150,8 @@ public class CharacterView : MonoBehaviour, ISerializationCallbackReceiver
     private Action effectFrameCallback;
 
     private bool animationEnded;
+    private bool hasAnimatorSpeedOverride;
+    private float animatorSpeedBeforeAction = 1f;
 
     private static readonly int VisualStateHash =
         Animator.StringToHash("VisualState");
@@ -250,7 +252,8 @@ public class CharacterView : MonoBehaviour, ISerializationCallbackReceiver
         ActionType actionType,
         Action onHitFrame = null,
         Action onEffectFrame = null,
-        float timeout = 5f)
+        float timeout = 5f,
+        float playbackSpeed = 1f)
     {
         if (animator == null)
             yield break;
@@ -259,6 +262,8 @@ public class CharacterView : MonoBehaviour, ISerializationCallbackReceiver
 
         hitFrameCallback = onHitFrame;
         effectFrameCallback = onEffectFrame;
+
+        ApplyAnimatorSpeedOverride(playbackSpeed);
 
         try
         {
@@ -282,14 +287,40 @@ public class CharacterView : MonoBehaviour, ISerializationCallbackReceiver
             hitFrameCallback = null;
             effectFrameCallback = null;
             animationEnded = false;
+            RestoreAnimatorSpeed();
         }
 
         RefreshVisualState();
     }
 
+    private void ApplyAnimatorSpeedOverride(float playbackSpeed)
+    {
+        if (animator == null)
+            return;
+
+        if (!hasAnimatorSpeedOverride)
+        {
+            animatorSpeedBeforeAction = animator.speed;
+            hasAnimatorSpeedOverride = true;
+        }
+
+        animator.speed = Mathf.Max(0.01f, playbackSpeed);
+    }
+
+    private void RestoreAnimatorSpeed()
+    {
+        if (animator == null || !hasAnimatorSpeedOverride)
+            return;
+
+        animator.speed = animatorSpeedBeforeAction;
+        animatorSpeedBeforeAction = 1f;
+        hasAnimatorSpeedOverride = false;
+    }
+
     public void CancelActionPlayback()
     {
         ClearActionPlaybackCallbacks();
+        RestoreAnimatorSpeed();
 
         if (animator != null)
             RefreshVisualState();
@@ -298,6 +329,7 @@ public class CharacterView : MonoBehaviour, ISerializationCallbackReceiver
     public void AbortActionPlayback()
     {
         ClearActionPlaybackCallbacks();
+        RestoreAnimatorSpeed();
 
         if (animator == null)
             return;

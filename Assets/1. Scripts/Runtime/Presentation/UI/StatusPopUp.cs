@@ -30,6 +30,7 @@ public class StatusPopup : MonoBehaviour
 
     private Camera mainCamera;
     private BattleCameraDirector battleCameraDirector;
+    private BattleAnimationDirector battleAnimationDirector;
     private CameraController cameraController;
 
     private bool isSelected;
@@ -55,6 +56,7 @@ public class StatusPopup : MonoBehaviour
 
         mainCamera = Camera.main;
         battleCameraDirector = FindFirstObjectByType<BattleCameraDirector>();
+        battleAnimationDirector = FindFirstObjectByType<BattleAnimationDirector>();
         cameraController = FindFirstObjectByType<CameraController>();
 
         if (popupRoot != null)
@@ -78,6 +80,12 @@ public class StatusPopup : MonoBehaviour
 
     private void Update()
     {
+        if (IsBattleInteractionLocked())
+        {
+            SuspendWithoutCameraReturn();
+            return;
+        }
+
         HandleInput();
 
         if (popupRoot == null)
@@ -184,8 +192,11 @@ public class StatusPopup : MonoBehaviour
 
     private void Select()
     {
-        if (character == null)
+        if (character == null ||
+            IsBattleInteractionLocked())
+        {
             return;
+        }
 
         if (currentSelected != null && currentSelected != this)
         {
@@ -226,6 +237,22 @@ public class StatusPopup : MonoBehaviour
             popupRoot.SetActive(false);
 
         outline?.DisableOutline();
+
+        if (currentSelected == this)
+            currentSelected = null;
+    }
+
+    private void SuspendWithoutCameraReturn()
+    {
+        bool hasVisibleSelection =
+            isSelected ||
+            (popupRoot != null &&
+             popupRoot.activeSelf);
+
+        if (!hasVisibleSelection)
+            return;
+
+        DeselectWithoutCameraReturn();
     }
 
     //--------------------------------------------------
@@ -234,6 +261,12 @@ public class StatusPopup : MonoBehaviour
     {
         if (!isSelected)
             return;
+
+        if (IsBattleInteractionLocked())
+        {
+            DeselectWithoutCameraReturn();
+            return;
+        }
 
         isSelected = false;
 
@@ -587,8 +620,43 @@ public class StatusPopup : MonoBehaviour
         return battleCameraDirector;
     }
 
+    private BattleAnimationDirector GetBattleAnimationDirector()
+    {
+        if (battleAnimationDirector != null)
+            return battleAnimationDirector;
+
+        battleAnimationDirector =
+            FindFirstObjectByType<BattleAnimationDirector>();
+
+        return battleAnimationDirector;
+    }
+
+    private bool IsBattleInteractionLocked()
+    {
+        if (!Application.isPlaying)
+            return false;
+
+        if (battleManager == null)
+        {
+            battleManager =
+                FindFirstObjectByType<BattleManager>();
+        }
+
+        if (battleManager?.TurnManager?.IsResolving == true)
+            return true;
+
+        BattleAnimationDirector animationDirector =
+            GetBattleAnimationDirector();
+
+        return animationDirector != null &&
+               animationDirector.IsPlaying;
+    }
+
     private void FocusCamera()
     {
+        if (IsBattleInteractionLocked())
+            return;
+
         Vector3 focusPosition =
             transform.position + focusOffset;
 
@@ -609,6 +677,9 @@ public class StatusPopup : MonoBehaviour
 
     private void ReturnCamera()
     {
+        if (IsBattleInteractionLocked())
+            return;
+
         BattleCameraDirector director =
             GetBattleCameraDirector();
 

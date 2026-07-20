@@ -22,6 +22,15 @@ public class BattleVisualRequest
     public List<ClashRollVisualStep> ClashSteps = new();
     public List<int> HitDamages = new();
 
+    [Header("Continuous Clash Sequence")]
+    public bool IsClashSequence;
+    public List<BattleClashVisualExchange> ClashExchanges = new();
+
+    public bool HasClashSequence =>
+        IsClashSequence &&
+        ClashExchanges != null &&
+        ClashExchanges.Count > 0;
+
     public int FallbackDamage;
 
     public bool HasWorldPosition;

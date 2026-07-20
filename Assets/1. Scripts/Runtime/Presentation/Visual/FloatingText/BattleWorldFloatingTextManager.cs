@@ -342,6 +342,107 @@ public class BattleWorldFloatingTextManager : MonoBehaviour
         }
     }
 
+    public IEnumerator ShowClashPowerStep(
+        Transform attackerAnchor,
+        Transform targetAnchor,
+        ClashRollVisualStep step,
+        Color normalColor,
+        Color tieColor,
+        string attackerLabel,
+        string targetLabel,
+        int timingIndex,
+        float resultHold)
+    {
+        ClashTextPair pair;
+
+        if (!TryCreateTextPair(
+                attackerAnchor,
+                targetAnchor,
+                normalColor,
+                out pair,
+                attackerLabel,
+                targetLabel))
+        {
+            yield break;
+        }
+
+        try
+        {
+            float rollDuration;
+            float tickInterval;
+
+            GetRollTiming(
+                Mathf.Max(0, timingIndex),
+                out rollDuration,
+                out tickInterval);
+
+            SetPairColor(pair, normalColor);
+
+            yield return RunPairInParallel(
+                pair.Attacker,
+                pair.Attacker.RollToClashResult(
+                    step.AttackerRollResult,
+                    step.AttackerValue,
+                    step.AttackerSpeedModifier,
+                    step.AttackerMomentumModifier,
+                    step.AttackerCritical,
+                    rollDuration,
+                    tickInterval,
+                    randomMin,
+                    randomMax),
+                pair.Target,
+                pair.Target.RollToClashResult(
+                    step.TargetRollResult,
+                    step.TargetValue,
+                    step.TargetSpeedModifier,
+                    step.TargetMomentumModifier,
+                    step.TargetCritical,
+                    rollDuration,
+                    tickInterval,
+                    randomMin,
+                    randomMax));
+
+            if (!IsPairActive(pair))
+                yield break;
+
+            if (step.IsTie)
+            {
+                SetPairColor(pair, tieColor);
+
+                if (pair.Attacker != null)
+                    pair.Attacker.SetText(TieText);
+
+                if (pair.Target != null)
+                    pair.Target.SetText(TieText);
+
+                float tieSpeedFactor =
+                    Mathf.Pow(
+                        speedMultiplierPerTie,
+                        Mathf.Max(0, timingIndex));
+
+                yield return WaitForDuration(
+                    Mathf.Max(
+                        0.05f,
+                        tieHoldDuration * tieSpeedFactor));
+
+                if (!IsPairActive(pair))
+                    yield break;
+            }
+
+            yield return WaitForDuration(
+                Mathf.Max(0f, resultHold));
+
+            if (!IsPairActive(pair))
+                yield break;
+
+            yield return FadePair(pair);
+        }
+        finally
+        {
+            ReleasePair(pair);
+        }
+    }
+
     private bool TryCreateTextPair(
         Transform attackerAnchor,
         Transform targetAnchor,

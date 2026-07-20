@@ -65,6 +65,110 @@ public class BattleVisualRequestBuilder
         return request;
     }
 
+
+    public BattleVisualRequest BuildClashSequence(
+        ClashResultContext result)
+    {
+        BattleAction first = result?.FirstAction;
+        BattleAction second = result?.SecondAction;
+
+        if (first == null || second == null)
+            return null;
+
+        SkillVisualDefinition sequenceVisual =
+            ResolveVisualDefinition(first) ??
+            ResolveVisualDefinition(second);
+
+        BattleVisualRequest request =
+            BattleVisualRequest.FromAction(
+                first,
+                sequenceVisual);
+
+        request.OpponentAction = second;
+        request.IsClashSequence = true;
+
+        // 합의 두 참가자를 전체 시퀀스 동안 고정한다.
+        request.Attacker = first.Owner;
+        request.AttackerPart = first.OwnerPart;
+        request.Target = second.Owner;
+        request.TargetPart = first.TargetPart ?? second.OwnerPart;
+        request.TargetPoint = new TargetPoint(
+            request.Target,
+            request.TargetPart);
+
+        if (result.Exchanges != null)
+        {
+            foreach (ClashExchangeResult exchange
+                     in result.Exchanges)
+            {
+                if (exchange == null)
+                    continue;
+
+                ClashRollVisualStep displayStep =
+                    exchange.CreateVisualStep(first);
+
+                displayStep.RoundIndex =
+                    exchange.ExchangeIndex;
+
+                request.ClashSteps.Add(displayStep);
+
+                BattleVisualRequest attackRequest = null;
+
+                if (!exchange.WasCancelled &&
+                    exchange.WinnerAction != null &&
+                    exchange.DamageContext != null)
+                {
+                    DamageContext context =
+                        exchange.DamageContext;
+
+                    attackRequest = Build(
+                        exchange.WinnerAction,
+                        clashSteps: null,
+                        hitDamages: new List<int>
+                        {
+                            exchange.Damage
+                        },
+                        opponentAction:
+                            exchange.LoserAction,
+                        targetPartHpBefore:
+                            context.HasTargetPartSnapshot
+                                ? context.TargetPartHpBefore
+                                : null,
+                        targetPartHpAfter:
+                            context.HasTargetPartSnapshot
+                                ? context.TargetPartHpAfter
+                                : null,
+                        damageContext: context);
+                }
+
+                request.ClashExchanges.Add(
+                    new BattleClashVisualExchange
+                    {
+                        ExchangeIndex =
+                            exchange.ExchangeIndex,
+                        IsOneSided =
+                            exchange.IsOneSided,
+                        IsTie =
+                            exchange.IsTie,
+                        WasCancelled =
+                            exchange.WasCancelled,
+                        DisplayStep =
+                            displayStep,
+                        AttackRequest =
+                            attackRequest
+                    });
+            }
+        }
+
+        ResolveWorldPosition(request);
+
+        BattleVisualValidator.ValidateRequest(
+            request,
+            logWarnings: true);
+
+        return request;
+    }
+
     private static void ApplyHitDamages(
         BattleVisualRequest request,
         List<int> hitDamages,

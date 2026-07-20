@@ -105,8 +105,22 @@ InitTestScene*.unity*
 # Auto-generated cache in Assets folder
 /[Aa]ssets/[Ss]ceneDependencyCache*
 
-/Assets/BattleAnalysis/**
-!/Assets/BattleAnalysis/.gitkeep
+# Project Abyss AI export files
+# Scripts Export
+/Assets/**/Project_Abyss_All_Scripts_For_AI*
 
-/Assets/BattleSimulation/**
-!/Assets/BattleSimulation/.gitkeep
+# Hierarchy Export
+/Assets/**/Project_Abyss_Current_Hierarchy_For_AI*
+
+# Core Data Export
+# Manifest, Part TXT, Upload ZIP 및 Unity .meta 포함
+/Assets/AllDataTXT/Core/
+/Assets/AllDataTXT/Core.meta
+
+# Project Abyss AI export files
+/Assets/**/Project_Abyss_All_Scripts_For_AI*
+/Assets/**/Project_Abyss_Current_Hierarchy_For_AI*
+
+# Core / Models / All Data Export 전체
+/Assets/AllDataTXT/
+/Assets/AllDataTXT.meta

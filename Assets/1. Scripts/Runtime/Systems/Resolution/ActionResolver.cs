@@ -132,85 +132,22 @@ public class ActionResolver
             ClashResultContext result =
                 clashManager.ResolvePair(pair);
 
-            if (result == null)
+            if (result == null ||
+                BattleSimulationRuntime.IsBatchSimulation ||
+                battleAnimationDirector == null)
+            {
+                continue;
+            }
+
+            BattleVisualRequest request =
+                visualRequestBuilder.BuildClashSequence(
+                    result);
+
+            if (request == null)
                 continue;
 
-            bool playedDamageExchange = false;
-
-            if (result.Exchanges != null)
-            {
-                foreach (ClashExchangeResult exchange
-                         in result.Exchanges)
-                {
-                    if (exchange == null ||
-                        exchange.WinnerAction == null ||
-                        exchange.DamageContext == null)
-                    {
-                        continue;
-                    }
-
-                    BattleAction visualAction =
-                        exchange.WinnerAction;
-
-                    BattleAction opponent =
-                        exchange.LoserAction;
-
-                    List<ClashRollVisualStep> steps = null;
-
-                    if (result.IsClash &&
-                        !exchange.IsOneSided)
-                    {
-                        steps = new List<ClashRollVisualStep>
-                        {
-                            exchange.CreateVisualStep(
-                                visualAction)
-                        };
-                    }
-
-                    List<int> hitDamages = new()
-                    {
-                        exchange.Damage
-                    };
-
-                    DamageContext damageContext =
-                        exchange.DamageContext;
-
-                    yield return PlayActionVisual(
-                        visualAction,
-                        steps,
-                        hitDamages,
-                        opponent,
-                        damageContext.HasTargetPartSnapshot
-                            ? damageContext.TargetPartHpBefore
-                            : null,
-                        damageContext.HasTargetPartSnapshot
-                            ? damageContext.TargetPartHpAfter
-                            : null,
-                        damageContext);
-
-                    playedDamageExchange = true;
-                }
-            }
-
-            // 모든 교환이 동률이거나 피해 요청이 없었던 합도
-            // 굴림 결과 자체는 한 번 표시한다.
-            if (!playedDamageExchange &&
-                result.IsClash)
-            {
-                BattleAction visualAction =
-                    result.FirstAction ??
-                    result.WinnerAction;
-
-                if (visualAction != null)
-                {
-                    yield return PlayActionVisual(
-                        visualAction,
-                        result.ClashSteps,
-                        new List<int>(),
-                        result.SecondAction ??
-                        result.LoserAction);
-                }
-            }
+            yield return battleAnimationDirector
+                .Play(request);
         }
     }
 
