@@ -26,6 +26,10 @@ public class BattleVisualRequest
     public bool IsClashSequence;
     public List<BattleClashVisualExchange> ClashExchanges = new();
 
+    public bool HasMomentumTimeline;
+    public int MomentumAtSequenceStart;
+    public int MomentumAfterSequence;
+
     public bool HasClashSequence =>
         IsClashSequence &&
         ClashExchanges != null &&

@@ -20,6 +20,8 @@ public sealed class ClashExchangeResult
 
     public DamageContext DamageContext;
 
+    public int MomentumBefore;
+    public int MomentumAfter;
     public int MomentumShift;
     public int PrestigeDealtGain;
     public int PrestigeTakenGain;

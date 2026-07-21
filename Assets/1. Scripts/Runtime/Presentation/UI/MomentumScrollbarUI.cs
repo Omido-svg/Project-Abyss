@@ -16,14 +16,21 @@ public sealed class MomentumScrollbarUI : MonoBehaviour
 
     [Header("Animation")]
     [SerializeField, Min(0f)] private float animateDuration = 0.35f;
+
+    [Tooltip("합의 각 굴림 결과가 확정될 때 사용하는 짧은 이동 시간입니다.")]
+    [SerializeField, Min(0f)] private float exchangeAnimateDuration = 0.18f;
+
     [SerializeField] private bool useUnscaledTime = true;
 
     [Header("Debug")]
     [SerializeField] private bool logMomentumAnimation = true;
 
     private bool isLocked;
+    private bool isInlineAnimating;
     private float displayedMomentum;
     private Coroutine animateRoutine;
+
+    public float DisplayedMomentum => displayedMomentum;
 
     private void Awake()
     {
@@ -43,12 +50,17 @@ public sealed class MomentumScrollbarUI : MonoBehaviour
     {
         StopAnimation();
         isLocked = false;
+        isInlineAnimating = false;
     }
 
     private void Update()
     {
-        if (isLocked || animateRoutine != null)
+        if (isLocked ||
+            isInlineAnimating ||
+            animateRoutine != null)
+        {
             return;
+        }
 
         float real = GetRealMomentum();
 
@@ -68,67 +80,147 @@ public sealed class MomentumScrollbarUI : MonoBehaviour
 
         isLocked = true;
 
-        if (logMomentumAnimation)
-        {
-            Debug.Log(
-                $"[MomentumScrollbarUI] Lock / " +
-                $"Displayed={displayedMomentum}, Real={GetRealMomentum()}");
-        }
+        LogAnimation(
+            "Lock Current",
+            displayedMomentum,
+            GetRealMomentum());
+    }
+
+    /// <summary>
+    /// 전투 계산은 연출 전에 끝나므로 실제 MomentumManager 값은 이미 최종값일 수 있다.
+    /// 연속 합 시작 시 계산 전 스냅샷으로 표시를 되돌리고 잠가,
+    /// 각 교환의 기록을 순서대로 재생할 수 있게 한다.
+    /// </summary>
+    public void LockDisplayAt(
+        float momentum)
+    {
+        StopAnimation();
+
+        isLocked = true;
+        displayedMomentum = ClampMomentum(momentum);
+        ApplySlider(displayedMomentum);
+
+        LogAnimation(
+            "Lock Snapshot",
+            displayedMomentum,
+            GetRealMomentum());
+    }
+
+    /// <summary>
+    /// 합의 한 굴림/교환이 화면에서 끝난 직후 호출한다.
+    /// 잠금은 유지하면서 해당 교환의 MomentumAfter까지 이동한다.
+    /// </summary>
+    public IEnumerator AnimateLockedDisplayToRoutine(
+        float targetMomentum)
+    {
+        StopAnimation();
+
+        isLocked = true;
+        isInlineAnimating = true;
+
+        float from = displayedMomentum;
+        float to = ClampMomentum(targetMomentum);
+
+        LogAnimation(
+            "Exchange Step",
+            from,
+            to);
+
+        yield return AnimateMomentumInternal(
+            from,
+            to,
+            exchangeAnimateDuration);
+
+        isInlineAnimating = false;
+        isLocked = true;
     }
 
     public void ReleaseAndAnimateToRealMomentum()
     {
         StopAnimation();
         animateRoutine = StartCoroutine(
-            ReleaseAndAnimateToRealMomentumRoutine());
+            ReleaseRoutineWrapper());
     }
 
     public IEnumerator ReleaseAndAnimateToRealMomentumRoutine()
     {
+        StopAnimation();
+
         isLocked = false;
+        isInlineAnimating = true;
 
         float from = displayedMomentum;
         float to = GetRealMomentum();
 
-        if (logMomentumAnimation)
-        {
-            Debug.Log(
-                $"[MomentumScrollbarUI] Release Routine / " +
-                $"From={from}, To={to}");
-        }
+        LogAnimation(
+            "Release Routine",
+            from,
+            to);
 
-        yield return AnimateMomentum(from, to);
+        yield return AnimateMomentumInternal(
+            from,
+            to,
+            animateDuration);
+
+        isInlineAnimating = false;
+        isLocked = false;
     }
 
     public void ForceRefresh()
     {
         StopAnimation();
         isLocked = false;
+        isInlineAnimating = false;
         displayedMomentum = GetRealMomentum();
         ApplySlider(displayedMomentum);
     }
 
-    private IEnumerator AnimateMomentum(float from, float to)
+    private IEnumerator ReleaseRoutineWrapper()
     {
-        if (animateDuration <= 0f ||
+        isLocked = false;
+        isInlineAnimating = true;
+
+        float from = displayedMomentum;
+        float to = GetRealMomentum();
+
+        LogAnimation(
+            "Release",
+            from,
+            to);
+
+        yield return AnimateMomentumInternal(
+            from,
+            to,
+            animateDuration);
+
+        isInlineAnimating = false;
+        isLocked = false;
+        animateRoutine = null;
+    }
+
+    private IEnumerator AnimateMomentumInternal(
+        float from,
+        float to,
+        float duration)
+    {
+        if (duration <= 0f ||
             Mathf.Approximately(from, to))
         {
             displayedMomentum = to;
             ApplySlider(displayedMomentum);
-            animateRoutine = null;
             yield break;
         }
 
         float elapsed = 0f;
 
-        while (elapsed < animateDuration)
+        while (elapsed < duration)
         {
             elapsed += useUnscaledTime
                 ? Time.unscaledDeltaTime
                 : Time.deltaTime;
 
             float t = Mathf.Clamp01(
-                elapsed / animateDuration);
+                elapsed / duration);
 
             float eased = Mathf.SmoothStep(0f, 1f, t);
 
@@ -140,7 +232,6 @@ public sealed class MomentumScrollbarUI : MonoBehaviour
 
         displayedMomentum = to;
         ApplySlider(displayedMomentum);
-        animateRoutine = null;
     }
 
     private void ResolveReferences()
@@ -178,6 +269,15 @@ public sealed class MomentumScrollbarUI : MonoBehaviour
             : battleManager.MomentumManager.CurrentMomentum;
     }
 
+    private float ClampMomentum(
+        float momentum)
+    {
+        return Mathf.Clamp(
+            momentum,
+            minMomentum,
+            maxMomentum);
+    }
+
     private void ApplySlider(float momentum)
     {
         if (momentumSlider == null)
@@ -208,5 +308,18 @@ public sealed class MomentumScrollbarUI : MonoBehaviour
             minMomentum,
             maxMomentum,
             normalized);
+    }
+
+    private void LogAnimation(
+        string label,
+        float from,
+        float to)
+    {
+        if (!logMomentumAnimation)
+            return;
+
+        Debug.Log(
+            $"[MomentumScrollbarUI] {label} / " +
+            $"From={from}, To={to}, Real={GetRealMomentum()}");
     }
 }

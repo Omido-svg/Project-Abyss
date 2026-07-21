@@ -334,6 +334,13 @@ public class BattleAnimationDirector : MonoBehaviour
             request,
             visual);
 
+        TriggerCameraImpactPulse(
+            playback,
+            request,
+            visual,
+            SkillCameraImpactTiming.OnActionStart,
+            isClash: false);
+
         if (visual.FaceEachOther &&
             target != null &&
             !(request.IsSelfTarget && visual.SkipFacingForSelfTarget))
@@ -392,6 +399,13 @@ public class BattleAnimationDirector : MonoBehaviour
                 request,
                 visual,
                 SkillCameraShotTiming.OnClashRoll);
+
+            TriggerCameraImpactPulse(
+                playback,
+                request,
+                visual,
+                SkillCameraImpactTiming.OnClashRoll,
+                isClash: true);
 
             if (visual.ClashRollCameraLeadTime > 0f)
             {
@@ -460,6 +474,17 @@ public class BattleAnimationDirector : MonoBehaviour
             request,
             visual,
             BattleVfxTiming.AfterAction);
+
+        TriggerCameraImpactPulse(
+            playback,
+            request,
+            visual,
+            SkillCameraImpactTiming.AfterAction,
+            damage: request.FinalHpDamage,
+            isCritical: request.WasCritical,
+            brokePart: request.BrokePart,
+            wasKilled: request.WasKilled,
+            isClash: false);
 
         if (request.WasKilled)
         {
@@ -603,6 +628,13 @@ public class BattleAnimationDirector : MonoBehaviour
             request,
             visual);
 
+        TriggerCameraImpactPulse(
+            playback,
+            request,
+            visual,
+            SkillCameraImpactTiming.OnActionStart,
+            isClash: true);
+
         if (visual.FaceEachOther &&
             !(request.IsSelfTarget &&
               visual.SkipFacingForSelfTarget))
@@ -702,6 +734,15 @@ public class BattleAnimationDirector : MonoBehaviour
                     exchangeVisual,
                     SkillCameraShotTiming.OnClashRoll);
 
+                TriggerCameraImpactPulse(
+                    playback,
+                    exchangeRequest,
+                    exchangeVisual,
+                    SkillCameraImpactTiming.OnClashRoll,
+                    exchangeIndex: exchange.ExchangeIndex,
+                    isClash: true,
+                    isOneSided: exchange.IsOneSided);
+
                 float leadTime =
                     exchangeVisual.ClashRollCameraLeadTime /
                     animationSpeed;
@@ -723,8 +764,15 @@ public class BattleAnimationDirector : MonoBehaviour
                 yield return PlayClashExchangeAttack(
                     playback,
                     exchange.AttackRequest,
+                    exchange,
                     animationSpeed);
             }
+
+            // 전투 계산은 이미 끝났지만 기세 UI는 교환별 스냅샷을 따라간다.
+            // 따라서 각 굴림의 승패와 공격 연출이 끝난 직후 해당 이동을 재생한다.
+            yield return PlayMomentumExchangeStep(
+                playback,
+                exchange);
 
             float exchangeGap =
                 GetClashExchangeGap(i);
@@ -736,6 +784,21 @@ public class BattleAnimationDirector : MonoBehaviour
                     exchangeGap);
             }
         }
+
+        yield return PlayMomentumSequenceFinalStep(
+            playback,
+            request);
+
+        TriggerCameraImpactPulse(
+            playback,
+            request,
+            visual,
+            SkillCameraImpactTiming.OnClashFinalResult,
+            exchangeIndex:
+                request.ClashExchanges != null
+                    ? request.ClashExchanges.Count - 1
+                    : -1,
+            isClash: true);
 
         playback.ResetToRootRequest();
 
@@ -814,6 +877,7 @@ public class BattleAnimationDirector : MonoBehaviour
     private IEnumerator PlayClashExchangeAttack(
         BattleVisualPlaybackState playback,
         BattleVisualRequest attackRequest,
+        BattleClashVisualExchange exchange,
         float animationSpeed)
     {
         if (playback == null ||
@@ -889,7 +953,12 @@ public class BattleAnimationDirector : MonoBehaviour
                         playback,
                         views,
                         visual,
-                        hitIndex);
+                        hitIndex,
+                        exchangeIndex:
+                            exchange?.ExchangeIndex ?? -1,
+                        isClash: true,
+                        isOneSided:
+                            exchange?.IsOneSided == true);
                 },
                 onEffectFrame: null,
                 timeout: Mathf.Max(
@@ -904,7 +973,12 @@ public class BattleAnimationDirector : MonoBehaviour
             playback,
             views,
             visual,
-            hitFrameCount);
+            hitFrameCount,
+            exchangeIndex:
+                exchange?.ExchangeIndex ?? -1,
+            isClash: true,
+            isOneSided:
+                exchange?.IsOneSided == true);
 
         views.AttackerView?.RefreshVisualState();
         views.TargetView?.RefreshVisualState();
@@ -1134,6 +1208,56 @@ public class BattleAnimationDirector : MonoBehaviour
         return matchingCueOrdinal == hitIndex;
     }
 
+    private IEnumerator PlayMomentumExchangeStep(
+        BattleVisualPlaybackState playback,
+        BattleClashVisualExchange exchange)
+    {
+        if (playback == null ||
+            exchange == null ||
+            momentumScrollbarUI == null ||
+            !playback.IsMomentumDisplayLocked)
+        {
+            yield break;
+        }
+
+        if (exchange.MomentumBefore ==
+            exchange.MomentumAfter)
+        {
+            yield break;
+        }
+
+        yield return momentumScrollbarUI
+            .AnimateLockedDisplayToRoutine(
+                exchange.MomentumAfter);
+    }
+
+    private IEnumerator PlayMomentumSequenceFinalStep(
+        BattleVisualPlaybackState playback,
+        BattleVisualRequest request)
+    {
+        if (playback == null ||
+            request == null ||
+            momentumScrollbarUI == null ||
+            !playback.IsMomentumDisplayLocked ||
+            !request.HasMomentumTimeline)
+        {
+            yield break;
+        }
+
+        if (Mathf.Approximately(
+                momentumScrollbarUI.DisplayedMomentum,
+                request.MomentumAfterSequence))
+        {
+            yield break;
+        }
+
+        // 결투 대 결투의 최종 다수결 보너스처럼 특정 교환이 아니라
+        // 합 전체 종료 시 적용되는 이동을 마지막에 별도로 보여준다.
+        yield return momentumScrollbarUI
+            .AnimateLockedDisplayToRoutine(
+                request.MomentumAfterSequence);
+    }
+
     private IEnumerator PlayMomentumRefreshAtVisualEnd(
         BattleVisualPlaybackState playback)
     {
@@ -1180,7 +1304,17 @@ public class BattleAnimationDirector : MonoBehaviour
         if (momentumScrollbarUI != null)
         {
             playback.IsMomentumDisplayLocked = true;
-            momentumScrollbarUI.LockCurrentDisplay();
+
+            if (request?.HasClashSequence == true &&
+                request.HasMomentumTimeline)
+            {
+                momentumScrollbarUI.LockDisplayAt(
+                    request.MomentumAtSequenceStart);
+            }
+            else
+            {
+                momentumScrollbarUI.LockCurrentDisplay();
+            }
         }
 
     }
@@ -1216,6 +1350,8 @@ public class BattleAnimationDirector : MonoBehaviour
             {
                 case BattleVisualCleanupPhase.CameraRoutine:
                     StopCameraShotRoutine();
+                    cameraDirector?.CancelImpactPulse(
+                        restoreLens: true);
                     break;
 
                 case BattleVisualCleanupPhase.AttackerAnimation:
@@ -1598,6 +1734,54 @@ public class BattleAnimationDirector : MonoBehaviour
             playback.HasCameraActivity = false;
     }
 
+
+    private void TriggerCameraImpactPulse(
+        BattleVisualPlaybackState playback,
+        BattleVisualRequest request,
+        SkillVisualDefinition visual,
+        SkillCameraImpactTiming timing,
+        int hitIndex = -1,
+        int exchangeIndex = -1,
+        int damage = 0,
+        bool isCritical = false,
+        bool brokePart = false,
+        bool wasKilled = false,
+        bool isClash = false,
+        bool isOneSided = false)
+    {
+        if (request == null ||
+            visual?.CameraDefinition == null ||
+            cameraDirector == null)
+        {
+            return;
+        }
+
+        SkillCameraImpactPulse pulse =
+            visual.CameraDefinition.FindImpactPulse(
+                timing,
+                hitIndex,
+                exchangeIndex,
+                damage,
+                isCritical,
+                brokePart,
+                wasKilled,
+                isClash,
+                isOneSided);
+
+        if (pulse == null)
+            return;
+
+        Coroutine routine =
+            cameraDirector.StartImpactPulse(
+                pulse);
+
+        if (routine != null &&
+            playback != null)
+        {
+            playback.HasCameraActivity = true;
+        }
+    }
+
     private void PlayHitCameraShake(
         SkillVisualDefinition visual)
     {
@@ -1618,7 +1802,10 @@ public class BattleAnimationDirector : MonoBehaviour
         BattleVisualPlaybackState playback,
         CharacterViewSet views,
         SkillVisualDefinition visual,
-        int hitFrameCount)
+        int hitFrameCount,
+        int exchangeIndex = -1,
+        bool isClash = false,
+        bool isOneSided = false)
     {
         if (playback == null ||
             visual == null)
@@ -1682,7 +1869,10 @@ public class BattleAnimationDirector : MonoBehaviour
             views,
             visual,
             Mathf.Max(0, hitFrameCount),
-            remainingDamage);
+            remainingDamage,
+            exchangeIndex,
+            isClash,
+            isOneSided);
     }
 
     private IEnumerator ShowActionAnnouncement(
@@ -1736,7 +1926,10 @@ public class BattleAnimationDirector : MonoBehaviour
         CharacterViewSet views,
         SkillVisualDefinition visual,
         int hitIndex,
-        int? damageOverride = null)
+        int? damageOverride = null,
+        int exchangeIndex = -1,
+        bool isClash = false,
+        bool isOneSided = false)
     {
         if (playback == null ||
             playback.IsCancellationRequested ||
@@ -1825,6 +2018,29 @@ public class BattleAnimationDirector : MonoBehaviour
             request,
             visual,
             SkillCameraShotTiming.OnHitFrame);
+
+        int plannedHitCount =
+            playback.HitDamages != null
+                ? playback.HitDamages.Count
+                : 0;
+
+        bool isTerminalHit =
+            plannedHitCount <= 1 ||
+            hitIndex >= plannedHitCount - 1;
+
+        TriggerCameraImpactPulse(
+            playback,
+            request,
+            visual,
+            SkillCameraImpactTiming.OnHitFrame,
+            hitIndex,
+            exchangeIndex,
+            damage,
+            request.WasCritical && hitIndex == 0,
+            request.BrokePart && isTerminalHit,
+            request.WasKilled && isTerminalHit,
+            isClash,
+            isOneSided);
 
         damagePresenter.ApplyHit(
             playback,

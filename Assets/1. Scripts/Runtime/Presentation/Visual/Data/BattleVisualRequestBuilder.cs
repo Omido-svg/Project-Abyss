@@ -72,7 +72,7 @@ public class BattleVisualRequestBuilder
         BattleAction first = result?.FirstAction;
         BattleAction second = result?.SecondAction;
 
-        if (first == null || second == null)
+        if (first == null)
             return null;
 
         SkillVisualDefinition sequenceVisual =
@@ -86,12 +86,19 @@ public class BattleVisualRequestBuilder
 
         request.OpponentAction = second;
         request.IsClashSequence = true;
+        request.HasMomentumTimeline = true;
+        request.MomentumAtSequenceStart =
+            result.MomentumAtStart;
+        request.MomentumAfterSequence =
+            result.MomentumAfterResolution;
 
-        // 합의 두 참가자를 전체 시퀀스 동안 고정한다.
+        // 합은 두 참가자를, 일방 공격은 실제 공격 대상을 전체 시퀀스 동안 고정한다.
         request.Attacker = first.Owner;
         request.AttackerPart = first.OwnerPart;
-        request.Target = second.Owner;
-        request.TargetPart = first.TargetPart ?? second.OwnerPart;
+        request.Target = second != null
+            ? second.Owner
+            : first.Target;
+        request.TargetPart = first.TargetPart ?? second?.OwnerPart;
         request.TargetPoint = new TargetPoint(
             request.Target,
             request.TargetPart);
@@ -152,6 +159,12 @@ public class BattleVisualRequestBuilder
                             exchange.IsTie,
                         WasCancelled =
                             exchange.WasCancelled,
+                        MomentumBefore =
+                            exchange.MomentumBefore,
+                        MomentumAfter =
+                            exchange.MomentumAfter,
+                        MomentumShift =
+                            exchange.MomentumShift,
                         DisplayStep =
                             displayStep,
                         AttackRequest =

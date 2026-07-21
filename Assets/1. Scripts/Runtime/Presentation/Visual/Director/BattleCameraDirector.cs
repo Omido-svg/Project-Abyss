@@ -37,6 +37,11 @@ public class BattleCameraDirector : MonoBehaviour
 
     private BattleCinemachineTargetGroupBinder groupBinder;
     private Coroutine restoreBlendRoutine;
+    private Coroutine impactPulseRoutine;
+
+    private CinemachineCamera impactPulseCamera;
+    private float impactPulseRestoreFov;
+    private bool hasImpactPulseRestoreFov;
 
     private readonly HashSet<string>
         reportedCameraPointFallbacks =
@@ -83,6 +88,7 @@ public class BattleCameraDirector : MonoBehaviour
 
     private void OnDisable()
     {
+        CancelImpactPulse(restoreLens: true);
         StopAllCoroutines();
         restoreBlendRoutine = null;
         interactionCameraActive = false;
@@ -289,6 +295,7 @@ public class BattleCameraDirector : MonoBehaviour
 
     public void SnapToOverview()
     {
+        CancelImpactPulse(restoreLens: true);
         StopInteractionFocus();
         groupBinder?.Clear();
         CancelBlendRestore();
@@ -367,6 +374,7 @@ public class BattleCameraDirector : MonoBehaviour
 
     private void ReturnInternal(bool restoreBaseBlend = true)
     {
+        CancelImpactPulse(restoreLens: true);
         StopInteractionFocus();
         groupBinder?.Clear();
 
@@ -427,6 +435,272 @@ public class BattleCameraDirector : MonoBehaviour
         rig.ImpulseSource.GenerateImpulseWithForce(force);
 
         Log($"Cinemachine Impulse / Force={force}");
+    }
+
+
+    /// <summary>
+    /// 현재 활성 CinemachineCamera의 FOV에 짧은 펄스를 적용합니다.
+    /// 기존 Shot의 위치, 회전, CameraPoint 및 Brain Blend는 변경하지 않습니다.
+    /// </summary>
+    public Coroutine StartImpactPulse(
+        SkillCameraImpactPulse pulse)
+    {
+        if (pulse == null)
+            return null;
+
+        pulse.Sanitize();
+
+        if (!pulse.CanPlay)
+            return null;
+
+        if (!EnsureRig("StartImpactPulse"))
+            return null;
+
+        CancelImpactPulse(restoreLens: true);
+
+        impactPulseRoutine =
+            StartCoroutine(
+                PlayImpactPulseRoutine(
+                    pulse));
+
+        return impactPulseRoutine;
+    }
+
+    public void CancelImpactPulse(
+        bool restoreLens = true)
+    {
+        if (impactPulseRoutine != null)
+        {
+            StopCoroutine(
+                impactPulseRoutine);
+
+            impactPulseRoutine = null;
+        }
+
+        if (restoreLens &&
+            hasImpactPulseRestoreFov &&
+            impactPulseCamera != null)
+        {
+            SetCameraFieldOfView(
+                impactPulseCamera,
+                impactPulseRestoreFov);
+        }
+
+        impactPulseCamera = null;
+        impactPulseRestoreFov = 0f;
+        hasImpactPulseRestoreFov = false;
+    }
+
+    private IEnumerator PlayImpactPulseRoutine(
+        SkillCameraImpactPulse pulse)
+    {
+        if (pulse == null)
+            yield break;
+
+        if (pulse.StartDelay > 0f)
+        {
+            yield return WaitImpactTime(
+                pulse.StartDelay,
+                pulse.UseUnscaledTime);
+        }
+
+        CinemachineCamera camera =
+            ResolveImpactCamera();
+
+        if (camera == null)
+        {
+            impactPulseRoutine = null;
+            yield break;
+        }
+
+        impactPulseCamera = camera;
+        impactPulseRestoreFov =
+            Mathf.Clamp(
+                camera.Lens.FieldOfView,
+                1f,
+                179f);
+
+        hasImpactPulseRestoreFov = true;
+
+        float targetFov =
+            Mathf.Clamp(
+                impactPulseRestoreFov +
+                pulse.FieldOfViewDelta,
+                1f,
+                179f);
+
+        if (pulse.UseShake &&
+            pulse.ShakeTiming ==
+                SkillCameraImpactShakeTiming.OnPulseStart)
+        {
+            PlayShake(
+                pulse.Shake);
+        }
+
+        if (Mathf.Abs(
+                targetFov -
+                impactPulseRestoreFov) > 0.001f)
+        {
+            yield return AnimateImpactFov(
+                camera,
+                impactPulseRestoreFov,
+                targetFov,
+                pulse.ZoomInDuration,
+                pulse.ZoomInCurve,
+                pulse.UseUnscaledTime);
+        }
+
+        if (pulse.UseShake &&
+            pulse.ShakeTiming ==
+                SkillCameraImpactShakeTiming.OnZoomPeak)
+        {
+            PlayShake(
+                pulse.Shake);
+        }
+
+        if (pulse.HoldDuration > 0f)
+        {
+            yield return WaitImpactTime(
+                pulse.HoldDuration,
+                pulse.UseUnscaledTime);
+        }
+
+        if (Mathf.Abs(
+                targetFov -
+                impactPulseRestoreFov) > 0.001f)
+        {
+            yield return AnimateImpactFov(
+                camera,
+                targetFov,
+                impactPulseRestoreFov,
+                pulse.ZoomOutDuration,
+                pulse.ZoomOutCurve,
+                pulse.UseUnscaledTime);
+        }
+
+        if (impactPulseCamera == camera &&
+            hasImpactPulseRestoreFov)
+        {
+            SetCameraFieldOfView(
+                camera,
+                impactPulseRestoreFov);
+        }
+
+        impactPulseCamera = null;
+        impactPulseRestoreFov = 0f;
+        hasImpactPulseRestoreFov = false;
+        impactPulseRoutine = null;
+    }
+
+    private IEnumerator AnimateImpactFov(
+        CinemachineCamera camera,
+        float from,
+        float to,
+        float duration,
+        AnimationCurve curve,
+        bool useUnscaledTime)
+    {
+        if (camera == null)
+            yield break;
+
+        if (duration <= 0f)
+        {
+            SetCameraFieldOfView(
+                camera,
+                to);
+
+            yield break;
+        }
+
+        float elapsed = 0f;
+
+        while (elapsed < duration)
+        {
+            if (camera == null)
+                yield break;
+
+            elapsed += useUnscaledTime
+                ? Time.unscaledDeltaTime
+                : Time.deltaTime;
+
+            float normalized =
+                Mathf.Clamp01(
+                    elapsed /
+                    duration);
+
+            float evaluated =
+                curve != null
+                    ? curve.Evaluate(normalized)
+                    : normalized;
+
+            SetCameraFieldOfView(
+                camera,
+                Mathf.LerpUnclamped(
+                    from,
+                    to,
+                    evaluated));
+
+            yield return null;
+        }
+
+        SetCameraFieldOfView(
+            camera,
+            to);
+    }
+
+    private static IEnumerator WaitImpactTime(
+        float duration,
+        bool useUnscaledTime)
+    {
+        if (duration <= 0f)
+            yield break;
+
+        if (useUnscaledTime)
+        {
+            yield return new WaitForSecondsRealtime(
+                duration);
+
+            yield break;
+        }
+
+        yield return new WaitForSeconds(
+            duration);
+    }
+
+    private CinemachineCamera ResolveImpactCamera()
+    {
+        if (rig == null)
+            return null;
+
+        if (rig.ActiveCamera != null)
+            return rig.ActiveCamera;
+
+        if (rig.PoseCamera != null)
+            return rig.PoseCamera;
+
+        if (rig.GroupCamera != null)
+            return rig.GroupCamera;
+
+        return rig.OverviewCamera;
+    }
+
+    private static void SetCameraFieldOfView(
+        CinemachineCamera camera,
+        float fieldOfView)
+    {
+        if (camera == null)
+            return;
+
+        LensSettings lens =
+            camera.Lens;
+
+        lens.FieldOfView =
+            Mathf.Clamp(
+                fieldOfView,
+                1f,
+                179f);
+
+        camera.Lens = lens;
     }
 
     public IEnumerator PlayShotsByTiming(

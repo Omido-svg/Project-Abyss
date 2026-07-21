@@ -194,6 +194,8 @@ public class ClashManager
                 IsClash = true,
                 FirstAction = first,
                 SecondAction = second,
+                MomentumAtStart =
+                    momentumManager.CurrentMomentum,
                 PrestigeGain =
                     firstStartPrestige +
                     secondStartPrestige
@@ -289,6 +291,9 @@ public class ClashManager
             first,
             second);
 
+        result.MomentumAfterResolution =
+            momentumManager.CurrentMomentum;
+
         battleContext._battleEvent
             .RaiseClashResolved(result);
 
@@ -302,6 +307,9 @@ public class ClashManager
         ref bool firstSkillExecuted,
         ref bool secondSkillExecuted)
     {
+        int momentumBefore =
+            momentumManager.CurrentMomentum;
+
         RollClashPower(
             first,
             second,
@@ -355,11 +363,15 @@ public class ClashManager
             !CanContinueRoll(second))
         {
             exchange.WasCancelled = true;
+            exchange.MomentumBefore = momentumBefore;
+            exchange.MomentumAfter = momentumBefore;
             return exchange;
         }
 
         if (exchange.IsTie)
         {
+            exchange.MomentumBefore = momentumBefore;
+            exchange.MomentumAfter = momentumBefore;
             first.Skill?.NotifyClashDraw(first, second);
             second.Skill?.NotifyClashDraw(second, first);
             return exchange;
@@ -395,6 +407,8 @@ public class ClashManager
         exchange.WinnerAction = winner;
         exchange.LoserAction = loser;
         exchange.DamageContext = damageContext;
+        exchange.MomentumBefore = momentum.Before;
+        exchange.MomentumAfter = momentum.After;
         exchange.MomentumShift = momentum.SignedShift;
         exchange.PrestigeDealtGain = dealtGain;
         exchange.PrestigeTakenGain = takenGain;
@@ -427,7 +441,9 @@ public class ClashManager
             {
                 IsClash = false,
                 FirstAction = action,
-                WinnerAction = action
+                WinnerAction = action,
+                MomentumAtStart =
+                    momentumManager.CurrentMomentum
             };
 
         int rollCount = Mathf.Max(
@@ -462,6 +478,9 @@ public class ClashManager
         if (result.OneSidedHitCount <= 0)
             result.WinnerAction = null;
 
+        result.MomentumAfterResolution =
+            momentumManager.CurrentMomentum;
+
         FinalizeCompatibilityFields(result);
         return result;
     }
@@ -473,6 +492,9 @@ public class ClashManager
         ref bool skillExecuted,
         bool cameFromClash)
     {
+        int momentumBefore =
+            momentumManager.CurrentMomentum;
+
         action.RollPowerForExchange(exchangeIndex);
         action.ClearClashModifiers();
 
@@ -493,7 +515,9 @@ public class ClashManager
                 FirstClashPower = action.RolledPower,
                 SecondClashPower = 0,
                 FirstRollResult =
-                    action.LastRollResult?.Clone()
+                    action.LastRollResult?.Clone(),
+                MomentumBefore = momentumBefore,
+                MomentumAfter = momentumBefore
             };
         }
 
@@ -536,6 +560,8 @@ public class ClashManager
                 WinnerAction = action,
                 LoserAction = exhaustedOpponent,
                 DamageContext = damageContext,
+                MomentumBefore = momentum.Before,
+                MomentumAfter = momentum.After,
                 MomentumShift = momentum.SignedShift,
                 PrestigeDealtGain = dealtGain,
                 PrestigeTakenGain = takenGain

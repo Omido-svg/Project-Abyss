@@ -7027,6 +7027,7 @@ MonoBehaviour:
   minMomentum: -100
   maxMomentum: 100
   animateDuration: 0.35
+  exchangeAnimateDuration: 0.18
   useUnscaledTime: 1
   logMomentumAnimation: 1
 --- !u!114 &1805580446

@@ -12,6 +12,8 @@ public class ClashResultContext
     public int LoserClashPower;
     public int Gap;
 
+    public int MomentumAtStart;
+    public int MomentumAfterResolution;
     public int MomentumShift;
     public int PrestigeGain;
 

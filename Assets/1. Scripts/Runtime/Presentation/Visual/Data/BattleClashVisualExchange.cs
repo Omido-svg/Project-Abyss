@@ -8,6 +8,12 @@ public sealed class BattleClashVisualExchange
     public bool IsTie;
     public bool WasCancelled;
 
+    // 실제 전투 계산 시점의 교환별 기세 스냅샷이다.
+    // 전투 로직은 선계산되지만 UI는 이 값을 사용해 각 굴림 직후 순서대로 재생한다.
+    public int MomentumBefore;
+    public int MomentumAfter;
+    public int MomentumShift;
+
     // 합 전체의 FirstAction 관점으로 고정된 표시 데이터다.
     // 승자가 바뀌어도 양쪽 숫자와 라벨 위치가 뒤집히지 않는다.
     public ClashRollVisualStep DisplayStep;
