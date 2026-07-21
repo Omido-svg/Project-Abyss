@@ -799,9 +799,23 @@ public class ClashManager
             0,
             self.Speed - opponent.Speed);
 
-        // 양쪽에 +gap / -gap을 동시에 주면 실제 비교 차이가
-        // 두 배가 된다. 빠른 쪽만 상대 속도와의 차이를 보정받는다.
-        return speedGap * clashRules.SpeedWeight;
+        // 단계식 속도 보정
+        // 0~2  : +0
+        // 3~5  : +1
+        // 6~8  : +2
+        // 9 이상: +3
+        //
+        // SpeedWeight는 기존 세이브/디버그 계약을 유지하기 위한
+        // 최종 배율로만 사용한다. 기본값 1에서는 위 표 그대로 동작한다.
+        int tierModifier = speedGap switch
+        {
+            <= 2 => 0,
+            <= 5 => 1,
+            <= 8 => 2,
+            _ => 3
+        };
+
+        return tierModifier * clashRules.SpeedWeight;
     }
 
     private bool ExecuteSkillOnce(

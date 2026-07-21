@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class EliteEnemy : Enemy
+public class EliteEnemy : Enemy, ICharacterAuthoringTarget
 {
     [Header("Skill Set")]
     [SerializeField]
@@ -17,6 +17,21 @@ public class EliteEnemy : Enemy
     private readonly List<BodyPart> bodyParts = new();
 
     public override IReadOnlyList<BodyPart> BodyParts => bodyParts;
+
+    public bool ApplyCharacterAuthoring(
+        CharacterAuthoringBundle bundle)
+    {
+        if (bundle?.SkillSet is not EliteEnemySkillSet configuredSkillSet)
+            return false;
+
+        skillSet = configuredSkillSet;
+        usePostureRotation = bundle.UseElitePostureRotation;
+        postureSettings =
+            bundle.ElitePostureSettings ??
+            new EnemyPostureSettings();
+
+        return true;
+    }
 
     //--------------------------------
     // EliteEnemy는 도사림 사용 허용

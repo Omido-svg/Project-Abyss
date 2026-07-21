@@ -5215,6 +5215,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   canvasGroup: {fileID: 1299797370}
   slotHeaderText: {fileID: 0}
+  actionSlotSelector: {fileID: 0}
   normalAttackButton: {fileID: 1730484223}
   duelButton: {fileID: 699706617}
   preparationButton: {fileID: 842641891}
@@ -7248,10 +7249,10 @@ RectTransform:
   m_Children: []
   m_Father: {fileID: 382454537}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 1}
-  m_AnchorMax: {x: 0, y: 1}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 0, y: 0}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 58.53, y: 36.21}
+  m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0, y: 1}
 --- !u!114 &1824034224
 MonoBehaviour:

@@ -7,6 +7,53 @@ public abstract class Character : MonoBehaviour
     [SerializeField] private CharacterData data;
     public CharacterData Data => data;
 
+    /// <summary>
+    /// CharacterAuthoringBundle이 Character.Initialize 이전에 핵심 참조를 적용하는 진입점이다.
+    /// Bundle을 사용하지 않는 기존 Prefab은 기존 직렬화 값을 그대로 사용한다.
+    /// </summary>
+    public void ConfigureAuthoringCore(
+        CharacterData characterData,
+        IReadOnlyList<CharacterItem> items = null,
+        IReadOnlyList<CharacterAugment> augments = null)
+    {
+        if (characterData != null)
+            data = characterData;
+
+        if (items != null)
+        {
+            equippedItems ??= new List<CharacterItem>();
+            equippedItems.Clear();
+
+            for (int i = 0; i < items.Count; i++)
+            {
+                CharacterItem item = items[i];
+
+                if (item != null &&
+                    !equippedItems.Contains(item))
+                {
+                    equippedItems.Add(item);
+                }
+            }
+        }
+
+        if (augments != null)
+        {
+            equippedAugments ??= new List<CharacterAugment>();
+            equippedAugments.Clear();
+
+            for (int i = 0; i < augments.Count; i++)
+            {
+                CharacterAugment augment = augments[i];
+
+                if (augment != null &&
+                    !equippedAugments.Contains(augment))
+                {
+                    equippedAugments.Add(augment);
+                }
+            }
+        }
+    }
+
     public BattleContext BattleContext => battleContext;
 
     public BattleEvent BattleEvent

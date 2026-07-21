@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class Olaf : Character
+public class Olaf : Character, ICharacterAuthoringTarget
 {
     [Header("Skill Set")]
     [SerializeField]
@@ -17,6 +17,16 @@ public class Olaf : Character
 
     public OlafImmortalFuryMechanic ImmortalFuryMechanic =>
         GetMechanic<OlafImmortalFuryMechanic>();
+
+    public bool ApplyCharacterAuthoring(
+        CharacterAuthoringBundle bundle)
+    {
+        if (bundle?.SkillSet is not OlafSkillSet configuredSkillSet)
+            return false;
+
+        skillSet = configuredSkillSet;
+        return true;
+    }
 
     protected override void BuildBodyParts()
     {

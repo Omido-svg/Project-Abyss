@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class NormalEnemy : Enemy
+public class NormalEnemy : Enemy, ICharacterAuthoringTarget
 {
     [Header("Skill Set")]
     [SerializeField]
@@ -23,6 +23,23 @@ public class NormalEnemy : Enemy
     public override bool SupportsLastStand => false;
 
     public override int GetMaxCombatActionSlots() => 1;
+
+    public bool ApplyCharacterAuthoring(
+        CharacterAuthoringBundle bundle)
+    {
+        if (bundle?.SkillSet is not NormalEnemySkillSet configuredSkillSet)
+            return false;
+
+        skillSet = configuredSkillSet;
+
+        if (bundle.OverrideNormalEnemySingleHp)
+        {
+            singleMaxHP =
+                bundle.NormalEnemySingleMaxHp;
+        }
+
+        return true;
+    }
 
     protected override void BuildBodyParts()
     {

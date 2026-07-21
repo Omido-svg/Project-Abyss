@@ -1656,6 +1656,120 @@ public class BattleUIManager : MonoBehaviour
         return "";
     }
 
+    public ActionSlot FindActionSlot(
+        Character owner,
+        BodyPart part,
+        int actionIndex)
+    {
+        if (battleManager?.ActionManager == null ||
+            owner == null ||
+            part == null ||
+            actionIndex < 0)
+        {
+            return null;
+        }
+
+        return battleManager.ActionManager.FindSlot(
+            owner,
+            part,
+            actionIndex);
+    }
+
+    /// <summary>
+    /// 동적으로 생성된 부위별 ActionSlot 버튼에서 호출한다.
+    /// 빈 슬롯과 이미 채워진 슬롯 모두 같은 경로로 편집할 수 있다.
+    /// </summary>
+    public bool OpenOwnerActionSlot(
+        Character owner,
+        BodyPart part,
+        int actionIndex)
+    {
+        if (!TrySelectOwnerSlot(
+                owner,
+                part,
+                actionIndex))
+        {
+            return false;
+        }
+
+        ActionSlot existing =
+            FindActionSlot(
+                owner,
+                part,
+                actionIndex);
+
+        selectedTarget =
+            existing?.TargetCharacter;
+
+        selectedTargetPart =
+            existing?.TargetPart;
+
+        selection.ClearTarget();
+        selection.SelectSkill(null);
+
+        if (selectedTarget != null)
+        {
+            selection.SelectTarget(
+                selectedTarget,
+                selectedTargetPart);
+        }
+
+        if (existing?.Skill != null)
+            selection.SelectSkill(existing.Skill);
+
+        inputMode = BattleInputMode.SelectSkill;
+        SyncSelectionViewModel();
+        ShowSkillPanel();
+        RefreshAllBodyPartButtons();
+
+        return true;
+    }
+
+    /// <summary>
+    /// 슬롯 바의 우클릭 삭제용. 삭제 뒤 같은 ActionIndex를 빈 슬롯으로
+    /// 유지해 사용자가 즉시 새 행동을 다시 선택할 수 있게 한다.
+    /// </summary>
+    public bool RemoveActionSlotAndContinueEditing(
+        Character owner,
+        BodyPart part,
+        int actionIndex)
+    {
+        if (!IsManagerReady() ||
+            owner == null ||
+            part == null)
+        {
+            return false;
+        }
+
+        ActionSlot slot =
+            FindActionSlot(
+                owner,
+                part,
+                actionIndex);
+
+        if (slot == null)
+            return false;
+
+        battleManager.ActionManager.RemoveSlot(
+            owner,
+            part,
+            actionIndex);
+
+        actionIndexCursorByPart[part] =
+            Mathf.Max(0, actionIndex);
+
+        bool reopened =
+            OpenOwnerActionSlot(
+                owner,
+                part,
+                actionIndex);
+
+        if (!reopened)
+            RefreshCharacterUI(owner);
+
+        return true;
+    }
+
     public bool SelectActionSlot(ActionSlot slot)
     {
         if (slot == null ||

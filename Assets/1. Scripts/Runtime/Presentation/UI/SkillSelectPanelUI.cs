@@ -1,5 +1,6 @@
 using TMPro;
 using UnityEngine;
+using UnityEngine.UI;
 
 public sealed class SkillSelectPanelUI : MonoBehaviour
 {
@@ -7,6 +8,13 @@ public sealed class SkillSelectPanelUI : MonoBehaviour
 
     [Header("Optional Slot Header")]
     [SerializeField] private TMP_Text slotHeaderText;
+
+    [Header("Dynamic Action Slot Selector")]
+    [Tooltip(
+        "비어 있으면 같은 GameObject에 런타임으로 생성됩니다. " +
+        "부위별 최대 행동 수만큼 버튼을 자동 생성합니다.")]
+    [SerializeField]
+    private ActionSlotSelectorUI actionSlotSelector;
 
     [Header("Skill Buttons")]
     [SerializeField] private SkillButtonUI normalAttackButton;
@@ -32,9 +40,31 @@ public sealed class SkillSelectPanelUI : MonoBehaviour
     private void EnsureReferences()
     {
         canvasGroup ??= GetComponent<CanvasGroup>();
+
+        if (actionSlotSelector == null)
+        {
+            actionSlotSelector =
+                GetComponent<ActionSlotSelectorUI>();
+        }
+
+        if (actionSlotSelector == null)
+        {
+            actionSlotSelector =
+                gameObject.AddComponent<ActionSlotSelectorUI>();
+        }
+
+        Button styleSource =
+            normalAttackButton != null
+                ? normalAttackButton.GetComponent<Button>()
+                : null;
+
+        actionSlotSelector.ConfigureFallbackStyle(
+            styleSource);
     }
 
-    public void Show(BattleUIManager manager, BodyPart part)
+    public void Show(
+        BattleUIManager manager,
+        BodyPart part)
     {
         Show(manager, part, 0, 1);
     }
@@ -71,16 +101,9 @@ public sealed class SkillSelectPanelUI : MonoBehaviour
             canvasGroup.blocksRaycasts = true;
         }
 
-        if (slotHeaderText != null)
-        {
-            slotHeaderText.text =
-                $"행동 슬롯 #{selectedActionIndex + 1} / {maxActionSlots}";
-        }
-
-        BindSkillButton(normalAttackButton, ActionType.NormalAttack, "일반공격");
-        BindSkillButton(duelButton, ActionType.Duel, "결투");
-        BindSkillButton(preparationButton, ActionType.Preparation, "도사림");
-        BindSkillButton(prestigeButton, ActionType.Prestige, "위세");
+        RefreshSlotHeader();
+        RebuildActionSlotButtons();
+        RefreshSkillButtons();
 
         transform.SetAsLastSibling();
 
@@ -100,6 +123,8 @@ public sealed class SkillSelectPanelUI : MonoBehaviour
         if (slotHeaderText != null)
             slotHeaderText.text = "";
 
+        actionSlotSelector?.ClearGeneratedButtons();
+
         if (canvasGroup != null)
         {
             canvasGroup.alpha = 0f;
@@ -110,13 +135,63 @@ public sealed class SkillSelectPanelUI : MonoBehaviour
 
     public void RefreshVisibleButtons()
     {
-        if (!IsVisible || uiManager == null || selectedPart == null)
+        if (!IsVisible ||
+            uiManager == null ||
+            selectedPart == null)
+        {
+            return;
+        }
+
+        selectedActionIndex = Mathf.Clamp(
+            uiManager.SelectedActionIndex,
+            0,
+            Mathf.Max(0, maxActionSlots - 1));
+
+        RefreshSlotHeader();
+        RebuildActionSlotButtons();
+        RefreshSkillButtons();
+    }
+
+    private void RefreshSlotHeader()
+    {
+        if (slotHeaderText == null)
             return;
 
-        BindSkillButton(normalAttackButton, ActionType.NormalAttack, "일반공격");
-        BindSkillButton(duelButton, ActionType.Duel, "결투");
-        BindSkillButton(preparationButton, ActionType.Preparation, "도사림");
-        BindSkillButton(prestigeButton, ActionType.Prestige, "위세");
+        slotHeaderText.text =
+            $"행동 슬롯 #{selectedActionIndex + 1} / {maxActionSlots}";
+    }
+
+    private void RebuildActionSlotButtons()
+    {
+        actionSlotSelector?.Rebuild(
+            uiManager,
+            selectedPart?.Owner,
+            selectedPart,
+            selectedActionIndex,
+            maxActionSlots);
+    }
+
+    private void RefreshSkillButtons()
+    {
+        BindSkillButton(
+            normalAttackButton,
+            ActionType.NormalAttack,
+            "일반공격");
+
+        BindSkillButton(
+            duelButton,
+            ActionType.Duel,
+            "결투");
+
+        BindSkillButton(
+            preparationButton,
+            ActionType.Preparation,
+            "도사림");
+
+        BindSkillButton(
+            prestigeButton,
+            ActionType.Prestige,
+            "위세");
     }
 
     private void BindSkillButton(
@@ -133,11 +208,14 @@ public sealed class SkillSelectPanelUI : MonoBehaviour
 
         bool usable =
             uiManager != null &&
-            uiManager.IsSkillSelectable(selectedPart, skill);
+            uiManager.IsSkillSelectable(
+                selectedPart,
+                skill);
 
-        string reason = uiManager?.GetSkillSelectionReason(
-            selectedPart,
-            skill);
+        string reason =
+            uiManager?.GetSkillSelectionReason(
+                selectedPart,
+                skill);
 
         string label;
 
@@ -161,7 +239,8 @@ public sealed class SkillSelectPanelUI : MonoBehaviour
             }
             else
             {
-                label = $"{skill.SkillName}\n{energyLabel}";
+                label =
+                    $"{skill.SkillName}\n{energyLabel}";
             }
         }
 

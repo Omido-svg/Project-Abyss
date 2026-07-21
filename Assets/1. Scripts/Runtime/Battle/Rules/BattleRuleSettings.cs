@@ -100,6 +100,9 @@ public sealed class ClashRuleSettings
     [Min(1)]
     public int DefaultExchangeRollCount = 3;
 
+    [Tooltip(
+        "단계식 속도 보정(차이 0~2:+0, 3~5:+1, 6~8:+2, 9 이상:+3)의 최종 배율입니다. " +
+        "기본값 1에서 설계표 그대로 적용됩니다.")]
     [Min(0)]
     public int SpeedWeight = 1;
 
