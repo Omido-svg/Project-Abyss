@@ -13,11 +13,20 @@ public class CharacterActionMover : MonoBehaviour
 
     private Vector3 defaultLocalPosition;
 
+    public Transform VisualRoot
+    {
+        get
+        {
+            if (visualRoot == null)
+                visualRoot = transform;
+
+            return visualRoot;
+        }
+    }
+
     private void Awake()
     {
-        if (visualRoot == null)
-            visualRoot = transform;
-
+        visualRoot = VisualRoot;
         defaultLocalPosition = visualRoot.localPosition;
     }
 

@@ -1,0 +1,51 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d0163392f1e89b4448da024edd3daf3b, type: 3}
+  m_Name: Olaf Character Bundle
+  m_EditorClassIdentifier: 
+  kind: 0
+  displayName: Olaf
+  authoringNotes: "SO \uAE30\uBC18 \uC62C\uB77C\uD504 \uC644\uC131\uBCF8. CharacterData,
+    SkillSet, CombatLoadout, VisualProfile\uACFC Animator\uB97C \uBB36\uC2B5\uB2C8\uB2E4."
+  characterData: {fileID: 11400000, guid: e9bc03b760a7e094eb95540f97744572, type: 2}
+  skillSet: {fileID: 11400000, guid: 3d75845fdbab70e4790338bfc8e669ab, type: 2}
+  characterPrefab: {fileID: 0}
+  visualProfile: {fileID: 11400000, guid: 6ad6ee546df81ab4ebe3dcb118388219, type: 2}
+  animatorController: {fileID: 9100000, guid: 8396239eabf98ac4787eb4682559e3e9, type: 2}
+  avatar: {fileID: 9000000, guid: 94efb0b38c24977489a9282dcf7b7068, type: 2}
+  overrideAnimatorController: 1
+  overrideAvatar: 0
+  overrideLoadout: 0
+  equippedItems: []
+  equippedAugments: []
+  overrideNormalEnemySingleHp: 1
+  normalEnemySingleMaxHp: 50
+  useElitePostureRotation: 1
+  elitePostureSettings:
+    MinimumTurns: 2
+    MaximumTurns: 3
+    NormalAttackSlotLimit: 3
+    CrouchingAttackSlotLimit: 2
+    OffensiveAttackSlotLimit: 4
+    ExpectedMomentumDriftPerTurn: 15
+  includedAssets:
+  - {fileID: 11400000, guid: e9bc03b760a7e094eb95540f97744572, type: 2}
+  - {fileID: 11400000, guid: 3d75845fdbab70e4790338bfc8e669ab, type: 2}
+  - {fileID: 11400000, guid: 8d9c3aad2944dca45b238efa251d57d1, type: 2}
+  - {fileID: 11400000, guid: d186584d80e209d44a0aa4fd4c31b939, type: 2}
+  - {fileID: 11400000, guid: 9307bc19f87268e49b814a05778f430c, type: 2}
+  - {fileID: 11400000, guid: 6acf50d52cbb5c94581da06a0a953647, type: 2}
+  - {fileID: 11400000, guid: 55bc5414689646c4e9ada845127e9149, type: 2}
+  supportingAssets:
+  - {fileID: 11400000, guid: 6ad6ee546df81ab4ebe3dcb118388219, type: 2}
+  - {fileID: 9100000, guid: 8396239eabf98ac4787eb4682559e3e9, type: 2}
+  - {fileID: 9000000, guid: 94efb0b38c24977489a9282dcf7b7068, type: 2}

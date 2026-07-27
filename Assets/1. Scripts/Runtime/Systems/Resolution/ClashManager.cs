@@ -7,6 +7,8 @@ public class ClashManager
     private readonly MomentumManager momentumManager;
     private readonly BattleContext battleContext;
     private readonly PrestigeChargeService prestigeChargeService;
+    private readonly AttackWeightTargetResolver
+        attackWeightTargetResolver;
     private readonly ClashRuleSettings clashRules;
 
     public ClashManager(
@@ -20,6 +22,10 @@ public class ClashManager
 
         prestigeChargeService =
             new PrestigeChargeService(battleContext);
+
+        attackWeightTargetResolver =
+            new AttackWeightTargetResolver(
+                battleContext);
 
         clashRules = battleContext?.Rules?.Clash ??
                      new ClashRuleSettings();
@@ -307,126 +313,168 @@ public class ClashManager
         ref bool firstSkillExecuted,
         ref bool secondSkillExecuted)
     {
-        int momentumBefore =
-            momentumManager.CurrentMomentum;
+        int momentumBefore = momentumManager.CurrentMomentum;
+        int rerolls = 0;
+        bool firstExecuted = true;
+        bool secondExecuted = true;
 
-        RollClashPower(
-            first,
-            second,
-            exchangeIndex);
+        while (true)
+        {
+            RollClashPower(first, second, exchangeIndex);
+            RollClashPower(second, first, exchangeIndex);
 
-        RollClashPower(
-            second,
-            first,
-            exchangeIndex);
-
-        // OnExecute는 첫 교환에서 이긴 쪽만의 보상이 아니다.
-        // 양쪽 행동이 실제로 굴림을 시작했다면 승패 비교 전에
-        // 각각 정확히 한 번 실행되어야 한다.
-        bool firstExecuted = ExecuteSkillOnce(
-            first,
-            ref firstSkillExecuted);
-
-        bool secondExecuted = ExecuteSkillOnce(
-            second,
-            ref secondSkillExecuted);
-
-        int firstPower = first.ClashPower;
-        int secondPower = second.ClashPower;
-
-        ClashExchangeResult exchange =
-            new ClashExchangeResult
+            if (rerolls == 0)
             {
-                ExchangeIndex = exchangeIndex,
-                FirstAction = first,
-                SecondAction = second,
-                FirstClashPower = firstPower,
-                SecondClashPower = secondPower,
-                FirstRollResult =
-                    first.LastRollResult?.Clone(),
-                SecondRollResult =
-                    second.LastRollResult?.Clone(),
-                IsTie = firstPower == secondPower
-            };
+                firstExecuted = ExecuteSkillOnce(first, ref firstSkillExecuted);
+                secondExecuted = ExecuteSkillOnce(second, ref secondSkillExecuted);
+            }
 
-        Debug.Log(
-            $"[Clash Exchange] Index={exchangeIndex}, " +
-            $"First={GetActionName(first)} / {firstPower}, " +
-            $"Second={GetActionName(second)} / {secondPower}");
+            if (!firstExecuted || !secondExecuted ||
+                !CanContinueRoll(first) || !CanContinueRoll(second))
+            {
+                return new ClashExchangeResult
+                {
+                    ExchangeIndex = exchangeIndex,
+                    FirstAction = first,
+                    SecondAction = second,
+                    WasCancelled = true,
+                    FirstClashPower = first.ClashPower,
+                    SecondClashPower = second.ClashPower,
+                    FirstRollResult = first.LastRollResult?.Clone(),
+                    SecondRollResult = second.LastRollResult?.Clone(),
+                    FirstRollType = first.CurrentRollType,
+                    SecondRollType = second.CurrentRollType,
+                    TieRerollCount = rerolls,
+                    MomentumBefore = momentumBefore,
+                    MomentumAfter = momentumBefore
+                };
+            }
 
-        // 히후미 자해나 OnExecute 효과로 행동자/대상이 사망하거나
-        // 행동 부위가 파괴되었다면 이미 만든 굴림만 소모하고
-        // 이번 교환의 피해·기세·승리 수는 발생시키지 않는다.
-        if (!firstExecuted ||
-            !secondExecuted ||
-            !CanContinueRoll(first) ||
-            !CanContinueRoll(second))
-        {
-            exchange.WasCancelled = true;
-            exchange.MomentumBefore = momentumBefore;
-            exchange.MomentumAfter = momentumBefore;
-            return exchange;
+            if (first.ClashPower != second.ClashPower)
+                break;
+
+            rerolls++;
+
+            // 동률 재굴림은 현재 굴림만 새로 뽑는다.
+            // OncePerAction/ReuseValueAcrossAction 캐시도 이 교환에서는 무효화한다.
+            first.InvalidateCachedRoll(exchangeIndex);
+            second.InvalidateCachedRoll(exchangeIndex);
+
+            if (rerolls >= clashRules.MaxTieRerolls)
+            {
+                first.Skill?.NotifyClashDraw(first, second);
+                second.Skill?.NotifyClashDraw(second, first);
+                return new ClashExchangeResult
+                {
+                    ExchangeIndex = exchangeIndex,
+                    FirstAction = first,
+                    SecondAction = second,
+                    IsTie = true,
+                    FirstClashPower = first.ClashPower,
+                    SecondClashPower = second.ClashPower,
+                    FirstRollResult = first.LastRollResult?.Clone(),
+                    SecondRollResult = second.LastRollResult?.Clone(),
+                    FirstRollType = first.CurrentRollType,
+                    SecondRollType = second.CurrentRollType,
+                    TieRerollCount = rerolls,
+                    MomentumBefore = momentumBefore,
+                    MomentumAfter = momentumBefore
+                };
+            }
         }
 
-        if (exchange.IsTie)
+        if (rerolls > 0)
         {
-            exchange.MomentumBefore = momentumBefore;
-            exchange.MomentumAfter = momentumBefore;
-            first.Skill?.NotifyClashDraw(first, second);
-            second.Skill?.NotifyClashDraw(second, first);
-            return exchange;
+            if (first.LastRollResult != null) first.LastRollResult.WasRerolled = true;
+            if (second.LastRollResult != null) second.LastRollResult.WasRerolled = true;
         }
 
-        bool firstWon = firstPower > secondPower;
+        bool firstWon = first.ClashPower > second.ClashPower;
         BattleAction winner = firstWon ? first : second;
         BattleAction loser = firstWon ? second : first;
+        bool winnerDefense = winner.CurrentRollType == CombatRollType.Defense;
+        bool loserDefense = loser.CurrentRollType == CombatRollType.Defense;
 
-        DamageContext damageContext =
-            damageManager.ApplyDamageContext(
+        DamageContext damageContext = null;
+
+        List<DamageContext>
+            secondaryDamageContexts =
+                new List<DamageContext>();
+
+        int dealtGain = 0;
+        int takenGain = 0;
+
+        // 수비 승리: 피해와 잔효과를 전부 무효화하고 기세만 +5.
+        // 수비 패배: 공격자의 판정값 격차만큼만 피해. 판정 보정은 피해에 섞지 않는다.
+        if (!winnerDefense)
+        {
+            int damagePower = loserDefense
+                ? Mathf.Max(1, winner.ClashPower - loser.ClashPower)
+                : winner.GetDamagePower();
+
+            attackWeightTargetResolver
+                .ResolveTargets(
+                    winner);
+
+            damageContext = damageManager.ApplyDamageContext(
                 winner,
+                damagePower,
                 isClashDamage: true,
-                targetLostClash: true);
+                targetLostClash: true,
+                applyMomentum: !loserDefense);
 
-        winner.SetDamageContext(damageContext);
+            winner.SetDamageContext(damageContext);
 
-        MomentumShiftResult momentum =
-            momentumManager.ApplyHit(winner.Owner);
+            secondaryDamageContexts =
+                ApplyAttackWeightDamage(
+                    winner,
+                    winner.GetDamagePower(),
+                    exchangeIndex,
+                    applyMomentum: true);
 
-        int dealtGain =
-            prestigeChargeService.ChargeHitDealt(
-                winner.Owner,
-                loser.Owner,
-                winner);
+            dealtGain = prestigeChargeService.ChargeHitDealt(
+                winner.Owner, loser.Owner, winner);
+            takenGain = prestigeChargeService.ChargeHitTaken(
+                loser.Owner, winner.Owner, winner);
 
-        int takenGain =
-            prestigeChargeService.ChargeHitTaken(
-                loser.Owner,
-                winner.Owner,
-                winner);
+            winner.Skill?.NotifyExchangeWin(winner, loser, damageContext);
+            loser.Skill?.NotifyExchangeLose(loser, winner, damageContext);
+        }
 
-        exchange.WinnerAction = winner;
-        exchange.LoserAction = loser;
-        exchange.DamageContext = damageContext;
-        exchange.MomentumBefore = momentum.Before;
-        exchange.MomentumAfter = momentum.After;
-        exchange.MomentumShift = momentum.SignedShift;
-        exchange.PrestigeDealtGain = dealtGain;
-        exchange.PrestigeTakenGain = takenGain;
+        MomentumShiftResult momentum = momentumManager.ApplyHit(winner.Owner);
 
-        winner.Skill?.NotifyExchangeWin(
-            winner,
-            loser,
-            damageContext);
+        winner.Skill?.NotifyRollResolved(
+            winner, loser, exchangeIndex, true, damageContext);
+        loser.Skill?.NotifyRollResolved(
+            loser, winner, exchangeIndex, false, damageContext);
 
-        loser.Skill?.NotifyExchangeLose(
-            loser,
-            winner,
-            damageContext);
+        ClashExchangeResult exchange = new ClashExchangeResult
+        {
+            ExchangeIndex = exchangeIndex,
+            FirstAction = first,
+            SecondAction = second,
+            FirstClashPower = first.ClashPower,
+            SecondClashPower = second.ClashPower,
+            FirstRollResult = first.LastRollResult?.Clone(),
+            SecondRollResult = second.LastRollResult?.Clone(),
+            FirstRollType = first.CurrentRollType,
+            SecondRollType = second.CurrentRollType,
+            TieRerollCount = rerolls,
+            WasDefenseResolution = winnerDefense || loserDefense,
+            WinnerAction = winner,
+            LoserAction = loser,
+            DamageContext = damageContext,
+            MomentumBefore = momentum.Before,
+            MomentumAfter = momentum.After,
+            MomentumShift = momentum.SignedShift,
+            PrestigeDealtGain = dealtGain,
+            PrestigeTakenGain = takenGain
+        };
 
-        LogExchange(
-            exchange,
-            isClash: true);
+        exchange.SecondaryDamageContexts.AddRange(
+            secondaryDamageContexts);
 
+        LogExchange(exchange, isClash: true);
         return exchange;
     }
 
@@ -492,18 +540,12 @@ public class ClashManager
         ref bool skillExecuted,
         bool cameFromClash)
     {
-        int momentumBefore =
-            momentumManager.CurrentMomentum;
-
+        int momentumBefore = momentumManager.CurrentMomentum;
         action.RollPowerForExchange(exchangeIndex);
         action.ClearClashModifiers();
 
-        bool executed = ExecuteSkillOnce(
-            action,
-            ref skillExecuted);
-
-        if (!executed ||
-            !CanContinueRoll(action))
+        bool executed = ExecuteSkillOnce(action, ref skillExecuted);
+        if (!executed || !CanContinueRoll(action))
         {
             return new ClashExchangeResult
             {
@@ -513,69 +555,163 @@ public class ClashManager
                 IsOneSided = true,
                 WasCancelled = true,
                 FirstClashPower = action.RolledPower,
-                SecondClashPower = 0,
-                FirstRollResult =
-                    action.LastRollResult?.Clone(),
+                FirstRollResult = action.LastRollResult?.Clone(),
+                FirstRollType = action.CurrentRollType,
                 MomentumBefore = momentumBefore,
                 MomentumAfter = momentumBefore
             };
         }
 
-        DamageContext damageContext =
-            damageManager.ApplyDamageContext(
-                action,
-                isClashDamage: false,
-                targetLostClash: false);
+        // 막을 대상이 없으므로 일방 단계의 수비 굴림은 소멸한다.
+        if (action.CurrentRollType == CombatRollType.Defense)
+        {
+            action.Skill?.NotifyRollResolved(
+                action, exhaustedOpponent, exchangeIndex, false, null);
 
-        action.SetDamageContext(damageContext);
-
-        MomentumShiftResult momentum =
-            momentumManager.ApplyHit(action.Owner);
-
-        Character target = action.Target;
-
-        int dealtGain =
-            prestigeChargeService.ChargeHitDealt(
-                action.Owner,
-                target,
-                action);
-
-        int takenGain =
-            prestigeChargeService.ChargeHitTaken(
-                target,
-                action.Owner,
-                action);
-
-        ClashExchangeResult exchange =
-            new ClashExchangeResult
+            return new ClashExchangeResult
             {
                 ExchangeIndex = exchangeIndex,
                 FirstAction = action,
                 SecondAction = exhaustedOpponent,
                 IsOneSided = true,
+                WasDefenseResolution = true,
                 FirstClashPower = action.RolledPower,
-                SecondClashPower = 0,
-                FirstRollResult =
-                    action.LastRollResult?.Clone(),
-                WinnerAction = action,
-                LoserAction = exhaustedOpponent,
-                DamageContext = damageContext,
-                MomentumBefore = momentum.Before,
-                MomentumAfter = momentum.After,
-                MomentumShift = momentum.SignedShift,
-                PrestigeDealtGain = dealtGain,
-                PrestigeTakenGain = takenGain
+                FirstRollResult = action.LastRollResult?.Clone(),
+                FirstRollType = action.CurrentRollType,
+                MomentumBefore = momentumBefore,
+                MomentumAfter = momentumBefore
             };
+        }
 
-        action.Skill?.NotifyOneSideHit(
+        attackWeightTargetResolver
+            .ResolveTargets(
+                action);
+
+        DamageContext damageContext = damageManager.ApplyDamageContext(
             action,
-            damageContext);
+            action.GetDamagePower(),
+            isClashDamage: false,
+            targetLostClash: false,
+            applyMomentum: true);
 
-        LogExchange(
-            exchange,
-            isClash: cameFromClash);
+        action.SetDamageContext(damageContext);
 
+        List<DamageContext>
+            secondaryDamageContexts =
+                ApplyAttackWeightDamage(
+                    action,
+                    action.GetDamagePower(),
+                    exchangeIndex,
+                    applyMomentum: true);
+
+        MomentumShiftResult momentum = momentumManager.ApplyHit(action.Owner);
+        Character target = action.Target;
+
+        int dealtGain = prestigeChargeService.ChargeHitDealt(
+            action.Owner, target, action);
+        int takenGain = prestigeChargeService.ChargeHitTaken(
+            target, action.Owner, action);
+
+        if (action.ActionType != ActionType.Duel)
+            action.Skill?.NotifyOneSideHit(action, damageContext);
+
+        action.Skill?.NotifyRollResolved(
+            action, exhaustedOpponent, exchangeIndex, true, damageContext);
+
+        ClashExchangeResult exchange = new ClashExchangeResult
+        {
+            ExchangeIndex = exchangeIndex,
+            FirstAction = action,
+            SecondAction = exhaustedOpponent,
+            IsOneSided = true,
+            FirstClashPower = action.RolledPower,
+            FirstRollResult = action.LastRollResult?.Clone(),
+            FirstRollType = action.CurrentRollType,
+            WinnerAction = action,
+            LoserAction = exhaustedOpponent,
+            DamageContext = damageContext,
+            MomentumBefore = momentum.Before,
+            MomentumAfter = momentum.After,
+            MomentumShift = momentum.SignedShift,
+            PrestigeDealtGain = dealtGain,
+            PrestigeTakenGain = takenGain
+        };
+
+        exchange.SecondaryDamageContexts.AddRange(
+            secondaryDamageContexts);
+
+        LogExchange(exchange, isClash: cameFromClash);
         return exchange;
+    }
+
+    private List<DamageContext>
+        ApplyAttackWeightDamage(
+            BattleAction action,
+            int rawPower,
+            int exchangeIndex,
+            bool applyMomentum)
+    {
+        List<DamageContext> results =
+            new List<DamageContext>();
+
+        if (action == null ||
+            action.Skill == null ||
+            action.CurrentRollType !=
+                CombatRollType.Attack ||
+            action.Skill.AttackWeight <= 1)
+        {
+            return results;
+        }
+
+        IReadOnlyList<AttackWeightTarget> targets =
+            attackWeightTargetResolver
+                .ResolveTargets(
+                    action);
+
+        if (targets == null ||
+            targets.Count <= 1)
+        {
+            return results;
+        }
+
+        for (int index = 1;
+             index < targets.Count;
+             index++)
+        {
+            AttackWeightTarget target =
+                targets[index];
+
+            if (target == null ||
+                target.IsPrimary ||
+                !target.IsValid)
+            {
+                continue;
+            }
+
+            DamageContext context =
+                damageManager
+                    .ApplyAttackWeightDamageContext(
+                        action,
+                        target,
+                        rawPower,
+                        action.Skill
+                            .SecondaryTargetDamageMultiplier,
+                        applyMomentum);
+
+            if (context == null)
+                continue;
+
+            action.AddAttackWeightHitResult(
+                new AttackWeightHitResult(
+                    exchangeIndex,
+                    target,
+                    context));
+
+            results.Add(
+                context);
+        }
+
+        return results;
     }
 
     private void FinalizeClashMajority(
@@ -705,19 +841,45 @@ public class ClashManager
 
         ApplyDamageAggregate(
             result,
-            exchange.DamageContext);
+            exchange.DamageContext,
+            isPrimaryTarget: true);
+
+        if (exchange.SecondaryDamageContexts == null)
+            return;
+
+        foreach (DamageContext secondaryContext
+                 in exchange.SecondaryDamageContexts)
+        {
+            if (secondaryContext == null)
+                continue;
+
+            result.DamageContexts.Add(
+                secondaryContext);
+
+            result.SecondaryDamageContexts.Add(
+                secondaryContext);
+
+            ApplyDamageAggregate(
+                result,
+                secondaryContext,
+                isPrimaryTarget: false);
+        }
     }
 
     private void ApplyDamageAggregate(
         ClashResultContext result,
-        DamageContext context)
+        DamageContext context,
+        bool isPrimaryTarget)
     {
         if (result == null || context == null)
             return;
 
-        result.DamageContext = context;
-        result.DamageResult = context.Result;
-        result.DamageEventResult = context.EventResult;
+        if (isPrimaryTarget)
+        {
+            result.DamageContext = context;
+            result.DamageResult = context.Result;
+            result.DamageEventResult = context.EventResult;
+        }
 
         result.FinalHpDamage += context.FinalHpDamage;
         result.PartHpDamage += context.PartHpDamage;
@@ -728,21 +890,33 @@ public class ClashManager
         result.BrokePart |= context.BrokePart;
         result.WeakenedPart |= context.WeakenedPart;
 
-        result.HasTargetCharacterHpSnapshot = true;
+        if (!isPrimaryTarget)
+            return;
 
-        if (result.DamageContexts.Count == 1)
-            result.TargetCharacterHpBefore = context.TargetHpBefore;
+        if (!result.HasTargetCharacterHpSnapshot)
+        {
+            result.TargetCharacterHpBefore =
+                context.TargetHpBefore;
+        }
 
-        result.TargetCharacterHpAfter = context.TargetHpAfter;
+        result.HasTargetCharacterHpSnapshot =
+            true;
+
+        result.TargetCharacterHpAfter =
+            context.TargetHpAfter;
 
         if (!context.HasTargetPartSnapshot)
             return;
 
         if (!result.HasTargetPartHpSnapshot)
-            result.TargetPartHpBefore = context.TargetPartHpBefore;
+        {
+            result.TargetPartHpBefore =
+                context.TargetPartHpBefore;
+        }
 
         result.HasTargetPartHpSnapshot = true;
-        result.TargetPartHpAfter = context.TargetPartHpAfter;
+        result.TargetPartHpAfter =
+            context.TargetPartHpAfter;
     }
 
     private void FinalizeCompatibilityFields(
@@ -825,23 +999,18 @@ public class ClashManager
             0,
             self.Speed - opponent.Speed);
 
-        // 단계식 속도 보정
-        // 0~2  : +0
-        // 3~5  : +1
-        // 6~8  : +2
-        // 9 이상: +3
+        // v3.6 밸런스 규칙:
+        // 속도는 행동 순서와 타깃 선점의 핵심 능력치로 유지하되,
+        // 합 굴림에서는 큰 격차가 있을 때만 최대 +1을 준다.
+        // 0~5 차이: +0
+        // 6 이상  : +1
         //
-        // SpeedWeight는 기존 세이브/디버그 계약을 유지하기 위한
-        // 최종 배율로만 사용한다. 기본값 1에서는 위 표 그대로 동작한다.
-        int tierModifier = speedGap switch
-        {
-            <= 2 => 0,
-            <= 5 => 1,
-            <= 8 => 2,
-            _ => 3
-        };
+        // 기존 +2~+3 보정이 다회 굴림마다 누적되어
+        // 빠른 캐릭터가 사실상 확정 승리하던 현상을 방지한다.
+        if (speedGap < 6 || clashRules.SpeedWeight <= 0)
+            return 0;
 
-        return tierModifier * clashRules.SpeedWeight;
+        return 1;
     }
 
     private bool ExecuteSkillOnce(

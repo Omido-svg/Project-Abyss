@@ -65,6 +65,119 @@ public class DamageManager
         return ApplyDamageContext(request);
     }
 
+    public DamageContext ApplyDamageContext(
+        BattleAction action,
+        int rawPower,
+        bool isClashDamage,
+        bool targetLostClash,
+        bool applyMomentum = true)
+    {
+        if (!IsValidAction(action))
+            return null;
+
+        DamageRequest request = DamageRequest.FromAction(
+            action,
+            ResolveActionDamageType(action),
+            GetSkillMultiplier(action),
+            ShouldBreakPart(action),
+            isClashDamage,
+            targetLostClash);
+
+        // 합에서 공격 굴림이 승리해 이 API에 도달했다면,
+        // 순수 굴림값이 0 이하라도 실제 피해는 최소 1에서 시작한다.
+        // 판정값 보정은 rawPower에 섞지 않는다.
+        int resolvedRawPower = Mathf.Max(1, rawPower);
+        request.Damage = resolvedRawPower;
+        request.RawPower = resolvedRawPower;
+        request.ApplyMomentum = applyMomentum;
+        return ApplyDamageContext(request);
+    }
+
+    public DamageContext ApplyAttackWeightDamageContext(
+        BattleAction action,
+        AttackWeightTarget weightedTarget,
+        int rawPower,
+        float secondaryDamageMultiplier,
+        bool applyMomentum = true)
+    {
+        if (action == null ||
+            action.Owner == null ||
+            action.Owner.IsDead ||
+            action.Skill == null ||
+            weightedTarget == null ||
+            weightedTarget.IsPrimary ||
+            weightedTarget.TargetCharacter == null ||
+            weightedTarget.TargetCharacter.IsDead)
+        {
+            return null;
+        }
+
+        BodyPart targetPart =
+            weightedTarget.TargetPart;
+
+        if (targetPart != null &&
+            targetPart.Owner != null &&
+            targetPart.Owner !=
+            weightedTarget.TargetCharacter)
+        {
+            return null;
+        }
+
+        float skillMultiplier =
+            GetSkillMultiplier(action) *
+            Mathf.Max(
+                0f,
+                secondaryDamageMultiplier);
+
+        if (skillMultiplier <= 0f)
+            return null;
+
+        int resolvedRawPower =
+            Mathf.Max(
+                1,
+                rawPower);
+
+        DamageRequest request =
+            DamageRequest.FromAction(
+                action,
+                ResolveActionDamageType(
+                    action,
+                    targetPart),
+                skillMultiplier,
+                ShouldBreakPart(
+                    action,
+                    targetPart),
+                isClashDamage: false,
+                targetLostClash: false);
+
+        request.TargetCharacter =
+            weightedTarget.TargetCharacter;
+
+        request.TargetPart =
+            targetPart;
+
+        request.Damage =
+            resolvedRawPower;
+
+        request.RawPower =
+            resolvedRawPower;
+
+        request.IsClashDamage =
+            false;
+
+        request.TargetLostClash =
+            false;
+
+        request.IsPrestigeClash =
+            false;
+
+        request.ApplyMomentum =
+            applyMomentum;
+
+        return ApplyDamageContext(
+            request);
+    }
+
     //--------------------------------
     // 상태이상·반격·자해·처형까지 사용하는 범용 API
     //--------------------------------
@@ -405,13 +518,22 @@ public class DamageManager
     private DamageType ResolveActionDamageType(
         BattleAction action)
     {
+        return ResolveActionDamageType(
+            action,
+            action?.TargetPart);
+    }
+
+    private DamageType ResolveActionDamageType(
+        BattleAction action,
+        BodyPart targetPart)
+    {
         if (action == null)
             return DamageType.SkillPart;
 
         if (action.ActionType == ActionType.Prestige)
             return DamageType.Prestige;
 
-        return action.TargetPart == null
+        return targetPart == null
             ? DamageType.Direct
             : DamageType.SkillPart;
     }
@@ -435,13 +557,31 @@ public class DamageManager
     private bool ShouldBreakPart(
         BattleAction action)
     {
-        if (action?.TargetPart == null)
-            return false;
+        return ShouldBreakPart(
+            action,
+            action?.TargetPart);
+    }
 
-        if (momentumManager == null)
+    private bool ShouldBreakPart(
+        BattleAction action,
+        BodyPart targetPart)
+    {
+        if (targetPart == null ||
+            !targetPart.IsWeakened)
+        {
             return false;
+        }
 
-        return momentumManager.CanStandardBreakPart(
-            action.Owner);
+        // 적은 파괴 스킬 권한을 갖지 않는다. 다만 짓누름(+70 이상)에서는
+        // 약화 부위를 기세만으로 파괴할 수 있다.
+        if (action?.Owner is Enemy)
+        {
+            return
+                momentumManager?
+                    .CanStandardBreakPart(
+                        action.Owner) == true;
+        }
+
+        return action?.Skill?.CanBreakPart == true;
     }
 }

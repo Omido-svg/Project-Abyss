@@ -20,6 +20,7 @@ public class DamageNumberManager : MonoBehaviour
     private RectTransform canvasRect;
     private Action<DamageNumberUI> releaseNumberHandler;
     private bool isShuttingDown;
+    private bool isHierarchyDisabling;
 
     private void Awake()
     {
@@ -27,14 +28,24 @@ public class DamageNumberManager : MonoBehaviour
         ResolveReferences();
     }
 
+    private void OnEnable()
+    {
+        isHierarchyDisabling = false;
+    }
+
     private void OnDisable()
     {
-        ReleaseAllActiveNumbers();
+        // Canvas 또는 Scene hierarchy가 비활성화되는 동안에는
+        // 자식 DamageNumber의 부모를 바꾸면 Unity가 SetParent를 거부한다.
+        // 활성 숫자는 Pool로 옮기지 않고 안전하게 폐기한다.
+        isHierarchyDisabling = true;
+        DestroyAllActiveNumbers();
     }
 
     private void OnDestroy()
     {
         isShuttingDown = true;
+        isHierarchyDisabling = true;
         DestroyAllTrackedNumbers();
     }
 
@@ -152,14 +163,24 @@ public class DamageNumberManager : MonoBehaviour
 
         number.ResetForPool();
 
-        if (isShuttingDown || numberPool.Count >= maxPoolSize)
+        bool canPool =
+            !isShuttingDown &&
+            !isHierarchyDisabling &&
+            isActiveAndEnabled &&
+            canvasRect != null &&
+            canvasRect.gameObject.activeInHierarchy &&
+            numberPool.Count < maxPoolSize;
+
+        if (!canPool)
         {
             Destroy(number.gameObject);
             return;
         }
 
+        // Pool 객체를 Canvas 아래에 그대로 둔다.
+        // Release 시 SetParent를 호출하지 않으므로 부모 Canvas의
+        // 활성화/비활성화 처리와 충돌하지 않는다.
         number.gameObject.SetActive(false);
-        number.transform.SetParent(transform, false);
         numberPool.Push(number);
     }
 
@@ -169,6 +190,16 @@ public class DamageNumberManager : MonoBehaviour
         {
             DamageNumberUI number = GetFirstActiveNumber();
             ReleaseNumber(number);
+        }
+    }
+
+    private void DestroyAllActiveNumbers()
+    {
+        while (activeNumbers.Count > 0)
+        {
+            DamageNumberUI number = GetFirstActiveNumber();
+            activeNumbers.Remove(number);
+            DestroyNumber(number);
         }
     }
 
@@ -202,5 +233,4 @@ public class DamageNumberManager : MonoBehaviour
         Destroy(number.gameObject);
     }
 }
-
 

@@ -41,6 +41,13 @@ public class NormalEnemy : Enemy, ICharacterAuthoringTarget
         return true;
     }
 
+    public override Skill CreateRuntimeSkillForLoadout(
+        SkillDefinition definition)
+    {
+        return NormalEnemyRuntimeSkill.Create(
+            definition);
+    }
+
     protected override void BuildBodyParts()
     {
         // 일반몹은 가짜 HEAD를 만들지 않는다.

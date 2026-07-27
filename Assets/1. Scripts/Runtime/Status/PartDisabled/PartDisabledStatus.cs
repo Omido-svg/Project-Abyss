@@ -6,14 +6,15 @@ public abstract class PartDisabledStatus : StatusEffect
         Duration = -1;
     }
 
-    public override StatusEffectDurationPolicy DurationPolicy =>
-        StatusEffectDurationPolicy.Permanent;
-
-    public override StatusEffectStackPolicy StackPolicy =>
-        StatusEffectStackPolicy.Ignore;
-
-    // 약화 디버프는 부위가 파괴되면 제거되고 캐릭터 상태로 이전되지 않는다.
+    public override StatusEffectDurationPolicy DurationPolicy => StatusEffectDurationPolicy.Permanent;
+    public override StatusEffectStackPolicy StackPolicy => StatusEffectStackPolicy.Ignore;
     public override bool TransferToCharacterOnPartBreak => false;
+
+    protected override string GetMergeKey() =>
+        $"{GetType().FullName}:{SourcePart?.Type.ToString() ?? "NONE"}";
+
+    protected bool IsOwnerAction(BattleAction action) =>
+        action != null && action.Owner == Owner;
 
     public override void OnApply() { }
     public override void OnRemove() { }

@@ -4,6 +4,7 @@ using UnityEngine;
 internal sealed class BattleVisualDamagePresenter
 {
     private BattleUIManager battleUIManager;
+    private BattleWorldCharacterPlateManager worldPlateManager;
     private readonly bool logDebug;
 
     public BattleVisualDamagePresenter(
@@ -74,6 +75,21 @@ internal sealed class BattleVisualDamagePresenter
                 battleUIManager.RefreshTargetUI(
                     target.Character,
                     target.Part);
+
+                ResolveWorldPlateManager();
+                worldPlateManager?.ClearVisualHpOverride(target.Character);
+                worldPlateManager?.RefreshCharacter(target.Character);
+            }
+        }
+        else
+        {
+            ResolveWorldPlateManager();
+
+            foreach (BattleVisualHpOverrideTarget target
+                     in playback.HpOverrideTargets)
+            {
+                if (target.Character != null)
+                    worldPlateManager?.ClearVisualHpOverride(target.Character);
             }
         }
 
@@ -159,6 +175,11 @@ internal sealed class BattleVisualDamagePresenter
             request.Target,
             request.TargetPart,
             visualStartHp);
+
+        ResolveWorldPlateManager();
+        worldPlateManager?.SetVisualHpOverride(
+            request.Target,
+            ResolveWorldVisualStartHp(request, totalDamage));
 
         RefreshBattleUi(request, -1, 0);
     }
@@ -249,6 +270,81 @@ internal sealed class BattleVisualDamagePresenter
             request.Target,
             request.TargetPart,
             displayHp);
+
+        ResolveWorldPlateManager();
+
+        int worldStartHp =
+            ResolveWorldVisualStartHp(
+                request,
+                DamageDistributionUtility.Sum(playback.HitDamages));
+
+        int worldFinalHp = ResolveWorldVisualFinalHp(request);
+
+        int worldDisplayHp = Mathf.Max(
+            worldFinalHp,
+            worldStartHp - playback.VisualDamageAccumulated);
+
+        worldPlateManager?.SetVisualHpOverride(
+            request.Target,
+            worldDisplayHp);
+    }
+
+    private static int ResolveWorldVisualStartHp(
+        BattleVisualRequest request,
+        int totalDamage)
+    {
+        if (request?.Target == null)
+            return 0;
+
+        int maximum = ResolveWorldVisualMaxHp(request);
+
+        if (request.HasTargetCharacterHpSnapshot)
+        {
+            return Mathf.Clamp(
+                request.TargetCharacterHpBefore,
+                0,
+                maximum);
+        }
+
+        return Mathf.Clamp(
+            ResolveWorldVisualFinalHp(request) + Mathf.Max(0, totalDamage),
+            0,
+            maximum);
+    }
+
+    private static int ResolveWorldVisualFinalHp(
+        BattleVisualRequest request)
+    {
+        if (request?.Target == null)
+            return 0;
+
+        int maximum = ResolveWorldVisualMaxHp(request);
+
+        if (request.HasTargetCharacterHpSnapshot)
+        {
+            return Mathf.Clamp(
+                request.TargetCharacterHpAfter,
+                0,
+                maximum);
+        }
+
+        return Mathf.Clamp(
+            request.Target.CurrentHP,
+            0,
+            maximum);
+    }
+
+    private static int ResolveWorldVisualMaxHp(
+        BattleVisualRequest request)
+    {
+        if (request?.Target == null)
+            return 1;
+
+        return Mathf.Max(
+            1,
+            request.TargetCharacterMaxHp > 0
+                ? request.TargetCharacterMaxHp
+                : request.Target.MaxCombatHP);
     }
 
     private void RefreshBattleUi(
@@ -265,6 +361,9 @@ internal sealed class BattleVisualDamagePresenter
             request.Target,
             request.TargetPart);
 
+        ResolveWorldPlateManager();
+        worldPlateManager?.RefreshCharacter(request.Target);
+
         Canvas.ForceUpdateCanvases();
 
         if (!logDebug || hitIndex < 0)
@@ -276,6 +375,16 @@ internal sealed class BattleVisualDamagePresenter
             $"Target={request.Target.Data?.CharacterName}, " +
             $"Point={(request.TargetPart == null ? "SINGLE_HP" : request.TargetPart.Type.ToString())}, " +
             $"Hit={hitIndex}, Damage={damage}");
+    }
+    
+    private void ResolveWorldPlateManager()
+    {
+        if (worldPlateManager != null)
+            return;
+
+        worldPlateManager =
+            Object.FindFirstObjectByType<BattleWorldCharacterPlateManager>(
+                FindObjectsInactive.Include);
     }
 
     private void ResolveBattleUiManager()

@@ -1,0 +1,5 @@
+PROJECT_ABYSS_DISABLED_SCRIPT_ARCHIVE
+CREATED: 2026-07-26T23:50:48.6919952+09:00
+REASON: LegacyBattleUiInstaller
+
+Assets/1. Scripts/Editor/Tools/BattleUiReadabilityInstaller.cs

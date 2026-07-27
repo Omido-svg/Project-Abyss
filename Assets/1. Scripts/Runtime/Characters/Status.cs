@@ -3,7 +3,7 @@ using UnityEngine;
 public class CurrentStatus
 {
     public int maxPrestige = 100;
-    public int maxEnergy = 2;
+    public int maxEnergy = 3;
 
     public int minSpeed;
     public int maxSpeed;
@@ -26,7 +26,7 @@ public class CurrentStatus
         }
 
         maxPrestige = Mathf.Max(0, data.maxPrestige);
-        maxEnergy = Mathf.Max(0, data.maxEnergy);
+        maxEnergy = Mathf.Max(3, data.maxEnergy);
         damageMultiplier = Mathf.Max(0f, data.damageMultiplier);
         defensePenetrationRate =
             Mathf.Clamp01(data.defensePenetration);
@@ -40,7 +40,7 @@ public class CurrentStatus
     public void Clamp()
     {
         maxPrestige = Mathf.Max(0, maxPrestige);
-        maxEnergy = Mathf.Max(0, maxEnergy);
+        maxEnergy = Mathf.Max(3, maxEnergy);
         maxSpeed = Mathf.Max(minSpeed, maxSpeed);
         damageMultiplier = Mathf.Max(0f, damageMultiplier);
         defense = Mathf.Max(0, defense);

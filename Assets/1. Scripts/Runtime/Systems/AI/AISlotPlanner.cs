@@ -4,6 +4,8 @@ using UnityEngine;
 
 public sealed class AIActionSource
 {
+    private readonly IReadOnlyList<Skill> fallbackSkills;
+
     public AIActionSource(
         Enemy owner,
         BodyPart part,
@@ -12,23 +14,63 @@ public sealed class AIActionSource
     {
         Owner = owner;
         Part = part;
-        Skills = skills ?? Array.Empty<Skill>();
+        fallbackSkills = skills ?? Array.Empty<Skill>();
         MaxSlots = Mathf.Max(0, maxSlots);
     }
 
     public Enemy Owner { get; }
     public BodyPart Part { get; }
-    public IReadOnlyList<Skill> Skills { get; }
     public int MaxSlots { get; }
 
-    public bool IsValid =>
-        Owner != null &&
-        !Owner.IsDead &&
-        MaxSlots > 0 &&
-        Skills.Count > 0 &&
-        (Part == null
-            ? Owner.IsSingleHpTarget
-            : !Part.IsBroken);
+    // 구버전 호출부 호환. 슬롯별 허용 스킬은 GetSkills(actionIndex)를 사용한다.
+    public IReadOnlyList<Skill> Skills => GetSkills(0);
+
+    public IReadOnlyList<Skill> GetSkills(
+        int actionIndex)
+    {
+        if (Owner == null)
+            return fallbackSkills;
+
+        IReadOnlyList<Skill> configured =
+            Owner.GetSelectableSkills(
+                Part,
+                Mathf.Max(0, actionIndex));
+
+        if (Owner.CombatRulesRuntime?.HasStructuredRules == true)
+        {
+            return configured ?? Array.Empty<Skill>();
+        }
+
+        return configured != null && configured.Count > 0
+            ? configured
+            : fallbackSkills;
+    }
+
+    public bool IsValid
+    {
+        get
+        {
+            if (Owner == null ||
+                Owner.IsDead ||
+                MaxSlots <= 0 ||
+                (Part == null
+                    ? !Owner.IsSingleHpTarget
+                    : Part.IsBroken))
+            {
+                return false;
+            }
+
+            for (int actionIndex = 0;
+                 actionIndex < MaxSlots;
+                 actionIndex++)
+            {
+                if (GetSkills(actionIndex).Count > 0)
+                    return true;
+            }
+
+            return false;
+        }
+    }
 }
 
 public sealed class AISlotPlanner
@@ -106,9 +148,7 @@ public sealed class AISlotPlanner
     private IReadOnlyList<Skill> GetSingleHpSkills(
         Enemy enemy)
     {
-        // 현재 단일 HP 일반몹은 P3부터 CharacterSkills를 공개한다.
-        // 이후 다른 단일 HP 적을 추가할 때는 같은 런타임 스킬 공급 계약을
-        // 구현하거나 이 메서드에 명시적으로 연결하면 된다.
+        // 현재 단일 HP 일반몹은 CharacterSkills를 런타임 스킬 공급원으로 사용한다.
         if (enemy is NormalEnemy normalEnemy)
         {
             return normalEnemy.CharacterSkills ??

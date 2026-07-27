@@ -67,9 +67,16 @@ public class CharacterStatusController
         Character source)
     {
         return AddCharacterStatusInternal(
-            effect,
-            source,
-            wasTransferred: false);
+            effect, source, null, wasTransferred: false);
+    }
+
+    public StatusEffectApplyResult AddStatus(
+        StatusEffect effect,
+        Character source,
+        BodyPart sourcePart)
+    {
+        return AddCharacterStatusInternal(
+            effect, source, sourcePart, wasTransferred: false);
     }
 
     public StatusEffectApplyResult AddPartStatus(
@@ -91,9 +98,7 @@ public class CharacterStatusController
         if (part == null || part.IsBroken)
         {
             return AddCharacterStatusInternal(
-                effect,
-                source,
-                wasTransferred: part != null);
+                effect, source, part, wasTransferred: part != null);
         }
 
         effect.Initialize(owner, source, part);
@@ -129,12 +134,13 @@ public class CharacterStatusController
     private StatusEffectApplyResult AddCharacterStatusInternal(
         StatusEffect effect,
         Character source,
+        BodyPart sourcePart,
         bool wasTransferred)
     {
         if (owner == null || effect == null)
             return Rejected(effect, null);
 
-        effect.Initialize(owner, source, null);
+        effect.Initialize(owner, source, null, sourcePart);
 
         StatusEffect existing =
             FindSameStatus(effect);
@@ -279,31 +285,26 @@ public class CharacterStatusController
             if (effect == null)
                 continue;
 
-            Character source =
-                effect.Source ?? owner;
-
-            if (!effect.TransferToCharacterOnPartBreak)
-            {
-                RemovePartStatus(
-                    part,
-                    effect,
-                    StatusEffectRemoveReason.PartBroken);
-                continue;
-            }
-
             RemovePartStatus(
                 part,
                 effect,
-                StatusEffectRemoveReason.Transferred);
+                StatusEffectRemoveReason.PartBroken);
+        }
+    }
 
-            AddCharacterStatusInternal(
-                effect,
-                source,
-                wasTransferred: true);
+    public void RemoveStatusesFromSourcePart(
+        BodyPart sourcePart,
+        StatusEffectRemoveReason reason)
+    {
+        if (sourcePart == null)
+            return;
 
-            Debug.Log(
-                $"{GetOwnerName()} {part.Type}의 {effect.Name} 상태가 " +
-                "캐릭터 상태로 이전됨");
+        foreach (StatusEffect effect in characterStatuses.ToArray())
+        {
+            if (effect?.SourcePart != sourcePart)
+                continue;
+
+            RemoveStatus(effect, reason);
         }
     }
 

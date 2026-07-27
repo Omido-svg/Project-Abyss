@@ -41,7 +41,8 @@ public class BattleVisualRequestBuilder
         }
 
         DamageContext sourceContext =
-            damageContext ?? action.LastDamageContext;
+            damageContext ??
+            action.PrimaryDamageContext;
 
         request.ApplyDamageContext(sourceContext);
         ApplyHitDamages(request, hitDamages, sourceContext);
@@ -146,6 +147,15 @@ public class BattleVisualRequestBuilder
                                 ? context.TargetPartHpAfter
                                 : null,
                         damageContext: context);
+
+                    if (attackRequest != null &&
+                        exchange.SecondaryDamageContexts != null)
+                    {
+                        attackRequest.SecondaryDamageContexts
+                            .AddRange(
+                                exchange
+                                    .SecondaryDamageContexts);
+                    }
                 }
 
                 request.ClashExchanges.Add(

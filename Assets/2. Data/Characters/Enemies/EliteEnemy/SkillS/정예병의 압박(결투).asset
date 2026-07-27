@@ -12,13 +12,79 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a85a262093fed2b45a6f05cb3a256be9, type: 3}
   m_Name: "\uC815\uC608\uBCD1\uC758 \uC555\uBC15(\uACB0\uD22C)"
   m_EditorClassIdentifier: 
+  skillId: 5fb3b00e68684389a86c92f3e0345061
   SkillName: "\uC815\uC608\uBCD1\uC758 \uC555\uBC15(\uACB0\uD22C)"
   ActionType: 1
   BasePower: 7
   CanBreakPart: 0
   GainPrestige: 1
+  Description: "\uBC29\uC5B4\uB85C \uC0C1\uB300\uC758 \uCCAB \uACF5\uACA9\uC744 \uD758\uB9AC\uACE0
+    \uBC18\uACA9\uD55C \uB4A4 \uB2E4\uC2DC \uBC29\uC5B4\uD558\uB294 \uC815\uC608\uBCD1\uC758
+    \uACB0\uD22C\uC785\uB2C8\uB2E4."
+  Keywords: []
+  Rolls:
+  - Index: 0
+    Type: 1
+    MinPower: 9
+    MaxPower: 11
+    RngSource: 1
+    CoinFrontChance: 0.5
+    CoinBackPower: 7
+    CoinFrontPower: 8
+    CoinFrontIsCritical: 0
+    ChinchiroHifumiPower: -4
+    ChinchiroBlankPower: 3
+    ChinchiroMokuPower: 7
+    ChinchiroShigoroPower: 20
+    ChinchiroArashiPower: 24
+    JudgmentModifier: 0
+    ReuseValueAcrossAction: 0
+    OnWinEffects: []
+    OnLoseEffects: []
+  - Index: 1
+    Type: 0
+    MinPower: 9
+    MaxPower: 11
+    RngSource: 1
+    CoinFrontChance: 0.5
+    CoinBackPower: 7
+    CoinFrontPower: 8
+    CoinFrontIsCritical: 0
+    ChinchiroHifumiPower: -4
+    ChinchiroBlankPower: 3
+    ChinchiroMokuPower: 7
+    ChinchiroShigoroPower: 20
+    ChinchiroArashiPower: 24
+    JudgmentModifier: 0
+    ReuseValueAcrossAction: 0
+    OnWinEffects: []
+    OnLoseEffects: []
+  - Index: 2
+    Type: 1
+    MinPower: 9
+    MaxPower: 11
+    RngSource: 1
+    CoinFrontChance: 0.5
+    CoinBackPower: 7
+    CoinFrontPower: 8
+    CoinFrontIsCritical: 0
+    ChinchiroHifumiPower: -4
+    ChinchiroBlankPower: 3
+    ChinchiroMokuPower: 7
+    ChinchiroShigoroPower: 20
+    ChinchiroArashiPower: 24
+    JudgmentModifier: 0
+    ReuseValueAcrossAction: 0
+    OnWinEffects: []
+    OnLoseEffects: []
   ExchangeRollCount: 3
   RollReusePolicy: 0
+  MultiRollPenalty:
+    Enabled: 0
+    PreviewText: 
+    Timing: 2
+    TriggerAfterRollIndex: 0
+    Effects: []
   ResolvePrestigeInCombat: 0
   OverrideCanClash: 0
   CanClashValue: 0
@@ -37,8 +103,8 @@ MonoBehaviour:
   ChinchiroHifumiSelfDamage: 1
   Effects:
   - {fileID: 11400000, guid: c709f54ed5bb5934eae625088ed3d772, type: 2}
-  OverrideEnergyCost: 0
-  EnergyCost: 0
+  OverrideEnergyCost: 1
+  EnergyCost: 1
   OverrideResourceRules: 0
   RequireFullPrestige: 0
   PrestigeCost: 0

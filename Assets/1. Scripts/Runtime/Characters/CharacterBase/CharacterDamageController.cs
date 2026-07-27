@@ -189,7 +189,7 @@ public sealed class CharacterDamageController
             $"{request.SourceEffect?.Name} 피해 {actualDamage} " +
             $"HP : {beforePartHP} -> {targetPart.PartHP:0}");
 
-        if (targetPart.PartHP <= 0f)
+        if (targetPart.PartHP <= 1f)
         {
             bodyPartController?.WeakenPart(
                 targetPart,
@@ -260,7 +260,7 @@ public sealed class CharacterDamageController
             $"{OwnerName()}의 {targetPart.Type} 부위에 {actualDamage} 피해 " +
             $"HP : {beforePartHP} -> {targetPart.PartHP:0}");
 
-        if (targetPart.PartHP <= 0f)
+        if (targetPart.PartHP <= 1f)
         {
             bodyPartController?.WeakenPart(
                 targetPart,

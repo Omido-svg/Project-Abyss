@@ -1,0 +1,2505 @@
+#if UNITY_EDITOR
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Text;
+using TMPro;
+using UnityEditor;
+using UnityEditor.SceneManagement;
+using UnityEngine;
+using UnityEngine.SceneManagement;
+using UnityEngine.UI;
+
+/// <summary>
+/// Project Abyss의 현재 CameraTest 전투 UI 구조를 기준으로
+/// 기존 핵심 참조를 보존하면서 HUD를 다시 배치하고,
+/// 과거 ReadableBattleHUD 잔재와 Missing Script를 정리한다.
+///
+/// 대상 기준:
+/// - Battle UI Canvas
+/// - Battle UI Manager / BattleManager
+/// - Player Body Parts / Enemy Body Parts
+/// - SkillSelectPanel / MomentumBar / PlayerEnergyPanel
+/// - StartBtn / ResetBtn / 분석 UI
+/// </summary>
+public sealed class ProjectAbyssBattleUiRefactorTool : EditorWindow
+{
+    private const string WindowMenu =
+        "Tools/Project Abyss/UI/Battle UI Refactor & Cleanup";
+
+    private const string QuickApplyMenu =
+        "Tools/Project Abyss/UI/Apply Readable HUD V2";
+
+    private const string CanvasName = "Battle UI Canvas";
+    private const string HudRootName = "ReadableBattleHUD";
+
+    private const string LegacyInstallerPath =
+        "Assets/1. Scripts/Editor/Tools/BattleUiReadabilityInstaller.cs";
+
+    private static readonly string[] PreservedObjectNames =
+    {
+        "Player Body Parts",
+        "Enemy Body Parts",
+        "MomentumBar",
+        "PlayerEnergyPanel",
+        "StartBtn",
+        "ResetBtn",
+        "SkillSelectPanel",
+        "BattleActionAnnouncePanel",
+        "TargetArrowUIObject",
+        "DebugScrollView",
+        "BattleAnalysisPanel",
+        "BattleAnalysisToggleButton"
+    };
+
+    private bool createSceneBackup = true;
+    private bool saveSceneAfterApply;
+    private bool keepDebugAndAnalysisObjects = true;
+    private bool archiveLegacyInstallerAfterApply = true;
+    private bool removeMissingScripts = true;
+
+    private Vector2 scrollPosition;
+    private string lastReport =
+        "먼저 현재 Scene 분석을 실행하세요.";
+
+    [MenuItem(WindowMenu, false, 2000)]
+    public static void OpenWindow()
+    {
+        ProjectAbyssBattleUiRefactorTool window =
+            GetWindow<ProjectAbyssBattleUiRefactorTool>();
+
+        window.titleContent =
+            new GUIContent("Abyss UI Refactor");
+
+        window.minSize =
+            new Vector2(620f, 650f);
+
+        window.Show();
+    }
+
+    [MenuItem(QuickApplyMenu, false, 2001)]
+    private static void QuickApply()
+    {
+        ApplyReadableHudV2(
+            createBackup: true,
+            saveAfterApply: false,
+            keepDebugTools: true,
+            removeMissing: true,
+            archiveLegacyInstaller: true);
+    }
+
+    private void OnGUI()
+    {
+        scrollPosition =
+            EditorGUILayout.BeginScrollView(scrollPosition);
+
+        EditorGUILayout.Space(8f);
+
+        EditorGUILayout.LabelField(
+            "Project Abyss 전투 UI 재구축",
+            EditorStyles.boldLabel);
+
+        EditorGUILayout.HelpBox(
+            "현재 Hierarchy의 기존 버튼·템플릿·Manager 참조를 보존한 채 " +
+            "ReadableBattleHUD만 다시 만듭니다. 중앙 3D 전투 화면을 가리지 않도록 " +
+            "상단 중앙 정보, 좌우 소형 카드, 하단 행동 슬롯 Dock으로 분리합니다.",
+            MessageType.Info);
+
+        EditorGUILayout.Space(8f);
+
+        DrawOptions();
+
+        EditorGUILayout.Space(12f);
+
+        using (new EditorGUILayout.HorizontalScope())
+        {
+            if (GUILayout.Button(
+                    "1. 현재 Scene 분석",
+                    GUILayout.Height(36f)))
+            {
+                lastReport = AnalyzeCurrentScene();
+            }
+
+            if (GUILayout.Button(
+                    "2. HUD V2 적용",
+                    GUILayout.Height(36f)))
+            {
+                bool applied =
+                    ApplyReadableHudV2(
+                        createSceneBackup,
+                        saveSceneAfterApply,
+                        keepDebugAndAnalysisObjects,
+                        removeMissingScripts,
+                        archiveLegacyInstallerAfterApply);
+
+                if (applied)
+                    lastReport = AnalyzeCurrentScene();
+            }
+        }
+
+        using (new EditorGUILayout.HorizontalScope())
+        {
+            if (GUILayout.Button(
+                    "Legacy UI 잔재만 정리",
+                    GUILayout.Height(30f)))
+            {
+                CleanupLegacyUiArtifacts();
+                lastReport = AnalyzeCurrentScene();
+            }
+
+            if (GUILayout.Button(
+                    "사용하지 않는 스크립트 감사 창",
+                    GUILayout.Height(30f)))
+            {
+                ProjectAbyssUnusedScriptCleaner.OpenWindow();
+            }
+        }
+
+        EditorGUILayout.Space(12f);
+
+        EditorGUILayout.LabelField(
+            "분석 결과",
+            EditorStyles.boldLabel);
+
+        EditorGUILayout.TextArea(
+            lastReport,
+            GUILayout.MinHeight(260f),
+            GUILayout.ExpandHeight(true));
+
+        EditorGUILayout.Space(8f);
+
+        EditorGUILayout.HelpBox(
+            "자동 소스 삭제 대상은 과거 BattleUiReadabilityInstaller 하나뿐입니다. " +
+            "BattleReadableHudUI, BattleConfiguredSlotBoardUI, BattleStatusListUI, " +
+            "BattleStatusRowUI는 새 HUD에서도 사용하므로 삭제하면 안 됩니다. " +
+            "그 외 스크립트는 별도 감사 창에서 참조를 검사한 뒤 수동 선택하여 비활성 보관합니다.",
+            MessageType.Warning);
+
+        EditorGUILayout.EndScrollView();
+    }
+
+    private void DrawOptions()
+    {
+        EditorGUILayout.LabelField(
+            "적용 옵션",
+            EditorStyles.boldLabel);
+
+        createSceneBackup =
+            EditorGUILayout.ToggleLeft(
+                "적용 전 Scene 백업 복사본 생성",
+                createSceneBackup);
+
+        saveSceneAfterApply =
+            EditorGUILayout.ToggleLeft(
+                "적용 후 현재 Scene 저장",
+                saveSceneAfterApply);
+
+        keepDebugAndAnalysisObjects =
+            EditorGUILayout.ToggleLeft(
+                "Debug/Analysis 오브젝트는 비활성 개발자 레이어에 보존",
+                keepDebugAndAnalysisObjects);
+
+        removeMissingScripts =
+            EditorGUILayout.ToggleLeft(
+                "현재 Scene의 Missing Script 컴포넌트 제거",
+                removeMissingScripts);
+
+        archiveLegacyInstallerAfterApply =
+            EditorGUILayout.ToggleLeft(
+                "적용 후 과거 BattleUiReadabilityInstaller.cs를 비활성 보관",
+                archiveLegacyInstallerAfterApply);
+    }
+
+    private static string AnalyzeCurrentScene()
+    {
+        StringBuilder report = new();
+
+        Scene scene =
+            SceneManager.GetActiveScene();
+
+        report.AppendLine(
+            $"Scene: {scene.name}");
+
+        report.AppendLine(
+            $"Path: {(string.IsNullOrWhiteSpace(scene.path) ? "(저장되지 않음)" : scene.path)}");
+
+        report.AppendLine(
+            $"Dirty: {scene.isDirty}");
+
+        Canvas canvas =
+            FindBattleCanvas();
+
+        if (canvas == null)
+        {
+            report.AppendLine();
+            report.AppendLine(
+                "[ERROR] Battle UI Canvas를 찾지 못했습니다.");
+
+            Debug.LogError(report.ToString());
+            return report.ToString();
+        }
+
+        CanvasScaler scaler =
+            canvas.GetComponent<CanvasScaler>();
+
+        report.AppendLine();
+        report.AppendLine(
+            $"Canvas: {GetHierarchyPath(canvas.transform)}");
+
+        if (scaler == null)
+        {
+            report.AppendLine(
+                "CanvasScaler: 없음");
+        }
+        else
+        {
+            report.AppendLine(
+                $"CanvasScaler: {scaler.uiScaleMode}, " +
+                $"Reference={scaler.referenceResolution}, " +
+                $"Match={scaler.matchWidthOrHeight:0.00}");
+        }
+
+        BattleManager battleManager =
+            UnityEngine.Object.FindFirstObjectByType<BattleManager>(
+                FindObjectsInactive.Include);
+
+        BattleUIManager battleUiManager =
+            UnityEngine.Object.FindFirstObjectByType<BattleUIManager>(
+                FindObjectsInactive.Include);
+
+        report.AppendLine(
+            $"BattleManager: {(battleManager == null ? "없음" : GetHierarchyPath(battleManager.transform))}");
+
+        report.AppendLine(
+            $"BattleUIManager: {(battleUiManager == null ? "없음" : GetHierarchyPath(battleUiManager.transform))}");
+
+        Transform hud =
+            FindDirectChild(
+                canvas.transform,
+                HudRootName);
+
+        report.AppendLine(
+            $"ReadableBattleHUD: {(hud == null ? "없음" : "존재")}");
+
+        report.AppendLine();
+        report.AppendLine(
+            "필수/보존 대상:");
+
+        foreach (string objectName in PreservedObjectNames)
+        {
+            Transform target =
+                FindDeepChild(
+                    canvas.transform,
+                    objectName);
+
+            report.AppendLine(
+                $"- {objectName}: " +
+                (target == null
+                    ? "없음"
+                    : GetHierarchyPath(target)));
+        }
+
+        int missingCount =
+            CountMissingScriptsInActiveScene();
+
+        report.AppendLine();
+        report.AppendLine(
+            $"Missing Script 컴포넌트: {missingCount}");
+
+        int readableHudCount =
+            UnityEngine.Object.FindObjectsByType<BattleReadableHudUI>(
+                FindObjectsInactive.Include,
+                FindObjectsSortMode.None).Length;
+
+        int slotBoardCount =
+            UnityEngine.Object.FindObjectsByType<BattleConfiguredSlotBoardUI>(
+                FindObjectsInactive.Include,
+                FindObjectsSortMode.None).Length;
+
+        report.AppendLine(
+            $"BattleReadableHudUI 수: {readableHudCount}");
+
+        report.AppendLine(
+            $"BattleConfiguredSlotBoardUI 수: {slotBoardCount}");
+
+        if (File.Exists(
+                ToAbsoluteAssetPath(
+                    LegacyInstallerPath)))
+        {
+            report.AppendLine();
+            report.AppendLine(
+                $"Legacy installer: {LegacyInstallerPath}");
+        }
+
+        Debug.Log(report.ToString());
+        return report.ToString();
+    }
+
+    private static bool ApplyReadableHudV2(
+        bool createBackup,
+        bool saveAfterApply,
+        bool keepDebugTools,
+        bool removeMissing,
+        bool archiveLegacyInstaller)
+    {
+        if (EditorApplication.isPlayingOrWillChangePlaymode)
+        {
+            EditorUtility.DisplayDialog(
+                "Project Abyss",
+                "Play Mode를 종료한 뒤 실행하세요.",
+                "확인");
+
+            return false;
+        }
+
+        Scene scene =
+            SceneManager.GetActiveScene();
+
+        if (!scene.IsValid() ||
+            !scene.isLoaded)
+        {
+            EditorUtility.DisplayDialog(
+                "Project Abyss",
+                "활성 Scene이 없습니다.",
+                "확인");
+
+            return false;
+        }
+
+        Canvas canvas =
+            FindBattleCanvas();
+
+        if (canvas == null)
+        {
+            EditorUtility.DisplayDialog(
+                "Project Abyss",
+                "Battle UI Canvas를 찾지 못했습니다.",
+                "확인");
+
+            return false;
+        }
+
+        Transform playerBodyParts =
+            FindDeepChild(
+                canvas.transform,
+                "Player Body Parts");
+
+        Transform enemyBodyParts =
+            FindDeepChild(
+                canvas.transform,
+                "Enemy Body Parts");
+
+        if (playerBodyParts == null ||
+            enemyBodyParts == null)
+        {
+            EditorUtility.DisplayDialog(
+                "Project Abyss",
+                "Player Body Parts 또는 Enemy Body Parts를 찾지 못했습니다.\n" +
+                "현재 BattleParticipantButtonFactory의 템플릿을 보존할 수 없으므로 적용을 중단합니다.",
+                "확인");
+
+            return false;
+        }
+
+        if (createBackup)
+            CreateSceneBackup(scene);
+
+        TMP_FontAsset sharedFont =
+            ResolveSceneFont(canvas);
+
+        int undoGroup =
+            Undo.GetCurrentGroup();
+
+        Undo.SetCurrentGroupName(
+            "Project Abyss Readable HUD V2");
+
+        try
+        {
+            Undo.RegisterFullObjectHierarchyUndo(
+                canvas.gameObject,
+                "Rebuild Project Abyss Battle HUD");
+
+            Dictionary<string, Transform> preserved =
+                ExtractPreservedObjects(
+                    canvas.transform);
+
+            DestroyExistingHudRoots(
+                canvas.transform);
+
+            ConfigureCanvasScaler(canvas);
+
+            RectTransform root =
+                CreateRect(
+                    HudRootName,
+                    canvas.transform);
+
+            Stretch(root);
+
+            RectTransform topPanel =
+                CreatePanel(
+                    "TopCenterPanel",
+                    root,
+                    new Color32(13, 18, 27, 220));
+
+            SetStretchAnchors(
+                topPanel,
+                new Vector2(0.285f, 0.88f),
+                new Vector2(0.715f, 0.985f),
+                new Vector2(0f, 0f),
+                new Vector2(0f, 0f));
+
+            RectTransform playerPanel =
+                CreatePanel(
+                    "PlayerPanel",
+                    root,
+                    new Color32(15, 24, 36, 192));
+
+            SetStretchAnchors(
+                playerPanel,
+                new Vector2(0.015f, 0.51f),
+                new Vector2(0.255f, 0.965f),
+                new Vector2(0f, 0f),
+                new Vector2(0f, 0f));
+
+            RectTransform enemyPanel =
+                CreatePanel(
+                    "EnemyPanel",
+                    root,
+                    new Color32(37, 18, 24, 192));
+
+            SetStretchAnchors(
+                enemyPanel,
+                new Vector2(0.745f, 0.51f),
+                new Vector2(0.985f, 0.965f),
+                new Vector2(0f, 0f),
+                new Vector2(0f, 0f));
+
+            RectTransform bottomDock =
+                CreatePanel(
+                    "BottomActionDock",
+                    root,
+                    new Color32(12, 18, 28, 218));
+
+            SetStretchAnchors(
+                bottomDock,
+                new Vector2(0.08f, 0.02f),
+                new Vector2(0.92f, 0.215f),
+                Vector2.zero,
+                Vector2.zero);
+
+            RectTransform overlayLayer =
+                CreateRect(
+                    "OverlayLayer",
+                    root);
+
+            Stretch(overlayLayer);
+
+            RectTransform debugLayer =
+                CreateRect(
+                    "DeveloperLayer",
+                    root);
+
+            Stretch(debugLayer);
+            debugLayer.gameObject.SetActive(true);
+
+            BattleManager battleManager =
+                UnityEngine.Object.FindFirstObjectByType<BattleManager>(
+                    FindObjectsInactive.Include);
+
+            BattleUIManager battleUiManager =
+                UnityEngine.Object.FindFirstObjectByType<BattleUIManager>(
+                    FindObjectsInactive.Include);
+
+            BuildAccent(
+                playerPanel,
+                new Color32(62, 148, 224, 230),
+                top: true);
+
+            BuildAccent(
+                enemyPanel,
+                new Color32(213, 78, 98, 230),
+                top: true);
+
+            TMP_Text turnText;
+            TMP_Text momentumText;
+            TMP_Text bossPhaseText;
+
+            BuildTopCenterPanel(
+                topPanel,
+                sharedFont,
+                preserved,
+                out turnText,
+                out momentumText,
+                out bossPhaseText);
+
+            TMP_Text playerTitle =
+                CreateText(
+                    "PlayerTitle",
+                    playerPanel,
+                    "PLAYER · 부위 상태",
+                    22f,
+                    TextAlignmentOptions.Center,
+                    sharedFont);
+
+            SetStretchAnchors(
+                playerTitle.rectTransform,
+                new Vector2(0.04f, 0.885f),
+                new Vector2(0.96f, 0.975f),
+                Vector2.zero,
+                Vector2.zero);
+
+            TMP_Text enemyTitle =
+                CreateText(
+                    "EnemyTitle",
+                    enemyPanel,
+                    "ENEMY · 조준 부위",
+                    22f,
+                    TextAlignmentOptions.Center,
+                    sharedFont);
+
+            SetStretchAnchors(
+                enemyTitle.rectTransform,
+                new Vector2(0.04f, 0.885f),
+                new Vector2(0.96f, 0.975f),
+                Vector2.zero,
+                Vector2.zero);
+
+            RectTransform playerContainer =
+                MovePreservedRect(
+                    preserved,
+                    "Player Body Parts",
+                    playerPanel);
+
+            RectTransform enemyContainer =
+                MovePreservedRect(
+                    preserved,
+                    "Enemy Body Parts",
+                    enemyPanel);
+
+            ConfigureBodyPartContainer(
+                playerContainer,
+                isEnemy: false,
+                new Vector2(0.04f, 0.35f),
+                new Vector2(0.96f, 0.73f));
+
+            ConfigureBodyPartContainer(
+                enemyContainer,
+                isEnemy: true,
+                new Vector2(0.04f, 0.35f),
+                new Vector2(0.96f, 0.835f));
+
+            RectTransform playerEnergy =
+                MovePreservedRect(
+                    preserved,
+                    "PlayerEnergyPanel",
+                    playerPanel);
+
+            if (playerEnergy != null)
+            {
+                SetStretchAnchors(
+                    playerEnergy,
+                    new Vector2(0.04f, 0.755f),
+                    new Vector2(0.96f, 0.855f),
+                    Vector2.zero,
+                    Vector2.zero);
+
+                StyleEnergyPanel(playerEnergy);
+            }
+
+            BattleStatusListUI playerStatus =
+                CreateStatusList(
+                    "PlayerStatusList",
+                    playerPanel,
+                    "상태 효과",
+                    sharedFont,
+                    new Vector2(0.04f, 0.035f),
+                    new Vector2(0.96f, 0.315f));
+
+            BattleStatusListUI enemyStatus =
+                CreateStatusList(
+                    "EnemyStatusList",
+                    enemyPanel,
+                    "상태 효과",
+                    sharedFont,
+                    new Vector2(0.04f, 0.035f),
+                    new Vector2(0.96f, 0.315f));
+
+            BuildBottomDock(
+                bottomDock,
+                sharedFont,
+                preserved,
+                battleManager,
+                battleUiManager);
+
+            BuildOverlayLayer(
+                overlayLayer,
+                preserved);
+
+            BuildDeveloperLayer(
+                canvas,
+                debugLayer,
+                preserved,
+                keepDebugTools);
+
+            ConfigureParticipantButtonFactory(
+                battleUiManager,
+                playerContainer,
+                enemyContainer);
+
+            BattleReadableHudUI hud =
+                Undo.AddComponent<BattleReadableHudUI>(
+                    root.gameObject);
+
+            hud.Configure(
+                battleManager,
+                turnText,
+                momentumText,
+                bossPhaseText,
+                playerStatus,
+                enemyStatus);
+
+            overlayLayer.SetAsLastSibling();
+            debugLayer.SetAsLastSibling();
+
+            CleanupDuplicateHudComponents(
+                root,
+                hud);
+
+            if (removeMissing)
+                RemoveMissingScriptsFromActiveScene();
+
+            EditorSceneManager.MarkSceneDirty(scene);
+
+            if (saveAfterApply)
+                EditorSceneManager.SaveScene(scene);
+
+            Undo.CollapseUndoOperations(undoGroup);
+
+            Selection.activeGameObject =
+                root.gameObject;
+
+            if (archiveLegacyInstaller)
+            {
+                ProjectAbyssScriptArchiveUtility
+                    .ArchiveLegacyInstallerWithConfirmation(
+                        LegacyInstallerPath);
+            }
+
+            EditorUtility.DisplayDialog(
+                "Project Abyss",
+                "ReadableBattleHUD V2를 적용했습니다.\n\n" +
+                "중앙 전투 화면을 비우고,\n" +
+                "좌우 부위 카드 / 상단 기세 / 하단 행동 슬롯으로 재배치했습니다.\n" +
+                "Scene을 Play Mode에서 확인하세요.",
+                "확인");
+
+            return true;
+        }
+        catch (Exception exception)
+        {
+            Debug.LogException(exception);
+
+            Undo.RevertAllDownToGroup(
+                undoGroup);
+
+            EditorUtility.DisplayDialog(
+                "Project Abyss",
+                "HUD 재구축 중 오류가 발생하여 Undo를 시도했습니다.\n" +
+                exception.Message,
+                "확인");
+
+            return false;
+        }
+    }
+
+    private static void BuildTopCenterPanel(
+        RectTransform panel,
+        TMP_FontAsset font,
+        IReadOnlyDictionary<string, Transform> preserved,
+        out TMP_Text turnText,
+        out TMP_Text momentumText,
+        out TMP_Text bossPhaseText)
+    {
+        turnText =
+            CreateText(
+                "TurnPhaseText",
+                panel,
+                "<b>전투 준비</b>",
+                21f,
+                TextAlignmentOptions.Center,
+                font);
+
+        SetStretchAnchors(
+            turnText.rectTransform,
+            new Vector2(0.015f, 0.22f),
+            new Vector2(0.285f, 0.92f),
+            Vector2.zero,
+            Vector2.zero);
+
+        momentumText =
+            CreateText(
+                "MomentumSummaryText",
+                panel,
+                "<b>기세 0</b>\n균형 · 피해 ×1",
+                22f,
+                TextAlignmentOptions.Center,
+                font);
+
+        SetStretchAnchors(
+            momentumText.rectTransform,
+            new Vector2(0.30f, 0.24f),
+            new Vector2(0.70f, 0.94f),
+            Vector2.zero,
+            Vector2.zero);
+
+        bossPhaseText =
+            CreateText(
+                "BossPhaseText",
+                panel,
+                "<b>적 행동</b>\n기본 패턴",
+                20f,
+                TextAlignmentOptions.Center,
+                font);
+
+        SetStretchAnchors(
+            bossPhaseText.rectTransform,
+            new Vector2(0.715f, 0.22f),
+            new Vector2(0.985f, 0.92f),
+            Vector2.zero,
+            Vector2.zero);
+
+        RectTransform momentumBar =
+            MovePreservedRect(
+                preserved,
+                "MomentumBar",
+                panel);
+
+        if (momentumBar != null)
+        {
+            SetStretchAnchors(
+                momentumBar,
+                new Vector2(0.24f, 0.075f),
+                new Vector2(0.76f, 0.19f),
+                Vector2.zero,
+                Vector2.zero);
+
+            Slider slider =
+                momentumBar.GetComponent<Slider>();
+
+            if (slider != null)
+                slider.interactable = false;
+        }
+    }
+
+    private static void BuildBottomDock(
+        RectTransform bottomDock,
+        TMP_FontAsset font,
+        IReadOnlyDictionary<string, Transform> preserved,
+        BattleManager battleManager,
+        BattleUIManager battleUiManager)
+    {
+        RectTransform planPanel =
+            CreatePanel(
+                "ActionPlanPanel",
+                bottomDock,
+                new Color32(18, 27, 40, 205));
+
+        SetStretchAnchors(
+            planPanel,
+            new Vector2(0.012f, 0.08f),
+            new Vector2(0.875f, 0.92f),
+            Vector2.zero,
+            Vector2.zero);
+
+        TMP_Text title =
+            CreateText(
+                "ActionPlanTitle",
+                planPanel,
+                "이번 턴 행동 슬롯",
+                19f,
+                TextAlignmentOptions.Left,
+                font);
+
+        SetStretchAnchors(
+            title.rectTransform,
+            new Vector2(0.02f, 0.76f),
+            new Vector2(0.98f, 0.96f),
+            Vector2.zero,
+            Vector2.zero);
+
+        RectTransform content =
+            CreateRect(
+                "ConfiguredSlotContent",
+                planPanel);
+
+        SetStretchAnchors(
+            content,
+            new Vector2(0.02f, 0.08f),
+            new Vector2(0.98f, 0.73f),
+            Vector2.zero,
+            Vector2.zero);
+
+        HorizontalLayoutGroup layout =
+            Undo.AddComponent<HorizontalLayoutGroup>(
+                content.gameObject);
+
+        layout.spacing = 9f;
+        layout.padding =
+            new RectOffset(0, 0, 0, 0);
+        layout.childAlignment =
+            TextAnchor.MiddleLeft;
+        layout.childControlWidth = true;
+        layout.childControlHeight = true;
+        layout.childForceExpandWidth = false;
+        layout.childForceExpandHeight = false;
+
+        Button template =
+            CreateButton(
+                "ConfiguredSlotTemplate",
+                content,
+                new Vector2(226f, 94f),
+                font);
+
+        template.gameObject.SetActive(false);
+
+        LayoutElement templateLayout =
+            Undo.AddComponent<LayoutElement>(
+                template.gameObject);
+
+        templateLayout.preferredWidth = 226f;
+        templateLayout.preferredHeight = 94f;
+        templateLayout.minWidth = 190f;
+        templateLayout.minHeight = 80f;
+
+        TMP_Text emptyText =
+            CreateText(
+                "EmptySlotText",
+                content,
+                "사용 가능한 행동 슬롯이 없습니다.",
+                18f,
+                TextAlignmentOptions.Center,
+                font);
+
+        LayoutElement emptyLayout =
+            Undo.AddComponent<LayoutElement>(
+                emptyText.gameObject);
+
+        emptyLayout.preferredWidth = 480f;
+        emptyLayout.preferredHeight = 94f;
+        emptyLayout.minHeight = 80f;
+        emptyLayout.flexibleWidth = 1f;
+
+        emptyText.color =
+            new Color32(197, 208, 224, 255);
+
+        BattleConfiguredSlotBoardUI board =
+            Undo.AddComponent<BattleConfiguredSlotBoardUI>(
+                planPanel.gameObject);
+
+        board.Configure(
+            battleManager,
+            battleUiManager,
+            content,
+            template,
+            emptyText);
+
+        RectTransform controls =
+            CreateRect(
+                "BattleControls",
+                bottomDock);
+
+        SetStretchAnchors(
+            controls,
+            new Vector2(0.885f, 0.08f),
+            new Vector2(0.988f, 0.92f),
+            Vector2.zero,
+            Vector2.zero);
+
+        RectTransform startButton =
+            MovePreservedRect(
+                preserved,
+                "StartBtn",
+                controls);
+
+        if (startButton != null)
+        {
+            SetStretchAnchors(
+                startButton,
+                new Vector2(0.04f, 0.53f),
+                new Vector2(0.96f, 0.90f),
+                Vector2.zero,
+                Vector2.zero);
+
+            StyleExistingButton(
+                startButton,
+                "전투 시작",
+                new Color32(224, 230, 239, 255),
+                new Color32(44, 88, 122, 255),
+                font);
+        }
+
+        TMP_Text hint =
+            CreateText(
+                "ControlHint",
+                controls,
+                "슬롯 선택\n우클릭 취소",
+                13f,
+                TextAlignmentOptions.Center,
+                font);
+
+        SetStretchAnchors(
+            hint.rectTransform,
+            new Vector2(0f, 0.06f),
+            new Vector2(1f, 0.46f),
+            Vector2.zero,
+            Vector2.zero);
+
+        hint.color =
+            new Color32(165, 176, 193, 255);
+    }
+
+    private static void BuildOverlayLayer(
+        RectTransform overlayLayer,
+        IReadOnlyDictionary<string, Transform> preserved)
+    {
+        RectTransform skillPanel =
+            MovePreservedRect(
+                preserved,
+                "SkillSelectPanel",
+                overlayLayer);
+
+        if (skillPanel != null)
+        {
+            SetStretchAnchors(
+                skillPanel,
+                new Vector2(0.20f, 0.15f),
+                new Vector2(0.80f, 0.84f),
+                Vector2.zero,
+                Vector2.zero);
+
+            Image image =
+                skillPanel.GetComponent<Image>();
+
+            if (image != null)
+            {
+                Color color = image.color;
+                color.a = Mathf.Max(color.a, 0.94f);
+                image.color = color;
+            }
+
+            // 기존 SkillSelectPanel은 선택 단계에서만 열리는 Modal이다.
+            // 보존 과정에서 활성화된 상태를 그대로 두면 화면을 다시 덮으므로
+            // 재배치 직후에는 반드시 닫아 둔다.
+            skillPanel.gameObject.SetActive(false);
+        }
+
+        RectTransform announce =
+            MovePreservedRect(
+                preserved,
+                "BattleActionAnnouncePanel",
+                overlayLayer);
+
+        if (announce != null)
+        {
+            SetStretchAnchors(
+                announce,
+                new Vector2(0.28f, 0.35f),
+                new Vector2(0.72f, 0.62f),
+                Vector2.zero,
+                Vector2.zero);
+        }
+
+        RectTransform arrow =
+            MovePreservedRect(
+                preserved,
+                "TargetArrowUIObject",
+                overlayLayer);
+
+        if (arrow != null)
+            Stretch(arrow);
+    }
+
+    private static void BuildDeveloperLayer(
+        Canvas canvas,
+        RectTransform debugLayer,
+        IReadOnlyDictionary<string, Transform> preserved,
+        bool keepDebugTools)
+    {
+        string[] debugNames =
+        {
+            "DebugScrollView",
+            "BattleAnalysisPanel",
+            "ResetBtn",
+            "BattleAnalysisToggleButton"
+        };
+
+        if (!keepDebugTools)
+        {
+            foreach (string name in debugNames)
+            {
+                if (preserved.TryGetValue(
+                        name,
+                        out Transform target) &&
+                    target != null)
+                {
+                    Undo.DestroyObjectImmediate(
+                        target.gameObject);
+                }
+            }
+
+            BattleAnalysisPanelToggle existingToggle =
+                canvas.GetComponent<BattleAnalysisPanelToggle>();
+
+            if (existingToggle != null)
+                Undo.DestroyObjectImmediate(existingToggle);
+
+            return;
+        }
+
+        RectTransform debugScroll =
+            MovePreservedRect(
+                preserved,
+                "DebugScrollView",
+                debugLayer);
+
+        if (debugScroll != null)
+        {
+            SetStretchAnchors(
+                debugScroll,
+                new Vector2(0.65f, 0.18f),
+                new Vector2(0.985f, 0.90f),
+                Vector2.zero,
+                Vector2.zero);
+
+            debugScroll.gameObject.SetActive(false);
+        }
+
+        RectTransform analysisPanel =
+            MovePreservedRect(
+                preserved,
+                "BattleAnalysisPanel",
+                debugLayer);
+
+        if (analysisPanel != null)
+        {
+            SetStretchAnchors(
+                analysisPanel,
+                new Vector2(0.015f, 0.18f),
+                new Vector2(0.35f, 0.90f),
+                Vector2.zero,
+                Vector2.zero);
+
+            analysisPanel.gameObject.SetActive(false);
+        }
+
+        RectTransform resetButton =
+            MovePreservedRect(
+                preserved,
+                "ResetBtn",
+                debugLayer);
+
+        if (resetButton != null)
+        {
+            SetStretchAnchors(
+                resetButton,
+                new Vector2(0.88f, 0.925f),
+                new Vector2(0.975f, 0.978f),
+                Vector2.zero,
+                Vector2.zero);
+
+            resetButton.gameObject.SetActive(false);
+        }
+
+        RectTransform analysisButton =
+            MovePreservedRect(
+                preserved,
+                "BattleAnalysisToggleButton",
+                debugLayer);
+
+        if (analysisButton != null)
+        {
+            SetStretchAnchors(
+                analysisButton,
+                new Vector2(0.69f, 0.925f),
+                new Vector2(0.87f, 0.978f),
+                Vector2.zero,
+                Vector2.zero);
+
+            analysisButton.gameObject.SetActive(false);
+        }
+
+        BattleAnalysisPanelToggle toggle =
+            canvas.GetComponent<BattleAnalysisPanelToggle>();
+
+        if (toggle != null &&
+            analysisPanel != null)
+        {
+            CanvasGroup panelGroup =
+                analysisPanel.GetComponent<CanvasGroup>();
+
+            if (panelGroup == null)
+            {
+                panelGroup =
+                    Undo.AddComponent<CanvasGroup>(
+                        analysisPanel.gameObject);
+            }
+
+            Button button =
+                analysisButton != null
+                    ? analysisButton.GetComponent<Button>()
+                    : null;
+
+            TMP_Text label =
+                button != null
+                    ? button.GetComponentInChildren<TMP_Text>(true)
+                    : null;
+
+            toggle.Configure(
+                analysisPanel.gameObject,
+                panelGroup,
+                button,
+                label,
+                hiddenAtStart: true);
+        }
+    }
+
+    private static BattleStatusListUI CreateStatusList(
+        string objectName,
+        RectTransform parent,
+        string titleText,
+        TMP_FontAsset font,
+        Vector2 anchorMin,
+        Vector2 anchorMax)
+    {
+        RectTransform panel =
+            CreatePanel(
+                objectName,
+                parent,
+                new Color32(8, 12, 20, 145));
+
+        SetStretchAnchors(
+            panel,
+            anchorMin,
+            anchorMax,
+            Vector2.zero,
+            Vector2.zero);
+
+        Undo.AddComponent<RectMask2D>(
+            panel.gameObject);
+
+        TMP_Text title =
+            CreateText(
+                "Title",
+                panel,
+                titleText,
+                15f,
+                TextAlignmentOptions.Left,
+                font);
+
+        SetStretchAnchors(
+            title.rectTransform,
+            new Vector2(0.035f, 0.77f),
+            new Vector2(0.965f, 0.96f),
+            Vector2.zero,
+            Vector2.zero);
+
+        title.color =
+            new Color32(205, 216, 232, 255);
+
+        RectTransform content =
+            CreateRect(
+                "Content",
+                panel);
+
+        SetStretchAnchors(
+            content,
+            new Vector2(0.025f, 0.04f),
+            new Vector2(0.975f, 0.74f),
+            Vector2.zero,
+            Vector2.zero);
+
+        VerticalLayoutGroup layout =
+            Undo.AddComponent<VerticalLayoutGroup>(
+                content.gameObject);
+
+        layout.spacing = 4f;
+        layout.padding =
+            new RectOffset(0, 0, 0, 0);
+        layout.childAlignment =
+            TextAnchor.UpperLeft;
+        layout.childControlWidth = true;
+        layout.childControlHeight = false;
+        layout.childForceExpandWidth = true;
+        layout.childForceExpandHeight = false;
+
+        RectTransform rowRect =
+            CreatePanel(
+                "StatusRowTemplate",
+                content,
+                new Color32(28, 37, 51, 225));
+
+        rowRect.sizeDelta =
+            new Vector2(300f, 38f);
+
+        LayoutElement rowLayout =
+            Undo.AddComponent<LayoutElement>(
+                rowRect.gameObject);
+
+        rowLayout.preferredHeight = 38f;
+        rowLayout.minHeight = 34f;
+
+        TMP_Text rowText =
+            CreateText(
+                "Label",
+                rowRect,
+                "상태",
+                11f,
+                TextAlignmentOptions.Left,
+                font);
+
+        Stretch(rowText.rectTransform);
+
+        rowText.rectTransform.offsetMin =
+            new Vector2(8f, 2f);
+
+        rowText.rectTransform.offsetMax =
+            new Vector2(-8f, -2f);
+
+        rowText.enableAutoSizing = true;
+        rowText.fontSizeMin = 8f;
+        rowText.fontSizeMax = 11f;
+        rowText.overflowMode =
+            TextOverflowModes.Ellipsis;
+
+        BattleStatusRowUI row =
+            Undo.AddComponent<BattleStatusRowUI>(
+                rowRect.gameObject);
+
+        row.Configure(
+            null,
+            rowText);
+
+        rowRect.gameObject.SetActive(false);
+
+        BattleStatusListUI list =
+            Undo.AddComponent<BattleStatusListUI>(
+                panel.gameObject);
+
+        list.Configure(
+            null,
+            content,
+            row);
+
+        return list;
+    }
+
+    private static void ConfigureParticipantButtonFactory(
+        BattleUIManager battleUiManager,
+        RectTransform playerContainer,
+        RectTransform enemyContainer)
+    {
+        if (battleUiManager == null ||
+            playerContainer == null ||
+            enemyContainer == null)
+        {
+            return;
+        }
+
+        BattleParticipantButtonFactory factory =
+            battleUiManager.GetComponent<BattleParticipantButtonFactory>();
+
+        if (factory == null)
+        {
+            factory =
+                UnityEngine.Object.FindFirstObjectByType
+                    <BattleParticipantButtonFactory>(
+                        FindObjectsInactive.Include);
+        }
+
+        if (factory == null)
+            return;
+
+        Undo.RecordObject(
+            factory,
+            "Configure Battle Participant Button Factory");
+
+        BodyPartButton playerTemplate =
+            playerContainer.GetComponentInChildren
+                <BodyPartButton>(true);
+
+        BodyPartButton enemyTemplate =
+            enemyContainer.GetComponentInChildren
+                <BodyPartButton>(true);
+
+        if (playerTemplate != null &&
+            enemyTemplate != null)
+        {
+            factory.Configure(
+                playerTemplate,
+                enemyTemplate,
+                playerContainer,
+                enemyContainer);
+        }
+
+        SerializedObject serialized =
+            new(factory);
+
+        SetSerializedProperty(
+            serialized,
+            "configureGridLayout",
+            true);
+
+        SetSerializedProperty(
+            serialized,
+            "autoPositionContainers",
+            false);
+
+        SetSerializedProperty(
+            serialized,
+            "fitContainerWidthToColumns",
+            false);
+
+        SetSerializedProperty(
+            serialized,
+            "fitContainerHeightToGeneratedRows",
+            false);
+
+        SetSerializedProperty(
+            serialized,
+            "cellSize",
+            new Vector2(205f, 78f));
+
+        SetSerializedProperty(
+            serialized,
+            "spacing",
+            new Vector2(8f, 8f));
+
+        SetSerializedProperty(
+            serialized,
+            "playerColumns",
+            2);
+
+        SetSerializedProperty(
+            serialized,
+            "enemyColumns",
+            2);
+
+        serialized.ApplyModifiedProperties();
+        EditorUtility.SetDirty(factory);
+    }
+
+    private static void ConfigureBodyPartContainer(
+        RectTransform container,
+        bool isEnemy,
+        Vector2 anchorMin,
+        Vector2 anchorMax)
+    {
+        if (container == null)
+            return;
+
+        SetStretchAnchors(
+            container,
+            anchorMin,
+            anchorMax,
+            Vector2.zero,
+            Vector2.zero);
+
+        ContentSizeFitter fitter =
+            container.GetComponent<ContentSizeFitter>();
+
+        if (fitter != null)
+            Undo.DestroyObjectImmediate(fitter);
+
+        GridLayoutGroup grid =
+            container.GetComponent<GridLayoutGroup>();
+
+        if (grid == null)
+        {
+            grid =
+                Undo.AddComponent<GridLayoutGroup>(
+                    container.gameObject);
+        }
+
+        grid.cellSize =
+            new Vector2(205f, 78f);
+
+        grid.spacing =
+            new Vector2(8f, 8f);
+
+        grid.constraint =
+            GridLayoutGroup.Constraint.FixedColumnCount;
+
+        grid.constraintCount = 2;
+        grid.startAxis =
+            GridLayoutGroup.Axis.Horizontal;
+
+        grid.startCorner =
+            isEnemy
+                ? GridLayoutGroup.Corner.UpperRight
+                : GridLayoutGroup.Corner.UpperLeft;
+
+        grid.childAlignment =
+            isEnemy
+                ? TextAnchor.UpperRight
+                : TextAnchor.UpperLeft;
+
+        grid.padding =
+            new RectOffset(0, 0, 0, 0);
+
+        BodyPartButton[] buttons =
+            container.GetComponentsInChildren
+                <BodyPartButton>(true);
+
+        foreach (BodyPartButton button in buttons)
+        {
+            TMP_Text label =
+                button.GetComponentInChildren
+                    <TMP_Text>(true);
+
+            if (label == null)
+                continue;
+
+            label.enableAutoSizing = true;
+            label.fontSizeMin = 10f;
+            label.fontSizeMax = 17f;
+            label.alignment =
+                TextAlignmentOptions.Center;
+            label.overflowMode =
+                TextOverflowModes.Ellipsis;
+
+            RectTransform labelRect =
+                label.rectTransform;
+
+            Stretch(labelRect);
+
+            labelRect.offsetMin =
+                new Vector2(6f, 4f);
+
+            labelRect.offsetMax =
+                new Vector2(-6f, -4f);
+        }
+    }
+
+    private static void StyleEnergyPanel(
+        RectTransform energyPanel)
+    {
+        Image image =
+            energyPanel.GetComponent<Image>();
+
+        if (image != null)
+        {
+            image.color =
+                new Color32(18, 39, 58, 205);
+        }
+
+        TMP_Text label =
+            energyPanel.GetComponentInChildren
+                <TMP_Text>(true);
+
+        if (label != null)
+        {
+            label.enableAutoSizing = true;
+            label.fontSizeMin = 11f;
+            label.fontSizeMax = 18f;
+            label.alignment =
+                TextAlignmentOptions.Center;
+        }
+    }
+
+    private static void StyleExistingButton(
+        RectTransform rect,
+        string labelValue,
+        Color labelColor,
+        Color buttonColor,
+        TMP_FontAsset font)
+    {
+        Image image =
+            rect.GetComponent<Image>();
+
+        if (image != null)
+            image.color = buttonColor;
+
+        TMP_Text label =
+            rect.GetComponentInChildren
+                <TMP_Text>(true);
+
+        if (label == null)
+            return;
+
+        label.text = labelValue;
+        label.color = labelColor;
+        label.alignment =
+            TextAlignmentOptions.Center;
+        label.enableAutoSizing = true;
+        label.fontSizeMin = 12f;
+        label.fontSizeMax = 20f;
+
+        if (font != null)
+            label.font = font;
+
+        Stretch(label.rectTransform);
+
+        label.rectTransform.offsetMin =
+            new Vector2(4f, 2f);
+
+        label.rectTransform.offsetMax =
+            new Vector2(-4f, -2f);
+    }
+
+    private static void BuildAccent(
+        RectTransform parent,
+        Color color,
+        bool top)
+    {
+        RectTransform accent =
+            CreatePanel(
+                "Accent",
+                parent,
+                color);
+
+        SetStretchAnchors(
+            accent,
+            top
+                ? new Vector2(0f, 0.975f)
+                : new Vector2(0f, 0f),
+            top
+                ? new Vector2(1f, 1f)
+                : new Vector2(1f, 0.025f),
+            Vector2.zero,
+            Vector2.zero);
+    }
+
+    private static void CleanupDuplicateHudComponents(
+        RectTransform root,
+        BattleReadableHudUI newHud)
+    {
+        Scene activeScene =
+            SceneManager.GetActiveScene();
+
+        BattleReadableHudUI[] hudComponents =
+            UnityEngine.Object.FindObjectsByType
+                <BattleReadableHudUI>(
+                    FindObjectsInactive.Include,
+                    FindObjectsSortMode.None);
+
+        foreach (BattleReadableHudUI component in hudComponents)
+        {
+            if (component == null ||
+                component == newHud ||
+                component.gameObject.scene != activeScene)
+            {
+                continue;
+            }
+
+            if (component.transform.IsChildOf(root))
+                continue;
+
+            Undo.DestroyObjectImmediate(component);
+        }
+
+        BattleConfiguredSlotBoardUI[] boards =
+            UnityEngine.Object.FindObjectsByType
+                <BattleConfiguredSlotBoardUI>(
+                    FindObjectsInactive.Include,
+                    FindObjectsSortMode.None);
+
+        foreach (BattleConfiguredSlotBoardUI board in boards)
+        {
+            if (board == null ||
+                board.gameObject.scene != activeScene ||
+                board.transform.IsChildOf(root))
+            {
+                continue;
+            }
+
+            Undo.DestroyObjectImmediate(board);
+        }
+    }
+
+    private static void CleanupLegacyUiArtifacts()
+    {
+        if (EditorApplication.isPlayingOrWillChangePlaymode)
+        {
+            EditorUtility.DisplayDialog(
+                "Project Abyss",
+                "Play Mode를 종료한 뒤 실행하세요.",
+                "확인");
+
+            return;
+        }
+
+        Canvas canvas =
+            FindBattleCanvas();
+
+        if (canvas == null)
+        {
+            EditorUtility.DisplayDialog(
+                "Project Abyss",
+                "Battle UI Canvas를 찾지 못했습니다.",
+                "확인");
+
+            return;
+        }
+
+        int group =
+            Undo.GetCurrentGroup();
+
+        Undo.SetCurrentGroupName(
+            "Clean Project Abyss Legacy UI");
+
+        Undo.RegisterFullObjectHierarchyUndo(
+            canvas.gameObject,
+            "Clean Legacy UI");
+
+        List<Transform> hudRoots =
+            new();
+
+        for (int i = 0;
+             i < canvas.transform.childCount;
+             i++)
+        {
+            Transform child =
+                canvas.transform.GetChild(i);
+
+            if (child.name == HudRootName ||
+                child.name.StartsWith(
+                    HudRootName + "_",
+                    StringComparison.Ordinal))
+            {
+                hudRoots.Add(child);
+            }
+        }
+
+        if (hudRoots.Count > 1)
+        {
+            for (int i = 0;
+                 i < hudRoots.Count - 1;
+                 i++)
+            {
+                Transform oldRoot =
+                    hudRoots[i];
+
+                RestorePreservedObjects(
+                    oldRoot,
+                    canvas.transform);
+
+                Undo.DestroyObjectImmediate(
+                    oldRoot.gameObject);
+            }
+        }
+
+        int removedMissing =
+            RemoveMissingScriptsFromActiveScene();
+
+        EditorSceneManager.MarkSceneDirty(
+            SceneManager.GetActiveScene());
+
+        Undo.CollapseUndoOperations(group);
+
+        EditorUtility.DisplayDialog(
+            "Project Abyss",
+            "Legacy UI 중복 루트와 Missing Script를 정리했습니다.\n" +
+            $"제거된 Missing Script: {removedMissing}",
+            "확인");
+    }
+
+    private static Dictionary<string, Transform>
+        ExtractPreservedObjects(
+            Transform canvas)
+    {
+        Dictionary<string, Transform> result =
+            new(StringComparer.Ordinal);
+
+        foreach (string name in PreservedObjectNames)
+        {
+            Transform target =
+                FindDeepChild(
+                    canvas,
+                    name);
+
+            if (target == null)
+                continue;
+
+            result[name] = target;
+
+            if (target.parent != canvas)
+            {
+                Undo.SetTransformParent(
+                    target,
+                    canvas,
+                    $"Preserve {name}");
+            }
+
+            target.gameObject.SetActive(
+                name != "DebugScrollView" &&
+                name != "BattleAnalysisPanel" &&
+                name != "ResetBtn" &&
+                name != "BattleAnalysisToggleButton");
+        }
+
+        return result;
+    }
+
+    private static void RestorePreservedObjects(
+        Transform oldRoot,
+        Transform canvas)
+    {
+        foreach (string name in PreservedObjectNames)
+        {
+            Transform target =
+                FindDeepChild(
+                    oldRoot,
+                    name);
+
+            if (target == null)
+                continue;
+
+            Undo.SetTransformParent(
+                target,
+                canvas,
+                $"Restore {name}");
+        }
+    }
+
+    private static void DestroyExistingHudRoots(
+        Transform canvas)
+    {
+        List<GameObject> roots =
+            new();
+
+        for (int i = 0;
+             i < canvas.childCount;
+             i++)
+        {
+            Transform child =
+                canvas.GetChild(i);
+
+            if (child.name == HudRootName ||
+                child.name.StartsWith(
+                    HudRootName + "_",
+                    StringComparison.Ordinal))
+            {
+                roots.Add(
+                    child.gameObject);
+            }
+        }
+
+        foreach (GameObject root in roots)
+            Undo.DestroyObjectImmediate(root);
+    }
+
+    private static RectTransform MovePreservedRect(
+        IReadOnlyDictionary<string, Transform> preserved,
+        string objectName,
+        Transform newParent)
+    {
+        if (!preserved.TryGetValue(
+                objectName,
+                out Transform target) ||
+            target == null)
+        {
+            return null;
+        }
+
+        Undo.SetTransformParent(
+            target,
+            newParent,
+            $"Move {objectName}");
+
+        target.localScale =
+            Vector3.one;
+
+        return target as RectTransform;
+    }
+
+    private static void ConfigureCanvasScaler(
+        Canvas canvas)
+    {
+        CanvasScaler scaler =
+            canvas.GetComponent<CanvasScaler>();
+
+        if (scaler == null)
+        {
+            scaler =
+                Undo.AddComponent<CanvasScaler>(
+                    canvas.gameObject);
+        }
+
+        Undo.RecordObject(
+            scaler,
+            "Configure Battle Canvas Scaler");
+
+        scaler.uiScaleMode =
+            CanvasScaler.ScaleMode.ScaleWithScreenSize;
+
+        scaler.referenceResolution =
+            new Vector2(1920f, 1080f);
+
+        scaler.screenMatchMode =
+            CanvasScaler.ScreenMatchMode.MatchWidthOrHeight;
+
+        scaler.matchWidthOrHeight = 0.5f;
+        scaler.referencePixelsPerUnit = 100f;
+
+        EditorUtility.SetDirty(scaler);
+    }
+
+    private static Canvas FindBattleCanvas()
+    {
+        GameObject named =
+            GameObject.Find(CanvasName);
+
+        if (named != null &&
+            named.TryGetComponent(
+                out Canvas namedCanvas))
+        {
+            return namedCanvas;
+        }
+
+        Canvas[] canvases =
+            UnityEngine.Object.FindObjectsByType<Canvas>(
+                FindObjectsInactive.Include,
+                FindObjectsSortMode.None);
+
+        foreach (Canvas canvas in canvases)
+        {
+            if (canvas.name == CanvasName)
+                return canvas;
+        }
+
+        return canvases.FirstOrDefault(
+            candidate =>
+                candidate.GetComponentInChildren
+                    <BattleUIManager>(true) != null);
+    }
+
+    private static TMP_FontAsset ResolveSceneFont(
+        Canvas canvas)
+    {
+        TMP_Text[] texts =
+            canvas.GetComponentsInChildren
+                <TMP_Text>(true);
+
+        foreach (TMP_Text text in texts)
+        {
+            if (text != null &&
+                text.font != null)
+            {
+                return text.font;
+            }
+        }
+
+        return TMP_Settings.defaultFontAsset;
+    }
+
+    private static RectTransform CreatePanel(
+        string name,
+        Transform parent,
+        Color color)
+    {
+        RectTransform rect =
+            CreateRect(
+                name,
+                parent);
+
+        Image image =
+            Undo.AddComponent<Image>(
+                rect.gameObject);
+
+        image.color = color;
+        image.raycastTarget = false;
+
+        return rect;
+    }
+
+    private static RectTransform CreateRect(
+        string name,
+        Transform parent)
+    {
+        GameObject gameObject =
+            new(
+                name,
+                typeof(RectTransform));
+
+        Undo.RegisterCreatedObjectUndo(
+            gameObject,
+            $"Create {name}");
+
+        RectTransform rect =
+            gameObject.GetComponent<RectTransform>();
+
+        rect.SetParent(
+            parent,
+            false);
+
+        rect.localScale =
+            Vector3.one;
+
+        return rect;
+    }
+
+    private static TMP_Text CreateText(
+        string name,
+        Transform parent,
+        string value,
+        float fontSize,
+        TextAlignmentOptions alignment,
+        TMP_FontAsset font)
+    {
+        GameObject gameObject =
+            new(
+                name,
+                typeof(RectTransform),
+                typeof(CanvasRenderer),
+                typeof(TextMeshProUGUI));
+
+        Undo.RegisterCreatedObjectUndo(
+            gameObject,
+            $"Create {name}");
+
+        RectTransform rect =
+            gameObject.GetComponent<RectTransform>();
+
+        rect.SetParent(
+            parent,
+            false);
+
+        TextMeshProUGUI text =
+            gameObject.GetComponent<TextMeshProUGUI>();
+
+        text.text = value;
+        text.fontSize = fontSize;
+        text.alignment = alignment;
+        text.richText = true;
+        text.raycastTarget = false;
+        text.color =
+            new Color32(235, 240, 248, 255);
+
+        if (font != null)
+            text.font = font;
+
+        return text;
+    }
+
+    private static Button CreateButton(
+        string name,
+        Transform parent,
+        Vector2 size,
+        TMP_FontAsset font)
+    {
+        GameObject buttonObject =
+            new(
+                name,
+                typeof(RectTransform),
+                typeof(CanvasRenderer),
+                typeof(Image),
+                typeof(Button));
+
+        Undo.RegisterCreatedObjectUndo(
+            buttonObject,
+            $"Create {name}");
+
+        RectTransform rect =
+            buttonObject.GetComponent<RectTransform>();
+
+        rect.SetParent(
+            parent,
+            false);
+
+        rect.sizeDelta = size;
+
+        Image image =
+            buttonObject.GetComponent<Image>();
+
+        image.color =
+            new Color32(35, 50, 70, 245);
+
+        Button button =
+            buttonObject.GetComponent<Button>();
+
+        TMP_Text label =
+            CreateText(
+                "Label",
+                rect,
+                "행동 슬롯",
+                16f,
+                TextAlignmentOptions.Left,
+                font);
+
+        Stretch(label.rectTransform);
+
+        label.rectTransform.offsetMin =
+            new Vector2(12f, 7f);
+
+        label.rectTransform.offsetMax =
+            new Vector2(-12f, -7f);
+
+        label.enableAutoSizing = true;
+        label.fontSizeMin = 11f;
+        label.fontSizeMax = 16f;
+        label.overflowMode =
+            TextOverflowModes.Ellipsis;
+
+        return button;
+    }
+
+    private static void Stretch(
+        RectTransform rect)
+    {
+        if (rect == null)
+            return;
+
+        rect.anchorMin =
+            Vector2.zero;
+
+        rect.anchorMax =
+            Vector2.one;
+
+        rect.pivot =
+            new Vector2(0.5f, 0.5f);
+
+        rect.anchoredPosition =
+            Vector2.zero;
+
+        rect.sizeDelta =
+            Vector2.zero;
+
+        rect.localScale =
+            Vector3.one;
+    }
+
+    private static void SetStretchAnchors(
+        RectTransform rect,
+        Vector2 anchorMin,
+        Vector2 anchorMax,
+        Vector2 offsetMin,
+        Vector2 offsetMax)
+    {
+        if (rect == null)
+            return;
+
+        rect.anchorMin = anchorMin;
+        rect.anchorMax = anchorMax;
+        rect.pivot =
+            new Vector2(0.5f, 0.5f);
+        rect.offsetMin = offsetMin;
+        rect.offsetMax = offsetMax;
+        rect.localScale =
+            Vector3.one;
+    }
+
+    private static Transform FindDeepChild(
+        Transform root,
+        string objectName)
+    {
+        if (root == null)
+            return null;
+
+        if (root.name == objectName)
+            return root;
+
+        for (int i = 0;
+             i < root.childCount;
+             i++)
+        {
+            Transform found =
+                FindDeepChild(
+                    root.GetChild(i),
+                    objectName);
+
+            if (found != null)
+                return found;
+        }
+
+        return null;
+    }
+
+    private static Transform FindDirectChild(
+        Transform root,
+        string objectName)
+    {
+        if (root == null)
+            return null;
+
+        for (int i = 0;
+             i < root.childCount;
+             i++)
+        {
+            Transform child =
+                root.GetChild(i);
+
+            if (child.name == objectName)
+                return child;
+        }
+
+        return null;
+    }
+
+    private static string GetHierarchyPath(
+        Transform target)
+    {
+        if (target == null)
+            return "(null)";
+
+        Stack<string> names =
+            new();
+
+        Transform current = target;
+
+        while (current != null)
+        {
+            names.Push(current.name);
+            current = current.parent;
+        }
+
+        return string.Join(
+            "/",
+            names);
+    }
+
+    private static int CountMissingScriptsInActiveScene()
+    {
+        int count = 0;
+
+        foreach (GameObject gameObject in
+                 GetAllSceneGameObjects())
+        {
+            count +=
+                GameObjectUtility
+                    .GetMonoBehavioursWithMissingScriptCount(
+                        gameObject);
+        }
+
+        return count;
+    }
+
+    private static int RemoveMissingScriptsFromActiveScene()
+    {
+        int removed = 0;
+
+        foreach (GameObject gameObject in
+                 GetAllSceneGameObjects())
+        {
+            int count =
+                GameObjectUtility
+                    .GetMonoBehavioursWithMissingScriptCount(
+                        gameObject);
+
+            if (count <= 0)
+                continue;
+
+            Undo.RegisterCompleteObjectUndo(
+                gameObject,
+                "Remove Missing Scripts");
+
+            removed +=
+                GameObjectUtility
+                    .RemoveMonoBehavioursWithMissingScript(
+                        gameObject);
+        }
+
+        return removed;
+    }
+
+    private static IEnumerable<GameObject>
+        GetAllSceneGameObjects()
+    {
+        Scene scene =
+            SceneManager.GetActiveScene();
+
+        foreach (GameObject root in
+                 scene.GetRootGameObjects())
+        {
+            Transform[] transforms =
+                root.GetComponentsInChildren
+                    <Transform>(true);
+
+            foreach (Transform transform in transforms)
+                yield return transform.gameObject;
+        }
+    }
+
+    private static void CreateSceneBackup(
+        Scene scene)
+    {
+        string backupFolder =
+            "Assets/5. Scenes/_UI_Backups";
+
+        EnsureAssetFolder(
+            backupFolder);
+
+        string safeName =
+            string.IsNullOrWhiteSpace(scene.name)
+                ? "Untitled"
+                : scene.name;
+
+        string backupPath =
+            $"{backupFolder}/" +
+            $"{safeName}_Before_UI_V2_" +
+            $"{DateTime.Now:yyyyMMdd_HHmmss}.unity";
+
+        bool saved =
+            EditorSceneManager.SaveScene(
+                scene,
+                backupPath,
+                saveAsCopy: true);
+
+        if (!saved)
+        {
+            throw new InvalidOperationException(
+                $"Scene 백업 생성에 실패했습니다: {backupPath}");
+        }
+
+        Debug.Log(
+            $"[Project Abyss UI] Scene backup created: {backupPath}");
+    }
+
+    private static void EnsureAssetFolder(
+        string folderPath)
+    {
+        string normalized =
+            folderPath.Replace('\\', '/');
+
+        string[] parts =
+            normalized.Split('/');
+
+        if (parts.Length == 0 ||
+            parts[0] != "Assets")
+        {
+            throw new ArgumentException(
+                "Asset folder must start with Assets/.");
+        }
+
+        string current = "Assets";
+
+        for (int i = 1;
+             i < parts.Length;
+             i++)
+        {
+            string next =
+                $"{current}/{parts[i]}";
+
+            if (!AssetDatabase.IsValidFolder(next))
+            {
+                AssetDatabase.CreateFolder(
+                    current,
+                    parts[i]);
+            }
+
+            current = next;
+        }
+    }
+
+    private static string ToAbsoluteAssetPath(
+        string assetPath)
+    {
+        string projectRoot =
+            Directory.GetParent(
+                Application.dataPath)?.FullName ??
+            string.Empty;
+
+        return Path.GetFullPath(
+            Path.Combine(
+                projectRoot,
+                assetPath));
+    }
+
+    private static void SetSerializedProperty(
+        SerializedObject serialized,
+        string propertyName,
+        bool value)
+    {
+        SerializedProperty property =
+            serialized.FindProperty(propertyName);
+
+        if (property != null)
+            property.boolValue = value;
+    }
+
+    private static void SetSerializedProperty(
+        SerializedObject serialized,
+        string propertyName,
+        int value)
+    {
+        SerializedProperty property =
+            serialized.FindProperty(propertyName);
+
+        if (property != null)
+            property.intValue = value;
+    }
+
+    private static void SetSerializedProperty(
+        SerializedObject serialized,
+        string propertyName,
+        Vector2 value)
+    {
+        SerializedProperty property =
+            serialized.FindProperty(propertyName);
+
+        if (property != null)
+            property.vector2Value = value;
+    }
+}
+
+internal static class ProjectAbyssScriptArchiveUtility
+{
+    public static bool ArchiveLegacyInstallerWithConfirmation(
+        string assetPath)
+    {
+        string absolute =
+            ToAbsoluteAssetPath(assetPath);
+
+        if (!File.Exists(absolute))
+            return false;
+
+        bool confirmed =
+            EditorUtility.DisplayDialog(
+                "Project Abyss",
+                "과거 BattleUiReadabilityInstaller.cs를 " +
+                "컴파일 대상에서 제거하고 .disabled.txt로 보관합니다.\n\n" +
+                assetPath,
+                "비활성 보관",
+                "유지");
+
+        if (!confirmed)
+            return false;
+
+        return ArchiveAndDisable(
+            new[] { assetPath },
+            "LegacyBattleUiInstaller");
+    }
+
+    public static bool ArchiveAndDisable(
+        IReadOnlyList<string> assetPaths,
+        string reason)
+    {
+        if (assetPaths == null ||
+            assetPaths.Count == 0)
+        {
+            return false;
+        }
+
+        string timestamp =
+            DateTime.Now.ToString(
+                "yyyyMMdd_HHmmss");
+
+        string archiveAssetRoot =
+            $"Assets/_ProjectAbyssArchive/" +
+            $"DisabledScripts/{timestamp}";
+
+        string archiveAbsoluteRoot =
+            ToAbsoluteAssetPath(
+                archiveAssetRoot);
+
+        Directory.CreateDirectory(
+            archiveAbsoluteRoot);
+
+        StringBuilder manifest =
+            new();
+
+        manifest.AppendLine(
+            $"PROJECT_ABYSS_DISABLED_SCRIPT_ARCHIVE");
+
+        manifest.AppendLine(
+            $"CREATED: {DateTime.Now:O}");
+
+        manifest.AppendLine(
+            $"REASON: {reason}");
+
+        manifest.AppendLine();
+
+        AssetDatabase.StartAssetEditing();
+
+        try
+        {
+            foreach (string assetPath in assetPaths)
+            {
+                string sourceAbsolute =
+                    ToAbsoluteAssetPath(assetPath);
+
+                if (!File.Exists(sourceAbsolute))
+                    continue;
+
+                string relative =
+                    assetPath.StartsWith(
+                        "Assets/",
+                        StringComparison.Ordinal)
+                        ? assetPath.Substring(
+                            "Assets/".Length)
+                        : Path.GetFileName(assetPath);
+
+                string destination =
+                    Path.Combine(
+                        archiveAbsoluteRoot,
+                        relative + ".disabled.txt");
+
+                Directory.CreateDirectory(
+                    Path.GetDirectoryName(destination) ??
+                    archiveAbsoluteRoot);
+
+                string sourceText =
+                    File.ReadAllText(sourceAbsolute);
+
+                File.WriteAllText(
+                    destination,
+                    "// Disabled by Project Abyss cleanup tool.\n" +
+                    $"// Original asset: {assetPath}\n" +
+                    $"// Archived: {DateTime.Now:O}\n\n" +
+                    sourceText,
+                    new UTF8Encoding(false));
+
+                string metaPath =
+                    sourceAbsolute + ".meta";
+
+                if (File.Exists(metaPath))
+                {
+                    File.Copy(
+                        metaPath,
+                        destination + ".meta.txt",
+                        overwrite: true);
+                }
+
+                manifest.AppendLine(assetPath);
+
+                AssetDatabase.DeleteAsset(
+                    assetPath);
+            }
+        }
+        finally
+        {
+            AssetDatabase.StopAssetEditing();
+            AssetDatabase.Refresh();
+        }
+
+        File.WriteAllText(
+            Path.Combine(
+                archiveAbsoluteRoot,
+                "MANIFEST.txt"),
+            manifest.ToString(),
+            new UTF8Encoding(false));
+
+        AssetDatabase.Refresh();
+
+        Debug.Log(
+            $"[Project Abyss Cleanup] Disabled scripts archived to " +
+            $"{archiveAssetRoot}");
+
+        return true;
+    }
+
+    private static string ToAbsoluteAssetPath(
+        string assetPath)
+    {
+        string projectRoot =
+            Directory.GetParent(
+                Application.dataPath)?.FullName ??
+            string.Empty;
+
+        return Path.GetFullPath(
+            Path.Combine(
+                projectRoot,
+                assetPath));
+    }
+}
+#endif

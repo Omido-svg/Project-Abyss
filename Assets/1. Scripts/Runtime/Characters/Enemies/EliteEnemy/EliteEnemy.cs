@@ -18,6 +18,8 @@ public class EliteEnemy : Enemy, ICharacterAuthoringTarget
 
     public override IReadOnlyList<BodyPart> BodyParts => bodyParts;
 
+    public override bool SupportsLastStand => true;
+
     public bool ApplyCharacterAuthoring(
         CharacterAuthoringBundle bundle)
     {

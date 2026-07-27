@@ -31,14 +31,20 @@ public class CharacterView : MonoBehaviour, ISerializationCallbackReceiver
     [SerializeField] private bool logDebug;
 
     private bool missingAnimatorWarningLogged;
-    private bool missingHitStateWarningLogged;
+    private bool missingHitPlaybackWarningLogged;
 
     public void PlayHit()
     {
         if (animator == null)
             return;
 
-        animator.SetTrigger(HitHash);
+        if (HasAnimatorParameter(
+                HitHash,
+                AnimatorControllerParameterType.Trigger))
+        {
+            animator.SetTrigger(
+                HitHash);
+        }
     }
 
     public void PlayHitRestart()
@@ -65,7 +71,16 @@ public class CharacterView : MonoBehaviour, ISerializationCallbackReceiver
             return;
         }
 
-        animator.ResetTrigger(HitHash);
+        bool hasHitTrigger =
+            HasAnimatorParameter(
+                HitHash,
+                AnimatorControllerParameterType.Trigger);
+
+        if (hasHitTrigger)
+        {
+            animator.ResetTrigger(
+                HitHash);
+        }
 
         if (TryResolveHitStateHash(
                 out int hitStateHash))
@@ -87,18 +102,62 @@ public class CharacterView : MonoBehaviour, ISerializationCallbackReceiver
             return;
         }
 
-        if (!missingHitStateWarningLogged)
+        // State를 직접 찾지 못해도 Hit Trigger가 존재하면 정상 구성이다.
+        // Any State 또는 Sub-State Machine 전이가 Trigger를 소비할 수 있으므로
+        // 이 경로는 경고가 아니라 정상적인 피격 재생 방식으로 취급한다.
+        if (hasHitTrigger)
         {
-            missingHitStateWarningLogged = true;
+            animator.SetTrigger(
+                HitHash);
+
+            if (logDebug)
+            {
+                Debug.Log(
+                    $"{name} Hit Trigger 재생 : Hit",
+                    this);
+            }
+
+            return;
+        }
+
+        if (!missingHitPlaybackWarningLogged)
+        {
+            missingHitPlaybackWarningLogged = true;
 
             Debug.LogWarning(
-                $"{name} Animator에 Hit State를 찾을 수 없음 : " +
-                $"{hitStateName} / Trigger 방식으로 대체 실행 " +
+                $"{name} Animator에서 Hit 재생 경로를 찾을 수 없습니다. " +
+                $"State={hitStateName}, Trigger=Hit 모두 없음 " +
                 "(이 경고는 한 번만 출력됩니다.)",
                 this);
         }
+    }
 
-        animator.SetTrigger(HitHash);
+    private bool HasAnimatorParameter(
+        int parameterHash,
+        AnimatorControllerParameterType expectedType)
+    {
+        if (animator == null)
+            return false;
+
+        AnimatorControllerParameter[] parameters =
+            animator.parameters;
+
+        if (parameters == null)
+            return false;
+
+        foreach (AnimatorControllerParameter parameter
+                 in parameters)
+        {
+            if (parameter.nameHash ==
+                parameterHash &&
+                parameter.type ==
+                expectedType)
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private bool TryResolveHitStateHash(

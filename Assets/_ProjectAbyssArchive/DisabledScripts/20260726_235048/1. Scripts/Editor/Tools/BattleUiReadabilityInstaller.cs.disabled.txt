@@ -1,0 +1,898 @@
+// Disabled by Project Abyss cleanup tool.
+// Original asset: Assets/1. Scripts/Editor/Tools/BattleUiReadabilityInstaller.cs
+// Archived: 2026-07-26T23:50:48.6935058+09:00
+
+#if UNITY_EDITOR
+using System;
+using TMPro;
+using UnityEditor;
+using UnityEditor.SceneManagement;
+using UnityEngine;
+using UnityEngine.SceneManagement;
+using UnityEngine.UI;
+
+/// <summary>
+/// CameraTest의 평면적인 전투 UI를 사용자 중심 HUD로 재배치한다.
+/// 기존 핵심 컴포넌트와 버튼은 삭제하지 않고 새 레이아웃 아래로 이동한다.
+/// </summary>
+public static class BattleUiReadabilityInstaller
+{
+    private const string MenuPath =
+        "Tools/Project Abyss/Combat Rules 2026-07-26/" +
+        "Rebuild Readable Battle UI";
+
+    [MenuItem(MenuPath, false, 2100)]
+    public static void Rebuild()
+    {
+        Canvas canvas =
+            FindCanvas();
+
+        if (canvas == null)
+        {
+            EditorUtility.DisplayDialog(
+                "Project Abyss",
+                "현재 Scene에서 Battle UI Canvas를 찾지 못했습니다.",
+                "확인");
+            return;
+        }
+
+        Undo.RegisterFullObjectHierarchyUndo(
+            canvas.gameObject,
+            "Rebuild Project Abyss Battle UI");
+
+        Transform oldHud =
+            canvas.transform.Find("ReadableBattleHUD");
+
+        if (oldHud != null)
+        {
+            RestoreOriginalObjects(
+                oldHud,
+                canvas.transform);
+
+            Undo.DestroyObjectImmediate(
+                oldHud.gameObject);
+        }
+
+        RectTransform root =
+            CreateRect(
+                "ReadableBattleHUD",
+                canvas.transform);
+
+        Stretch(root);
+
+        RectTransform topBar =
+            CreatePanel(
+                "TopBar",
+                root,
+                new Color32(16, 21, 31, 235));
+
+        SetAnchors(
+            topBar,
+            new Vector2(0f, 1f),
+            new Vector2(1f, 1f),
+            new Vector2(0.5f, 1f),
+            new Vector2(0f, -12f),
+            new Vector2(-24f, 112f));
+
+        RectTransform playerPanel =
+            CreatePanel(
+                "PlayerPanel",
+                root,
+                new Color32(18, 25, 38, 225));
+
+        SetAnchors(
+            playerPanel,
+            new Vector2(0f, 0.5f),
+            new Vector2(0f, 0.5f),
+            new Vector2(0f, 0.5f),
+            new Vector2(14f, 18f),
+            new Vector2(360f, 600f));
+
+        RectTransform enemyPanel =
+            CreatePanel(
+                "EnemyPanel",
+                root,
+                new Color32(38, 22, 25, 225));
+
+        SetAnchors(
+            enemyPanel,
+            new Vector2(1f, 0.5f),
+            new Vector2(1f, 0.5f),
+            new Vector2(1f, 0.5f),
+            new Vector2(-14f, 18f),
+            new Vector2(360f, 600f));
+
+        RectTransform planPanel =
+            CreatePanel(
+                "ActionPlanPanel",
+                root,
+                new Color32(18, 25, 38, 238));
+
+        SetAnchors(
+            planPanel,
+            new Vector2(0.5f, 0f),
+            new Vector2(0.5f, 0f),
+            new Vector2(0.5f, 0f),
+            new Vector2(0f, 12f),
+            new Vector2(760f, 250f));
+
+        RectTransform overlay =
+            CreateRect(
+                "OverlayLayer",
+                root);
+
+        Stretch(overlay);
+        overlay.SetAsLastSibling();
+
+        TMP_Text turnText =
+            CreateText(
+                "TurnPhaseText",
+                topBar,
+                "TURN 0\n전투 준비",
+                24f,
+                TextAlignmentOptions.Center);
+
+        SetAnchors(
+            turnText.rectTransform,
+            new Vector2(0f, 0f),
+            new Vector2(0f, 1f),
+            new Vector2(0f, 0.5f),
+            new Vector2(18f, 0f),
+            new Vector2(160f, -18f));
+
+        TMP_Text momentumText =
+            CreateText(
+                "MomentumSummaryText",
+                topBar,
+                "기세 0\n균형 · 피해 ×1",
+                22f,
+                TextAlignmentOptions.Center);
+
+        SetAnchors(
+            momentumText.rectTransform,
+            new Vector2(0.5f, 0f),
+            new Vector2(0.5f, 1f),
+            new Vector2(0.5f, 0.5f),
+            new Vector2(0f, 0f),
+            new Vector2(240f, -18f));
+
+        TMP_Text bossPhaseText =
+            CreateText(
+                "BossPhaseText",
+                topBar,
+                "적 행동\n기본 패턴",
+                20f,
+                TextAlignmentOptions.Center);
+
+        SetAnchors(
+            bossPhaseText.rectTransform,
+            new Vector2(1f, 0f),
+            new Vector2(1f, 1f),
+            new Vector2(1f, 0.5f),
+            new Vector2(-18f, 0f),
+            new Vector2(180f, -18f));
+
+        TMP_Text playerTitle =
+            CreateText(
+                "PlayerTitle",
+                playerPanel,
+                "PLAYER · 부위 상태",
+                22f,
+                TextAlignmentOptions.Center);
+
+        SetAnchors(
+            playerTitle.rectTransform,
+            new Vector2(0f, 1f),
+            new Vector2(1f, 1f),
+            new Vector2(0.5f, 1f),
+            new Vector2(0f, -12f),
+            new Vector2(-24f, 34f));
+
+        TMP_Text enemyTitle =
+            CreateText(
+                "EnemyTitle",
+                enemyPanel,
+                "ENEMY · 조준 부위",
+                22f,
+                TextAlignmentOptions.Center);
+
+        SetAnchors(
+            enemyTitle.rectTransform,
+            new Vector2(0f, 1f),
+            new Vector2(1f, 1f),
+            new Vector2(0.5f, 1f),
+            new Vector2(0f, -12f),
+            new Vector2(-24f, 34f));
+
+        MoveAndLayout(
+            canvas.transform,
+            "Player Body Parts",
+            playerPanel,
+            new Vector2(14f, 230f),
+            new Vector2(-14f, -54f));
+
+        MoveAndLayout(
+            canvas.transform,
+            "Enemy Body Parts",
+            enemyPanel,
+            new Vector2(14f, 230f),
+            new Vector2(-14f, -54f));
+
+        BattleStatusListUI playerStatus =
+            CreateStatusList(
+                "PlayerStatusList",
+                playerPanel,
+                "현재 버프 / 디버프",
+                new Vector2(14f, 14f),
+                new Vector2(-14f, 210f));
+
+        BattleStatusListUI enemyStatus =
+            CreateStatusList(
+                "EnemyStatusList",
+                enemyPanel,
+                "현재 버프 / 디버프",
+                new Vector2(14f, 14f),
+                new Vector2(-14f, 210f));
+
+        BattleManager battleManager =
+            UnityEngine.Object.FindFirstObjectByType<BattleManager>(
+                FindObjectsInactive.Include);
+
+        BattleUIManager battleUIManager =
+            UnityEngine.Object.FindFirstObjectByType<BattleUIManager>(
+                FindObjectsInactive.Include);
+
+        CreateSlotBoard(
+            planPanel,
+            battleManager,
+            battleUIManager);
+
+        MoveSkillPanel(
+            canvas.transform,
+            overlay);
+
+        MoveTopBarControls(
+            canvas.transform,
+            topBar);
+
+        MoveOverlay(
+            canvas.transform,
+            overlay,
+            "BattleActionAnnouncePanel");
+
+        MoveOverlay(
+            canvas.transform,
+            overlay,
+            "TargetArrowUIObject");
+
+        MoveDebugObjects(
+            canvas.transform,
+            root);
+
+        BattleReadableHudUI hud =
+            root.gameObject.AddComponent<BattleReadableHudUI>();
+
+        hud.Configure(
+            battleManager,
+            turnText,
+            momentumText,
+            bossPhaseText,
+            playerStatus,
+            enemyStatus);
+
+        EditorSceneManager.MarkSceneDirty(
+            SceneManager.GetActiveScene());
+
+        Selection.activeObject = root.gameObject;
+
+        EditorUtility.DisplayDialog(
+            "Project Abyss",
+            "ReadableBattleHUD를 생성했습니다.\n" +
+            "Scene을 저장한 뒤 Play Mode에서 확인하세요.",
+            "확인");
+    }
+
+    private static Canvas FindCanvas()
+    {
+        GameObject named =
+            GameObject.Find("Battle UI Canvas");
+
+        if (named != null &&
+            named.TryGetComponent(
+                out Canvas namedCanvas))
+        {
+            return namedCanvas;
+        }
+
+        return UnityEngine.Object.FindFirstObjectByType<Canvas>(
+            FindObjectsInactive.Include);
+    }
+
+    private static void RestoreOriginalObjects(
+        Transform oldHud,
+        Transform canvas)
+    {
+        string[] originalNames =
+        {
+            "Player Body Parts",
+            "Enemy Body Parts",
+            "StartBtn",
+            "MomentumBar",
+            "TargetArrowUIObject",
+            "ResetBtn",
+            "SkillSelectPanel",
+            "BattleActionAnnouncePanel",
+            "DebugScrollView",
+            "BattleAnalysisPanel",
+            "BattleAnalysisToggleButton",
+            "PlayerEnergyPanel"
+        };
+
+        foreach (string objectName in originalNames)
+        {
+            Transform target =
+                FindDeepChild(
+                    oldHud,
+                    objectName);
+
+            if (target == null)
+                continue;
+
+            Undo.SetTransformParent(
+                target,
+                canvas,
+                $"Restore {objectName}");
+
+            target.gameObject.SetActive(
+                objectName != "BattleAnalysisPanel");
+        }
+    }
+
+    private static void MoveTopBarControls(
+        Transform canvas,
+        RectTransform topBar)
+    {
+        MoveWithRect(
+            canvas,
+            "MomentumBar",
+            topBar,
+            new Vector2(0.5f, 0f),
+            new Vector2(0.5f, 0f),
+            new Vector2(0.5f, 0f),
+            new Vector2(0f, 8f),
+            new Vector2(440f, 20f));
+
+        MoveWithRect(
+            canvas,
+            "PlayerEnergyPanel",
+            topBar,
+            new Vector2(0f, 0f),
+            new Vector2(0f, 0f),
+            new Vector2(0f, 0f),
+            new Vector2(184f, 10f),
+            new Vector2(200f, 64f));
+
+        MoveWithRect(
+            canvas,
+            "StartBtn",
+            topBar,
+            new Vector2(1f, 0f),
+            new Vector2(1f, 0f),
+            new Vector2(1f, 0f),
+            new Vector2(-310f, 12f),
+            new Vector2(92f, 40f));
+
+        MoveWithRect(
+            canvas,
+            "ResetBtn",
+            topBar,
+            new Vector2(1f, 0f),
+            new Vector2(1f, 0f),
+            new Vector2(1f, 0f),
+            new Vector2(-210f, 12f),
+            new Vector2(92f, 40f));
+
+        MoveWithRect(
+            canvas,
+            "BattleAnalysisToggleButton",
+            topBar,
+            new Vector2(1f, 0f),
+            new Vector2(1f, 0f),
+            new Vector2(1f, 0f),
+            new Vector2(-110f, 12f),
+            new Vector2(92f, 40f));
+    }
+
+    private static void MoveSkillPanel(
+        Transform canvas,
+        RectTransform overlay)
+    {
+        Transform target =
+            FindDeepChild(
+                canvas,
+                "SkillSelectPanel");
+
+        if (target == null)
+            return;
+
+        Undo.SetTransformParent(
+            target,
+            overlay,
+            "Move Skill Select Panel");
+
+        RectTransform rect =
+            target as RectTransform;
+
+        if (rect == null)
+            return;
+
+        SetAnchors(
+            rect,
+            new Vector2(0.5f, 0.5f),
+            new Vector2(0.5f, 0.5f),
+            new Vector2(0.5f, 0.5f),
+            Vector2.zero,
+            new Vector2(640f, 520f));
+    }
+
+    private static void MoveOverlay(
+        Transform canvas,
+        RectTransform overlay,
+        string objectName)
+    {
+        Transform target =
+            FindDeepChild(
+                canvas,
+                objectName);
+
+        if (target != null)
+        {
+            Undo.SetTransformParent(
+                target,
+                overlay,
+                $"Move {objectName}");
+        }
+    }
+
+    private static void MoveDebugObjects(
+        Transform canvas,
+        RectTransform root)
+    {
+        RectTransform debugLayer =
+            CreateRect(
+                "DebugLayer",
+                root);
+
+        Stretch(debugLayer);
+
+        string[] names =
+        {
+            "DebugScrollView",
+            "BattleAnalysisPanel"
+        };
+
+        foreach (string name in names)
+        {
+            Transform target =
+                FindDeepChild(
+                    canvas,
+                    name);
+
+            if (target == null)
+                continue;
+
+            Undo.SetTransformParent(
+                target,
+                debugLayer,
+                $"Move {name}");
+
+            target.gameObject.SetActive(false);
+        }
+
+        debugLayer.gameObject.SetActive(false);
+    }
+
+    private static void CreateSlotBoard(
+        RectTransform parent,
+        BattleManager battleManager,
+        BattleUIManager battleUIManager)
+    {
+        TMP_Text title =
+            CreateText(
+                "ActionPlanTitle",
+                parent,
+                "이번 턴 행동 슬롯 · 클릭해서 편집",
+                22f,
+                TextAlignmentOptions.Left);
+
+        SetAnchors(
+            title.rectTransform,
+            new Vector2(0f, 1f),
+            new Vector2(1f, 1f),
+            new Vector2(0.5f, 1f),
+            new Vector2(18f, -14f),
+            new Vector2(-36f, 34f));
+
+        RectTransform content =
+            CreateRect(
+                "ConfiguredSlotContent",
+                parent);
+
+        SetAnchors(
+            content,
+            new Vector2(0f, 0f),
+            new Vector2(1f, 1f),
+            new Vector2(0.5f, 0.5f),
+            new Vector2(18f, 16f),
+            new Vector2(-36f, -60f));
+
+        VerticalLayoutGroup layout =
+            content.gameObject.AddComponent<VerticalLayoutGroup>();
+
+        layout.spacing = 6f;
+        layout.padding =
+            new RectOffset(0, 0, 0, 0);
+        layout.childControlWidth = true;
+        layout.childControlHeight = false;
+        layout.childForceExpandWidth = true;
+        layout.childForceExpandHeight = false;
+
+        Button template =
+            CreateButton(
+                "ConfiguredSlotTemplate",
+                content,
+                new Vector2(680f, 66f));
+
+        template.gameObject.SetActive(false);
+
+        TMP_Text emptyText =
+            CreateText(
+                "EmptySlotText",
+                content,
+                "사용 가능한 행동 슬롯이 없습니다.",
+                17f,
+                TextAlignmentOptions.Center);
+
+        BattleConfiguredSlotBoardUI board =
+            parent.gameObject.AddComponent<BattleConfiguredSlotBoardUI>();
+
+        board.Configure(
+            battleManager,
+            battleUIManager,
+            content,
+            template,
+            emptyText);
+    }
+
+    private static BattleStatusListUI CreateStatusList(
+        string objectName,
+        RectTransform parent,
+        string titleText,
+        Vector2 offsetMin,
+        Vector2 offsetMax)
+    {
+        RectTransform panel =
+            CreatePanel(
+                objectName,
+                parent,
+                new Color32(10, 14, 22, 180));
+
+        panel.anchorMin = Vector2.zero;
+        panel.anchorMax = Vector2.one;
+        panel.offsetMin = offsetMin;
+        panel.offsetMax = offsetMax;
+
+        TMP_Text title =
+            CreateText(
+                "Title",
+                panel,
+                titleText,
+                18f,
+                TextAlignmentOptions.Left);
+
+        SetAnchors(
+            title.rectTransform,
+            new Vector2(0f, 1f),
+            new Vector2(1f, 1f),
+            new Vector2(0.5f, 1f),
+            new Vector2(10f, -8f),
+            new Vector2(-20f, 28f));
+
+        RectTransform content =
+            CreateRect(
+                "Content",
+                panel);
+
+        content.anchorMin = Vector2.zero;
+        content.anchorMax = Vector2.one;
+        content.offsetMin = new Vector2(8f, 8f);
+        content.offsetMax = new Vector2(-8f, -42f);
+
+        VerticalLayoutGroup layout =
+            content.gameObject.AddComponent<VerticalLayoutGroup>();
+
+        layout.spacing = 4f;
+        layout.childControlWidth = true;
+        layout.childControlHeight = false;
+        layout.childForceExpandWidth = true;
+        layout.childForceExpandHeight = false;
+
+        RectTransform rowRect =
+            CreatePanel(
+                "StatusRowTemplate",
+                content,
+                new Color32(32, 40, 54, 220));
+
+        rowRect.sizeDelta = new Vector2(300f, 54f);
+
+        TMP_Text rowText =
+            CreateText(
+                "Label",
+                rowRect,
+                "상태",
+                15f,
+                TextAlignmentOptions.Left);
+
+        Stretch(rowText.rectTransform);
+        rowText.rectTransform.offsetMin =
+            new Vector2(10f, 4f);
+        rowText.rectTransform.offsetMax =
+            new Vector2(-10f, -4f);
+
+        BattleStatusRowUI row =
+            rowRect.gameObject.AddComponent<BattleStatusRowUI>();
+
+        row.Configure(null, rowText);
+        rowRect.gameObject.SetActive(false);
+
+        BattleStatusListUI list =
+            panel.gameObject.AddComponent<BattleStatusListUI>();
+
+        list.Configure(null, content, row);
+        return list;
+    }
+
+    private static RectTransform CreatePanel(
+        string name,
+        Transform parent,
+        Color color)
+    {
+        RectTransform rect =
+            CreateRect(
+                name,
+                parent);
+
+        Image image =
+            rect.gameObject.AddComponent<Image>();
+
+        image.color = color;
+        image.raycastTarget = false;
+
+        return rect;
+    }
+
+    private static RectTransform CreateRect(
+        string name,
+        Transform parent)
+    {
+        GameObject gameObject =
+            new GameObject(
+                name,
+                typeof(RectTransform));
+
+        Undo.RegisterCreatedObjectUndo(
+            gameObject,
+            $"Create {name}");
+
+        RectTransform rect =
+            gameObject.GetComponent<RectTransform>();
+
+        rect.SetParent(
+            parent,
+            false);
+
+        return rect;
+    }
+
+    private static TMP_Text CreateText(
+        string name,
+        Transform parent,
+        string value,
+        float fontSize,
+        TextAlignmentOptions alignment)
+    {
+        GameObject gameObject =
+            new GameObject(
+                name,
+                typeof(RectTransform),
+                typeof(CanvasRenderer),
+                typeof(TextMeshProUGUI));
+
+        Undo.RegisterCreatedObjectUndo(
+            gameObject,
+            $"Create {name}");
+
+        RectTransform rect =
+            gameObject.GetComponent<RectTransform>();
+
+        rect.SetParent(
+            parent,
+            false);
+
+        TextMeshProUGUI text =
+            gameObject.GetComponent<TextMeshProUGUI>();
+
+        text.text = value;
+        text.fontSize = fontSize;
+        text.alignment = alignment;
+        text.enableWordWrapping = true;
+        text.raycastTarget = false;
+
+        return text;
+    }
+
+    private static Button CreateButton(
+        string name,
+        Transform parent,
+        Vector2 size)
+    {
+        GameObject buttonObject =
+            new GameObject(
+                name,
+                typeof(RectTransform),
+                typeof(CanvasRenderer),
+                typeof(Image),
+                typeof(Button));
+
+        Undo.RegisterCreatedObjectUndo(
+            buttonObject,
+            $"Create {name}");
+
+        RectTransform rect =
+            buttonObject.GetComponent<RectTransform>();
+
+        rect.SetParent(parent, false);
+        rect.sizeDelta = size;
+
+        Image image =
+            buttonObject.GetComponent<Image>();
+
+        image.color =
+            new Color32(35, 47, 66, 245);
+
+        Button button =
+            buttonObject.GetComponent<Button>();
+
+        TMP_Text label =
+            CreateText(
+                "Label",
+                rect,
+                "행동 슬롯",
+                16f,
+                TextAlignmentOptions.Left);
+
+        Stretch(label.rectTransform);
+        label.rectTransform.offsetMin =
+            new Vector2(12f, 6f);
+        label.rectTransform.offsetMax =
+            new Vector2(-12f, -6f);
+
+        return button;
+    }
+
+    private static void MoveAndLayout(
+        Transform canvas,
+        string objectName,
+        RectTransform parent,
+        Vector2 offsetMin,
+        Vector2 offsetMax)
+    {
+        Transform target =
+            FindDeepChild(
+                canvas,
+                objectName);
+
+        if (target == null)
+            return;
+
+        Undo.SetTransformParent(
+            target,
+            parent,
+            $"Move {objectName}");
+
+        if (target is not RectTransform rect)
+            return;
+
+        rect.anchorMin = Vector2.zero;
+        rect.anchorMax = Vector2.one;
+        rect.offsetMin = offsetMin;
+        rect.offsetMax = offsetMax;
+    }
+
+    private static void MoveWithRect(
+        Transform canvas,
+        string objectName,
+        RectTransform parent,
+        Vector2 anchorMin,
+        Vector2 anchorMax,
+        Vector2 pivot,
+        Vector2 position,
+        Vector2 size)
+    {
+        Transform target =
+            FindDeepChild(
+                canvas,
+                objectName);
+
+        if (target == null)
+            return;
+
+        Undo.SetTransformParent(
+            target,
+            parent,
+            $"Move {objectName}");
+
+        if (target is RectTransform rect)
+        {
+            SetAnchors(
+                rect,
+                anchorMin,
+                anchorMax,
+                pivot,
+                position,
+                size);
+        }
+    }
+
+    private static Transform FindDeepChild(
+        Transform root,
+        string objectName)
+    {
+        if (root == null)
+            return null;
+
+        if (root.name == objectName)
+            return root;
+
+        for (int i = 0;
+             i < root.childCount;
+             i++)
+        {
+            Transform found =
+                FindDeepChild(
+                    root.GetChild(i),
+                    objectName);
+
+            if (found != null)
+                return found;
+        }
+
+        return null;
+    }
+
+    private static void Stretch(
+        RectTransform rect)
+    {
+        rect.anchorMin = Vector2.zero;
+        rect.anchorMax = Vector2.one;
+        rect.pivot = new Vector2(0.5f, 0.5f);
+        rect.anchoredPosition = Vector2.zero;
+        rect.sizeDelta = Vector2.zero;
+    }
+
+    private static void SetAnchors(
+        RectTransform rect,
+        Vector2 anchorMin,
+        Vector2 anchorMax,
+        Vector2 pivot,
+        Vector2 position,
+        Vector2 size)
+    {
+        rect.anchorMin = anchorMin;
+        rect.anchorMax = anchorMax;
+        rect.pivot = pivot;
+        rect.anchoredPosition = position;
+        rect.sizeDelta = size;
+    }
+}
+#endif

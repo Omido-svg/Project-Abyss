@@ -1,0 +1,8 @@
+PROJECT_ABYSS_FINAL_BATTLE_UI_APPLIED
+AppliedAt: 2026-07-27T03:15:51.3245203+09:00
+Scene: Assets/5. Scenes/CameraTest.unity
+TargetArrowUI: reused
+ClashOverview: horizontal left-to-right
+SkillPanel: four animated drawers
+CharacterDetail: camera-only front focus
+WorldEnemyPlate: name/currentHP/maxHP

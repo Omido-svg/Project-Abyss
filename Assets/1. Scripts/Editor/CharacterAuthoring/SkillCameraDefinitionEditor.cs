@@ -48,7 +48,7 @@ public sealed class SkillCameraDefinitionEditor :
     {
         serializedObject.Update();
 
-        DrawHeader();
+        DrawCameraHelpHeader();
         DrawShotTimeline();
         DrawImpactPulseSection();
         DrawReturnSection();
@@ -56,7 +56,7 @@ public sealed class SkillCameraDefinitionEditor :
         serializedObject.ApplyModifiedProperties();
     }
 
-    private void DrawHeader()
+    private void DrawCameraHelpHeader()
     {
         EditorGUILayout.HelpBox(
             "Shot은 카메라의 위치·회전과 구도 전환을 담당합니다.\n" +

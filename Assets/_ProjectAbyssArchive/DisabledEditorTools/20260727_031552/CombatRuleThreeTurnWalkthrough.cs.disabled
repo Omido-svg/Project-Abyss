@@ -1,0 +1,212 @@
+#if UNITY_EDITOR
+using System.IO;
+using System.Text;
+using UnityEditor;
+using UnityEngine;
+
+public static class CombatRuleThreeTurnWalkthrough
+{
+    private const string MenuPath =
+        "Tools/Project Abyss/Combat Rules 2026-07-26/" +
+        "Run 3-Turn Rule Walkthrough";
+
+    private const string ReportDirectory =
+        "Assets/ProjectAbyssReports";
+
+    [MenuItem(MenuPath, false, 2120)]
+    public static void Run()
+    {
+        int momentum = 0;
+        StringBuilder report = new();
+
+        report.AppendLine("PROJECT ABYSS — 3 TURN RULE WALKTHROUGH");
+        report.AppendLine();
+
+        report.AppendLine("[TURN 1]");
+        Shift(ref momentum, -5, report, "Boss duel attack #1");
+        Shift(ref momentum, -5, report, "Boss duel attack #2");
+        Shift(ref momentum, -25, report, "Boss Duel-vs-Duel majority push");
+        Shift(ref momentum, -5, report, "Boss attack wins");
+        Shift(ref momentum, +5, report, "Player defense wins: damage 0");
+        Shift(ref momentum, -5, report, "Boss attack wins");
+        Shift(ref momentum, -5, report, "Boss remaining attack");
+        Shift(ref momentum, -5, report, "Boss paired attack");
+        Shift(ref momentum, -5, report, "Boss paired attack");
+        Shift(ref momentum, -5, report, "Boss remaining attack; remaining defense vanishes");
+        Shift(ref momentum, -5, report, "Unaccepted duel hit #1; no duel effect");
+        Shift(ref momentum, -5, report, "Unaccepted duel hit #2; no duel effect");
+        Shift(ref momentum, -5, report, "Boss overwhelm-gated break hit");
+        AssertValue(momentum, -75, "Turn 1 momentum");
+        report.AppendLine(
+            "Part result: weakened at HP 1, global debuff, then enemy-gated break; only linked slot disabled.");
+        report.AppendLine();
+
+        report.AppendLine("[TURN 2]");
+        for (int i = 0; i < 4; i++)
+            Shift(ref momentum, +5, report, $"Player 4-roll duel hit #{i + 1}");
+
+        Shift(ref momentum, +25, report, "Player Duel-vs-Duel majority push");
+        Shift(ref momentum, +5, report, "Player attack wins");
+        Shift(ref momentum, -5, report, "Player defense loses: damage = judgment gap 2");
+        Shift(ref momentum, +5, report, "Player attack wins");
+        Shift(ref momentum, +5, report, "Player remaining attack");
+
+        for (int i = 0; i < 4; i++)
+            Shift(ref momentum, +5, report, $"Player one-sided attack #{i + 1}");
+
+        AssertValue(momentum, 0, "Turn 2 momentum");
+        report.AppendLine(
+            "Phase result: boss skill pool/slot count changed; 4-roll penalty applied.");
+        report.AppendLine();
+
+        report.AppendLine("[TURN 3]");
+        Shift(ref momentum, +5, report, "Player duel hit #1");
+        Shift(ref momentum, +5, report, "Player duel hit #2");
+        Shift(ref momentum, +25, report, "Player duel majority push");
+
+        for (int i = 0; i < 4; i++)
+            Shift(ref momentum, +5, report, $"Player normal hit #{i + 1}");
+
+        int bossPartHp = 30;
+        int[] powers = { 10, 11, 8, 13 };
+
+        for (int i = 0; i < powers.Length; i++)
+        {
+            int damage =
+                AttackDamage(
+                    powers[i],
+                    momentum);
+
+            if (i < powers.Length - 1)
+                bossPartHp = Mathf.Max(1, bossPartHp - damage);
+            else if (bossPartHp == 1)
+                bossPartHp = 0;
+
+            report.AppendLine(
+                $"Breaker roll {i + 1}: pure={powers[i]}, " +
+                $"momentumBefore={momentum}, damage={damage}, partHP={bossPartHp}");
+
+            Shift(
+                ref momentum,
+                +5,
+                report,
+                $"Player breaker hit #{i + 1}");
+        }
+
+        AssertValue(momentum, 75, "Momentum before boss retaliation");
+        AssertValue(bossPartHp, 0, "Boss part break");
+
+        int firstBossDamage =
+            AttackDamage(
+                15,
+                -momentum);
+
+        Shift(
+            ref momentum,
+            -10,
+            report,
+            "Elite boss Last Stand hit");
+
+        int secondBossDamage =
+            AttackDamage(
+                14,
+                -momentum);
+
+        Shift(
+            ref momentum,
+            -5,
+            report,
+            "Boss hit after leaving Last Stand");
+
+        AssertValue(firstBossDamage, 7, "First boss damage");
+        AssertValue(secondBossDamage, 7, "Second boss damage");
+        AssertValue(momentum, 60, "Turn 3 momentum");
+
+        report.AppendLine();
+        report.AppendLine("[FORMULA CHECK]");
+        report.AppendLine(
+            "Attack damage = Floor(pure roll × momentum multiplier), minimum 1.");
+        report.AppendLine(
+            "Defense loss damage = Max(1, opponent judgment - own judgment).");
+        report.AppendLine(
+            "Speed/judgment bonuses never enter attack damage.");
+        report.AppendLine(
+            "Only paired exchanges count toward clash majority.");
+
+        Directory.CreateDirectory(ReportDirectory);
+
+        string path =
+            $"{ReportDirectory}/CombatRule_3Turn_Walkthrough.txt";
+
+        File.WriteAllText(
+            path,
+            report.ToString(),
+            Encoding.UTF8);
+
+        AssetDatabase.Refresh();
+        Debug.Log(report.ToString());
+
+        Object reportAsset =
+            AssetDatabase.LoadAssetAtPath<Object>(path);
+
+        if (reportAsset != null)
+        {
+            Selection.activeObject = reportAsset;
+            EditorGUIUtility.PingObject(reportAsset);
+        }
+
+        EditorUtility.DisplayDialog(
+            "Project Abyss",
+            "3턴 규칙 워크스루가 완료되었습니다.\n" +
+            $"최종 기세: {momentum}\n보고서: {path}",
+            "확인");
+    }
+
+    private static int AttackDamage(
+        int purePower,
+        int attackerPerspectiveMomentum)
+    {
+        float multiplier;
+
+        if (attackerPerspectiveMomentum >= 70)
+            multiplier = 2f;
+        else if (attackerPerspectiveMomentum <= -30)
+            multiplier = 0.5f;
+        else
+            multiplier = 1f;
+
+        return Mathf.Max(
+            1,
+            Mathf.FloorToInt(
+                purePower * multiplier));
+    }
+
+    private static void Shift(
+        ref int momentum,
+        int delta,
+        StringBuilder report,
+        string reason)
+    {
+        int before = momentum;
+        momentum = Mathf.Clamp(
+            momentum + delta,
+            -100,
+            100);
+
+        report.AppendLine(
+            $"{before,4} {delta,4} -> {momentum,4} : {reason}");
+    }
+
+    private static void AssertValue(
+        int actual,
+        int expected,
+        string label)
+    {
+        if (actual != expected)
+        {
+            throw new System.InvalidOperationException(
+                $"{label}: expected {expected}, actual {actual}");
+        }
+    }
+}
+#endif

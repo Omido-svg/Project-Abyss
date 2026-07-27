@@ -68,7 +68,9 @@ public class SkillEffectContext
             damageContext,
             killContext,
             useCountThisTurn,
+            damageContext?.Target ??
             action?.Target,
+            damageContext?.TargetPart ??
             action?.TargetPart)
     {
     }

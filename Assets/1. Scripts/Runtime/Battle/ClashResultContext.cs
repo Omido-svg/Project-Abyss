@@ -36,6 +36,10 @@ public class ClashResultContext
     public List<int> HitDamages = new();
     public List<DamageContext> DamageContexts = new();
 
+    public List<DamageContext>
+        SecondaryDamageContexts =
+            new List<DamageContext>();
+
     public DamageContext DamageContext;
     public DamageResult DamageResult;
     public DamageEventResult DamageEventResult;
@@ -57,7 +61,7 @@ public class ClashResultContext
     public int TargetCharacterHpBefore;
     public int TargetCharacterHpAfter;
 
-    public int TotalDamage
+    public int PrimaryDamage
     {
         get
         {
@@ -69,4 +73,28 @@ public class ClashResultContext
             return total;
         }
     }
+
+    public int AttackWeightDamage
+    {
+        get
+        {
+            int total = 0;
+
+            if (SecondaryDamageContexts == null)
+                return total;
+
+            foreach (DamageContext context
+                     in SecondaryDamageContexts)
+            {
+                total +=
+                    context?.GetDisplayDamage() ?? 0;
+            }
+
+            return total;
+        }
+    }
+
+    public int TotalDamage =>
+        PrimaryDamage +
+        AttackWeightDamage;
 }

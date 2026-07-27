@@ -6,22 +6,21 @@ public sealed class BattleRuleSettings
 {
     public MomentumRuleSettings Momentum = new();
     public ClashRuleSettings Clash = new();
+    public EnergyRuleSettings Energy = new();
     public PrestigeRuleSettings Prestige = new();
 
     [Header("Legacy Compatibility")]
-    [Tooltip(
-        "공격력/방어력/피해 배율 기반의 기존 수치 파이프라인을 유지할 때만 켭니다. " +
-        "새 기세 바 설계에서는 꺼진 상태가 표준입니다.")]
     public bool UseLegacyAttackDefenseStats;
 
     public void Normalize()
     {
         Momentum ??= new MomentumRuleSettings();
         Clash ??= new ClashRuleSettings();
+        Energy ??= new EnergyRuleSettings();
         Prestige ??= new PrestigeRuleSettings();
-
         Momentum.Normalize();
         Clash.Normalize();
+        Energy.Normalize();
         Prestige.Normalize();
     }
 }
@@ -29,108 +28,87 @@ public sealed class BattleRuleSettings
 [Serializable]
 public sealed class MomentumRuleSettings
 {
-    [Header("Range")]
     public int Minimum = -100;
     public int Maximum = 100;
-
-    [Header("Perspective Thresholds")]
     public int LastStandThreshold = -70;
     public int DisadvantageThreshold = -30;
     public int AdvantageThreshold = 30;
     public int OverwhelmThreshold = 70;
 
-    [Header("Damage Multiplier")]
-    [Min(0f)] public float LastStandMultiplier = 0.4f;
-    [Min(0f)] public float DisadvantageMultiplier = 0.4f;
-    [Min(0f)] public float BalanceMultiplier = 0.4f;
-    [Min(0f)] public float AdvantageMultiplier = 1.0f;
-    [Min(0f)] public float OverwhelmMultiplier = 2.0f;
-    [Min(0f)] public float MaximumOverwhelmMultiplier = 2.5f;
+    [Header("Fixed interval multipliers")]
+    [Min(0f)] public float LastStandMultiplier = 0.5f;
+    [Min(0f)] public float DisadvantageMultiplier = 0.5f;
+    [Min(0f)] public float BalanceMultiplier = 1f;
+    [Min(0f)] public float AdvantageMultiplier = 1f;
+    [Min(0f)] public float OverwhelmMultiplier = 2f;
+    [HideInInspector] public float MaximumOverwhelmMultiplier = 2f;
 
     [Header("Shift")]
     [Min(0)] public int HitShift = 5;
-    [Min(0)] public int DuelVictoryShift = 20;
+    [Min(0)] public int DuelVictoryShift = 25;
     [Min(1)] public int LastStandHitShiftMultiplier = 2;
 
     public void Normalize()
     {
-        if (Maximum <= Minimum)
-            Maximum = Minimum + 1;
+        // 2026-07-26 확정 규칙. 기존 Scene/Prefab에 직렬화된 구 수치도
+        // 런타임에서는 이 고정값으로 정규화한다.
+        Minimum = -100;
+        Maximum = 100;
+        LastStandThreshold = -70;
+        DisadvantageThreshold = -30;
+        AdvantageThreshold = 30;
+        OverwhelmThreshold = 70;
 
-        LastStandThreshold = Mathf.Clamp(
-            LastStandThreshold,
-            Minimum,
-            Maximum);
+        LastStandMultiplier = 0.5f;
+        DisadvantageMultiplier = 0.5f;
+        BalanceMultiplier = 1f;
+        AdvantageMultiplier = 1f;
+        OverwhelmMultiplier = 2f;
+        MaximumOverwhelmMultiplier = 2f;
 
-        DisadvantageThreshold = Mathf.Clamp(
-            DisadvantageThreshold,
-            LastStandThreshold,
-            Maximum);
-
-        AdvantageThreshold = Mathf.Clamp(
-            AdvantageThreshold,
-            DisadvantageThreshold,
-            Maximum);
-
-        OverwhelmThreshold = Mathf.Clamp(
-            OverwhelmThreshold,
-            AdvantageThreshold,
-            Maximum);
-
-        LastStandMultiplier = Mathf.Max(0f, LastStandMultiplier);
-        DisadvantageMultiplier = Mathf.Max(0f, DisadvantageMultiplier);
-        BalanceMultiplier = Mathf.Max(0f, BalanceMultiplier);
-        AdvantageMultiplier = Mathf.Max(0f, AdvantageMultiplier);
-        OverwhelmMultiplier = Mathf.Max(0f, OverwhelmMultiplier);
-        MaximumOverwhelmMultiplier = Mathf.Max(
-            OverwhelmMultiplier,
-            MaximumOverwhelmMultiplier);
-
-        HitShift = Mathf.Max(0, HitShift);
-        DuelVictoryShift = Mathf.Max(0, DuelVictoryShift);
-        LastStandHitShiftMultiplier = Mathf.Max(
-            1,
-            LastStandHitShiftMultiplier);
+        HitShift = 5;
+        DuelVictoryShift = 25;
+        LastStandHitShiftMultiplier = 2;
     }
 }
 
 [Serializable]
 public sealed class ClashRuleSettings
 {
-    [Min(1)]
-    public int DefaultExchangeRollCount = 3;
-
-    [Tooltip(
-        "단계식 속도 보정(차이 0~2:+0, 3~5:+1, 6~8:+2, 9 이상:+3)의 최종 배율입니다. " +
-        "기본값 1에서 설계표 그대로 적용됩니다.")]
-    [Min(0)]
-    public int SpeedWeight = 1;
-
-    [Tooltip(
-        "true면 COMBAT 행동은 승패와 관계없이 행동 시작 시 자원을 소비합니다.")]
+    [Range(2, 8)] public int DefaultExchangeRollCount = 3;
+    [Min(0)] public int SpeedWeight = 1;
+    [Min(1)] public int MaxTieRerolls = 64;
     public bool ConsumeResourceOnActionStart = true;
 
     public void Normalize()
     {
-        DefaultExchangeRollCount = Mathf.Max(
-            1,
-            DefaultExchangeRollCount);
-
+        DefaultExchangeRollCount = Mathf.Clamp(DefaultExchangeRollCount, 2, 8);
         SpeedWeight = Mathf.Max(0, SpeedWeight);
+        MaxTieRerolls = Mathf.Max(1, MaxTieRerolls);
+    }
+}
+
+[Serializable]
+public sealed class EnergyRuleSettings
+{
+    [Min(1)] public int DefaultMaximum = 3;
+    [Min(0)] public int TurnStartGain = 1;
+    public bool StartFull = true;
+
+    public void Normalize()
+    {
+        DefaultMaximum = Mathf.Max(1, DefaultMaximum);
+        TurnStartGain = Mathf.Max(0, TurnStartGain);
     }
 }
 
 [Serializable]
 public sealed class PrestigeRuleSettings
 {
-    [Header("Standard Charge")]
     [Min(0)] public int ClashStartCharge = 1;
     [Min(0)] public int HitDealtCharge = 1;
     [Min(0)] public int HitTakenCharge = 1;
     [Min(0)] public int ClashVictoryCharge = 1;
-
-    [Tooltip(
-        "도사림은 합을 만들지 않으므로 표준 위세 충전에서 제외합니다.")]
     public bool PreparationDoesNotCharge = true;
 
     public void Normalize()

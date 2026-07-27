@@ -73,7 +73,7 @@ public sealed class DamageCalculator
         context.BaseDamage =
             Mathf.Max(
                 0,
-                Mathf.RoundToInt(baseDamage));
+                Mathf.FloorToInt(baseDamage));
 
         float rawDamage =
             context.RawPower +
@@ -88,10 +88,21 @@ public sealed class DamageCalculator
         rawDamage *=
             context.SkillMultiplier;
 
-        context.RawDamage =
+        int flooredDamage =
             Mathf.Max(
                 0,
-                Mathf.RoundToInt(rawDamage));
+                Mathf.FloorToInt(rawDamage));
+
+        // 최신 규칙: 승리한 공격 굴림의 피해는 기세 배율 적용 후 버림,
+        // 그리고 실제 공격 피해라면 최소 1을 보장한다.
+        if (context.RawPower > 0 &&
+            context.SkillMultiplier > 0f &&
+            flooredDamage <= 0)
+        {
+            flooredDamage = 1;
+        }
+
+        context.RawDamage = flooredDamage;
 
         context.ModifiedDamage =
             context.RawDamage;

@@ -13,10 +13,56 @@ MonoBehaviour:
   m_Name: EliteEnemy Data
   m_EditorClassIdentifier: 
   CharacterName: "\uC815\uC608 \uBAB9"
-  TargetMode: 0
+  CombatantTier: 2
+  Portrait: {fileID: 0}
+  DetailArtwork: {fileID: 0}
+  RoleName: "\uC815\uC608 \uCC98\uD615\uC790"
+  UiSummary: "\uBC29\uC5B4 \uAD74\uB9BC\uC73C\uB85C \uACF5\uACA9\uC744 \uD758\uB9AC\uACE0
+    \uC555\uBC15\uACFC \uCC98\uD615 \uAE30\uC220\uB85C \uBC18\uACA9\uD558\uB294 \uC815\uC608
+    \uC801."
+  TargetMode: 1
   SingleHpMax: 1
   maxPrestige: 100
-  maxEnergy: 2
+  maxEnergy: 3
+  ActionSlots:
+  - SlotId: HEAD_01
+    DisplayName: "\uBA38\uB9AC \uD589\uB3D9"
+    Enabled: 1
+    HasLinkedPart: 1
+    LinkedPartType: 0
+    OverrideSpeedRange: 0
+    MinSpeed: 3
+    MaxSpeed: 8
+    AllowedActionTypes: 00000000010000000200000003000000
+  - SlotId: LEFT_HAND_01
+    DisplayName: "\uC67C\uC190 \uD589\uB3D9"
+    Enabled: 1
+    HasLinkedPart: 1
+    LinkedPartType: 1
+    OverrideSpeedRange: 0
+    MinSpeed: 3
+    MaxSpeed: 8
+    AllowedActionTypes: 000000000100000003000000
+  - SlotId: RIGHT_HAND_01
+    DisplayName: "\uC624\uB978\uC190 \uD589\uB3D9"
+    Enabled: 1
+    HasLinkedPart: 1
+    LinkedPartType: 2
+    OverrideSpeedRange: 0
+    MinSpeed: 3
+    MaxSpeed: 8
+    AllowedActionTypes: 000000000100000003000000
+  - SlotId: LEGS_01
+    DisplayName: "\uB2E4\uB9AC \uD589\uB3D9"
+    Enabled: 1
+    HasLinkedPart: 1
+    LinkedPartType: 3
+    OverrideSpeedRange: 0
+    MinSpeed: 3
+    MaxSpeed: 8
+    AllowedActionTypes: 0200000003000000
+  CombatLoadout: {fileID: 11400000, guid: 2dbf693936d873742afef74044506075, type: 2}
+  BossPhases: []
   damageMultiplier: 1
   defensePenetration: 0
   minSpeed: 5

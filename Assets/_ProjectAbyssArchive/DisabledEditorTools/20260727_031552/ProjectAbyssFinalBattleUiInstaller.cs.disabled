@@ -1,0 +1,1889 @@
+#if UNITY_EDITOR
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using TMPro;
+using UnityEditor;
+using UnityEditor.SceneManagement;
+using UnityEngine;
+using UnityEngine.SceneManagement;
+using UnityEngine.UI;
+
+/// <summary>
+/// Project Abyss CameraTest의 기존 전투 로직과 TargetArrowUI를 유지하면서
+/// 최종 전투 UI 구조를 한 번만 구축하는 Editor Tool입니다.
+/// 성공적으로 적용되면 과거 일회성 Tool들과 이 Installer 자체를
+/// .cs.disabled 파일로 보관하여 Tools 메뉴에서 제거합니다.
+/// </summary>
+public sealed class ProjectAbyssFinalBattleUiInstaller : EditorWindow
+{
+    private const string MenuPath =
+        "Tools/Project Abyss/Build Final Battle UI (One Time)";
+
+    private const string CanvasName = "Battle UI Canvas";
+    private const string OldHudName = "ReadableBattleHUD";
+    private const string RootName = "AbyssBattleUI";
+
+    private static readonly string[] OneShotToolPaths =
+    {
+        "Assets/1. Scripts/Editor/Tools/BattleUiReadabilityInstaller.cs",
+        "Assets/1. Scripts/Editor/Tools/ProjectAbyssBattleUiRefactorTool.cs",
+        "Assets/1. Scripts/Editor/Tools/ProjectAbyssUnusedScriptCleaner.cs",
+        "Assets/1. Scripts/Editor/Tools/CombatRuleThreeTurnWalkthrough.cs",
+        "Assets/1. Scripts/Editor/Tools/CombatRules20260726LatestMigration.cs"
+    };
+
+    private static readonly Color PanelColor =
+        new(0.025f, 0.035f, 0.055f, 0.94f);
+
+    private static readonly Color PanelSoftColor =
+        new(0.04f, 0.055f, 0.08f, 0.90f);
+
+    private static readonly Color BorderColor =
+        new(0.18f, 0.44f, 0.70f, 0.95f);
+
+    private static readonly Color AccentColor =
+        new(0.10f, 0.58f, 1f, 1f);
+
+    private Vector2 scroll;
+    private bool archiveOldTools = true;
+    private bool saveScene = true;
+    private bool createBackup = true;
+    private bool removeMissingScripts = true;
+
+    [MenuItem(MenuPath, false, 2100)]
+    public static void Open()
+    {
+        ProjectAbyssFinalBattleUiInstaller window =
+            GetWindow<ProjectAbyssFinalBattleUiInstaller>();
+
+        window.titleContent = new GUIContent("Final Battle UI");
+        window.minSize = new Vector2(620f, 540f);
+        window.Show();
+    }
+
+    private void OnGUI()
+    {
+        scroll = EditorGUILayout.BeginScrollView(scroll);
+
+        EditorGUILayout.Space(10f);
+        EditorGUILayout.LabelField(
+            "Project Abyss 최종 전투 UI 구축",
+            EditorStyles.boldLabel);
+
+        EditorGUILayout.HelpBox(
+            "현재 TargetArrowUI의 행동 연결 로직은 그대로 유지합니다. " +
+            "우측 결투 현황을 좌→우 방향으로 배치하고, 기존 부위 버튼을 " +
+            "초상화 카드로 교체하며, 서랍형 스킬 패널·월드 HP 판·" +
+            "카메라 전용 상세 패널을 생성합니다.",
+            MessageType.Info);
+
+        EditorGUILayout.Space(8f);
+        createBackup = EditorGUILayout.ToggleLeft(
+            "적용 전 CameraTest Scene 백업 생성",
+            createBackup);
+        saveScene = EditorGUILayout.ToggleLeft(
+            "적용 후 현재 Scene 저장",
+            saveScene);
+        removeMissingScripts = EditorGUILayout.ToggleLeft(
+            "Scene의 Missing Script 제거",
+            removeMissingScripts);
+        archiveOldTools = EditorGUILayout.ToggleLeft(
+            "적용 후 일회성 Tool과 이 Installer를 비활성 보관",
+            archiveOldTools);
+
+        EditorGUILayout.Space(12f);
+
+        if (GUILayout.Button(
+                "최종 전투 UI 구축",
+                GUILayout.Height(46f)))
+        {
+            ApplyFromWindow();
+        }
+
+        EditorGUILayout.Space(12f);
+        EditorGUILayout.HelpBox(
+            "보존되는 핵심: BattleUIManager, BattleParticipantButtonFactory, " +
+            "BodyPartButtonRegistry, BattleTargetButtonRegistry, TargetArrowUI, " +
+            "StartBtn의 기존 OnClick, MomentumBar, BattleCameraDirector.\n\n" +
+            "캐릭터 상세 화면은 Character Transform 또는 " +
+            "CharacterFacingController를 회전시키지 않습니다. " +
+            "CharacterCameraPointSet의 CloseCameraPoint와 LookAtPoint를 이용해 " +
+            "CM_Pose 카메라만 이동합니다.",
+            MessageType.Warning);
+
+        EditorGUILayout.EndScrollView();
+    }
+
+    private void ApplyFromWindow()
+    {
+        if (!EditorUtility.DisplayDialog(
+                "최종 전투 UI 구축",
+                "현재 Scene의 기존 ReadableBattleHUD를 교체합니다.\n" +
+                "계속하시겠습니까?",
+                "적용",
+                "취소"))
+        {
+            return;
+        }
+
+        try
+        {
+            bool applied = Apply(
+                createBackup,
+                saveScene,
+                removeMissingScripts,
+                archiveOldTools);
+
+            if (!applied)
+                return;
+
+            EditorUtility.DisplayDialog(
+                "적용 완료",
+                "최종 전투 UI 구조를 생성했습니다.\n\n" +
+                "Play Mode에서 다음 순서로 확인하세요.\n" +
+                "1. 초상화 클릭 → 스킬 서랍\n" +
+                "2. 스킬 선택 → 우측 결투 현황으로 복귀\n" +
+                "3. 적 초상화 클릭 → 대상 지정\n" +
+                "4. 상세 버튼/월드 캐릭터 클릭 → 카메라만 정면 이동\n" +
+                "5. Start → TargetArrowUI 연결 유지",
+                "확인");
+
+            Close();
+        }
+        catch (Exception exception)
+        {
+            Debug.LogException(exception);
+            EditorUtility.DisplayDialog(
+                "적용 실패",
+                exception.ToString(),
+                "확인");
+        }
+    }
+
+    private static bool Apply(
+        bool backup,
+        bool save,
+        bool removeMissing,
+        bool archiveTools)
+    {
+        Scene scene = SceneManager.GetActiveScene();
+
+        if (!scene.IsValid() || !scene.isLoaded)
+        {
+            Debug.LogError("[FinalBattleUI] 활성 Scene이 없습니다.");
+            return false;
+        }
+
+        Canvas canvas = FindSceneComponentByName<Canvas>(CanvasName);
+        BattleManager battleManager = FindSceneComponent<BattleManager>();
+        BattleUIManager uiManager = FindSceneComponent<BattleUIManager>();
+        BattleCameraDirector cameraDirector =
+            FindSceneComponent<BattleCameraDirector>();
+        Camera mainCamera =
+            FindSceneComponentByName<Camera>("Main Camera") ?? Camera.main;
+
+        if (canvas == null || battleManager == null || uiManager == null)
+        {
+            Debug.LogError(
+                "[FinalBattleUI] Battle UI Canvas, BattleManager, " +
+                "BattleUIManager 중 하나를 찾지 못했습니다.");
+            return false;
+        }
+
+        if (backup)
+            BackupActiveScene(scene);
+
+        Undo.IncrementCurrentGroup();
+        int undoGroup = Undo.GetCurrentGroup();
+        Undo.SetCurrentGroupName("Build Project Abyss Final Battle UI");
+
+        ConfigureCanvas(canvas);
+
+        Button startButton =
+            FindChildComponentByName<Button>(canvas.transform, "StartBtn");
+        Slider momentumBar =
+            FindChildComponentByName<Slider>(canvas.transform, "MomentumBar");
+        TargetArrowUI targetArrow =
+            FindChildComponentByName<TargetArrowUI>(
+                canvas.transform,
+                "TargetArrowUIObject");
+        GameObject announcePanel =
+            FindChildByName(canvas.transform, "BattleActionAnnouncePanel");
+
+        DetachPreserved(startButton != null ? startButton.gameObject : null, canvas.transform);
+        DetachPreserved(momentumBar != null ? momentumBar.gameObject : null, canvas.transform);
+        DetachPreserved(targetArrow != null ? targetArrow.gameObject : null, canvas.transform);
+        DetachPreserved(announcePanel, canvas.transform);
+
+        DestroyExistingHud(canvas.transform);
+
+        GameObject root = CreateRectObject(RootName, canvas.transform);
+        Stretch(root.GetComponent<RectTransform>());
+        BattleScreenModeController modeController =
+            root.AddComponent<BattleScreenModeController>();
+
+        GameObject persistentLayer =
+            CreateRectObject("PersistentTopLayer", root.transform);
+        Stretch(persistentLayer.GetComponent<RectTransform>());
+        persistentLayer.transform.SetAsFirstSibling();
+
+        TopBarBuildResult topBar = BuildTopStatusBar(
+            persistentLayer.transform,
+            battleManager,
+            momentumBar);
+
+        GameObject defaultLayer =
+            CreateRectObject("DefaultBattleLayer", root.transform);
+        Stretch(defaultLayer.GetComponent<RectTransform>());
+
+        GameObject skillLayer =
+            CreateRectObject("SkillSelectionLayer", root.transform);
+        Stretch(skillLayer.GetComponent<RectTransform>());
+        CanvasGroup skillGroup = skillLayer.AddComponent<CanvasGroup>();
+
+        GameObject detailLayer =
+            CreateRectObject("CharacterDetailLayer", root.transform);
+        Stretch(detailLayer.GetComponent<RectTransform>());
+        CanvasGroup detailGroup = detailLayer.AddComponent<CanvasGroup>();
+
+        BattleCharacterDetailPanelUI detailPanel =
+            BuildCharacterDetailLayer(
+                detailLayer.transform,
+                detailGroup,
+                modeController,
+                cameraDirector);
+
+        SkillSelectPanelUI skillPanel =
+            BuildSkillSelectionLayer(
+                skillLayer.transform,
+                skillGroup,
+                modeController);
+
+        DefaultLayerBuildResult defaultUi =
+            BuildDefaultBattleLayer(
+                defaultLayer.transform,
+                startButton,
+                targetArrow,
+                detailPanel);
+
+        if (announcePanel != null)
+        {
+            announcePanel.transform.SetParent(root.transform, false);
+            RectTransform announceRect =
+                announcePanel.transform as RectTransform;
+
+            if (announceRect != null)
+            {
+                SetAnchors(
+                    announceRect,
+                    new Vector2(0.24f, 0.39f),
+                    new Vector2(0.76f, 0.61f));
+            }
+
+            announcePanel.transform.SetAsLastSibling();
+        }
+
+        modeController.Configure(
+            defaultLayer,
+            skillLayer,
+            detailLayer,
+            new[] { persistentLayer });
+
+        WireRuntimeManagers(
+            uiManager,
+            skillPanel,
+            defaultUi.PlayerTemplate,
+            defaultUi.EnemyTemplate,
+            defaultUi.PlayerColumn,
+            defaultUi.EnemyColumn,
+            targetArrow,
+            defaultUi.ArrowLayer,
+            canvas,
+            battleManager);
+
+        BuildWorldCharacterUi(
+            battleManager,
+            uiManager,
+            detailPanel,
+            mainCamera);
+
+        if (removeMissing)
+            RemoveMissingScripts(scene);
+
+        EditorUtility.SetDirty(canvas);
+        EditorUtility.SetDirty(uiManager);
+        EditorSceneManager.MarkSceneDirty(scene);
+
+        if (save && !string.IsNullOrWhiteSpace(scene.path))
+            EditorSceneManager.SaveScene(scene);
+
+        WriteApplicationMarker(scene.path);
+
+        Undo.CollapseUndoOperations(undoGroup);
+
+        if (archiveTools)
+            ScheduleToolArchive();
+
+        Debug.Log(
+            "[FinalBattleUI] 최종 전투 UI 구축 완료. " +
+            "TargetArrowUI는 기존 ActionSlot/Clash 계산을 그대로 사용합니다.");
+
+        return true;
+    }
+
+    private static void ConfigureCanvas(Canvas canvas)
+    {
+        CanvasScaler scaler = canvas.GetComponent<CanvasScaler>();
+
+        if (scaler == null)
+            scaler = Undo.AddComponent<CanvasScaler>(canvas.gameObject);
+
+        scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+        scaler.referenceResolution = new Vector2(1920f, 1080f);
+        scaler.screenMatchMode = CanvasScaler.ScreenMatchMode.MatchWidthOrHeight;
+        scaler.matchWidthOrHeight = 0.5f;
+    }
+
+    private static TopBarBuildResult BuildTopStatusBar(
+        Transform parent,
+        BattleManager battleManager,
+        Slider preservedMomentum)
+    {
+        GameObject root = CreatePanel(
+            "TopStatusBar",
+            parent,
+            PanelColor,
+            new Vector2(0.018f, 0.915f),
+            new Vector2(0.72f, 0.99f));
+
+        BattleTopStatusBarUI presenter =
+            root.AddComponent<BattleTopStatusBarUI>();
+
+        TMP_Text turn = CreateText(
+            "TurnText",
+            root.transform,
+            "턴\n01",
+            23f,
+            TextAlignmentOptions.Center,
+            new Vector2(0.01f, 0.08f),
+            new Vector2(0.12f, 0.92f));
+
+        TMP_Text momentum = CreateText(
+            "MomentumText",
+            root.transform,
+            "기세 0 · 균형",
+            23f,
+            TextAlignmentOptions.Left,
+            new Vector2(0.15f, 0.51f),
+            new Vector2(0.48f, 0.95f));
+
+        Slider slider = preservedMomentum;
+
+        if (slider == null)
+            slider = CreateSlider("MomentumBar", root.transform);
+        else
+            slider.transform.SetParent(root.transform, false);
+
+        SetAnchors(
+            slider.transform as RectTransform,
+            new Vector2(0.15f, 0.14f),
+            new Vector2(0.58f, 0.47f));
+
+        TMP_Text light = CreateText(
+            "LightText",
+            root.transform,
+            "빛\n0/0",
+            22f,
+            TextAlignmentOptions.Center,
+            new Vector2(0.61f, 0.08f),
+            new Vector2(0.74f, 0.92f));
+
+        TMP_Text enemy = CreateText(
+            "EnemyText",
+            root.transform,
+            "적\n0/0",
+            22f,
+            TextAlignmentOptions.Center,
+            new Vector2(0.76f, 0.08f),
+            new Vector2(0.89f, 0.92f));
+
+        TMP_Text wave = CreateText(
+            "WaveText",
+            root.transform,
+            "전투 준비",
+            18f,
+            TextAlignmentOptions.Center,
+            new Vector2(0.89f, 0.08f),
+            new Vector2(0.99f, 0.92f));
+
+        wave.color = new Color(0.78f, 0.83f, 0.90f, 1f);
+
+        presenter.Configure(
+            battleManager,
+            turn,
+            momentum,
+            light,
+            enemy,
+            slider);
+
+        return new TopBarBuildResult
+        {
+            Root = root,
+            Presenter = presenter,
+            MomentumBar = slider
+        };
+    }
+
+    private static DefaultLayerBuildResult BuildDefaultBattleLayer(
+        Transform parent,
+        Button preservedStart,
+        TargetArrowUI preservedArrow,
+        BattleCharacterDetailPanelUI detailPanel)
+    {
+        GameObject overview = CreatePanel(
+            "ClashOverviewPanel",
+            parent,
+            PanelColor,
+            new Vector2(0.685f, 0.36f),
+            new Vector2(0.985f, 0.895f));
+
+        CreateText(
+            "Title",
+            overview.transform,
+            "전체 결투 현황",
+            25f,
+            TextAlignmentOptions.Left,
+            new Vector2(0.04f, 0.88f),
+            new Vector2(0.96f, 0.98f));
+
+        CreateText(
+            "PlayerSideLabel",
+            overview.transform,
+            "아군 행동",
+            17f,
+            TextAlignmentOptions.Center,
+            new Vector2(0.02f, 0.80f),
+            new Vector2(0.31f, 0.88f));
+
+        CreateText(
+            "EnemySideLabel",
+            overview.transform,
+            "적 대상",
+            17f,
+            TextAlignmentOptions.Center,
+            new Vector2(0.69f, 0.80f),
+            new Vector2(0.98f, 0.88f));
+
+        GameObject arrowLayer =
+            CreateRectObject("ClashArrowLayer", overview.transform);
+        SetAnchors(
+            arrowLayer.GetComponent<RectTransform>(),
+            new Vector2(0.25f, 0.08f),
+            new Vector2(0.75f, 0.80f));
+        arrowLayer.transform.SetAsFirstSibling();
+
+        TargetArrowUI targetArrow = preservedArrow;
+
+        if (targetArrow == null)
+        {
+            GameObject arrowObject =
+                CreateRectObject("TargetArrowUIObject", arrowLayer.transform);
+            Stretch(arrowObject.GetComponent<RectTransform>());
+            targetArrow = arrowObject.AddComponent<TargetArrowUI>();
+        }
+        else
+        {
+            targetArrow.transform.SetParent(arrowLayer.transform, false);
+            Stretch(targetArrow.transform as RectTransform);
+        }
+
+        RectTransform playerColumn =
+            CreatePortraitColumn(
+                "PlayerPortraitColumn",
+                overview.transform,
+                new Vector2(0.025f, 0.08f),
+                new Vector2(0.29f, 0.80f));
+
+        RectTransform enemyColumn =
+            CreatePortraitColumn(
+                "EnemyPortraitColumn",
+                overview.transform,
+                new Vector2(0.71f, 0.08f),
+                new Vector2(0.975f, 0.80f));
+
+        BodyPartButton playerTemplate =
+            CreatePortraitTemplate(
+                "PlayerPortraitTemplate",
+                playerColumn,
+                detailPanel,
+                new Color(0.08f, 0.30f, 0.50f, 1f));
+
+        BodyPartButton enemyTemplate =
+            CreatePortraitTemplate(
+                "EnemyPortraitTemplate",
+                enemyColumn,
+                detailPanel,
+                new Color(0.48f, 0.12f, 0.12f, 1f));
+
+        CreateText(
+            "OverviewHint",
+            overview.transform,
+            "초상화: 행동/대상 선택   ·   i: 상세 보기",
+            15f,
+            TextAlignmentOptions.Center,
+            new Vector2(0.04f, 0.01f),
+            new Vector2(0.96f, 0.07f));
+
+        Button startButton = preservedStart;
+
+        if (startButton == null)
+        {
+            startButton = CreateButton(
+                "StartBtn",
+                parent,
+                "START",
+                34f,
+                new Vector2(0.76f, 0.075f),
+                new Vector2(0.965f, 0.165f),
+                new Color(0.04f, 0.15f, 0.27f, 0.98f));
+        }
+        else
+        {
+            startButton.transform.SetParent(parent, false);
+            SetAnchors(
+                startButton.transform as RectTransform,
+                new Vector2(0.76f, 0.075f),
+                new Vector2(0.965f, 0.165f));
+
+            TMP_Text label =
+                startButton.GetComponentInChildren<TMP_Text>(true);
+
+            if (label != null)
+            {
+                label.text = "START";
+                label.fontSize = 34f;
+            }
+        }
+
+        CreateText(
+            "StartHint",
+            parent,
+            "모든 행동과 대상을 확인한 뒤 전투를 시작합니다.",
+            16f,
+            TextAlignmentOptions.Center,
+            new Vector2(0.72f, 0.03f),
+            new Vector2(0.995f, 0.07f));
+
+        return new DefaultLayerBuildResult
+        {
+            Overview = overview,
+            PlayerColumn = playerColumn,
+            EnemyColumn = enemyColumn,
+            PlayerTemplate = playerTemplate,
+            EnemyTemplate = enemyTemplate,
+            ArrowLayer = arrowLayer.GetComponent<RectTransform>(),
+            TargetArrow = targetArrow,
+            StartButton = startButton
+        };
+    }
+
+    private static SkillSelectPanelUI BuildSkillSelectionLayer(
+        Transform parent,
+        CanvasGroup group,
+        BattleScreenModeController modeController)
+    {
+        GameObject surface = CreatePanel(
+            "SkillDrawerPanel",
+            parent,
+            new Color(0.015f, 0.025f, 0.045f, 0.88f),
+            new Vector2(0.015f, 0.08f),
+            new Vector2(0.635f, 0.895f));
+
+        SkillSelectPanelUI panel =
+            surface.AddComponent<SkillSelectPanelUI>();
+        ActionSlotSelectorUI slotSelector =
+            surface.AddComponent<ActionSlotSelectorUI>();
+
+        TMP_Text header = CreateText(
+            "SlotHeaderText",
+            surface.transform,
+            "행동 슬롯",
+            25f,
+            TextAlignmentOptions.Left,
+            new Vector2(0.025f, 0.91f),
+            new Vector2(0.76f, 0.985f));
+
+        TMP_Text help = CreateText(
+            "HelpText",
+            surface.transform,
+            "행동 유형을 열고 스킬을 선택하세요.",
+            17f,
+            TextAlignmentOptions.Left,
+            new Vector2(0.025f, 0.855f),
+            new Vector2(0.82f, 0.91f));
+
+        Button close = CreateButton(
+            "CloseButton",
+            surface.transform,
+            "ESC  뒤로",
+            18f,
+            new Vector2(0.84f, 0.905f),
+            new Vector2(0.98f, 0.975f),
+            new Color(0.18f, 0.06f, 0.06f, 0.95f));
+
+        GameObject drawerRowObject =
+            CreateRectObject("DrawerRow", surface.transform);
+        RectTransform drawerRow = drawerRowObject.GetComponent<RectTransform>();
+        SetAnchors(
+            drawerRow,
+            new Vector2(0.02f, 0.19f),
+            new Vector2(0.98f, 0.84f));
+
+        HorizontalLayoutGroup rowLayout =
+            drawerRowObject.AddComponent<HorizontalLayoutGroup>();
+        rowLayout.spacing = 10f;
+        rowLayout.childAlignment = TextAnchor.UpperLeft;
+        rowLayout.childControlWidth = true;
+        rowLayout.childForceExpandWidth = true;
+        rowLayout.childControlHeight = false;
+        rowLayout.childForceExpandHeight = false;
+
+        List<SkillDrawerCategoryUI> drawers = new();
+        drawers.Add(CreateSkillDrawer(
+            "NormalDrawer",
+            drawerRow,
+            ActionType.NormalAttack,
+            "일반공격",
+            new Color(0.06f, 0.28f, 0.48f, 1f)));
+        drawers.Add(CreateSkillDrawer(
+            "DuelDrawer",
+            drawerRow,
+            ActionType.Duel,
+            "결투",
+            new Color(0.48f, 0.09f, 0.08f, 1f)));
+        drawers.Add(CreateSkillDrawer(
+            "PreparationDrawer",
+            drawerRow,
+            ActionType.Preparation,
+            "도사림",
+            new Color(0.04f, 0.38f, 0.31f, 1f)));
+        drawers.Add(CreateSkillDrawer(
+            "PrestigeDrawer",
+            drawerRow,
+            ActionType.Prestige,
+            "위세",
+            new Color(0.42f, 0.23f, 0.04f, 1f)));
+
+        CreateText(
+            "SelectionGuide",
+            surface.transform,
+            "스킬 선택 후 우측 결투 현황으로 돌아가 적 초상화를 선택합니다.",
+            20f,
+            TextAlignmentOptions.Center,
+            new Vector2(0.12f, 0.055f),
+            new Vector2(0.88f, 0.14f));
+
+        slotSelector.ConfigureFallbackStyle(close);
+
+        panel.Configure(
+            group,
+            modeController,
+            header,
+            help,
+            close,
+            slotSelector,
+            drawers.ToArray());
+
+        return panel;
+    }
+
+    private static SkillDrawerCategoryUI CreateSkillDrawer(
+        string name,
+        RectTransform parent,
+        ActionType actionType,
+        string title,
+        Color accent)
+    {
+        GameObject column =
+            CreateRectObject(name, parent);
+        LayoutElement columnLayout =
+            column.AddComponent<LayoutElement>();
+        columnLayout.flexibleWidth = 1f;
+        columnLayout.preferredWidth = 250f;
+        columnLayout.preferredHeight = 650f;
+
+        VerticalLayoutGroup vertical =
+            column.AddComponent<VerticalLayoutGroup>();
+        vertical.spacing = 0f;
+        vertical.childControlWidth = true;
+        vertical.childForceExpandWidth = true;
+        vertical.childControlHeight = false;
+        vertical.childForceExpandHeight = false;
+
+        Button header = CreateButtonWithLayout(
+            "HeaderButton",
+            column.transform,
+            title,
+            24f,
+            64f,
+            accent);
+
+        TMP_Text label =
+            header.GetComponentInChildren<TMP_Text>(true);
+
+        GameObject drawer =
+            CreatePanelWithLayout(
+                "DrawerBody",
+                column.transform,
+                PanelSoftColor,
+                0f);
+
+        LayoutElement drawerLayout = drawer.GetComponent<LayoutElement>();
+        CanvasGroup drawerGroup = drawer.AddComponent<CanvasGroup>();
+        drawer.AddComponent<RectMask2D>();
+
+        GameObject contentObject =
+            CreateRectObject("Content", drawer.transform);
+        RectTransform content = contentObject.GetComponent<RectTransform>();
+        content.anchorMin = new Vector2(0f, 1f);
+        content.anchorMax = new Vector2(1f, 1f);
+        content.pivot = new Vector2(0.5f, 1f);
+        content.anchoredPosition = Vector2.zero;
+        content.sizeDelta = new Vector2(0f, 520f);
+
+        VerticalLayoutGroup contentLayout =
+            contentObject.AddComponent<VerticalLayoutGroup>();
+        contentLayout.padding = new RectOffset(8, 8, 8, 8);
+        contentLayout.spacing = 8f;
+        contentLayout.childControlWidth = true;
+        contentLayout.childForceExpandWidth = true;
+        contentLayout.childControlHeight = false;
+        contentLayout.childForceExpandHeight = false;
+
+        BattleSkillCardButtonUI cardTemplate =
+            CreateSkillCardTemplate(content, accent);
+
+        SkillDrawerCategoryUI controller =
+            column.AddComponent<SkillDrawerCategoryUI>();
+        controller.Configure(
+            actionType,
+            header,
+            label,
+            drawer.GetComponent<RectTransform>(),
+            drawerLayout,
+            drawerGroup,
+            content,
+            cardTemplate,
+            500f);
+
+        return controller;
+    }
+
+    private static BattleSkillCardButtonUI CreateSkillCardTemplate(
+        Transform parent,
+        Color accent)
+    {
+        GameObject root = CreatePanelWithLayout(
+            "SkillCardTemplate",
+            parent,
+            new Color(0.055f, 0.065f, 0.085f, 0.98f),
+            112f);
+
+        Button button = root.AddComponent<Button>();
+        button.targetGraphic = root.GetComponent<Image>();
+
+        Image accentImage = CreateImage(
+            "Accent",
+            root.transform,
+            accent,
+            new Vector2(0f, 0f),
+            new Vector2(0.028f, 1f));
+
+        TMP_Text title = CreateText(
+            "Title",
+            root.transform,
+            "스킬 이름",
+            20f,
+            TextAlignmentOptions.Left,
+            new Vector2(0.06f, 0.62f),
+            new Vector2(0.96f, 0.95f));
+
+        TMP_Text roll = CreateText(
+            "RollSummary",
+            root.transform,
+            "2 Roll",
+            16f,
+            TextAlignmentOptions.Left,
+            new Vector2(0.06f, 0.31f),
+            new Vector2(0.64f, 0.61f));
+
+        TMP_Text cost = CreateText(
+            "Cost",
+            root.transform,
+            "빛 1",
+            16f,
+            TextAlignmentOptions.Right,
+            new Vector2(0.64f, 0.31f),
+            new Vector2(0.96f, 0.61f));
+
+        TMP_Text reason = CreateText(
+            "Reason",
+            root.transform,
+            "사용 가능",
+            14f,
+            TextAlignmentOptions.Left,
+            new Vector2(0.06f, 0.05f),
+            new Vector2(0.96f, 0.30f));
+
+        BattleSkillCardButtonUI presenter =
+            root.AddComponent<BattleSkillCardButtonUI>();
+        presenter.Configure(
+            button,
+            title,
+            roll,
+            cost,
+            reason,
+            accentImage);
+
+        root.SetActive(false);
+        return presenter;
+    }
+
+    private static BattleCharacterDetailPanelUI BuildCharacterDetailLayer(
+        Transform parent,
+        CanvasGroup group,
+        BattleScreenModeController modeController,
+        BattleCameraDirector cameraDirector)
+    {
+        GameObject surface = CreatePanel(
+            "LimbusStyleDetailSurface",
+            parent,
+            new Color(0.025f, 0.025f, 0.022f, 0.98f),
+            new Vector2(0.455f, 0.035f),
+            new Vector2(0.988f, 0.905f));
+
+        Button close = CreateButton(
+            "CloseButton",
+            surface.transform,
+            "×",
+            34f,
+            new Vector2(0.935f, 0.925f),
+            new Vector2(0.985f, 0.985f),
+            new Color(0.18f, 0.07f, 0.05f, 0.95f));
+
+        Image artwork = CreateImage(
+            "Artwork",
+            surface.transform,
+            Color.white,
+            new Vector2(0.025f, 0.76f),
+            new Vector2(0.17f, 0.965f));
+        artwork.preserveAspect = true;
+
+        TMP_Text name = CreateText(
+            "CharacterName",
+            surface.transform,
+            "캐릭터",
+            34f,
+            TextAlignmentOptions.Left,
+            new Vector2(0.19f, 0.88f),
+            new Vector2(0.67f, 0.965f));
+
+        TMP_Text role = CreateText(
+            "RoleName",
+            surface.transform,
+            "전투원",
+            19f,
+            TextAlignmentOptions.Left,
+            new Vector2(0.19f, 0.82f),
+            new Vector2(0.48f, 0.88f));
+
+        TMP_Text hp = CreateText(
+            "HpText",
+            surface.transform,
+            "체력 0/0",
+            20f,
+            TextAlignmentOptions.Left,
+            new Vector2(0.19f, 0.76f),
+            new Vector2(0.49f, 0.82f));
+
+        TMP_Text resources = CreateText(
+            "ResourceText",
+            surface.transform,
+            "빛 0/0  위세 0/0",
+            19f,
+            TextAlignmentOptions.Right,
+            new Vector2(0.49f, 0.76f),
+            new Vector2(0.91f, 0.84f));
+
+        Button summaryTab = CreateTabButton(
+            "SummaryTab", surface.transform, "요약", 0.025f, 0.25f);
+        Button skillsTab = CreateTabButton(
+            "SkillsTab", surface.transform, "스킬", 0.255f, 0.48f);
+        Button passivesTab = CreateTabButton(
+            "PassivesTab", surface.transform, "패시브", 0.485f, 0.71f);
+        Button statusTab = CreateTabButton(
+            "StatusTab", surface.transform, "상태", 0.715f, 0.94f);
+
+        TMP_Text summary = CreateText(
+            "SummaryText",
+            surface.transform,
+            "캐릭터 상세 정보",
+            19f,
+            TextAlignmentOptions.TopLeft,
+            new Vector2(0.035f, 0.08f),
+            new Vector2(0.965f, 0.69f));
+
+        ScrollBuildResult listScroll = BuildScrollArea(
+            "ListScroll",
+            surface.transform,
+            new Vector2(0.025f, 0.08f),
+            new Vector2(0.49f, 0.69f));
+
+        Button listTemplate = CreateListButtonTemplate(
+            listScroll.Content,
+            "ListButtonTemplate",
+            76f);
+
+        GameObject description = CreatePanel(
+            "DescriptionPanel",
+            surface.transform,
+            PanelSoftColor,
+            new Vector2(0.505f, 0.08f),
+            new Vector2(0.975f, 0.69f));
+
+        TMP_Text detailTitle = CreateText(
+            "DetailTitle",
+            description.transform,
+            "설명",
+            24f,
+            TextAlignmentOptions.Left,
+            new Vector2(0.04f, 0.84f),
+            new Vector2(0.96f, 0.97f));
+
+        TMP_Text detailBody = CreateText(
+            "DetailBody",
+            description.transform,
+            "항목을 선택하세요.",
+            18f,
+            TextAlignmentOptions.TopLeft,
+            new Vector2(0.04f, 0.28f),
+            new Vector2(0.96f, 0.83f));
+
+        GameObject keywordRowObject =
+            CreateRectObject("KeywordRow", description.transform);
+        RectTransform keywordRow = keywordRowObject.GetComponent<RectTransform>();
+        SetAnchors(
+            keywordRow,
+            new Vector2(0.04f, 0.05f),
+            new Vector2(0.96f, 0.25f));
+
+        HorizontalLayoutGroup keywordLayout =
+            keywordRowObject.AddComponent<HorizontalLayoutGroup>();
+        keywordLayout.spacing = 8f;
+        keywordLayout.childControlWidth = false;
+        keywordLayout.childControlHeight = true;
+        keywordLayout.childForceExpandWidth = false;
+        keywordLayout.childForceExpandHeight = true;
+
+        Button keywordTemplate = CreateKeywordTemplate(keywordRow);
+
+        GameObject popup = CreatePanel(
+            "KeywordPopup",
+            surface.transform,
+            new Color(0.03f, 0.06f, 0.09f, 0.99f),
+            new Vector2(0.60f, 0.06f),
+            new Vector2(0.985f, 0.38f));
+
+        TMP_Text popupTitle = CreateText(
+            "PopupTitle",
+            popup.transform,
+            "키워드",
+            22f,
+            TextAlignmentOptions.Left,
+            new Vector2(0.05f, 0.76f),
+            new Vector2(0.82f, 0.95f));
+
+        TMP_Text popupBody = CreateText(
+            "PopupBody",
+            popup.transform,
+            "설명",
+            17f,
+            TextAlignmentOptions.TopLeft,
+            new Vector2(0.05f, 0.10f),
+            new Vector2(0.95f, 0.75f));
+
+        Button popupClose = CreateButton(
+            "PopupClose",
+            popup.transform,
+            "×",
+            23f,
+            new Vector2(0.84f, 0.78f),
+            new Vector2(0.96f, 0.94f),
+            new Color(0.20f, 0.07f, 0.07f, 0.95f));
+
+        BattleCharacterDetailPanelUI panel =
+            parent.gameObject.AddComponent<BattleCharacterDetailPanelUI>();
+        panel.Configure(
+            group,
+            modeController,
+            cameraDirector,
+            close,
+            artwork,
+            name,
+            role,
+            hp,
+            resources,
+            summaryTab,
+            skillsTab,
+            passivesTab,
+            statusTab,
+            summary,
+            listScroll.Content,
+            listTemplate,
+            detailTitle,
+            detailBody,
+            keywordRow,
+            keywordTemplate,
+            popup,
+            popupTitle,
+            popupBody,
+            popupClose);
+
+        listScroll.Root.SetActive(true);
+        description.SetActive(true);
+        popup.SetActive(false);
+
+        return panel;
+    }
+
+    private static void WireRuntimeManagers(
+        BattleUIManager uiManager,
+        SkillSelectPanelUI skillPanel,
+        BodyPartButton playerTemplate,
+        BodyPartButton enemyTemplate,
+        RectTransform playerColumn,
+        RectTransform enemyColumn,
+        TargetArrowUI targetArrow,
+        RectTransform arrowLayer,
+        Canvas canvas,
+        BattleManager battleManager)
+    {
+        BattleParticipantButtonFactory factory =
+            uiManager.GetComponent<BattleParticipantButtonFactory>();
+
+        if (factory == null)
+            factory = Undo.AddComponent<BattleParticipantButtonFactory>(uiManager.gameObject);
+
+        BodyPartButtonRegistry partRegistry =
+            uiManager.GetComponent<BodyPartButtonRegistry>();
+
+        if (partRegistry == null)
+            partRegistry = Undo.AddComponent<BodyPartButtonRegistry>(uiManager.gameObject);
+
+        BattleTargetButtonRegistry targetRegistry =
+            uiManager.GetComponent<BattleTargetButtonRegistry>();
+
+        if (targetRegistry == null)
+        {
+            targetRegistry =
+                Undo.AddComponent<BattleTargetButtonRegistry>(uiManager.gameObject);
+        }
+
+        factory.Configure(
+            playerTemplate,
+            enemyTemplate,
+            playerColumn,
+            enemyColumn);
+
+        SerializedObject factoryObject = new(factory);
+        SetSerialized(factoryObject, "removeLegacyButtonsOnBuild", true);
+        SetSerialized(factoryObject, "configureGridLayout", true);
+        SetSerialized(factoryObject, "cellSize", new Vector2(108f, 94f));
+        SetSerialized(factoryObject, "spacing", new Vector2(8f, 8f));
+        SetSerialized(factoryObject, "playerColumns", 1);
+        SetSerialized(factoryObject, "enemyColumns", 1);
+        SetSerialized(factoryObject, "horizontalClashOverview", true);
+        SetSerialized(factoryObject, "fitContainerHeightToGeneratedRows", false);
+        SetSerialized(factoryObject, "autoPositionContainers", false);
+        SetSerialized(factoryObject, "fitContainerWidthToColumns", false);
+        factoryObject.ApplyModifiedPropertiesWithoutUndo();
+
+        uiManager.AssignParticipantButtonFactory(factory);
+
+        SerializedObject uiObject = new(uiManager);
+        SetSerialized(uiObject, "skillSelectPanel", skillPanel);
+        SetSerialized(uiObject, "bodyPartButtonRegistry", partRegistry);
+        SetSerialized(uiObject, "participantButtonFactory", factory);
+        SetSerialized(uiObject, "targetButtonRegistry", targetRegistry);
+        uiObject.ApplyModifiedPropertiesWithoutUndo();
+
+        if (targetArrow != null)
+        {
+            SerializedObject arrowObject = new(targetArrow);
+            SetSerialized(arrowObject, "battleManager", battleManager);
+            SetSerialized(arrowObject, "canvas", canvas);
+            SetSerialized(arrowObject, "arrowRoot", arrowLayer);
+            SetSerialized(arrowObject, "bodyPartButtonRegistry", partRegistry);
+            SetSerialized(arrowObject, "targetButtonRegistry", targetRegistry);
+            SetSerialized(arrowObject, "lineThickness", 4f);
+            SetSerialized(arrowObject, "startPadding", 8f);
+            SetSerialized(arrowObject, "endPadding", 8f);
+            SetSerialized(arrowObject, "arrowHeadLength", 18f);
+            arrowObject.ApplyModifiedPropertiesWithoutUndo();
+        }
+    }
+
+    private static void BuildWorldCharacterUi(
+        BattleManager battleManager,
+        BattleUIManager uiManager,
+        BattleCharacterDetailPanelUI detailPanel,
+        Camera mainCamera)
+    {
+        GameObject presentationRoot =
+            FindSceneObjectByName("[30] PRESENTATION");
+
+        Transform parent =
+            presentationRoot != null
+                ? presentationRoot.transform
+                : battleManager.transform;
+
+        GameObject old = FindChildByName(parent, "Battle World UI");
+
+        if (old != null)
+            Undo.DestroyObjectImmediate(old);
+
+        GameObject root = new("Battle World UI");
+        Undo.RegisterCreatedObjectUndo(root, "Create Battle World UI");
+        root.transform.SetParent(parent, false);
+
+        BattleWorldCharacterPlateManager manager =
+            root.AddComponent<BattleWorldCharacterPlateManager>();
+        manager.Configure(
+            battleManager,
+            uiManager,
+            detailPanel,
+            mainCamera);
+    }
+
+    private static RectTransform CreatePortraitColumn(
+        string name,
+        Transform parent,
+        Vector2 min,
+        Vector2 max)
+    {
+        GameObject root = CreateRectObject(name, parent);
+        RectTransform rect = root.GetComponent<RectTransform>();
+        SetAnchors(rect, min, max);
+
+        GridLayoutGroup grid = root.AddComponent<GridLayoutGroup>();
+        grid.cellSize = new Vector2(108f, 94f);
+        grid.spacing = new Vector2(8f, 8f);
+        grid.constraint = GridLayoutGroup.Constraint.FixedColumnCount;
+        grid.constraintCount = 1;
+        grid.startAxis = GridLayoutGroup.Axis.Vertical;
+        grid.startCorner = GridLayoutGroup.Corner.UpperLeft;
+        grid.childAlignment = TextAnchor.UpperCenter;
+        return rect;
+    }
+
+    private static BodyPartButton CreatePortraitTemplate(
+        string name,
+        Transform parent,
+        BattleCharacterDetailPanelUI detailPanel,
+        Color sideColor)
+    {
+        GameObject root = CreatePanelWithLayout(
+            name,
+            parent,
+            new Color(0.08f, 0.10f, 0.14f, 0.98f),
+            94f);
+
+        LayoutElement layout = root.GetComponent<LayoutElement>();
+        layout.preferredWidth = 108f;
+
+        Button button = root.AddComponent<Button>();
+        Image frame = root.GetComponent<Image>();
+        button.targetGraphic = frame;
+
+        Image side = CreateImage(
+            "SideAccent",
+            root.transform,
+            sideColor,
+            new Vector2(0f, 0f),
+            new Vector2(0.045f, 1f));
+
+        Image portrait = CreateImage(
+            "Portrait",
+            root.transform,
+            Color.white,
+            new Vector2(0.10f, 0.25f),
+            new Vector2(0.53f, 0.92f));
+        portrait.preserveAspect = true;
+
+        TMP_Text initial = CreateText(
+            "Initial",
+            root.transform,
+            "?",
+            29f,
+            TextAlignmentOptions.Center,
+            new Vector2(0.10f, 0.25f),
+            new Vector2(0.53f, 0.92f));
+
+        TMP_Text part = CreateText(
+            "Part",
+            root.transform,
+            "부위",
+            17f,
+            TextAlignmentOptions.Left,
+            new Vector2(0.56f, 0.68f),
+            new Vector2(0.95f, 0.94f));
+
+        TMP_Text hp = CreateText(
+            "Hp",
+            root.transform,
+            "HP 0/0",
+            13f,
+            TextAlignmentOptions.Left,
+            new Vector2(0.56f, 0.45f),
+            new Vector2(0.95f, 0.70f));
+
+        TMP_Text speed = CreateText(
+            "Speed",
+            root.transform,
+            "속도 0",
+            13f,
+            TextAlignmentOptions.Left,
+            new Vector2(0.56f, 0.24f),
+            new Vector2(0.95f, 0.47f));
+
+        TMP_Text skill = CreateText(
+            "Skill",
+            root.transform,
+            "미지정",
+            12f,
+            TextAlignmentOptions.Left,
+            new Vector2(0.10f, 0.02f),
+            new Vector2(0.74f, 0.25f));
+
+        Button detail = CreateButton(
+            "DetailButton",
+            root.transform,
+            "i",
+            15f,
+            new Vector2(0.78f, 0.02f),
+            new Vector2(0.96f, 0.23f),
+            new Color(0.08f, 0.25f, 0.42f, 0.95f));
+
+        BodyPartButton bodyPartButton = root.AddComponent<BodyPartButton>();
+        BattlePortraitButtonView view = root.AddComponent<BattlePortraitButtonView>();
+        view.Configure(
+            frame,
+            portrait,
+            initial,
+            part,
+            hp,
+            speed,
+            skill,
+            detail);
+
+        bodyPartButton.ConfigureAsTemplate();
+        root.SetActive(false);
+        return bodyPartButton;
+    }
+
+    private static Button CreateListButtonTemplate(
+        Transform parent,
+        string name,
+        float height)
+    {
+        Button button = CreateButtonWithLayout(
+            name,
+            parent,
+            "항목",
+            18f,
+            height,
+            new Color(0.06f, 0.075f, 0.095f, 0.98f));
+
+        TMP_Text text = button.GetComponentInChildren<TMP_Text>(true);
+
+        if (text != null)
+        {
+            text.alignment = TextAlignmentOptions.Left;
+            text.margin = new Vector4(14f, 6f, 14f, 6f);
+        }
+
+        button.gameObject.SetActive(false);
+        return button;
+    }
+
+    private static Button CreateKeywordTemplate(Transform parent)
+    {
+        Button button = CreateButtonWithLayout(
+            "KeywordTemplate",
+            parent,
+            "키워드",
+            15f,
+            42f,
+            new Color(0.06f, 0.28f, 0.48f, 0.98f));
+
+        LayoutElement layout = button.GetComponent<LayoutElement>();
+        layout.preferredWidth = 122f;
+        button.gameObject.SetActive(false);
+        return button;
+    }
+
+    private static Button CreateTabButton(
+        string name,
+        Transform parent,
+        string label,
+        float minX,
+        float maxX)
+    {
+        return CreateButton(
+            name,
+            parent,
+            label,
+            20f,
+            new Vector2(minX, 0.695f),
+            new Vector2(maxX, 0.755f),
+            new Color(0.08f, 0.085f, 0.075f, 0.98f));
+    }
+
+    private static ScrollBuildResult BuildScrollArea(
+        string name,
+        Transform parent,
+        Vector2 min,
+        Vector2 max)
+    {
+        GameObject root = CreatePanel(
+            name,
+            parent,
+            PanelSoftColor,
+            min,
+            max);
+
+        ScrollRect scroll = root.AddComponent<ScrollRect>();
+        scroll.horizontal = false;
+        scroll.vertical = true;
+        scroll.movementType = ScrollRect.MovementType.Clamped;
+
+        GameObject viewportObject =
+            CreateRectObject("Viewport", root.transform);
+        RectTransform viewport = viewportObject.GetComponent<RectTransform>();
+        Stretch(viewport);
+        viewportObject.AddComponent<Image>().color = Color.clear;
+        viewportObject.AddComponent<RectMask2D>();
+
+        GameObject contentObject =
+            CreateRectObject("Content", viewportObject.transform);
+        RectTransform content = contentObject.GetComponent<RectTransform>();
+        content.anchorMin = new Vector2(0f, 1f);
+        content.anchorMax = new Vector2(1f, 1f);
+        content.pivot = new Vector2(0.5f, 1f);
+        content.anchoredPosition = Vector2.zero;
+        content.sizeDelta = Vector2.zero;
+
+        VerticalLayoutGroup layout =
+            contentObject.AddComponent<VerticalLayoutGroup>();
+        layout.padding = new RectOffset(8, 8, 8, 8);
+        layout.spacing = 7f;
+        layout.childControlWidth = true;
+        layout.childForceExpandWidth = true;
+        layout.childControlHeight = false;
+        layout.childForceExpandHeight = false;
+
+        ContentSizeFitter fitter =
+            contentObject.AddComponent<ContentSizeFitter>();
+        fitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+
+        scroll.viewport = viewport;
+        scroll.content = content;
+
+        return new ScrollBuildResult
+        {
+            Root = root,
+            Viewport = viewport,
+            Content = content
+        };
+    }
+
+    private static Slider CreateSlider(string name, Transform parent)
+    {
+        GameObject root = CreateRectObject(name, parent);
+        Slider slider = root.AddComponent<Slider>();
+        slider.direction = Slider.Direction.LeftToRight;
+
+        Image background = CreateImage(
+            "Background",
+            root.transform,
+            new Color(0.10f, 0.12f, 0.15f, 1f),
+            Vector2.zero,
+            Vector2.one);
+
+        Image fill = CreateImage(
+            "Fill",
+            root.transform,
+            AccentColor,
+            new Vector2(0f, 0.18f),
+            new Vector2(1f, 0.82f));
+
+        slider.fillRect = fill.rectTransform;
+        slider.targetGraphic = background;
+        slider.interactable = false;
+        return slider;
+    }
+
+    private static GameObject CreatePanel(
+        string name,
+        Transform parent,
+        Color color,
+        Vector2 min,
+        Vector2 max)
+    {
+        GameObject root = CreateRectObject(name, parent);
+        Image image = root.AddComponent<Image>();
+        image.color = color;
+        image.raycastTarget = true;
+        SetAnchors(root.GetComponent<RectTransform>(), min, max);
+
+        Outline outline = root.AddComponent<Outline>();
+        outline.effectColor = BorderColor;
+        outline.effectDistance = new Vector2(1f, -1f);
+        return root;
+    }
+
+    private static GameObject CreatePanelWithLayout(
+        string name,
+        Transform parent,
+        Color color,
+        float preferredHeight)
+    {
+        GameObject root = CreateRectObject(name, parent);
+        Image image = root.AddComponent<Image>();
+        image.color = color;
+        LayoutElement layout = root.AddComponent<LayoutElement>();
+        layout.preferredHeight = preferredHeight;
+        return root;
+    }
+
+    private static Image CreateImage(
+        string name,
+        Transform parent,
+        Color color,
+        Vector2 min,
+        Vector2 max)
+    {
+        GameObject root = CreateRectObject(name, parent);
+        Image image = root.AddComponent<Image>();
+        image.color = color;
+        SetAnchors(root.GetComponent<RectTransform>(), min, max);
+        return image;
+    }
+
+    private static TMP_Text CreateText(
+        string name,
+        Transform parent,
+        string value,
+        float size,
+        TextAlignmentOptions alignment,
+        Vector2 min,
+        Vector2 max)
+    {
+        GameObject root = CreateRectObject(name, parent);
+        TextMeshProUGUI text = root.AddComponent<TextMeshProUGUI>();
+        text.text = value;
+        text.fontSize = size;
+        text.alignment = alignment;
+        text.color = Color.white;
+        text.richText = true;
+        text.raycastTarget = false;
+        text.overflowMode = TextOverflowModes.Ellipsis;
+        SetAnchors(root.GetComponent<RectTransform>(), min, max);
+        return text;
+    }
+
+    private static Button CreateButton(
+        string name,
+        Transform parent,
+        string label,
+        float fontSize,
+        Vector2 min,
+        Vector2 max,
+        Color color)
+    {
+        GameObject root = CreateRectObject(name, parent);
+        Image image = root.AddComponent<Image>();
+        image.color = color;
+        Button button = root.AddComponent<Button>();
+        button.targetGraphic = image;
+        SetAnchors(root.GetComponent<RectTransform>(), min, max);
+
+        TMP_Text text = CreateText(
+            "Label",
+            root.transform,
+            label,
+            fontSize,
+            TextAlignmentOptions.Center,
+            Vector2.zero,
+            Vector2.one);
+        text.overflowMode = TextOverflowModes.Overflow;
+        return button;
+    }
+
+    private static Button CreateButtonWithLayout(
+        string name,
+        Transform parent,
+        string label,
+        float fontSize,
+        float preferredHeight,
+        Color color)
+    {
+        GameObject root = CreateRectObject(name, parent);
+        Image image = root.AddComponent<Image>();
+        image.color = color;
+        Button button = root.AddComponent<Button>();
+        button.targetGraphic = image;
+        LayoutElement layout = root.AddComponent<LayoutElement>();
+        layout.preferredHeight = preferredHeight;
+
+        TMP_Text text = CreateText(
+            "Label",
+            root.transform,
+            label,
+            fontSize,
+            TextAlignmentOptions.Center,
+            Vector2.zero,
+            Vector2.one);
+        text.overflowMode = TextOverflowModes.Overflow;
+        return button;
+    }
+
+    private static GameObject CreateRectObject(
+        string name,
+        Transform parent)
+    {
+        GameObject root =
+            new(name, typeof(RectTransform));
+        Undo.RegisterCreatedObjectUndo(root, "Create " + name);
+        root.transform.SetParent(parent, false);
+        RectTransform rect = root.GetComponent<RectTransform>();
+        rect.localScale = Vector3.one;
+        rect.localRotation = Quaternion.identity;
+        return root;
+    }
+
+    private static void SetAnchors(
+        RectTransform rect,
+        Vector2 min,
+        Vector2 max)
+    {
+        if (rect == null)
+            return;
+
+        rect.anchorMin = min;
+        rect.anchorMax = max;
+        rect.offsetMin = Vector2.zero;
+        rect.offsetMax = Vector2.zero;
+        rect.localScale = Vector3.one;
+    }
+
+    private static void Stretch(RectTransform rect)
+    {
+        SetAnchors(rect, Vector2.zero, Vector2.one);
+    }
+
+    private static void DetachPreserved(
+        GameObject target,
+        Transform temporaryParent)
+    {
+        if (target == null)
+            return;
+
+        Undo.SetTransformParent(
+            target.transform,
+            temporaryParent,
+            "Preserve " + target.name);
+    }
+
+    private static void DestroyExistingHud(Transform canvas)
+    {
+        foreach (string name in new[] { OldHudName, RootName })
+        {
+            GameObject target = FindChildByName(canvas, name);
+
+            if (target != null)
+                Undo.DestroyObjectImmediate(target);
+        }
+    }
+
+    private static void RemoveMissingScripts(Scene scene)
+    {
+        int removed = 0;
+
+        foreach (GameObject root in scene.GetRootGameObjects())
+        {
+            foreach (Transform transform in
+                     root.GetComponentsInChildren<Transform>(true))
+            {
+                removed +=
+                    GameObjectUtility.RemoveMonoBehavioursWithMissingScript(
+                        transform.gameObject);
+            }
+        }
+
+        if (removed > 0)
+            Debug.Log($"[FinalBattleUI] Missing Script {removed}개 제거.");
+    }
+
+    private static void BackupActiveScene(Scene scene)
+    {
+        if (string.IsNullOrWhiteSpace(scene.path))
+            return;
+
+        string folder = "Assets/5. Scenes/_UI_Backups";
+        Directory.CreateDirectory(folder);
+
+        string fileName =
+            $"{scene.name}_before_FinalBattleUI_" +
+            $"{DateTime.Now:yyyyMMdd_HHmmss}.unity";
+
+        string path = Path.Combine(folder, fileName).Replace('\\', '/');
+        EditorSceneManager.SaveScene(scene, path, true);
+        AssetDatabase.Refresh();
+        Debug.Log($"[FinalBattleUI] Scene backup: {path}");
+    }
+
+    private static void WriteApplicationMarker(string scenePath)
+    {
+        string folder = "Assets/_ProjectAbyssArchive/UIApplyReports";
+        Directory.CreateDirectory(folder);
+
+        string path = Path.Combine(
+            folder,
+            $"FinalBattleUI_{DateTime.Now:yyyyMMdd_HHmmss}.txt");
+
+        File.WriteAllText(
+            path,
+            "PROJECT_ABYSS_FINAL_BATTLE_UI_APPLIED\n" +
+            $"AppliedAt: {DateTime.Now:O}\n" +
+            $"Scene: {scenePath}\n" +
+            "TargetArrowUI: reused\n" +
+            "ClashOverview: horizontal left-to-right\n" +
+            "SkillPanel: four animated drawers\n" +
+            "CharacterDetail: camera-only front focus\n" +
+            "WorldEnemyPlate: name/currentHP/maxHP\n");
+
+        AssetDatabase.Refresh();
+    }
+
+    private static void ScheduleToolArchive()
+    {
+        EditorApplication.delayCall += () =>
+        {
+            try
+            {
+                string folder =
+                    "Assets/_ProjectAbyssArchive/DisabledEditorTools/" +
+                    DateTime.Now.ToString("yyyyMMdd_HHmmss");
+
+                Directory.CreateDirectory(folder);
+
+                List<string> paths = new(OneShotToolPaths);
+                ProjectAbyssFinalBattleUiInstaller tempWindow =
+                    CreateInstance<ProjectAbyssFinalBattleUiInstaller>();
+                MonoScript selfScript =
+                    MonoScript.FromScriptableObject(tempWindow);
+                DestroyImmediate(tempWindow);
+
+                string selfPath = selfScript != null
+                    ? AssetDatabase.GetAssetPath(selfScript)
+                    : null;
+
+                if (!string.IsNullOrWhiteSpace(selfPath))
+                    paths.Add(selfPath);
+
+                foreach (string assetPath in paths.Distinct())
+                {
+                    if (string.IsNullOrWhiteSpace(assetPath) ||
+                        !File.Exists(assetPath))
+                    {
+                        continue;
+                    }
+
+                    string destination = Path.Combine(
+                        folder,
+                        Path.GetFileName(assetPath) + ".disabled");
+
+                    File.Copy(assetPath, destination, true);
+                    AssetDatabase.DeleteAsset(assetPath);
+                }
+
+                AssetDatabase.Refresh();
+                Debug.Log(
+                    "[FinalBattleUI] 일회성 Editor Tool을 비활성 보관했습니다: " +
+                    folder);
+            }
+            catch (Exception exception)
+            {
+                Debug.LogException(exception);
+            }
+        };
+    }
+
+    private static T FindSceneComponent<T>() where T : Component
+    {
+        Scene active = SceneManager.GetActiveScene();
+
+        return Resources.FindObjectsOfTypeAll<T>()
+            .FirstOrDefault(
+                target =>
+                    target != null &&
+                    target.gameObject.scene == active &&
+                    (target.hideFlags & HideFlags.HideAndDontSave) == 0);
+    }
+
+    private static T FindSceneComponentByName<T>(string name)
+        where T : Component
+    {
+        Scene active = SceneManager.GetActiveScene();
+
+        return Resources.FindObjectsOfTypeAll<T>()
+            .FirstOrDefault(
+                target =>
+                    target != null &&
+                    target.gameObject.scene == active &&
+                    string.Equals(
+                        target.gameObject.name,
+                        name,
+                        StringComparison.Ordinal));
+    }
+
+    private static GameObject FindSceneObjectByName(string name)
+    {
+        Scene active = SceneManager.GetActiveScene();
+
+        return Resources.FindObjectsOfTypeAll<GameObject>()
+            .FirstOrDefault(
+                target =>
+                    target != null &&
+                    target.scene == active &&
+                    string.Equals(
+                        target.name,
+                        name,
+                        StringComparison.Ordinal));
+    }
+
+    private static GameObject FindChildByName(
+        Transform root,
+        string name)
+    {
+        if (root == null)
+            return null;
+
+        foreach (Transform child in root.GetComponentsInChildren<Transform>(true))
+        {
+            if (string.Equals(child.name, name, StringComparison.Ordinal))
+                return child.gameObject;
+        }
+
+        return null;
+    }
+
+    private static T FindChildComponentByName<T>(
+        Transform root,
+        string name)
+        where T : Component
+    {
+        GameObject target = FindChildByName(root, name);
+        return target != null ? target.GetComponent<T>() : null;
+    }
+
+    private static void SetSerialized(
+        SerializedObject serializedObject,
+        string propertyName,
+        UnityEngine.Object value)
+    {
+        SerializedProperty property =
+            serializedObject.FindProperty(propertyName);
+
+        if (property != null)
+            property.objectReferenceValue = value;
+    }
+
+    private static void SetSerialized(
+        SerializedObject serializedObject,
+        string propertyName,
+        bool value)
+    {
+        SerializedProperty property =
+            serializedObject.FindProperty(propertyName);
+
+        if (property != null)
+            property.boolValue = value;
+    }
+
+    private static void SetSerialized(
+        SerializedObject serializedObject,
+        string propertyName,
+        int value)
+    {
+        SerializedProperty property =
+            serializedObject.FindProperty(propertyName);
+
+        if (property != null)
+            property.intValue = value;
+    }
+
+    private static void SetSerialized(
+        SerializedObject serializedObject,
+        string propertyName,
+        float value)
+    {
+        SerializedProperty property =
+            serializedObject.FindProperty(propertyName);
+
+        if (property != null)
+            property.floatValue = value;
+    }
+
+    private static void SetSerialized(
+        SerializedObject serializedObject,
+        string propertyName,
+        Vector2 value)
+    {
+        SerializedProperty property =
+            serializedObject.FindProperty(propertyName);
+
+        if (property != null)
+            property.vector2Value = value;
+    }
+
+    private sealed class TopBarBuildResult
+    {
+        public GameObject Root;
+        public BattleTopStatusBarUI Presenter;
+        public Slider MomentumBar;
+    }
+
+    private sealed class DefaultLayerBuildResult
+    {
+        public GameObject Overview;
+        public RectTransform PlayerColumn;
+        public RectTransform EnemyColumn;
+        public BodyPartButton PlayerTemplate;
+        public BodyPartButton EnemyTemplate;
+        public RectTransform ArrowLayer;
+        public TargetArrowUI TargetArrow;
+        public Button StartButton;
+    }
+
+    private sealed class ScrollBuildResult
+    {
+        public GameObject Root;
+        public RectTransform Viewport;
+        public RectTransform Content;
+    }
+}
+#endif

@@ -28,6 +28,28 @@ public class Olaf : Character, ICharacterAuthoringTarget
         return true;
     }
 
+    public override Skill CreateRuntimeSkillForLoadout(
+        SkillDefinition definition)
+    {
+        if (definition == null)
+            return null;
+
+        return definition.ActionType switch
+        {
+            ActionType.Duel =>
+                new OlafDuelRuntimeSkill(
+                    definition),
+
+            ActionType.Preparation =>
+                new OlafPreparationRuntimeSkill(
+                    definition),
+
+            _ =>
+                base.CreateRuntimeSkillForLoadout(
+                    definition)
+        };
+    }
+
     protected override void BuildBodyParts()
     {
         bodyParts.Clear();

@@ -446,11 +446,18 @@ public class BattleManager : MonoBehaviour
         }
 
         ActionManager.PrintSlots("BEFORE RESOLVE");
+
+        BattleResolutionUiController.BeginCurrentResolution();
         TurnManager.ResolveTurn(OnTurnResolved);
+
+        if (!TurnManager.IsResolving)
+            BattleResolutionUiController.EndCurrentResolution();
     }
 
     private void OnTurnResolved()
     {
+        BattleResolutionUiController.EndCurrentResolution();
+
         if (endingOrEnded ||
             destroyed ||
             !initializedSuccessfully)
@@ -517,6 +524,8 @@ public class BattleManager : MonoBehaviour
 
     private void EndBattleInternal(string reason)
     {
+        BattleResolutionUiController.EndCurrentResolution();
+
         if (endingOrEnded)
             return;
 

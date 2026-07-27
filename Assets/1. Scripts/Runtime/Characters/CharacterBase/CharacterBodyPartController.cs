@@ -136,17 +136,10 @@ public class CharacterBodyPartController
         int removedSlotCount =
             RemoveActionSlotsOfPart(part);
 
-        int remainingPartHP =
-            Mathf.Max(
-                0,
-                Mathf.RoundToInt(part.PartHP));
-
-        if (remainingPartHP > 0)
-            owner.ReduceCurrentHP(remainingPartHP);
-
+        // 최신 규칙: 파괴는 해당 부위에 연결된 행동 슬롯만 상실시킨다.
+        // 파괴 순간 남은 부위 HP를 전신 HP에 다시 차감하지 않는다.
         part.Break();
 
-        owner.TransferPartStatusesToCharacter(part);
         owner.OnBodyPartBroken(part, null);
 
         DamageContext activeDamage =

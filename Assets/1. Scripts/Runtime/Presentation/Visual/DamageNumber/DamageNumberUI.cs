@@ -142,6 +142,12 @@ public class DamageNumberUI : MonoBehaviour
     {
         StopSequence();
 
+        // activeSelf가 true인 채 OnDisable되었다면 이 객체가 아니라
+        // Canvas/Scene의 상위 hierarchy가 비활성화되는 중이다.
+        // 이 시점에 Manager로 반환하면 SetParent/SetActive lifecycle과 충돌한다.
+        if (gameObject.activeSelf)
+            return;
+
         Action<DamageNumberUI> callback = releaseHandler;
 
         if (callback == null)

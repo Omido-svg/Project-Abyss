@@ -1,27 +1,22 @@
 using UnityEngine;
 
 /// <summary>
-/// Character prefab과 CharacterAuthoringBundle을 연결한다.
-/// BattleManager보다 먼저 Awake되어 Character.Initialize 이전에 모든 참조를 적용한다.
+/// Character Prefab에 CharacterAuthoringBundle을 적용한다.
+/// BattleManager보다 먼저 CharacterData, CombatLoadout, Passive/Item,
+/// Legacy Adapter, Animator를 연결한다.
 /// </summary>
 [DefaultExecutionOrder(-10000)]
 [DisallowMultipleComponent]
 public sealed class CharacterAuthoringLink : MonoBehaviour
 {
-    [SerializeField]
-    private CharacterAuthoringBundle bundle;
-
-    [SerializeField]
-    private Character targetCharacter;
-
-    [SerializeField]
-    private Animator targetAnimator;
-
-    [SerializeField]
-    private bool applyOnAwake = true;
+    [SerializeField] private CharacterAuthoringBundle bundle;
+    [SerializeField] private Character targetCharacter;
+    [SerializeField] private Animator targetAnimator;
+    [SerializeField] private bool applyOnAwake = true;
 
     public CharacterAuthoringBundle Bundle => bundle;
     public Character TargetCharacter => targetCharacter;
+    public bool ApplyOnAwake => applyOnAwake;
 
     private void Awake()
     {
@@ -29,18 +24,14 @@ public sealed class CharacterAuthoringLink : MonoBehaviour
             ApplyNow();
     }
 
-    public void Configure(
-        CharacterAuthoringBundle newBundle)
+    public void Configure(CharacterAuthoringBundle newBundle)
     {
         bundle = newBundle;
         ResolveReferences();
     }
 
     [ContextMenu("Apply Character Authoring Bundle")]
-    private void ApplyNowFromContextMenu()
-    {
-        ApplyNow();
-    }
+    private void ApplyNowFromContextMenu() => ApplyNow();
 
     public bool ApplyNow()
     {
@@ -49,31 +40,25 @@ public sealed class CharacterAuthoringLink : MonoBehaviour
         if (bundle == null || targetCharacter == null)
             return false;
 
-        if (!bundle.IsCompatibleWith(
-                targetCharacter,
-                out string reason))
+        if (!bundle.IsCompatibleWith(targetCharacter, out string reason))
         {
             Debug.LogError(
-                "[CharacterAuthoringLink] Bundle 적용 실패 / " +
-                reason,
+                "[CharacterAuthoringLink] Bundle 적용 실패 / " + reason,
                 this);
             return false;
         }
 
         targetCharacter.ConfigureAuthoringCore(
             bundle.CharacterData,
-            bundle.OverrideLoadout
-                ? bundle.EquippedItems
-                : null,
-            bundle.OverrideLoadout
-                ? bundle.EquippedAugments
-                : null);
+            bundle.CombatLoadout,
+            bundle.OverrideLoadout ? bundle.EquippedItems : null,
+            bundle.OverrideLoadout ? bundle.EquippedAugments : null);
 
         if (targetCharacter is ICharacterAuthoringTarget target &&
             !target.ApplyCharacterAuthoring(bundle))
         {
             Debug.LogError(
-                "[CharacterAuthoringLink] 캐릭터 종류별 Authoring 적용 실패 / " +
+                "[CharacterAuthoringLink] 종류별 Authoring 적용 실패 / " +
                 $"Character={targetCharacter.GetType().Name}, Bundle={bundle.name}",
                 this);
             return false;
@@ -91,23 +76,19 @@ public sealed class CharacterAuthoringLink : MonoBehaviour
         if (bundle.OverrideAnimatorController &&
             bundle.AnimatorController != null)
         {
-            targetAnimator.runtimeAnimatorController =
-                bundle.AnimatorController;
+            targetAnimator.runtimeAnimatorController = bundle.AnimatorController;
         }
 
-        if (bundle.OverrideAvatar &&
-            bundle.Avatar != null)
-        {
+        if (bundle.OverrideAvatar && bundle.Avatar != null)
             targetAnimator.avatar = bundle.Avatar;
-        }
     }
 
     private void ResolveReferences()
     {
-        targetCharacter ??=
-            GetComponent<Character>();
-
-        targetAnimator ??=
-            GetComponentInChildren<Animator>(true);
+        targetCharacter ??= GetComponent<Character>();
+        targetCharacter ??= GetComponentInChildren<Character>(true);
+        targetAnimator ??= targetCharacter != null
+            ? targetCharacter.GetComponentInChildren<Animator>(true)
+            : GetComponentInChildren<Animator>(true);
     }
 }

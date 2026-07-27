@@ -36,8 +36,30 @@ public abstract class Skill
     private readonly HashSet<SkillEffectDispatchKey> activeEffectDispatches = new();
 
     protected virtual SkillDefinition RuntimeDefinition => null;
+    public SkillDefinition Definition => RuntimeDefinition;
 
     public virtual bool CanBreakPart => false;
+
+    public virtual int AttackWeight =>
+        RuntimeDefinition?.AttackWeight
+            ?.EffectiveWeight ?? 1;
+
+    public virtual float
+        SecondaryTargetDamageMultiplier =>
+            RuntimeDefinition?.AttackWeight
+                ?.SecondaryDamageMultiplier ?? 1f;
+
+    public virtual AttackWeightSecondaryPartMode
+        SecondaryAttackWeightPartMode =>
+            RuntimeDefinition?.AttackWeight
+                ?.SecondaryPartMode ??
+            global::AttackWeightSecondaryPartMode
+                .RandomValidTargetPoint;
+
+    public virtual bool
+        AllowBrokenAttackWeightParts =>
+            RuntimeDefinition?.AttackWeight
+                ?.AllowBrokenSecondaryParts ?? true;
 
     public virtual int ExchangeRollCount
     {
@@ -46,7 +68,7 @@ public abstract class Skill
             SkillDefinition definition = RuntimeDefinition;
 
             if (definition != null)
-                return Mathf.Max(1, definition.ExchangeRollCount);
+                return definition.EffectiveRollCount;
 
             int fallback =
                 owner?.BattleContext?.Rules?.Clash
@@ -54,8 +76,8 @@ public abstract class Skill
 
             return ActionType == ActionType.NormalAttack ||
                    ActionType == ActionType.Duel
-                ? Mathf.Max(1, fallback)
-                : 1;
+                ? Mathf.Clamp(fallback, 2, 8)
+                : 2;
         }
     }
 
@@ -129,10 +151,7 @@ public abstract class Skill
             {
                 ActionType.Duel => 1,
                 ActionType.NormalAttack => 0,
-                ActionType.Preparation =>
-                    PreparationTier == PreparationTier.Strong
-                        ? 1
-                        : 0,
+                ActionType.Preparation => 1,
                 ActionType.Prestige => 0,
                 _ => 0
             };
@@ -376,6 +395,23 @@ public abstract class Skill
 
     public virtual RollResult RollPowerResult()
     {
+        SkillResolverType fallbackType =
+            RuntimeDefinition?.ResolverType ??
+            CharacterRandomDebugOverride
+                .InferResolverType(
+                    Resolver);
+
+        if (CharacterRandomDebugOverride.TryCreateRoll(
+                owner,
+                this,
+                null,
+                fallbackType,
+                0,
+                out RollResult debugResult))
+        {
+            return debugResult;
+        }
+
         if (Resolver == null)
         {
             return new RollResult
@@ -388,6 +424,128 @@ public abstract class Skill
         }
 
         return Resolver.RollResult(this);
+    }
+
+    public SkillRollData GetRollData(int exchangeIndex) =>
+        RuntimeDefinition?.GetRollData(exchangeIndex);
+
+    public CombatRollType GetRollType(int exchangeIndex) =>
+        GetRollData(exchangeIndex)?.Type ?? CombatRollType.Attack;
+
+    public bool ShouldReuseRollData(int exchangeIndex) =>
+        GetRollData(exchangeIndex)?.ReuseValueAcrossAction == true ||
+        (GetRollData(exchangeIndex) == null &&
+         RollReusePolicy == SkillRollReusePolicy.OncePerAction);
+
+    public virtual RollResult RollPowerResultForExchange(int exchangeIndex)
+    {
+        SkillRollData data = GetRollData(exchangeIndex);
+        if (data == null)
+            return RollPowerResult();
+
+        SkillResolverType fallbackType =
+            RuntimeDefinition?.ResolverType ??
+            CharacterRandomDebugOverride
+                .InferResolverType(
+                    Resolver);
+
+        if (CharacterRandomDebugOverride.TryCreateRoll(
+                owner,
+                this,
+                data,
+                fallbackType,
+                exchangeIndex,
+                out RollResult debugResult))
+        {
+            return debugResult;
+        }
+
+        return CombatRollResolver.Roll(
+            this,
+            data,
+            fallbackType);
+    }
+
+    public void NotifyRollResolved(
+        BattleAction action,
+        BattleAction opponentAction,
+        int rollIndex,
+        bool won,
+        DamageContext damageContext)
+    {
+        // 결투를 평타로 받거나 아예 받지 않은 경우에는
+        // 결투 전용 굴림 효과가 발생하지 않는다.
+        if (ActionType == ActionType.Duel &&
+            opponentAction?.ActionType != ActionType.Duel)
+        {
+            return;
+        }
+
+        SkillRollData data = GetRollData(rollIndex);
+        IReadOnlyList<SkillEffectDefinition> effects = won
+            ? data?.OnWinEffects
+            : data?.OnLoseEffects;
+
+        ExecuteExplicitEffects(
+            effects,
+            action,
+            won ? SkillEffectTiming.OnRollWin : SkillEffectTiming.OnRollLose,
+            opponentAction,
+            damageContext);
+
+        MultiRollPenaltyData penalty = RuntimeDefinition?.MultiRollPenalty;
+        if (penalty?.HasExecutableEffect == true &&
+            penalty.Timing == MultiRollPenaltyTiming.AfterRoll &&
+            penalty.TriggerAfterRollIndex == rollIndex)
+        {
+            ExecuteExplicitEffects(
+                penalty.Effects,
+                action,
+                SkillEffectTiming.OnMultiRollPenaltyAfterRoll,
+                opponentAction,
+                damageContext);
+        }
+    }
+
+    private void ExecuteMultiRollPenalty(
+        BattleAction action,
+        MultiRollPenaltyTiming timing)
+    {
+        MultiRollPenaltyData penalty = RuntimeDefinition?.MultiRollPenalty;
+        if (penalty?.HasExecutableEffect != true || penalty.Timing != timing)
+            return;
+
+        SkillEffectTiming effectTiming = timing switch
+        {
+            MultiRollPenaltyTiming.OnActionStart => SkillEffectTiming.OnMultiRollPenaltyStart,
+            MultiRollPenaltyTiming.AfterRoll => SkillEffectTiming.OnMultiRollPenaltyAfterRoll,
+            _ => SkillEffectTiming.OnMultiRollPenaltyEnd
+        };
+
+        ExecuteExplicitEffects(penalty.Effects, action, effectTiming);
+    }
+
+    private void ExecuteExplicitEffects(
+        IReadOnlyList<SkillEffectDefinition> effects,
+        BattleAction action,
+        SkillEffectTiming timing,
+        BattleAction opponentAction = null,
+        DamageContext damageContext = null)
+    {
+        if (effects == null || action == null || RuntimeDefinition == null)
+            return;
+
+        SkillEffectContext context = new SkillEffectContext(
+            action,
+            RuntimeDefinition,
+            timing,
+            opponentAction,
+            damageContext,
+            null,
+            UseCountThisTurn);
+
+        foreach (SkillEffectDefinition effect in effects)
+            effect?.TryApply(context, timing);
     }
 
     protected IReadOnlyList<SkillEffectResult>
@@ -562,12 +720,20 @@ public abstract class Skill
         SkillUsageTracker.Increment(
             owner,
             GetUsageIdentity());
+
+        ExecuteMultiRollPenalty(
+            action,
+            MultiRollPenaltyTiming.OnActionStart);
     }
 
     private void OnActionEnd(BattleAction action)
     {
         if (action?.Skill != this)
             return;
+
+        ExecuteMultiRollPenalty(
+            action,
+            MultiRollPenaltyTiming.OnActionEnd);
 
         ExecuteDefinitionEffects(
             action,
@@ -581,6 +747,12 @@ public abstract class Skill
         if (winnerAction?.Skill != this)
             return;
 
+        if (ActionType == ActionType.Duel &&
+            loserAction?.ActionType != ActionType.Duel)
+        {
+            return;
+        }
+
         ExecuteDefinitionEffects(
             winnerAction,
             SkillEffectTiming.OnClashWin,
@@ -593,6 +765,12 @@ public abstract class Skill
     {
         if (loserAction?.Skill != this)
             return;
+
+        if (ActionType == ActionType.Duel &&
+            winnerAction?.ActionType != ActionType.Duel)
+        {
+            return;
+        }
 
         ExecuteDefinitionEffects(
             loserAction,

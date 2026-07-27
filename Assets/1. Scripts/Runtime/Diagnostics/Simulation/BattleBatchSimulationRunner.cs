@@ -192,11 +192,29 @@ public sealed class BattleBatchSimulationRunner : MonoBehaviour
     public void StopAnalysis()
     {
         if (!IsRunning)
+        {
+            panel?.SetStatus(
+                "현재 실행 중인 분석이 없습니다.");
             return;
+        }
 
         stopRequested = true;
-        panel?.SetStatus("현재 전투가 끝나는 즉시 분석을 중단합니다.");
+
+        panel?.SetStatus(
+            "즉시 중단 중...\n" +
+            "완료된 분석 회차까지만 저장합니다.");
+
+        AppendBatchEvent(
+            "STOP_REQUESTED",
+            $"CompletedRuns={LastSummary?.completedRuns ?? 0}");
+
+        if (activeManager != null &&
+            !activeManager.IsEndingOrEnded)
+        {
+            activeManager.EndBattle();
+        }
     }
+
 
     private void StartBatch(
         BattleSimulationMode mode,
@@ -331,6 +349,9 @@ public sealed class BattleBatchSimulationRunner : MonoBehaviour
 
                 yield return LoadSourceScene();
 
+                if (stopRequested)
+                    break;
+
                 BattleSimulationRunResult result =
                     new BattleSimulationRunResult
                     {
@@ -357,6 +378,20 @@ public sealed class BattleBatchSimulationRunner : MonoBehaviour
                 }
 
                 yield return RunCurrentSceneBattle(result);
+
+                if (stopRequested ||
+                    string.Equals(
+                        result.outcome,
+                        "STOPPED",
+                        StringComparison.Ordinal))
+                {
+                    AppendBatchEvent(
+                        "RUN_INTERRUPTED",
+                        $"Run={runIndex}, CompletedRuns={LastSummary.completedRuns}",
+                        runIndex);
+
+                    break;
+                }
 
                 LastSummary.runs.Add(result);
                 LastSummary.Recalculate();
@@ -424,6 +459,10 @@ public sealed class BattleBatchSimulationRunner : MonoBehaviour
         if (reloadCleanSceneAfterBatch &&
             sourceSceneBuildIndex >= 0)
         {
+            // 중단 요청은 결과 상태에 이미 기록했으므로,
+            // 사용자에게 깨끗한 Scene을 돌려주는 최종 재로드는 허용한다.
+            stopRequested = false;
+
             // 이 최종 재로드는 분석용 전투가 아니라 사용자에게 깨끗한 씬을 돌려주기 위한 것이다.
             // 자동 BattleDynamicAnalysisRecorder가 이 짧은 전투를 INVALID 세션으로 남기지 않게 한 번만 억제한다.
             BattleSimulationRuntime.SuppressNextDynamicAnalysisSession();
@@ -458,6 +497,14 @@ public sealed class BattleBatchSimulationRunner : MonoBehaviour
 
         while (!operation.isDone)
         {
+            if (stopRequested)
+            {
+                lastSceneLoadError =
+                    "사용자가 분석 중단을 요청했습니다.";
+
+                yield break;
+            }
+
             if (Time.realtimeSinceStartup - startedAt >
                 sceneLoadTimeoutSeconds)
             {
@@ -472,9 +519,19 @@ public sealed class BattleBatchSimulationRunner : MonoBehaviour
             yield return null;
         }
 
+        if (stopRequested)
+            yield break;
+
         // Awake/Start 및 한 프레임 지연 자동 시작을 기다린다.
         yield return null;
+
+        if (stopRequested)
+            yield break;
+
         yield return null;
+
+        if (stopRequested)
+            yield break;
 
         lastSceneLoadSucceeded = true;
         AppendBatchEvent(
@@ -489,6 +546,14 @@ public sealed class BattleBatchSimulationRunner : MonoBehaviour
 
         while (true)
         {
+            if (stopRequested)
+            {
+                result.outcome =
+                    "STOPPED";
+
+                yield break;
+            }
+
             activeManager =
                 FindFirstObjectByType<BattleManager>();
 
@@ -540,9 +605,12 @@ public sealed class BattleBatchSimulationRunner : MonoBehaviour
         {
             if (stopRequested)
             {
-                result.timedOut = true;
+                result.timedOut = false;
                 result.outcome = "STOPPED";
-                activeManager.EndBattle();
+
+                if (!activeManager.IsEndingOrEnded)
+                    activeManager.EndBattle();
+
                 break;
             }
 

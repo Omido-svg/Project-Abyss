@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 public sealed class AISkillDecision
@@ -36,7 +37,10 @@ public sealed class AISkillSelector
         AISkillDecision bestDecision = null;
         float bestScore = float.NegativeInfinity;
 
-        foreach (Skill skill in source.Skills)
+        IReadOnlyList<Skill> slotSkills =
+            source.GetSkills(actionIndex);
+
+        foreach (Skill skill in slotSkills)
         {
             if (!CanSelectSkill(
                     state,

@@ -1,0 +1,16 @@
+PROJECT ABYSS RANDOM RESOLVER DEBUG v4.7
+GeneratedUtc=2026-07-27T10:39:27.6920284Z
+Scene=Assets/5. Scenes/CameraTest.unity
+CharacterProfiles=2
+ToggleKey=F8
+ResolverRevealDuration=0.88
+
+ONE_TIME_TOOLS_SCHEDULED_FOR_DELETE
+Assets/1. Scripts/Editor/Tools/ProjectAbyssAutoPlanButtonsInstallerV44.cs
+Assets/1. Scripts/Editor/Tools/ProjectAbyssClashPresentationInstallerV43.cs
+Assets/1. Scripts/Editor/Tools/ProjectAbyssClashRngStartUiInstallerV45.cs
+Assets/1. Scripts/Editor/Tools/ProjectAbyssClashRollDetailUiInstallerV42.cs
+Assets/1. Scripts/Editor/Tools/ProjectAbyssEnemyDetailAuthoringRepairV412.cs
+Assets/1. Scripts/Editor/Tools/ProjectAbyssInteractionCombatAnalysisInstallerV41.cs
+Assets/1. Scripts/Editor/Tools/ProjectAbyssRandomResolverDebugInstallerV47.cs
+Assets/1. Scripts/Editor/Tools/ProjectAbyssTheOneLordTmpFontInstallerV46.cs

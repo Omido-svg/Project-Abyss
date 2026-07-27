@@ -1,0 +1,370 @@
+using System.Collections.Generic;
+using TMPro;
+using UnityEngine;
+using UnityEngine.UI;
+
+[DisallowMultipleComponent]
+public sealed class BattleWorldCharacterPlateManager : MonoBehaviour
+{
+    [SerializeField] private BattleManager battleManager;
+    [SerializeField] private BattleUIManager battleUiManager;
+    [SerializeField] private BattleCharacterDetailPanelUI detailPanel;
+    [SerializeField] private Camera targetCamera;
+    [SerializeField] private bool showPlayerPlate;
+    [SerializeField] private Vector3 worldOffset = new(0f, 0.48f, 0f);
+    [SerializeField] private float canvasScale = 0.0062f;
+
+    private readonly List<GameObject> generated = new();
+    private readonly Dictionary<Character, BattleWorldCharacterPlateUI> plates = new();
+
+    public void Configure(
+        BattleManager manager,
+        BattleUIManager uiManager,
+        BattleCharacterDetailPanelUI panel,
+        Camera camera)
+    {
+        battleManager = manager;
+        battleUiManager = uiManager;
+        detailPanel = panel;
+        targetCamera = camera;
+    }
+
+    private void Awake()
+    {
+        if (battleManager == null)
+            battleManager = FindFirstObjectByType<BattleManager>();
+
+        if (battleUiManager == null)
+            battleUiManager = FindFirstObjectByType<BattleUIManager>();
+
+        if (detailPanel == null)
+        {
+            detailPanel =
+                FindFirstObjectByType<BattleCharacterDetailPanelUI>(
+                    FindObjectsInactive.Include);
+        }
+
+        targetCamera ??= Camera.main;
+
+        if (battleManager != null)
+            battleManager.BattlePrepared += OnBattlePrepared;
+    }
+
+    private void Start()
+    {
+        if (battleManager?.BattleContext != null)
+            Build(battleManager.BattleContext);
+    }
+
+    private void OnDestroy()
+    {
+        if (battleManager != null)
+            battleManager.BattlePrepared -= OnBattlePrepared;
+
+        Clear();
+    }
+
+    private void OnBattlePrepared(BattleContext context)
+    {
+        Build(context);
+    }
+
+    public void Build(BattleContext context)
+    {
+        if (context == null)
+            return;
+
+        Clear();
+
+        if (showPlayerPlate && context.Player != null)
+            CreateForCharacter(context.Player);
+
+        if (context.Enemies != null)
+        {
+            foreach (Character enemy in context.Enemies)
+            {
+                if (enemy != null)
+                    CreateForCharacter(enemy);
+            }
+        }
+
+    }
+
+    private void CreateForCharacter(Character character)
+    {
+        if (character == null)
+            return;
+
+        BattleCharacterWorldClickInspector inspector =
+            character.GetComponent<BattleCharacterWorldClickInspector>();
+
+        if (inspector == null)
+            inspector = character.gameObject.AddComponent<BattleCharacterWorldClickInspector>();
+
+        inspector.Configure(
+            character,
+            battleUiManager,
+            detailPanel);
+
+        GameObject root =
+            new(
+                "BattleWorldInfoPlate",
+                typeof(RectTransform),
+                typeof(Canvas),
+                typeof(CanvasScaler),
+                typeof(GraphicRaycaster),
+                typeof(BattleWorldCharacterPlateUI));
+
+        Transform followTarget =
+            ResolvePlateFollowTarget(character);
+
+        root.transform.SetParent(
+            followTarget,
+            false);
+
+        Vector3 initialWorldPosition =
+            FindWorldTop(character) +
+            worldOffset;
+
+        Vector3 followLocalPosition =
+            followTarget.InverseTransformPoint(
+                initialWorldPosition);
+
+        RectTransform rect = root.GetComponent<RectTransform>();
+        rect.sizeDelta = new Vector2(360f, 92f);
+        rect.localScale = Vector3.one * canvasScale;
+        rect.localPosition = followLocalPosition;
+
+        Canvas canvas = root.GetComponent<Canvas>();
+        canvas.renderMode = RenderMode.WorldSpace;
+        canvas.worldCamera = targetCamera;
+        canvas.sortingOrder = 30;
+
+        CanvasScaler scaler = root.GetComponent<CanvasScaler>();
+        scaler.dynamicPixelsPerUnit = 20f;
+
+        Image background =
+            CreateImage(
+                "Background",
+                rect,
+                new Color(0.035f, 0.045f, 0.065f, 0.94f));
+
+        Stretch(background.rectTransform);
+
+        TMP_Text name =
+            CreateText(
+                "Name",
+                rect,
+                29f,
+                TextAlignmentOptions.Left);
+
+        SetRect(
+            name.rectTransform,
+            new Vector2(0.04f, 0.53f),
+            new Vector2(0.72f, 0.94f));
+
+        TMP_Text hp =
+            CreateText(
+                "Hp",
+                rect,
+                24f,
+                TextAlignmentOptions.Right);
+
+        SetRect(
+            hp.rectTransform,
+            new Vector2(0.70f, 0.53f),
+            new Vector2(0.96f, 0.94f));
+
+        Image hpTrack =
+            CreateImage(
+                "HpTrack",
+                rect,
+                new Color(0.12f, 0.12f, 0.14f, 1f));
+
+        SetRect(
+            hpTrack.rectTransform,
+            new Vector2(0.04f, 0.16f),
+            new Vector2(0.96f, 0.39f));
+
+        Image hpFill =
+            CreateImage(
+                "HpFill",
+                hpTrack.rectTransform,
+                new Color(0.86f, 0.16f, 0.16f, 1f));
+
+        Stretch(hpFill.rectTransform);
+        hpFill.type = Image.Type.Filled;
+        hpFill.fillMethod = Image.FillMethod.Horizontal;
+        hpFill.fillOrigin = 0;
+
+        BattleWorldCharacterPlateUI plate =
+            root.GetComponent<BattleWorldCharacterPlateUI>();
+
+        plate.Configure(
+            character,
+            targetCamera,
+            name,
+            hp,
+            hpFill,
+            followTarget,
+            followLocalPosition);
+
+        plates[character] = plate;
+        generated.Add(root);
+    }
+
+    public void SetVisualHpOverride(Character character, int hp)
+    {
+        if (character == null)
+            return;
+
+        if (plates.TryGetValue(character, out BattleWorldCharacterPlateUI plate) &&
+            plate != null)
+        {
+            plate.SetHpOverride(hp);
+        }
+    }
+
+    public void ClearVisualHpOverride(Character character)
+    {
+        if (character == null)
+            return;
+
+        if (plates.TryGetValue(character, out BattleWorldCharacterPlateUI plate) &&
+            plate != null)
+        {
+            plate.ClearHpOverride();
+        }
+    }
+
+    public void RefreshCharacter(Character character)
+    {
+        if (character == null)
+            return;
+
+        if (plates.TryGetValue(character, out BattleWorldCharacterPlateUI plate) &&
+            plate != null)
+        {
+            plate.RefreshNow();
+        }
+    }
+
+    private static Transform ResolvePlateFollowTarget(
+        Character character)
+    {
+        if (character == null)
+            return null;
+
+        CharacterActionMover mover =
+            character.GetComponent<CharacterActionMover>();
+
+        if (mover != null &&
+            mover.VisualRoot != null)
+        {
+            return mover.VisualRoot;
+        }
+
+        CharacterView view =
+            BattleCameraTargetResolver.GetView(
+                character);
+
+        if (view != null)
+            return view.transform;
+
+        return character.transform;
+    }
+
+    private static Vector3 FindWorldTop(Character character)
+    {
+        Renderer[] renderers =
+            character.GetComponentsInChildren<Renderer>(true);
+
+        if (renderers.Length == 0)
+            return character.transform.position + Vector3.up * 2f;
+
+        Bounds bounds = renderers[0].bounds;
+
+        for (int i = 1; i < renderers.Length; i++)
+            bounds.Encapsulate(renderers[i].bounds);
+
+        return new Vector3(
+            bounds.center.x,
+            bounds.max.y,
+            bounds.center.z);
+    }
+
+    private void Clear()
+    {
+        plates.Clear();
+
+        foreach (GameObject target in generated)
+        {
+            if (target != null)
+                Destroy(target);
+        }
+
+        generated.Clear();
+    }
+
+    private static Image CreateImage(
+        string name,
+        Transform parent,
+        Color color)
+    {
+        GameObject target =
+            new(
+                name,
+                typeof(RectTransform),
+                typeof(CanvasRenderer),
+                typeof(Image));
+
+        target.transform.SetParent(parent, false);
+
+        Image image = target.GetComponent<Image>();
+        image.color = color;
+        image.raycastTarget = false;
+        return image;
+    }
+
+    private static TMP_Text CreateText(
+        string name,
+        Transform parent,
+        float fontSize,
+        TextAlignmentOptions alignment)
+    {
+        GameObject target =
+            new(
+                name,
+                typeof(RectTransform),
+                typeof(CanvasRenderer),
+                typeof(TextMeshProUGUI));
+
+        target.transform.SetParent(parent, false);
+
+        TextMeshProUGUI text = target.GetComponent<TextMeshProUGUI>();
+        text.fontSize = fontSize;
+        text.alignment = alignment;
+        text.color = Color.white;
+        text.raycastTarget = false;
+        return text;
+    }
+
+    private static void Stretch(RectTransform rect)
+    {
+        rect.anchorMin = Vector2.zero;
+        rect.anchorMax = Vector2.one;
+        rect.offsetMin = Vector2.zero;
+        rect.offsetMax = Vector2.zero;
+    }
+
+    private static void SetRect(
+        RectTransform rect,
+        Vector2 min,
+        Vector2 max)
+    {
+        rect.anchorMin = min;
+        rect.anchorMax = max;
+        rect.offsetMin = Vector2.zero;
+        rect.offsetMax = Vector2.zero;
+    }
+}

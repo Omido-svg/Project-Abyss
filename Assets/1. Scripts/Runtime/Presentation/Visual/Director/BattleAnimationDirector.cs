@@ -48,6 +48,7 @@ public class BattleAnimationDirector : MonoBehaviour
     [Header("UI")]
     [SerializeField] private BattleUIManager battleUIManager;
     [SerializeField] private BattleActionAnnounceUI actionAnnounceUI;
+    [SerializeField] private BattleClashRollPresentationUI clashRollPresentationUI;
 
     private bool isPlaying;
     private Coroutine cameraShotRoutine;
@@ -105,6 +106,13 @@ public class BattleAnimationDirector : MonoBehaviour
         if (actionAnnounceUI == null)
             actionAnnounceUI = FindFirstObjectByType<BattleActionAnnounceUI>();
 
+        if (clashRollPresentationUI == null)
+        {
+            clashRollPresentationUI =
+                FindFirstObjectByType<BattleClashRollPresentationUI>(
+                    FindObjectsInactive.Include);
+        }
+
         if (targetArrowUI == null)
             targetArrowUI = FindFirstObjectByType<TargetArrowUI>();
             
@@ -115,10 +123,19 @@ public class BattleAnimationDirector : MonoBehaviour
             vfxManager = FindFirstObjectByType<BattleVfxManager>();
     }
 
+    public void AssignClashRollPresentationUI(
+        BattleClashRollPresentationUI value)
+    {
+        clashRollPresentationUI = value;
+    }
+
     public IEnumerator Play(BattleVisualRequest request)
     {
         if (request == null)
             yield break;
+
+        // Scene 재로드나 UI 재구성 뒤 파괴된 Unity 참조를 새 인스턴스로 다시 연결한다.
+        ResolveReferences();
 
         if (isPlaying)
         {
@@ -613,9 +630,17 @@ public class BattleAnimationDirector : MonoBehaviour
 
         playback.BeginCueScope();
 
-        yield return ShowActionAnnouncement(
-            playback,
-            visual);
+        if (clashRollPresentationUI != null)
+        {
+            yield return clashRollPresentationUI
+                .ShowSequence(request);
+        }
+        else
+        {
+            yield return ShowActionAnnouncement(
+                playback,
+                visual);
+        }
 
         StartCameraShots(
             playback,
@@ -719,6 +744,8 @@ public class BattleAnimationDirector : MonoBehaviour
 
             playback.BeginCueScope();
 
+            bool rollPresentationPlayed = false;
+
             if (!exchange.IsOneSided &&
                 exchangeVisual.ShowsClashPower)
             {
@@ -750,13 +777,42 @@ public class BattleAnimationDirector : MonoBehaviour
                 if (leadTime > 0f)
                     yield return new WaitForSeconds(leadTime);
 
-                yield return ShowClashPowerStep(
-                    playback,
-                    request,
-                    rootViews,
-                    exchangeVisual,
-                    exchange.DisplayStep,
-                    i);
+                if (clashRollPresentationUI != null)
+                {
+                    yield return clashRollPresentationUI
+                        .PlayPairedExchange(
+                            exchange,
+                            i);
+
+                    rollPresentationPlayed = true;
+                }
+                else
+                {
+                    yield return ShowClashPowerStep(
+                        playback,
+                        request,
+                        rootViews,
+                        exchangeVisual,
+                        exchange.DisplayStep,
+                        i);
+                }
+            }
+
+            if (!exchange.IsOneSided &&
+                !rollPresentationPlayed &&
+                clashRollPresentationUI != null)
+            {
+                yield return clashRollPresentationUI
+                    .PlayPairedExchange(
+                        exchange,
+                        i);
+            }
+
+            if (exchange.IsOneSided &&
+                clashRollPresentationUI != null)
+            {
+                clashRollPresentationUI
+                    .BeginOneSidedExchange(exchange);
             }
 
             if (exchange.HasAttack)
@@ -766,6 +822,13 @@ public class BattleAnimationDirector : MonoBehaviour
                     exchange.AttackRequest,
                     exchange,
                     animationSpeed);
+            }
+
+            if (exchange.IsOneSided &&
+                clashRollPresentationUI != null)
+            {
+                clashRollPresentationUI
+                    .EndOneSidedExchange();
             }
 
             // 전투 계산은 이미 끝났지만 기세 UI는 교환별 스냅샷을 따라간다.
@@ -866,9 +929,16 @@ public class BattleAnimationDirector : MonoBehaviour
                 visual.AfterReturnDelay);
         }
 
-        yield return HideActionAnnouncement(
-            playback,
-            visual);
+        if (clashRollPresentationUI != null)
+        {
+            yield return clashRollPresentationUI.Hide();
+        }
+        else
+        {
+            yield return HideActionAnnouncement(
+                playback,
+                visual);
+        }
 
         yield return PlayMomentumRefreshAtVisualEnd(
             playback);
@@ -1441,6 +1511,18 @@ public class BattleAnimationDirector : MonoBehaviour
 
                     if (wasVisible && actionAnnounceUI != null)
                         actionAnnounceUI.HideImmediate();
+
+                    // UnityEngine.Object에 ?.를 사용하면 파괴된 객체도 CLR null이 아니어서
+                    // MissingReferenceException이 발생할 수 있다. Unity의 오버로드된 null 검사를 사용한다.
+                    if (clashRollPresentationUI != null)
+                    {
+                        clashRollPresentationUI.HideImmediate();
+                    }
+                    else
+                    {
+                        clashRollPresentationUI = null;
+                    }
+
                     break;
                 }
 

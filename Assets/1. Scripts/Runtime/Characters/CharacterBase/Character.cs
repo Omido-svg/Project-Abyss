@@ -7,17 +7,43 @@ public abstract class Character : MonoBehaviour
     [SerializeField] private CharacterData data;
     public CharacterData Data => data;
 
+    [System.NonSerialized]
+    private CharacterCombatLoadout authoringCombatLoadoutOverride;
+
+    public CharacterCombatLoadout CombatLoadoutSource =>
+        authoringCombatLoadoutOverride != null
+            ? authoringCombatLoadoutOverride
+            : data?.CombatLoadout;
+
     /// <summary>
-    /// CharacterAuthoringBundle이 Character.Initialize 이전에 핵심 참조를 적용하는 진입점이다.
-    /// Bundle을 사용하지 않는 기존 Prefab은 기존 직렬화 값을 그대로 사용한다.
+    /// 구형 호출부 호환. CharacterData의 CombatLoadout을 사용한다.
     /// </summary>
     public void ConfigureAuthoringCore(
         CharacterData characterData,
         IReadOnlyList<CharacterItem> items = null,
         IReadOnlyList<CharacterAugment> augments = null)
     {
+        ConfigureAuthoringCore(
+            characterData,
+            characterData?.CombatLoadout,
+            items,
+            augments);
+    }
+
+    /// <summary>
+    /// Bundle이 Initialize 이전에 CharacterData, 최신 CombatLoadout,
+    /// Item, Passive/Augment를 한 번에 적용하는 진입점이다.
+    /// </summary>
+    public void ConfigureAuthoringCore(
+        CharacterData characterData,
+        CharacterCombatLoadout combatLoadout,
+        IReadOnlyList<CharacterItem> items = null,
+        IReadOnlyList<CharacterAugment> augments = null)
+    {
         if (characterData != null)
             data = characterData;
+
+        authoringCombatLoadoutOverride = combatLoadout;
 
         if (items != null)
         {
@@ -28,11 +54,8 @@ public abstract class Character : MonoBehaviour
             {
                 CharacterItem item = items[i];
 
-                if (item != null &&
-                    !equippedItems.Contains(item))
-                {
+                if (item != null && !equippedItems.Contains(item))
                     equippedItems.Add(item);
-                }
             }
         }
 
@@ -45,11 +68,8 @@ public abstract class Character : MonoBehaviour
             {
                 CharacterAugment augment = augments[i];
 
-                if (augment != null &&
-                    !equippedAugments.Contains(augment))
-                {
+                if (augment != null && !equippedAugments.Contains(augment))
                     equippedAugments.Add(augment);
-                }
             }
         }
     }
@@ -78,6 +98,7 @@ public abstract class Character : MonoBehaviour
     private readonly CharacterCombatState combatState = new();
     private readonly CharacterEventBinder eventBinder = new();
     private readonly List<Skill> characterSkills = new();
+    private CharacterCombatRulesRuntime combatRulesRuntime;
 
     private CharacterTargetModel targetModel;
 
@@ -124,6 +145,12 @@ public abstract class Character : MonoBehaviour
             return mechanicController.Mechanics;
         }
     }
+
+    /// <summary>
+    /// UI, 도감, 전투 상세 화면에서 현재 런타임에 초기화된 전체 스킬을
+    /// 안전하게 읽기 위한 읽기 전용 노출입니다.
+    /// </summary>
+    public IReadOnlyList<Skill> RuntimeSkills => characterSkills;
 
     //--------------------------------
     // Body Parts
@@ -189,7 +216,12 @@ public abstract class Character : MonoBehaviour
     public int TurnClashPowerBonus =>
         combatState?.TurnClashPowerBonus ?? 0;
 
-    public virtual bool SupportsLastStand => true;
+    public CharacterCombatRulesRuntime CombatRulesRuntime => combatRulesRuntime;
+
+    public virtual bool SupportsLastStand =>
+        Data != null &&
+        (Data.CombatantTier == CombatantTier.EliteEnemy ||
+         Data.CombatantTier == CombatantTier.Boss);
 
     public bool IsDead
     {
@@ -344,7 +376,13 @@ public abstract class Character : MonoBehaviour
             lifeController.Reset();
 
             //--------------------------------
-            // 4. 모든 런타임 Skill 이벤트 구독
+            // 4. 캐릭터별 슬롯 / 장착 스킬 / 보스 페이즈 런타임
+            //--------------------------------
+            combatRulesRuntime =
+                new CharacterCombatRulesRuntime(this);
+
+            //--------------------------------
+            // 5. 모든 런타임 Skill 이벤트 구독
             //--------------------------------
             characterSkills.Clear();
 
@@ -358,6 +396,12 @@ public abstract class Character : MonoBehaviour
                     if (skill != null)
                         characterSkills.Add(skill);
                 }
+            }
+
+            foreach (Skill skill in combatRulesRuntime.CreateRuntimeSkills())
+            {
+                if (skill != null && !characterSkills.Contains(skill))
+                    characterSkills.Add(skill);
             }
 
             eventBinder.BindSkills(
@@ -415,6 +459,7 @@ public abstract class Character : MonoBehaviour
         }
 
         characterSkills.Clear();
+        combatRulesRuntime = null;
         combatState.ClearDamageResolution();
 
         damageController = null;
@@ -454,6 +499,17 @@ public abstract class Character : MonoBehaviour
     protected virtual IEnumerable<Skill> GetCharacterSkills()
     {
         return System.Array.Empty<Skill>();
+    }
+
+    /// <summary>
+    /// Modern CharacterCombatLoadout의 SkillDefinition을 캐릭터 고유 RuntimeSkill로
+    /// 변환하는 확장점이다. 기본은 Definition 팩토리를 사용하고, Olaf처럼
+    /// 고유 Duel/Preparation Adapter가 필요한 캐릭터가 오버라이드한다.
+    /// </summary>
+    public virtual Skill CreateRuntimeSkillForLoadout(
+        SkillDefinition definition)
+    {
+        return definition?.CreateRuntimeSkill();
     }
 
     protected virtual ICombatTargetModel CreateCombatTargetModel()
@@ -497,37 +553,107 @@ public abstract class Character : MonoBehaviour
 
     //------------------------------------------------
 
+    public virtual int GetMaxActionSlots()
+    {
+        int configured =
+            combatRulesRuntime?.GetActiveSlotCount() ?? 0;
+
+        return configured > 0
+            ? configured
+            : GetMaxCombatActionSlots();
+    }
+
     public virtual int GetMaxCombatActionSlots()
     {
-        // 플레이어의 공격 가능 부위는 머리 + 양팔이므로 시스템 상한은 3이다.
-        return 3;
+        int configured = combatRulesRuntime?.GetActiveCombatSlotCount() ?? 0;
+        return configured > 0 ? configured : 3;
     }
 
     public virtual int GetMaxActionSlotsForPart(BodyPart part)
     {
         if (part == null)
-        {
-            return IsSingleHpTarget
-                ? 1
-                : 0;
-        }
-
+            return IsSingleHpTarget ? Mathf.Max(1, combatRulesRuntime?.GetSlotCountForPart(null) ?? 1) : 0;
         if (part.IsBroken)
             return 0;
 
-        ActionSlotPolicyContext context =
-            new ActionSlotPolicyContext
+        int configured = combatRulesRuntime?.GetSlotCountForPart(part) ?? 0;
+        if (configured > 0)
+            return configured;
+
+        ActionSlotPolicyContext context = new ActionSlotPolicyContext
+        {
+            Owner = this,
+            Part = part,
+            MaxSlots = 1
+        };
+        mechanicController?.ModifyActionSlotPolicy(context);
+        return Mathf.Max(0, context.MaxSlots);
+    }
+
+    public void ConfigureActionSlot(ActionSlot slot)
+    {
+        if (slot == null || slot.Owner != this)
+            return;
+
+        CharacterSlotConfig config =
+            combatRulesRuntime?.GetSlotConfig(slot.Part, slot.ActionIndex);
+
+        bool configurationChanged =
+            !ReferenceEquals(slot.SlotConfig, config) ||
+            !string.Equals(
+                slot.SlotId,
+                config?.SlotId,
+                System.StringComparison.Ordinal);
+
+        slot.SlotConfig = config;
+        slot.SlotId = config?.SlotId ??
+                      $"LEGACY_{slot.Part?.Type.ToString() ?? "CHARACTER"}_{slot.ActionIndex:00}";
+
+        if (configurationChanged &&
+            config?.OverrideSpeedRange == true)
+        {
+            slot.Speed =
+                Random.Range(
+                    config.MinSpeed,
+                    config.MaxSpeed + 1);
+        }
+    }
+
+    public bool CanUseActionSlot(ActionSlot slot)
+    {
+        if (slot == null || slot.Owner != this)
+            return false;
+        ConfigureActionSlot(slot);
+        if (slot.SlotConfig?.HasLinkedPart == true &&
+            slot.Part?.IsBroken == true)
+        {
+            return false;
+        }
+
+        return slot.SlotConfig == null ||
+               slot.SlotConfig.Enabled;
+    }
+
+    public IReadOnlyList<Skill> GetSelectableSkills(
+        BodyPart part,
+        int actionIndex = 0)
+    {
+        if (combatRulesRuntime?.HasStructuredRules == true)
+        {
+            ActionSlot probe = new ActionSlot
             {
                 Owner = this,
                 Part = part,
-                MaxSlots = 1
+                ActionIndex = Mathf.Max(0, actionIndex)
             };
+            ConfigureActionSlot(probe);
+            return combatRulesRuntime.GetAvailableSkillsForSlot(probe, characterSkills);
+        }
 
-        mechanicController?.ModifyActionSlotPolicy(context);
+        if (part != null)
+            return part.AvailableSkills;
 
-        return Mathf.Max(
-            0,
-            context.MaxSlots);
+        return characterSkills;
     }
 
     public T GetStatus<T>() where T : StatusEffect
@@ -615,9 +741,16 @@ public abstract class Character : MonoBehaviour
         // 도사림의 그 턴 한정 합 보정은 다음 턴 시작 전에 초기화한다.
         combatState?.ClearTurnModifiers();
 
-        // 에너지는 매 턴 시작 시 최대치까지 전량 회복된다.
-        // 도사림/합 계획 전에 복구되어 UI와 AI가 같은 예산을 본다.
-        resourceController?.RestoreEnergyToFull();
+        combatRulesRuntime?.EvaluateBossPhase(
+            battleContext,
+            battleContext?.battleManager?.TurnManager?.CurrentTurn ?? 1);
+
+        int turnEnergy =
+            battleContext?.Rules?.Energy?.TurnStartGain ?? 1;
+
+        resourceController?.AddEnergy(
+            turnEnergy,
+            CombatResourceChangeReason.TurnRefill);
 
         statusController?.OnTurnStart();
     }
@@ -999,10 +1132,10 @@ public abstract class Character : MonoBehaviour
         if (effect == null)
             return;
 
-        AddPartStatus(
-            part,
+        statusController?.AddStatus(
             effect,
-            this);
+            this,
+            part);
     }
 
     public void ApplyDisabledStatusForPart(BodyPart part)
@@ -1051,13 +1184,9 @@ public abstract class Character : MonoBehaviour
         BodyPart part,
         StatusEffect disabledDebuff)
     {
-        StatusEffect brokenStatus =
-            CreateBrokenPartStatus(part);
-
-        if (brokenStatus == null)
-            return;
-
-        AddStatus(brokenStatus, this);
+        statusController?.RemoveStatusesFromSourcePart(
+            part,
+            StatusEffectRemoveReason.PartBroken);
     }
 
     protected virtual StatusEffect CreateBrokenPartStatus(
@@ -1082,10 +1211,15 @@ public abstract class Character : MonoBehaviour
 
     public void AddStatus(StatusEffect effect, Character source)
     {
-        if (statusController == null)
-            return;
+        statusController?.AddStatus(effect, source);
+    }
 
-        statusController.AddStatus(effect, source);
+    public void AddStatus(
+        StatusEffect effect,
+        Character source,
+        BodyPart sourcePart)
+    {
+        statusController?.AddStatus(effect, source, sourcePart);
     }
 
     public void RemoveStatus(StatusEffect effect)
@@ -1119,6 +1253,9 @@ public abstract class Character : MonoBehaviour
     public void RemoveBrokenStatusForPart(BodyPart part)
     {
         statusController?.RemoveBrokenStatusForPart(part);
+        statusController?.RemoveStatusesFromSourcePart(
+            part,
+            StatusEffectRemoveReason.PartRecovered);
     }
 
     //------------------------------------------------

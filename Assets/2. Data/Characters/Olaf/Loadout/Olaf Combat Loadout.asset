@@ -1,0 +1,33 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8e03ed514d788a244870e9d951986ee3, type: 3}
+  m_Name: Olaf Combat Loadout
+  m_EditorClassIdentifier: 
+  NormalSkills:
+  - {fileID: 11400000, guid: d186584d80e209d44a0aa4fd4c31b939, type: 2}
+  DuelSkills:
+  - {fileID: 11400000, guid: 9307bc19f87268e49b814a05778f430c, type: 2}
+  PreparationSkills:
+  - {fileID: 11400000, guid: 6acf50d52cbb5c94581da06a0a953647, type: 2}
+  PrestigeSkills:
+  - {fileID: 11400000, guid: 55bc5414689646c4e9ada845127e9149, type: 2}
+  Catalog: {fileID: 11400000, guid: b3655c1772b60cd43ba826081ac6293d, type: 2}
+  IncludeCatalogCandidates: 0
+  NormalSkillPool:
+  - {fileID: 11400000, guid: d186584d80e209d44a0aa4fd4c31b939, type: 2}
+  DuelSkillPool:
+  - {fileID: 11400000, guid: 9307bc19f87268e49b814a05778f430c, type: 2}
+  PrestigeSkillPool:
+  - {fileID: 11400000, guid: 55bc5414689646c4e9ada845127e9149, type: 2}
+  CommonPreparationPool: []
+  CharacterPreparationPool:
+  - {fileID: 11400000, guid: 6acf50d52cbb5c94581da06a0a953647, type: 2}

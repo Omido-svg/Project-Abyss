@@ -1,0 +1,31 @@
+PROJECT ABYSS THEONELORD TMP FONT APPLY REPORT
+GeneratedUtc=2026-07-27T09:37:55.8942223Z
+Scene=Assets/5. Scenes/CameraTest.unity
+SourceFont=Assets/7. Fonts/TheOneLord.ttf
+FontAsset=Assets/7. Fonts/TheOneLord SDF.asset
+AtlasPopulationMode=Dynamic
+MultiAtlas=True
+TMP_Text=71/71
+TMP_InputField=0/0
+RuntimeBootstrapCount=1
+TMPSettingsDefaultUpdated=True
+
+FALLBACK_FONTS
+NotoSansKR-VariableFont_wght SDF
+NotoSansKR-VariableFont_wght SDF_Backup_20260720_140016
+
+PREVIOUS_SCENE_FONTS
+NotoSansKR-VariableFont_wght SDF
+
+UNRESOLVED_CHARACTERS
+(none)
+
+STUB_SCRIPTS_SCHEDULED_FOR_DELETE
+Assets/1. Scripts/Editor/Tools/ProjectAbyssBattleUiRepairV33.cs
+Assets/1. Scripts/Editor/Tools/ProjectAbyssBattleUiRepairV34.cs
+Assets/1. Scripts/Editor/Tools/ProjectAbyssBattleUiRepairV35.cs
+Assets/1. Scripts/Editor/Tools/ProjectAbyssEditModeDetailCameraShortcutV415.cs
+Assets/1. Scripts/Editor/Tools/ProjectAbyssInteractionRollAnalysisInstallerV40.cs
+Assets/1. Scripts/Editor/Tools/ProjectAbyssOlafSoRollUiAndFolderOrganizerV38.cs
+Assets/1. Scripts/Editor/Tools/ProjectAbyssOneTimeScriptFolderCleanupV39.cs
+Assets/1. Scripts/Editor/Tools/ProjectAbyssSystemsV36Installer.cs

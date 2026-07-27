@@ -38,6 +38,11 @@ public sealed class BattleAnalysisDebugPanel : MonoBehaviour
         stopButton = stop;
         openFolderButton = openFolder;
         statusText = status;
+
+        // 런타임 AddComponent 직후 Configure되는 구조에서도
+        // 전달받은 Button을 즉시 다시 연결한다.
+        BindButtons();
+        ResolveAndRegisterRunner();
     }
 
     private void Awake()
@@ -149,8 +154,17 @@ public sealed class BattleAnalysisDebugPanel : MonoBehaviour
         BattleBatchSimulationRunner resolved =
             ResolveRunner();
 
-        resolved?.StopAnalysis();
+        if (resolved == null)
+        {
+            SetStatus(
+                "배치 분석 Runner를 찾지 못해 중단할 수 없습니다.");
+            return;
+        }
+
+        resolved.RegisterPanel(this);
+        resolved.StopAnalysis();
     }
+
 
     public void OpenOutputFolder()
     {

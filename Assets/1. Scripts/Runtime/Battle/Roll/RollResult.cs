@@ -6,6 +6,9 @@ using System.Text;
 public class RollResult
 {
     public SkillResolverType ResolverType;
+    public int RollIndex;
+    public CombatRollType RollType = CombatRollType.Attack;
+    public int JudgmentModifier;
 
     public int BasePower;
     public int RawValue;
@@ -22,6 +25,9 @@ public class RollResult
     public bool IsCritical;
     public bool WasRerolled;
     public bool WasReused;
+
+    public bool DebugOverrideApplied;
+    public string DebugSource;
 
     public bool Critical => IsCritical;
 
@@ -91,6 +97,7 @@ public class RollResult
     {
         ClashPower =
             FinalPower +
+            JudgmentModifier +
             SpeedModifier +
             MomentumModifier +
             PreparationModifier;
@@ -154,6 +161,11 @@ public class RollResult
         builder.Append(GetShortDisplayText());
         builder.Append("\n<size=70%>");
         builder.Append(GetPurePowerBreakdown());
+
+        AppendSignedModifier(
+            builder,
+            "판정",
+            JudgmentModifier);
 
         AppendSignedModifier(
             builder,

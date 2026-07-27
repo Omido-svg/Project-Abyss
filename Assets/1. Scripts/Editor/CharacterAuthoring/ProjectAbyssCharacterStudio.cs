@@ -7,45 +7,36 @@ using UnityEditor;
 using UnityEngine;
 
 /// <summary>
-/// 캐릭터 프리팹을 자동 생성하는 도구가 아니라,
-/// 이미 존재하거나 새로 만든 Character Prefab 한 개를 중심으로
-/// 데이터·스킬·패시브·연출을 한 EditorWindow에서 편집하는 단일 작업 공간이다.
+/// Character Prefab 하나를 중심으로 최신 CharacterData/CombatLoadout,
+/// 최초 장착 스킬, Passive/Item, Legacy Adapter와 Presentation을 조립한다.
 /// </summary>
 public sealed class ProjectAbyssCharacterStudio : EditorWindow
 {
-    private const string MenuPath =
-        "Tools/Project Abyss/Character Studio";
-
-    private const string DefaultBundleFolder =
-        "Assets/2. Data/Characters";
+    private const string MenuPath = "Tools/Project Abyss/Character Studio";
+    private const string DefaultBundleFolder = "Assets/2. Data/Characters";
 
     private CharacterAuthoringBundle bundle;
     private Character importPrefab;
     private bool packReferencedAssetsOnImport = true;
-    private bool linkPrefabOnImport = true;
-    private bool showAdvancedBundleData;
+    private bool assemblePrefabOnImport = true;
+    private bool ensureStandardComponents = true;
+    private bool createStandardHierarchy = true;
+    private bool showAdvanced;
     private Vector2 scroll;
+    private string assemblySummary;
 
-    private readonly Dictionary<int, Editor>
-        nestedEditors = new();
-
-    private readonly Dictionary<string, bool>
-        sectionExpanded = new();
+    private readonly Dictionary<int, Editor> nestedEditors = new();
+    private readonly Dictionary<string, bool> folds = new();
 
     [MenuItem(MenuPath, false, 2010)]
-    public static void Open()
-    {
-        Open(null);
-    }
+    public static void Open() => Open(null);
 
-    public static void Open(
-        CharacterAuthoringBundle selectedBundle)
+    public static void Open(CharacterAuthoringBundle selectedBundle)
     {
         ProjectAbyssCharacterStudio window =
-            GetWindow<ProjectAbyssCharacterStudio>(
-                "Character Studio");
+            GetWindow<ProjectAbyssCharacterStudio>("Character Studio");
 
-        window.minSize = new Vector2(560f, 650f);
+        window.minSize = new Vector2(660f, 760f);
 
         if (selectedBundle != null)
             window.bundle = selectedBundle;
@@ -56,55 +47,45 @@ public sealed class ProjectAbyssCharacterStudio : EditorWindow
 
     private void OnEnable()
     {
-        Selection.selectionChanged +=
-            HandleSelectionChanged;
-
-        TryUseSelection();
+        Selection.selectionChanged += OnSelectionChanged;
+        UseSelection();
     }
 
     private void OnDisable()
     {
-        Selection.selectionChanged -=
-            HandleSelectionChanged;
-
+        Selection.selectionChanged -= OnSelectionChanged;
         DestroyNestedEditors();
     }
 
-    private void HandleSelectionChanged()
+    private void OnSelectionChanged()
     {
-        TryUseSelection();
+        UseSelection();
         Repaint();
     }
 
-    private void TryUseSelection()
+    private void UseSelection()
     {
-        if (Selection.activeObject is
-            CharacterAuthoringBundle selectedBundle)
+        if (Selection.activeObject is CharacterAuthoringBundle selectedBundle)
         {
             bundle = selectedBundle;
             return;
         }
 
-        Character selectedCharacter =
-            ResolveCharacterFromSelection();
+        Character character = ResolveSelectedCharacter();
 
-        if (selectedCharacter == null)
+        if (character == null)
             return;
 
         CharacterAuthoringLink link =
-            selectedCharacter.GetComponent<CharacterAuthoringLink>();
+            character.GetComponent<CharacterAuthoringLink>();
 
-        if (link != null && link.Bundle != null)
-        {
+        if (link?.Bundle != null)
             bundle = link.Bundle;
-            importPrefab = selectedCharacter;
-            return;
-        }
 
-        importPrefab = selectedCharacter;
+        importPrefab = character;
     }
 
-    private static Character ResolveCharacterFromSelection()
+    private static Character ResolveSelectedCharacter()
     {
         if (Selection.activeObject is Character character)
             return character;
@@ -118,10 +99,17 @@ public sealed class ProjectAbyssCharacterStudio : EditorWindow
 
     private void OnGUI()
     {
-        DrawStudioHeader();
+        EditorGUILayout.LabelField(
+            "Project Abyss Character Studio — Prefab Assembly v4.9",
+            EditorStyles.boldLabel);
+
+        EditorGUILayout.HelpBox(
+            "한 Character Prefab을 기준으로 CharacterData, ActionSlot, " +
+            "일반공격/결투/도사림/위세 후보와 최초 장착, Passive/Augment, Item, " +
+            "Legacy Adapter, Animator, Anchor, CameraPoint, VFX를 조립합니다.",
+            MessageType.Info);
 
         scroll = EditorGUILayout.BeginScrollView(scroll);
-
         DrawBundleSelector();
 
         if (bundle == null)
@@ -131,33 +119,19 @@ public sealed class ProjectAbyssCharacterStudio : EditorWindow
             return;
         }
 
-        SyncKindFromPrefab(bundle);
+        SyncKind();
+        SyncRuntimeReferences(false);
 
         DrawQuickActions();
-        DrawIdentityAndCore();
+        DrawCore();
         DrawSkills();
-        DrawPassivesAndBuild();
+        DrawPassivesAndItems();
+        DrawPrefabAssembly();
         DrawPresentation();
-        DrawRoleSpecificSettings();
         DrawValidation();
-        DrawAdvancedData();
+        DrawAdvanced();
 
         EditorGUILayout.EndScrollView();
-    }
-
-    private void DrawStudioHeader()
-    {
-        EditorGUILayout.Space(4f);
-
-        EditorGUILayout.LabelField(
-            "Project Abyss Character Studio",
-            EditorStyles.boldLabel);
-
-        EditorGUILayout.HelpBox(
-            "프리팹 종류를 선택해 자동 생성하는 도구가 아닙니다. " +
-            "Character Prefab과 Character Bundle을 연결한 뒤, " +
-            "스탯·스킬·효과·패시브·Animator·카메라·VFX를 이 창 하나에서 편집합니다.",
-            MessageType.Info);
     }
 
     private void DrawBundleSelector()
@@ -191,58 +165,34 @@ public sealed class ProjectAbyssCharacterStudio : EditorWindow
 
     private void DrawStartPanel()
     {
-        EditorGUILayout.Space(12f);
+        EditorGUILayout.Space(10f);
 
-        EditorGUILayout.LabelField(
-            "시작",
-            EditorStyles.boldLabel);
-
-        EditorGUILayout.HelpBox(
-            "가장 빠른 사용법: Project 창에서 Character Prefab을 선택하면 아래 필드에 자동으로 들어옵니다. " +
-            "이미 CharacterAuthoringLink가 연결된 Prefab이라면 해당 Bundle이 바로 열립니다.",
-            MessageType.None);
-
-        if (GUILayout.Button(
-                "빈 Character Bundle 만들기",
-                GUILayout.Height(32f)))
-        {
+        if (GUILayout.Button("빈 Character Bundle 만들기", GUILayout.Height(32f)))
             CreateEmptyBundle();
-        }
 
-        EditorGUILayout.Space(12f);
-
-        EditorGUILayout.LabelField(
-            "기존 Character Prefab 가져오기",
-            EditorStyles.boldLabel);
-
+        EditorGUILayout.Space(10f);
         importPrefab =
             (Character)EditorGUILayout.ObjectField(
-                "Character Prefab",
+                "기존 Character Prefab",
                 importPrefab,
                 typeof(Character),
                 false);
 
         packReferencedAssetsOnImport =
             EditorGUILayout.ToggleLeft(
-                "참조 중인 Project Abyss SO를 Bundle 내부 Sub-Asset으로 복사",
+                "참조 중인 Project Abyss SO를 Bundle Sub-Asset으로 복사",
                 packReferencedAssetsOnImport);
 
-        linkPrefabOnImport =
+        assemblePrefabOnImport =
             EditorGUILayout.ToggleLeft(
-                "Prefab에 CharacterAuthoringLink를 연결",
-                linkPrefabOnImport);
-
-        EditorGUILayout.HelpBox(
-            "이 작업은 선택한 Prefab의 실제 Character 타입을 자동 판별합니다. " +
-            "플레이어블/일반 적/정예 적을 별도로 선택하지 않으며, " +
-            "Prefab 자체를 새 타입으로 생성하지 않습니다.",
-            MessageType.None);
+                "Bundle 생성 후 Prefab 조립/복구",
+                assemblePrefabOnImport);
 
         using (new EditorGUI.DisabledScope(importPrefab == null))
         {
             if (GUILayout.Button(
                     "이 Prefab으로 Character Studio 시작",
-                    GUILayout.Height(34f)))
+                    GUILayout.Height(36f)))
             {
                 CreateBundleFromPrefab(importPrefab);
             }
@@ -251,85 +201,91 @@ public sealed class ProjectAbyssCharacterStudio : EditorWindow
 
     private void DrawQuickActions()
     {
-        Character prefab = bundle.CharacterPrefab;
-
-        EditorGUILayout.Space(8f);
         EditorGUILayout.BeginVertical("box");
-
-        EditorGUILayout.LabelField(
-            "현재 작업 대상",
-            EditorStyles.boldLabel);
-
-        EditorGUILayout.LabelField(
-            "역할",
-            GetRoleDisplayName(prefab));
-
-        EditorGUILayout.LabelField(
-            "Runtime Adapter",
-            bundle.Kind.ToString());
+        EditorGUILayout.LabelField("현재 Assembly", EditorStyles.boldLabel);
+        EditorGUILayout.LabelField("역할", GetRoleName(bundle.CharacterPrefab));
+        EditorGUILayout.ObjectField(
+            "Prefab",
+            bundle.CharacterPrefab,
+            typeof(Character),
+            false);
+        EditorGUILayout.ObjectField(
+            "Modern Loadout",
+            bundle.CombatLoadout,
+            typeof(CharacterCombatLoadout),
+            false);
+        EditorGUILayout.ObjectField(
+            "Legacy Adapter",
+            bundle.SkillSet,
+            typeof(ScriptableObject),
+            false);
 
         EditorGUILayout.BeginHorizontal();
 
         if (GUILayout.Button("Prefab 참조 다시 읽기"))
-            CaptureCurrentPrefab(packIntoBundle: false);
+            CapturePrefab(bundle.CharacterPrefab, false);
 
-        if (GUILayout.Button("현재 참조를 Bundle에 패킹"))
-            ConfirmAndPackCurrentPrefab();
+        if (GUILayout.Button("누락 Core 생성/Legacy 이관"))
+            EnsureCore();
+
+        if (GUILayout.Button("Loadout ↔ Adapter 동기화"))
+            SynchronizeAll(true);
 
         EditorGUILayout.EndHorizontal();
-
         EditorGUILayout.BeginHorizontal();
 
-        if (GUILayout.Button("Prefab Link 적용/복구"))
-            ApplyBundleLinkToCurrentPrefab(null);
-
-        if (GUILayout.Button("누락 Core 에셋 생성"))
-            EnsureMissingCoreAssets();
-
-        if (GUILayout.Button("저장"))
+        using (new EditorGUI.DisabledScope(bundle.CharacterPrefab == null))
         {
-            EditorUtility.SetDirty(bundle);
-            AssetDatabase.SaveAssets();
+            if (GUILayout.Button("Prefab 조립/복구", GUILayout.Height(30f)))
+                AssemblePrefab();
         }
 
-        EditorGUILayout.EndHorizontal();
+        if (GUILayout.Button("Bundle 내부로 패킹", GUILayout.Height(30f)))
+            ConfirmPack();
 
+        if (GUILayout.Button("모두 저장", GUILayout.Height(30f)))
+            SynchronizeAll(true);
+
+        EditorGUILayout.EndHorizontal();
         EditorGUILayout.EndVertical();
     }
 
-    private void DrawIdentityAndCore()
+    private void DrawCore()
     {
-        if (!BeginSection("identity", "1. 캐릭터 / 전투 스탯", true))
+        if (!BeginSection("core", "1. Character Core", true))
             return;
 
-        SerializedObject serialized =
-            new SerializedObject(bundle);
+        SerializedObject so = new(bundle);
+        so.Update();
+        DrawProperty(so, "displayName");
+        DrawProperty(so, "authoringNotes");
+        DrawProperty(so, "characterPrefab");
+        DrawProperty(so, "characterData");
+        DrawProperty(so, "combatLoadout");
 
-        serialized.Update();
+        EditorGUILayout.HelpBox(
+            "Legacy Adapter는 각 카테고리의 첫 장착 스킬을 기존 Character 클래스의 " +
+            "부위 생성/고유 RuntimeSkill 코드에 연결합니다.",
+            MessageType.None);
 
-        DrawProperty(serialized, "displayName");
-        DrawProperty(serialized, "authoringNotes");
-        DrawProperty(serialized, "characterPrefab");
-        DrawProperty(serialized, "characterData");
-        DrawProperty(serialized, "skillSet");
+        DrawProperty(so, "skillSet");
+        DrawProperty(so, "visualProfile");
 
-        bool changed =
-            serialized.ApplyModifiedProperties();
-
-        if (changed)
+        if (so.ApplyModifiedProperties())
         {
-            SyncKindFromPrefab(bundle);
-            EditorUtility.SetDirty(bundle);
+            SyncKind();
+            SyncRuntimeReferences(false);
+            DestroyNestedEditors();
         }
 
-        DrawNestedObject(
-            "CharacterData — HP / 속도 / 공격 / 방어 / 자원",
+        DrawNested(
+            "CharacterData — 스탯 / ActionSlot / Boss Phase",
             bundle.CharacterData,
             true);
 
-        DrawNestedObject(
-            "SkillSet — 런타임 스킬 슬롯 연결",
-            bundle.SkillSet,
+        DrawNested(
+            "CharacterCombatLoadout Raw",
+            bundle.CombatLoadout,
             false);
 
         EndSection();
@@ -337,359 +293,1308 @@ public sealed class ProjectAbyssCharacterStudio : EditorWindow
 
     private void DrawSkills()
     {
-        if (!BeginSection("skills", "2. 스킬 / 효과 / 연출", true))
+        if (!BeginSection(
+                "skills",
+                "2. 스킬 후보 / 최초 장착",
+                true))
+        {
             return;
+        }
 
-        List<SkillDefinition> skills =
-            CollectSkillDefinitions(bundle.SkillSet)
+        CharacterCombatLoadout loadout = bundle.CombatLoadout;
+
+        if (loadout == null)
+        {
+            EditorGUILayout.HelpBox(
+                "CharacterCombatLoadout이 없습니다.",
+                MessageType.Warning);
+
+            if (GUILayout.Button("Modern Combat Loadout 생성"))
+                EnsureCore();
+
+            EndSection();
+            return;
+        }
+
+        EditorGUILayout.HelpBox(
+            "후보 목록은 소유/교체 가능한 전체 SkillDefinition이고, " +
+            "최초 장착 목록은 전투 시작 시 장착되는 스킬입니다. " +
+            "한도는 일반 3 / 결투 2 / 도사림 3 / 위세 1입니다.",
+            MessageType.Info);
+
+        DrawSkillCategory(
+            loadout,
+            ActionType.NormalAttack,
+            "일반공격",
+            "NormalSkills",
+            "NormalSkillPool");
+
+        DrawSkillCategory(
+            loadout,
+            ActionType.Duel,
+            "결투",
+            "DuelSkills",
+            "DuelSkillPool");
+
+        DrawPreparationCategory(loadout);
+
+        DrawSkillCategory(
+            loadout,
+            ActionType.Prestige,
+            "위세",
+            "PrestigeSkills",
+            "PrestigeSkillPool");
+
+        EditorGUILayout.BeginHorizontal();
+
+        if (GUILayout.Button("장착/후보 목록 정리"))
+        {
+            NormalizeLoadout(loadout);
+            SynchronizeAll(true);
+        }
+
+        if (GUILayout.Button("첫 장착을 Legacy Adapter에 반영"))
+        {
+            SyncLegacyAdapter(true);
+            AssetDatabase.SaveAssets();
+        }
+
+        EditorGUILayout.EndHorizontal();
+
+        List<SkillDefinition> definitions =
+            loadout.EnumerateAllDefinitions()
+                .Where(skill => skill != null)
+                .Distinct()
                 .OrderBy(skill => skill.ActionType)
                 .ThenBy(skill => skill.SkillName)
                 .ToList();
 
-        if (skills.Count == 0)
-        {
-            EditorGUILayout.HelpBox(
-                "SkillSet에서 SkillDefinition을 찾지 못했습니다. " +
-                "누락 Core 에셋 생성 또는 SkillSet 직접 연결을 사용하세요.",
-                MessageType.Warning);
-        }
+        EditorGUILayout.Space(6f);
+        EditorGUILayout.LabelField(
+            $"스킬 상세 ({definitions.Count})",
+            EditorStyles.boldLabel);
 
-        for (int i = 0; i < skills.Count; i++)
-        {
-            SkillDefinition skill = skills[i];
-
-            if (skill == null)
-                continue;
-
-            DrawSkillCard(skill, i);
-        }
+        for (int i = 0; i < definitions.Count; i++)
+            DrawSkillCard(definitions[i], i);
 
         EndSection();
     }
 
-    private void DrawSkillCard(
-        SkillDefinition skill,
-        int index)
+    private void DrawSkillCategory(
+        CharacterCombatLoadout loadout,
+        ActionType actionType,
+        string label,
+        string equippedProperty,
+        string poolProperty)
     {
         EditorGUILayout.BeginVertical("box");
+        int limit = CharacterCombatLoadout.GetEquipLimit(actionType);
+        int count = loadout.GetEquipped(actionType).Count;
 
         EditorGUILayout.BeginHorizontal();
-
-        string title =
-            $"{index + 1}. [{skill.ActionType}] " +
-            $"{(string.IsNullOrWhiteSpace(skill.SkillName) ? skill.name : skill.SkillName)}";
-
         EditorGUILayout.LabelField(
-            title,
+            $"{label} — 최초 장착 {count}/{limit}",
             EditorStyles.boldLabel);
 
-        if (GUILayout.Button("Ping", GUILayout.Width(50f)))
+        if (GUILayout.Button("새 Skill 생성", GUILayout.Width(104f)))
+            CreateSkill(loadout, actionType);
+
+        EditorGUILayout.EndHorizontal();
+
+        SerializedObject so = new(loadout);
+        so.Update();
+        DrawProperty(so, equippedProperty, "최초 장착 스킬");
+        DrawProperty(so, poolProperty, "캐릭터 스킬 후보");
+
+        if (so.ApplyModifiedProperties())
+        {
+            NormalizeLoadout(loadout);
+            SyncLegacyAdapter(false);
+        }
+
+        EditorGUILayout.EndVertical();
+    }
+
+    private void DrawPreparationCategory(CharacterCombatLoadout loadout)
+    {
+        EditorGUILayout.BeginVertical("box");
+        int count = loadout.PreparationSkills?.Count ?? 0;
+
+        EditorGUILayout.BeginHorizontal();
+        EditorGUILayout.LabelField(
+            $"도사림 — 최초 장착 {count}/{CharacterCombatLoadout.PreparationLimit}",
+            EditorStyles.boldLabel);
+
+        if (GUILayout.Button("새 Skill 생성", GUILayout.Width(104f)))
+            CreateSkill(loadout, ActionType.Preparation);
+
+        EditorGUILayout.EndHorizontal();
+
+        SerializedObject so = new(loadout);
+        so.Update();
+        DrawProperty(so, "PreparationSkills", "최초 장착 도사림");
+        DrawProperty(so, "CommonPreparationPool", "공용 도사림 후보");
+        DrawProperty(so, "CharacterPreparationPool", "캐릭터 전용 도사림 후보");
+
+        if (so.ApplyModifiedProperties())
+        {
+            NormalizeLoadout(loadout);
+            SyncLegacyAdapter(false);
+        }
+
+        EditorGUILayout.EndVertical();
+    }
+
+    private void DrawSkillCard(SkillDefinition skill, int index)
+    {
+        EditorGUILayout.BeginVertical("box");
+        EditorGUILayout.BeginHorizontal();
+
+        string displayName = string.IsNullOrWhiteSpace(skill.SkillName)
+            ? skill.name
+            : skill.SkillName;
+
+        EditorGUILayout.LabelField(
+            $"{index + 1}. [{KoreanName(skill.ActionType)}] {displayName}",
+            EditorStyles.boldLabel);
+
+        if (GUILayout.Button("Ping", GUILayout.Width(48f)))
         {
             Selection.activeObject = skill;
             EditorGUIUtility.PingObject(skill);
         }
 
         if (skill.VisualDefinition == null &&
-            GUILayout.Button("Visual 생성", GUILayout.Width(86f)))
+            GUILayout.Button("Visual 생성", GUILayout.Width(82f)))
         {
-            CreateVisualForSkill(skill);
+            CreateVisual(skill);
         }
 
-        if (GUILayout.Button("Effect 추가", GUILayout.Width(82f)))
+        if (GUILayout.Button("Effect 추가", GUILayout.Width(78f)))
         {
-            ShowCreateSubAssetMenu<SkillEffectDefinition>(
-                type => AddEffectToSkill(skill, type));
+            ShowTypeMenu<SkillEffectDefinition>(
+                type => AddEffect(skill, type));
         }
 
         EditorGUILayout.EndHorizontal();
-
-        DrawNestedObject(
-            "스킬 수치 / 굴림 / 비용 / 조건",
+        DrawNested(
+            "수치 / 독립 굴림 / 공격 가중치 / 비용 / 조건",
             skill,
             true);
 
-        if (skill.Effects != null &&
-            skill.Effects.Count > 0)
+        if (skill.Effects != null)
         {
-            EditorGUILayout.LabelField(
-                "스킬 효과",
-                EditorStyles.boldLabel);
-
-            for (int effectIndex = 0;
-                 effectIndex < skill.Effects.Count;
-                 effectIndex++)
-            {
-                SkillEffectDefinition effect =
-                    skill.Effects[effectIndex];
-
-                DrawNestedObject(
-                    $"Effect #{effectIndex + 1}",
-                    effect,
-                    false);
-            }
+            for (int i = 0; i < skill.Effects.Count; i++)
+                DrawNested($"Effect #{i + 1}", skill.Effects[i], false);
         }
 
-        SkillVisualDefinition visual =
-            skill.VisualDefinition;
-
-        DrawNestedObject(
-            "Skill Visual — 이동 / 타격 / VFX / Animator",
-            visual,
-            visual != null);
-
-        DrawNestedObject(
-            "Skill Camera — Shot 순서 / 복귀",
-            visual?.CameraDefinition,
-            false);
-
+        DrawNested("Skill Visual", skill.VisualDefinition, false);
+        DrawNested("Skill Camera", skill.VisualDefinition?.CameraDefinition, false);
         EditorGUILayout.EndVertical();
-        EditorGUILayout.Space(4f);
     }
 
-    private void DrawPassivesAndBuild()
+    private void DrawPassivesAndItems()
     {
-        if (!BeginSection("passives", "3. 패시브 / 아이템 / 증강", true))
+        if (!BeginSection(
+                "build",
+                "3. Passive / Augment / Item",
+                true))
+        {
             return;
+        }
 
-        DrawBuiltInMechanicSummary(bundle.CharacterPrefab);
+        DrawBuiltInMechanics(bundle.CharacterPrefab);
 
-        SerializedObject serialized =
-            new SerializedObject(bundle);
-
-        serialized.Update();
-
-        SerializedProperty overrideLoadout =
-            serialized.FindProperty("overrideLoadout");
-
-        SerializedProperty items =
-            serialized.FindProperty("equippedItems");
-
-        SerializedProperty augments =
-            serialized.FindProperty("equippedAugments");
-
-        if (overrideLoadout != null)
-            EditorGUILayout.PropertyField(overrideLoadout);
+        SerializedObject so = new(bundle);
+        so.Update();
+        DrawProperty(so, "overrideLoadout");
 
         EditorGUILayout.HelpBox(
-            "캐릭터 고유 패시브를 데이터 에셋으로 만들 때는 CharacterAugment 파생 SO를 사용하세요. " +
-            "CreateMechanic(s)에서 CombatMechanic을 생성하므로 기존 이벤트·스탯·부위 수정 기능을 그대로 사용할 수 있습니다.",
-            MessageType.None);
+            "패시브 Script는 CharacterAugment 파생 ScriptableObject 인스턴스로 장착합니다. " +
+            "CreateMechanics가 매 전투마다 새 CombatMechanic을 생성합니다.",
+            MessageType.Info);
+
+        DrawProperty(
+            so,
+            "equippedAugments",
+            "처음부터 장착할 Passive/Augment");
+
+        DrawProperty(
+            so,
+            "equippedItems",
+            "처음부터 장착할 Item");
+
+        so.ApplyModifiedProperties();
 
         EditorGUILayout.BeginHorizontal();
 
-        if (GUILayout.Button("패시브/증강 Sub-Asset 추가"))
+        if (GUILayout.Button("Passive Script Instance 추가"))
         {
-            ShowCreateSubAssetMenu<CharacterAugment>(
-                type => AddObjectToBundleArray(
-                    "equippedAugments",
-                    type,
-                    registerSupporting: true));
+            ShowTypeMenu<CharacterAugment>(
+                type => AddBundleObject("equippedAugments", type));
         }
 
-        if (GUILayout.Button("아이템 Sub-Asset 추가"))
+        if (GUILayout.Button("Item Script Instance 추가"))
         {
-            ShowCreateSubAssetMenu<CharacterItem>(
-                type => AddObjectToBundleArray(
-                    "equippedItems",
-                    type,
-                    registerSupporting: true));
+            ShowTypeMenu<CharacterItem>(
+                type => AddBundleObject("equippedItems", type));
         }
 
         EditorGUILayout.EndHorizontal();
 
-        if (items != null)
-            EditorGUILayout.PropertyField(items, includeChildren: true);
+        DrawArrayObjects<CharacterAugment>(
+            "Passive / Augment 상세",
+            "equippedAugments");
 
-        if (augments != null)
-            EditorGUILayout.PropertyField(augments, includeChildren: true);
-
-        serialized.ApplyModifiedProperties();
-
-        DrawReferencedArrayEditors<CharacterItem>(
-            "아이템 상세",
+        DrawArrayObjects<CharacterItem>(
+            "Item 상세",
             "equippedItems");
 
-        DrawReferencedArrayEditors<CharacterAugment>(
-            "패시브 / 증강 상세",
-            "equippedAugments");
+        EndSection();
+    }
+
+    private void DrawPrefabAssembly()
+    {
+        if (!BeginSection("prefab", "4. Prefab 조립 / 복구", true))
+            return;
+
+        ensureStandardComponents =
+            EditorGUILayout.ToggleLeft(
+                "표준 Runtime/Presentation Component 자동 추가",
+                ensureStandardComponents);
+
+        createStandardHierarchy =
+            EditorGUILayout.ToggleLeft(
+                "Anchors / CameraPoints 표준 Hierarchy 자동 생성",
+                createStandardHierarchy);
+
+        List<string> missing =
+            bundle.CharacterPrefab != null
+                ? CharacterPrefabAssemblyUtility.ValidatePrefab(bundle)
+                : new List<string>();
+
+        if (missing.Count == 0 && bundle.CharacterPrefab != null)
+        {
+            EditorGUILayout.HelpBox(
+                "표준 Prefab 구성요소가 확인되었습니다.",
+                MessageType.Info);
+        }
+        else if (missing.Count > 0)
+        {
+            EditorGUILayout.HelpBox(
+                "현재 누락:\n• " + string.Join("\n• ", missing),
+                MessageType.Warning);
+        }
+
+        using (new EditorGUI.DisabledScope(bundle.CharacterPrefab == null))
+        {
+            if (GUILayout.Button(
+                    "현재 Bundle로 Prefab 조립/복구",
+                    GUILayout.Height(38f)))
+            {
+                AssemblePrefab();
+            }
+        }
+
+        if (!string.IsNullOrWhiteSpace(assemblySummary))
+            EditorGUILayout.HelpBox(assemblySummary, MessageType.Info);
 
         EndSection();
     }
 
     private void DrawPresentation()
     {
-        if (!BeginSection("presentation", "4. 공통 연출 / Animator / VFX", true))
+        if (!BeginSection("presentation", "5. Animator / Camera / VFX", true))
             return;
 
-        SerializedObject serialized =
-            new SerializedObject(bundle);
+        SerializedObject so = new(bundle);
+        so.Update();
+        DrawProperty(so, "visualProfile");
+        DrawProperty(so, "animatorController");
+        DrawProperty(so, "overrideAnimatorController");
+        DrawProperty(so, "avatar");
+        DrawProperty(so, "overrideAvatar");
+        so.ApplyModifiedProperties();
 
-        serialized.Update();
-
-        DrawProperty(serialized, "visualProfile");
-        DrawProperty(serialized, "animatorController");
-        DrawProperty(serialized, "overrideAnimatorController");
-        DrawProperty(serialized, "avatar");
-        DrawProperty(serialized, "overrideAvatar");
-
-        serialized.ApplyModifiedProperties();
-
-        DrawNestedObject(
-            "기본 SkillVisualProfile",
-            bundle.VisualProfile,
-            false);
+        DrawNested("SkillVisualProfile", bundle.VisualProfile, false);
 
         EditorGUILayout.BeginHorizontal();
 
         if (GUILayout.Button("Battle VFX 추가"))
-        {
-            AddConcreteSupportingAsset(
-                typeof(BattleVfxDefinition));
-        }
+            CreateSupporting(typeof(BattleVfxDefinition));
 
         if (GUILayout.Button("Persistent VFX 추가"))
-        {
-            AddConcreteSupportingAsset(
-                typeof(PersistentBattleVfxDefinition));
-        }
+            CreateSupporting(typeof(PersistentBattleVfxDefinition));
 
         if (GUILayout.Button("Status Visual 추가"))
-        {
-            AddConcreteSupportingAsset(
-                typeof(StatusEffectVisualDefinition));
-        }
+            CreateSupporting(typeof(StatusEffectVisualDefinition));
 
         EditorGUILayout.EndHorizontal();
-
-        DrawPresentationSupportingAssets();
-        DrawPrefabPresentationSummary(bundle.CharacterPrefab);
-
-        EndSection();
-    }
-
-    private void DrawRoleSpecificSettings()
-    {
-        Character prefab = bundle.CharacterPrefab;
-
-        if (prefab is not NormalEnemy &&
-            prefab is not EliteEnemy)
-        {
-            return;
-        }
-
-        if (!BeginSection("role", "5. 적 종류별 설정", true))
-            return;
-
-        SerializedObject serialized =
-            new SerializedObject(bundle);
-
-        serialized.Update();
-
-        if (prefab is NormalEnemy)
-        {
-            DrawProperty(serialized, "overrideNormalEnemySingleHp");
-            DrawProperty(serialized, "normalEnemySingleMaxHp");
-        }
-
-        if (prefab is EliteEnemy)
-        {
-            DrawProperty(serialized, "useElitePostureRotation");
-            DrawProperty(serialized, "elitePostureSettings");
-        }
-
-        serialized.ApplyModifiedProperties();
+        DrawPresentationAssets();
         EndSection();
     }
 
     private void DrawValidation()
     {
-        if (!BeginSection("validation", "6. 검증", true))
+        if (!BeginSection("validation", "6. Assembly 검증", true))
             return;
 
-        List<ValidationMessage> messages =
-            ValidateBundle(bundle);
-
-        int errorCount =
-            messages.Count(message =>
-                message.Type == MessageType.Error);
-
-        int warningCount =
-            messages.Count(message =>
-                message.Type == MessageType.Warning);
+        List<ValidationMessage> messages = Validate(bundle);
 
         if (messages.Count == 0)
         {
             EditorGUILayout.HelpBox(
-                "현재 Bundle의 핵심 참조와 스킬/연출 연결이 유효합니다.",
+                "Prefab, CharacterData, Modern Loadout, 최초 장착, " +
+                "Passive/Item, Legacy Adapter 연결이 유효합니다.",
                 MessageType.Info);
         }
         else
         {
-            EditorGUILayout.LabelField(
-                $"오류 {errorCount} / 경고 {warningCount}",
-                EditorStyles.boldLabel);
-
             foreach (ValidationMessage message in messages)
-            {
-                EditorGUILayout.HelpBox(
-                    message.Text,
-                    message.Type);
-            }
+                EditorGUILayout.HelpBox(message.Text, message.Type);
         }
 
-        if (GUILayout.Button("모든 관련 에셋 저장"))
-        {
-            EditorUtility.SetDirty(bundle);
-            AssetDatabase.SaveAssets();
-            AssetDatabase.Refresh();
-        }
+        if (GUILayout.Button("전체 동기화 + 저장"))
+            SynchronizeAll(true);
 
         EndSection();
     }
 
-    private void DrawAdvancedData()
+    private void DrawAdvanced()
     {
-        showAdvancedBundleData =
-            EditorGUILayout.Foldout(
-                showAdvancedBundleData,
-                "Advanced: Bundle 내부 목록",
-                true);
+        showAdvanced = EditorGUILayout.Foldout(
+            showAdvanced,
+            "Advanced: Bundle 내부 Asset 목록",
+            true);
 
-        if (!showAdvancedBundleData)
+        if (!showAdvanced)
             return;
 
-        SerializedObject serialized =
-            new SerializedObject(bundle);
-
-        serialized.Update();
-        DrawProperty(serialized, "includedAssets");
-        DrawProperty(serialized, "supportingAssets");
-        serialized.ApplyModifiedProperties();
+        SerializedObject so = new(bundle);
+        so.Update();
+        DrawProperty(so, "includedAssets");
+        DrawProperty(so, "supportingAssets");
+        so.ApplyModifiedProperties();
     }
 
-    private bool BeginSection(
-        string key,
-        string title,
-        bool defaultExpanded)
+    private void AssemblePrefab()
     {
-        bool expanded =
-            sectionExpanded.TryGetValue(
-                key,
-                out bool stored)
-                ? stored
-                : defaultExpanded;
+        SynchronizeAll(true);
 
-        expanded =
-            EditorGUILayout.BeginFoldoutHeaderGroup(
-                expanded,
-                title);
+        CharacterPrefabAssemblyReport report =
+            CharacterPrefabAssemblyUtility.Assemble(
+                bundle,
+                ensureStandardComponents,
+                createStandardHierarchy);
 
-        sectionExpanded[key] = expanded;
+        assemblySummary = report.BuildSummary();
+
+        if (report.Messages.Count > 0)
+            assemblySummary += "\n\n" + string.Join("\n", report.Messages);
+
+        DestroyNestedEditors();
+        Repaint();
+    }
+
+    private void EnsureCore()
+    {
+        if (bundle == null)
+            return;
+
+        Character prefab = bundle.CharacterPrefab;
+        CharacterAuthoringKind kind = DetectKind(prefab);
+        string safeName = SafeName(
+            string.IsNullOrWhiteSpace(bundle.DisplayName)
+                ? bundle.name
+                : bundle.DisplayName);
+
+        CharacterData data = bundle.CharacterData;
+        CharacterCombatLoadout loadout = bundle.CombatLoadout;
+        ScriptableObject adapter = bundle.SkillSet;
+        SkillVisualProfile profile = bundle.VisualProfile;
+
+        if (data == null)
+        {
+            data = CreateSubAsset<CharacterData>(
+                $"{safeName}_CharacterData",
+                false);
+            data.CharacterName = bundle.DisplayName;
+            data.TargetMode = prefab is NormalEnemy
+                ? CharacterTargetMode.SingleHP
+                : CharacterTargetMode.BodyParts;
+            data.SingleHpMax = prefab is NormalEnemy
+                ? bundle.NormalEnemySingleMaxHp
+                : 1;
+        }
+
+        if (loadout == null)
+        {
+            loadout = CreateSubAsset<CharacterCombatLoadout>(
+                $"{safeName}_CombatLoadout",
+                false);
+        }
+
+        if (adapter == null)
+            adapter = CreateLegacyAdapter(kind, safeName);
+
+        if (profile == null)
+        {
+            profile = CreateSubAsset<SkillVisualProfile>(
+                $"{safeName}_VisualProfile",
+                false);
+        }
+
+        data.CombatLoadout = loadout;
+        EnsureDefaultSlots(data, prefab);
+        MigrateLegacy(adapter, loadout);
+
+        EnsureOneSkill(loadout, ActionType.NormalAttack, safeName);
+        EnsureOneSkill(loadout, ActionType.Duel, safeName);
+
+        if (prefab is not NormalEnemy)
+            EnsureOneSkill(loadout, ActionType.Preparation, safeName);
+
+        EnsureOneSkill(loadout, ActionType.Prestige, safeName);
+        NormalizeLoadout(loadout);
+
+        bundle.ConfigureCore(
+            kind,
+            bundle.DisplayName,
+            data,
+            adapter,
+            loadout,
+            profile);
+
+        SyncLegacyAdapter(true);
+        SyncVisualProfile();
+        SynchronizeAll(true);
+        DestroyNestedEditors();
+    }
+
+    private void CreateSkill(
+        CharacterCombatLoadout loadout,
+        ActionType actionType)
+    {
+        string safeName = SafeName(bundle.DisplayName);
+        SkillDefinition skill = CreateSubAsset<SkillDefinition>(
+            $"{safeName}_{actionType}_{Guid.NewGuid():N}",
+            false);
+
+        ConfigureNewSkill(skill, actionType);
+        AddToPool(loadout, skill);
+
+        List<SkillDefinition> equipped = EquippedList(loadout, actionType);
+        int limit = CharacterCombatLoadout.GetEquipLimit(actionType);
+
+        if (equipped != null && equipped.Count < limit)
+            equipped.Add(skill);
+
+        CreateVisual(skill);
+        NormalizeLoadout(loadout);
+        SyncLegacyAdapter(true);
+        AssetDatabase.SaveAssets();
+        Selection.activeObject = skill;
+    }
+
+    private void EnsureOneSkill(
+        CharacterCombatLoadout loadout,
+        ActionType actionType,
+        string safeName)
+    {
+        List<SkillDefinition> equipped = EquippedList(loadout, actionType);
+
+        if (equipped == null || equipped.Any(skill => skill != null))
+            return;
+
+        SkillDefinition skill = CreateSubAsset<SkillDefinition>(
+            $"{safeName}_{actionType}_Skill",
+            false);
+
+        ConfigureNewSkill(skill, actionType);
+        equipped.Add(skill);
+        AddToPool(loadout, skill);
+        CreateVisual(skill);
+    }
+
+    private void ConfigureNewSkill(SkillDefinition skill, ActionType actionType)
+    {
+        skill.SkillName = $"{bundle.DisplayName} {KoreanName(actionType)}";
+        skill.ActionType = actionType;
+        skill.BasePower = 1;
+        skill.ExchangeRollCount = 3;
+        skill.ResolverType = SkillResolverType.Dice;
+        skill.DiceMin = 1;
+        skill.DiceMax = 6;
+        skill.CanBreakPart = actionType != ActionType.Preparation;
+        skill.GainPrestige = actionType != ActionType.Preparation;
+        skill.EnsureSkillId();
+        EditorUtility.SetDirty(skill);
+    }
+
+    private void CreateVisual(SkillDefinition skill)
+    {
+        if (skill == null || skill.VisualDefinition != null)
+            return;
+
+        string baseName = SafeName(
+            string.IsNullOrWhiteSpace(skill.SkillName)
+                ? skill.name
+                : skill.SkillName);
+
+        SkillCameraDefinition camera =
+            CreateSubAsset<SkillCameraDefinition>(
+                $"{baseName}_Camera",
+                false);
+
+        SkillVisualDefinition visual =
+            CreateSubAsset<SkillVisualDefinition>(
+                $"{baseName}_Visual",
+                false);
+
+        visual.AllowAsProfileFallback = false;
+        visual.CameraDefinition = camera;
+        skill.VisualDefinition = visual;
+        AssignProfileVisual(bundle.VisualProfile, skill, false);
+        EditorUtility.SetDirty(skill);
+        AssetDatabase.SaveAssets();
+    }
+
+    private void AddEffect(SkillDefinition skill, Type type)
+    {
+        SkillEffectDefinition effect =
+            CreateSubAsset(
+                type,
+                $"{skill.name}_{ObjectNames.NicifyVariableName(type.Name)}",
+                true) as SkillEffectDefinition;
+
+        if (effect == null)
+            return;
+
+        skill.Effects ??= new List<SkillEffectDefinition>();
+        skill.Effects.Add(effect);
+        EditorUtility.SetDirty(skill);
+        AssetDatabase.SaveAssets();
+    }
+
+    private void AddBundleObject(string propertyName, Type type)
+    {
+        ScriptableObject created =
+            CreateSubAsset(
+                type,
+                ObjectNames.NicifyVariableName(type.Name),
+                true);
+
+        if (created == null)
+            return;
+
+        SerializedObject so = new(bundle);
+        so.Update();
+        SerializedProperty array = so.FindProperty(propertyName);
+
+        if (array == null || !array.isArray)
+            return;
+
+        int index = array.arraySize;
+        array.InsertArrayElementAtIndex(index);
+        array.GetArrayElementAtIndex(index).objectReferenceValue = created;
+
+        SerializedProperty overrideLoadout = so.FindProperty("overrideLoadout");
+
+        if (overrideLoadout != null)
+            overrideLoadout.boolValue = true;
+
+        so.ApplyModifiedPropertiesWithoutUndo();
+        EditorUtility.SetDirty(bundle);
+        AssetDatabase.SaveAssets();
+    }
+
+    private void ShowTypeMenu<T>(Action<Type> selected)
+        where T : ScriptableObject
+    {
+        GenericMenu menu = new();
+        bool added = false;
+
+        foreach (Type type in TypeCache.GetTypesDerivedFrom<T>()
+                     .Where(type =>
+                         type != null &&
+                         !type.IsAbstract &&
+                         !type.IsGenericType &&
+                         typeof(ScriptableObject).IsAssignableFrom(type))
+                     .OrderBy(type => type.FullName))
+        {
+            added = true;
+            Type captured = type;
+            menu.AddItem(
+                new GUIContent(type.FullName?.Replace('.', '/') ?? type.Name),
+                false,
+                () => selected?.Invoke(captured));
+        }
+
+        if (!added)
+            menu.AddDisabledItem(new GUIContent("사용 가능한 구체 타입 없음"));
+
+        menu.ShowAsContext();
+    }
+
+    private void SynchronizeAll(bool save)
+    {
+        SyncRuntimeReferences(false);
+        NormalizeLoadout(bundle?.CombatLoadout);
+        SyncLegacyAdapter(true);
+        SyncVisualProfile();
+
+        if (save)
+        {
+            MarkGraphDirty();
+            AssetDatabase.SaveAssets();
+            AssetDatabase.Refresh();
+        }
+    }
+
+    private void SyncRuntimeReferences(bool save)
+    {
+        if (bundle == null)
+            return;
+
+        if (bundle.CharacterData != null &&
+            bundle.CombatLoadout != null &&
+            bundle.CharacterData.CombatLoadout != bundle.CombatLoadout)
+        {
+            bundle.CharacterData.CombatLoadout = bundle.CombatLoadout;
+            EditorUtility.SetDirty(bundle.CharacterData);
+        }
+
+        bundle.SynchronizeCharacterDataLoadout();
+        EditorUtility.SetDirty(bundle);
+
+        if (save)
+            AssetDatabase.SaveAssets();
+    }
+
+    private void SyncLegacyAdapter(bool createIfMissing)
+    {
+        CharacterCombatLoadout loadout = bundle?.CombatLoadout;
+
+        if (loadout == null)
+            return;
+
+        ScriptableObject adapter = bundle.SkillSet;
+
+        if (adapter == null && createIfMissing)
+        {
+            adapter = CreateLegacyAdapter(bundle.Kind, SafeName(bundle.DisplayName));
+            bundle.ConfigureLegacySkillSet(adapter);
+        }
+
+        if (adapter == null)
+            return;
+
+        SetLegacy(adapter, "NormalAttack", First(loadout, ActionType.NormalAttack));
+        SetLegacy(adapter, "DuelSkill", First(loadout, ActionType.Duel));
+        SetLegacy(adapter, "PreparationSkill", First(loadout, ActionType.Preparation));
+        SetLegacy(adapter, "PrestigeSkill", First(loadout, ActionType.Prestige));
+        EditorUtility.SetDirty(adapter);
+    }
+
+    private ScriptableObject CreateLegacyAdapter(
+        CharacterAuthoringKind kind,
+        string safeName)
+    {
+        return kind switch
+        {
+            CharacterAuthoringKind.Olaf =>
+                CreateSubAsset<OlafSkillSet>(
+                    $"{safeName}_LegacySkillAdapter",
+                    false),
+            CharacterAuthoringKind.EliteEnemy =>
+                CreateSubAsset<EliteEnemySkillSet>(
+                    $"{safeName}_LegacySkillAdapter",
+                    false),
+            CharacterAuthoringKind.NormalEnemy =>
+                CreateSubAsset<NormalEnemySkillSet>(
+                    $"{safeName}_LegacySkillAdapter",
+                    false),
+            _ => null
+        };
+    }
+
+    private static void SetLegacy(
+        ScriptableObject adapter,
+        string propertyName,
+        SkillDefinition skill)
+    {
+        if (adapter == null)
+            return;
+
+        SerializedObject so = new(adapter);
+        so.Update();
+        SerializedProperty property = so.FindProperty(propertyName);
+
+        if (property != null &&
+            property.propertyType == SerializedPropertyType.ObjectReference)
+        {
+            property.objectReferenceValue = skill;
+            so.ApplyModifiedPropertiesWithoutUndo();
+        }
+    }
+
+    private static void MigrateLegacy(
+        ScriptableObject adapter,
+        CharacterCombatLoadout loadout)
+    {
+        if (adapter == null || loadout == null)
+            return;
+
+        SerializedObject so = new(adapter);
+        SerializedProperty iterator = so.GetIterator();
+        bool enterChildren = true;
+
+        while (iterator.Next(enterChildren))
+        {
+            enterChildren = true;
+
+            if (iterator.propertyType != SerializedPropertyType.ObjectReference ||
+                iterator.objectReferenceValue is not SkillDefinition skill)
+            {
+                continue;
+            }
+
+            AddToPool(loadout, skill);
+            List<SkillDefinition> equipped = EquippedList(loadout, skill.ActionType);
+            int limit = CharacterCombatLoadout.GetEquipLimit(skill.ActionType);
+
+            if (equipped != null &&
+                equipped.Count < limit &&
+                !equipped.Contains(skill))
+            {
+                equipped.Add(skill);
+            }
+        }
+
+        NormalizeLoadout(loadout);
+    }
+
+    private void SyncVisualProfile()
+    {
+        if (bundle?.VisualProfile == null || bundle.CombatLoadout == null)
+            return;
+
+        foreach (SkillDefinition skill in bundle.CombatLoadout.EnumerateAllDefinitions())
+        {
+            if (skill?.VisualDefinition != null)
+                AssignProfileVisual(bundle.VisualProfile, skill, false);
+        }
+    }
+
+    private static void AssignProfileVisual(
+        SkillVisualProfile profile,
+        SkillDefinition skill,
+        bool overwrite)
+    {
+        if (profile == null || skill?.VisualDefinition == null)
+            return;
+
+        switch (skill.ActionType)
+        {
+            case ActionType.NormalAttack:
+                if (overwrite || profile.NormalAttackVisual == null)
+                    profile.NormalAttackVisual = skill.VisualDefinition;
+                break;
+            case ActionType.Duel:
+                if (overwrite || profile.DuelVisual == null)
+                    profile.DuelVisual = skill.VisualDefinition;
+                break;
+            case ActionType.Preparation:
+                if (overwrite || profile.PreparationVisual == null)
+                    profile.PreparationVisual = skill.VisualDefinition;
+                break;
+            case ActionType.Prestige:
+                if (overwrite || profile.PrestigeVisual == null)
+                    profile.PrestigeVisual = skill.VisualDefinition;
+                break;
+        }
+
+        EditorUtility.SetDirty(profile);
+    }
+
+    private static void NormalizeLoadout(CharacterCombatLoadout loadout)
+    {
+        if (loadout == null)
+            return;
+
+        Normalize(loadout.NormalSkills, ActionType.NormalAttack, CharacterCombatLoadout.NormalLimit);
+        Normalize(loadout.DuelSkills, ActionType.Duel, CharacterCombatLoadout.DuelLimit);
+        Normalize(loadout.PreparationSkills, ActionType.Preparation, CharacterCombatLoadout.PreparationLimit);
+        Normalize(loadout.PrestigeSkills, ActionType.Prestige, CharacterCombatLoadout.PrestigeLimit);
+        NormalizePool(loadout.NormalSkillPool, ActionType.NormalAttack);
+        NormalizePool(loadout.DuelSkillPool, ActionType.Duel);
+        NormalizePool(loadout.CommonPreparationPool, ActionType.Preparation);
+        NormalizePool(loadout.CharacterPreparationPool, ActionType.Preparation);
+        NormalizePool(loadout.PrestigeSkillPool, ActionType.Prestige);
+        EnsurePool(loadout.NormalSkills, loadout.NormalSkillPool);
+        EnsurePool(loadout.DuelSkills, loadout.DuelSkillPool);
+        EnsurePool(loadout.PreparationSkills, loadout.CharacterPreparationPool);
+        EnsurePool(loadout.PrestigeSkills, loadout.PrestigeSkillPool);
+        EditorUtility.SetDirty(loadout);
+    }
+
+    private static void Normalize(
+        List<SkillDefinition> values,
+        ActionType type,
+        int limit)
+    {
+        if (values == null)
+            return;
+
+        HashSet<SkillDefinition> unique = new();
+
+        for (int i = values.Count - 1; i >= 0; i--)
+        {
+            SkillDefinition value = values[i];
+
+            if (value == null || value.ActionType != type || !unique.Add(value))
+                values.RemoveAt(i);
+        }
+
+        while (values.Count > limit)
+            values.RemoveAt(values.Count - 1);
+    }
+
+    private static void NormalizePool(List<SkillDefinition> values, ActionType type)
+    {
+        if (values == null)
+            return;
+
+        HashSet<SkillDefinition> unique = new();
+
+        for (int i = values.Count - 1; i >= 0; i--)
+        {
+            SkillDefinition value = values[i];
+
+            if (value == null || value.ActionType != type || !unique.Add(value))
+                values.RemoveAt(i);
+        }
+    }
+
+    private static void EnsurePool(
+        IReadOnlyList<SkillDefinition> equipped,
+        ICollection<SkillDefinition> pool)
+    {
+        if (equipped == null || pool == null)
+            return;
+
+        foreach (SkillDefinition skill in equipped)
+        {
+            if (skill != null && !pool.Contains(skill))
+                pool.Add(skill);
+        }
+    }
+
+    private static List<SkillDefinition> EquippedList(
+        CharacterCombatLoadout loadout,
+        ActionType type)
+    {
+        return type switch
+        {
+            ActionType.NormalAttack => loadout.NormalSkills,
+            ActionType.Duel => loadout.DuelSkills,
+            ActionType.Preparation => loadout.PreparationSkills,
+            ActionType.Prestige => loadout.PrestigeSkills,
+            _ => null
+        };
+    }
+
+    private static SkillDefinition First(
+        CharacterCombatLoadout loadout,
+        ActionType type)
+    {
+        return EquippedList(loadout, type)?.FirstOrDefault(skill => skill != null);
+    }
+
+    private static void AddToPool(
+        CharacterCombatLoadout loadout,
+        SkillDefinition skill)
+    {
+        List<SkillDefinition> pool = skill.ActionType switch
+        {
+            ActionType.NormalAttack => loadout.NormalSkillPool,
+            ActionType.Duel => loadout.DuelSkillPool,
+            ActionType.Preparation => loadout.CharacterPreparationPool,
+            ActionType.Prestige => loadout.PrestigeSkillPool,
+            _ => null
+        };
+
+        if (pool != null && !pool.Contains(skill))
+            pool.Add(skill);
+    }
+
+    private static void EnsureDefaultSlots(CharacterData data, Character prefab)
+    {
+        data.ActionSlots ??= new List<CharacterSlotConfig>();
+
+        if (data.ActionSlots.Count > 0)
+            return;
+
+        if (prefab is NormalEnemy)
+        {
+            data.ActionSlots.Add(Slot(
+                "CHARACTER_SLOT_01",
+                "행동 슬롯",
+                false,
+                PartType.HEAD,
+                ActionType.NormalAttack,
+                ActionType.Duel,
+                ActionType.Prestige));
+            return;
+        }
+
+        data.ActionSlots.Add(Slot(
+            "HEAD_SLOT_01", "머리", true, PartType.HEAD,
+            ActionType.NormalAttack, ActionType.Duel,
+            ActionType.Preparation, ActionType.Prestige));
+
+        data.ActionSlots.Add(Slot(
+            "LEFT_HAND_SLOT_01", "왼손", true, PartType.LEFT_HAND,
+            ActionType.NormalAttack, ActionType.Duel, ActionType.Prestige));
+
+        data.ActionSlots.Add(Slot(
+            "RIGHT_HAND_SLOT_01", "오른손", true, PartType.RIGHT_HAND,
+            ActionType.NormalAttack, ActionType.Duel, ActionType.Prestige));
+
+        data.ActionSlots.Add(Slot(
+            "LEGS_SLOT_01", "다리", true, PartType.LEGS,
+            ActionType.Preparation, ActionType.Prestige));
+    }
+
+    private static CharacterSlotConfig Slot(
+        string id,
+        string label,
+        bool hasPart,
+        PartType part,
+        params ActionType[] allowed)
+    {
+        return new CharacterSlotConfig
+        {
+            SlotId = id,
+            DisplayName = label,
+            Enabled = true,
+            HasLinkedPart = hasPart,
+            LinkedPartType = part,
+            OverrideSpeedRange = false,
+            AllowedActionTypes = allowed.Distinct().ToList()
+        };
+    }
+
+    private void CreateEmptyBundle()
+    {
+        string path = EditorUtility.SaveFilePanelInProject(
+            "Create Character Bundle",
+            "NewCharacterBundle",
+            "asset",
+            "Character Assembly Bundle 위치를 선택하세요.",
+            DefaultBundleFolder);
+
+        if (string.IsNullOrWhiteSpace(path))
+            return;
+
+        CharacterAuthoringBundle created =
+            ScriptableObject.CreateInstance<CharacterAuthoringBundle>();
+
+        created.name = Path.GetFileNameWithoutExtension(path);
+        AssetDatabase.CreateAsset(created, path);
+        AssetDatabase.SaveAssets();
+        bundle = created;
+        Selection.activeObject = created;
+    }
+
+    private void CreateBundleFromPrefab(Character prefab)
+    {
+        if (!IsPrefab(prefab, out string prefabPath))
+        {
+            EditorUtility.DisplayDialog(
+                "Character Studio",
+                "Project 창의 Character Prefab Asset을 선택해야 합니다.",
+                "확인");
+            return;
+        }
+
+        string path = EditorUtility.SaveFilePanelInProject(
+            "Create Character Assembly Bundle",
+            $"{prefab.name}_CharacterBundle",
+            "asset",
+            "Bundle 저장 위치를 선택하세요.",
+            SuggestedFolder(prefabPath));
+
+        if (string.IsNullOrWhiteSpace(path))
+            return;
+
+        CharacterAuthoringBundle created =
+            ScriptableObject.CreateInstance<CharacterAuthoringBundle>();
+
+        created.name = Path.GetFileNameWithoutExtension(path);
+        AssetDatabase.CreateAsset(created, path);
+        bundle = created;
+        CapturePrefab(prefab, packReferencedAssetsOnImport);
+        EnsureCore();
+
+        if (assemblePrefabOnImport)
+            AssemblePrefab();
+
+        AssetDatabase.SaveAssets();
+        Selection.activeObject = bundle;
+    }
+
+    private void CapturePrefab(Character prefab, bool pack)
+    {
+        if (bundle == null || prefab == null || !IsPrefab(prefab, out _))
+            return;
+
+        CharacterData data = prefab.Data;
+        CharacterCombatLoadout loadout = data?.CombatLoadout;
+        ScriptableObject adapter =
+            ReadReference<ScriptableObject>(prefab, "skillSet");
+        List<CharacterItem> items =
+            ReadList<CharacterItem>(prefab, "equippedItems");
+        List<CharacterAugment> passives =
+            ReadList<CharacterAugment>(prefab, "equippedAugments");
+
+        if (pack)
+        {
+            CharacterAuthoringCloneUtility clone =
+                new CharacterAuthoringCloneUtility(bundle);
+
+            clone.CapturePrefab(prefab.gameObject);
+            if (data != null) clone.CloneRoot(data);
+            if (loadout != null) clone.CloneRoot(loadout);
+            if (adapter != null) clone.CloneRoot(adapter);
+            foreach (CharacterItem item in items) clone.CloneRoot(item);
+            foreach (CharacterAugment passive in passives) clone.CloneRoot(passive);
+            clone.FinalizeClones();
+
+            data = clone.GetClone(data) ?? data;
+            loadout = clone.GetClone(loadout) ?? loadout;
+            adapter = clone.GetClone(adapter) ?? adapter;
+            items = items.Select(item => clone.GetClone(item) ?? item).Distinct().ToList();
+            passives = passives.Select(value => clone.GetClone(value) ?? value).Distinct().ToList();
+        }
+
+        SkillVisualProfile profile = bundle.VisualProfile ??
+            CreateSubAsset<SkillVisualProfile>(
+                $"{SafeName(prefab.name)}_VisualProfile",
+                false);
+
+        string displayName =
+            !string.IsNullOrWhiteSpace(data?.CharacterName)
+                ? data.CharacterName
+                : prefab.name;
+
+        bundle.ConfigureCore(
+            DetectKind(prefab),
+            displayName,
+            data,
+            adapter,
+            loadout,
+            profile);
+
+        bundle.ConfigurePrefab(prefab);
+        bundle.ConfigureLoadout(items, passives, true);
+        ConfigurePresentationFromPrefab(prefab);
+
+        if (loadout != null)
+            MigrateLegacy(adapter, loadout);
+
+        SynchronizeAll(true);
+        DestroyNestedEditors();
+    }
+
+    private void ConfirmPack()
+    {
+        if (bundle?.CharacterPrefab == null)
+            return;
+
+        bool confirmed = EditorUtility.DisplayDialog(
+            "Bundle 패킹",
+            "현재 Prefab이 참조하는 CharacterData, CombatLoadout, Legacy Adapter, " +
+            "Skill, Effect, Visual, Passive, Item, VFX SO 그래프를 Bundle 내부 " +
+            "Sub-Asset 복사본으로 만듭니다.\n\n원본 SO는 삭제되지 않습니다.",
+            "패킹",
+            "취소");
+
+        if (confirmed)
+            CapturePrefab(bundle.CharacterPrefab, true);
+    }
+
+    private void ConfigurePresentationFromPrefab(Character prefab)
+    {
+        Animator animator = prefab?.GetComponentInChildren<Animator>(true);
+        SerializedObject so = new(bundle);
+        so.Update();
+        SetObject(so, "animatorController", animator?.runtimeAnimatorController);
+        SetObject(so, "avatar", animator?.avatar);
+        SetBool(so, "overrideAnimatorController", animator?.runtimeAnimatorController != null);
+        SetBool(so, "overrideAvatar", animator?.avatar != null);
+        so.ApplyModifiedPropertiesWithoutUndo();
+    }
+
+    private static List<ValidationMessage> Validate(CharacterAuthoringBundle value)
+    {
+        List<ValidationMessage> result = new();
+
+        if (value.CharacterPrefab == null)
+            result.Add(Error("Character Prefab이 없습니다."));
+
+        if (value.CharacterData == null)
+            result.Add(Error("CharacterData가 없습니다."));
+
+        CharacterCombatLoadout loadout = value.CombatLoadout;
+
+        if (loadout == null)
+        {
+            result.Add(Error("Modern CharacterCombatLoadout이 없습니다."));
+        }
+        else
+        {
+            ValidateCategory(result, loadout.NormalSkills, loadout.NormalSkillPool,
+                ActionType.NormalAttack, CharacterCombatLoadout.NormalLimit, "일반공격");
+            ValidateCategory(result, loadout.DuelSkills, loadout.DuelSkillPool,
+                ActionType.Duel, CharacterCombatLoadout.DuelLimit, "결투");
+            ValidateCategory(
+                result,
+                loadout.PreparationSkills,
+                loadout.CommonPreparationPool.Concat(loadout.CharacterPreparationPool)
+                    .Where(skill => skill != null).Distinct().ToList(),
+                ActionType.Preparation,
+                CharacterCombatLoadout.PreparationLimit,
+                "도사림");
+            ValidateCategory(result, loadout.PrestigeSkills, loadout.PrestigeSkillPool,
+                ActionType.Prestige, CharacterCombatLoadout.PrestigeLimit, "위세");
+
+            foreach (SkillDefinition skill in loadout.EnumerateAllDefinitions())
+            {
+                if (skill != null && skill.VisualDefinition == null)
+                    result.Add(Warn($"{skill.name}: SkillVisualDefinition이 없습니다."));
+            }
+        }
+
+        if (value.CharacterData != null &&
+            loadout != null &&
+            value.CharacterData.CombatLoadout != loadout)
+        {
+            result.Add(Error("CharacterData.CombatLoadout과 Bundle Loadout이 다릅니다."));
+        }
+
+        if (value.Kind != CharacterAuthoringKind.Custom && value.SkillSet == null)
+            result.Add(Error("Legacy Runtime Adapter가 없습니다."));
+
+        if (value.CharacterPrefab != null)
+        {
+            foreach (string missing in CharacterPrefabAssemblyUtility.ValidatePrefab(value))
+                result.Add(Warn(missing));
+        }
+
+        return result;
+    }
+
+    private static void ValidateCategory(
+        ICollection<ValidationMessage> result,
+        IReadOnlyList<SkillDefinition> equipped,
+        IReadOnlyCollection<SkillDefinition> pool,
+        ActionType type,
+        int limit,
+        string label)
+    {
+        if ((equipped?.Count ?? 0) > limit)
+            result.Add(Error($"{label} 장착 한도 {limit}개를 초과합니다."));
+
+        if (equipped == null)
+            return;
+
+        HashSet<SkillDefinition> unique = new();
+
+        foreach (SkillDefinition skill in equipped)
+        {
+            if (skill == null)
+            {
+                result.Add(Warn($"{label} 장착 목록에 NULL이 있습니다."));
+                continue;
+            }
+
+            if (!unique.Add(skill))
+                result.Add(Warn($"{label}: {skill.name} 중복"));
+
+            if (skill.ActionType != type)
+                result.Add(Error($"{skill.name}: ActionType={skill.ActionType}, Expected={type}"));
+
+            if (pool != null && pool.Count > 0 && !pool.Contains(skill))
+                result.Add(Error($"{skill.name}: 장착되어 있지만 {label} 후보 목록에 없습니다."));
+        }
+    }
+
+    private void DrawBuiltInMechanics(Character prefab)
+    {
+        string[] names = prefab switch
+        {
+            Olaf => new[] { "OlafMadnessMechanic", "OlafImmortalFuryMechanic" },
+            EliteEnemy => new[] { "EliteEnemyMechanic", "EnemyPostureMechanic" },
+            NormalEnemy => new[] { "NormalEnemyBloodScentMechanic" },
+            _ => Array.Empty<string>()
+        };
+
+        EditorGUILayout.LabelField("Character Class 내장 Mechanic", EditorStyles.boldLabel);
+
+        if (names.Length == 0)
+            EditorGUILayout.LabelField("없음 — 아래 Passive/Augment로 구성");
+        else
+            foreach (string name in names) EditorGUILayout.LabelField("• " + name);
+    }
+
+    private void DrawPresentationAssets()
+    {
+        foreach (UnityEngine.Object asset in bundle.SupportingAssets)
+        {
+            if (asset is BattleVfxDefinition ||
+                asset is PersistentBattleVfxDefinition ||
+                asset is StatusEffectVisualDefinition)
+            {
+                DrawNested($"{asset.GetType().Name}: {asset.name}", asset, false);
+            }
+        }
+    }
+
+    private void CreateSupporting(Type type)
+    {
+        CreateSubAsset(
+            type,
+            ObjectNames.NicifyVariableName(type.Name),
+            true);
+        AssetDatabase.SaveAssets();
+    }
+
+    private void MarkGraphDirty()
+    {
+        EditorUtility.SetDirty(bundle);
+        if (bundle.CharacterData != null) EditorUtility.SetDirty(bundle.CharacterData);
+        if (bundle.CombatLoadout != null) EditorUtility.SetDirty(bundle.CombatLoadout);
+        if (bundle.SkillSet != null) EditorUtility.SetDirty(bundle.SkillSet);
+        if (bundle.VisualProfile != null) EditorUtility.SetDirty(bundle.VisualProfile);
+
+        foreach (SkillDefinition skill in bundle.EnumerateSkillDefinitions())
+            if (skill != null) EditorUtility.SetDirty(skill);
+    }
+
+    private bool BeginSection(string key, string title, bool defaultValue)
+    {
+        bool expanded = folds.TryGetValue(key, out bool stored)
+            ? stored
+            : defaultValue;
+
+        expanded = EditorGUILayout.BeginFoldoutHeaderGroup(expanded, title);
+        folds[key] = expanded;
 
         if (!expanded)
         {
             EditorGUILayout.EndFoldoutHeaderGroup();
-            EditorGUILayout.Space(4f);
+            EditorGUILayout.Space(3f);
             return false;
         }
 
@@ -705,43 +1610,38 @@ public sealed class ProjectAbyssCharacterStudio : EditorWindow
     }
 
     private static void DrawProperty(
-        SerializedObject serialized,
-        string propertyName)
+        SerializedObject so,
+        string name,
+        string label = null)
     {
-        SerializedProperty property =
-            serialized?.FindProperty(propertyName);
+        SerializedProperty property = so?.FindProperty(name);
 
         if (property != null)
-            EditorGUILayout.PropertyField(property, true);
+        {
+            if (string.IsNullOrWhiteSpace(label))
+                EditorGUILayout.PropertyField(property, true);
+            else
+                EditorGUILayout.PropertyField(property, new GUIContent(label), true);
+        }
     }
 
-    private void DrawNestedObject(
+    private void DrawNested(
         string title,
         UnityEngine.Object asset,
-        bool defaultExpanded)
+        bool defaultValue)
     {
         if (asset == null || asset == bundle)
             return;
 
         int id = asset.GetInstanceID();
         string key = $"nested:{id}:{title}";
-
-        bool expanded =
-            sectionExpanded.TryGetValue(
-                key,
-                out bool stored)
-                ? stored
-                : defaultExpanded;
+        bool expanded = folds.TryGetValue(key, out bool stored)
+            ? stored
+            : defaultValue;
 
         EditorGUILayout.BeginVertical("box");
-
         EditorGUILayout.BeginHorizontal();
-
-        expanded =
-            EditorGUILayout.Foldout(
-                expanded,
-                title,
-                true);
+        expanded = EditorGUILayout.Foldout(expanded, title, true);
 
         if (GUILayout.Button("Ping", GUILayout.Width(48f)))
         {
@@ -750,20 +1650,15 @@ public sealed class ProjectAbyssCharacterStudio : EditorWindow
         }
 
         EditorGUILayout.EndHorizontal();
-
-        sectionExpanded[key] = expanded;
+        folds[key] = expanded;
 
         if (expanded)
         {
-            if (!nestedEditors.TryGetValue(
-                    id,
-                    out Editor editor) ||
+            if (!nestedEditors.TryGetValue(id, out Editor editor) ||
                 editor == null ||
                 editor.target != asset)
             {
-                if (editor != null)
-                    DestroyImmediate(editor);
-
+                if (editor != null) DestroyImmediate(editor);
                 editor = Editor.CreateEditor(asset);
                 nestedEditors[id] = editor;
             }
@@ -776,1243 +1671,31 @@ public sealed class ProjectAbyssCharacterStudio : EditorWindow
         EditorGUILayout.EndVertical();
     }
 
-    private void DrawReferencedArrayEditors<T>(
-        string title,
-        string propertyName)
+    private void DrawArrayObjects<T>(string title, string propertyName)
         where T : UnityEngine.Object
     {
-        SerializedObject serialized =
-            new SerializedObject(bundle);
-
-        SerializedProperty property =
-            serialized.FindProperty(propertyName);
-
-        if (property == null ||
-            !property.isArray ||
-            property.arraySize == 0)
-        {
-            return;
-        }
-
-        EditorGUILayout.LabelField(
-            title,
-            EditorStyles.boldLabel);
-
-        for (int i = 0; i < property.arraySize; i++)
-        {
-            T value =
-                property.GetArrayElementAtIndex(i)
-                    .objectReferenceValue as T;
-
-            DrawNestedObject(
-                $"{title} #{i + 1}",
-                value,
-                false);
-        }
-    }
-
-    private void DrawBuiltInMechanicSummary(
-        Character prefab)
-    {
-        string[] mechanics = prefab switch
-        {
-            Olaf => new[]
-            {
-                "광전사의 광기 — 교환 출혈, 결투 패배/부위 파괴 광기, 고유 파괴",
-                "불사의 분노 — 사망 방지, 추가 행동 슬롯, 턴 종료 자해"
-            },
-            EliteEnemy => new[]
-            {
-                "엘리트 본능 — 합 승리/부위 상태 변화 위세 반응",
-                "적 자세 로테이션 — 자세별 COMBAT 슬롯과 기세 성향"
-            },
-            NormalEnemy => new[]
-            {
-                "피 냄새 — 합 승리 시 출혈 적용"
-            },
-            _ => Array.Empty<string>()
-        };
-
-        EditorGUILayout.LabelField(
-            "코드 내장 메커닉",
-            EditorStyles.boldLabel);
-
-        if (mechanics.Length == 0)
-        {
-            EditorGUILayout.HelpBox(
-                "이 Prefab 타입에서 자동 등록되는 내장 CombatMechanic이 확인되지 않습니다. " +
-                "데이터형 패시브는 아래 CharacterAugment 목록으로 추가할 수 있습니다.",
-                MessageType.None);
-            return;
-        }
-
-        foreach (string mechanic in mechanics)
-            EditorGUILayout.LabelField("• " + mechanic, EditorStyles.wordWrappedLabel);
-    }
-
-    private void DrawPresentationSupportingAssets()
-    {
-        IReadOnlyList<UnityEngine.Object> assets =
-            bundle.SupportingAssets;
-
-        if (assets == null)
-            return;
-
-        foreach (UnityEngine.Object asset in assets)
-        {
-            if (asset is BattleVfxDefinition ||
-                asset is PersistentBattleVfxDefinition ||
-                asset is StatusEffectVisualDefinition)
-            {
-                DrawNestedObject(
-                    $"{asset.GetType().Name}: {asset.name}",
-                    asset,
-                    false);
-            }
-        }
-    }
-
-    private static void DrawPrefabPresentationSummary(
-        Character prefab)
-    {
-        if (prefab == null)
-            return;
-
-        Animator animator =
-            prefab.GetComponentInChildren<Animator>(true);
-
-        CharacterView view =
-            prefab.GetComponent<CharacterView>() ??
-            prefab.GetComponentInChildren<CharacterView>(true);
-
-        CharacterCameraPointSet points =
-            prefab.GetComponentInChildren<CharacterCameraPointSet>(true);
-
-        EditorGUILayout.Space(4f);
-        EditorGUILayout.LabelField(
-            "Prefab 연출 구성",
-            EditorStyles.boldLabel);
-
-        EditorGUILayout.ObjectField(
-            "Character Prefab",
-            prefab,
-            typeof(Character),
-            false);
-
-        EditorGUILayout.ObjectField(
-            "Animator",
-            animator,
-            typeof(Animator),
-            true);
-
-        EditorGUILayout.ObjectField(
-            "CharacterView",
-            view,
-            typeof(CharacterView),
-            true);
-
-        EditorGUILayout.ObjectField(
-            "Camera Point Set",
-            points,
-            typeof(CharacterCameraPointSet),
-            true);
-    }
-
-    private void CreateEmptyBundle()
-    {
-        string path =
-            EditorUtility.SaveFilePanelInProject(
-                "Create Character Bundle",
-                "NewCharacterBundle",
-                "asset",
-                "Character Studio에서 편집할 Bundle 위치를 선택하세요.",
-                DefaultBundleFolder);
-
-        if (string.IsNullOrWhiteSpace(path))
-            return;
-
-        CharacterAuthoringBundle created =
-            ScriptableObject.CreateInstance<CharacterAuthoringBundle>();
-
-        created.name =
-            Path.GetFileNameWithoutExtension(path);
-
-        AssetDatabase.CreateAsset(created, path);
-        AssetDatabase.SaveAssets();
-
-        bundle = created;
-        Selection.activeObject = created;
-        EditorGUIUtility.PingObject(created);
-    }
-
-    private void CreateBundleFromPrefab(
-        Character prefab)
-    {
-        if (!IsPrefabAsset(prefab, out string prefabPath))
-        {
-            EditorUtility.DisplayDialog(
-                "Character Studio",
-                "Project 창의 Character Prefab Asset을 선택해야 합니다.",
-                "확인");
-            return;
-        }
-
-        string defaultName =
-            $"{prefab.name}_CharacterBundle";
-
-        string path =
-            EditorUtility.SaveFilePanelInProject(
-                "Create Character Bundle From Prefab",
-                defaultName,
-                "asset",
-                "Bundle 저장 위치를 선택하세요.",
-                GetSuggestedFolder(prefabPath));
-
-        if (string.IsNullOrWhiteSpace(path))
-            return;
-
-        CharacterAuthoringBundle created =
-            ScriptableObject.CreateInstance<CharacterAuthoringBundle>();
-
-        created.name =
-            Path.GetFileNameWithoutExtension(path);
-
-        AssetDatabase.CreateAsset(created, path);
-        bundle = created;
-
-        CapturePrefabIntoBundle(
-            prefab,
-            packReferencedAssetsOnImport,
-            linkPrefabOnImport);
-
-        AssetDatabase.SaveAssets();
-        AssetDatabase.Refresh();
-
-        Selection.activeObject = bundle;
-        EditorGUIUtility.PingObject(bundle);
-    }
-
-    private void CaptureCurrentPrefab(
-        bool packIntoBundle)
-    {
-        if (bundle?.CharacterPrefab == null)
-        {
-            EditorUtility.DisplayDialog(
-                "Character Studio",
-                "먼저 Bundle의 Character Prefab을 연결하세요.",
-                "확인");
-            return;
-        }
-
-        CapturePrefabIntoBundle(
-            bundle.CharacterPrefab,
-            packIntoBundle,
-            linkPrefab: true);
-    }
-
-    private void ConfirmAndPackCurrentPrefab()
-    {
-        if (bundle?.CharacterPrefab == null)
-        {
-            EditorUtility.DisplayDialog(
-                "Character Studio",
-                "먼저 Bundle의 Character Prefab을 연결하세요.",
-                "확인");
-            return;
-        }
-
-        bool confirmed =
-            EditorUtility.DisplayDialog(
-                "Bundle 패킹",
-                "현재 Prefab이 참조하는 Project Abyss ScriptableObject 그래프를 " +
-                "Bundle 내부 Sub-Asset 복사본으로 만들고 Prefab 참조를 복사본으로 연결합니다.\n\n" +
-                "원본 SO는 삭제되지 않습니다.",
-                "패킹",
-                "취소");
-
-        if (confirmed)
-            CaptureCurrentPrefab(packIntoBundle: true);
-    }
-
-    private void CapturePrefabIntoBundle(
-        Character prefab,
-        bool packIntoBundle,
-        bool linkPrefab)
-    {
-        if (bundle == null || prefab == null)
-            return;
-
-        if (!IsPrefabAsset(prefab, out _))
-            return;
-
-        CharacterAuthoringCloneUtility cloneUtility = null;
-
-        CharacterData data = prefab.Data;
-        ScriptableObject skillSet =
-            ReadObjectReference<ScriptableObject>(
-                prefab,
-                "skillSet");
-
-        if (packIntoBundle)
-        {
-            cloneUtility =
-                new CharacterAuthoringCloneUtility(bundle);
-
-            cloneUtility.CapturePrefab(prefab.gameObject);
-
-            if (data != null)
-                cloneUtility.CloneRoot(data);
-
-            if (skillSet != null)
-                cloneUtility.CloneRoot(skillSet);
-
-            cloneUtility.FinalizeClones();
-
-            data =
-                cloneUtility.GetClone(data) ?? data;
-
-            skillSet =
-                cloneUtility.GetClone(skillSet) ?? skillSet;
-        }
-
-        SkillVisualProfile profile =
-            bundle.VisualProfile;
-
-        if (profile == null)
-        {
-            profile = CreateSubAsset<SkillVisualProfile>(
-                bundle,
-                $"{SanitizeName(prefab.name)}_VisualProfile",
-                supporting: false);
-        }
-
-        ConfigureVisualProfileFromSkillSet(
-            profile,
-            skillSet);
-
-        string displayName =
-            data != null &&
-            !string.IsNullOrWhiteSpace(data.CharacterName)
-                ? data.CharacterName
-                : prefab.name;
-
-        bundle.ConfigureCore(
-            DetectKind(prefab),
-            displayName,
-            data,
-            skillSet,
-            profile);
-
-        bundle.ConfigurePrefab(prefab);
-
-        ConfigurePackedLoadout(
-            bundle,
-            prefab,
-            cloneUtility);
-
-        ConfigureCharacterSpecificSettings(
-            bundle,
-            prefab);
-
-        ConfigurePresentationFromPrefab(
-            bundle,
-            prefab);
-
-        if (linkPrefab)
-        {
-            ApplyBundleLinkToCurrentPrefab(
-                cloneUtility);
-        }
-
-        EditorUtility.SetDirty(bundle);
-        AssetDatabase.SaveAssets();
-        DestroyNestedEditors();
-    }
-
-    private void ApplyBundleLinkToCurrentPrefab(
-        CharacterAuthoringCloneUtility cloneUtility)
-    {
-        if (bundle?.CharacterPrefab == null)
-            return;
-
-        Character prefab = bundle.CharacterPrefab;
-
-        if (!IsPrefabAsset(prefab, out string path))
-        {
-            EditorUtility.DisplayDialog(
-                "Character Studio",
-                "Bundle에 연결된 Character가 Prefab Asset이 아닙니다.",
-                "확인");
-            return;
-        }
-
-        GameObject root =
-            PrefabUtility.LoadPrefabContents(path);
-
-        if (root == null)
-            return;
-
-        try
-        {
-            Character character =
-                root.GetComponentInChildren<Character>(true);
-
-            if (character == null)
-                return;
-
-            cloneUtility?.RemapPrefab(root);
-
-            CharacterAuthoringLink link =
-                character.GetComponent<CharacterAuthoringLink>();
-
-            if (link == null)
-            {
-                link =
-                    character.gameObject
-                        .AddComponent<CharacterAuthoringLink>();
-            }
-
-            link.Configure(bundle);
-
-            PrefabUtility.SaveAsPrefabAsset(
-                root,
-                path);
-        }
-        finally
-        {
-            PrefabUtility.UnloadPrefabContents(root);
-        }
-
-        AssetDatabase.ImportAsset(path);
-
-        GameObject prefabAsset =
-            AssetDatabase.LoadAssetAtPath<GameObject>(path);
-
-        Character refreshed =
-            prefabAsset?.GetComponentInChildren<Character>(true);
-
-        if (refreshed != null)
-            bundle.ConfigurePrefab(refreshed);
-
-        EditorUtility.SetDirty(bundle);
-        AssetDatabase.SaveAssets();
-    }
-
-    private void EnsureMissingCoreAssets()
-    {
-        if (bundle == null)
-            return;
-
-        Character prefab = bundle.CharacterPrefab;
-        CharacterAuthoringKind kind = DetectKind(prefab);
-        string safeName = SanitizeName(
-            string.IsNullOrWhiteSpace(bundle.DisplayName)
-                ? bundle.name
-                : bundle.DisplayName);
-
-        CharacterData data = bundle.CharacterData;
-        ScriptableObject skillSet = bundle.SkillSet;
-        SkillVisualProfile profile = bundle.VisualProfile;
-
-        if (data == null)
-        {
-            data = CreateSubAsset<CharacterData>(
-                bundle,
-                $"{safeName}_CharacterData",
-                supporting: false);
-
-            data.CharacterName = bundle.DisplayName;
-            data.TargetMode = prefab is NormalEnemy
-                ? CharacterTargetMode.SingleHP
-                : CharacterTargetMode.BodyParts;
-            data.SingleHpMax = 50;
-        }
-
-        if (skillSet == null)
-        {
-            skillSet = kind switch
-            {
-                CharacterAuthoringKind.Olaf =>
-                    CreateSubAsset<OlafSkillSet>(
-                        bundle,
-                        $"{safeName}_SkillSet",
-                        supporting: false),
-
-                CharacterAuthoringKind.EliteEnemy =>
-                    CreateSubAsset<EliteEnemySkillSet>(
-                        bundle,
-                        $"{safeName}_SkillSet",
-                        supporting: false),
-
-                CharacterAuthoringKind.NormalEnemy =>
-                    CreateSubAsset<NormalEnemySkillSet>(
-                        bundle,
-                        $"{safeName}_SkillSet",
-                        supporting: false),
-
-                _ => null
-            };
-        }
-
-        if (profile == null)
-        {
-            profile = CreateSubAsset<SkillVisualProfile>(
-                bundle,
-                $"{safeName}_VisualProfile",
-                supporting: false);
-        }
-
-        if (skillSet != null)
-        {
-            EnsureSkillSlot(
-                skillSet,
-                "NormalAttack",
-                ActionType.NormalAttack,
-                safeName,
-                profile);
-
-            EnsureSkillSlot(
-                skillSet,
-                "DuelSkill",
-                ActionType.Duel,
-                safeName,
-                profile);
-
-            if (skillSet is not NormalEnemySkillSet)
-            {
-                EnsureSkillSlot(
-                    skillSet,
-                    "PreparationSkill",
-                    ActionType.Preparation,
-                    safeName,
-                    profile);
-            }
-
-            EnsureSkillSlot(
-                skillSet,
-                "PrestigeSkill",
-                ActionType.Prestige,
-                safeName,
-                profile);
-        }
-
-        bundle.ConfigureCore(
-            kind,
-            bundle.DisplayName,
-            data,
-            skillSet,
-            profile);
-
-        EditorUtility.SetDirty(bundle);
-        EditorUtility.SetDirty(data);
-
-        if (skillSet != null)
-            EditorUtility.SetDirty(skillSet);
-
-        if (profile != null)
-            EditorUtility.SetDirty(profile);
-
-        AssetDatabase.SaveAssets();
-        DestroyNestedEditors();
-    }
-
-    private void EnsureSkillSlot(
-        ScriptableObject skillSet,
-        string propertyName,
-        ActionType actionType,
-        string safeName,
-        SkillVisualProfile profile)
-    {
-        SerializedObject serialized =
-            new SerializedObject(skillSet);
-
-        SerializedProperty property =
-            serialized.FindProperty(propertyName);
-
-        if (property == null ||
-            property.propertyType !=
-            SerializedPropertyType.ObjectReference)
-        {
-            return;
-        }
-
-        SkillDefinition skill =
-            property.objectReferenceValue as SkillDefinition;
-
-        if (skill == null)
-        {
-            skill = CreateSubAsset<SkillDefinition>(
-                bundle,
-                $"{safeName}_{actionType}_Skill",
-                supporting: false);
-
-            skill.SkillName =
-                $"{bundle.DisplayName} {GetKoreanActionName(actionType)}";
-            skill.ActionType = actionType;
-            skill.BasePower = 1;
-            skill.ExchangeRollCount = 3;
-            skill.ResolverType = SkillResolverType.Dice;
-            skill.DiceMin = 1;
-            skill.DiceMax = 6;
-            skill.CanBreakPart =
-                actionType != ActionType.Preparation;
-            skill.GainPrestige =
-                actionType != ActionType.Preparation;
-
-            property.objectReferenceValue = skill;
-            serialized.ApplyModifiedPropertiesWithoutUndo();
-            EditorUtility.SetDirty(skillSet);
-        }
-
-        if (skill.VisualDefinition == null)
-            CreateVisualForSkill(skill);
-
-        AssignProfileVisual(
-            profile,
-            actionType,
-            skill.VisualDefinition);
-    }
-
-    private void CreateVisualForSkill(
-        SkillDefinition skill)
-    {
-        if (bundle == null || skill == null)
-            return;
-
-        string baseName =
-            SanitizeName(
-                string.IsNullOrWhiteSpace(skill.SkillName)
-                    ? skill.name
-                    : skill.SkillName);
-
-        SkillCameraDefinition camera =
-            CreateSubAsset<SkillCameraDefinition>(
-                bundle,
-                $"{baseName}_Camera",
-                supporting: false);
-
-        SkillVisualDefinition visual =
-            CreateSubAsset<SkillVisualDefinition>(
-                bundle,
-                $"{baseName}_Visual",
-                supporting: false);
-
-        visual.AllowAsProfileFallback = false;
-        visual.CameraDefinition = camera;
-        skill.VisualDefinition = visual;
-
-        AssignProfileVisual(
-            bundle.VisualProfile,
-            skill.ActionType,
-            visual);
-
-        EditorUtility.SetDirty(skill);
-        EditorUtility.SetDirty(visual);
-        EditorUtility.SetDirty(camera);
-        AssetDatabase.SaveAssets();
-        DestroyNestedEditors();
-    }
-
-    private void AddEffectToSkill(
-        SkillDefinition skill,
-        Type effectType)
-    {
-        if (skill == null ||
-            effectType == null)
-        {
-            return;
-        }
-
-        SkillEffectDefinition effect =
-            CreateSubAsset(
-                bundle,
-                effectType,
-                $"{skill.name}_{ObjectNames.NicifyVariableName(effectType.Name)}",
-                supporting: true) as SkillEffectDefinition;
-
-        if (effect == null)
-            return;
-
-        Undo.RecordObject(
-            skill,
-            "Add Skill Effect");
-
-        skill.Effects ??=
-            new List<SkillEffectDefinition>();
-
-        skill.Effects.Add(effect);
-
-        EditorUtility.SetDirty(skill);
-        AssetDatabase.SaveAssets();
-    }
-
-    private void AddObjectToBundleArray(
-        string propertyName,
-        Type type,
-        bool registerSupporting)
-    {
-        if (bundle == null || type == null)
-            return;
-
-        ScriptableObject created =
-            CreateSubAsset(
-                bundle,
-                type,
-                ObjectNames.NicifyVariableName(type.Name),
-                registerSupporting);
-
-        if (created == null)
-            return;
-
-        SerializedObject serialized =
-            new SerializedObject(bundle);
-
-        serialized.Update();
-
-        SerializedProperty array =
-            serialized.FindProperty(propertyName);
-
-        if (array == null || !array.isArray)
-            return;
-
-        int index = array.arraySize;
-        array.InsertArrayElementAtIndex(index);
-        array.GetArrayElementAtIndex(index)
-            .objectReferenceValue = created;
-
-        SerializedProperty overrideLoadout =
-            serialized.FindProperty("overrideLoadout");
-
-        if (overrideLoadout != null)
-            overrideLoadout.boolValue = true;
-
-        serialized.ApplyModifiedPropertiesWithoutUndo();
-        EditorUtility.SetDirty(bundle);
-        AssetDatabase.SaveAssets();
-    }
-
-    private void AddConcreteSupportingAsset(
-        Type type)
-    {
-        if (type == null ||
-            type.IsAbstract ||
-            !typeof(ScriptableObject).IsAssignableFrom(type))
-        {
-            return;
-        }
-
-        CreateSubAsset(
-            bundle,
-            type,
-            ObjectNames.NicifyVariableName(type.Name),
-            supporting: true);
-
-        AssetDatabase.SaveAssets();
-    }
-
-    private void ShowCreateSubAssetMenu<T>(
-        Action<Type> onSelected)
-        where T : ScriptableObject
-    {
-        GenericMenu menu = new();
-        bool added = false;
-
-        IEnumerable<Type> types =
-            TypeCache.GetTypesDerivedFrom<T>()
-                .Where(type =>
-                    type != null &&
-                    !type.IsAbstract &&
-                    !type.IsGenericType &&
-                    typeof(ScriptableObject)
-                        .IsAssignableFrom(type))
-                .OrderBy(type => type.FullName);
-
-        foreach (Type type in types)
-        {
-            added = true;
-            Type captured = type;
-
-            string menuName =
-                string.IsNullOrWhiteSpace(type.FullName)
-                    ? type.Name
-                    : type.FullName.Replace('.', '/');
-
-            menu.AddItem(
-                new GUIContent(menuName),
-                false,
-                () => onSelected?.Invoke(captured));
-        }
-
-        if (!added)
-        {
-            menu.AddDisabledItem(
-                new GUIContent("사용 가능한 구체 타입 없음"));
-        }
-
-        menu.ShowAsContext();
-    }
-
-    private static List<SkillDefinition>
-        CollectSkillDefinitions(
-            ScriptableObject skillSet)
-    {
-        List<SkillDefinition> result = new();
-        HashSet<SkillDefinition> unique = new();
-
-        if (skillSet == null)
-            return result;
-
-        SerializedObject serialized =
-            new SerializedObject(skillSet);
-
-        SerializedProperty property =
-            serialized.GetIterator();
-
-        bool enterChildren = true;
-
-        while (property.Next(enterChildren))
-        {
-            enterChildren = true;
-
-            if (property.propertyType !=
-                SerializedPropertyType.ObjectReference)
-            {
-                continue;
-            }
-
-            if (property.objectReferenceValue is not
-                SkillDefinition definition)
-            {
-                continue;
-            }
-
-            if (unique.Add(definition))
-                result.Add(definition);
-        }
-
-        return result;
-    }
-
-    private static void ConfigureVisualProfileFromSkillSet(
-        SkillVisualProfile profile,
-        ScriptableObject skillSet)
-    {
-        if (profile == null || skillSet == null)
-            return;
-
-        foreach (SkillDefinition definition in
-                 CollectSkillDefinitions(skillSet))
-        {
-            if (definition?.VisualDefinition == null)
-                continue;
-
-            AssignProfileVisual(
-                profile,
-                definition.ActionType,
-                definition.VisualDefinition);
-        }
-
-        EditorUtility.SetDirty(profile);
-    }
-
-    private static void AssignProfileVisual(
-        SkillVisualProfile profile,
-        ActionType actionType,
-        SkillVisualDefinition visual)
-    {
-        if (profile == null || visual == null)
-            return;
-
-        switch (actionType)
-        {
-            case ActionType.NormalAttack:
-                profile.NormalAttackVisual = visual;
-                break;
-            case ActionType.Duel:
-                profile.DuelVisual = visual;
-                break;
-            case ActionType.Preparation:
-                profile.PreparationVisual = visual;
-                break;
-            case ActionType.Prestige:
-                profile.PrestigeVisual = visual;
-                break;
-        }
-
-        EditorUtility.SetDirty(profile);
-    }
-
-    private static void ConfigurePackedLoadout(
-        CharacterAuthoringBundle targetBundle,
-        Character sourceCharacter,
-        CharacterAuthoringCloneUtility cloneUtility)
-    {
-        List<CharacterItem> sourceItems =
-            ReadObjectReferenceList<CharacterItem>(
-                sourceCharacter,
-                "equippedItems");
-
-        List<CharacterAugment> sourceAugments =
-            ReadObjectReferenceList<CharacterAugment>(
-                sourceCharacter,
-                "equippedAugments");
-
-        List<CharacterItem> items = new();
-        List<CharacterAugment> augments = new();
-
-        foreach (CharacterItem source in sourceItems)
-        {
-            CharacterItem value =
-                cloneUtility?.GetClone(source) ?? source;
-
-            if (value != null && !items.Contains(value))
-                items.Add(value);
-        }
-
-        foreach (CharacterAugment source in sourceAugments)
-        {
-            CharacterAugment value =
-                cloneUtility?.GetClone(source) ?? source;
-
-            if (value != null && !augments.Contains(value))
-                augments.Add(value);
-        }
-
-        targetBundle.ConfigureLoadout(
-            items,
-            augments,
-            shouldOverride: true);
-    }
-
-    private static void ConfigureCharacterSpecificSettings(
-        CharacterAuthoringBundle targetBundle,
-        Character sourceCharacter)
-    {
-        if (sourceCharacter is NormalEnemy)
-        {
-            SerializedObject serialized =
-                new SerializedObject(sourceCharacter);
-
-            int singleMaxHp =
-                serialized.FindProperty("singleMaxHP")
-                    ?.intValue ?? 50;
-
-            targetBundle.ConfigureNormalEnemy(
-                singleMaxHp,
-                shouldOverride: true);
-        }
-
-        if (sourceCharacter is not EliteEnemy)
-            return;
-
-        SerializedObject elite =
-            new SerializedObject(sourceCharacter);
-
-        bool usePosture =
-            elite.FindProperty("usePostureRotation")
-                ?.boolValue ?? true;
-
-        SerializedProperty posture =
-            elite.FindProperty("postureSettings");
-
-        EnemyPostureSettings settings =
-            new EnemyPostureSettings();
-
-        if (posture != null)
-        {
-            CopyInt(posture, "MinimumTurns", value => settings.MinimumTurns = value);
-            CopyInt(posture, "MaximumTurns", value => settings.MaximumTurns = value);
-            CopyInt(posture, "NormalAttackSlotLimit", value => settings.NormalAttackSlotLimit = value);
-            CopyInt(posture, "CrouchingAttackSlotLimit", value => settings.CrouchingAttackSlotLimit = value);
-            CopyInt(posture, "OffensiveAttackSlotLimit", value => settings.OffensiveAttackSlotLimit = value);
-            CopyInt(posture, "ExpectedMomentumDriftPerTurn", value => settings.ExpectedMomentumDriftPerTurn = value);
-        }
-
-        targetBundle.ConfigureEliteEnemy(
-            usePosture,
-            settings);
-    }
-
-    private static void ConfigurePresentationFromPrefab(
-        CharacterAuthoringBundle targetBundle,
-        Character prefab)
-    {
-        Animator animator =
-            prefab?.GetComponentInChildren<Animator>(true);
-
-        SerializedObject serialized =
-            new SerializedObject(targetBundle);
-
-        serialized.Update();
-
-        SerializedProperty controller =
-            serialized.FindProperty("animatorController");
-
-        SerializedProperty avatar =
-            serialized.FindProperty("avatar");
-
-        SerializedProperty overrideController =
-            serialized.FindProperty("overrideAnimatorController");
-
-        SerializedProperty overrideAvatar =
-            serialized.FindProperty("overrideAvatar");
-
-        if (controller != null)
-            controller.objectReferenceValue = animator?.runtimeAnimatorController;
-
-        if (avatar != null)
-            avatar.objectReferenceValue = animator?.avatar;
-
-        if (overrideController != null)
-            overrideController.boolValue = animator?.runtimeAnimatorController != null;
-
-        if (overrideAvatar != null)
-            overrideAvatar.boolValue = animator?.avatar != null;
-
-        serialized.ApplyModifiedPropertiesWithoutUndo();
-    }
-
-    private static List<ValidationMessage> ValidateBundle(
-        CharacterAuthoringBundle targetBundle)
-    {
-        List<ValidationMessage> result = new();
-
-        if (targetBundle == null)
-            return result;
-
-        Character prefab = targetBundle.CharacterPrefab;
-
-        if (prefab == null)
-        {
-            result.Add(new ValidationMessage(
-                MessageType.Error,
-                "Character Prefab이 없습니다."));
-        }
-        else if (!targetBundle.IsCompatibleWith(
-                     prefab,
-                     out string reason))
-        {
-            result.Add(new ValidationMessage(
-                MessageType.Error,
-                reason));
-        }
-
-        if (targetBundle.CharacterData == null)
-        {
-            result.Add(new ValidationMessage(
-                MessageType.Error,
-                "CharacterData가 없습니다."));
-        }
-
-        if (targetBundle.SkillSet == null)
-        {
-            result.Add(new ValidationMessage(
-                MessageType.Warning,
-                "SkillSet이 없습니다. 스킬을 사용하지 않는 Custom Character가 아니라면 연결이 필요합니다."));
-        }
-
-        foreach (SkillDefinition skill in
-                 CollectSkillDefinitions(targetBundle.SkillSet))
-        {
-            if (skill.VisualDefinition == null)
-            {
-                result.Add(new ValidationMessage(
-                    MessageType.Warning,
-                    $"{skill.name}: SkillVisualDefinition이 없습니다."));
-                continue;
-            }
-
-            if (skill.VisualDefinition.UsesTargetCamera &&
-                skill.VisualDefinition.CameraDefinition == null)
-            {
-                result.Add(new ValidationMessage(
-                    MessageType.Warning,
-                    $"{skill.name}: Target Camera를 사용하지만 CameraDefinition이 없습니다."));
-            }
-        }
-
-        if (prefab != null)
-        {
-            CharacterAuthoringLink link =
-                prefab.GetComponent<CharacterAuthoringLink>();
-
-            if (link == null || link.Bundle != targetBundle)
-            {
-                result.Add(new ValidationMessage(
-                    MessageType.Warning,
-                    "Prefab의 CharacterAuthoringLink가 없거나 다른 Bundle을 참조합니다."));
-            }
-
-            if (prefab.GetComponentInChildren<Animator>(true) == null)
-            {
-                result.Add(new ValidationMessage(
-                    MessageType.Warning,
-                    "Prefab 하위에 Animator가 없습니다."));
-            }
-
-            if (prefab.GetComponentInChildren<CharacterView>(true) == null &&
-                prefab.GetComponent<CharacterView>() == null)
-            {
-                result.Add(new ValidationMessage(
-                    MessageType.Warning,
-                    "Prefab에서 CharacterView를 찾지 못했습니다."));
-            }
-        }
-
-        return result;
-    }
-
-    private static void SyncKindFromPrefab(
-        CharacterAuthoringBundle targetBundle)
-    {
-        if (targetBundle == null ||
-            targetBundle.CharacterPrefab == null)
-        {
-            return;
-        }
-
-        CharacterAuthoringKind detected =
-            DetectKind(targetBundle.CharacterPrefab);
-
-        if (targetBundle.Kind == detected)
-            return;
-
-        SerializedObject serialized =
-            new SerializedObject(targetBundle);
-
-        SerializedProperty kind =
-            serialized.FindProperty("kind");
-
-        if (kind == null)
-            return;
-
-        kind.enumValueIndex = (int)detected;
-        serialized.ApplyModifiedPropertiesWithoutUndo();
-        EditorUtility.SetDirty(targetBundle);
-    }
-
-    private static CharacterAuthoringKind DetectKind(
-        Character character)
-    {
-        return character switch
-        {
-            Olaf => CharacterAuthoringKind.Olaf,
-            EliteEnemy => CharacterAuthoringKind.EliteEnemy,
-            NormalEnemy => CharacterAuthoringKind.NormalEnemy,
-            _ => CharacterAuthoringKind.Custom
-        };
-    }
-
-    private static string GetRoleDisplayName(
-        Character character)
-    {
-        return character switch
-        {
-            NormalEnemy => "일반 적 — 단일 HP",
-            EliteEnemy => "정예 적 — 부위형",
-            Enemy => "적 — Custom Runtime",
-            Olaf => "플레이어블 캐릭터 — Olaf Runtime",
-            null => "미지정",
-            _ => "플레이어블/Custom Character"
-        };
-    }
-
-    private static bool IsPrefabAsset(
-        Character character,
-        out string path)
-    {
-        path = character == null
-            ? null
-            : AssetDatabase.GetAssetPath(character);
-
-        return !string.IsNullOrWhiteSpace(path) &&
-               path.EndsWith(
-                   ".prefab",
-                   StringComparison.OrdinalIgnoreCase);
-    }
-
-    private static string GetSuggestedFolder(
-        string prefabPath)
-    {
-        if (string.IsNullOrWhiteSpace(prefabPath))
-            return DefaultBundleFolder;
-
-        string folder =
-            Path.GetDirectoryName(prefabPath)
-                ?.Replace('\\', '/');
-
-        return string.IsNullOrWhiteSpace(folder)
-            ? DefaultBundleFolder
-            : folder;
-    }
-
-    private static T ReadObjectReference<T>(
-        UnityEngine.Object source,
-        string propertyName)
-        where T : UnityEngine.Object
-    {
-        if (source == null)
-            return null;
-
-        SerializedObject serialized =
-            new SerializedObject(source);
-
-        return serialized.FindProperty(propertyName)
-            ?.objectReferenceValue as T;
-    }
-
-    private static List<T> ReadObjectReferenceList<T>(
-        UnityEngine.Object source,
-        string propertyName)
-        where T : UnityEngine.Object
-    {
-        List<T> result = new();
-
-        if (source == null)
-            return result;
-
-        SerializedObject serialized =
-            new SerializedObject(source);
-
-        SerializedProperty property =
-            serialized.FindProperty(propertyName);
+        SerializedObject so = new(bundle);
+        SerializedProperty property = so.FindProperty(propertyName);
 
         if (property == null || !property.isArray)
-            return result;
+            return;
 
         for (int i = 0; i < property.arraySize; i++)
         {
-            T value =
-                property.GetArrayElementAtIndex(i)
-                    .objectReferenceValue as T;
-
-            if (value != null)
-                result.Add(value);
+            T value = property.GetArrayElementAtIndex(i).objectReferenceValue as T;
+            DrawNested($"{title} #{i + 1}", value, false);
         }
-
-        return result;
     }
 
-    private static T CreateSubAsset<T>(
-        CharacterAuthoringBundle targetBundle,
-        string assetName,
-        bool supporting)
+    private T CreateSubAsset<T>(string name, bool supporting)
         where T : ScriptableObject
     {
-        return CreateSubAsset(
-            targetBundle,
-            typeof(T),
-            assetName,
-            supporting) as T;
+        return CreateSubAsset(typeof(T), name, supporting) as T;
     }
 
-    private static ScriptableObject CreateSubAsset(
-        CharacterAuthoringBundle targetBundle,
-        Type type,
-        string assetName,
-        bool supporting)
+    private ScriptableObject CreateSubAsset(Type type, string name, bool supporting)
     {
-        if (targetBundle == null ||
+        if (bundle == null ||
             type == null ||
             type.IsAbstract ||
             !typeof(ScriptableObject).IsAssignableFrom(type))
@@ -2020,91 +1703,157 @@ public sealed class ProjectAbyssCharacterStudio : EditorWindow
             return null;
         }
 
-        ScriptableObject asset =
-            ScriptableObject.CreateInstance(type);
+        ScriptableObject asset = ScriptableObject.CreateInstance(type);
+        asset.name = string.IsNullOrWhiteSpace(name)
+            ? ObjectNames.NicifyVariableName(type.Name)
+            : name;
 
-        asset.name =
-            string.IsNullOrWhiteSpace(assetName)
-                ? ObjectNames.NicifyVariableName(type.Name)
-                : assetName;
+        AssetDatabase.AddObjectToAsset(asset, bundle);
 
-        AssetDatabase.AddObjectToAsset(
-            asset,
-            targetBundle);
-
-        if (supporting)
-            targetBundle.RegisterSupportingAsset(asset);
-        else
-            targetBundle.RegisterIncludedAsset(asset);
+        if (supporting) bundle.RegisterSupportingAsset(asset);
+        else bundle.RegisterIncludedAsset(asset);
 
         EditorUtility.SetDirty(asset);
-        EditorUtility.SetDirty(targetBundle);
-        AssetDatabase.ImportAsset(
-            AssetDatabase.GetAssetPath(targetBundle));
-
+        EditorUtility.SetDirty(bundle);
+        AssetDatabase.ImportAsset(AssetDatabase.GetAssetPath(bundle));
         return asset;
     }
 
-    private static void CopyInt(
-        SerializedProperty parent,
-        string childName,
-        Action<int> setter)
+    private static T ReadReference<T>(UnityEngine.Object source, string name)
+        where T : UnityEngine.Object
     {
-        SerializedProperty child =
-            parent?.FindPropertyRelative(childName);
-
-        if (child != null)
-            setter?.Invoke(child.intValue);
+        return source == null
+            ? null
+            : new SerializedObject(source).FindProperty(name)?.objectReferenceValue as T;
     }
 
-    private static string SanitizeName(
-        string value)
+    private static List<T> ReadList<T>(UnityEngine.Object source, string name)
+        where T : UnityEngine.Object
     {
-        string safe = string.IsNullOrWhiteSpace(value)
-            ? "Character"
-            : value.Trim();
+        List<T> result = new();
+        if (source == null) return result;
 
-        foreach (char invalid in
-                 Path.GetInvalidFileNameChars())
+        SerializedProperty property = new SerializedObject(source).FindProperty(name);
+        if (property == null || !property.isArray) return result;
+
+        for (int i = 0; i < property.arraySize; i++)
         {
-            safe = safe.Replace(invalid, '_');
+            if (property.GetArrayElementAtIndex(i).objectReferenceValue is T value)
+                result.Add(value);
         }
 
-        return safe.Replace('/', '_').Replace('\\', '_');
+        return result;
     }
 
-    private static string GetKoreanActionName(
-        ActionType actionType)
+    private static void SetObject(
+        SerializedObject so,
+        string name,
+        UnityEngine.Object value)
     {
-        return actionType switch
+        SerializedProperty property = so?.FindProperty(name);
+        if (property != null) property.objectReferenceValue = value;
+    }
+
+    private static void SetBool(SerializedObject so, string name, bool value)
+    {
+        SerializedProperty property = so?.FindProperty(name);
+        if (property != null) property.boolValue = value;
+    }
+
+    private void SyncKind()
+    {
+        if (bundle?.CharacterPrefab == null)
+            return;
+
+        CharacterAuthoringKind detected = DetectKind(bundle.CharacterPrefab);
+
+        if (bundle.Kind == detected)
+            return;
+
+        SerializedObject so = new(bundle);
+        SerializedProperty kind = so.FindProperty("kind");
+
+        if (kind != null)
+        {
+            kind.enumValueIndex = (int)detected;
+            so.ApplyModifiedPropertiesWithoutUndo();
+            EditorUtility.SetDirty(bundle);
+        }
+    }
+
+    private static CharacterAuthoringKind DetectKind(Character character) =>
+        character switch
+        {
+            Olaf => CharacterAuthoringKind.Olaf,
+            EliteEnemy => CharacterAuthoringKind.EliteEnemy,
+            NormalEnemy => CharacterAuthoringKind.NormalEnemy,
+            _ => CharacterAuthoringKind.Custom
+        };
+
+    private static string GetRoleName(Character character) =>
+        character switch
+        {
+            Olaf => "플레이어블 — Olaf",
+            EliteEnemy => "정예 적 — 부위형",
+            NormalEnemy => "일반 적 — 단일 HP",
+            Enemy => "Custom Enemy",
+            null => "미지정",
+            _ => "Playable / Custom"
+        };
+
+    private static string KoreanName(ActionType type) =>
+        type switch
         {
             ActionType.NormalAttack => "일반공격",
             ActionType.Duel => "결투",
             ActionType.Preparation => "도사림",
             ActionType.Prestige => "위세",
-            _ => actionType.ToString()
+            _ => type.ToString()
         };
+
+    private static string SafeName(string value)
+    {
+        string safe = string.IsNullOrWhiteSpace(value) ? "Character" : value.Trim();
+
+        foreach (char invalid in Path.GetInvalidFileNameChars())
+            safe = safe.Replace(invalid, '_');
+
+        return safe.Replace('/', '_').Replace('\\', '_');
+    }
+
+    private static bool IsPrefab(Character character, out string path)
+    {
+        path = character == null ? null : AssetDatabase.GetAssetPath(character);
+        return !string.IsNullOrWhiteSpace(path) &&
+               path.EndsWith(".prefab", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static string SuggestedFolder(string prefabPath)
+    {
+        string folder = Path.GetDirectoryName(prefabPath)?.Replace('\\', '/');
+        return string.IsNullOrWhiteSpace(folder) ? DefaultBundleFolder : folder;
     }
 
     private void DestroyNestedEditors()
     {
         foreach (Editor editor in nestedEditors.Values)
-        {
-            if (editor != null)
-                DestroyImmediate(editor);
-        }
+            if (editor != null) DestroyImmediate(editor);
 
         nestedEditors.Clear();
     }
+
+    private static ValidationMessage Error(string text) =>
+        new(MessageType.Error, text);
+
+    private static ValidationMessage Warn(string text) =>
+        new(MessageType.Warning, text);
 
     private readonly struct ValidationMessage
     {
         public readonly MessageType Type;
         public readonly string Text;
 
-        public ValidationMessage(
-            MessageType type,
-            string text)
+        public ValidationMessage(MessageType type, string text)
         {
             Type = type;
             Text = text;

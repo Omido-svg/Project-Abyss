@@ -88,8 +88,9 @@ public class BodyPart
             0,
             Mathf.CeilToInt(PartHP));
 
-        int applied = Mathf.Min(before, damage);
-        PartHP = Mathf.Max(0f, PartHP - applied);
+        int maximumApplicable = Mathf.Max(0, before - 1);
+        int applied = Mathf.Min(maximumApplicable, damage);
+        PartHP = Mathf.Max(1f, PartHP - applied);
 
         if (applied > 0)
             Revision++;
@@ -106,7 +107,7 @@ public class BodyPart
         }
 
         State = BodyPartState.Weakened;
-        PartHP = 0f;
+        PartHP = 1f;
         Revision++;
 
         Debug.Log(
@@ -216,10 +217,10 @@ public class BodyPart
             return;
         }
 
-        if (isWeakened || currentHP <= 0f)
+        if (isWeakened || currentHP <= 1f)
         {
             State = BodyPartState.Weakened;
-            PartHP = 0f;
+            PartHP = 1f;
             Revision++;
             return;
         }

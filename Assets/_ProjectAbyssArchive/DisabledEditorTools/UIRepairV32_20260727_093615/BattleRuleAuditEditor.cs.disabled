@@ -1,0 +1,366 @@
+#if UNITY_EDITOR
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Text;
+using UnityEditor;
+using UnityEditor.SceneManagement;
+using UnityEngine;
+using UnityEngine.SceneManagement;
+
+public static class BattleRuleAuditEditor
+{
+    private const string MenuPath =
+        "Tools/Project Abyss/Combat Rules 2026-07-26/" +
+        "Audit Current Implementation";
+
+    private const string ReportDirectory =
+        "Assets/ProjectAbyssReports";
+
+    [MenuItem(MenuPath, false, 2110)]
+    public static void Audit()
+    {
+        List<string> errors = new();
+        List<string> warnings = new();
+        List<string> passed = new();
+
+        AuditSkills(errors, warnings, passed);
+        AuditCharacters(errors, warnings, passed);
+        AuditScene(errors, warnings, passed);
+
+        Directory.CreateDirectory(ReportDirectory);
+
+        string reportPath =
+            $"{ReportDirectory}/CombatRuleAudit_2026-07-26.txt";
+
+        StringBuilder report = new();
+
+        report.AppendLine("PROJECT ABYSS COMBAT RULE AUDIT");
+        report.AppendLine("Rule baseline: 2026-07-26");
+        report.AppendLine(
+            $"Errors={errors.Count} / Warnings={warnings.Count} / Passed={passed.Count}");
+        report.AppendLine();
+
+        AppendSection(report, "ERROR", errors);
+        AppendSection(report, "WARNING", warnings);
+        AppendSection(report, "PASS", passed);
+
+        File.WriteAllText(
+            reportPath,
+            report.ToString(),
+            Encoding.UTF8);
+
+        AssetDatabase.Refresh();
+
+        Debug.Log(report.ToString());
+
+        EditorUtility.DisplayDialog(
+            "Project Abyss Rule Audit",
+            $"오류 {errors.Count} / 경고 {warnings.Count} / 통과 {passed.Count}\n" +
+            $"보고서: {reportPath}",
+            "확인");
+
+        Object reportAsset =
+            AssetDatabase.LoadAssetAtPath<Object>(
+                reportPath);
+
+        if (reportAsset != null)
+        {
+            Selection.activeObject = reportAsset;
+            EditorGUIUtility.PingObject(reportAsset);
+        }
+    }
+
+    private static void AuditSkills(
+        List<string> errors,
+        List<string> warnings,
+        List<string> passed)
+    {
+        string[] guids =
+            AssetDatabase.FindAssets(
+                "t:SkillDefinition");
+
+        int checkedCount = 0;
+
+        foreach (string guid in guids)
+        {
+            string path =
+                AssetDatabase.GUIDToAssetPath(guid);
+
+            SkillDefinition skill =
+                AssetDatabase.LoadAssetAtPath<SkillDefinition>(
+                    path);
+
+            if (skill == null)
+                continue;
+
+            checkedCount++;
+
+            int rollCount =
+                skill.Rolls?.Count ?? 0;
+
+            if (rollCount < 2 || rollCount > 4)
+            {
+                errors.Add(
+                    $"Skill roll count must be 2~4: {path} / {rollCount}");
+            }
+
+            if (skill.Rolls != null)
+            {
+                for (int i = 0;
+                     i < skill.Rolls.Count;
+                     i++)
+                {
+                    SkillRollData roll =
+                        skill.Rolls[i];
+
+                    if (roll == null)
+                    {
+                        errors.Add(
+                            $"Null RollData: {path} / index {i}");
+                        continue;
+                    }
+
+                    if (roll.MaxPower < roll.MinPower)
+                    {
+                        errors.Add(
+                            $"Invalid roll range: {path} / index {i}");
+                    }
+                }
+            }
+
+            if (rollCount >= 4 &&
+                skill.MultiRollPenalty?.Enabled != true)
+            {
+                warnings.Add(
+                    $"4-roll skill has no penalty: {path}");
+            }
+
+            if (skill.ActionType !=
+                    ActionType.Prestige &&
+                skill.EnergyCost < 0)
+            {
+                errors.Add(
+                    $"Negative energy cost: {path}");
+            }
+
+            if (IsEnemySkill(path) &&
+                skill.CanBreakPart)
+            {
+                errors.Add(
+                    $"Enemy skill owns direct break permission: {path}");
+            }
+        }
+
+        passed.Add(
+            $"SkillDefinition assets inspected: {checkedCount}");
+    }
+
+    private static void AuditCharacters(
+        List<string> errors,
+        List<string> warnings,
+        List<string> passed)
+    {
+        string[] guids =
+            AssetDatabase.FindAssets(
+                "t:CharacterData");
+
+        int checkedCount = 0;
+
+        foreach (string guid in guids)
+        {
+            string path =
+                AssetDatabase.GUIDToAssetPath(guid);
+
+            CharacterData data =
+                AssetDatabase.LoadAssetAtPath<CharacterData>(
+                    path);
+
+            if (data == null)
+                continue;
+
+            checkedCount++;
+
+            if (data.maxEnergy < 3)
+            {
+                errors.Add(
+                    $"Energy maximum is below 3: {path}");
+            }
+
+            HashSet<string> slotIds = new();
+
+            if (data.ActionSlots != null)
+            {
+                for (int i = 0;
+                     i < data.ActionSlots.Count;
+                     i++)
+                {
+                    CharacterSlotConfig config =
+                        data.ActionSlots[i];
+
+                    if (config == null)
+                    {
+                        errors.Add(
+                            $"Null slot config: {path} / index {i}");
+                        continue;
+                    }
+
+                    if (string.IsNullOrWhiteSpace(
+                            config.SlotId))
+                    {
+                        errors.Add(
+                            $"Empty SlotId: {path} / index {i}");
+                    }
+                    else if (!slotIds.Add(config.SlotId))
+                    {
+                        errors.Add(
+                            $"Duplicate SlotId: {path} / {config.SlotId}");
+                    }
+
+                    if (!config.HasLinkedPart &&
+                        data.CombatantTier ==
+                            CombatantTier.Player)
+                    {
+                        warnings.Add(
+                            $"Player has an independent slot. " +
+                            $"Current slot board displays it but legacy targeting input cannot edit it: " +
+                            $"{path} / {config.SlotId}");
+                    }
+                }
+            }
+
+            CharacterCombatLoadout loadout =
+                data.CombatLoadout;
+
+            if (loadout != null)
+            {
+                if ((loadout.NormalSkills?.Count ?? 0) > 3)
+                    errors.Add($"Normal loadout exceeds 3: {path}");
+
+                if ((loadout.DuelSkills?.Count ?? 0) > 2)
+                    errors.Add($"Duel loadout exceeds 2: {path}");
+
+                if ((loadout.PreparationSkills?.Count ?? 0) > 3)
+                    errors.Add($"Preparation loadout exceeds 3: {path}");
+            }
+        }
+
+        passed.Add(
+            $"CharacterData assets inspected: {checkedCount}");
+    }
+
+    private static void AuditScene(
+        List<string> errors,
+        List<string> warnings,
+        List<string> passed)
+    {
+        BattleManager manager =
+            Object.FindFirstObjectByType<BattleManager>(
+                FindObjectsInactive.Include);
+
+        if (manager == null)
+            errors.Add("BattleManager is missing in the current Scene.");
+        else
+            passed.Add("BattleManager found.");
+
+        BattleUIManager uiManager =
+            Object.FindFirstObjectByType<BattleUIManager>(
+                FindObjectsInactive.Include);
+
+        if (uiManager == null)
+            errors.Add("BattleUIManager is missing in the current Scene.");
+        else
+            passed.Add("BattleUIManager found.");
+
+        if (Object.FindFirstObjectByType<BattleReadableHudUI>(
+                FindObjectsInactive.Include) == null)
+        {
+            warnings.Add(
+                "ReadableBattleHUD has not been installed. " +
+                "Run Rebuild Readable Battle UI.");
+        }
+        else
+        {
+            passed.Add("ReadableBattleHUD found.");
+        }
+
+        if (Object.FindFirstObjectByType<BattleConfiguredSlotBoardUI>(
+                FindObjectsInactive.Include) == null)
+        {
+            warnings.Add(
+                "Configured slot board is missing.");
+        }
+        else
+        {
+            passed.Add("Configured slot board found.");
+        }
+
+        int statusLists =
+            Object.FindObjectsByType<BattleStatusListUI>(
+                FindObjectsInactive.Include,
+                FindObjectsSortMode.None)
+                .Length;
+
+        if (statusLists < 2)
+        {
+            warnings.Add(
+                $"Player/enemy status lists are incomplete: {statusLists}/2");
+        }
+        else
+        {
+            passed.Add(
+                $"Status lists found: {statusLists}");
+        }
+
+        SkillSelectPanelUI skillPanel =
+            Object.FindFirstObjectByType<SkillSelectPanelUI>(
+                FindObjectsInactive.Include);
+
+        if (skillPanel == null)
+            errors.Add("SkillSelectPanelUI is missing.");
+        else
+            passed.Add("SkillSelectPanelUI found.");
+
+        if (SceneManager.GetActiveScene().isDirty)
+        {
+            warnings.Add(
+                "Current Scene has unsaved changes.");
+        }
+    }
+
+    private static bool IsEnemySkill(
+        string assetPath)
+    {
+        if (string.IsNullOrWhiteSpace(assetPath))
+            return false;
+
+        string normalized =
+            assetPath.Replace('\\', '/')
+                .ToLowerInvariant();
+
+        return normalized.Contains("/enemies/") ||
+               normalized.Contains("/enemy/") ||
+               normalized.Contains("/boss/");
+    }
+
+    private static void AppendSection(
+        StringBuilder report,
+        string title,
+        IReadOnlyList<string> items)
+    {
+        report.AppendLine($"[{title}]");
+
+        if (items == null || items.Count == 0)
+        {
+            report.AppendLine("- none");
+        }
+        else
+        {
+            foreach (string item in items)
+                report.AppendLine("- " + item);
+        }
+
+        report.AppendLine();
+    }
+}
+#endif

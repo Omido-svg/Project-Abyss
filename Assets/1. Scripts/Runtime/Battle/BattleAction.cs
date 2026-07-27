@@ -33,6 +33,9 @@ public class BattleAction
     public int SpeedModifier;
     public int MomentumModifier;
     public int PreparationModifier;
+    public int JudgmentModifier;
+    public int CurrentRollIndex;
+    public CombatRollType CurrentRollType = CombatRollType.Attack;
 
     public bool Critical =>
         LastRollResult != null &&
@@ -49,6 +52,7 @@ public class BattleAction
             RolledPower = value;
             ClashPower =
                 value +
+                JudgmentModifier +
                 SpeedModifier +
                 MomentumModifier +
                 PreparationModifier;
@@ -61,7 +65,56 @@ public class BattleAction
     public List<RollResult> RollHistory { get; } = new();
     public List<DamageContext> DamageContexts { get; } = new();
 
-    private RollResult cachedActionRollResult;
+    private readonly List<AttackWeightTarget>
+        attackWeightTargets =
+            new List<AttackWeightTarget>();
+
+    private readonly List<AttackWeightHitResult>
+        attackWeightHitResults =
+            new List<AttackWeightHitResult>();
+
+    private readonly Dictionary<int, RollResult> cachedRollResults = new();
+
+    public IReadOnlyList<AttackWeightTarget>
+        AttackWeightTargets =>
+            attackWeightTargets;
+
+    public IReadOnlyList<AttackWeightHitResult>
+        AttackWeightHitResults =>
+            attackWeightHitResults;
+
+    public bool HasResolvedAttackWeightTargets
+    {
+        get;
+        private set;
+    }
+
+    public int RequestedAttackWeight =>
+        Mathf.Max(
+            1,
+            Skill?.AttackWeight ?? 1);
+
+    public int ResolvedAttackWeight =>
+        attackWeightTargets.Count;
+
+    public DamageContext PrimaryDamageContext
+    {
+        get
+        {
+            foreach (DamageContext context
+                     in DamageContexts)
+            {
+                if (context != null &&
+                    context.Target == Target &&
+                    context.TargetPart == TargetPart)
+                {
+                    return context;
+                }
+            }
+
+            return LastDamageContext;
+        }
+    }
 
     public bool HasDamageLog;
     public int LoggedDamage;
@@ -92,7 +145,11 @@ public class BattleAction
         ResetCurrentRollState();
         RollHistory.Clear();
         DamageContexts.Clear();
-        cachedActionRollResult = null;
+        cachedRollResults.Clear();
+
+        attackWeightTargets.Clear();
+        attackWeightHitResults.Clear();
+        HasResolvedAttackWeightTargets = false;
 
         HasDamageLog = false;
         LoggedDamage = 0;
@@ -113,18 +170,21 @@ public class BattleAction
         int exchangeIndex)
     {
         ResetCurrentRollState();
+        if (Skill == null) return 0;
 
-        if (Skill == null)
-            return 0;
+        CurrentRollIndex = Mathf.Max(0, exchangeIndex);
+        CurrentRollType = Skill.GetRollType(CurrentRollIndex);
 
+        RollResult cached = null;
         bool reuse =
-            Skill.RollReusePolicy ==
-                SkillRollReusePolicy.OncePerAction &&
-            cachedActionRollResult != null;
+            Skill.ShouldReuseRollData(CurrentRollIndex) &&
+            cachedRollResults.TryGetValue(
+                CurrentRollIndex,
+                out cached);
 
-        LastRollResult = reuse
-            ? cachedActionRollResult.Clone()
-            : Skill.RollPowerResult();
+        LastRollResult = reuse && cached != null
+            ? cached.Clone()
+            : Skill.RollPowerResultForExchange(CurrentRollIndex);
 
         if (LastRollResult == null)
         {
@@ -133,54 +193,37 @@ public class BattleAction
             return RolledPower;
         }
 
-        if (reuse)
-        {
-            LastRollResult.WasReused = true;
-            LastRollResult.ClearClashModifiers();
-            SetPurePower(LastRollResult.FinalPower);
-        }
-        else
-        {
-            int modifiedRoll = LastRollResult.RawValue;
+        LastRollResult.RollIndex = CurrentRollIndex;
+        LastRollResult.RollType = CurrentRollType;
+        LastRollResult.ClearClashModifiers();
+        LastRollResult.WasReused = reuse;
 
-            if (Owner != null)
-            {
-                modifiedRoll = Owner.ModifyRoll(
-                    this,
-                    LastRollResult.RawValue);
-            }
+        SetPurePower(LastRollResult.FinalPower);
 
-            LastRollResult.BasePower = Skill.BasePower;
-            LastRollResult.SetModifiedValue(modifiedRoll);
-            LastRollResult.ClearClashModifiers();
-            SetPurePower(LastRollResult.FinalPower);
+        int judgedPower = Owner != null
+            ? Owner.ModifyRoll(this, RolledPower)
+            : RolledPower;
 
-            if (Skill.RollReusePolicy ==
-                SkillRollReusePolicy.OncePerAction)
-            {
-                cachedActionRollResult =
-                    LastRollResult.Clone();
-            }
-        }
+        JudgmentModifier =
+            (judgedPower - RolledPower) +
+            LastRollResult.JudgmentModifier;
+
+        LastRollResult.JudgmentModifier = JudgmentModifier;
+        LastRollResult.RecalculateClashPower();
+
+        if (!reuse && Skill.ShouldReuseRollData(CurrentRollIndex))
+            cachedRollResults[CurrentRollIndex] = LastRollResult.Clone();
 
         HasRolled = true;
         RollHistory.Add(LastRollResult.Clone());
-
-        Debug.Log(
-            $"[BattleAction] Exchange Roll / " +
-            $"ActionId={ActionId}, " +
-            $"Exchange={exchangeIndex}, " +
-            $"Owner={Owner?.Data?.CharacterName}, " +
-            $"Skill={Skill?.SkillName}, " +
-            $"Type={LastRollResult.ResolverType}, " +
-            $"Raw={LastRollResult.RawValue}, " +
-            $"Modified={LastRollResult.ModifiedValue}, " +
-            $"FinalPower={RolledPower}, " +
-            $"Critical={Critical}, " +
-            $"Reused={LastRollResult.WasReused}, " +
-            $"Display={LastRollResult.GetShortDisplayText()}");
-
         return RolledPower;
+    }
+
+    public void InvalidateCachedRoll(
+        int exchangeIndex)
+    {
+        cachedRollResults.Remove(
+            Mathf.Max(0, exchangeIndex));
     }
 
     public void ApplyClashModifiers(
@@ -194,6 +237,7 @@ public class BattleAction
 
         ClashPower =
             RolledPower +
+            JudgmentModifier +
             SpeedModifier +
             MomentumModifier +
             PreparationModifier;
@@ -226,6 +270,8 @@ public class BattleAction
         SpeedModifier = 0;
         MomentumModifier = 0;
         PreparationModifier = 0;
+        JudgmentModifier = 0;
+        CurrentRollType = CombatRollType.Attack;
         HasRolled = false;
         LastRollResult = null;
     }
@@ -244,6 +290,45 @@ public class BattleAction
         LoggedAfterHP = Mathf.Max(0, afterHP);
     }
 
+    public void SetAttackWeightTargets(
+        IEnumerable<AttackWeightTarget> targets)
+    {
+        attackWeightTargets.Clear();
+
+        if (targets != null)
+        {
+            foreach (AttackWeightTarget target
+                     in targets)
+            {
+                if (target == null ||
+                    target.TargetCharacter == null)
+                {
+                    continue;
+                }
+
+                attackWeightTargets.Add(
+                    target);
+            }
+        }
+
+        HasResolvedAttackWeightTargets =
+            true;
+    }
+
+    public void AddAttackWeightHitResult(
+        AttackWeightHitResult result)
+    {
+        if (result == null ||
+            result.Target == null ||
+            result.DamageContext == null)
+        {
+            return;
+        }
+
+        attackWeightHitResults.Add(
+            result);
+    }
+
     public void SetDamageContext(
         DamageContext context)
     {
@@ -254,8 +339,15 @@ public class BattleAction
         if (context == null)
             return;
 
-        if (!DamageContexts.Contains(context))
-            DamageContexts.Add(context);
+        bool isNewContext =
+            !DamageContexts.Contains(
+                context);
+
+        if (!isNewContext)
+            return;
+
+        DamageContexts.Add(
+            context);
 
         SetDamageLog(
             context.GetDisplayDamage(),

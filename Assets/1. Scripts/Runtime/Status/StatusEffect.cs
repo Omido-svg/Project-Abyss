@@ -12,10 +12,12 @@ public abstract class StatusEffect
     protected Character owner;
     protected Character source;
     protected BodyPart ownerPart;
+    protected BodyPart sourcePart;
 
     public Character Owner => owner;
     public Character Source => source;
     public BodyPart OwnerPart => ownerPart;
+    public BodyPart SourcePart => sourcePart;
 
     public bool IsPartEffect => ownerPart != null;
     public bool IsCharacterEffect => ownerPart == null;
@@ -28,9 +30,9 @@ public abstract class StatusEffect
     public virtual StatusEffectStackPolicy StackPolicy =>
         StatusEffectStackPolicy.RefreshDuration;
 
-    // 부위 파괴 시 DOT 등은 캐릭터 상태로 이전할 수 있다.
-    // 약화 디버프는 PartDisabledStatus에서 false로 막는다.
-    public virtual bool TransferToCharacterOnPartBreak => true;
+    // 최신 규칙에서는 부위 파괴 시 상태를 다른 범위로 이전하지 않는다.
+    // 필드는 구형 파생 클래스 API 호환을 위해 남겨 둔다.
+    public virtual bool TransferToCharacterOnPartBreak => false;
 
     public bool IsPermanent =>
         DurationPolicy == StatusEffectDurationPolicy.Permanent ||
@@ -48,9 +50,19 @@ public abstract class StatusEffect
         Character source,
         BodyPart ownerPart = null)
     {
+        Initialize(owner, source, ownerPart, ownerPart);
+    }
+
+    public virtual void Initialize(
+        Character owner,
+        Character source,
+        BodyPart ownerPart,
+        BodyPart sourcePart)
+    {
         this.owner = owner;
         this.source = source;
         this.ownerPart = ownerPart;
+        this.sourcePart = sourcePart;
     }
 
     public virtual void OnApply() { }
@@ -148,6 +160,9 @@ public abstract class StatusEffect
 
         if (incoming?.Source != null)
             source = incoming.Source;
+
+        if (incoming?.SourcePart != null)
+            sourcePart = incoming.SourcePart;
 
         result.StackAfter = Stack;
         result.DurationAfter = Duration;

@@ -1,0 +1,642 @@
+#if UNITY_EDITOR
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Text;
+using System.Text.RegularExpressions;
+using UnityEditor;
+using UnityEngine;
+
+/// <summary>
+/// Assets/1. Scripts 아래의 C# 파일 중
+/// 1) 다른 C#에서 타입명이 사용되지 않고,
+/// 2) Scene/Prefab/Asset YAML에 MonoScript GUID가 없으며,
+/// 3) 자동 실행/Editor 진입점 속성이 없는 파일만
+/// "검토 후보"로 표시한다.
+///
+/// 후보는 자동 삭제하지 않는다.
+/// 사용자가 직접 선택한 항목만 .disabled.txt로 보관한 뒤 원본 .cs를 제거한다.
+/// </summary>
+public sealed class ProjectAbyssUnusedScriptCleaner : EditorWindow
+{
+    private const string MenuPath =
+        "Tools/Project Abyss/UI/Unused Script Auditor";
+
+    private const string SourceRoot =
+        "Assets/1. Scripts";
+
+    private static readonly string[] SerializedExtensions =
+    {
+        ".unity",
+        ".prefab",
+        ".asset",
+        ".controller",
+        ".overrideController",
+        ".playable",
+        ".anim",
+        ".mat"
+    };
+
+    private static readonly string[] EntryPointMarkers =
+    {
+        "RuntimeInitializeOnLoadMethod",
+        "InitializeOnLoad",
+        "InitializeOnLoadMethod",
+        "MenuItem",
+        "CustomEditor",
+        "CustomPropertyDrawer",
+        "CreateAssetMenu",
+        "DidReloadScripts",
+        "PostProcessBuild",
+        "OnOpenAsset"
+    };
+
+    private readonly List<Candidate> candidates =
+        new();
+
+    private Vector2 scroll;
+    private string scanSummary =
+        "아직 검사하지 않았습니다.";
+
+    private bool showMonoBehaviours = true;
+    private bool showScriptableObjects = true;
+    private bool showPlainClasses = true;
+
+    [MenuItem(MenuPath, false, 2010)]
+    public static void OpenWindow()
+    {
+        ProjectAbyssUnusedScriptCleaner window =
+            GetWindow<ProjectAbyssUnusedScriptCleaner>();
+
+        window.titleContent =
+            new GUIContent("Unused Script Audit");
+
+        window.minSize =
+            new Vector2(760f, 580f);
+
+        window.Show();
+    }
+
+    private void OnGUI()
+    {
+        EditorGUILayout.Space(8f);
+
+        EditorGUILayout.LabelField(
+            "Project Abyss 사용되지 않는 스크립트 감사",
+            EditorStyles.boldLabel);
+
+        EditorGUILayout.HelpBox(
+            "이 검사는 '삭제 확정'이 아니라 검토 후보를 찾는 안전장치입니다. " +
+            "문자열 Reflection, 외부 패키지 호출, 런타임 타입 검색은 완전히 증명할 수 없습니다. " +
+            "후보는 기본적으로 선택되지 않으며, 선택한 파일만 .disabled.txt로 보관됩니다.",
+            MessageType.Warning);
+
+        using (new EditorGUILayout.HorizontalScope())
+        {
+            if (GUILayout.Button(
+                    "참조 검사 실행",
+                    GUILayout.Height(34f)))
+            {
+                Scan();
+            }
+
+            using (new EditorGUI.DisabledScope(
+                       candidates.All(candidate =>
+                           !candidate.Selected)))
+            {
+                if (GUILayout.Button(
+                        "선택 항목 비활성 보관",
+                        GUILayout.Height(34f)))
+                {
+                    ArchiveSelected();
+                }
+            }
+        }
+
+        EditorGUILayout.Space(6f);
+
+        using (new EditorGUILayout.HorizontalScope())
+        {
+            showMonoBehaviours =
+                EditorGUILayout.ToggleLeft(
+                    "MonoBehaviour",
+                    showMonoBehaviours,
+                    GUILayout.Width(130f));
+
+            showScriptableObjects =
+                EditorGUILayout.ToggleLeft(
+                    "ScriptableObject",
+                    showScriptableObjects,
+                    GUILayout.Width(150f));
+
+            showPlainClasses =
+                EditorGUILayout.ToggleLeft(
+                    "일반 클래스",
+                    showPlainClasses,
+                    GUILayout.Width(130f));
+        }
+
+        EditorGUILayout.HelpBox(
+            scanSummary,
+            MessageType.Info);
+
+        DrawCandidateList();
+    }
+
+    private void DrawCandidateList()
+    {
+        EditorGUILayout.Space(4f);
+
+        scroll =
+            EditorGUILayout.BeginScrollView(scroll);
+
+        foreach (Candidate candidate in candidates)
+        {
+            if (!IsVisible(candidate))
+                continue;
+
+            using (new EditorGUILayout.VerticalScope(
+                       EditorStyles.helpBox))
+            {
+                using (new EditorGUILayout.HorizontalScope())
+                {
+                    candidate.Selected =
+                        EditorGUILayout.Toggle(
+                            candidate.Selected,
+                            GUILayout.Width(20f));
+
+                    EditorGUILayout.LabelField(
+                        candidate.TypeName,
+                        EditorStyles.boldLabel,
+                        GUILayout.Width(220f));
+
+                    GUILayout.FlexibleSpace();
+
+                    EditorGUILayout.LabelField(
+                        candidate.Kind,
+                        GUILayout.Width(145f));
+                }
+
+                EditorGUILayout.SelectableLabel(
+                    candidate.AssetPath,
+                    GUILayout.Height(18f));
+
+                EditorGUILayout.LabelField(
+                    candidate.Reason,
+                    EditorStyles.wordWrappedMiniLabel);
+            }
+        }
+
+        EditorGUILayout.EndScrollView();
+    }
+
+    private bool IsVisible(
+        Candidate candidate)
+    {
+        return candidate.Kind switch
+        {
+            "MonoBehaviour" => showMonoBehaviours,
+            "ScriptableObject" => showScriptableObjects,
+            _ => showPlainClasses
+        };
+    }
+
+    private void Scan()
+    {
+        candidates.Clear();
+
+        if (!AssetDatabase.IsValidFolder(SourceRoot))
+        {
+            scanSummary =
+                $"{SourceRoot} 폴더를 찾지 못했습니다.";
+
+            return;
+        }
+
+        string[] scriptGuids =
+            AssetDatabase.FindAssets(
+                "t:MonoScript",
+                new[] { SourceRoot });
+
+        Dictionary<string, string> sourceByPath =
+            new(StringComparer.Ordinal);
+
+        foreach (string guid in scriptGuids)
+        {
+            string path =
+                AssetDatabase.GUIDToAssetPath(guid);
+
+            if (!path.EndsWith(
+                    ".cs",
+                    StringComparison.OrdinalIgnoreCase))
+            {
+                continue;
+            }
+
+            string absolute =
+                ToAbsoluteAssetPath(path);
+
+            if (!File.Exists(absolute))
+                continue;
+
+            sourceByPath[path] =
+                File.ReadAllText(absolute);
+        }
+
+        List<PreliminaryCandidate> preliminary =
+            new();
+
+        foreach (KeyValuePair<string, string> pair
+                 in sourceByPath)
+        {
+            string path =
+                pair.Key;
+
+            string source =
+                pair.Value;
+
+            if (ShouldSkipPathOrSource(
+                    path,
+                    source))
+            {
+                continue;
+            }
+
+            MonoScript monoScript =
+                AssetDatabase.LoadAssetAtPath
+                    <MonoScript>(path);
+
+            Type type =
+                monoScript?.GetClass();
+
+            if (type == null)
+                continue;
+
+            int sourceReferenceCount =
+                CountSourceReferences(
+                    type.Name,
+                    path,
+                    sourceByPath);
+
+            if (sourceReferenceCount > 0)
+                continue;
+
+            string scriptGuid =
+                AssetDatabase.AssetPathToGUID(
+                    path);
+
+            preliminary.Add(
+                new PreliminaryCandidate
+                {
+                    AssetPath = path,
+                    ScriptGuid = scriptGuid,
+                    Type = type
+                });
+        }
+
+        HashSet<string> targetGuids =
+            new(
+                preliminary
+                    .Select(candidate =>
+                        candidate.ScriptGuid)
+                    .Where(guid =>
+                        !string.IsNullOrWhiteSpace(guid)),
+                StringComparer.Ordinal);
+
+        HashSet<string> referencedGuids =
+            FindSerializedGuidReferences(
+                targetGuids);
+
+        foreach (PreliminaryCandidate candidate
+                 in preliminary)
+        {
+            if (referencedGuids.Contains(
+                    candidate.ScriptGuid))
+            {
+                continue;
+            }
+
+            candidates.Add(
+                new Candidate
+                {
+                    TypeName =
+                        candidate.Type.Name,
+
+                    AssetPath =
+                        candidate.AssetPath,
+
+                    Kind =
+                        GetKind(candidate.Type),
+
+                    Reason =
+                        BuildReason(candidate.Type),
+
+                    Selected = false
+                });
+        }
+
+        candidates.Sort(
+            (left, right) =>
+                string.Compare(
+                    left.AssetPath,
+                    right.AssetPath,
+                    StringComparison.Ordinal));
+
+        int monoCount =
+            candidates.Count(candidate =>
+                candidate.Kind == "MonoBehaviour");
+
+        int soCount =
+            candidates.Count(candidate =>
+                candidate.Kind == "ScriptableObject");
+
+        int plainCount =
+            candidates.Count -
+            monoCount -
+            soCount;
+
+        scanSummary =
+            $"검사한 C# 파일: {sourceByPath.Count}\n" +
+            $"검토 후보: {candidates.Count} " +
+            $"(MonoBehaviour {monoCount}, " +
+            $"ScriptableObject {soCount}, 일반 클래스 {plainCount})\n" +
+            "후보는 자동 선택되지 않습니다.";
+
+        Debug.Log(
+            BuildConsoleReport());
+    }
+
+    private string BuildConsoleReport()
+    {
+        StringBuilder report =
+            new();
+
+        report.AppendLine(
+            "[Project Abyss Unused Script Audit]");
+
+        report.AppendLine(scanSummary);
+
+        foreach (Candidate candidate in candidates)
+        {
+            report.AppendLine(
+                $"- [{candidate.Kind}] " +
+                $"{candidate.TypeName} :: " +
+                $"{candidate.AssetPath}");
+        }
+
+        return report.ToString();
+    }
+
+    private void ArchiveSelected()
+    {
+        List<string> selected =
+            candidates
+                .Where(candidate =>
+                    candidate.Selected)
+                .Select(candidate =>
+                    candidate.AssetPath)
+                .ToList();
+
+        if (selected.Count == 0)
+            return;
+
+        string preview =
+            string.Join(
+                "\n",
+                selected.Take(12));
+
+        if (selected.Count > 12)
+        {
+            preview +=
+                $"\n... 외 {selected.Count - 12}개";
+        }
+
+        bool confirmed =
+            EditorUtility.DisplayDialog(
+                "Project Abyss",
+                "선택한 .cs 파일을 .disabled.txt로 보관하고 " +
+                "원본을 컴파일 대상에서 제거합니다.\n\n" +
+                preview + "\n\n계속할까요?",
+                "비활성 보관",
+                "취소");
+
+        if (!confirmed)
+            return;
+
+        bool archived =
+            ProjectAbyssScriptArchiveUtility
+                .ArchiveAndDisable(
+                    selected,
+                    "UnusedScriptAuditManualSelection");
+
+        if (!archived)
+            return;
+
+        candidates.RemoveAll(
+            candidate =>
+                selected.Contains(
+                    candidate.AssetPath));
+
+        scanSummary =
+            $"선택한 {selected.Count}개 파일을 비활성 보관했습니다.";
+
+        GUIUtility.ExitGUI();
+    }
+
+    private static bool ShouldSkipPathOrSource(
+        string path,
+        string source)
+    {
+        if (path.Contains(
+                "/Editor/",
+                StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
+        }
+
+        if (path.Contains(
+                "/Tests/",
+                StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
+        }
+
+        foreach (string marker in EntryPointMarkers)
+        {
+            if (source.Contains(
+                    marker,
+                    StringComparison.Ordinal))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static int CountSourceReferences(
+        string typeName,
+        string declaringPath,
+        IReadOnlyDictionary<string, string> sourceByPath)
+    {
+        Regex pattern =
+            new(
+                $@"\b{Regex.Escape(typeName)}\b",
+                RegexOptions.CultureInvariant);
+
+        int count = 0;
+
+        foreach (KeyValuePair<string, string> pair
+                 in sourceByPath)
+        {
+            if (string.Equals(
+                    pair.Key,
+                    declaringPath,
+                    StringComparison.Ordinal))
+            {
+                continue;
+            }
+
+            if (pattern.IsMatch(pair.Value))
+                count++;
+        }
+
+        return count;
+    }
+
+    private static HashSet<string>
+        FindSerializedGuidReferences(
+            HashSet<string> targetGuids)
+    {
+        HashSet<string> referenced =
+            new(StringComparer.Ordinal);
+
+        if (targetGuids.Count == 0)
+            return referenced;
+
+        string assetsRoot =
+            Application.dataPath;
+
+        IEnumerable<string> files =
+            Directory.EnumerateFiles(
+                    assetsRoot,
+                    "*.*",
+                    SearchOption.AllDirectories)
+                .Where(path =>
+                    SerializedExtensions.Contains(
+                        Path.GetExtension(path),
+                        StringComparer.OrdinalIgnoreCase));
+
+        foreach (string path in files)
+        {
+            string text;
+
+            try
+            {
+                text =
+                    File.ReadAllText(path);
+            }
+            catch
+            {
+                continue;
+            }
+
+            foreach (string guid in targetGuids)
+            {
+                if (referenced.Contains(guid))
+                    continue;
+
+                if (text.IndexOf(
+                        guid,
+                        StringComparison.Ordinal) >= 0)
+                {
+                    referenced.Add(guid);
+                }
+            }
+
+            if (referenced.Count ==
+                targetGuids.Count)
+            {
+                break;
+            }
+        }
+
+        return referenced;
+    }
+
+    private static string GetKind(
+        Type type)
+    {
+        if (typeof(MonoBehaviour)
+            .IsAssignableFrom(type))
+        {
+            return "MonoBehaviour";
+        }
+
+        if (typeof(ScriptableObject)
+            .IsAssignableFrom(type))
+        {
+            return "ScriptableObject";
+        }
+
+        return "Plain Class";
+    }
+
+    private static string BuildReason(
+        Type type)
+    {
+        if (typeof(MonoBehaviour)
+            .IsAssignableFrom(type))
+        {
+            return
+                "다른 C# 파일의 직접 타입 참조와 Scene/Prefab/Asset의 " +
+                "MonoScript GUID 참조가 발견되지 않았습니다. " +
+                "AddComponent(string), Reflection, Addressables 간접 사용 여부를 수동 확인하세요.";
+        }
+
+        if (typeof(ScriptableObject)
+            .IsAssignableFrom(type))
+        {
+            return
+                "다른 C# 파일의 직접 타입 참조와 직렬화 Asset 참조가 발견되지 않았습니다. " +
+                "Resources.Load, Addressables, Reflection 사용 여부를 수동 확인하세요.";
+        }
+
+        return
+            "다른 C# 파일에서 타입명이 사용되지 않고 직렬화 참조도 발견되지 않았습니다. " +
+            "문자열 기반 Reflection 또는 외부 Assembly 호출 여부를 수동 확인하세요.";
+    }
+
+    private static string ToAbsoluteAssetPath(
+        string assetPath)
+    {
+        string projectRoot =
+            Directory.GetParent(
+                Application.dataPath)?.FullName ??
+            string.Empty;
+
+        return Path.GetFullPath(
+            Path.Combine(
+                projectRoot,
+                assetPath));
+    }
+
+    [Serializable]
+    private sealed class Candidate
+    {
+        public string TypeName;
+        public string AssetPath;
+        public string Kind;
+        public string Reason;
+        public bool Selected;
+    }
+
+    private sealed class PreliminaryCandidate
+    {
+        public string AssetPath;
+        public string ScriptGuid;
+        public Type Type;
+    }
+}
+#endif

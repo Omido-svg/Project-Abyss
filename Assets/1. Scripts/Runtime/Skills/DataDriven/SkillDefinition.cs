@@ -1,11 +1,18 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-[CreateAssetMenu(
-    menuName = "Battle/Skill/Skill Definition",
-    fileName = "NewSkillDefinition")]
+[CreateAssetMenu(menuName = "Battle/Skill/Skill Definition", fileName = "NewSkillDefinition")]
 public class SkillDefinition : ScriptableObject
 {
+    [Header("Identity")]
+    [SerializeField, Tooltip("저장 데이터와 상점 카탈로그에서 사용하는 안정적인 식별자입니다.")]
+    private string skillId;
+
+    public string SkillId =>
+        string.IsNullOrWhiteSpace(skillId)
+            ? name
+            : skillId;
+
     [Header("Basic")]
     public string SkillName;
     public ActionType ActionType;
@@ -13,35 +20,41 @@ public class SkillDefinition : ScriptableObject
     public bool CanBreakPart;
     public bool GainPrestige = true;
 
-    [Header("Exchange Roll")]
-    [Min(1)]
-    public int ExchangeRollCount = 3;
+    [Header("Attack Weight — total character targets including main target")]
+    public AttackWeightSettings AttackWeight =
+        new AttackWeightSettings();
 
-    public SkillRollReusePolicy RollReusePolicy =
-        SkillRollReusePolicy.RollEachExchange;
+    [TextArea(2, 8)]
+    [Tooltip("상세 화면에서 표시할 스킬 설명입니다. 비어 있으면 수치로 자동 생성합니다.")]
+    public string Description;
 
-    [Tooltip(
-        "김삿갓처럼 위세지만 속도순 COMBAT에서 합을 붙일 때 사용합니다.")]
+    [Tooltip("클릭 가능한 고유 키워드입니다. 비어 있으면 행동 타입과 효과에서 자동 추론합니다.")]
+    public List<SkillKeywordEntry> Keywords = new();
+
+    [Header("Independent rolls — 2 to 8")]
+    public List<SkillRollData> Rolls = new();
+
+    [Header("Legacy roll fallback")]
+    [Range(2, 8)] public int ExchangeRollCount = 3;
+    public SkillRollReusePolicy RollReusePolicy = SkillRollReusePolicy.RollEachExchange;
+
+    [Header("High-roll-count risk")]
+    public MultiRollPenaltyData MultiRollPenalty = new();
+
+    [Tooltip("김삿갓처럼 위세지만 속도순 COMBAT에서 합을 붙일 때 사용합니다.")]
     public bool ResolvePrestigeInCombat;
-
     public bool OverrideCanClash;
     public bool CanClashValue;
 
     [Header("Preparation")]
-    [Tooltip(
-        "약한 도사림은 에너지 0, 강한 캐릭터 고유 도사림은 에너지 1이 기본입니다.")]
     public PreparationTier PreparationTier = PreparationTier.Weak;
 
-    [Header("Resolver")]
+    [Header("Legacy/default RNG source")]
     public SkillResolverType ResolverType;
     public int DiceMin;
     public int DiceMax;
-
-    [Min(1)]
-    public int CoinCount = 1;
-
-    [Range(0f, 1f)]
-    public float CoinFrontChance = 0.5f;
+    [Min(1)] public int CoinCount = 1;
+    [Range(0f, 1f)] public float CoinFrontChance = 0.5f;
     public int CoinFrontValue = 1;
     public int CoinBackValue;
     public bool CoinFrontIsCritical;
@@ -55,119 +68,97 @@ public class SkillDefinition : ScriptableObject
     [Header("Effects")]
     public List<SkillEffectDefinition> Effects = new();
 
-    [Header("Energy Cost")]
-    [Tooltip(
-        "false면 ActionType과 PreparationTier의 기본 비용을 사용합니다. " +
-        "평타 0 / 결투 1 / 약한 도사림 0 / 강한 도사림 1 / 위세 0입니다. " +
-        "예외 비용이 필요할 때만 true로 설정합니다.")]
+    [Header("Energy Cost — every skill owns its cost")]
     public bool OverrideEnergyCost;
-
-    [Min(0)]
-    public int EnergyCost;
+    [Min(0)] public int EnergyCost;
 
     [Header("Other Resource Rules")]
-    [Tooltip("false면 기존 위세 규칙을 그대로 사용합니다.")]
     public bool OverrideResourceRules;
-
     public bool RequireFullPrestige;
     [Min(0)] public int PrestigeCost;
     public bool ConsumeAllPrestige;
-
     public string CustomResourceKey;
     [Min(0)] public int CustomResourceCost;
     public bool ConsumeAllCustomResource;
 
     [Header("Prestige Use Policy")]
     public bool OverridePrestigeUsePolicy;
-    public PrestigeUsePolicy PrestigeUsePolicy =
-        PrestigeUsePolicy.OncePerTurn;
+    public PrestigeUsePolicy PrestigeUsePolicy = PrestigeUsePolicy.OncePerTurn;
 
     [Header("Visual")]
     public SkillVisualDefinition VisualDefinition;
 
-    public Skill CreateRuntimeSkill()
+    public int EffectiveRollCount =>
+        Rolls != null && Rolls.Count > 0
+            ? Mathf.Clamp(Rolls.Count, 2, 8)
+            : Mathf.Clamp(ExchangeRollCount, 2, 8);
+
+    public SkillRollData GetRollData(int exchangeIndex)
     {
-        return ActionType switch
-        {
-            ActionType.NormalAttack =>
-                new DataNormalSkill(this),
-            ActionType.Duel =>
-                new DataDuelSkill(this),
-            ActionType.Preparation =>
-                new DataPreparationSkill(this),
-            ActionType.Prestige =>
-                new DataPrestigeSkill(this),
-            _ => CreateUnsupportedSkill()
-        };
+        if (Rolls == null || Rolls.Count == 0)
+            return null;
+        int index = Mathf.Clamp(exchangeIndex, 0, Rolls.Count - 1);
+        return Rolls[index];
     }
+
+    public Skill CreateRuntimeSkill() => ActionType switch
+    {
+        ActionType.NormalAttack => new DataNormalSkill(this),
+        ActionType.Duel => new DataDuelSkill(this),
+        ActionType.Preparation => new DataPreparationSkill(this),
+        ActionType.Prestige => new DataPrestigeSkill(this),
+        _ => CreateUnsupportedSkill()
+    };
 
     private Skill CreateUnsupportedSkill()
     {
-        Debug.LogError(
-            $"지원하지 않는 ActionType입니다 : {ActionType}");
+        Debug.LogError($"지원하지 않는 ActionType입니다 : {ActionType}");
         return null;
     }
 
-    public SkillResolver CreateResolver()
+    public SkillResolver CreateResolver() => ResolverType switch
     {
-        return ResolverType switch
-        {
-            SkillResolverType.Dice =>
-                new DiceResolver(DiceMin, DiceMax),
-
-            SkillResolverType.Coin =>
-                new CoinResolver(
-                    CoinCount,
-                    CoinFrontChance,
-                    CoinFrontValue,
-                    CoinBackValue,
-                    CoinFrontIsCritical),
-
-            SkillResolverType.Slot =>
-                new SlotResolver(),
-
-            SkillResolverType.Chinchiro =>
-                new ChinchiroResolver(
-                    ChinchiroArashiBonus,
-                    ChinchiroShigoroBonus,
-                    ChinchiroHifumiPenalty,
-                    ChinchiroHifumiSelfDamage),
-
-            _ => CreateFallbackResolver()
-        };
-    }
+        SkillResolverType.Dice => new DiceResolver(DiceMin, DiceMax),
+        SkillResolverType.Coin => new CoinResolver(CoinCount, CoinFrontChance, CoinFrontValue, CoinBackValue, CoinFrontIsCritical),
+        SkillResolverType.Slot => new SlotResolver(),
+        SkillResolverType.Chinchiro => new ChinchiroResolver(ChinchiroArashiBonus, ChinchiroShigoroBonus, ChinchiroHifumiPenalty, ChinchiroHifumiSelfDamage),
+        _ => CreateFallbackResolver()
+    };
 
 #if UNITY_EDITOR
     private void OnValidate()
     {
-        ExchangeRollCount = Mathf.Max(1, ExchangeRollCount);
+        EnsureSkillId();
+        ExchangeRollCount = Mathf.Clamp(ExchangeRollCount, 2, 8);
         EnergyCost = Mathf.Max(0, EnergyCost);
         CoinCount = Mathf.Max(1, CoinCount);
         CoinFrontChance = Mathf.Clamp01(CoinFrontChance);
+        Rolls ??= new List<SkillRollData>();
+        Keywords ??= new List<SkillKeywordEntry>();
+        MultiRollPenalty ??= new MultiRollPenaltyData();
+        MultiRollPenalty.Sanitize();
+        AttackWeight ??= new AttackWeightSettings();
+        AttackWeight.Sanitize();
+        while (Rolls.Count > 8) Rolls.RemoveAt(Rolls.Count - 1);
+        if (Rolls.Count == 1) Rolls.Add(new SkillRollData());
+        for (int i = 0; i < Rolls.Count; i++) Rolls[i]?.Sanitize(i);
+        if (ResolvePrestigeInCombat && ActionType != ActionType.Prestige) ResolvePrestigeInCombat = false;
+        if (ActionType != ActionType.Preparation) PreparationTier = PreparationTier.Weak;
+    }
 
-        ChinchiroArashiBonus = Mathf.Max(0, ChinchiroArashiBonus);
-        ChinchiroShigoroBonus = Mathf.Max(0, ChinchiroShigoroBonus);
-        ChinchiroHifumiPenalty = Mathf.Max(0, ChinchiroHifumiPenalty);
-        ChinchiroHifumiSelfDamage = Mathf.Max(0, ChinchiroHifumiSelfDamage);
+    public bool EnsureSkillId()
+    {
+        if (!string.IsNullOrWhiteSpace(skillId))
+            return false;
 
-        if (ResolvePrestigeInCombat &&
-            ActionType != ActionType.Prestige)
-        {
-            ResolvePrestigeInCombat = false;
-        }
-
-        if (ActionType != ActionType.Preparation)
-            PreparationTier = PreparationTier.Weak;
-
-        if (ResolverType == SkillResolverType.Chinchiro)
-            RollReusePolicy = SkillRollReusePolicy.OncePerAction;
+        skillId = System.Guid.NewGuid().ToString("N");
+        return true;
     }
 #endif
 
     private SkillResolver CreateFallbackResolver()
     {
-        Debug.LogError(
-            $"지원하지 않는 ResolverType입니다 : {ResolverType}");
+        Debug.LogError($"지원하지 않는 ResolverType입니다 : {ResolverType}");
         return new DiceResolver(0, 0);
     }
 }

@@ -22,6 +22,15 @@ public class BattleVisualRequest
     public List<ClashRollVisualStep> ClashSteps = new();
     public List<int> HitDamages = new();
 
+    [Header("Attack Weight")]
+    public List<DamageContext>
+        SecondaryDamageContexts =
+            new List<DamageContext>();
+
+    public bool HasSecondaryDamage =>
+        SecondaryDamageContexts != null &&
+        SecondaryDamageContexts.Count > 0;
+
     [Header("Continuous Clash Sequence")]
     public bool IsClashSequence;
     public List<BattleClashVisualExchange> ClashExchanges = new();

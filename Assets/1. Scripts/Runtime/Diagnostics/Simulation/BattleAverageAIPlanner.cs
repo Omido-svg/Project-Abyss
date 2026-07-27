@@ -17,6 +17,25 @@ public sealed class BattleAverageAIPlanner
         public int PrestigeCount;
         public int PlannedEnergyCost;
 
+        public bool CanPlanCombatSlot(Skill skill)
+        {
+            if (Owner == null || skill == null)
+                return false;
+
+            if (skill.DefaultPhase != ActionPhase.COMBAT)
+                return true;
+
+            int combatCount = 0;
+
+            foreach (ActionSlot slot in Planned)
+            {
+                if (slot?.Phase == ActionPhase.COMBAT)
+                    combatCount++;
+            }
+
+            return combatCount < Owner.GetMaxCombatActionSlots();
+        }
+
         public bool CanPlanEnergy(Skill skill)
         {
             return Owner != null &&
@@ -110,11 +129,18 @@ public sealed class BattleAverageAIPlanner
                  actionIndex < maxSlots;
                  actionIndex++)
             {
+                IReadOnlyList<Skill> selectableSkills =
+                    ResolveSelectableSkills(
+                        player,
+                        part,
+                        actionIndex);
+
                 Decision decision = SelectDecision(
                     state,
                     part,
                     actionIndex,
-                    actionManager);
+                    actionManager,
+                    selectableSkills);
 
                 if (!decision.IsValid)
                     continue;
@@ -151,12 +177,16 @@ public sealed class BattleAverageAIPlanner
         PlanningState state,
         BodyPart part,
         int actionIndex,
-        ActionManager actionManager)
+        ActionManager actionManager,
+        IReadOnlyList<Skill> selectableSkills)
     {
         Decision best = default;
         float bestScore = float.NegativeInfinity;
 
-        foreach (Skill skill in part.AvailableSkills)
+        if (selectableSkills == null)
+            return best;
+
+        foreach (Skill skill in selectableSkills)
         {
             if (!CanUse(state, part, skill))
                 continue;
@@ -228,6 +258,9 @@ public sealed class BattleAverageAIPlanner
             return false;
         }
 
+        if (!state.CanPlanCombatSlot(skill))
+            return false;
+
         if (!state.CanPlanEnergy(skill))
             return false;
 
@@ -242,6 +275,37 @@ public sealed class BattleAverageAIPlanner
             PrestigeUsePolicy.Unlimited => true,
             _ => false
         };
+    }
+
+    private static IReadOnlyList<Skill> ResolveSelectableSkills(
+        Character player,
+        BodyPart part,
+        int actionIndex)
+    {
+        if (player == null)
+            return System.Array.Empty<Skill>();
+
+        IReadOnlyList<Skill> configured =
+            player.GetSelectableSkills(
+                part,
+                Mathf.Max(0, actionIndex));
+
+        // 현재 CharacterCombatLoadout 구조가 있으면 그 슬롯 규칙을
+        // 유일한 공급원으로 사용한다. 구버전 캐릭터만 AvailableSkills로 폴백한다.
+        if (player.CombatRulesRuntime?.HasStructuredRules == true)
+        {
+            return configured ??
+                   System.Array.Empty<Skill>();
+        }
+
+        if (configured != null &&
+            configured.Count > 0)
+        {
+            return configured;
+        }
+
+        return part?.AvailableSkills ??
+               System.Array.Empty<Skill>();
     }
 
     private TargetPoint SelectTarget(

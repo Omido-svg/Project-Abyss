@@ -1,0 +1,121 @@
+#if UNITY_EDITOR
+using System.Collections.Generic;
+using UnityEditor;
+using UnityEngine;
+
+public static class CombatRules20260726LatestMigration
+{
+    [MenuItem("Tools/Project Abyss/Combat Rules 2026-07-26/Migrate Skill Definitions")]
+    public static void MigrateSkills()
+    {
+        string[] guids = AssetDatabase.FindAssets("t:SkillDefinition");
+        int changed = 0;
+        foreach (string guid in guids)
+        {
+            string path = AssetDatabase.GUIDToAssetPath(guid);
+            SkillDefinition definition = AssetDatabase.LoadAssetAtPath<SkillDefinition>(path);
+            if (definition == null) continue;
+
+            Undo.RecordObject(definition, "Migrate Project Abyss Skill Rolls");
+            definition.ExchangeRollCount = Mathf.Clamp(definition.ExchangeRollCount, 2, 4);
+            definition.Rolls ??= new List<SkillRollData>();
+
+            if (definition.Rolls.Count == 0)
+            {
+                int count = definition.ExchangeRollCount;
+                int min = Mathf.Max(0, definition.BasePower + Mathf.Min(definition.DiceMin, definition.DiceMax));
+                int max = Mathf.Max(min, definition.BasePower + Mathf.Max(definition.DiceMin, definition.DiceMax));
+                for (int i = 0; i < count; i++)
+                {
+                    definition.Rolls.Add(new SkillRollData
+                    {
+                        Index = i,
+                        Type = CombatRollType.Attack,
+                        MinPower = min,
+                        MaxPower = max,
+                        RngSource = definition.ResolverType switch
+                        {
+                            SkillResolverType.Coin => RollRngSource.Coin,
+                            SkillResolverType.Chinchiro => RollRngSource.Chinchiro,
+                            _ => RollRngSource.Dice
+                        },
+                        CoinBackPower = Mathf.Max(0, definition.BasePower + definition.CoinBackValue),
+                        CoinFrontPower = Mathf.Max(0, definition.BasePower + definition.CoinFrontValue),
+                        CoinFrontChance = definition.CoinFrontChance,
+                        CoinFrontIsCritical = definition.CoinFrontIsCritical
+                    });
+                }
+            }
+
+            if (!definition.OverrideEnergyCost)
+            {
+                definition.OverrideEnergyCost = true;
+                definition.EnergyCost = definition.ActionType switch
+                {
+                    ActionType.NormalAttack => 0,
+                    ActionType.Duel => 1,
+                    ActionType.Preparation => 1,
+                    _ => 0
+                };
+            }
+
+            if (path.Contains("/Enemies/"))
+                definition.CanBreakPart = false;
+
+            EditorUtility.SetDirty(definition);
+            changed++;
+        }
+
+        string[] characterDataGuids =
+            AssetDatabase.FindAssets("t:CharacterData");
+
+        int characterDataChanged = 0;
+        foreach (string guid in characterDataGuids)
+        {
+            CharacterData data =
+                AssetDatabase.LoadAssetAtPath<CharacterData>(
+                    AssetDatabase.GUIDToAssetPath(guid));
+
+            if (data == null || data.maxEnergy >= 3)
+                continue;
+
+            Undo.RecordObject(
+                data,
+                "Migrate Project Abyss Energy Cap");
+
+            data.maxEnergy = 3;
+            EditorUtility.SetDirty(data);
+            characterDataChanged++;
+        }
+
+        AssetDatabase.SaveAssets();
+        Debug.Log(
+            $"[Combat Rules Migration] " +
+            $"SkillDefinition {changed}개 / " +
+            $"CharacterData {characterDataChanged}개 검사·갱신 완료");
+    }
+
+    [MenuItem("Tools/Project Abyss/Combat Rules 2026-07-26/Validate Latest Rules")]
+    public static void ValidateRules()
+    {
+        string[] guids = AssetDatabase.FindAssets("t:SkillDefinition");
+        int errors = 0;
+        foreach (string guid in guids)
+        {
+            SkillDefinition definition = AssetDatabase.LoadAssetAtPath<SkillDefinition>(AssetDatabase.GUIDToAssetPath(guid));
+            if (definition == null) continue;
+            if (definition.EffectiveRollCount < 2 || definition.EffectiveRollCount > 4)
+            {
+                Debug.LogError($"[Combat Rules] {definition.name}: 굴림 수가 2~4가 아닙니다.", definition);
+                errors++;
+            }
+            if (definition.Rolls != null && definition.Rolls.Count >= 4 &&
+                definition.MultiRollPenalty?.Enabled != true)
+            {
+                Debug.LogWarning($"[Combat Rules] {definition.name}: 4굴림인데 자기 디버프/비용이 비활성입니다.", definition);
+            }
+        }
+        Debug.Log($"[Combat Rules Validation] 오류 {errors}개");
+    }
+}
+#endif

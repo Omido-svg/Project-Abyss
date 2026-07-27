@@ -17,8 +17,69 @@ MonoBehaviour:
   BasePower: 2
   CanBreakPart: 0
   GainPrestige: 1
+  Rolls:
+  - Index: 0
+    Type: 0
+    MinPower: 4
+    MaxPower: 6
+    RngSource: 1
+    CoinFrontChance: 0.5
+    CoinBackPower: 2
+    CoinFrontPower: 3
+    CoinFrontIsCritical: 0
+    ChinchiroHifumiPower: -4
+    ChinchiroBlankPower: 3
+    ChinchiroMokuPower: 7
+    ChinchiroShigoroPower: 20
+    ChinchiroArashiPower: 24
+    JudgmentModifier: 0
+    ReuseValueAcrossAction: 0
+    OnWinEffects: []
+    OnLoseEffects: []
+  - Index: 1
+    Type: 0
+    MinPower: 4
+    MaxPower: 6
+    RngSource: 1
+    CoinFrontChance: 0.5
+    CoinBackPower: 2
+    CoinFrontPower: 3
+    CoinFrontIsCritical: 0
+    ChinchiroHifumiPower: -4
+    ChinchiroBlankPower: 3
+    ChinchiroMokuPower: 7
+    ChinchiroShigoroPower: 20
+    ChinchiroArashiPower: 24
+    JudgmentModifier: 0
+    ReuseValueAcrossAction: 0
+    OnWinEffects: []
+    OnLoseEffects: []
+  - Index: 2
+    Type: 0
+    MinPower: 4
+    MaxPower: 6
+    RngSource: 1
+    CoinFrontChance: 0.5
+    CoinBackPower: 2
+    CoinFrontPower: 3
+    CoinFrontIsCritical: 0
+    ChinchiroHifumiPower: -4
+    ChinchiroBlankPower: 3
+    ChinchiroMokuPower: 7
+    ChinchiroShigoroPower: 20
+    ChinchiroArashiPower: 24
+    JudgmentModifier: 0
+    ReuseValueAcrossAction: 0
+    OnWinEffects: []
+    OnLoseEffects: []
   ExchangeRollCount: 3
   RollReusePolicy: 0
+  MultiRollPenalty:
+    Enabled: 0
+    PreviewText: 
+    Timing: 2
+    TriggerAfterRollIndex: 0
+    Effects: []
   ResolvePrestigeInCombat: 0
   OverrideCanClash: 0
   CanClashValue: 0
@@ -37,8 +98,8 @@ MonoBehaviour:
   ChinchiroHifumiSelfDamage: 1
   Effects:
   - {fileID: 11400000, guid: 34bc95e903f945046a515c97cda52fab, type: 2}
-  OverrideEnergyCost: 0
-  EnergyCost: 0
+  OverrideEnergyCost: 1
+  EnergyCost: 1
   OverrideResourceRules: 0
   RequireFullPrestige: 0
   PrestigeCost: 0

@@ -74,10 +74,22 @@ public class ActionManager : IDisposable
         }
 
         NormalizeForAdd(slot);
+        slot.Owner?.ConfigureActionSlot(slot);
 
-        if (!CanAddByCombatSlotLimit(slot, null))
+        if (slot.Owner != null && !slot.Owner.CanUseActionSlot(slot))
+            return false;
+
+        if (!string.IsNullOrWhiteSpace(slot.SlotId) &&
+            FindSlot(slot.Owner, slot.SlotId) != null)
         {
-            LogCombatSlotLimitFailure(slot);
+            Debug.LogWarning(
+                $"[ActionManager] 이미 계획된 SlotId입니다: {slot.SlotId}");
+            return false;
+        }
+
+        if (!CanAddByConfiguredSlotLimit(slot, null))
+        {
+            LogConfiguredSlotLimitFailure(slot);
             return false;
         }
 
@@ -85,7 +97,8 @@ public class ActionManager : IDisposable
                 slot.Owner,
                 slot.Skill,
                 slot.Part,
-                slot.ActionIndex))
+                slot.ActionIndex,
+                slot.SlotId))
         {
             LogEnergyReservationFailure(slot);
             return false;
@@ -121,18 +134,24 @@ public class ActionManager : IDisposable
         if (slot.ActionIndex < 0)
             slot.ActionIndex = 0;
 
+        slot.Owner?.ConfigureActionSlot(slot);
+        if (slot.Owner != null && !slot.Owner.CanUseActionSlot(slot))
+            return false;
+
         ActionSlot oldSlot =
-            FindSlot(
-                slot.Owner,
-                slot.Part,
-                slot.ActionIndex);
+            !string.IsNullOrWhiteSpace(slot.SlotId)
+                ? FindSlot(slot.Owner, slot.SlotId)
+                : FindSlot(
+                    slot.Owner,
+                    slot.Part,
+                    slot.ActionIndex);
 
         if (oldSlot == slot)
             return true;
 
-        if (!CanAddByCombatSlotLimit(slot, oldSlot))
+        if (!CanAddByConfiguredSlotLimit(slot, oldSlot))
         {
-            LogCombatSlotLimitFailure(slot);
+            LogConfiguredSlotLimitFailure(slot);
             return false;
         }
 
@@ -140,7 +159,8 @@ public class ActionManager : IDisposable
                 slot.Owner,
                 slot.Skill,
                 slot.Part,
-                slot.ActionIndex))
+                slot.ActionIndex,
+                slot.SlotId))
         {
             LogEnergyReservationFailure(slot);
             return false;
@@ -337,6 +357,42 @@ public class ActionManager : IDisposable
         return result;
     }
 
+    public ActionSlot FindSlot(
+        Character owner,
+        string slotId)
+    {
+        if (isDisposed ||
+            owner == null ||
+            string.IsNullOrWhiteSpace(slotId))
+        {
+            return null;
+        }
+
+        foreach (ActionSlot slot in slots)
+        {
+            if (slot?.Owner != owner)
+                continue;
+
+            if (string.Equals(
+                    slot.SlotId,
+                    slotId,
+                    StringComparison.Ordinal))
+            {
+                return slot;
+            }
+        }
+
+        return null;
+    }
+
+    public bool RemoveSlot(
+        Character owner,
+        string slotId)
+    {
+        return RemoveSlot(
+            FindSlot(owner, slotId));
+    }
+
     public ActionSlot FindSlotById(
         long actionId)
     {
@@ -433,40 +489,39 @@ public class ActionManager : IDisposable
         return count;
     }
 
-    private bool CanAddByCombatSlotLimit(
+    private bool CanAddByConfiguredSlotLimit(
         ActionSlot incoming,
         ActionSlot replacing)
     {
-        if (incoming?.Owner == null ||
-            incoming.Phase != ActionPhase.COMBAT)
-        {
-            return true;
-        }
+        if (incoming?.Owner == null)
+            return false;
 
-        int count = CountCombatSlots(incoming.Owner);
+        int count = CountSlots(incoming.Owner);
+
         if (replacing != null &&
-            replacing.Owner == incoming.Owner &&
-            replacing.Phase == ActionPhase.COMBAT)
+            replacing.Owner == incoming.Owner)
         {
             count--;
         }
 
-        return count < incoming.Owner.GetMaxCombatActionSlots();
+        return incoming.Owner.CanUseActionSlot(incoming) &&
+               count < incoming.Owner.GetMaxActionSlots();
     }
 
-    private void LogCombatSlotLimitFailure(ActionSlot slot)
+    private void LogConfiguredSlotLimitFailure(ActionSlot slot)
     {
         Debug.LogWarning(
-            $"[ActionManager] COMBAT 슬롯 상한 초과 / " +
+            $"[ActionManager] 행동 슬롯 상한 초과 / " +
             $"Owner={slot?.Owner?.Data?.CharacterName}, " +
-            $"Limit={slot?.Owner?.GetMaxCombatActionSlots() ?? 0}, " +
-            $"Current={CountCombatSlots(slot?.Owner)}");
+            $"Limit={slot?.Owner?.GetMaxActionSlots() ?? 0}, " +
+            $"Current={CountSlots(slot?.Owner)}");
     }
 
     public int GetPlannedEnergyCost(
         Character owner,
         BodyPart excludedPart = null,
-        int excludedActionIndex = -1)
+        int excludedActionIndex = -1,
+        string excludedSlotId = null)
     {
         if (isDisposed || owner == null)
             return 0;
@@ -478,12 +533,20 @@ public class ActionManager : IDisposable
             if (slot?.Owner != owner || slot.Skill == null)
                 continue;
 
-            if (excludedActionIndex >= 0 &&
+            bool excludedBySlotId =
+                !string.IsNullOrWhiteSpace(excludedSlotId) &&
+                string.Equals(
+                    slot.SlotId,
+                    excludedSlotId,
+                    StringComparison.Ordinal);
+
+            bool excludedByLegacyKey =
+                excludedActionIndex >= 0 &&
                 slot.Part == excludedPart &&
-                slot.ActionIndex == excludedActionIndex)
-            {
+                slot.ActionIndex == excludedActionIndex;
+
+            if (excludedBySlotId || excludedByLegacyKey)
                 continue;
-            }
 
             total += Mathf.Max(0, slot.Skill.EnergyCost);
 
@@ -497,7 +560,8 @@ public class ActionManager : IDisposable
     public int GetRemainingEnergyAfterPlan(
         Character owner,
         BodyPart excludedPart = null,
-        int excludedActionIndex = -1)
+        int excludedActionIndex = -1,
+        string excludedSlotId = null)
     {
         if (owner == null)
             return 0;
@@ -508,14 +572,16 @@ public class ActionManager : IDisposable
             GetPlannedEnergyCost(
                 owner,
                 excludedPart,
-                excludedActionIndex));
+                excludedActionIndex,
+                excludedSlotId));
     }
 
     public bool CanReserveEnergy(
         Character owner,
         Skill skill,
         BodyPart excludedPart = null,
-        int excludedActionIndex = -1)
+        int excludedActionIndex = -1,
+        string excludedSlotId = null)
     {
         if (owner == null || skill == null)
             return false;
@@ -523,7 +589,8 @@ public class ActionManager : IDisposable
         int planned = GetPlannedEnergyCost(
             owner,
             excludedPart,
-            excludedActionIndex);
+            excludedActionIndex,
+            excludedSlotId);
 
         long required =
             (long)planned + Mathf.Max(0, skill.EnergyCost);
@@ -539,7 +606,8 @@ public class ActionManager : IDisposable
         int planned = GetPlannedEnergyCost(
             slot.Owner,
             slot.Part,
-            slot.ActionIndex);
+            slot.ActionIndex,
+            slot.SlotId);
 
         Debug.LogWarning(
             $"[ActionManager] 에너지 예산 초과로 슬롯 등록 거부 / " +
@@ -784,6 +852,7 @@ public class ActionManager : IDisposable
         return
             $"ActionId   : {slot.ActionId}\n" +
             $"ActionIndex: {slot.ActionIndex}\n" +
+            $"SlotId     : {slot.SlotId ?? "NULL"}\n" +
             $"Owner      : {ownerName}\n" +
             $"Part       : {partName}\n" +
             $"Skill      : {skillName}\n" +

@@ -1,0 +1,58 @@
+﻿PROJECT ABYSS — 3 TURN RULE WALKTHROUGH
+
+[TURN 1]
+   0   -5 ->   -5 : Boss duel attack #1
+  -5   -5 ->  -10 : Boss duel attack #2
+ -10  -25 ->  -35 : Boss Duel-vs-Duel majority push
+ -35   -5 ->  -40 : Boss attack wins
+ -40    5 ->  -35 : Player defense wins: damage 0
+ -35   -5 ->  -40 : Boss attack wins
+ -40   -5 ->  -45 : Boss remaining attack
+ -45   -5 ->  -50 : Boss paired attack
+ -50   -5 ->  -55 : Boss paired attack
+ -55   -5 ->  -60 : Boss remaining attack; remaining defense vanishes
+ -60   -5 ->  -65 : Unaccepted duel hit #1; no duel effect
+ -65   -5 ->  -70 : Unaccepted duel hit #2; no duel effect
+ -70   -5 ->  -75 : Boss overwhelm-gated break hit
+Part result: weakened at HP 1, global debuff, then enemy-gated break; only linked slot disabled.
+
+[TURN 2]
+ -75    5 ->  -70 : Player 4-roll duel hit #1
+ -70    5 ->  -65 : Player 4-roll duel hit #2
+ -65    5 ->  -60 : Player 4-roll duel hit #3
+ -60    5 ->  -55 : Player 4-roll duel hit #4
+ -55   25 ->  -30 : Player Duel-vs-Duel majority push
+ -30    5 ->  -25 : Player attack wins
+ -25   -5 ->  -30 : Player defense loses: damage = judgment gap 2
+ -30    5 ->  -25 : Player attack wins
+ -25    5 ->  -20 : Player remaining attack
+ -20    5 ->  -15 : Player one-sided attack #1
+ -15    5 ->  -10 : Player one-sided attack #2
+ -10    5 ->   -5 : Player one-sided attack #3
+  -5    5 ->    0 : Player one-sided attack #4
+Phase result: boss skill pool/slot count changed; 4-roll penalty applied.
+
+[TURN 3]
+   0    5 ->    5 : Player duel hit #1
+   5    5 ->   10 : Player duel hit #2
+  10   25 ->   35 : Player duel majority push
+  35    5 ->   40 : Player normal hit #1
+  40    5 ->   45 : Player normal hit #2
+  45    5 ->   50 : Player normal hit #3
+  50    5 ->   55 : Player normal hit #4
+Breaker roll 1: pure=10, momentumBefore=55, damage=10, partHP=20
+  55    5 ->   60 : Player breaker hit #1
+Breaker roll 2: pure=11, momentumBefore=60, damage=11, partHP=9
+  60    5 ->   65 : Player breaker hit #2
+Breaker roll 3: pure=8, momentumBefore=65, damage=8, partHP=1
+  65    5 ->   70 : Player breaker hit #3
+Breaker roll 4: pure=13, momentumBefore=70, damage=26, partHP=0
+  70    5 ->   75 : Player breaker hit #4
+  75  -10 ->   65 : Elite boss Last Stand hit
+  65   -5 ->   60 : Boss hit after leaving Last Stand
+
+[FORMULA CHECK]
+Attack damage = Floor(pure roll × momentum multiplier), minimum 1.
+Defense loss damage = Max(1, opponent judgment - own judgment).
+Speed/judgment bonuses never enter attack damage.
+Only paired exchanges count toward clash majority.

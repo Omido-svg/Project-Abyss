@@ -13,10 +13,56 @@ MonoBehaviour:
   m_Name: Olaf Status Data
   m_EditorClassIdentifier: 
   CharacterName: Olaf
-  TargetMode: 0
+  CombatantTier: 0
+  Portrait: {fileID: 0}
+  DetailArtwork: {fileID: 0}
+  RoleName: "\uBD88\uC0AC\uC758 \uAD11\uC804\uC0AC"
+  UiSummary: "\uBD80\uC704\uAC00 \uD30C\uAD34\uB420\uC218\uB85D \uAD11\uAE30\uB97C
+    \uCD95\uC801\uD558\uACE0, \uACB0\uD22C\uC640 \uCD9C\uD608\uC744 \uD1B5\uD574
+    \uC804\uC7A5\uC744 \uBC00\uC5B4\uBD99\uC774\uB294 \uACF5\uACA9\uD615 \uCE90\uB9AD\uD130."
+  TargetMode: 1
   SingleHpMax: 1
   maxPrestige: 100
-  maxEnergy: 2
+  maxEnergy: 3
+  ActionSlots:
+  - SlotId: HEAD_01
+    DisplayName: "\uBA38\uB9AC \uD589\uB3D9"
+    Enabled: 1
+    HasLinkedPart: 1
+    LinkedPartType: 0
+    OverrideSpeedRange: 0
+    MinSpeed: 3
+    MaxSpeed: 8
+    AllowedActionTypes: 00000000010000000200000003000000
+  - SlotId: LEFT_HAND_01
+    DisplayName: "\uC67C\uC190 \uD589\uB3D9"
+    Enabled: 1
+    HasLinkedPart: 1
+    LinkedPartType: 1
+    OverrideSpeedRange: 0
+    MinSpeed: 3
+    MaxSpeed: 8
+    AllowedActionTypes: 000000000100000003000000
+  - SlotId: RIGHT_HAND_01
+    DisplayName: "\uC624\uB978\uC190 \uD589\uB3D9"
+    Enabled: 1
+    HasLinkedPart: 1
+    LinkedPartType: 2
+    OverrideSpeedRange: 0
+    MinSpeed: 3
+    MaxSpeed: 8
+    AllowedActionTypes: 000000000100000003000000
+  - SlotId: LEGS_01
+    DisplayName: "\uB2E4\uB9AC \uD589\uB3D9"
+    Enabled: 1
+    HasLinkedPart: 1
+    LinkedPartType: 3
+    OverrideSpeedRange: 0
+    MinSpeed: 3
+    MaxSpeed: 8
+    AllowedActionTypes: 0200000003000000
+  CombatLoadout: {fileID: 11400000, guid: 8d9c3aad2944dca45b238efa251d57d1, type: 2}
+  BossPhases: []
   damageMultiplier: 1
   defensePenetration: 0
   minSpeed: 7

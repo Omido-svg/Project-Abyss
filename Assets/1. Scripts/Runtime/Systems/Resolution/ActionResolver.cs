@@ -195,7 +195,7 @@ public class ActionResolver
         List<int> result = new();
 
         int resolvedDamage =
-            action?.LastDamageContext
+            action?.PrimaryDamageContext
                 ?.GetDisplayDamage() ?? 0;
 
         if (resolvedDamage > 0)

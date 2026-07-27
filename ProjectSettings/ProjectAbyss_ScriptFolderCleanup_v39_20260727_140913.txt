@@ -1,0 +1,208 @@
+PROJECT ABYSS SCRIPT FOLDER CLEANUP v3.9
+CREATED_AT=2026-07-27T14:09:13.9557151+09:00
+MOVE_API=AssetDatabase.MoveAsset
+
+GUID=5f56d719ac8e2444d8866af90e582dbc
+FROM=Assets/1. Scripts/Runtime/Characters/CharacterBase/Core/Character.cs
+TO=Assets/1. Scripts/Runtime/Characters/CharacterBase/Character.cs
+
+GUID=07ba8079580082849bc51b58eb176965
+FROM=Assets/1. Scripts/Runtime/Characters/CharacterBase/Core/CharacterCombatState.cs
+TO=Assets/1. Scripts/Runtime/Characters/CharacterBase/CharacterCombatState.cs
+
+GUID=02f75a7e990b2b34480f808c74726683
+FROM=Assets/1. Scripts/Runtime/Characters/CharacterBase/Core/CharacterData.cs
+TO=Assets/1. Scripts/Runtime/Characters/CharacterBase/CharacterData.cs
+
+GUID=7d28ebf77df2a924aa89265ac494dda7
+FROM=Assets/1. Scripts/Runtime/Characters/CharacterBase/Core/CharacterRuntimeSnapshot.cs
+TO=Assets/1. Scripts/Runtime/Characters/CharacterBase/CharacterRuntimeSnapshot.cs
+
+GUID=87b1c7da8c20f294dad07207324639ba
+FROM=Assets/1. Scripts/Runtime/Characters/CharacterBase/Controllers/CharacterBodyPartController.cs
+TO=Assets/1. Scripts/Runtime/Characters/CharacterBase/CharacterBodyPartController.cs
+
+GUID=0641855dc92e34941a95ed112c4a066b
+FROM=Assets/1. Scripts/Runtime/Characters/CharacterBase/Controllers/CharacterBuildController.cs
+TO=Assets/1. Scripts/Runtime/Characters/CharacterBase/CharacterBuildController.cs
+
+GUID=5d9ec0d9c054d234ebce951f30053440
+FROM=Assets/1. Scripts/Runtime/Characters/CharacterBase/Controllers/CharacterDamageController.cs
+TO=Assets/1. Scripts/Runtime/Characters/CharacterBase/CharacterDamageController.cs
+
+GUID=add88c35edf8cb142903f83139585d38
+FROM=Assets/1. Scripts/Runtime/Characters/CharacterBase/Controllers/CharacterEventBinder.cs
+TO=Assets/1. Scripts/Runtime/Characters/CharacterBase/CharacterEventBinder.cs
+
+GUID=581f684da890cab4caba079bed3ca5b7
+FROM=Assets/1. Scripts/Runtime/Characters/CharacterBase/Controllers/CharacterLifeController.cs
+TO=Assets/1. Scripts/Runtime/Characters/CharacterBase/CharacterLifeController.cs
+
+GUID=f423969a536b7c345912b31afef08f5c
+FROM=Assets/1. Scripts/Runtime/Characters/CharacterBase/Controllers/CharacterMechanicController.cs
+TO=Assets/1. Scripts/Runtime/Characters/CharacterBase/CharacterMechanicController.cs
+
+GUID=f1f0552de61d4d0418e06582f28dd65d
+FROM=Assets/1. Scripts/Runtime/Characters/CharacterBase/Controllers/CharacterResourceController.cs
+TO=Assets/1. Scripts/Runtime/Characters/CharacterBase/CharacterResourceController.cs
+
+GUID=32525ea969c97d0418bb9225529c7bda
+FROM=Assets/1. Scripts/Runtime/Characters/CharacterBase/Controllers/CharacterStatusController.cs
+TO=Assets/1. Scripts/Runtime/Characters/CharacterBase/CharacterStatusController.cs
+
+GUID=2985882258239c44d8669c94539bdef5
+FROM=Assets/1. Scripts/Runtime/Characters/CharacterBase/Mechanics/CharacterBuildMechanicContext.cs
+TO=Assets/1. Scripts/Runtime/Characters/CharacterBase/CharacterBuildMechanicContext.cs
+
+GUID=3408a0d57f6aa0d4db84e32c1dba8d7d
+FROM=Assets/1. Scripts/Runtime/Characters/CharacterBase/Mechanics/IBodyPartBreakImmediateReaction.cs
+TO=Assets/1. Scripts/Runtime/Characters/CharacterBase/IBodyPartBreakImmediateReaction.cs
+
+GUID=2adbb94e37996404b92686aa24b992ea
+FROM=Assets/1. Scripts/Runtime/Characters/CharacterBase/Mechanics/ReactiveCombatMechanic.cs
+TO=Assets/1. Scripts/Runtime/Characters/CharacterBase/ReactiveCombatMechanic.cs
+
+GUID=54981011eaef39145bdbfe8e3b2cfed4
+FROM=Assets/1. Scripts/Runtime/Characters/CharacterBase/Targeting/BodyPartTargetModel.cs
+TO=Assets/1. Scripts/Runtime/Characters/CharacterBase/BodyPartTargetModel.cs
+
+GUID=35a75f9bfbf89ae4a80bda4dcd9aff45
+FROM=Assets/1. Scripts/Runtime/Characters/CharacterBase/Targeting/CharacterTargetModel.cs
+TO=Assets/1. Scripts/Runtime/Characters/CharacterBase/CharacterTargetModel.cs
+
+GUID=2251d14ac86adce42a95b99d186c32f5
+FROM=Assets/1. Scripts/Runtime/Characters/CharacterBase/Targeting/ICombatTargetModel.cs
+TO=Assets/1. Scripts/Runtime/Characters/CharacterBase/ICombatTargetModel.cs
+
+GUID=926359bac060a45448cf99ff0bf82ba8
+FROM=Assets/1. Scripts/Runtime/Characters/CharacterBase/Targeting/SingleHpTargetModel.cs
+TO=Assets/1. Scripts/Runtime/Characters/CharacterBase/SingleHpTargetModel.cs
+
+GUID=149bf5c90071ff14faed00ef77e04bc0
+FROM=Assets/1. Scripts/Runtime/Presentation/UI/CharacterDetail/BattleCharacterDetailPanelUI.cs
+TO=Assets/1. Scripts/Runtime/Presentation/UI/Panels/BattleCharacterDetailPanelUI.cs
+
+GUID=ef0392176045f4142a0825a1560e21fd
+FROM=Assets/1. Scripts/Runtime/Presentation/UI/CharacterDetail/BattleStatusListUI.cs
+TO=Assets/1. Scripts/Runtime/Presentation/UI/Panels/BattleStatusListUI.cs
+
+GUID=96d92fe66a817214d919e01542caa851
+FROM=Assets/1. Scripts/Runtime/Presentation/UI/HUD/BattleActionAnnounceUI.cs
+TO=Assets/1. Scripts/Runtime/Presentation/UI/Panels/BattleActionAnnounceUI.cs
+
+GUID=df40f35b4525b9a4d8f7b74ca44976ec
+FROM=Assets/1. Scripts/Runtime/Presentation/UI/HUD/BattleEnergyUI.cs
+TO=Assets/1. Scripts/Runtime/Presentation/UI/Panels/BattleEnergyUI.cs
+
+GUID=da13b4cfc61d6b048a2e0d8dc4f3dc96
+FROM=Assets/1. Scripts/Runtime/Presentation/UI/HUD/BattleReadableHudUI.cs
+TO=Assets/1. Scripts/Runtime/Presentation/UI/Panels/BattleReadableHudUI.cs
+
+GUID=bafa7da65d5a0324cb6437430fef2be4
+FROM=Assets/1. Scripts/Runtime/Presentation/UI/HUD/BattleTopStatusBarUI.cs
+TO=Assets/1. Scripts/Runtime/Presentation/UI/Panels/BattleTopStatusBarUI.cs
+
+GUID=979f2d3bca3e8b64597645375a5b17a5
+FROM=Assets/1. Scripts/Runtime/Presentation/UI/HUD/MomentumScrollbarUI.cs
+TO=Assets/1. Scripts/Runtime/Presentation/UI/Panels/MomentumScrollbarUI.cs
+
+GUID=186bb63c29072a3499db73d591c4dc2c
+FROM=Assets/1. Scripts/Runtime/Presentation/UI/Selection/Skills/BattleConfiguredSlotBoardUI.cs
+TO=Assets/1. Scripts/Runtime/Presentation/UI/Panels/BattleConfiguredSlotBoardUI.cs
+
+GUID=792096fbfda436d4f8f9584f9553029e
+FROM=Assets/1. Scripts/Runtime/Presentation/UI/Selection/Skills/SkillSelectPanelUI.cs
+TO=Assets/1. Scripts/Runtime/Presentation/UI/Panels/SkillSelectPanelUI.cs
+
+GUID=4ac1b77dba9853742b0d0618fa4bcdfe
+FROM=Assets/1. Scripts/Runtime/Presentation/UI/World/BattleWorldCharacterPlateManager.cs
+TO=Assets/1. Scripts/Runtime/Presentation/UI/Panels/BattleWorldCharacterPlateManager.cs
+
+GUID=b3f0ed53b2d91e2469c2d1e26fbf59a2
+FROM=Assets/1. Scripts/Runtime/Presentation/UI/World/BattleWorldCharacterPlateUI.cs
+TO=Assets/1. Scripts/Runtime/Presentation/UI/Panels/BattleWorldCharacterPlateUI.cs
+
+GUID=6d5d8d2704205ef4eb11d20f5521bc6c
+FROM=Assets/1. Scripts/Runtime/Presentation/UI/CharacterDetail/BattleCharacterWorldClickInspector.cs
+TO=Assets/1. Scripts/Runtime/Presentation/UI/Components/BattleCharacterWorldClickInspector.cs
+
+GUID=68ae5c53ca66a4842a2a78cc3420c505
+FROM=Assets/1. Scripts/Runtime/Presentation/UI/CharacterDetail/BattleKeywordGlossary.cs
+TO=Assets/1. Scripts/Runtime/Presentation/UI/Components/BattleKeywordGlossary.cs
+
+GUID=dc9de14d555d4364c92301301088b491
+FROM=Assets/1. Scripts/Runtime/Presentation/UI/CharacterDetail/BattleStatusRowUI.cs
+TO=Assets/1. Scripts/Runtime/Presentation/UI/Components/BattleStatusRowUI.cs
+
+GUID=306168312d01b9c46850dd259f344a5e
+FROM=Assets/1. Scripts/Runtime/Presentation/UI/CharacterDetail/SkillKeywordEntry.cs
+TO=Assets/1. Scripts/Runtime/Presentation/UI/Components/SkillKeywordEntry.cs
+
+GUID=92f3087b424726149b6cfa1041a77f91
+FROM=Assets/1. Scripts/Runtime/Presentation/UI/CharacterDetail/StatusPopUp.cs
+TO=Assets/1. Scripts/Runtime/Presentation/UI/Components/StatusPopUp.cs
+
+GUID=b8c950b7064a28d49984264a980ae964
+FROM=Assets/1. Scripts/Runtime/Presentation/UI/Common/OutlineController.cs
+TO=Assets/1. Scripts/Runtime/Presentation/UI/Components/OutlineController.cs
+
+GUID=21b1d73422b10354f9f4138896b1cb75
+FROM=Assets/1. Scripts/Runtime/Presentation/UI/Selection/Participants/BattleParticipantButtonFactory.cs
+TO=Assets/1. Scripts/Runtime/Presentation/UI/Components/BattleParticipantButtonFactory.cs
+
+GUID=f902db8d8e254e84d8fd5c6dd20d7080
+FROM=Assets/1. Scripts/Runtime/Presentation/UI/Selection/Participants/BattlePortraitButtonView.cs
+TO=Assets/1. Scripts/Runtime/Presentation/UI/Components/BattlePortraitButtonView.cs
+
+GUID=d1b6d71627c01f047a7b0f00f64cf4c4
+FROM=Assets/1. Scripts/Runtime/Presentation/UI/Selection/Participants/BattleTargetButtonRegistry.cs
+TO=Assets/1. Scripts/Runtime/Presentation/UI/Components/BattleTargetButtonRegistry.cs
+
+GUID=0dabe4f21c417e64f870aed41bc5db5f
+FROM=Assets/1. Scripts/Runtime/Presentation/UI/Selection/Participants/BodyPartButton.cs
+TO=Assets/1. Scripts/Runtime/Presentation/UI/Components/BodyPartButton.cs
+
+GUID=fd83c1b255ad9a44ab4639ebf23ce704
+FROM=Assets/1. Scripts/Runtime/Presentation/UI/Selection/Participants/BodyPartButtonRegistry.cs
+TO=Assets/1. Scripts/Runtime/Presentation/UI/Components/BodyPartButtonRegistry.cs
+
+GUID=213c5fb62d2d3114a88bb5c171307936
+FROM=Assets/1. Scripts/Runtime/Presentation/UI/Selection/Participants/BodyPartButtonViewModel.cs
+TO=Assets/1. Scripts/Runtime/Presentation/UI/Components/BodyPartButtonViewModel.cs
+
+GUID=33c98caffbc161a4fa9b59a3e9a873ec
+FROM=Assets/1. Scripts/Runtime/Presentation/UI/Selection/Participants/TargetArrowUI.cs
+TO=Assets/1. Scripts/Runtime/Presentation/UI/Components/TargetArrowUI.cs
+
+GUID=5207d1fb2533d9947b8353a9e5174eda
+FROM=Assets/1. Scripts/Runtime/Presentation/UI/Selection/Participants/TargetSelectionViewModel.cs
+TO=Assets/1. Scripts/Runtime/Presentation/UI/Components/TargetSelectionViewModel.cs
+
+GUID=482c75cb2a9562447aa1636588563518
+FROM=Assets/1. Scripts/Runtime/Presentation/UI/Selection/Skills/ActionSlotButtonUI.cs
+TO=Assets/1. Scripts/Runtime/Presentation/UI/Components/ActionSlotButtonUI.cs
+
+GUID=25da825ed0c918a4e92c2141c3be318e
+FROM=Assets/1. Scripts/Runtime/Presentation/UI/Selection/Skills/ActionSlotSelectorUI.cs
+TO=Assets/1. Scripts/Runtime/Presentation/UI/Components/ActionSlotSelectorUI.cs
+
+GUID=6e354cc236266ed4a8a328e4801d60d2
+FROM=Assets/1. Scripts/Runtime/Presentation/UI/Selection/Skills/ActionSlotViewModel.cs
+TO=Assets/1. Scripts/Runtime/Presentation/UI/Components/ActionSlotViewModel.cs
+
+GUID=7ce738e5680775345939f8eaff843f7e
+FROM=Assets/1. Scripts/Runtime/Presentation/UI/Selection/Skills/BattleSkillCardButtonUI.cs
+TO=Assets/1. Scripts/Runtime/Presentation/UI/Components/BattleSkillCardButtonUI.cs
+
+GUID=1298445bbc16aac499242bfcf13c748d
+FROM=Assets/1. Scripts/Runtime/Presentation/UI/Selection/Skills/BattleSkillUiText.cs
+TO=Assets/1. Scripts/Runtime/Presentation/UI/Components/BattleSkillUiText.cs
+
+GUID=4abc4e017caee8f47a5b663d4e1844d3
+FROM=Assets/1. Scripts/Runtime/Presentation/UI/Selection/Skills/SkillButtonUI.cs
+TO=Assets/1. Scripts/Runtime/Presentation/UI/Components/SkillButtonUI.cs
+
+GUID=b015e0a9c548ee7419828aba5677664e
+FROM=Assets/1. Scripts/Runtime/Presentation/UI/Selection/Skills/SkillDrawerCategoryUI.cs
+TO=Assets/1. Scripts/Runtime/Presentation/UI/Components/SkillDrawerCategoryUI.cs
+

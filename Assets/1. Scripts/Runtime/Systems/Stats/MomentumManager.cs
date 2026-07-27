@@ -135,17 +135,7 @@ public class MomentumManager
                 return settings.AdvantageMultiplier;
 
             case MomentumState.Overwhelm:
-            {
-                float t = Mathf.InverseLerp(
-                    settings.OverwhelmThreshold,
-                    settings.Maximum,
-                    perspective);
-
-                return Mathf.Lerp(
-                    settings.OverwhelmMultiplier,
-                    settings.MaximumOverwhelmMultiplier,
-                    t);
-            }
+                return settings.OverwhelmMultiplier;
 
             default:
                 return 1f;
@@ -165,7 +155,8 @@ public class MomentumManager
     {
         int amount = settings.HitShift;
 
-        if (IsLastStand(attacker))
+        if (attacker?.SupportsLastStand == true &&
+            IsLastStand(attacker))
         {
             amount *=
                 settings.LastStandHitShiftMultiplier;

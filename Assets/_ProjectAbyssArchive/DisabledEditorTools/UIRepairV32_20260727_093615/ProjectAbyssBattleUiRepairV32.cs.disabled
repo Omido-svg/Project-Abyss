@@ -1,0 +1,877 @@
+#if UNITY_EDITOR
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using TMPro;
+using UnityEditor;
+using UnityEditor.SceneManagement;
+using UnityEngine;
+using UnityEngine.SceneManagement;
+using UnityEngine.UI;
+
+/// <summary>
+/// Final Battle UI v3 적용 이후의 기존 Hierarchy를 보존하면서
+/// 표시 오류, 선택 패널 활성화 순서, 폰트 크기, 상세 카메라 프레이밍을
+/// 한 번만 보정하는 Repair Tool입니다.
+/// </summary>
+public sealed class ProjectAbyssBattleUiRepairV32 : EditorWindow
+{
+    private const string MenuPath =
+        "Tools/Project Abyss/Repair Battle UI v3.2 (One Time)";
+
+    private const string RootName = "AbyssBattleUI";
+    private const string SelfPath =
+        "Assets/1. Scripts/Editor/Tools/ProjectAbyssBattleUiRepairV32.cs";
+
+    private static readonly string[] KnownMenuProviderPaths =
+    {
+        "Assets/1. Scripts/Editor/Tools/CombatRules20260726LatestMigration.cs",
+        "Assets/1. Scripts/Editor/Tools/CombatRuleThreeTurnWalkthrough.cs",
+        "Assets/1. Scripts/Editor/Tools/BattleRuleAuditEditor.cs",
+        "Assets/1. Scripts/Editor/CharacterAuthoring/ProjectAbyssCharacterWorkbench.cs",
+        "Assets/1. Scripts/Editor/Tools/ProjectAbyssFinalBattleUiInstaller.cs",
+        "Assets/1. Scripts/Editor/Tools/ProjectAbyssBattleUiRefactorTool.cs",
+        "Assets/1. Scripts/Editor/Tools/ProjectAbyssUnusedScriptCleaner.cs"
+    };
+
+    private bool createBackup = true;
+    private bool saveScene = true;
+    private bool removeRequestedTools = true;
+    private bool archiveThisRepairTool = true;
+
+    [MenuItem(MenuPath, false, 2095)]
+    public static void Open()
+    {
+        ProjectAbyssBattleUiRepairV32 window =
+            GetWindow<ProjectAbyssBattleUiRepairV32>();
+
+        window.titleContent = new GUIContent("Battle UI Repair v3.2");
+        window.minSize = new Vector2(610f, 430f);
+        window.Show();
+    }
+
+    private void OnGUI()
+    {
+        EditorGUILayout.Space(12f);
+        EditorGUILayout.LabelField(
+            "Project Abyss Battle UI Repair v3.2",
+            EditorStyles.boldLabel);
+
+        EditorGUILayout.HelpBox(
+            "Final Battle UI v3가 이미 적용된 CameraTest Scene을 대상으로 합니다.\n" +
+            "아군 부위 클릭 시 스킬 패널이 투명 상태로 남는 문제, 작은 폰트, " +
+            "상단 텍스트의 줄바꿈/리치 텍스트 문제, 상세 화면의 카메라 프레이밍을 수정합니다.",
+            MessageType.Info);
+
+        EditorGUILayout.Space(8f);
+        createBackup = EditorGUILayout.ToggleLeft(
+            "적용 전 Scene 백업 생성",
+            createBackup);
+        saveScene = EditorGUILayout.ToggleLeft(
+            "적용 후 Scene 저장",
+            saveScene);
+        removeRequestedTools = EditorGUILayout.ToggleLeft(
+            "요청된 기존 Tools 메뉴 제공 스크립트 비활성 보관",
+            removeRequestedTools);
+        archiveThisRepairTool = EditorGUILayout.ToggleLeft(
+            "성공 후 이 Repair Tool도 비활성 보관",
+            archiveThisRepairTool);
+
+        EditorGUILayout.Space(14f);
+
+        if (GUILayout.Button("Battle UI v3.2 수정 적용", GUILayout.Height(48f)))
+            ApplyFromWindow();
+
+        EditorGUILayout.Space(12f);
+        EditorGUILayout.HelpBox(
+            "DOTween은 프로젝트에 이미 존재하는 DG.Tweening을 사용합니다.\n" +
+            "캐릭터 Transform과 CharacterFacingController는 회전시키지 않으며, " +
+            "기존 CloseCameraPoint/LookAtPoint를 이용해 카메라 프레이밍만 변경합니다.",
+            MessageType.Warning);
+    }
+
+    private void ApplyFromWindow()
+    {
+        if (EditorApplication.isPlayingOrWillChangePlaymode)
+        {
+            EditorUtility.DisplayDialog(
+                "Project Abyss",
+                "Play Mode를 종료한 뒤 실행하세요.",
+                "확인");
+            return;
+        }
+
+        if (!EditorUtility.DisplayDialog(
+                "Battle UI v3.2 수정",
+                "현재 Final Battle UI Hierarchy를 보정합니다.",
+                "적용",
+                "취소"))
+        {
+            return;
+        }
+
+        try
+        {
+            ApplyRepair(
+                createBackup,
+                saveScene,
+                removeRequestedTools,
+                archiveThisRepairTool);
+
+            EditorUtility.DisplayDialog(
+                "수정 완료",
+                "Scene 수정이 완료되었습니다.\n" +
+                "스크립트 재컴파일 후 Play Mode에서 아군 부위 클릭, " +
+                "서랍 애니메이션, 상세 카메라를 확인하세요.",
+                "확인");
+
+            Close();
+        }
+        catch (Exception exception)
+        {
+            Debug.LogException(exception);
+            EditorUtility.DisplayDialog(
+                "수정 실패",
+                exception.ToString(),
+                "확인");
+        }
+    }
+
+    private static void ApplyRepair(
+        bool backup,
+        bool save,
+        bool cleanupTools,
+        bool cleanupSelf)
+    {
+        Scene scene = SceneManager.GetActiveScene();
+
+        if (!scene.IsValid() || !scene.isLoaded)
+            throw new InvalidOperationException("활성 Scene이 없습니다.");
+
+        GameObject root = FindSceneObject(RootName);
+        Canvas canvas = FindSceneComponentByName<Canvas>("Battle UI Canvas");
+        BattleUIManager uiManager = FindSceneComponent<BattleUIManager>();
+
+        if (root == null || canvas == null || uiManager == null)
+        {
+            throw new InvalidOperationException(
+                "AbyssBattleUI, Battle UI Canvas 또는 BattleUIManager를 찾지 못했습니다. " +
+                "Final Battle UI v3가 적용된 Scene인지 확인하세요.");
+        }
+
+        if (backup)
+            BackupScene(scene);
+
+        Undo.IncrementCurrentGroup();
+        int undoGroup = Undo.GetCurrentGroup();
+        Undo.SetCurrentGroupName("Repair Project Abyss Battle UI v3.2");
+        Undo.RegisterFullObjectHierarchyUndo(root, "Repair Battle UI v3.2");
+
+        ConfigureCanvas(canvas);
+
+        BattleScreenModeController modeController =
+            root.GetComponent<BattleScreenModeController>();
+
+        GameObject persistentLayer = FindChild(root.transform, "PersistentTopLayer");
+        GameObject defaultLayer = FindChild(root.transform, "DefaultBattleLayer");
+        GameObject skillLayer = FindChild(root.transform, "SkillSelectionLayer");
+        GameObject detailLayer = FindChild(root.transform, "CharacterDetailLayer");
+
+        if (modeController == null ||
+            persistentLayer == null ||
+            defaultLayer == null ||
+            skillLayer == null ||
+            detailLayer == null)
+        {
+            throw new InvalidOperationException(
+                "Final Battle UI v3의 Layer 구조가 완전하지 않습니다.");
+        }
+
+        RepairTopBar(persistentLayer.transform);
+        RepairClashOverview(defaultLayer.transform, uiManager);
+        RepairSkillLayer(skillLayer, modeController, uiManager);
+        RepairDetailLayer(detailLayer, modeController);
+        RepairWorldPlateManager();
+
+        modeController.Configure(
+            defaultLayer,
+            skillLayer,
+            detailLayer,
+            new[] { persistentLayer });
+
+        EditorUtility.SetDirty(root);
+        EditorUtility.SetDirty(uiManager);
+        EditorSceneManager.MarkSceneDirty(scene);
+
+        if (save && !string.IsNullOrWhiteSpace(scene.path))
+            EditorSceneManager.SaveScene(scene);
+
+        Undo.CollapseUndoOperations(undoGroup);
+
+        if (cleanupTools)
+            ArchiveRequestedMenuProviders(cleanupSelf);
+        else if (cleanupSelf)
+            ArchiveScripts(new[] { SelfPath }, "UIRepairV32");
+
+        AssetDatabase.SaveAssets();
+        AssetDatabase.Refresh();
+
+        Debug.Log(
+            "[Battle UI Repair v3.2] 적용 완료 / " +
+            "Skill panel activation order, DOTween drawers, readable fonts, " +
+            "detail camera framing and tool cleanup repaired.");
+    }
+
+    private static void ConfigureCanvas(Canvas canvas)
+    {
+        CanvasScaler scaler = canvas.GetComponent<CanvasScaler>();
+
+        if (scaler == null)
+            scaler = Undo.AddComponent<CanvasScaler>(canvas.gameObject);
+
+        scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+        scaler.referenceResolution = new Vector2(1920f, 1080f);
+        scaler.screenMatchMode = CanvasScaler.ScreenMatchMode.MatchWidthOrHeight;
+        scaler.matchWidthOrHeight = 0.5f;
+        EditorUtility.SetDirty(scaler);
+    }
+
+    private static void RepairTopBar(Transform persistentLayer)
+    {
+        RectTransform topBar =
+            FindChildRect(persistentLayer, "TopStatusBar");
+
+        if (topBar == null)
+            return;
+
+        SetAnchors(
+            topBar,
+            new Vector2(0.015f, 0.90f),
+            new Vector2(0.76f, 0.988f));
+
+        SetTextRect(topBar, "TurnText", "턴 01", 27f,
+            new Vector2(0.012f, 0.10f), new Vector2(0.15f, 0.90f),
+            TextAlignmentOptions.Center);
+
+        SetTextRect(topBar, "MomentumText", "기세 0 · 균형", 25f,
+            new Vector2(0.17f, 0.54f), new Vector2(0.54f, 0.92f),
+            TextAlignmentOptions.Left);
+
+        RectTransform momentum = FindChildRect(topBar, "MomentumBar");
+        if (momentum != null)
+        {
+            SetAnchors(
+                momentum,
+                new Vector2(0.17f, 0.16f),
+                new Vector2(0.56f, 0.48f));
+        }
+
+        SetTextRect(topBar, "LightText", "빛 0/0", 25f,
+            new Vector2(0.58f, 0.10f), new Vector2(0.73f, 0.90f),
+            TextAlignmentOptions.Center);
+
+        SetTextRect(topBar, "EnemyText", "적 0/0", 25f,
+            new Vector2(0.74f, 0.10f), new Vector2(0.87f, 0.90f),
+            TextAlignmentOptions.Center);
+
+        SetTextRect(topBar, "WaveText", "전투 준비", 20f,
+            new Vector2(0.875f, 0.10f), new Vector2(0.995f, 0.90f),
+            TextAlignmentOptions.Center);
+    }
+
+    private static void RepairClashOverview(
+        Transform defaultLayer,
+        BattleUIManager uiManager)
+    {
+        RectTransform overview =
+            FindChildRect(defaultLayer, "ClashOverviewPanel");
+
+        if (overview == null)
+            return;
+
+        SetAnchors(
+            overview,
+            new Vector2(0.60f, 0.27f),
+            new Vector2(0.985f, 0.895f));
+
+        SetNamedText(overview, "Title", 29f, TextAlignmentOptions.Left, false);
+        SetNamedText(overview, "PlayerSideLabel", 20f, TextAlignmentOptions.Center, false);
+        SetNamedText(overview, "EnemySideLabel", 20f, TextAlignmentOptions.Center, false);
+        SetNamedText(overview, "OverviewHint", 17f, TextAlignmentOptions.Center, false);
+
+        RectTransform playerColumn =
+            FindChildRect(overview, "PlayerPortraitColumn");
+        RectTransform enemyColumn =
+            FindChildRect(overview, "EnemyPortraitColumn");
+        RectTransform arrowLayer =
+            FindChildRect(overview, "ClashArrowLayer");
+
+        if (playerColumn != null)
+        {
+            SetAnchors(
+                playerColumn,
+                new Vector2(0.025f, 0.08f),
+                new Vector2(0.315f, 0.80f));
+            ConfigurePortraitGrid(playerColumn);
+        }
+
+        if (enemyColumn != null)
+        {
+            SetAnchors(
+                enemyColumn,
+                new Vector2(0.685f, 0.08f),
+                new Vector2(0.975f, 0.80f));
+            ConfigurePortraitGrid(enemyColumn);
+        }
+
+        if (arrowLayer != null)
+        {
+            SetAnchors(
+                arrowLayer,
+                new Vector2(0.305f, 0.08f),
+                new Vector2(0.695f, 0.80f));
+        }
+
+        RepairPortraitTemplate(
+            FindChildRect(playerColumn, "PlayerPortraitTemplate"));
+        RepairPortraitTemplate(
+            FindChildRect(enemyColumn, "EnemyPortraitTemplate"));
+
+        BattleParticipantButtonFactory factory =
+            uiManager.GetComponent<BattleParticipantButtonFactory>();
+
+        if (factory != null)
+        {
+            SerializedObject so = new(factory);
+            SetSerialized(so, "cellSize", new Vector2(156f, 112f));
+            SetSerialized(so, "spacing", new Vector2(8f, 8f));
+            SetSerialized(so, "playerColumns", 1);
+            SetSerialized(so, "enemyColumns", 1);
+            SetSerialized(so, "horizontalClashOverview", true);
+            SetSerialized(so, "fitContainerHeightToGeneratedRows", false);
+            SetSerialized(so, "autoPositionContainers", false);
+            SetSerialized(so, "fitContainerWidthToColumns", false);
+            so.ApplyModifiedPropertiesWithoutUndo();
+            EditorUtility.SetDirty(factory);
+        }
+    }
+
+    private static void ConfigurePortraitGrid(RectTransform column)
+    {
+        if (column == null)
+            return;
+
+        GridLayoutGroup grid = column.GetComponent<GridLayoutGroup>();
+
+        if (grid == null)
+            grid = Undo.AddComponent<GridLayoutGroup>(column.gameObject);
+
+        grid.cellSize = new Vector2(156f, 112f);
+        grid.spacing = new Vector2(8f, 8f);
+        grid.constraint = GridLayoutGroup.Constraint.FixedColumnCount;
+        grid.constraintCount = 1;
+        grid.startAxis = GridLayoutGroup.Axis.Vertical;
+        grid.childAlignment = TextAnchor.UpperCenter;
+        EditorUtility.SetDirty(grid);
+    }
+
+    private static void RepairPortraitTemplate(RectTransform template)
+    {
+        if (template == null)
+            return;
+
+        template.sizeDelta = new Vector2(156f, 112f);
+
+        LayoutElement layout = template.GetComponent<LayoutElement>();
+        if (layout != null)
+        {
+            layout.preferredWidth = 156f;
+            layout.preferredHeight = 112f;
+        }
+
+        SetChildAnchors(template, "Portrait",
+            new Vector2(0.055f, 0.27f), new Vector2(0.41f, 0.93f));
+        SetChildAnchors(template, "Initial",
+            new Vector2(0.055f, 0.27f), new Vector2(0.41f, 0.93f));
+        SetChildAnchors(template, "Part",
+            new Vector2(0.44f, 0.70f), new Vector2(0.97f, 0.95f));
+        SetChildAnchors(template, "Hp",
+            new Vector2(0.44f, 0.47f), new Vector2(0.97f, 0.72f));
+        SetChildAnchors(template, "Speed",
+            new Vector2(0.44f, 0.25f), new Vector2(0.97f, 0.49f));
+        SetChildAnchors(template, "Skill",
+            new Vector2(0.055f, 0.025f), new Vector2(0.79f, 0.25f));
+        SetChildAnchors(template, "DetailButton",
+            new Vector2(0.82f, 0.025f), new Vector2(0.97f, 0.245f));
+
+        SetNamedText(template, "Initial", 36f, TextAlignmentOptions.Center, false);
+        SetNamedText(template, "Part", 20f, TextAlignmentOptions.Left, false);
+        SetNamedText(template, "Hp", 16f, TextAlignmentOptions.Left, false);
+        SetNamedText(template, "Speed", 16f, TextAlignmentOptions.Left, false);
+        SetNamedText(template, "Skill", 15f, TextAlignmentOptions.Left, true);
+
+        TMP_Text detailText =
+            FindChildComponent<TMP_Text>(template, "DetailButton");
+        ConfigureText(detailText, 18f, TextAlignmentOptions.Center, false);
+    }
+
+    private static void RepairSkillLayer(
+        GameObject skillLayer,
+        BattleScreenModeController modeController,
+        BattleUIManager uiManager)
+    {
+        CanvasGroup group = skillLayer.GetComponent<CanvasGroup>();
+        if (group == null)
+            group = Undo.AddComponent<CanvasGroup>(skillLayer);
+
+        RectTransform surface =
+            FindChildRect(skillLayer.transform, "SkillDrawerPanel");
+
+        SkillSelectPanelUI panel =
+            skillLayer.GetComponentInChildren<SkillSelectPanelUI>(true);
+
+        if (surface == null || panel == null)
+            return;
+
+        SetAnchors(
+            surface,
+            new Vector2(0.015f, 0.065f),
+            new Vector2(0.67f, 0.90f));
+
+        SetNamedText(surface, "SlotHeaderText", 27f, TextAlignmentOptions.Left, false);
+        SetNamedText(surface, "HelpText", 19f, TextAlignmentOptions.Left, false);
+        SetNamedText(surface, "SelectionGuide", 21f, TextAlignmentOptions.Center, false);
+
+        foreach (SkillDrawerCategoryUI drawer in
+                 surface.GetComponentsInChildren<SkillDrawerCategoryUI>(true))
+        {
+            TMP_Text header =
+                drawer.GetComponentInChildren<TMP_Text>(true);
+            ConfigureText(header, 24f, TextAlignmentOptions.Center, false);
+
+            RectTransform card = FindChildRect(drawer.transform, "SkillCardTemplate");
+            if (card != null)
+            {
+                LayoutElement layout = card.GetComponent<LayoutElement>();
+                if (layout != null)
+                    layout.preferredHeight = 132f;
+
+                SetNamedText(card, "Title", 22f, TextAlignmentOptions.Left, true);
+                SetNamedText(card, "RollSummary", 18f, TextAlignmentOptions.Left, false);
+                SetNamedText(card, "Cost", 18f, TextAlignmentOptions.Right, false);
+                SetNamedText(card, "Reason", 16f, TextAlignmentOptions.Left, true);
+            }
+        }
+
+        SerializedObject panelObject = new(panel);
+        SetSerialized(panelObject, "canvasGroup", group);
+        SetSerialized(panelObject, "modeController", modeController);
+        SetSerialized(panelObject, "animatedRoot", surface);
+        SetSerialized(panelObject, "enterOffsetY", 120f);
+        SetSerialized(panelObject, "showDuration", 0.24f);
+        SetSerialized(panelObject, "hideDuration", 0.16f);
+        panelObject.ApplyModifiedPropertiesWithoutUndo();
+        EditorUtility.SetDirty(panel);
+
+        SerializedObject uiObject = new(uiManager);
+        SetSerialized(uiObject, "skillSelectPanel", panel);
+        uiObject.ApplyModifiedPropertiesWithoutUndo();
+        EditorUtility.SetDirty(uiManager);
+
+        group.alpha = 0f;
+        group.interactable = false;
+        group.blocksRaycasts = false;
+    }
+
+    private static void RepairDetailLayer(
+        GameObject detailLayer,
+        BattleScreenModeController modeController)
+    {
+        CanvasGroup group = detailLayer.GetComponent<CanvasGroup>();
+        if (group == null)
+            group = Undo.AddComponent<CanvasGroup>(detailLayer);
+
+        RectTransform surface =
+            FindChildRect(detailLayer.transform, "LimbusStyleDetailSurface");
+
+        BattleCharacterDetailPanelUI panel =
+            detailLayer.GetComponent<BattleCharacterDetailPanelUI>();
+
+        if (surface == null || panel == null)
+            return;
+
+        // 패널은 오른쪽 45%만 사용한다. 카메라 LookAt 오프셋과 함께
+        // 3D 캐릭터가 화면 왼쪽에 완전히 보이도록 한다.
+        SetAnchors(
+            surface,
+            new Vector2(0.54f, 0.035f),
+            new Vector2(0.988f, 0.91f));
+
+        SetNamedText(surface, "CharacterName", 34f, TextAlignmentOptions.Left, false, true);
+        SetNamedText(surface, "RoleName", 20f, TextAlignmentOptions.Left, false, true);
+        SetNamedText(surface, "HpText", 21f, TextAlignmentOptions.Left, false, true);
+        SetNamedText(surface, "ResourceText", 20f, TextAlignmentOptions.Right, false, true);
+        SetNamedText(surface, "SummaryText", 20f, TextAlignmentOptions.TopLeft, false, true);
+        SetNamedText(surface, "DetailTitle", 25f, TextAlignmentOptions.Left, false, true);
+        SetNamedText(surface, "DetailBody", 19f, TextAlignmentOptions.TopLeft, false, true);
+        SetNamedText(surface, "PopupTitle", 23f, TextAlignmentOptions.Left, false, true);
+        SetNamedText(surface, "PopupBody", 18f, TextAlignmentOptions.TopLeft, false, true);
+
+        SerializedObject so = new(panel);
+        SetSerialized(so, "canvasGroup", group);
+        SetSerialized(so, "modeController", modeController);
+        SetSerialized(so, "animatedSurface", surface);
+        SetSerialized(so, "slideDistance", 180f);
+        SetSerialized(so, "showDuration", 0.24f);
+        SetSerialized(so, "hideDuration", 0.18f);
+        SetSerialized(so, "horizontalFramingOffset", 1.15f);
+        so.ApplyModifiedPropertiesWithoutUndo();
+        EditorUtility.SetDirty(panel);
+
+        group.alpha = 0f;
+        group.interactable = false;
+        group.blocksRaycasts = false;
+    }
+
+    private static void RepairWorldPlateManager()
+    {
+        BattleWorldCharacterPlateManager manager =
+            FindSceneComponent<BattleWorldCharacterPlateManager>();
+
+        if (manager == null)
+            return;
+
+        SerializedObject so = new(manager);
+        SetSerialized(so, "worldOffset", new Vector3(0f, 0.48f, 0f));
+        SetSerialized(so, "canvasScale", 0.0062f);
+        so.ApplyModifiedPropertiesWithoutUndo();
+        EditorUtility.SetDirty(manager);
+    }
+
+    private static void ArchiveRequestedMenuProviders(bool includeSelf)
+    {
+        HashSet<string> paths =
+            new(KnownMenuProviderPaths, StringComparer.OrdinalIgnoreCase);
+
+        string[] guids = AssetDatabase.FindAssets("t:MonoScript", new[] { "Assets" });
+
+        foreach (string guid in guids)
+        {
+            string path = AssetDatabase.GUIDToAssetPath(guid);
+
+            if (string.IsNullOrWhiteSpace(path) ||
+                string.Equals(path, SelfPath, StringComparison.OrdinalIgnoreCase) ||
+                !path.EndsWith(".cs", StringComparison.OrdinalIgnoreCase))
+            {
+                continue;
+            }
+
+            string absolute = ToAbsolutePath(path);
+
+            if (!File.Exists(absolute))
+                continue;
+
+            string source;
+
+            try
+            {
+                source = File.ReadAllText(absolute);
+            }
+            catch
+            {
+                continue;
+            }
+
+            // 프로젝트마다 파일명이 다른 Folder Structure Tool도
+            // 실제 MenuItem 문자열을 기준으로 찾아 제거한다.
+            if (source.Contains("[MenuItem", StringComparison.Ordinal) &&
+                source.Contains("Folder Structure", StringComparison.OrdinalIgnoreCase))
+            {
+                paths.Add(path);
+            }
+        }
+
+        if (includeSelf)
+            paths.Add(SelfPath);
+
+        ArchiveScripts(paths, "UIRepairV32");
+    }
+
+    private static void ArchiveScripts(
+        IEnumerable<string> sourcePaths,
+        string groupName)
+    {
+        string timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
+        string archiveAssetDirectory =
+            $"Assets/_ProjectAbyssArchive/DisabledEditorTools/{groupName}_{timestamp}";
+        string archiveAbsoluteDirectory = ToAbsolutePath(archiveAssetDirectory);
+        Directory.CreateDirectory(archiveAbsoluteDirectory);
+
+        foreach (string sourcePath in sourcePaths.Distinct(StringComparer.OrdinalIgnoreCase))
+        {
+            if (string.IsNullOrWhiteSpace(sourcePath))
+                continue;
+
+            string absoluteSource = ToAbsolutePath(sourcePath);
+
+            if (!File.Exists(absoluteSource))
+                continue;
+
+            string destinationName =
+                Path.GetFileName(sourcePath) + ".disabled";
+            string absoluteDestination =
+                GetUniquePath(
+                    Path.Combine(archiveAbsoluteDirectory, destinationName));
+
+            File.Move(absoluteSource, absoluteDestination);
+
+            string sourceMeta = absoluteSource + ".meta";
+            if (File.Exists(sourceMeta))
+                File.Move(sourceMeta, absoluteDestination + ".meta");
+
+            Debug.Log(
+                $"[Battle UI Repair v3.2] Tool archived: {sourcePath}");
+        }
+    }
+
+    private static void BackupScene(Scene scene)
+    {
+        if (string.IsNullOrWhiteSpace(scene.path))
+            return;
+
+        string directory = "Assets/5. Scenes/_UI_Backups";
+        Directory.CreateDirectory(ToAbsolutePath(directory));
+
+        string name = Path.GetFileNameWithoutExtension(scene.path);
+        string backupPath =
+            $"{directory}/{name}_Before_UI_Repair_v3_2_{DateTime.Now:yyyyMMdd_HHmmss}.unity";
+
+        EditorSceneManager.SaveScene(scene, backupPath, true);
+        AssetDatabase.Refresh();
+    }
+
+    private static void SetTextRect(
+        RectTransform parent,
+        string name,
+        string value,
+        float fontSize,
+        Vector2 min,
+        Vector2 max,
+        TextAlignmentOptions alignment)
+    {
+        RectTransform rect = FindChildRect(parent, name);
+        if (rect == null)
+            return;
+
+        SetAnchors(rect, min, max);
+        TMP_Text text = rect.GetComponent<TMP_Text>();
+
+        if (text != null)
+        {
+            text.text = value;
+            ConfigureText(text, fontSize, alignment, false);
+        }
+    }
+
+    private static void SetNamedText(
+        Transform parent,
+        string name,
+        float size,
+        TextAlignmentOptions alignment,
+        bool ellipsis,
+        bool richText = false)
+    {
+        TMP_Text text = FindChildComponent<TMP_Text>(parent, name);
+        ConfigureText(text, size, alignment, ellipsis, richText);
+    }
+
+    private static void ConfigureText(
+        TMP_Text text,
+        float size,
+        TextAlignmentOptions alignment,
+        bool ellipsis,
+        bool richText = false)
+    {
+        if (text == null)
+            return;
+
+        text.richText = richText;
+        bool wrap = alignment == TextAlignmentOptions.TopLeft;
+        text.enableWordWrapping = wrap;
+        text.enableAutoSizing = false;
+        text.fontSize = size;
+        text.alignment = alignment;
+        text.overflowMode = wrap
+            ? TextOverflowModes.Overflow
+            : ellipsis
+                ? TextOverflowModes.Ellipsis
+                : TextOverflowModes.Overflow;
+        text.margin = Vector4.zero;
+        EditorUtility.SetDirty(text);
+    }
+
+    private static void SetChildAnchors(
+        Transform parent,
+        string childName,
+        Vector2 min,
+        Vector2 max)
+    {
+        RectTransform child = FindChildRect(parent, childName);
+        if (child != null)
+            SetAnchors(child, min, max);
+    }
+
+    private static void SetAnchors(
+        RectTransform rect,
+        Vector2 min,
+        Vector2 max)
+    {
+        if (rect == null)
+            return;
+
+        rect.anchorMin = min;
+        rect.anchorMax = max;
+        rect.offsetMin = Vector2.zero;
+        rect.offsetMax = Vector2.zero;
+        EditorUtility.SetDirty(rect);
+    }
+
+    private static RectTransform FindChildRect(
+        Transform parent,
+        string name)
+    {
+        if (parent == null)
+            return null;
+
+        Transform child = FindChild(parent, name)?.transform;
+        return child as RectTransform;
+    }
+
+    private static GameObject FindChild(
+        Transform parent,
+        string name)
+    {
+        if (parent == null)
+            return null;
+
+        foreach (Transform child in parent.GetComponentsInChildren<Transform>(true))
+        {
+            if (child != null && child.name == name)
+                return child.gameObject;
+        }
+
+        return null;
+    }
+
+    private static T FindChildComponent<T>(
+        Transform parent,
+        string objectName)
+        where T : Component
+    {
+        GameObject child = FindChild(parent, objectName);
+        return child != null ? child.GetComponent<T>() : null;
+    }
+
+    private static GameObject FindSceneObject(string objectName)
+    {
+        foreach (GameObject root in SceneManager.GetActiveScene().GetRootGameObjects())
+        {
+            foreach (Transform child in root.GetComponentsInChildren<Transform>(true))
+            {
+                if (child != null && child.name == objectName)
+                    return child.gameObject;
+            }
+        }
+
+        return null;
+    }
+
+    private static T FindSceneComponent<T>() where T : Component
+    {
+        return UnityEngine.Object.FindFirstObjectByType<T>(
+            FindObjectsInactive.Include);
+    }
+
+    private static T FindSceneComponentByName<T>(string objectName)
+        where T : Component
+    {
+        GameObject target = FindSceneObject(objectName);
+        return target != null ? target.GetComponent<T>() : null;
+    }
+
+    private static void SetSerialized<T>(
+        SerializedObject serializedObject,
+        string propertyName,
+        T value)
+    {
+        SerializedProperty property =
+            serializedObject.FindProperty(propertyName);
+
+        if (property == null)
+        {
+            Debug.LogWarning(
+                $"[Battle UI Repair v3.2] SerializedProperty not found: {propertyName}");
+            return;
+        }
+
+        switch (value)
+        {
+            case UnityEngine.Object objectValue:
+                property.objectReferenceValue = objectValue;
+                break;
+            case bool boolValue:
+                property.boolValue = boolValue;
+                break;
+            case int intValue:
+                property.intValue = intValue;
+                break;
+            case float floatValue:
+                property.floatValue = floatValue;
+                break;
+            case Vector2 vector2Value:
+                property.vector2Value = vector2Value;
+                break;
+            case Vector3 vector3Value:
+                property.vector3Value = vector3Value;
+                break;
+            default:
+                throw new NotSupportedException(
+                    $"Unsupported SerializedProperty value: {typeof(T).Name}");
+        }
+    }
+
+    private static string ToAbsolutePath(string assetPath)
+    {
+        string projectRoot = Directory.GetParent(Application.dataPath)?.FullName;
+
+        if (string.IsNullOrWhiteSpace(projectRoot))
+            throw new InvalidOperationException("Unity Project Root를 찾지 못했습니다.");
+
+        return Path.GetFullPath(
+            Path.Combine(projectRoot, assetPath.Replace('/', Path.DirectorySeparatorChar)));
+    }
+
+    private static string GetUniquePath(string path)
+    {
+        if (!File.Exists(path))
+            return path;
+
+        string directory = Path.GetDirectoryName(path) ?? string.Empty;
+        string fileName = Path.GetFileNameWithoutExtension(path);
+        string extension = Path.GetExtension(path);
+        int index = 1;
+
+        while (true)
+        {
+            string candidate =
+                Path.Combine(directory, $"{fileName}_{index}{extension}");
+
+            if (!File.Exists(candidate))
+                return candidate;
+
+            index++;
+        }
+    }
+}
+#endif
