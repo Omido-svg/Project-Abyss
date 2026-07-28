@@ -10,7 +10,9 @@ public class BattleAnimationDirector : MonoBehaviour
     [SerializeField] private SkillCutsceneDirector skillCutsceneDirector;
     [SerializeField] private BattleWorldFloatingTextManager floatingTextManager;
     [SerializeField] private DamageNumberManager damageNumberManager;
-    [SerializeField] private SkillVisualProfile defaultVisualProfile;
+    [SerializeField, Tooltip(
+        "이전 Scene 직렬화 호환용입니다. Timeline-only 런타임은 SkillDefinition의 전용 Visual만 사용합니다.")]
+    private SkillVisualProfile defaultVisualProfile;
     [SerializeField] private TargetArrowUI targetArrowUI;
     [SerializeField] private MomentumScrollbarUI momentumScrollbarUI;
     [SerializeField] private BattleVfxManager vfxManager;
@@ -52,7 +54,6 @@ public class BattleAnimationDirector : MonoBehaviour
     [SerializeField] private BattleClashRollPresentationUI clashRollPresentationUI;
 
     private bool isPlaying;
-    private Coroutine cameraShotRoutine;
     private BattleVisualRequestBuilder requestBuilder;
     private BattleVisualDamagePresenter damagePresenter;
     private BattleVisualPlaybackState activePlayback;
@@ -64,11 +65,6 @@ public class BattleAnimationDirector : MonoBehaviour
     private void Awake()
     {
         ResolveReferences();
-
-        BattleVisualValidator.ValidateProfile(
-            defaultVisualProfile,
-            this,
-            logWarnings: true);
 
         requestBuilder =
             new BattleVisualRequestBuilder(
@@ -218,7 +214,6 @@ public class BattleAnimationDirector : MonoBehaviour
         skillCutsceneDirector?.Cancel();
 
         StopAllCoroutines();
-        cameraShotRoutine = null;
 
         CompletePlayback(playback);
     }
@@ -341,295 +336,55 @@ public class BattleAnimationDirector : MonoBehaviour
         playback.AttackerFacing = views.AttackerFacing;
         playback.TargetFacing = views.TargetFacing;
 
-        if (CanPlayTimelineCutscene(
+        if (!HasRequiredTimelineCutscene(
                 visual,
-                SkillCutsceneSegment.Action))
+                SkillCutsceneSegment.Action,
+                request))
         {
-            yield return PlayTimelineCutsceneInternal(
-                playback,
-                request,
-                visual,
-                views,
-                isClashAttack: false,
-                exchangeIndex: -1,
-                isOneSided: false,
-                playbackSpeed: 1f,
-                manageActionLifecycle: true);
-
             yield break;
         }
-        
-        PlaySkillVfx(
+
+        yield return PlayTimelineCutsceneInternal(
             playback,
             request,
             visual,
-            BattleVfxTiming.OnActionStart);
-
-        if (logDebug)
-        {
-            Debug.Log(
-                $"[BattleAnimationDirector] PlayInternal 시작 / " +
-                $"Attacker={attacker?.Data.CharacterName}, " +
-                $"Target={target?.Data.CharacterName}, " +
-                $"ActionType={request.ActionType}, " +
-                $"HasHitFrameDamage={visual.HasHitFrameDamage}, " +
-                $"ApplyDamageIfNoHitFrame={visual.ApplyDamageIfNoHitFrame}, " +
-                $"ShowsClashPower={visual.ShowsClashPower}, " +
-                $"ClashSteps={request.ClashSteps?.Count ?? 0}, " +
-                $"HitDamages={request.HitDamages?.Count ?? 0}");
-        }
-
-        yield return ShowActionAnnouncement(
-            playback,
-            visual);
-            
-        StartCameraShots(
-            playback,
-            request,
-            visual,
-            SkillCameraShotTiming.OnActionStart);
-
-        BeginSkillCamera(
-            playback,
-            request,
-            visual);
-
-        TriggerCameraImpactPulse(
-            playback,
-            request,
-            visual,
-            SkillCameraImpactTiming.OnActionStart,
-            isClash: false);
-
-        if (visual.FaceEachOther &&
-            target != null &&
-            !(request.IsSelfTarget && visual.SkipFacingForSelfTarget))
-        {
-            playback.ShouldRestoreFacing = true;
-
-            yield return FaceEachOther(
-                views,
-                attacker,
-                target);
-        }
-
-        if (views.AttackerMover != null &&
-            target != null &&
-            !(request.IsSelfTarget && visual.SkipMovementForSelfTarget))
-        {
-            if (visual.MoveSettings != null)
-            {
-                CharacterActionStartPositionMode startPositionMode =
-                    visual.MoveSettings.StartPositionMode;
-
-                playback.ShouldRestoreAttackerPosition =
-                    visual.MoveSettings.UseMove &&
-                    startPositionMode != CharacterActionStartPositionMode.None &&
-                    startPositionMode != CharacterActionStartPositionMode.CurrentPosition;
-
-                yield return views.AttackerMover.MoveToActionStartPosition(
-                    attacker,
-                    target,
-                    request.TargetPart,
-                    visual.MoveSettings);
-            }
-            else if (visual.MovesToTarget)
-            {
-                playback.ShouldRestoreAttackerPosition = true;
-
-                yield return views.AttackerMover.MoveNearTarget(
-                    target,
-                    request.TargetPart);
-            }
-        }
-
-        yield return WaitSkillCameraArrive(
-            visual);
-
-        if (visual.ShowsClashPower)
-        {
-            PlaySkillVfx(
-                playback,
-                request,
-                visual,
-                BattleVfxTiming.OnClashRoll);
-
-            StartCameraShots(
-                playback,
-                request,
-                visual,
-                SkillCameraShotTiming.OnClashRoll);
-
-            TriggerCameraImpactPulse(
-                playback,
-                request,
-                visual,
-                SkillCameraImpactTiming.OnClashRoll,
-                isClash: true);
-
-            if (visual.ClashRollCameraLeadTime > 0f)
-            {
-                yield return new WaitForSeconds(
-                    visual.ClashRollCameraLeadTime);
-            }
-
-            yield return ShowClashPower(
-                playback,
-                request,
-                views,
-                visual);
-        }
-        
-        PlaySkillVfx(
-            playback,
-            request,
-            visual,
-            BattleVfxTiming.BeforeAttackAnimation);
-        
-        StartCameraShots(
-            playback,
-            request,
-            visual,
-            SkillCameraShotTiming.BeforeAttackAnimation);
-
-        if (visual.BeforeActionDelay > 0f)
-        {
-            yield return new WaitForSeconds(
-                visual.BeforeActionDelay);
-        }
-
-        int hitFrameCount = 0;
-
-        if (views.AttackerView != null)
-        {
-            yield return views.AttackerView.PlayAction(
-                request.ActionType,
-                onHitFrame: () =>
-                {
-                    int hitIndex =
-                        hitFrameCount;
-
-                    hitFrameCount++;
-
-                    ApplyHitFrame(
-                        playback,
-                        views,
-                        visual,
-                        hitIndex);
-                },
-                onEffectFrame: null);
-        }
-
-        ApplyMissingHitFrameFallback(
-            playback,
             views,
-            visual,
-            hitFrameCount);
-
-        views.AttackerView?.RefreshVisualState();
-        views.TargetView?.RefreshVisualState();
-        
-        PlaySkillVfx(
-            playback,
-            request,
-            visual,
-            BattleVfxTiming.AfterAction);
-
-        TriggerCameraImpactPulse(
-            playback,
-            request,
-            visual,
-            SkillCameraImpactTiming.AfterAction,
-            damage: request.FinalHpDamage,
-            isCritical: request.WasCritical,
-            brokePart: request.BrokePart,
-            wasKilled: request.WasKilled,
-            isClash: false);
-
-        if (request.WasKilled)
-        {
-            PlaySkillVfx(
-                playback,
-                request,
-                visual,
-                BattleVfxTiming.OnKill);
-        }
-
-        if (visual.AfterActionDelay > 0f)
-        {
-            yield return new WaitForSeconds(
-                visual.AfterActionDelay);
-        }
-
-        if (views.AttackerMover != null &&
-            playback.ShouldRestoreAttackerPosition)
-        {
-            if (visual.MoveSettings != null)
-            {
-                yield return views.AttackerMover.ReturnToDefaultPosition(
-                    visual.MoveSettings);
-            }
-            else if (visual.ReturnPositionAfterAction &&
-                    visual.MovesToTarget)
-            {
-                yield return views.AttackerMover.ReturnToDefaultPosition();
-            }
-        }
-
-        playback.ShouldRestoreAttackerPosition = false;
-
-        if (visual.ReturnFacingAfterAction &&
-            playback.ShouldRestoreFacing)
-        {
-            yield return ReturnFacing(
-                views);
-        }
-
-        playback.ShouldRestoreFacing = false;
-
-        StopCameraShotRoutine();
-
-        Coroutine afterActionCameraRoutine =
-            StartCameraShots(
-                playback,
-                request,
-                visual,
-                SkillCameraShotTiming.AfterAction);
-
-        if (afterActionCameraRoutine != null)
-            yield return afterActionCameraRoutine;
-
-        EndSkillCamera(
-            playback,
-            visual);
-
-        if (visual.AfterReturnDelay > 0f)
-        {
-            yield return new WaitForSeconds(
-                visual.AfterReturnDelay);
-        }
-
-        yield return HideActionAnnouncement(
-            playback,
-            visual);
-
-        yield return PlayMomentumRefreshAtVisualEnd(
-            playback);
+            isClashAttack: false,
+            exchangeIndex: -1,
+            isOneSided: false,
+            playbackSpeed: 1f,
+            manageActionLifecycle: true);
     }
     
-    private bool CanPlayTimelineCutscene(
+    private bool HasRequiredTimelineCutscene(
         SkillVisualDefinition visual,
-        SkillCutsceneSegment segment)
+        SkillCutsceneSegment segment,
+        BattleVisualRequest request)
     {
-        return
+        SkillCutsceneDefinition definition =
+            visual?.CutsceneDefinition;
+
+        bool valid =
             skillCutsceneDirector != null &&
-            visual != null &&
-            visual.UseTimelineCutscene &&
-            visual.CutsceneDefinition != null &&
-            visual.CutsceneDefinition
-                .HasTimeline(segment) &&
-            visual.CutsceneDefinition
-                .CameraRigPrefab != null;
+            definition != null &&
+            definition.HasCompleteTimelineSet &&
+            definition.HasTimeline(segment);
+
+        if (valid)
+            return true;
+
+        string missing = definition == null
+            ? "SkillCutsceneDefinition"
+            : string.Join(", ", definition.GetMissingRequirements());
+
+        Debug.LogError(
+            "[BattleAnimationDirector] Timeline-only 스킬 연출을 재생할 수 없습니다. " +
+            $"Skill={request?.SourceAction?.Skill?.SkillName ?? request?.VisualDefinition?.name ?? "UNKNOWN"}, " +
+            $"Segment={segment}, Missing={missing}. " +
+            "Tools/Project Abyss/Migration/Convert All Combat Skills To Timeline을 실행하세요.",
+            visual);
+
+        return false;
     }
 
     private IEnumerator
@@ -679,8 +434,7 @@ public class BattleAnimationDirector : MonoBehaviour
                 request.Target);
         }
 
-        if (manageActionLifecycle &&
-            definition.PrepareLegacyMovement &&
+        if (definition.PrepareMovement &&
             views.AttackerMover != null &&
             request.Target != null &&
             !request.IsSelfTarget)
@@ -688,7 +442,7 @@ public class BattleAnimationDirector : MonoBehaviour
             playback
                 .ShouldRestoreAttackerPosition =
                     definition
-                        .RestoreLegacyMovement;
+                        .RestoreMovement;
 
             if (visual.MoveSettings != null)
             {
@@ -706,22 +460,6 @@ public class BattleAnimationDirector : MonoBehaviour
                         request.Target,
                         request.TargetPart);
             }
-        }
-
-        if (definition.UseLegacyAutomaticVfx)
-        {
-            PlaySkillVfx(
-                playback,
-                request,
-                visual,
-                BattleVfxTiming.OnActionStart);
-
-            PlaySkillVfx(
-                playback,
-                request,
-                visual,
-                BattleVfxTiming
-                    .BeforeAttackAnimation);
         }
 
         yield return skillCutsceneDirector
@@ -765,12 +503,15 @@ public class BattleAnimationDirector : MonoBehaviour
                         }
 
                         case SkillCutsceneEventType.Vfx:
-                            PlaySkillVfx(
-                                playback,
-                                request,
-                                visual,
-                                eventClip.VfxTiming,
-                                eventClip.HitIndex);
+                            if (!definition.UseExplicitVisualFxTracks)
+                            {
+                                PlaySkillVfx(
+                                    playback,
+                                    request,
+                                    visual,
+                                    eventClip.VfxTiming,
+                                    eventClip.HitIndex);
+                            }
                             break;
 
                         case SkillCutsceneEventType
@@ -778,6 +519,37 @@ public class BattleAnimationDirector : MonoBehaviour
                             PlayHitCameraShake(
                                 visual);
                             break;
+
+                        case SkillCutsceneEventType
+                            .CameraImpactPulse:
+                        {
+                            int pulseHitIndex =
+                                eventClip.HitIndex >= 0
+                                    ? eventClip.HitIndex
+                                    : Mathf.Max(0, hitFrameCount - 1);
+
+                            int pulseDamage =
+                                damagePresenter != null
+                                    ? damagePresenter.GetDamageForHitIndex(
+                                        playback,
+                                        pulseHitIndex)
+                                    : 0;
+
+                            TriggerCameraImpactPulse(
+                                playback,
+                                request,
+                                visual,
+                                eventClip.CameraImpactTiming,
+                                pulseHitIndex,
+                                exchangeIndex,
+                                pulseDamage,
+                                request.WasCritical && pulseHitIndex == 0,
+                                request.BrokePart,
+                                request.WasKilled,
+                                isClashAttack,
+                                isOneSided);
+                            break;
+                        }
 
                         case SkillCutsceneEventType
                             .TargetHitReaction:
@@ -800,47 +572,11 @@ public class BattleAnimationDirector : MonoBehaviour
                     }
                 });
 
-        if (definition.ApplyMissingHitFallback)
-        {
-            ApplyMissingHitFrameFallback(
-                playback,
-                views,
-                visual,
-                hitFrameCount,
-                exchangeIndex:
-                    exchangeIndex,
-                isClash:
-                    isClashAttack,
-                isOneSided:
-                    isOneSided);
-        }
-
         views.AttackerView?
             .RefreshVisualState();
 
         views.TargetView?
             .RefreshVisualState();
-
-        if (definition.UseLegacyAutomaticVfx)
-        {
-            PlaySkillVfx(
-                playback,
-                request,
-                visual,
-                BattleVfxTiming.AfterAction);
-
-            if (request.WasKilled)
-            {
-                PlaySkillVfx(
-                    playback,
-                    request,
-                    visual,
-                    BattleVfxTiming.OnKill);
-            }
-        }
-
-        if (!manageActionLifecycle)
-            yield break;
 
         if (views.AttackerMover != null &&
             playback
@@ -872,6 +608,9 @@ public class BattleAnimationDirector : MonoBehaviour
 
         playback.ShouldRestoreFacing =
             false;
+
+        if (!manageActionLifecycle)
+            yield break;
 
         yield return HideActionAnnouncement(
             playback,
@@ -950,71 +689,9 @@ public class BattleAnimationDirector : MonoBehaviour
                 visual);
         }
 
-        StartCameraShots(
-            playback,
-            request,
-            visual,
-            SkillCameraShotTiming.OnActionStart);
-
-        BeginSkillCamera(
-            playback,
-            request,
-            visual);
-
-        TriggerCameraImpactPulse(
-            playback,
-            request,
-            visual,
-            SkillCameraImpactTiming.OnActionStart,
-            isClash: true);
-
-        if (visual.FaceEachOther &&
-            !(request.IsSelfTarget &&
-              visual.SkipFacingForSelfTarget))
-        {
-            playback.ShouldRestoreFacing = true;
-
-            yield return FaceEachOther(
-                rootViews,
-                request.Attacker,
-                request.Target);
-        }
-
-        if (rootViews.AttackerMover != null &&
-            !(request.IsSelfTarget &&
-              visual.SkipMovementForSelfTarget))
-        {
-            if (visual.MoveSettings != null)
-            {
-                CharacterActionStartPositionMode startPositionMode =
-                    visual.MoveSettings.StartPositionMode;
-
-                playback.ShouldRestoreAttackerPosition =
-                    visual.MoveSettings.UseMove &&
-                    startPositionMode !=
-                        CharacterActionStartPositionMode.None &&
-                    startPositionMode !=
-                        CharacterActionStartPositionMode.CurrentPosition;
-
-                yield return rootViews.AttackerMover
-                    .MoveToActionStartPosition(
-                        request.Attacker,
-                        request.Target,
-                        request.TargetPart,
-                        visual.MoveSettings);
-            }
-            else if (visual.MovesToTarget)
-            {
-                playback.ShouldRestoreAttackerPosition = true;
-
-                yield return rootViews.AttackerMover
-                    .MoveNearTarget(
-                        request.Target,
-                        request.TargetPart);
-            }
-        }
-
-        yield return WaitSkillCameraArrive(visual);
+        // 합 수치/UI는 전투 해석 결과를 보여주는 별도 Presentation이다.
+        // 실제 스킬 Animation / Camera / VFX / Hit 타이밍은 각 교환의
+        // ClashAttack Timeline만 담당한다.
 
         for (int i = 0;
              i < request.ClashExchanges.Count;
@@ -1057,34 +734,6 @@ public class BattleAnimationDirector : MonoBehaviour
             if (!exchange.IsOneSided &&
                 exchangeVisual.ShowsClashPower)
             {
-                PlaySkillVfx(
-                    playback,
-                    exchangeRequest,
-                    exchangeVisual,
-                    BattleVfxTiming.OnClashRoll);
-
-                StartCameraShots(
-                    playback,
-                    exchangeRequest,
-                    exchangeVisual,
-                    SkillCameraShotTiming.OnClashRoll);
-
-                TriggerCameraImpactPulse(
-                    playback,
-                    exchangeRequest,
-                    exchangeVisual,
-                    SkillCameraImpactTiming.OnClashRoll,
-                    exchangeIndex: exchange.ExchangeIndex,
-                    isClash: true,
-                    isOneSided: exchange.IsOneSided);
-
-                float leadTime =
-                    exchangeVisual.ClashRollCameraLeadTime /
-                    animationSpeed;
-
-                if (leadTime > 0f)
-                    yield return new WaitForSeconds(leadTime);
-
                 if (clashRollPresentationUI != null)
                 {
                     yield return clashRollPresentationUI
@@ -1160,17 +809,6 @@ public class BattleAnimationDirector : MonoBehaviour
             playback,
             request);
 
-        TriggerCameraImpactPulse(
-            playback,
-            request,
-            visual,
-            SkillCameraImpactTiming.OnClashFinalResult,
-            exchangeIndex:
-                request.ClashExchanges != null
-                    ? request.ClashExchanges.Count - 1
-                    : -1,
-            isClash: true);
-
         playback.ResetToRootRequest();
 
         if (logDebug)
@@ -1182,60 +820,8 @@ public class BattleAnimationDirector : MonoBehaviour
         rootViews.AttackerView?.RefreshVisualState();
         rootViews.TargetView?.RefreshVisualState();
 
-        PlaySkillVfx(
-            playback,
-            request,
-            visual,
-            BattleVfxTiming.AfterAction);
-
-        if (rootViews.AttackerMover != null &&
-            playback.ShouldRestoreAttackerPosition)
-        {
-            if (visual.MoveSettings != null)
-            {
-                yield return rootViews.AttackerMover
-                    .ReturnToDefaultPosition(
-                        visual.MoveSettings);
-            }
-            else if (visual.ReturnPositionAfterAction &&
-                     visual.MovesToTarget)
-            {
-                yield return rootViews.AttackerMover
-                    .ReturnToDefaultPosition();
-            }
-        }
-
-        playback.ShouldRestoreAttackerPosition = false;
-
-        if (visual.ReturnFacingAfterAction &&
-            playback.ShouldRestoreFacing)
-        {
-            yield return ReturnFacing(rootViews);
-        }
-
-        playback.ShouldRestoreFacing = false;
-
-        StopCameraShotRoutine();
-
-        Coroutine afterActionCameraRoutine =
-            StartCameraShots(
-                playback,
-                request,
-                visual,
-                SkillCameraShotTiming.AfterAction);
-
-        if (afterActionCameraRoutine != null)
-            yield return afterActionCameraRoutine;
-
-        EndSkillCamera(
-            playback,
-            visual);
-
-        if (visual.AfterReturnDelay > 0f)
-        {
-            yield return new WaitForSeconds(
-                visual.AfterReturnDelay);
-        }
+        // 각 ClashAttack Timeline이 자체 Return/Result Segment를 재생하고
+        // 이동·Facing 복구까지 마친다. 여기서는 합 UI만 닫는다.
 
         if (clashRollPresentationUI != null)
         {
@@ -1291,118 +877,26 @@ public class BattleAnimationDirector : MonoBehaviour
             playback,
             visual);
 
-        if (CanPlayTimelineCutscene(
+        if (!HasRequiredTimelineCutscene(
                 visual,
-                SkillCutsceneSegment.ClashAttack))
+                SkillCutsceneSegment.ClashAttack,
+                attackRequest))
         {
-            yield return PlayTimelineCutsceneInternal(
-                playback,
-                attackRequest,
-                visual,
-                views,
-                isClashAttack: true,
-                exchangeIndex:
-                    exchange?.ExchangeIndex ?? -1,
-                isOneSided:
-                    exchange?.IsOneSided == true,
-                playbackSpeed:
-                    animationSpeed,
-                manageActionLifecycle:
-                    false);
-
-            playback.ActiveActionView =
-                null;
-
-            playback.ActiveTargetView =
-                null;
-
+            playback.ActiveActionView = null;
+            playback.ActiveTargetView = null;
             yield break;
         }
 
-        PlaySkillVfx(
+        yield return PlayTimelineCutsceneInternal(
             playback,
             attackRequest,
             visual,
-            BattleVfxTiming.OnActionStart);
-
-        PlaySkillVfx(
-            playback,
-            attackRequest,
-            visual,
-            BattleVfxTiming.BeforeAttackAnimation);
-
-        StartCameraShots(
-            playback,
-            attackRequest,
-            visual,
-            SkillCameraShotTiming.BeforeAttackAnimation);
-
-        float beforeDelay =
-            visual.BeforeActionDelay /
-            Mathf.Max(0.01f, animationSpeed);
-
-        if (beforeDelay > 0f)
-            yield return new WaitForSeconds(beforeDelay);
-
-        int hitFrameCount = 0;
-
-        if (views.AttackerView != null)
-        {
-            yield return views.AttackerView.PlayAction(
-                attackRequest.ActionType,
-                onHitFrame: () =>
-                {
-                    int hitIndex = hitFrameCount;
-                    hitFrameCount++;
-
-                    ApplyHitFrame(
-                        playback,
-                        views,
-                        visual,
-                        hitIndex,
-                        exchangeIndex:
-                            exchange?.ExchangeIndex ?? -1,
-                        isClash: true,
-                        isOneSided:
-                            exchange?.IsOneSided == true);
-                },
-                onEffectFrame: null,
-                timeout: Mathf.Max(
-                    1f,
-                    5f / Mathf.Max(
-                        0.01f,
-                        animationSpeed)),
-                playbackSpeed: animationSpeed);
-        }
-
-        ApplyMissingHitFrameFallback(
-            playback,
             views,
-            visual,
-            hitFrameCount,
-            exchangeIndex:
-                exchange?.ExchangeIndex ?? -1,
-            isClash: true,
-            isOneSided:
-                exchange?.IsOneSided == true);
-
-        views.AttackerView?.RefreshVisualState();
-        views.TargetView?.RefreshVisualState();
-
-        PlaySkillVfx(
-            playback,
-            attackRequest,
-            visual,
-            BattleVfxTiming.AfterAction);
-
-        if (attackRequest.WasKilled)
-        {
-            PlaySkillVfx(
-                playback,
-                attackRequest,
-                visual,
-                BattleVfxTiming.OnKill);
-        }
+            isClashAttack: true,
+            exchangeIndex: exchange?.ExchangeIndex ?? -1,
+            isOneSided: exchange?.IsOneSided == true,
+            playbackSpeed: animationSpeed,
+            manageActionLifecycle: false);
 
         playback.ActiveActionView = null;
         playback.ActiveTargetView = null;
@@ -1755,7 +1249,6 @@ public class BattleAnimationDirector : MonoBehaviour
             switch (phase)
             {
                 case BattleVisualCleanupPhase.CameraRoutine:
-                    StopCameraShotRoutine();
                     cameraDirector?.CancelImpactPulse(
                         restoreLens: true);
                     break;
@@ -1943,215 +1436,8 @@ public class BattleAnimationDirector : MonoBehaviour
         }
     }
 
-    private void BeginSkillCamera(
-        BattleVisualPlaybackState playback,
-        BattleVisualRequest request,
-        SkillVisualDefinition visual)
-    {
-        if (request == null ||
-            visual == null)
-            return;
-
-        if (!visual.UsesTargetCamera)
-            return;
-
-        if (HasAnyCameraShots(visual.CameraDefinition))
-            return;
-
-        if (cameraDirector == null)
-            return;
-
-        if (request.Attacker == null ||
-            request.Target == null)
-            return;
-
-        // 자기 대상 도사림은 동일 캐릭터 두 개를 FocusBetween하지 않는다.
-        if (request.IsSelfTarget)
-            return;
-
-        if (playback != null)
-            playback.HasCameraActivity = true;
-
-        cameraDirector.FocusBetween(
-            request.Attacker,
-            request.Target);
-    }
-
-    private Coroutine StartCameraShots(
-        BattleVisualPlaybackState playback,
-        BattleVisualRequest request,
-        SkillVisualDefinition visual,
-        SkillCameraShotTiming timing)
-    {
-        if (request == null || visual == null)
-            return null;
-
-        if (cameraDirector == null)
-            return null;
-
-        if (visual.CameraDefinition == null)
-            return null;
-
-        if (!HasCameraShots(
-                visual.CameraDefinition,
-                timing))
-        {
-            return null;
-        }
-
-        StopCameraShotRoutine();
-
-        cameraShotRoutine =
-            StartCoroutine(
-                PlayCameraShots(
-                    request,
-                    visual,
-                    timing));
-
-        if (playback != null)
-            playback.HasCameraActivity = true;
-
-        return cameraShotRoutine;
-    }
-
-    private void StopCameraShotRoutine()
-    {
-        if (cameraShotRoutine == null)
-            return;
-
-        StopCoroutine(cameraShotRoutine);
-        cameraShotRoutine = null;
-    }
-
-    private static bool HasCameraShots(
-        SkillCameraDefinition definition,
-        SkillCameraShotTiming timing)
-    {
-        if (definition == null ||
-            definition.Shots == null)
-        {
-            return false;
-        }
-
-        foreach (SkillCameraShot shot in definition.Shots)
-        {
-            if (shot != null &&
-                shot.Timing == timing)
-            {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    private static bool HasAnyCameraShots(
-        SkillCameraDefinition definition)
-    {
-        if (definition == null ||
-            definition.Shots == null)
-        {
-            return false;
-        }
-
-        foreach (SkillCameraShot shot in definition.Shots)
-        {
-            if (shot != null)
-                return true;
-        }
-
-        return false;
-    }
-
-    private IEnumerator PlayCameraShots(
-        BattleVisualRequest request,
-        SkillVisualDefinition visual,
-        SkillCameraShotTiming timing)
-    {
-        if (request == null || visual == null)
-            yield break;
-
-        if (cameraDirector == null)
-            yield break;
-
-        if (visual.CameraDefinition == null)
-            yield break;
-
-        yield return cameraDirector.PlayShotsByTiming(
-            request,
-            visual.CameraDefinition,
-            timing);
-
-        cameraShotRoutine = null;
-    }
-
-    private IEnumerator WaitSkillCameraArrive(
-        SkillVisualDefinition visual)
-    {
-        if (visual == null)
-            yield break;
-
-        if (!visual.UsesTargetCamera)
-            yield break;
-
-        if (HasAnyCameraShots(visual.CameraDefinition))
-            yield break;
-
-        if (cameraDirector == null)
-            yield break;
-
-        yield return cameraDirector.WaitUntilArrived(
-            visual.CameraArriveTimeout);
-    }
-
-    private void EndSkillCamera(
-        BattleVisualPlaybackState playback,
-        SkillVisualDefinition visual)
-    {
-        if (visual == null)
-        {
-            if (playback != null)
-                playback.HasCameraActivity = false;
-
-            return;
-        }
-
-        if (cameraDirector == null)
-        {
-            if (playback != null)
-                playback.HasCameraActivity = false;
-
-            return;
-        }
-
-        if (HasAnyCameraShots(visual.CameraDefinition))
-        {
-            if (visual.CameraDefinition.ReturnToOverviewAfterAction)
-            {
-                cameraDirector.Return(
-                    visual.CameraDefinition);
-            }
-
-            if (playback != null)
-                playback.HasCameraActivity = false;
-
-            return;
-        }
-
-        if (!visual.ReturnCameraAfterAction)
-        {
-            if (playback != null)
-                playback.HasCameraActivity = false;
-
-            return;
-        }
-
-        cameraDirector.Return();
-
-        if (playback != null)
-            playback.HasCameraActivity = false;
-    }
-
+    // Camera 위치·전환은 Skill Camera Timeline Track만 담당한다.
+    // BattleCameraDirector는 Timeline Event가 명시적으로 요청한 Impact Pulse/Shake에만 사용한다.
 
     private void TriggerCameraImpactPulse(
         BattleVisualPlaybackState playback,
@@ -2214,83 +1500,6 @@ public class BattleAnimationDirector : MonoBehaviour
 
         cameraDirector.PlayShake(
             visual.HitShake);
-    }
-
-    private void ApplyMissingHitFrameFallback(
-        BattleVisualPlaybackState playback,
-        CharacterViewSet views,
-        SkillVisualDefinition visual,
-        int hitFrameCount,
-        int exchangeIndex = -1,
-        bool isClash = false,
-        bool isOneSided = false)
-    {
-        if (playback == null ||
-            visual == null)
-        {
-            return;
-        }
-
-        if (!visual.HasHitFrameDamage)
-            return;
-
-        int plannedHitCount =
-            playback.HitDamages.Count;
-
-        if (plannedHitCount <= hitFrameCount)
-        {
-            if (hitFrameCount > 0 ||
-                !visual.ApplyDamageIfNoHitFrame)
-            {
-                return;
-            }
-        }
-
-        int remainingDamage = 0;
-
-        for (int i = Mathf.Max(0, hitFrameCount);
-             i < plannedHitCount;
-             i++)
-        {
-            remainingDamage +=
-                Mathf.Max(
-                    0,
-                    playback.HitDamages[i]);
-        }
-
-        BattleVisualRequest request =
-            playback.Request;
-
-        if (plannedHitCount == 0)
-        {
-            remainingDamage =
-                Mathf.Max(
-                    0,
-                    request.GetDamageForHitIndex(0));
-        }
-
-        if (remainingDamage <= 0 &&
-            !visual.ApplyDamageIfNoHitFrame)
-        {
-            return;
-        }
-
-        Debug.LogWarning(
-            $"[BattleAnimationDirector] 계획된 HitFrame 일부가 없어 fallback 피격/데미지 연출을 적용합니다. " +
-            $"Attacker={request.Attacker?.Data.CharacterName}, " +
-            $"Target={request.Target?.Data.CharacterName}, " +
-            $"ActualHits={hitFrameCount}, PlannedHits={plannedHitCount}, " +
-            $"RemainingDamage={remainingDamage}");
-
-        ApplyHitFrame(
-            playback,
-            views,
-            visual,
-            Mathf.Max(0, hitFrameCount),
-            remainingDamage,
-            exchangeIndex,
-            isClash,
-            isOneSided);
     }
 
     private IEnumerator ShowActionAnnouncement(
@@ -2402,23 +1611,30 @@ public class BattleAnimationDirector : MonoBehaviour
                 $"HitIndex={hitIndex} / Damage={damage}");
         }
             
-        PlaySkillVfx(
-            playback,
-            request,
-            visual,
-            BattleVfxTiming.OnHitFrame,
-            hitIndex,
-            damage);
+        bool useExplicitVisualFx =
+            visual.CutsceneDefinition != null &&
+            visual.CutsceneDefinition.UseExplicitVisualFxTracks;
 
-        if (request.WasCritical && hitIndex == 0)
+        if (!useExplicitVisualFx)
         {
             PlaySkillVfx(
                 playback,
                 request,
                 visual,
-                BattleVfxTiming.OnCritical,
+                BattleVfxTiming.OnHitFrame,
                 hitIndex,
                 damage);
+
+            if (request.WasCritical && hitIndex == 0)
+            {
+                PlaySkillVfx(
+                    playback,
+                    request,
+                    visual,
+                    BattleVfxTiming.OnCritical,
+                    hitIndex,
+                    damage);
+            }
         }
 
         targetView.PlayHitRestart();
@@ -2431,42 +1647,11 @@ public class BattleAnimationDirector : MonoBehaviour
                 damage);
         }
 
-        StartCameraShots(
-            playback,
-            request,
-            visual,
-            SkillCameraShotTiming.OnHitFrame);
-
-        int plannedHitCount =
-            playback.HitDamages != null
-                ? playback.HitDamages.Count
-                : 0;
-
-        bool isTerminalHit =
-            plannedHitCount <= 1 ||
-            hitIndex >= plannedHitCount - 1;
-
-        TriggerCameraImpactPulse(
-            playback,
-            request,
-            visual,
-            SkillCameraImpactTiming.OnHitFrame,
-            hitIndex,
-            exchangeIndex,
-            damage,
-            request.WasCritical && hitIndex == 0,
-            request.BrokePart && isTerminalHit,
-            request.WasKilled && isTerminalHit,
-            isClash,
-            isOneSided);
-
         damagePresenter.ApplyHit(
             playback,
             hitIndex,
             damage);
 
-        PlayHitCameraShake(
-            visual);
     }
 
     private IEnumerator ShowClashPower(

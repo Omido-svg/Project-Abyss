@@ -947,10 +947,9 @@ public static class OlafCompleteCharacterBuilder
             idle,
             new OlafCutscenePlan(
                 durationFrames: 96,
-                hitFrames: new[] { 42, 60, 76 },
+                hitFrames: new[] { 26 },
                 slowMotionScale: 0.82f,
                 useLegacyMovement: true,
-                useLegacyAutomaticVfx: false,
                 cameraVariant: 0),
             log);
 
@@ -967,10 +966,9 @@ public static class OlafCompleteCharacterBuilder
             idle,
             new OlafCutscenePlan(
                 durationFrames: 126,
-                hitFrames: new[] { 64, 82, 100, 114 },
+                hitFrames: new[] { 27, 50 },
                 slowMotionScale: 0.72f,
                 useLegacyMovement: false,
-                useLegacyAutomaticVfx: true,
                 cameraVariant: 1),
             log);
 
@@ -987,10 +985,9 @@ public static class OlafCompleteCharacterBuilder
             idle,
             new OlafCutscenePlan(
                 durationFrames: 144,
-                hitFrames: new[] { 72, 88, 104, 120 },
+                hitFrames: new[] { 40 },
                 slowMotionScale: 0.78f,
                 useLegacyMovement: true,
-                useLegacyAutomaticVfx: false,
                 cameraVariant: 2),
             log);
 
@@ -1007,10 +1004,9 @@ public static class OlafCompleteCharacterBuilder
             idle,
             new OlafCutscenePlan(
                 durationFrames: 180,
-                hitFrames: new[] { 90, 110, 132, 154 },
+                hitFrames: new[] { 50 },
                 slowMotionScale: 0.58f,
                 useLegacyMovement: false,
-                useLegacyAutomaticVfx: false,
                 cameraVariant: 3),
             log);
     }
@@ -1055,10 +1051,9 @@ public static class OlafCompleteCharacterBuilder
             skill.name + "_Visual";
 
         visual.AllowAsProfileFallback = false;
-        visual.UseTimelineCutscene = true;
         visual.CutsceneDefinition = null;
         visual.HasHitFrameDamage = true;
-        visual.ApplyDamageIfNoHitFrame = true;
+        visual.ApplyDamageIfNoHitFrame = false;
         visual.ExpectedHitFrameCount =
             Mathf.Max(1, plan.HitFrames.Length);
         visual.HitDamageWeights =
@@ -1107,19 +1102,18 @@ public static class OlafCompleteCharacterBuilder
 
         definition.AttackerAnimation =
             attackerAnimation;
+        // 공격 대상은 런타임마다 달라지므로 특정 타깃 Hit Clip을
+        // 공격자 스킬 Timeline에 고정하지 않는다.
         definition.TargetAnimation =
-            targetHitAnimation;
+            null;
         definition.AuthoringFrameRate = 30d;
         definition.DefaultDurationFrames =
             plan.DurationFrames;
         definition.PrepareFacing = true;
-        definition.PrepareLegacyMovement =
+        definition.PrepareMovement =
             plan.UseLegacyMovement;
-        definition.RestoreLegacyMovement = true;
+        definition.RestoreMovement = true;
         definition.RestoreFacing = true;
-        definition.UseLegacyAutomaticVfx =
-            plan.UseLegacyAutomaticVfx;
-        definition.ApplyMissingHitFallback = true;
         definition.RestoreOverview = true;
         definition.RestoreTimeScale = true;
 
@@ -1236,15 +1230,9 @@ public static class OlafCompleteCharacterBuilder
             0d,
             timeline.fixedDuration);
 
-        EnsureAnimationTrackClip(
+        ClearAnimationTrackClips(
             timeline,
-            SkillCutsceneAssetBuilder.TargetTrackName,
-            targetAnimation,
-            plan.HitFrames[0] /
-            definition.FrameRate,
-            targetAnimation != null
-                ? targetAnimation.length
-                : 0.5d);
+            SkillCutsceneAssetBuilder.TargetTrackName);
 
         ConfigureCameraSequence(
             definition,
@@ -1731,26 +1719,8 @@ public static class OlafCompleteCharacterBuilder
                     hitIndex: index);
             }
 
-            AddConfiguredEvent(
-                definition,
-                timeline,
-                frame,
-                SkillCutsceneEventType.Vfx,
-                hitIndex: index,
-                vfxTiming:
-                    BattleVfxTiming.OnHitFrame);
-
-            AddConfiguredEvent(
-                definition,
-                timeline,
-                frame,
-                SkillCutsceneEventType.CameraShake);
-
-            AddConfiguredEvent(
-                definition,
-                timeline,
-                frame + 1,
-                SkillCutsceneEventType.TargetHitReaction);
+            // Hit Event 하나가 피격 모션, OnHit VFX, CameraShake,
+            // CameraImpactPulse를 원자적으로 실행한다. 별도 중복 Event를 만들지 않는다.
         }
 
         AddConfiguredEvent(
@@ -1913,6 +1883,44 @@ public static class OlafCompleteCharacterBuilder
 
         EditorUtility.SetDirty(track);
         EditorUtility.SetDirty(timeline);
+    }
+
+
+    private static void ClearAnimationTrackClips(
+        TimelineAsset timeline,
+        string trackName)
+    {
+        if (timeline == null ||
+            string.IsNullOrWhiteSpace(
+                trackName))
+        {
+            return;
+        }
+
+        AnimationTrack track =
+            timeline.GetOutputTracks()
+                .OfType<AnimationTrack>()
+                .FirstOrDefault(
+                    candidate =>
+                        string.Equals(
+                            candidate.name,
+                            trackName,
+                            StringComparison.OrdinalIgnoreCase));
+
+        if (track == null)
+            return;
+
+        foreach (TimelineClip clip in
+                 track.GetClips().ToArray())
+        {
+            timeline.DeleteClip(
+                clip);
+        }
+
+        EditorUtility.SetDirty(
+            track);
+        EditorUtility.SetDirty(
+            timeline);
     }
 
     private static void EnsureAnimationTrackClip(
@@ -2859,12 +2867,6 @@ public static class OlafCompleteCharacterBuilder
                 continue;
             }
 
-            if (!visual.UseTimelineCutscene)
-            {
-                issues.Add(
-                    $"{skill.name}: UseTimelineCutscene OFF");
-            }
-
             SkillCutsceneDefinition definition =
                 visual.CutsceneDefinition;
 
@@ -2875,8 +2877,13 @@ public static class OlafCompleteCharacterBuilder
                 continue;
             }
 
-            if (definition.CameraRigPrefab == null)
-                issues.Add($"{skill.name}: CameraRigPrefab 없음");
+            if (!definition.HasCompleteTimelineSet)
+            {
+                issues.Add(
+                    $"{skill.name}: 필수 Timeline 세트 누락 (" +
+                    string.Join(", ", definition.GetMissingRequirements()) +
+                    ")");
+            }
 
             foreach (SkillCutsceneSegment segment in
                      Enum.GetValues(
@@ -3589,7 +3596,6 @@ public static class OlafCompleteCharacterBuilder
             int[] hitFrames,
             float slowMotionScale,
             bool useLegacyMovement,
-            bool useLegacyAutomaticVfx,
             int cameraVariant)
         {
             DurationFrames =
@@ -3600,8 +3606,6 @@ public static class OlafCompleteCharacterBuilder
                 Mathf.Max(0.01f, slowMotionScale);
             UseLegacyMovement =
                 useLegacyMovement;
-            UseLegacyAutomaticVfx =
-                useLegacyAutomaticVfx;
             CameraVariant =
                 Mathf.Max(0, cameraVariant);
         }
@@ -3610,7 +3614,6 @@ public static class OlafCompleteCharacterBuilder
         public int[] HitFrames { get; }
         public float SlowMotionScale { get; }
         public bool UseLegacyMovement { get; }
-        public bool UseLegacyAutomaticVfx { get; }
         public int CameraVariant { get; }
     }
 }

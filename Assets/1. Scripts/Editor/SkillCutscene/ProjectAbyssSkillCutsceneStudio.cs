@@ -38,6 +38,9 @@ public sealed class ProjectAbyssSkillCutsceneStudio :
     private SkillCutsceneEventType newEventType =
         SkillCutsceneEventType.Hit;
 
+    private BattleVfxDefinition newVfxDefinition;
+    private SkillShaderEffectDefinition newShaderDefinition;
+
     private Vector2 scroll;
     private string lastMessage;
     private MessageType lastMessageType =
@@ -167,6 +170,9 @@ public sealed class ProjectAbyssSkillCutsceneStudio :
             DrawCameraAuthoringSection(
                 definition);
 
+            DrawVisualFxSection(
+                definition);
+
             DrawEventSection(
                 definition);
 
@@ -195,13 +201,13 @@ public sealed class ProjectAbyssSkillCutsceneStudio :
         EditorGUILayout.Space(4f);
 
         EditorGUILayout.LabelField(
-            "Project Abyss Skill Cutscene Studio v5.0",
+            "Project Abyss Skill Cutscene Studio v6.3 — Timeline Visual FX",
             EditorStyles.boldLabel);
 
         EditorGUILayout.HelpBox(
             "Unity Timeline을 시간축으로 사용하고 Project Abyss 전용 Camera/Event Track을 추가합니다.\n" +
             "스킬 전용 CM 카메라를 Scene View에서 자유롭게 배치하고 Ctrl+Shift+F로 구도를 맞춘 뒤, " +
-            "현재 Camera Clip에 Capture하면 됩니다.",
+            "현재 Camera Clip에 Capture하면 됩니다. VFX/Shader FX는 Visual FX 그룹의 전용 Track에서 직접 편집합니다.",
             MessageType.Info);
     }
 
@@ -292,15 +298,15 @@ public sealed class ProjectAbyssSkillCutsceneStudio :
         if (definition == null)
         {
             EditorGUILayout.HelpBox(
-                "SkillVisualDefinition, SkillCutsceneDefinition, Action Timeline, " +
+                "SkillVisualDefinition, SkillCutsceneDefinition, 필수 5-Segment Timeline, " +
                 "Camera Rig Prefab과 기본 Track을 한 번에 생성합니다.",
                 MessageType.None);
         }
 
         if (GUILayout.Button(
                 definition == null
-                    ? "Create Cutscene Assets"
-                    : "Repair / Complete Cutscene Assets",
+                    ? "Create Required Timeline Assets"
+                    : "Repair Complete Timeline Set",
                 GUILayout.Height(36f)))
         {
             SkillCutsceneDefinition created =
@@ -313,7 +319,7 @@ public sealed class ProjectAbyssSkillCutsceneStudio :
             if (created != null)
             {
                 lastMessage =
-                    "Cutscene Definition, Action Timeline, Camera Rig과 " +
+                    "Cutscene Definition, 5-Segment Timeline, Camera Rig과 " +
                     "기본 Track 구성을 확인했습니다.";
 
                 lastMessageType =
@@ -649,6 +655,234 @@ public sealed class ProjectAbyssSkillCutsceneStudio :
         EditorGUILayout.EndVertical();
     }
 
+    private void DrawVisualFxSection(
+        SkillCutsceneDefinition definition)
+    {
+        EditorGUILayout.BeginVertical("box");
+        EditorGUILayout.LabelField(
+            "4. Visual FX — VFX + Shader",
+            EditorStyles.boldLabel);
+
+        SerializedObject definitionObject = new SerializedObject(definition);
+        definitionObject.Update();
+        SerializedProperty explicitFx =
+            definitionObject.FindProperty("UseExplicitVisualFxTracks");
+
+        if (explicitFx != null)
+        {
+            EditorGUILayout.PropertyField(
+                explicitFx,
+                new GUIContent("Use Explicit Visual FX Tracks"));
+            definitionObject.ApplyModifiedProperties();
+        }
+
+        TimelineAsset timeline = definition.GetTimeline(segment);
+        ProjectAbyssSkillCutscenePreviewBinder binder = FindPreviewBinder();
+        double playhead = binder?.Director?.time ?? 0d;
+
+        newVfxDefinition =
+            (BattleVfxDefinition)EditorGUILayout.ObjectField(
+                "VFX Definition",
+                newVfxDefinition,
+                typeof(BattleVfxDefinition),
+                false);
+
+        using (new EditorGUI.DisabledScope(timeline == null))
+        {
+            if (GUILayout.Button(
+                    "Add VFX Clip At Playhead",
+                    GUILayout.Height(30f)))
+            {
+                TimelineClip clip = SkillCutsceneAssetBuilder.AddVfxClip(
+                    definition,
+                    timeline,
+                    playhead,
+                    newVfxDefinition);
+
+                lastMessage = clip != null
+                    ? "Visual FX/VFX Track에 Clip을 추가했습니다. " +
+                      "Clip Inspector에서 Binding, 위치, 이동, Scale, Playback Speed를 설정하세요."
+                    : "VFX Clip 추가에 실패했습니다.";
+                lastMessageType = clip != null
+                    ? MessageType.Info
+                    : MessageType.Error;
+                binder?.BindNow();
+            }
+        }
+
+        EditorGUILayout.Space(4f);
+        newShaderDefinition =
+            (SkillShaderEffectDefinition)EditorGUILayout.ObjectField(
+                "Shader Effect Definition",
+                newShaderDefinition,
+                typeof(SkillShaderEffectDefinition),
+                false);
+
+        using (new EditorGUI.DisabledScope(timeline == null))
+        {
+            if (GUILayout.Button(
+                    "Add Shader FX Clip At Playhead",
+                    GUILayout.Height(30f)))
+            {
+                TimelineClip clip = SkillCutsceneAssetBuilder.AddShaderFxClip(
+                    definition,
+                    timeline,
+                    playhead,
+                    newShaderDefinition);
+
+                lastMessage = clip != null
+                    ? "Visual FX/Shader Track에 Clip을 추가했습니다. " +
+                      "Clip Inspector에서 Attacker/Target, Renderer, Material Slot과 Strength Curve를 설정하세요."
+                    : "Shader FX Clip 추가에 실패했습니다.";
+                lastMessageType = clip != null
+                    ? MessageType.Info
+                    : MessageType.Error;
+                binder?.BindNow();
+            }
+        }
+
+        EditorGUILayout.Space(6f);
+        EditorGUILayout.BeginHorizontal();
+
+        using (new EditorGUI.DisabledScope(
+                   timeline == null || binder?.Context == null ||
+                   Selection.activeGameObject == null))
+        {
+            if (GUILayout.Button("Capture Selected Transform → VFX Start"))
+            {
+                CaptureResult result = CaptureSelectedVfxTransform(
+                    binder,
+                    timeline,
+                    captureEnd: false);
+                lastMessage = result.Message;
+                lastMessageType = result.Success
+                    ? MessageType.Info
+                    : MessageType.Error;
+            }
+
+            if (GUILayout.Button("Capture Selected Transform → VFX End"))
+            {
+                CaptureResult result = CaptureSelectedVfxTransform(
+                    binder,
+                    timeline,
+                    captureEnd: true);
+                lastMessage = result.Message;
+                lastMessageType = result.Success
+                    ? MessageType.Info
+                    : MessageType.Error;
+            }
+        }
+
+        EditorGUILayout.EndHorizontal();
+
+        EditorGUILayout.HelpBox(
+            "VFX Definition은 Effect Prefab과 Pool/Lifetime 기본값을 나타냅니다. " +
+            "스킬별 발생 위치, 회전, Scale, 이동 경로, 재생 속도와 Clip 수명은 VFX Timeline Clip에서 설정합니다.\n" +
+            "Shader Effect Definition은 제어할 Shader Property 계약만 나타냅니다. " +
+            "어느 캐릭터/Renderer/Material Slot에 언제 적용할지는 Shader FX Clip에서 설정합니다.\n" +
+            "Scene View에서 임시 VFX 또는 빈 GameObject를 원하는 위치에 놓고 Start/End Capture를 사용하면 좌표를 Clip에 저장할 수 있습니다.",
+            MessageType.Info);
+
+        EditorGUILayout.EndVertical();
+    }
+
+    public static CaptureResult CaptureSelectedVfxTransformToCurrentClip(
+        bool captureEnd)
+    {
+        ProjectAbyssSkillCutscenePreviewBinder binder = FindPreviewBinder();
+        SkillCutsceneDefinition definition = binder?.Definition;
+        TimelineAsset timeline = definition?.GetTimeline(binder.Segment);
+
+        return CaptureSelectedVfxTransform(
+            binder,
+            timeline,
+            captureEnd);
+    }
+
+    private static CaptureResult CaptureSelectedVfxTransform(
+        ProjectAbyssSkillCutscenePreviewBinder binder,
+        TimelineAsset timeline,
+        bool captureEnd)
+    {
+        if (binder?.Director == null || binder.Context == null || timeline == null)
+            return CaptureResult.Fail("열린 Preview Scene과 바인딩된 Timeline이 필요합니다.");
+
+        GameObject selected = Selection.activeGameObject;
+
+        if (selected == null)
+            return CaptureResult.Fail("Scene View에서 위치 기준으로 사용할 GameObject를 선택하세요.");
+
+        TimelineClip timelineClip = FindActiveVfxClip(
+            timeline,
+            binder.Director.time);
+
+        if (timelineClip?.asset is not SkillVfxTimelineClip clip)
+        {
+            return CaptureResult.Fail(
+                "현재 Playhead를 포함하는 VFX Clip이 없습니다. VFX Clip 범위 안으로 Playhead를 이동하세요.");
+        }
+
+        Undo.RecordObject(clip, "Capture Skill VFX Transform");
+
+        Transform basis = binder.Context.ResolveVisualFxBinding(
+            clip.Binding,
+            clip.AnchorKey);
+
+        Vector3 position;
+        Vector3 euler;
+
+        if (clip.Binding == SkillVisualFxBinding.World || basis == null)
+        {
+            position = selected.transform.position;
+            euler = selected.transform.rotation.eulerAngles;
+        }
+        else
+        {
+            position = basis.InverseTransformPoint(selected.transform.position);
+            euler = (Quaternion.Inverse(basis.rotation) *
+                     selected.transform.rotation).eulerAngles;
+        }
+
+        if (captureEnd)
+        {
+            clip.AnimateTransform = true;
+            clip.EndPosition = position;
+            clip.EndEuler = euler;
+            clip.EndScale = selected.transform.lossyScale;
+        }
+        else
+        {
+            clip.StartPosition = position;
+            clip.StartEuler = euler;
+            clip.StartScale = selected.transform.lossyScale;
+        }
+
+        EditorUtility.SetDirty(clip);
+        EditorUtility.SetDirty(timeline);
+        AssetDatabase.SaveAssets();
+        binder.BindNow();
+
+        return CaptureResult.Ok(
+            $"{selected.name} Transform을 활성 VFX Clip의 " +
+            $"{(captureEnd ? "End" : "Start")} 값으로 저장했습니다.");
+    }
+
+    private static TimelineClip FindActiveVfxClip(
+        TimelineAsset timeline,
+        double time)
+    {
+        if (timeline == null)
+            return null;
+
+        return SkillTimelineTrackUtility
+            .EnumerateAllTracks(timeline)
+            .OfType<SkillVfxTimelineTrack>()
+            .SelectMany(track => track.GetClips())
+            .Where(clip => clip.start <= time && time <= clip.end)
+            .OrderBy(clip => clip.start)
+            .LastOrDefault();
+    }
+
     private void DrawEventSection(
         SkillCutsceneDefinition definition)
     {
@@ -656,7 +890,7 @@ public sealed class ProjectAbyssSkillCutsceneStudio :
             "box");
 
         EditorGUILayout.LabelField(
-            "4. Battle Event Clips",
+            "5. Battle Event Clips",
             EditorStyles.boldLabel);
 
         TimelineAsset timeline =
@@ -705,10 +939,11 @@ public sealed class ProjectAbyssSkillCutsceneStudio :
         }
 
         EditorGUILayout.HelpBox(
-            "Hit: 계산된 피해·Damage Number·피격 처리를 해당 프레임에 표시\n" +
-            "Vfx: SkillVisualDefinition의 VFX Cue 실행\n" +
-            "CameraShake: 기존 Hit Shake 실행\n" +
-            "TargetHitReaction: 타깃 Hit 재생\n" +
+            "Hit: 계산된 피해·Damage Number와 현재 타깃의 Hit 상태를 해당 프레임에 재생\n" +
+            "Vfx: Legacy VFX Cue 호환 이벤트 — 새 제작에서는 Visual FX/VFX Track 사용\n" +
+            "CameraShake: Hit Shake 프리셋 실행\n" +
+            "CameraImpactPulse: SkillCameraDefinition의 FOV/Impulse 프리셋 실행\n" +
+            "TargetHitReaction: 피해 없는 추가 움찔만 필요할 때 사용(Hit에는 기본 반응 포함)\n" +
             "SetTimeScale / RestoreTimeScale: 구간 슬로모션\n" +
             "ReturnOverview: 기본 전투 카메라 복귀",
             MessageType.None);
@@ -723,7 +958,7 @@ public sealed class ProjectAbyssSkillCutsceneStudio :
             "box");
 
         EditorGUILayout.LabelField(
-            "5. Animation",
+            "6. Animation",
             EditorStyles.boldLabel);
 
         SerializedObject serialized =
@@ -754,23 +989,15 @@ public sealed class ProjectAbyssSkillCutsceneStudio :
 
         DrawProperty(
             serialized,
-            "PrepareLegacyMovement");
+            "PrepareMovement");
 
         DrawProperty(
             serialized,
-            "RestoreLegacyMovement");
+            "RestoreMovement");
 
         DrawProperty(
             serialized,
             "RestoreFacing");
-
-        DrawProperty(
-            serialized,
-            "UseLegacyAutomaticVfx");
-
-        DrawProperty(
-            serialized,
-            "ApplyMissingHitFallback");
 
         DrawProperty(
             serialized,
@@ -1220,6 +1447,15 @@ public sealed class ProjectAbyssSkillCutsceneStudio :
             issues.Add(
                 "Camera Rig Prefab이 없습니다.");
         }
+
+        if (!definition.HasCompleteTimelineSet)
+        {
+            issues.Add(
+                "필수 Timeline 세트 누락: " +
+                string.Join(
+                    ", ",
+                    definition.GetMissingRequirements()));
+        }
         else if (
             definition.CameraRigPrefab
                 .GetComponentInChildren<
@@ -1235,13 +1471,6 @@ public sealed class ProjectAbyssSkillCutsceneStudio :
                 ? null
                 : FindSkillVisual(
                     definition);
-
-        if (visual != null &&
-            !visual.UseTimelineCutscene)
-        {
-            issues.Add(
-                "SkillVisualDefinition.UseTimelineCutscene이 꺼져 있습니다.");
-        }
 
         foreach (TimelineAsset timeline
                  in EnumerateTimelines(

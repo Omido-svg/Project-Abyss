@@ -12,7 +12,8 @@ public enum SkillCutsceneEventType
     SetTimeScale = 4,
     RestoreTimeScale = 5,
     ReturnOverview = 6,
-    Custom = 7
+    Custom = 7,
+    CameraImpactPulse = 8
 }
 
 [Serializable]
@@ -32,6 +33,10 @@ public sealed class SkillCutsceneEventClip :
     [Header("VFX")]
     public BattleVfxTiming VfxTiming =
         BattleVfxTiming.OnHitFrame;
+
+    [Header("Camera Impact")]
+    public SkillCameraImpactTiming CameraImpactTiming =
+        SkillCameraImpactTiming.OnHitFrame;
 
     [Header("Time Scale")]
     [Min(0.01f)]

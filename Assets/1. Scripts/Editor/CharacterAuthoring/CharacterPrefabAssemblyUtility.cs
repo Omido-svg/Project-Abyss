@@ -6,8 +6,8 @@ using UnityEditor;
 using UnityEngine;
 
 /// <summary>
-/// Bundle을 실제 Character Prefab의 표준 Component/Hierarchy/Reference로 조립한다.
-/// 모델과 포인트의 위치는 생성하지 않으며, 누락된 빈 Transform은 0 위치로 만든다.
+/// Bundle을 Timeline-only Character Prefab의 표준 Component/Hierarchy/Reference로 조립한다.
+/// 공격 Animation Event Relay는 생성하지 않으며 Animator는 상태 표현용으로만 유지한다.
 /// </summary>
 public static class CharacterPrefabAssemblyUtility
 {
@@ -81,9 +81,6 @@ public static class CharacterPrefabAssemblyUtility
 
             Transform visualRoot = ResolveVisualRoot(character);
             Animator animator = character.GetComponentInChildren<Animator>(true);
-            AnimationEventRelay relay = animator != null
-                ? EnsureComponent<AnimationEventRelay>(animator.gameObject, report)
-                : null;
 
             Transform anchorsRoot = createStandardHierarchy
                 ? EnsureChild(visualRoot, "Anchors", report)
@@ -160,7 +157,6 @@ public static class CharacterPrefabAssemblyUtility
                     view,
                     character,
                     animator,
-                    relay,
                     anchors,
                     points);
 
@@ -232,8 +228,6 @@ public static class CharacterPrefabAssemblyUtility
 
         if (animator == null)
             result.Add("Animator가 없습니다.");
-        else if (animator.GetComponent<AnimationEventRelay>() == null)
-            result.Add("Animator Object에 AnimationEventRelay가 없습니다.");
 
         Transform visualRoot = ResolveVisualRoot(prefab);
 
@@ -299,7 +293,6 @@ public static class CharacterPrefabAssemblyUtility
         CharacterView view,
         Character character,
         Animator animator,
-        AnimationEventRelay relay,
         IReadOnlyDictionary<PartType, Transform> anchors,
         IReadOnlyDictionary<string, Transform> points)
     {
@@ -307,7 +300,6 @@ public static class CharacterPrefabAssemblyUtility
         so.Update();
         SetObject(so, "character", character);
         SetObject(so, "animator", animator);
-        SetObject(so, "eventRelay", relay);
 
         SerializedProperty anchorList = so.FindProperty("bodyPartAnchors");
 

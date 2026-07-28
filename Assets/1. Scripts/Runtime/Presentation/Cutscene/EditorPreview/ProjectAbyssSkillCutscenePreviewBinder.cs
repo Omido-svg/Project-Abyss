@@ -154,7 +154,8 @@ public sealed class
             definition.FrameRate,
             definition.RestoreOverview,
             definition.RestoreTimeScale,
-            null);
+            HandlePreviewTimelineEvent,
+            allowEditModeEvents: true);
 
         director.playableAsset =
             timeline;
@@ -174,6 +175,48 @@ public sealed class
 
         EditorUtility.SetDirty(
             director);
+    }
+
+    private void HandlePreviewTimelineEvent(
+        SkillCutsceneEventClip clip)
+    {
+        if (clip == null ||
+            (clip.EventType !=
+                 SkillCutsceneEventType.Hit &&
+             clip.EventType !=
+                 SkillCutsceneEventType.TargetHitReaction))
+        {
+            return;
+        }
+
+        CharacterView targetView =
+            target != null
+                ? target.GetComponentInChildren<
+                    CharacterView>(true)
+                : null;
+
+        if (targetView == null)
+            return;
+
+        targetView.PlayHitRestart();
+
+        // Edit Mode에서는 Animator가 자동으로 다음 프레임을 평가하지 않으므로
+        // 한 Authoring Frame만큼 직접 진행해 Hit Pose가 Scene/Game View에 보이게 한다.
+        Animator targetAnimator =
+            targetView.Animator;
+
+        if (!Application.isPlaying &&
+            targetAnimator != null &&
+            targetAnimator.isActiveAndEnabled)
+        {
+            targetAnimator.Update(
+                1f /
+                Mathf.Max(
+                    1f,
+                    (float)definition.FrameRate));
+        }
+
+        SceneView.RepaintAll();
     }
 
     private void BindWhenReady()

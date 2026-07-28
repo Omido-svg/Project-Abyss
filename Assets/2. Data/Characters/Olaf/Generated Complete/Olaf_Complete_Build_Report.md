@@ -1,6 +1,6 @@
 # Olaf Complete Character Build Report
 
-- Generated: 2026-07-28 09:31:42
+- Generated: 2026-07-28 13:50:28
 - Bundle: `Assets/2. Data/Characters/Olaf/Generated Complete/Olaf_Complete_CharacterBundle.asset`
 - Prefab: `Assets/2. Data/Characters/Olaf/Generated Complete/Prefabs/Olaf_Complete.prefab`
 - Preview Target: `Assets/2. Data/Characters/Olaf/Generated Complete/Prefabs/EliteEnemy_CutscenePreview.prefab`

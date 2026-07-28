@@ -7,7 +7,11 @@ using UnityEngine;
     menuName = "Battle/Visual/Skill Camera Definition")]
 public class SkillCameraDefinition : ScriptableObject
 {
-    [Header("Shot Timeline")]
+    [Header("Legacy Shot Migration Source")]
+    [Tooltip(
+        "Timeline 마이그레이션이 기존 Shot을 Camera Clip으로 옮길 때만 사용합니다. " +
+        "런타임과 신규 Authoring에서는 사용하지 않습니다.")]
+    [HideInInspector]
     public List<SkillCameraShot> Shots = new();
 
     [Header("Impact Zoom Pulses")]
@@ -16,16 +20,18 @@ public class SkillCameraDefinition : ScriptableObject
         "위에서부터 검사하며 조건을 처음 만족한 Pulse 하나를 재생합니다.")]
     public List<SkillCameraImpactPulse> ImpactPulses = new();
 
-    [Header("Return")]
+    [Header("Legacy Return Migration Source")]
+    [HideInInspector]
     public bool ReturnToOverviewAfterAction = true;
 
-    [Header("Return Blend")]
+    [HideInInspector]
     public bool OverrideReturnBrainBlend = true;
 
+    [HideInInspector]
     public CinemachineBlendDefinition.Styles ReturnBlendStyle =
         CinemachineBlendDefinition.Styles.EaseOut;
 
-    [Min(0f)]
+    [HideInInspector, Min(0f)]
     public float ReturnBlendTime = 0.25f;
 
     public SkillCameraImpactPulse FindImpactPulse(

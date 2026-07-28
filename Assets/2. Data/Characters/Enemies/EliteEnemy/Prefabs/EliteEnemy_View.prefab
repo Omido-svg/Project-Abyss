@@ -455,7 +455,6 @@ GameObject:
   m_Component:
   - component: {fileID: 8229574441040363326}
   - component: {fileID: 3103776755250615873}
-  - component: {fileID: 8515434171656967799}
   - component: {fileID: 1215243484220146694}
   m_Layer: 0
   m_Name: EliteEnemy_View
@@ -504,18 +503,6 @@ Animator:
   m_AllowConstantClipSamplingOptimization: 1
   m_KeepAnimatorStateOnDisable: 0
   m_WriteDefaultValuesOnDisable: 0
---- !u!114 &8515434171656967799
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1451491642465541091}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: aef701c4dfff52649b1070bcafe238b7, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!114 &1215243484220146694
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -528,8 +515,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b8c950b7064a28d49984264a980ae964, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  targetRenderer: {fileID: 0}
-  outlineMaterial: {fileID: 0}
+  outlineMaterialTemplate: {fileID: 0}
+  outlineColor: {r: 0.2, g: 0.85, b: 1, a: 1}
+  outlineWidth: 0.025
+  targetRenderers: []
 --- !u!1 &1517930174646566310
 GameObject:
   m_ObjectHideFlags: 0

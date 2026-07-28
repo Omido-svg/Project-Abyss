@@ -224,7 +224,8 @@ public sealed class SkillCutsceneDirector :
             definition.FrameRate,
             definition.RestoreOverview,
             definition.RestoreTimeScale,
-            onEvent);
+            onEvent,
+            request);
 
         playableDirector.extrapolationMode =
             DirectorWrapMode.None;

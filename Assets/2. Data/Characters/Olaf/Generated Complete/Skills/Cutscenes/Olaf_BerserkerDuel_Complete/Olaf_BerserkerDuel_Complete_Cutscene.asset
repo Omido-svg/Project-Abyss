@@ -17,17 +17,16 @@ MonoBehaviour:
   PartBreakTimeline: {fileID: 11400000, guid: 73ae315da8fa4454e82c1f2528ed4656, type: 2}
   KillTimeline: {fileID: 11400000, guid: 4b9f427819750fb4c825470419902a80, type: 2}
   ReturnTimeline: {fileID: 11400000, guid: ad78d06640ef0c946b2cc3309d24a4a2, type: 2}
-  CameraRigPrefab: {fileID: 1082654032705550855, guid: 1db7d5cd3575ff04e9515dadbd56b4ed, type: 3}
+  CameraRigPrefab: {fileID: 2536571788550024408, guid: 1db7d5cd3575ff04e9515dadbd56b4ed, type: 3}
   AttackerAnimation: {fileID: 7400000, guid: 6f81679836ff8be47a1c9dc56ea787d4, type: 2}
-  TargetAnimation: {fileID: 7400000, guid: 599a42bf304c25a4fae9cb811956b0f6, type: 2}
+  TargetAnimation: {fileID: 0}
   AuthoringFrameRate: 30
   DefaultDurationFrames: 126
   PrepareFacing: 1
-  PrepareLegacyMovement: 0
-  RestoreLegacyMovement: 1
+  PrepareMovement: 0
+  RestoreMovement: 1
   RestoreFacing: 1
-  UseLegacyAutomaticVfx: 1
-  ApplyMissingHitFallback: 1
+  UseExplicitVisualFxTracks: 1
   RestoreOverview: 1
   RestoreTimeScale: 1
   previewScenePath: 

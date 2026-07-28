@@ -1,0 +1,30 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 500e8a6276f78a94e9b03147ee7cd830, type: 3}
+  m_Name: Olaf_Showcase_HitBurst
+  m_EditorClassIdentifier: 
+  EffectPrefab: {fileID: 3591034732102903412, guid: 43ca10b1449f71c498ca80739595f9e9, type: 3}
+  Lifetime: 0.45
+  DestroyAfterLifetime: 1
+  UseUnscaledLifetime: 0
+  UsePooling: 1
+  PrewarmCount: 2
+  MaxPoolSize: 20
+  PositionOffset: {x: 0, y: 0, z: 0}
+  RotationOffset: {x: 0, y: 0, z: 0}
+  Scale: {x: 1, y: 1, z: 1}
+  FollowMode: 0
+  Color: {r: 1, g: 0.72, b: 0.12, a: 1}
+  Intensity: 1
+  Radius: 1.2
+  PlayEventName: OnPlay
+  LogSpawn: 0

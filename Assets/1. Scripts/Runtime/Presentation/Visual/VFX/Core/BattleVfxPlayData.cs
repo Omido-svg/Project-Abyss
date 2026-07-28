@@ -16,4 +16,5 @@ public class BattleVfxPlayData
     public Color Color;
     public float Intensity;
     public float Radius;
+    public float PlaybackSpeed = 1f;
 }

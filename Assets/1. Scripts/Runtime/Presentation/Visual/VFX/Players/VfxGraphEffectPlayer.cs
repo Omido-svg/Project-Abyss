@@ -25,6 +25,10 @@ public class VfxGraphEffectPlayer : MonoBehaviour, IBattleVfxPlayable
         BattleVfxDefinition definition =
             playData.Definition;
 
+        visualEffect.playRate = Mathf.Max(
+            0.01f,
+            playData.PlaybackSpeed);
+
         if (!string.IsNullOrEmpty(colorProperty) &&
             visualEffect.HasVector4(colorProperty))
         {

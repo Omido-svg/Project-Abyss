@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a85a262093fed2b45a6f05cb3a256be9, type: 3}
   m_Name: Olaf_MadnessFlurry_Complete
   m_EditorClassIdentifier: 
-  skillId: 30d956740da242c08650ae8a75b4a26e
+  skillId: 2acdfe2b99684c4cb2c54534f6f6068a
   SkillName: "\uAD11\uAE30\uC758 \uB09C\uB3C4\uC9C8"
   ActionType: 2
   BasePower: 3

@@ -18,6 +18,11 @@ MonoBehaviour:
   BasePower: 5
   CanBreakPart: 0
   GainPrestige: 1
+  AttackWeight:
+    Weight: 1
+    SecondaryPartMode: 0
+    SecondaryDamageMultiplier: 1
+    AllowBrokenSecondaryParts: 1
   Description: "\uBE60\uB978 \uACF5\uACA9 \uC0AC\uC774\uC5D0 \uD55C \uBC88\uC758
     \uBC29\uC5B4 \uAD74\uB9BC\uC744 \uC11E\uC5B4 \uB2E4\uC74C \uD0C0\uACA9\uC744
     \uC774\uC5B4\uAC00\uB294 \uC62C\uB77C\uD504\uC758 \uAE30\uBCF8 \uACF5\uACA9\uC785\uB2C8\uB2E4."
@@ -32,6 +37,8 @@ MonoBehaviour:
     CoinBackPower: 5
     CoinFrontPower: 6
     CoinFrontIsCritical: 0
+    SlotMinimum: 1
+    SlotMaximum: 9
     ChinchiroHifumiPower: -4
     ChinchiroBlankPower: 3
     ChinchiroMokuPower: 7
@@ -50,6 +57,8 @@ MonoBehaviour:
     CoinBackPower: 5
     CoinFrontPower: 6
     CoinFrontIsCritical: 0
+    SlotMinimum: 1
+    SlotMaximum: 9
     ChinchiroHifumiPower: -4
     ChinchiroBlankPower: 3
     ChinchiroMokuPower: 7
@@ -68,6 +77,8 @@ MonoBehaviour:
     CoinBackPower: 5
     CoinFrontPower: 6
     CoinFrontIsCritical: 0
+    SlotMinimum: 1
+    SlotMaximum: 9
     ChinchiroHifumiPower: -4
     ChinchiroBlankPower: 3
     ChinchiroMokuPower: 7
@@ -114,4 +125,4 @@ MonoBehaviour:
   ConsumeAllCustomResource: 0
   OverridePrestigeUsePolicy: 0
   PrestigeUsePolicy: 1
-  VisualDefinition: {fileID: 11400000, guid: 5ec90a471f7cf1c43ba5e4937771e69b, type: 2}
+  VisualDefinition: {fileID: 11400000, guid: 365fe316a9fc0b7498c4ffd0f190f559, type: 2}

@@ -1,0 +1,31 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fee421b23d5d88b4dbbdbeda866a400f, type: 3}
+  m_Name: "\uAD11\uAE30\uC758 \uB09C\uB3C4\uC9C8(\uB3C4\uC0AC\uB9BC)_Cutscene"
+  m_EditorClassIdentifier: 
+  ActionTimeline: {fileID: 11400000, guid: b46f32b6f16d4a64e94860e950954e74, type: 2}
+  ClashAttackTimeline: {fileID: 11400000, guid: 587ef862744f20e40ad01da73d4ec036, type: 2}
+  PartBreakTimeline: {fileID: 11400000, guid: 6fabc4f0b8fd4e84c8445766b7b801c7, type: 2}
+  KillTimeline: {fileID: 11400000, guid: c835d59f0f0bce64382bd085444230b9, type: 2}
+  ReturnTimeline: {fileID: 11400000, guid: 17e98c2125d89874aad876554ac03159, type: 2}
+  CameraRigPrefab: {fileID: 959217233566835, guid: d36a03cc83219b943840ae75e3af50fe, type: 3}
+  AttackerAnimation: {fileID: 7400000, guid: 7ecd664a2a80703468c54eb901cfcc57, type: 2}
+  TargetAnimation: {fileID: 0}
+  AuthoringFrameRate: 30
+  DefaultDurationFrames: 120
+  PrepareFacing: 1
+  PrepareMovement: 0
+  RestoreMovement: 1
+  RestoreFacing: 1
+  RestoreOverview: 1
+  RestoreTimeScale: 1
+  previewScenePath: 

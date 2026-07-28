@@ -49,9 +49,7 @@ public sealed class SkillCameraDefinitionEditor :
         serializedObject.Update();
 
         DrawCameraHelpHeader();
-        DrawShotTimeline();
         DrawImpactPulseSection();
-        DrawReturnSection();
 
         serializedObject.ApplyModifiedProperties();
     }
@@ -59,9 +57,9 @@ public sealed class SkillCameraDefinitionEditor :
     private void DrawCameraHelpHeader()
     {
         EditorGUILayout.HelpBox(
-            "Shot은 카메라의 위치·회전과 구도 전환을 담당합니다.\n" +
-            "Impact Zoom Pulse는 현재 Shot을 유지한 채 Lens FOV만 매우 짧게 " +
-            "줌인/줌아웃하여 합 굴림과 타격감을 강화합니다.",
+            "카메라 위치·전환·Blend는 Skill Cutscene Studio와 Timeline Camera Track에서 편집합니다.\n" +
+            "이 에셋에서는 Timeline의 CameraImpactPulse Event Clip이 호출할 FOV/Impulse 프리셋만 편집합니다. " +
+            "기존 Shots/Return 값은 마이그레이션 원본으로 숨겨져 있으며 런타임에서 사용되지 않습니다.",
             MessageType.Info);
     }
 
@@ -92,7 +90,7 @@ public sealed class SkillCameraDefinitionEditor :
         showImpactPulses =
             EditorGUILayout.BeginFoldoutHeaderGroup(
                 showImpactPulses,
-                "2. Impact Zoom Pulses");
+                "Camera Impact Pulses");
 
         if (!showImpactPulses)
         {

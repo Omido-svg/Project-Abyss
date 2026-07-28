@@ -61,7 +61,7 @@ public class ShaderMaterialEffectPlayer : MonoBehaviour, IBattleVfxPlayable
             if (faceCamera && facingCamera == null)
                 facingCamera = Camera.main;
 
-            elapsed += Time.deltaTime;
+            elapsed += Time.deltaTime * Mathf.Max(0.01f, playData.PlaybackSpeed);
 
             float t =
                 Mathf.Clamp01(

@@ -1,0 +1,33 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4d5e1197d6e5ebd4a9b1627dbe36612a, type: 3}
+  m_Name: Olaf_Showcase_RageGlow
+  m_EditorClassIdentifier: 
+  FloatProperties:
+  - PropertyName: _Smoothness
+    TargetValue: 0.85
+    BlendMode: 0
+  - PropertyName: _Glossiness
+    TargetValue: 0.85
+    BlendMode: 0
+  ColorProperties:
+  - PropertyName: _BaseColor
+    TargetValue: {r: 1, g: 0.16, b: 0.035, a: 1}
+    BlendMode: 0
+  - PropertyName: _Color
+    TargetValue: {r: 1, g: 0.16, b: 0.035, a: 1}
+    BlendMode: 0
+  - PropertyName: _EmissionColor
+    TargetValue: {r: 2.8, g: 0.18, b: 0.025, a: 1}
+    BlendMode: 1
+  VectorProperties: []
+  IgnoreMissingProperties: 1

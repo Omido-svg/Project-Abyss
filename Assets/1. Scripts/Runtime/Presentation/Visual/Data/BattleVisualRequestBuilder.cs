@@ -1,13 +1,15 @@
+using UnityEngine;
 using System.Collections.Generic;
 
 public class BattleVisualRequestBuilder
 {
-    private readonly SkillVisualProfile defaultVisualProfile;
+    // 생성자 시그니처는 기존 호출부 호환을 위해 유지합니다.
+    // Timeline-only 정책에서는 Profile fallback을 사용하지 않습니다.
 
     public BattleVisualRequestBuilder(
         SkillVisualProfile defaultVisualProfile)
     {
-        this.defaultVisualProfile = defaultVisualProfile;
+        _ = defaultVisualProfile;
     }
 
     public BattleVisualRequest Build(
@@ -24,6 +26,15 @@ public class BattleVisualRequestBuilder
 
         SkillVisualDefinition visualDefinition =
             ResolveVisualDefinition(action);
+
+        if (visualDefinition == null ||
+            !visualDefinition.HasTimelineCutscene)
+        {
+            Debug.LogError(
+                "[BattleVisualRequestBuilder] Timeline-only 요청 생성을 중단합니다. " +
+                $"Skill={action.Skill?.SkillName ?? "NULL"}");
+            return null;
+        }
 
         BattleVisualRequest request =
             BattleVisualRequest.FromAction(action, visualDefinition);
@@ -79,6 +90,16 @@ public class BattleVisualRequestBuilder
         SkillVisualDefinition sequenceVisual =
             ResolveVisualDefinition(first) ??
             ResolveVisualDefinition(second);
+
+        if (sequenceVisual == null ||
+            !sequenceVisual.HasTimelineCutscene)
+        {
+            Debug.LogError(
+                "[BattleVisualRequestBuilder] 합 Timeline 요청 생성을 중단합니다. " +
+                $"First={first.Skill?.SkillName ?? "NULL"}, " +
+                $"Second={second?.Skill?.SkillName ?? "NULL"}");
+            return null;
+        }
 
         BattleVisualRequest request =
             BattleVisualRequest.FromAction(
@@ -335,9 +356,13 @@ public class BattleVisualRequestBuilder
             return visualSkill.VisualDefinition;
         }
 
-        if (defaultVisualProfile == null || action.Skill == null)
-            return null;
+        Debug.LogError(
+            "[BattleVisualRequestBuilder] Timeline-only 정책 위반: " +
+            "모든 전투 스킬은 전용 SkillVisualDefinition과 " +
+            "SkillCutsceneDefinition을 가져야 합니다. " +
+            $"Skill={action.Skill?.SkillName ?? "NULL"}. " +
+            "Tools/Project Abyss/Migration/Convert All Combat Skills To Timeline을 실행하세요.");
 
-        return defaultVisualProfile.GetDefault(action.Skill.ActionType);
+        return null;
     }
 }

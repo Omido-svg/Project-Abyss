@@ -28,6 +28,10 @@ public sealed class SkillCutsceneRuntimeContext :
     private Character attacker;
     private Character target;
     private BodyPart targetPart;
+    private BattleVisualRequest request;
+
+    private SkillTimelineVfxController timelineVfxController;
+    private SkillTimelineShaderController timelineShaderController;
 
     private Transform combatFrame;
     private Transform midpoint;
@@ -49,6 +53,8 @@ public sealed class SkillCutsceneRuntimeContext :
         SkillCutsceneEventClip>
         eventCallback;
 
+    private bool allowEditModeEventCallback;
+
     public Character Attacker =>
         attacker;
 
@@ -57,6 +63,9 @@ public sealed class SkillCutsceneRuntimeContext :
 
     public BodyPart TargetPart =>
         targetPart;
+
+    public BattleVisualRequest Request =>
+        request;
 
     public SkillCutsceneCameraRig CameraRig =>
         cameraRig;
@@ -88,7 +97,35 @@ public sealed class SkillCutsceneRuntimeContext :
         bool shouldRestoreTimeScale,
         Action<
             SkillCutsceneEventClip>
-            onEvent)
+            onEvent,
+        bool allowEditModeEvents = false)
+    {
+        Configure(
+            rig,
+            newAttacker,
+            newTarget,
+            newTargetPart,
+            frameRate,
+            shouldRestoreOverview,
+            shouldRestoreTimeScale,
+            onEvent,
+            null,
+            allowEditModeEvents);
+    }
+
+    public void Configure(
+        SkillCutsceneCameraRig rig,
+        Character newAttacker,
+        Character newTarget,
+        BodyPart newTargetPart,
+        double frameRate,
+        bool shouldRestoreOverview,
+        bool shouldRestoreTimeScale,
+        Action<
+            SkillCutsceneEventClip>
+            onEvent,
+        BattleVisualRequest visualRequest,
+        bool allowEditModeEvents = false)
     {
         cameraRig =
             rig;
@@ -101,6 +138,9 @@ public sealed class SkillCutsceneRuntimeContext :
 
         targetPart =
             newTargetPart;
+
+        request =
+            visualRequest;
 
         authoringFrameRate =
             Mathf.Max(
@@ -116,6 +156,9 @@ public sealed class SkillCutsceneRuntimeContext :
         eventCallback =
             onEvent;
 
+        allowEditModeEventCallback =
+            allowEditModeEvents;
+
         if (!capturedTimeScale)
         {
             originalTimeScale =
@@ -125,6 +168,7 @@ public sealed class SkillCutsceneRuntimeContext :
                 true;
         }
 
+        EnsureVisualFxControllers();
         EnsureRuntimeFrames();
         UpdateDynamicFrames();
 
@@ -149,7 +193,7 @@ public sealed class SkillCutsceneRuntimeContext :
             return;
 
         foreach (TrackAsset track
-                 in timeline.GetOutputTracks())
+                 in SkillTimelineTrackUtility.EnumerateAllTracks(timeline))
         {
             if (track is not
                 SkillCameraTimelineTrack)
@@ -181,6 +225,105 @@ public sealed class SkillCutsceneRuntimeContext :
                             curve);
             }
         }
+    }
+
+    public Transform ResolveVisualFxBinding(
+        SkillVisualFxBinding binding,
+        string anchorKey)
+    {
+        UpdateDynamicFrames();
+
+        return binding switch
+        {
+            SkillVisualFxBinding.CombatFrame =>
+                combatFrame,
+            SkillVisualFxBinding.AttackerRoot =>
+                attacker?.transform,
+            SkillVisualFxBinding.AttackerVisualRoot =>
+                GetVisualRoot(attacker),
+            SkillVisualFxBinding.TargetRoot =>
+                target?.transform,
+            SkillVisualFxBinding.TargetVisualRoot =>
+                GetVisualRoot(target),
+            SkillVisualFxBinding.AttackerAnchor =>
+                ResolveAnchor(attacker, anchorKey),
+            SkillVisualFxBinding.TargetAnchor =>
+                ResolveAnchor(target, anchorKey),
+            SkillVisualFxBinding.AttackerBodyPart =>
+                ResolveBodyPartAnchor(
+                    attacker,
+                    request?.AttackerPart),
+            SkillVisualFxBinding.TargetBodyPart =>
+                ResolveBodyPartAnchor(
+                    target,
+                    targetPart),
+            SkillVisualFxBinding.Camera =>
+                ResolveActiveCameraTransform(),
+            SkillVisualFxBinding.World =>
+                null,
+            _ =>
+                combatFrame
+        };
+    }
+
+    public void BeginTimelineVfx(
+        int trackId,
+        int clipKey,
+        SkillVfxTimelineClip clip,
+        float clipDuration)
+    {
+        EnsureVisualFxControllers();
+        timelineVfxController?.Begin(
+            trackId,
+            clipKey,
+            clip,
+            clipDuration);
+    }
+
+    public void UpdateTimelineVfx(
+        int trackId,
+        int clipKey,
+        SkillVfxTimelineClip clip,
+        float normalizedTime,
+        float timelineWeight)
+    {
+        timelineVfxController?.UpdateClip(
+            trackId,
+            clipKey,
+            clip,
+            normalizedTime,
+            timelineWeight);
+    }
+
+    public void EndTimelineVfx(
+        int trackId,
+        int clipKey,
+        SkillVfxTimelineClip clip)
+    {
+        timelineVfxController?.End(
+            trackId,
+            clipKey,
+            clip);
+    }
+
+    public void StopTimelineVfxTrack(int trackId)
+    {
+        timelineVfxController?.StopTrack(trackId);
+    }
+
+    public void UpdateShaderFxTrack(
+        int trackId,
+        IReadOnlyList<SkillShaderTimelineContribution> contributions)
+    {
+        EnsureVisualFxControllers();
+        timelineShaderController?.UpdateTrack(
+            trackId,
+            contributions);
+    }
+
+    public void RemoveShaderFxTrack(int trackId)
+    {
+        timelineShaderController?.RemoveTrack(trackId);
     }
 
     public Transform ResolvePositionBinding(
@@ -444,7 +587,8 @@ public sealed class SkillCutsceneRuntimeContext :
                 break;
         }
 
-        if (Application.isPlaying)
+        if (Application.isPlaying ||
+            allowEditModeEventCallback)
         {
             eventCallback?.Invoke(
                 clip);
@@ -459,6 +603,8 @@ public sealed class SkillCutsceneRuntimeContext :
 
     public void Restore()
     {
+        timelineVfxController?.RestoreAll();
+        timelineShaderController?.RestoreAll();
         activeCameraClip =
             null;
 
@@ -480,6 +626,12 @@ public sealed class SkillCutsceneRuntimeContext :
 
         eventCallback =
             null;
+
+        request =
+            null;
+
+        allowEditModeEventCallback =
+            false;
 
         blendByClip.Clear();
     }
@@ -584,6 +736,54 @@ public sealed class SkillCutsceneRuntimeContext :
                 fallbackDuration,
                 curve,
                 style);
+    }
+
+    private void EnsureVisualFxControllers()
+    {
+        timelineVfxController ??=
+            GetComponent<SkillTimelineVfxController>();
+
+        if (timelineVfxController == null)
+            timelineVfxController =
+                gameObject.AddComponent<SkillTimelineVfxController>();
+
+        timelineShaderController ??=
+            GetComponent<SkillTimelineShaderController>();
+
+        if (timelineShaderController == null)
+            timelineShaderController =
+                gameObject.AddComponent<SkillTimelineShaderController>();
+
+        timelineVfxController.Configure(this);
+        timelineShaderController.Configure(this);
+    }
+
+    private Transform ResolveActiveCameraTransform()
+    {
+        if (activeCameraClip != null && cameraRig != null)
+        {
+            GameObject camera = cameraRig
+                .GetCamera(activeCameraClip.CameraKey)
+                ?.gameObject;
+
+            if (camera != null)
+                return camera.transform;
+        }
+
+        return Camera.main != null
+            ? Camera.main.transform
+            : cameraRig?.transform;
+    }
+
+    private static Transform ResolveBodyPartAnchor(
+        Character character,
+        BodyPart part)
+    {
+        if (character == null || part == null)
+            return GetVisualRoot(character);
+
+        CharacterView view = character.GetComponentInChildren<CharacterView>(true);
+        return view?.GetBodyPartAnchor(part) ?? GetVisualRoot(character);
     }
 
     private void UpdateDynamicFrames()

@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a85a262093fed2b45a6f05cb3a256be9, type: 3}
   m_Name: Olaf_BerserkerDuel_Complete
   m_EditorClassIdentifier: 
-  skillId: d62b030dadea43c69be98363a7c8b36a
+  skillId: 49d93a8d045448fcb897e491602c3993
   SkillName: "\uAD11\uC804\uC0AC\uC758 \uACB0\uD22C"
   ActionType: 1
   BasePower: 8

@@ -52,6 +52,11 @@ public class BloodSplatterParticleEffectPlayer : MonoBehaviour, IBattleVfxPlayab
 
         side.Normalize();
 
+        float playbackSpeed =
+            playData != null
+                ? Mathf.Max(0.01f, playData.PlaybackSpeed)
+                : 1f;
+
         float radius =
             playData != null
                 ? Mathf.Max(0.1f, playData.Radius)
@@ -107,7 +112,7 @@ public class BloodSplatterParticleEffectPlayer : MonoBehaviour, IBattleVfxPlayab
             float speed =
                 Random.Range(
                     minSpeed,
-                    maxSpeed);
+                    maxSpeed) * playbackSpeed;
 
             Vector3 worldVelocity =
                 worldDirection * speed;
@@ -122,7 +127,7 @@ public class BloodSplatterParticleEffectPlayer : MonoBehaviour, IBattleVfxPlayab
             emitParams.startLifetime =
                 Random.Range(
                     minLifetime,
-                    maxLifetime);
+                    maxLifetime) / playbackSpeed;
 
             emitParams.startSize =
                 Random.Range(

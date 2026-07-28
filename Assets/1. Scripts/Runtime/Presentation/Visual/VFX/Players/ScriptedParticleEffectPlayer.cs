@@ -46,6 +46,11 @@ public class ScriptedParticleEffectPlayer : MonoBehaviour, IBattleVfxPlayable
         if (baseColor.a <= 0.01f)
             baseColor = startColor;
 
+        float playbackSpeed =
+            playData != null
+                ? Mathf.Max(0.01f, playData.PlaybackSpeed)
+                : 1f;
+
         float radius =
             playData != null
                 ? Mathf.Max(0.1f, playData.Radius)
@@ -67,7 +72,7 @@ public class ScriptedParticleEffectPlayer : MonoBehaviour, IBattleVfxPlayable
             float speed =
                 Random.Range(
                     minSpeed,
-                    maxSpeed);
+                    maxSpeed) * playbackSpeed;
 
             emitParams.position =
                 Vector3.zero;
@@ -78,7 +83,7 @@ public class ScriptedParticleEffectPlayer : MonoBehaviour, IBattleVfxPlayable
             emitParams.startLifetime =
                 Random.Range(
                     minLifetime,
-                    maxLifetime);
+                    maxLifetime) / playbackSpeed;
 
             emitParams.startSize =
                 Random.Range(

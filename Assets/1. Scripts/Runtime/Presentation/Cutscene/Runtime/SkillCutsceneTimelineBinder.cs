@@ -11,6 +11,8 @@ using UnityEngine.Timeline;
 /// [Abyss] Target Animation
 /// [AbyssRig] CM_Overview
 /// [AbyssRig] CM_Follow
+/// [Abyss FX] VFX
+/// [Abyss FX] Shader
 /// </summary>
 public static class SkillCutsceneTimelineBinder
 {
@@ -39,7 +41,7 @@ public static class SkillCutsceneTimelineBinder
             timeline);
 
         foreach (TrackAsset track
-                 in timeline.GetOutputTracks())
+                 in SkillTimelineTrackUtility.EnumerateAllTracks(timeline))
         {
             if (track == null)
                 continue;
@@ -47,7 +49,11 @@ public static class SkillCutsceneTimelineBinder
             if (track is
                     SkillCameraTimelineTrack ||
                 track is
-                    SkillCutsceneEventTrack)
+                    SkillCutsceneEventTrack ||
+                track is
+                    SkillVfxTimelineTrack ||
+                track is
+                    SkillShaderTimelineTrack)
             {
                 director.SetGenericBinding(
                     track,
@@ -82,6 +88,17 @@ public static class SkillCutsceneTimelineBinder
                     StringComparison
                         .OrdinalIgnoreCase))
             {
+                // 공격 스킬 Timeline은 특정 타깃의 Hit AnimationClip을 고정 소유하지 않는다.
+                // 빈 Target Track을 Animator에 바인딩하면 Timeline 출력이 타깃의
+                // 상태 Animator(Hit/Dead/Idle)를 덮을 수 있으므로 바인딩하지 않는다.
+                if (!HasPlayableAnimationClip(
+                        track as AnimationTrack))
+                {
+                    director.ClearGenericBinding(
+                        track);
+                    continue;
+                }
+
                 BindAnimation(
                     director,
                     track,
@@ -127,6 +144,28 @@ public static class SkillCutsceneTimelineBinder
                 track,
                 animator);
         }
+    }
+
+    private static bool HasPlayableAnimationClip(
+        AnimationTrack track)
+    {
+        if (track == null)
+            return false;
+
+        foreach (TimelineClip clip in
+                 track.GetClips())
+        {
+            if (clip == null ||
+                clip.asset == null ||
+                clip.duration <= 0d)
+            {
+                continue;
+            }
+
+            return true;
+        }
+
+        return false;
     }
 
     private static void BindAnimation(

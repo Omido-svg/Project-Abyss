@@ -3241,18 +3241,6 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 2773726033093029892, guid: 1bc64ea4d78d46d4d8905c341217be68, type: 3}
   m_PrefabInstance: {fileID: 891893399}
   m_PrefabAsset: {fileID: 0}
---- !u!114 &377962555
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 377962553}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: aef701c4dfff52649b1070bcafe238b7, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!95 &377962556
 Animator:
   serializedVersion: 7
@@ -4701,18 +4689,6 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 6273795992420303399, guid: 8773a60b5fbd4d94fa89250f6c909818, type: 3}
   m_PrefabInstance: {fileID: 1942539578}
   m_PrefabAsset: {fileID: 0}
---- !u!114 &541519632
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 541519630}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: aef701c4dfff52649b1070bcafe238b7, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!95 &541519633
 Animator:
   serializedVersion: 7
@@ -8406,9 +8382,6 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 2965766512714198417, guid: 1bc64ea4d78d46d4d8905c341217be68, type: 3}
       insertIndex: -1
       addedObject: {fileID: 377962556}
-    - targetCorrespondingSourceObject: {fileID: 2965766512714198417, guid: 1bc64ea4d78d46d4d8905c341217be68, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 377962555}
   m_SourcePrefab: {fileID: 100100000, guid: 1bc64ea4d78d46d4d8905c341217be68, type: 3}
 --- !u!4 &891893400 stripped
 Transform:
@@ -11743,7 +11716,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   character: {fileID: 1244269864}
   animator: {fileID: 541519633}
-  eventRelay: {fileID: 541519632}
   bodyPartAnchors:
   - PartType: 0
     Anchor: {fileID: 1942539583}
@@ -11758,6 +11730,7 @@ MonoBehaviour:
   hitCameraPoint: {fileID: 224419467}
   hitStateName: Hit
   hitCrossFadeDuration: 0.03
+  evaluateHitImmediately: 1
   baseLayerIndex: 0
   logDebug: 0
 --- !u!114 &1244269867
@@ -19808,9 +19781,6 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 3531720042393369939, guid: 8773a60b5fbd4d94fa89250f6c909818, type: 3}
       insertIndex: -1
       addedObject: {fileID: 541519633}
-    - targetCorrespondingSourceObject: {fileID: 3531720042393369939, guid: 8773a60b5fbd4d94fa89250f6c909818, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 541519632}
   m_SourcePrefab: {fileID: 100100000, guid: 8773a60b5fbd4d94fa89250f6c909818, type: 3}
 --- !u!4 &1942539579 stripped
 Transform:
@@ -21499,7 +21469,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   character: {fileID: 2094296668}
   animator: {fileID: 377962556}
-  eventRelay: {fileID: 377962555}
   bodyPartAnchors:
   - PartType: 0
     Anchor: {fileID: 1566227388}
@@ -21514,6 +21483,7 @@ MonoBehaviour:
   hitCameraPoint: {fileID: 891893403}
   hitStateName: Hit
   hitCrossFadeDuration: 0.03
+  evaluateHitImmediately: 1
   baseLayerIndex: 0
   logDebug: 0
 --- !u!114 &2094296672
@@ -21783,6 +21753,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   cameraDirector: {fileID: 2104202808}
+  skillCutsceneDirector: {fileID: 0}
   floatingTextManager: {fileID: 2113237150}
   damageNumberManager: {fileID: 2113237156}
   defaultVisualProfile: {fileID: 11400000, guid: 6ad6ee546df81ab4ebe3dcb118388219, type: 2}
@@ -21899,7 +21870,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: 0, y: 0.0000038146973}
+  m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 18, y: 13.999992}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &2143639258

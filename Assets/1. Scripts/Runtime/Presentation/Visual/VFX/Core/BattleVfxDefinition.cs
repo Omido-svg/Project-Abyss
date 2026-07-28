@@ -18,12 +18,15 @@ public class BattleVfxDefinition : ScriptableObject
     [Min(0)] public int PrewarmCount = 0;
     [Min(0)] public int MaxPoolSize = 8;
 
-    [Header("Transform")]
-    public Vector3 PositionOffset;
-    public Vector3 RotationOffset;
-    public Vector3 Scale = Vector3.one;
+    [Header("Legacy Cue Transform Defaults")]
+    [Tooltip("Legacy BattleVfxCue 경로에서만 사용됩니다. Skill VFX Timeline Clip은 자체 Transform을 사용합니다.")]
+    [HideInInspector] public Vector3 PositionOffset;
+    [HideInInspector] public Vector3 RotationOffset;
+    [HideInInspector] public Vector3 Scale = Vector3.one;
 
-    [Header("Follow")]
+    [Header("Legacy Cue Follow Default")]
+    [Tooltip("Legacy BattleVfxCue 경로에서만 사용됩니다. Skill VFX Timeline Clip은 자체 FollowMode를 사용합니다.")]
+    [HideInInspector]
     public BattleVfxFollowMode FollowMode = BattleVfxFollowMode.SpawnWorldFixed;
 
     [Header("Common Parameters")]

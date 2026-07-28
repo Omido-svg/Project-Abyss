@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a85a262093fed2b45a6f05cb3a256be9, type: 3}
   m_Name: Olaf_ImmortalFrenzy_Complete
   m_EditorClassIdentifier: 
-  skillId: 365e7e89302743558627a15f0a852c5f
+  skillId: 27b40e4336dc45009739c8f89351beeb
   SkillName: "\uBD88\uC0AC\uC758 \uAD11\uB780"
   ActionType: 3
   BasePower: 20

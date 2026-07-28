@@ -20,6 +20,15 @@ public static class SkillCutsceneAssetBuilder
         SkillCutsceneTimelineBinder
             .TargetAnimationTrackName;
 
+    public const string VisualFxGroupName =
+        "Visual FX";
+
+    public const string VfxTrackName =
+        "[Abyss FX] VFX";
+
+    public const string ShaderTrackName =
+        "[Abyss FX] Shader";
+
     public static SkillCutsceneDefinition EnsureForSkill(
         SkillDefinition skill,
         Character attackerPrefab,
@@ -95,12 +104,25 @@ public static class SkillCutsceneAssetBuilder
                 definition,
                 definitionPath);
 
+            definition.PrepareFacing =
+                visual.FaceEachOther;
+            definition.PrepareMovement =
+                visual.MovesToTarget;
+            definition.RestoreMovement =
+                visual.ReturnPositionAfterAction;
+            definition.RestoreFacing =
+                visual.ReturnFacingAfterAction;
+            definition.UseExplicitVisualFxTracks = true;
+
             visual.CutsceneDefinition =
                 definition;
+            visual.AllowAsProfileFallback =
+                false;
+            visual.ApplyDamageIfNoHitFrame =
+                false;
 
-            visual.UseTimelineCutscene =
-                true;
-
+            EditorUtility.SetDirty(
+                definition);
             EditorUtility.SetDirty(
                 visual);
         }
@@ -129,6 +151,28 @@ public static class SkillCutsceneAssetBuilder
             definition.ActionTimeline,
             addDefaultClips: true);
 
+        foreach (SkillCutsceneSegment segment in
+                 (SkillCutsceneSegment[])Enum.GetValues(
+                     typeof(SkillCutsceneSegment)))
+        {
+            TimelineAsset timeline =
+                segment == SkillCutsceneSegment.Action
+                    ? definition.ActionTimeline
+                    : EnsureSegment(definition, segment);
+
+            EnsureTimelineStructure(
+                definition,
+                timeline,
+                addDefaultClips:
+                    segment == SkillCutsceneSegment.Action ||
+                    segment == SkillCutsceneSegment.ClashAttack);
+
+            EnsureSegmentDefaults(
+                definition,
+                timeline,
+                segment);
+        }
+
         EditorUtility.SetDirty(
             definition);
 
@@ -139,7 +183,6 @@ public static class SkillCutsceneAssetBuilder
             skill);
 
         AssetDatabase.SaveAssets();
-        AssetDatabase.Refresh();
 
         return definition;
     }
@@ -231,11 +274,13 @@ public static class SkillCutsceneAssetBuilder
             definition,
             timeline,
             addDefaultClips:
-                segment ==
-                SkillCutsceneSegment.Action ||
-                segment ==
-                SkillCutsceneSegment
-                    .ClashAttack);
+                segment == SkillCutsceneSegment.Action ||
+                segment == SkillCutsceneSegment.ClashAttack);
+
+        EnsureSegmentDefaults(
+            definition,
+            timeline,
+            segment);
 
         EditorUtility.SetDirty(
             definition);
@@ -310,6 +355,30 @@ public static class SkillCutsceneAssetBuilder
                         null,
                         "Battle Events");
 
+        GroupTrack visualFxGroup =
+            FindTrack<GroupTrack>(
+                timeline,
+                VisualFxGroupName) ??
+            timeline.CreateTrack<GroupTrack>(
+                null,
+                VisualFxGroupName);
+
+        SkillVfxTimelineTrack vfxTrack =
+            FindTrack<SkillVfxTimelineTrack>(
+                timeline,
+                VfxTrackName) ??
+            timeline.CreateTrack<SkillVfxTimelineTrack>(
+                visualFxGroup,
+                VfxTrackName);
+
+        SkillShaderTimelineTrack shaderTrack =
+            FindTrack<SkillShaderTimelineTrack>(
+                timeline,
+                ShaderTrackName) ??
+            timeline.CreateTrack<SkillShaderTimelineTrack>(
+                visualFxGroup,
+                ShaderTrackName);
+
         if (!addDefaultClips)
         {
             EditorUtility.SetDirty(
@@ -374,8 +443,9 @@ public static class SkillCutsceneAssetBuilder
                 cameraTrack);
         }
 
-        if (!eventTrack.GetClips()
-            .Any())
+        if (!eventTrack.GetClips().Any() &&
+            ShouldCreateDefaultHit(
+                definition))
         {
             CreateHitEventClip(
                 definition,
@@ -586,15 +656,40 @@ public static class SkillCutsceneAssetBuilder
 
         binder.BindNow();
 
-        EditorSceneManager.SaveScene(
-            scene,
-            scenePath);
+        bool sceneSaved =
+            EditorSceneManager.SaveScene(
+                scene,
+                scenePath);
 
-        definition.SetPreviewScenePath(
-            scenePath);
+        if (!sceneSaved)
+        {
+            Debug.LogWarning(
+                $"[SkillCutsceneAssetBuilder] Preview Scene 저장 실패: {scenePath}");
+            return null;
+        }
 
+        // SaveScene 또는 에셋 import 과정에서 기존 ScriptableObject wrapper가
+        // 파괴될 수 있다. 저장 전에 얻어 둔 persistent path로 다시 로드한 뒤
+        // PreviewScenePath를 기록해야 MissingReferenceException이 발생하지 않는다.
+        SkillCutsceneDefinition persistentDefinition =
+            AssetDatabase.LoadAssetAtPath<SkillCutsceneDefinition>(
+                definitionPath);
+
+        if (persistentDefinition != null)
+        {
+            persistentDefinition.SetPreviewScenePath(
+                scenePath);
+        }
+        else
+        {
+            Debug.LogWarning(
+                "[SkillCutsceneAssetBuilder] 저장 후 Cutscene Definition을 " +
+                $"다시 로드하지 못했습니다. Path={definitionPath}");
+        }
+
+        // SaveScene은 .unity 에셋을 이미 등록한다. 여기서 Refresh까지 호출하면
+        // Timeline/VFX/Scene import와 창 repaint가 같은 tick에 중첩될 수 있다.
         AssetDatabase.SaveAssets();
-        AssetDatabase.Refresh();
 
         Selection.activeGameObject =
             host;
@@ -604,6 +699,84 @@ public static class SkillCutsceneAssetBuilder
                 "Window/Sequencing/Timeline");
 
         return scenePath;
+    }
+
+    private static void EnsureSegmentDefaults(
+        SkillCutsceneDefinition definition,
+        TimelineAsset timeline,
+        SkillCutsceneSegment segment)
+    {
+        if (definition == null || timeline == null)
+            return;
+
+        SkillCameraTimelineTrack cameraTrack =
+            FindTrack<SkillCameraTimelineTrack>(
+                timeline,
+                "Skill Camera") ??
+            timeline.CreateTrack<SkillCameraTimelineTrack>(
+                null,
+                "Skill Camera");
+
+        if (!cameraTrack.GetClips().Any())
+        {
+            TimelineClip camera =
+                cameraTrack.CreateClip<SkillCameraTimelineClip>();
+
+            camera.start = 0d;
+            camera.duration = Math.Max(
+                1d / definition.FrameRate,
+                timeline.fixedDuration);
+            camera.displayName =
+                segment == SkillCutsceneSegment.Return
+                    ? "CM_Overview"
+                    : segment == SkillCutsceneSegment.Kill ||
+                      segment == SkillCutsceneSegment.PartBreak
+                        ? "CM_Impact"
+                        : "CM_Overview";
+
+            if (camera.asset is SkillCameraTimelineClip cameraAsset)
+            {
+                cameraAsset.CameraKey = camera.displayName;
+                cameraAsset.PositionBinding =
+                    camera.displayName == "CM_Overview"
+                        ? SkillCameraPositionBinding.RigRootFixed
+                        : SkillCameraPositionBinding.CombatFrameFollow;
+                cameraAsset.AimBinding =
+                    SkillCameraAimBinding.AttackerTargetMidpoint;
+                EditorUtility.SetDirty(cameraAsset);
+            }
+        }
+
+        SkillCutsceneEventTrack eventTrack =
+            FindTrack<SkillCutsceneEventTrack>(
+                timeline,
+                "Battle Events") ??
+            timeline.CreateTrack<SkillCutsceneEventTrack>(
+                null,
+                "Battle Events");
+
+        if (segment == SkillCutsceneSegment.Return &&
+            !eventTrack.GetClips().Any(clip =>
+                clip.asset is SkillCutsceneEventClip asset &&
+                asset.EventType == SkillCutsceneEventType.ReturnOverview))
+        {
+            TimelineClip returnClip =
+                eventTrack.CreateClip<SkillCutsceneEventClip>();
+            returnClip.start = Math.Max(
+                0d,
+                timeline.fixedDuration - 1d / definition.FrameRate);
+            returnClip.duration = 1d / definition.FrameRate;
+            returnClip.displayName = "ReturnOverview";
+
+            if (returnClip.asset is SkillCutsceneEventClip returnAsset)
+            {
+                returnAsset.EventType =
+                    SkillCutsceneEventType.ReturnOverview;
+                EditorUtility.SetDirty(returnAsset);
+            }
+        }
+
+        EditorUtility.SetDirty(timeline);
     }
 
     public static TimelineClip AddCameraClip(
@@ -716,6 +889,78 @@ public static class SkillCutsceneAssetBuilder
         AssetDatabase.SaveAssets();
 
         return track;
+    }
+
+    public static TimelineClip AddVfxClip(
+        SkillCutsceneDefinition definition,
+        TimelineAsset timeline,
+        double startTime,
+        BattleVfxDefinition vfxDefinition)
+    {
+        if (definition == null || timeline == null)
+            return null;
+
+        GroupTrack group =
+            FindTrack<GroupTrack>(timeline, VisualFxGroupName) ??
+            timeline.CreateTrack<GroupTrack>(null, VisualFxGroupName);
+
+        SkillVfxTimelineTrack track =
+            FindTrack<SkillVfxTimelineTrack>(timeline, VfxTrackName) ??
+            timeline.CreateTrack<SkillVfxTimelineTrack>(group, VfxTrackName);
+
+        TimelineClip clip = track.CreateClip<SkillVfxTimelineClip>();
+        clip.start = Math.Max(0d, startTime);
+        clip.duration = 30d / definition.FrameRate;
+        clip.displayName = vfxDefinition != null
+            ? vfxDefinition.name
+            : "VFX Clip";
+
+        if (clip.asset is SkillVfxTimelineClip asset)
+        {
+            asset.Definition = vfxDefinition;
+            EditorUtility.SetDirty(asset);
+        }
+
+        definition.UseExplicitVisualFxTracks = true;
+        EditorUtility.SetDirty(definition);
+        EditorUtility.SetDirty(timeline);
+        AssetDatabase.SaveAssets();
+        return clip;
+    }
+
+    public static TimelineClip AddShaderFxClip(
+        SkillCutsceneDefinition definition,
+        TimelineAsset timeline,
+        double startTime,
+        SkillShaderEffectDefinition shaderDefinition)
+    {
+        if (definition == null || timeline == null)
+            return null;
+
+        GroupTrack group =
+            FindTrack<GroupTrack>(timeline, VisualFxGroupName) ??
+            timeline.CreateTrack<GroupTrack>(null, VisualFxGroupName);
+
+        SkillShaderTimelineTrack track =
+            FindTrack<SkillShaderTimelineTrack>(timeline, ShaderTrackName) ??
+            timeline.CreateTrack<SkillShaderTimelineTrack>(group, ShaderTrackName);
+
+        TimelineClip clip = track.CreateClip<SkillShaderTimelineClip>();
+        clip.start = Math.Max(0d, startTime);
+        clip.duration = 30d / definition.FrameRate;
+        clip.displayName = shaderDefinition != null
+            ? shaderDefinition.name
+            : "Shader FX Clip";
+
+        if (clip.asset is SkillShaderTimelineClip asset)
+        {
+            asset.Definition = shaderDefinition;
+            EditorUtility.SetDirty(asset);
+        }
+
+        EditorUtility.SetDirty(timeline);
+        AssetDatabase.SaveAssets();
+        return clip;
     }
 
     public static TimelineClip AddEventClip(
@@ -1168,6 +1413,38 @@ public static class SkillCutsceneAssetBuilder
             impactAsset);
     }
 
+    private static bool ShouldCreateDefaultHit(
+        SkillCutsceneDefinition definition)
+    {
+        if (definition == null)
+            return true;
+
+        string[] guids =
+            AssetDatabase.FindAssets(
+                "t:SkillDefinition");
+
+        foreach (string guid in guids)
+        {
+            SkillDefinition skill =
+                AssetDatabase.LoadAssetAtPath<
+                    SkillDefinition>(
+                        AssetDatabase.GUIDToAssetPath(
+                            guid));
+
+            if (skill?.VisualDefinition?
+                    .CutsceneDefinition !=
+                definition)
+            {
+                continue;
+            }
+
+            return skill.VisualDefinition
+                .HasHitFrameDamage;
+        }
+
+        return true;
+    }
+
     private static void CreateHitEventClip(
         SkillCutsceneDefinition definition,
         SkillCutsceneEventTrack track,
@@ -1209,8 +1486,8 @@ public static class SkillCutsceneAssetBuilder
         if (timeline == null)
             return null;
 
-        return timeline
-            .GetOutputTracks()
+        return SkillTimelineTrackUtility
+            .EnumerateAllTracks(timeline)
             .OfType<T>()
             .FirstOrDefault(
                 track =>

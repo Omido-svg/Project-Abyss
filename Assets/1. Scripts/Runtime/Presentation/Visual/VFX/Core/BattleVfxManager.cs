@@ -15,7 +15,8 @@ public class BattleVfxManager : MonoBehaviour
 
     private void Awake()
     {
-        if (pool == null)
+        // Edit Mode Timeline Preview에서는 Scene에 영구 Pool Object를 만들지 않는다.
+        if (Application.isPlaying && pool == null)
             pool = BattleVfxPool.GetOrCreate();
     }
 
@@ -174,7 +175,7 @@ public class BattleVfxManager : MonoBehaviour
         bool playedByCustomPlayer = TryPlayWithCustomPlayer(instance.gameObject, playData);
 
         if (!playedByCustomPlayer)
-            TryPlayAsVfxGraphFallback(instance.gameObject, definition);
+            TryPlayAsVfxGraphFallback(instance.gameObject, definition, 1f);
 
         if (definition.LogSpawn || logDebug)
         {
@@ -197,6 +198,160 @@ public class BattleVfxManager : MonoBehaviour
         }
 
         return instance;
+    }
+
+
+    /// <summary>
+    /// Skill VFX Timeline Clip이 계산한 최종 Pose/Scale/Speed를 그대로 재생한다.
+    /// BattleVfxDefinition은 VFX 자체와 Pool/Lifetime 기본값만 제공하고,
+    /// 스킬별 공간 배치와 움직임은 Timeline Clip이 소유한다.
+    /// </summary>
+    public BattleVfxInstance PlayTimelineVfx(
+        BattleVfxDefinition definition,
+        BattleVfxContext context,
+        Transform parent,
+        Vector3 position,
+        Quaternion rotation,
+        Vector3 scale,
+        float playbackSpeed,
+        float lifetime,
+        bool autoRelease)
+    {
+        if (!VfxDefinitionValidator.Validate(definition, this))
+            return null;
+
+        if (context == null || !context.CanPlayVfx())
+            return null;
+
+        bool usePool = Application.isPlaying && definition.UsePooling;
+
+        if (usePool && pool == null)
+            pool = BattleVfxPool.GetOrCreate();
+
+        BattleVfxInstance instance;
+
+        if (usePool)
+        {
+            pool.Prewarm(
+                definition.EffectPrefab,
+                definition.PrewarmCount,
+                definition.MaxPoolSize);
+
+            instance = pool.Acquire(
+                definition.EffectPrefab,
+                position,
+                rotation,
+                parent,
+                definition.MaxPoolSize);
+        }
+        else
+        {
+            GameObject created = Instantiate(
+                definition.EffectPrefab,
+                position,
+                rotation,
+                parent);
+
+            created.hideFlags = Application.isPlaying
+                ? HideFlags.None
+                : HideFlags.DontSave;
+
+            instance = created.GetComponent<BattleVfxInstance>();
+
+            if (instance == null)
+                instance = created.AddComponent<BattleVfxInstance>();
+
+            instance.Configure(
+                null,
+                new BattleVfxPoolKey(definition.EffectPrefab),
+                0);
+            instance.PrepareForUse(position, rotation, parent);
+        }
+
+        if (instance == null)
+            return null;
+
+        if (!context.CanPlayVfx())
+        {
+            instance.Release();
+            return null;
+        }
+
+        context.TrackSpawnedVfx(instance);
+        instance.transform.localScale = scale;
+
+        float safeSpeed = Mathf.Max(0.01f, playbackSpeed);
+        float safeLifetime = Mathf.Max(0.01f, lifetime);
+        ApplyPlaybackSpeed(instance.gameObject, safeSpeed);
+
+        BattleVfxPlayData playData = new BattleVfxPlayData
+        {
+            Definition = definition,
+            Context = context,
+            Instance = instance.gameObject,
+            PooledInstance = instance,
+            Anchor = parent,
+            Position = position,
+            Rotation = rotation,
+            Lifetime = safeLifetime,
+            Color = definition.Color,
+            Intensity = definition.Intensity,
+            Radius = definition.Radius,
+            PlaybackSpeed = safeSpeed
+        };
+
+        bool playedByCustomPlayer =
+            TryPlayWithCustomPlayer(instance.gameObject, playData);
+
+        if (!playedByCustomPlayer)
+            TryPlayAsVfxGraphFallback(
+                instance.gameObject,
+                definition,
+                safeSpeed);
+
+        if (definition.LogSpawn || logDebug)
+        {
+            Debug.Log(
+                $"[BattleVfxManager] Timeline VFX Spawn / " +
+                $"Definition={definition.name}, " +
+                $"Speed={safeSpeed:0.##}, Lifetime={safeLifetime:0.###}, " +
+                $"Parent={(parent != null ? parent.name : "WORLD")}",
+                this);
+        }
+
+        if (autoRelease)
+            instance.ReleaseAfter(safeLifetime, definition.UseUnscaledLifetime);
+
+        return instance;
+    }
+
+    private static void ApplyPlaybackSpeed(
+        GameObject instance,
+        float playbackSpeed)
+    {
+        if (instance == null)
+            return;
+
+        ParticleSystem[] particles =
+            instance.GetComponentsInChildren<ParticleSystem>(true);
+
+        foreach (ParticleSystem particle in particles)
+        {
+            if (particle == null)
+                continue;
+
+            ParticleSystem.MainModule main = particle.main;
+            main.simulationSpeed = playbackSpeed;
+        }
+
+        VisualEffect[] effects =
+            instance.GetComponentsInChildren<VisualEffect>(true);
+
+        foreach (VisualEffect effect in effects)
+        {
+            if (effect != null)
+                effect.playRate = playbackSpeed;
+        }
     }
 
     private bool TryResolveSpawnPose(
@@ -297,7 +452,8 @@ public class BattleVfxManager : MonoBehaviour
 
     private static void TryPlayAsVfxGraphFallback(
         GameObject instance,
-        BattleVfxDefinition definition)
+        BattleVfxDefinition definition,
+        float playbackSpeed)
     {
         if (instance == null || definition == null)
             return;
@@ -308,6 +464,7 @@ public class BattleVfxManager : MonoBehaviour
             return;
 
         visualEffect.Reinit();
+        visualEffect.playRate = Mathf.Max(0.01f, playbackSpeed);
 
         if (!string.IsNullOrEmpty(definition.PlayEventName))
             visualEffect.SendEvent(definition.PlayEventName);

@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a85a262093fed2b45a6f05cb3a256be9, type: 3}
   m_Name: Olaf_BloodStrike_Complete
   m_EditorClassIdentifier: 
-  skillId: 3207d0f7fcd94f2cbf6cccf3c059c881
+  skillId: fbf683582ff74880bd7bb8d36ab62b6d
   SkillName: "\uD53C\uC758 \uC77C\uACA9"
   ActionType: 0
   BasePower: 5

@@ -6,9 +6,18 @@ using System.Linq;
 using UnityEditor;
 using UnityEngine;
 
+public enum CharacterStudioBootstrapKind
+{
+    Olaf = 0,
+    EliteEnemy = 1,
+    NormalEnemy = 2,
+    Custom = 3
+}
+
 /// <summary>
-/// Character Prefab 하나를 중심으로 최신 CharacterData/CombatLoadout,
-/// 최초 장착 스킬, Passive/Item, Legacy Adapter와 Presentation을 조립한다.
+/// 리깅 Model Asset에서 Character Prefab을 처음 생성하거나,
+/// 기존 Character Prefab을 중심으로 CharacterData/CombatLoadout,
+/// Skill, Passive/Item, Presentation과 Cutscene Authoring을 조립한다.
 /// </summary>
 public sealed class ProjectAbyssCharacterStudio : EditorWindow
 {
@@ -17,6 +26,16 @@ public sealed class ProjectAbyssCharacterStudio : EditorWindow
 
     private CharacterAuthoringBundle bundle;
     private Character importPrefab;
+
+    private int startMode;
+    private string bootstrapCharacterName = "NewCharacter";
+    private CharacterStudioBootstrapKind bootstrapKind =
+        CharacterStudioBootstrapKind.NormalEnemy;
+    private GameObject bootstrapModelAsset;
+    private MonoScript bootstrapCustomCharacterScript;
+    private Avatar bootstrapAvatar;
+    private RuntimeAnimatorController bootstrapAnimatorController;
+    private string bootstrapOutputFolder = DefaultBundleFolder;
     private bool packReferencedAssetsOnImport = true;
     private bool assemblePrefabOnImport = true;
     private bool ensureStandardComponents = true;
@@ -100,13 +119,12 @@ public sealed class ProjectAbyssCharacterStudio : EditorWindow
     private void OnGUI()
     {
         EditorGUILayout.LabelField(
-            "Project Abyss Character Studio — Prefab + Cutscene Assembly v5.0",
+            "Project Abyss Character Studio v6.3 — Create From Model + Assembly",
             EditorStyles.boldLabel);
 
         EditorGUILayout.HelpBox(
-            "한 Character Prefab을 기준으로 CharacterData, ActionSlot, " +
-            "일반공격/결투/도사림/위세 후보와 최초 장착, Passive/Augment, Item, " +
-            "Legacy Adapter, Animator, Anchor, CameraPoint, VFX를 조립합니다.",
+            "리깅된 Model Asset에서 Character Prefab을 처음 생성하거나, 기존 Prefab을 가져와 " +
+            "CharacterData, ActionSlot, Skill, Passive/Augment, Animator, Anchor, CameraPoint와 Cutscene Authoring을 조립합니다.",
             MessageType.Info);
 
         scroll = EditorGUILayout.BeginScrollView(scroll);
@@ -167,13 +185,127 @@ public sealed class ProjectAbyssCharacterStudio : EditorWindow
     {
         EditorGUILayout.Space(10f);
 
-        if (GUILayout.Button("빈 Character Bundle 만들기", GUILayout.Height(32f)))
-            CreateEmptyBundle();
+        startMode = GUILayout.Toolbar(
+            startMode,
+            new[]
+            {
+                "새 캐릭터 만들기",
+                "기존 Prefab 가져오기"
+            });
 
-        EditorGUILayout.Space(10f);
+        EditorGUILayout.Space(8f);
+
+        if (startMode == 0)
+            DrawCreateFromModelPanel();
+        else
+            DrawImportPrefabPanel();
+
+        EditorGUILayout.Space(12f);
+
+        if (GUILayout.Button("빈 Character Bundle만 만들기", GUILayout.Height(26f)))
+            CreateEmptyBundle();
+    }
+
+    private void DrawCreateFromModelPanel()
+    {
+        EditorGUILayout.BeginVertical("box");
+        EditorGUILayout.LabelField(
+            "리깅 Model → Character Prefab + Bundle",
+            EditorStyles.boldLabel);
+
+        bootstrapCharacterName = EditorGUILayout.TextField(
+            "Character Name",
+            bootstrapCharacterName);
+
+        bootstrapKind = (CharacterStudioBootstrapKind)EditorGUILayout.EnumPopup(
+            "Character Kind",
+            bootstrapKind);
+
+        if (bootstrapKind == CharacterStudioBootstrapKind.Custom)
+        {
+            bootstrapCustomCharacterScript =
+                (MonoScript)EditorGUILayout.ObjectField(
+                    "Custom Character Script",
+                    bootstrapCustomCharacterScript,
+                    typeof(MonoScript),
+                    false);
+        }
+
+        bootstrapModelAsset =
+            (GameObject)EditorGUILayout.ObjectField(
+                "Rigged Model FBX/Prefab",
+                bootstrapModelAsset,
+                typeof(GameObject),
+                false);
+
+        bootstrapAvatar =
+            (Avatar)EditorGUILayout.ObjectField(
+                "Avatar Override",
+                bootstrapAvatar,
+                typeof(Avatar),
+                false);
+
+        bootstrapAnimatorController =
+            (RuntimeAnimatorController)EditorGUILayout.ObjectField(
+                "Animator Controller",
+                bootstrapAnimatorController,
+                typeof(RuntimeAnimatorController),
+                false);
+
+        EditorGUILayout.BeginHorizontal();
+        bootstrapOutputFolder = EditorGUILayout.TextField(
+            "Output Folder",
+            bootstrapOutputFolder);
+
+        if (GUILayout.Button("...", GUILayout.Width(32f)))
+        {
+            string selected = EditorUtility.OpenFolderPanel(
+                "Character Output Folder",
+                Application.dataPath,
+                string.Empty);
+
+            string assetPath = AbsoluteToAssetPath(selected);
+
+            if (!string.IsNullOrWhiteSpace(assetPath))
+                bootstrapOutputFolder = assetPath;
+        }
+
+        EditorGUILayout.EndHorizontal();
+
+        EditorGUILayout.HelpBox(
+            "Model Asset은 Skeleton/SkinnedMesh/Animator를 가진 FBX 또는 Model Prefab입니다. " +
+            "도구가 Character Root, 구체 Character 컴포넌트, Prefab, Bundle, Core Data와 표준 Anchor Hierarchy를 생성합니다.\n" +
+            "Custom은 Character와 ICharacterAuthoringTarget을 구현한 비추상 MonoBehaviour Script가 필요합니다.",
+            MessageType.Info);
+
+        bool canCreate =
+            bootstrapModelAsset != null &&
+            !string.IsNullOrWhiteSpace(bootstrapCharacterName) &&
+            ResolveBootstrapCharacterType(out _) != null;
+
+        using (new EditorGUI.DisabledScope(!canCreate))
+        {
+            if (GUILayout.Button(
+                    "Create Character From Model",
+                    GUILayout.Height(40f)))
+            {
+                CreateCharacterFromModel();
+            }
+        }
+
+        EditorGUILayout.EndVertical();
+    }
+
+    private void DrawImportPrefabPanel()
+    {
+        EditorGUILayout.BeginVertical("box");
+        EditorGUILayout.LabelField(
+            "기존 Character Prefab 가져오기",
+            EditorStyles.boldLabel);
+
         importPrefab =
             (Character)EditorGUILayout.ObjectField(
-                "기존 Character Prefab",
+                "Existing Character Prefab",
                 importPrefab,
                 typeof(Character),
                 false);
@@ -197,6 +329,8 @@ public sealed class ProjectAbyssCharacterStudio : EditorWindow
                 CreateBundleFromPrefab(importPrefab);
             }
         }
+
+        EditorGUILayout.EndVertical();
     }
 
     private void DrawQuickActions()
@@ -464,8 +598,11 @@ public sealed class ProjectAbyssCharacterStudio : EditorWindow
             EditorGUIUtility.PingObject(skill);
         }
 
-        if (skill.VisualDefinition == null &&
-            GUILayout.Button("Visual 생성", GUILayout.Width(82f)))
+        if (GUILayout.Button(
+                skill.VisualDefinition?.CutsceneDefinition == null
+                    ? "Timeline 생성"
+                    : "Timeline 보수",
+                GUILayout.Width(92f)))
         {
             CreateVisual(skill);
         }
@@ -844,30 +981,72 @@ public sealed class ProjectAbyssCharacterStudio : EditorWindow
 
     private void CreateVisual(SkillDefinition skill)
     {
-        if (skill == null || skill.VisualDefinition != null)
+        if (skill == null)
             return;
 
-        string baseName = SafeName(
-            string.IsNullOrWhiteSpace(skill.SkillName)
-                ? skill.name
-                : skill.SkillName);
+        if (skill.VisualDefinition == null)
+        {
+            string baseName = SafeName(
+                string.IsNullOrWhiteSpace(skill.SkillName)
+                    ? skill.name
+                    : skill.SkillName);
 
-        SkillCameraDefinition camera =
-            CreateSubAsset<SkillCameraDefinition>(
-                $"{baseName}_Camera",
-                false);
+            SkillCameraDefinition camera =
+                CreateSubAsset<SkillCameraDefinition>(
+                    $"{baseName}_Camera",
+                    false);
 
-        SkillVisualDefinition visual =
-            CreateSubAsset<SkillVisualDefinition>(
-                $"{baseName}_Visual",
-                false);
+            SkillVisualDefinition visual =
+                CreateSubAsset<SkillVisualDefinition>(
+                    $"{baseName}_Visual",
+                    false);
 
-        visual.AllowAsProfileFallback = false;
-        visual.CameraDefinition = camera;
-        skill.VisualDefinition = visual;
-        AssignProfileVisual(bundle.VisualProfile, skill, false);
+            ConfigureTimelineVisualDefaults(
+                visual,
+                skill.ActionType);
+            visual.CameraDefinition = camera;
+            skill.VisualDefinition = visual;
+            EditorUtility.SetDirty(skill);
+            AssetDatabase.SaveAssets();
+        }
+
+        SkillCutsceneAssetBuilder.EnsureForSkill(
+            skill,
+            bundle?.CharacterPrefab,
+            null);
+
         EditorUtility.SetDirty(skill);
         AssetDatabase.SaveAssets();
+    }
+
+    private static void ConfigureTimelineVisualDefaults(
+        SkillVisualDefinition visual,
+        ActionType actionType)
+    {
+        if (visual == null)
+            return;
+
+        bool isPreparation =
+            actionType == ActionType.Preparation;
+
+        visual.AllowAsProfileFallback = false;
+        visual.HasHitFrameDamage = !isPreparation;
+        visual.ApplyDamageIfNoHitFrame = false;
+        visual.ExpectedHitFrameCount = 1;
+        visual.DistributeDamageByHitCount = !isPreparation;
+        visual.MovesToTarget = !isPreparation;
+        visual.ReturnPositionAfterAction = !isPreparation;
+        visual.FaceEachOther = !isPreparation;
+        visual.ReturnFacingAfterAction = !isPreparation;
+
+        if (visual.MoveSettings != null)
+        {
+            visual.MoveSettings.UseMove =
+                !isPreparation;
+        }
+
+        EditorUtility.SetDirty(
+            visual);
     }
 
     private void AddEffect(SkillDefinition skill, Type type)
@@ -1087,14 +1266,8 @@ public sealed class ProjectAbyssCharacterStudio : EditorWindow
 
     private void SyncVisualProfile()
     {
-        if (bundle?.VisualProfile == null || bundle.CombatLoadout == null)
-            return;
-
-        foreach (SkillDefinition skill in bundle.CombatLoadout.EnumerateAllDefinitions())
-        {
-            if (skill?.VisualDefinition != null)
-                AssignProfileVisual(bundle.VisualProfile, skill, false);
-        }
+        // Timeline-only 정책에서는 SkillDefinition.VisualDefinition이 유일한 런타임 원본이다.
+        // 기존 SkillVisualProfile은 이전 데이터 확인용으로만 보존하며 새 스킬을 연결하지 않는다.
     }
 
     private static void AssignProfileVisual(
@@ -1296,6 +1469,205 @@ public sealed class ProjectAbyssCharacterStudio : EditorWindow
         };
     }
 
+    private void CreateCharacterFromModel()
+    {
+        Type characterType = ResolveBootstrapCharacterType(out string typeError);
+
+        if (characterType == null)
+        {
+            EditorUtility.DisplayDialog("Character Studio", typeError, "확인");
+            return;
+        }
+
+        if (!TryNormalizeAssetFolder(bootstrapOutputFolder, out string baseFolder))
+        {
+            EditorUtility.DisplayDialog(
+                "Character Studio",
+                "Output Folder는 Assets 내부 경로여야 합니다.",
+                "확인");
+            return;
+        }
+
+        string safeName = SafeName(bootstrapCharacterName);
+        string characterFolder = $"{baseFolder}/{safeName}";
+        string prefabFolder = $"{characterFolder}/Prefabs";
+        EnsureAssetFolder(prefabFolder);
+
+        GameObject root = new GameObject(safeName + "_Root");
+        root.transform.SetPositionAndRotation(Vector3.zero, Quaternion.identity);
+        root.transform.localScale = Vector3.one;
+
+        try
+        {
+            Character character = root.AddComponent(characterType) as Character;
+
+            if (character == null)
+                throw new InvalidOperationException("Character 컴포넌트 생성에 실패했습니다.");
+
+            GameObject model = InstantiateModelAsset(bootstrapModelAsset);
+
+            if (model == null)
+                throw new InvalidOperationException("Model Asset 인스턴스 생성에 실패했습니다.");
+
+            model.name = safeName + "_Model";
+            model.transform.SetParent(root.transform, false);
+            model.transform.localPosition = Vector3.zero;
+            model.transform.localRotation = Quaternion.identity;
+            model.transform.localScale = Vector3.one;
+
+            Animator animator = model.GetComponentInChildren<Animator>(true);
+
+            if (animator == null)
+                animator = model.AddComponent<Animator>();
+
+            if (bootstrapAvatar != null)
+                animator.avatar = bootstrapAvatar;
+
+            if (bootstrapAnimatorController != null)
+                animator.runtimeAnimatorController = bootstrapAnimatorController;
+
+            string prefabPath = AssetDatabase.GenerateUniqueAssetPath(
+                $"{prefabFolder}/{safeName}.prefab");
+
+            GameObject saved = PrefabUtility.SaveAsPrefabAsset(root, prefabPath);
+
+            if (saved == null)
+                throw new InvalidOperationException("Prefab 저장에 실패했습니다.");
+
+            Character prefabCharacter = saved.GetComponent<Character>() ??
+                                        saved.GetComponentInChildren<Character>(true);
+
+            if (prefabCharacter == null)
+                throw new InvalidOperationException("저장된 Prefab에서 Character를 찾지 못했습니다.");
+
+            string bundlePath = AssetDatabase.GenerateUniqueAssetPath(
+                $"{characterFolder}/{safeName}_CharacterBundle.asset");
+
+            CreateBundleFromPrefabAtPath(
+                prefabCharacter,
+                bundlePath,
+                pack: false,
+                assemble: true);
+
+            importPrefab = prefabCharacter;
+            assemblySummary =
+                $"새 캐릭터 생성 완료\nPrefab: {prefabPath}\nBundle: {bundlePath}";
+
+            EditorUtility.DisplayDialog(
+                "Character Studio",
+                assemblySummary,
+                "확인");
+        }
+        catch (Exception exception)
+        {
+            Debug.LogException(exception);
+            EditorUtility.DisplayDialog(
+                "Character Studio",
+                "새 캐릭터 생성 실패\n" + exception.Message,
+                "확인");
+        }
+        finally
+        {
+            if (root != null)
+                DestroyImmediate(root);
+        }
+    }
+
+    private Type ResolveBootstrapCharacterType(out string error)
+    {
+        error = string.Empty;
+
+        Type type = bootstrapKind switch
+        {
+            CharacterStudioBootstrapKind.Olaf => typeof(Olaf),
+            CharacterStudioBootstrapKind.EliteEnemy => typeof(EliteEnemy),
+            CharacterStudioBootstrapKind.NormalEnemy => typeof(NormalEnemy),
+            _ => bootstrapCustomCharacterScript != null
+                ? bootstrapCustomCharacterScript.GetClass()
+                : null
+        };
+
+        if (type == null)
+        {
+            error = "사용할 Character Script를 지정하세요.";
+            return null;
+        }
+
+        if (!typeof(Character).IsAssignableFrom(type) ||
+            !typeof(MonoBehaviour).IsAssignableFrom(type) ||
+            type.IsAbstract)
+        {
+            error = "선택한 Script는 비추상 Character MonoBehaviour여야 합니다.";
+            return null;
+        }
+
+        if (!typeof(ICharacterAuthoringTarget).IsAssignableFrom(type))
+        {
+            error = "선택한 Character Script는 ICharacterAuthoringTarget을 구현해야 합니다.";
+            return null;
+        }
+
+        return type;
+    }
+
+    private static GameObject InstantiateModelAsset(GameObject modelAsset)
+    {
+        if (modelAsset == null)
+            return null;
+
+        GameObject instance = PrefabUtility.InstantiatePrefab(modelAsset) as GameObject;
+
+        if (instance == null)
+            instance = Instantiate(modelAsset);
+
+        return instance;
+    }
+
+    private static bool TryNormalizeAssetFolder(
+        string value,
+        out string assetFolder)
+    {
+        assetFolder = string.IsNullOrWhiteSpace(value)
+            ? DefaultBundleFolder
+            : value.Trim().Replace('\\', '/').TrimEnd('/');
+
+        return assetFolder == "Assets" ||
+               assetFolder.StartsWith("Assets/", StringComparison.Ordinal);
+    }
+
+    private static string AbsoluteToAssetPath(string absolutePath)
+    {
+        if (string.IsNullOrWhiteSpace(absolutePath))
+            return null;
+
+        string normalized = absolutePath.Replace('\\', '/').TrimEnd('/');
+        string assets = Application.dataPath.Replace('\\', '/').TrimEnd('/');
+
+        if (!normalized.StartsWith(assets, StringComparison.OrdinalIgnoreCase))
+            return null;
+
+        return "Assets" + normalized.Substring(assets.Length);
+    }
+
+    private static void EnsureAssetFolder(string assetFolder)
+    {
+        if (!TryNormalizeAssetFolder(assetFolder, out string normalized))
+            throw new ArgumentException("Assets 내부 폴더가 아닙니다.", nameof(assetFolder));
+
+        string[] parts = normalized.Split('/');
+        string current = parts[0];
+
+        for (int i = 1; i < parts.Length; i++)
+        {
+            string next = current + "/" + parts[i];
+
+            if (!AssetDatabase.IsValidFolder(next))
+                AssetDatabase.CreateFolder(current, parts[i]);
+
+            current = next;
+        }
+    }
+
     private void CreateEmptyBundle()
     {
         string path = EditorUtility.SaveFilePanelInProject(
@@ -1339,19 +1711,36 @@ public sealed class ProjectAbyssCharacterStudio : EditorWindow
         if (string.IsNullOrWhiteSpace(path))
             return;
 
+        CreateBundleFromPrefabAtPath(
+            prefab,
+            path,
+            packReferencedAssetsOnImport,
+            assemblePrefabOnImport);
+    }
+
+    private void CreateBundleFromPrefabAtPath(
+        Character prefab,
+        string path,
+        bool pack,
+        bool assemble)
+    {
+        if (prefab == null || string.IsNullOrWhiteSpace(path))
+            return;
+
         CharacterAuthoringBundle created =
             ScriptableObject.CreateInstance<CharacterAuthoringBundle>();
 
         created.name = Path.GetFileNameWithoutExtension(path);
         AssetDatabase.CreateAsset(created, path);
         bundle = created;
-        CapturePrefab(prefab, packReferencedAssetsOnImport);
+        CapturePrefab(prefab, pack);
         EnsureCore();
 
-        if (assemblePrefabOnImport)
+        if (assemble)
             AssemblePrefab();
 
         AssetDatabase.SaveAssets();
+        AssetDatabase.Refresh();
         Selection.activeObject = bundle;
     }
 
@@ -1482,8 +1871,27 @@ public sealed class ProjectAbyssCharacterStudio : EditorWindow
 
             foreach (SkillDefinition skill in loadout.EnumerateAllDefinitions())
             {
-                if (skill != null && skill.VisualDefinition == null)
-                    result.Add(Warn($"{skill.name}: SkillVisualDefinition이 없습니다."));
+                if (skill == null)
+                    continue;
+
+                if (skill.VisualDefinition == null)
+                {
+                    result.Add(Error($"{skill.name}: SkillVisualDefinition이 없습니다."));
+                    continue;
+                }
+
+                if (!skill.VisualDefinition.HasTimelineCutscene)
+                {
+                    SkillCutsceneDefinition cutscene =
+                        skill.VisualDefinition.CutsceneDefinition;
+
+                    string missing = cutscene == null
+                        ? "SkillCutsceneDefinition"
+                        : string.Join(", ", cutscene.GetMissingRequirements());
+
+                    result.Add(Error(
+                        $"{skill.name}: Timeline-only 필수 구성 누락 ({missing})"));
+                }
             }
         }
 

@@ -12,11 +12,19 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a85a262093fed2b45a6f05cb3a256be9, type: 3}
   m_Name: "\uB09C\uD3ED\uD55C \uACF5\uACA9(\uACB0\uD22C)"
   m_EditorClassIdentifier: 
+  skillId: 313842626a60416f97ac13a24ca171e3
   SkillName: "\uB09C\uD3ED\uD55C \uACF5\uACA9(\uACB0\uD22C)"
   ActionType: 1
   BasePower: 2
   CanBreakPart: 0
   GainPrestige: 1
+  AttackWeight:
+    Weight: 1
+    SecondaryPartMode: 0
+    SecondaryDamageMultiplier: 1
+    AllowBrokenSecondaryParts: 1
+  Description: 
+  Keywords: []
   Rolls:
   - Index: 0
     Type: 0
@@ -27,6 +35,8 @@ MonoBehaviour:
     CoinBackPower: 2
     CoinFrontPower: 3
     CoinFrontIsCritical: 0
+    SlotMinimum: 1
+    SlotMaximum: 9
     ChinchiroHifumiPower: -4
     ChinchiroBlankPower: 3
     ChinchiroMokuPower: 7
@@ -45,6 +55,8 @@ MonoBehaviour:
     CoinBackPower: 2
     CoinFrontPower: 3
     CoinFrontIsCritical: 0
+    SlotMinimum: 1
+    SlotMaximum: 9
     ChinchiroHifumiPower: -4
     ChinchiroBlankPower: 3
     ChinchiroMokuPower: 7
@@ -63,6 +75,8 @@ MonoBehaviour:
     CoinBackPower: 2
     CoinFrontPower: 3
     CoinFrontIsCritical: 0
+    SlotMinimum: 1
+    SlotMaximum: 9
     ChinchiroHifumiPower: -4
     ChinchiroBlankPower: 3
     ChinchiroMokuPower: 7
@@ -109,4 +123,4 @@ MonoBehaviour:
   ConsumeAllCustomResource: 0
   OverridePrestigeUsePolicy: 0
   PrestigeUsePolicy: 1
-  VisualDefinition: {fileID: 0}
+  VisualDefinition: {fileID: 11400000, guid: 205eeea79b985124d8e84f90aa20432b, type: 2}
