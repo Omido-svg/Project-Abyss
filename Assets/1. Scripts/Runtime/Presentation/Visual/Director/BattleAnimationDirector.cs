@@ -361,8 +361,8 @@ public class BattleAnimationDirector : MonoBehaviour
         SkillCutsceneSegment segment,
         BattleVisualRequest request)
     {
-        SkillCutsceneDefinition definition =
-            visual?.CutsceneDefinition;
+        SkillVisualDefinition definition =
+            visual;
 
         bool valid =
             skillCutsceneDirector != null &&
@@ -374,7 +374,7 @@ public class BattleAnimationDirector : MonoBehaviour
             return true;
 
         string missing = definition == null
-            ? "SkillCutsceneDefinition"
+            ? "SkillVisualDefinition"
             : string.Join(", ", definition.GetMissingRequirements());
 
         Debug.LogError(
@@ -397,10 +397,13 @@ public class BattleAnimationDirector : MonoBehaviour
             int exchangeIndex,
             bool isOneSided,
             float playbackSpeed,
-            bool manageActionLifecycle)
+            bool manageActionLifecycle,
+            bool includeReturnTimeline = true,
+            bool restoreStaging = true,
+            bool trackSequenceStaging = false)
     {
-        SkillCutsceneDefinition definition =
-            visual?.CutsceneDefinition;
+        SkillVisualDefinition definition =
+            visual;
 
         if (playback == null ||
             request == null ||
@@ -425,8 +428,17 @@ public class BattleAnimationDirector : MonoBehaviour
             request.Target != null &&
             !request.IsSelfTarget)
         {
-            playback.ShouldRestoreFacing =
-                definition.RestoreFacing;
+            if (trackSequenceStaging)
+            {
+                playback.ShouldRestoreFacing =
+                    playback.ShouldRestoreFacing ||
+                    definition.RestoreFacing;
+            }
+            else
+            {
+                playback.ShouldRestoreFacing =
+                    definition.RestoreFacing;
+            }
 
             yield return FaceEachOther(
                 views,
@@ -439,10 +451,22 @@ public class BattleAnimationDirector : MonoBehaviour
             request.Target != null &&
             !request.IsSelfTarget)
         {
-            playback
-                .ShouldRestoreAttackerPosition =
-                    definition
-                        .RestoreMovement;
+            if (trackSequenceStaging)
+            {
+                if (definition.RestoreMovement)
+                {
+                    playback.TrackStagedMover(
+                        views.AttackerMover,
+                        visual.MoveSettings);
+                }
+            }
+            else
+            {
+                playback
+                    .ShouldRestoreAttackerPosition =
+                        definition
+                            .RestoreMovement;
+            }
 
             if (visual.MoveSettings != null)
             {
@@ -570,7 +594,8 @@ public class BattleAnimationDirector : MonoBehaviour
 
                             break;
                     }
-                });
+                },
+                includeReturnTimeline);
 
         views.AttackerView?
             .RefreshVisualState();
@@ -578,36 +603,39 @@ public class BattleAnimationDirector : MonoBehaviour
         views.TargetView?
             .RefreshVisualState();
 
-        if (views.AttackerMover != null &&
+        if (restoreStaging)
+        {
+            if (views.AttackerMover != null &&
+                playback
+                    .ShouldRestoreAttackerPosition)
+            {
+                if (visual.MoveSettings != null)
+                {
+                    yield return views.AttackerMover
+                        .ReturnToDefaultPosition(
+                            visual.MoveSettings);
+                }
+                else
+                {
+                    yield return views.AttackerMover
+                        .ReturnToDefaultPosition();
+                }
+            }
+
             playback
-                .ShouldRestoreAttackerPosition)
-        {
-            if (visual.MoveSettings != null)
-            {
-                yield return views.AttackerMover
-                    .ReturnToDefaultPosition(
-                        visual.MoveSettings);
-            }
-            else
-            {
-                yield return views.AttackerMover
-                    .ReturnToDefaultPosition();
-            }
-        }
+                .ShouldRestoreAttackerPosition =
+                    false;
 
-        playback
-            .ShouldRestoreAttackerPosition =
+            if (definition.RestoreFacing &&
+                playback.ShouldRestoreFacing)
+            {
+                yield return ReturnFacing(
+                    views);
+            }
+
+            playback.ShouldRestoreFacing =
                 false;
-
-        if (definition.RestoreFacing &&
-            playback.ShouldRestoreFacing)
-        {
-            yield return ReturnFacing(
-                views);
         }
-
-        playback.ShouldRestoreFacing =
-            false;
 
         if (!manageActionLifecycle)
             yield break;
@@ -692,6 +720,13 @@ public class BattleAnimationDirector : MonoBehaviour
         // 합 수치/UI는 전투 해석 결과를 보여주는 별도 Presentation이다.
         // 실제 스킬 Animation / Camera / VFX / Hit 타이밍은 각 교환의
         // ClashAttack Timeline만 담당한다.
+        // 이동/Facing/Return은 합 전체가 끝날 때 한 번만 복구한다.
+
+        BattleVisualRequest lastAttackRequest =
+            null;
+
+        SkillVisualDefinition lastAttackVisual =
+            visual;
 
         for (int i = 0;
              i < request.ClashExchanges.Count;
@@ -774,6 +809,14 @@ public class BattleAnimationDirector : MonoBehaviour
 
             if (exchange.HasAttack)
             {
+                lastAttackRequest =
+                    exchange.AttackRequest;
+
+                lastAttackVisual =
+                    exchange.AttackRequest
+                        .VisualDefinition ??
+                    visual;
+
                 yield return PlayClashExchangeAttack(
                     playback,
                     exchange.AttackRequest,
@@ -809,19 +852,37 @@ public class BattleAnimationDirector : MonoBehaviour
             playback,
             request);
 
+        if (!playback.IsCancellationRequested &&
+            skillCutsceneDirector != null &&
+            lastAttackRequest != null &&
+            lastAttackVisual != null &&
+            !lastAttackRequest.WasKilled &&
+            lastAttackVisual.ReturnTimeline != null)
+        {
+            playback.SetCurrentRequest(
+                lastAttackRequest);
+
+            yield return skillCutsceneDirector
+                .PlayReturnSegment(
+                    lastAttackRequest,
+                    lastAttackVisual,
+                    playbackSpeed: 1f);
+        }
+
+        yield return RestoreClashSequenceStaging(
+            playback,
+            rootViews);
+
         playback.ResetToRootRequest();
 
         if (logDebug)
         {
             Debug.Log(
-                "[BattleAnimationDirector] 연속 합 교환 종료 / 원위치 복귀 시작");
+                "[BattleAnimationDirector] 연속 합 종료 / 전체 굴림 소모 후 원위치 복귀 완료");
         }
 
         rootViews.AttackerView?.RefreshVisualState();
         rootViews.TargetView?.RefreshVisualState();
-
-        // 각 ClashAttack Timeline이 자체 Return/Result Segment를 재생하고
-        // 이동·Facing 복구까지 마친다. 여기서는 합 UI만 닫는다.
 
         if (clashRollPresentationUI != null)
         {
@@ -896,10 +957,64 @@ public class BattleAnimationDirector : MonoBehaviour
             exchangeIndex: exchange?.ExchangeIndex ?? -1,
             isOneSided: exchange?.IsOneSided == true,
             playbackSpeed: animationSpeed,
-            manageActionLifecycle: false);
+            manageActionLifecycle: false,
+            includeReturnTimeline: false,
+            restoreStaging: false,
+            trackSequenceStaging: true);
 
         playback.ActiveActionView = null;
         playback.ActiveTargetView = null;
+    }
+
+    private IEnumerator RestoreClashSequenceStaging(
+        BattleVisualPlaybackState playback,
+        CharacterViewSet rootViews)
+    {
+        if (playback == null)
+            yield break;
+
+        List<Coroutine> returnRoutines =
+            new List<Coroutine>();
+
+        foreach (KeyValuePair<
+                     CharacterActionMover,
+                     CharacterActionMoveSettings> pair
+                 in playback.StagedMoverSettings)
+        {
+            CharacterActionMover mover =
+                pair.Key;
+
+            if (mover == null)
+                continue;
+
+            IEnumerator routine =
+                pair.Value != null
+                    ? mover.ReturnToDefaultPosition(
+                        pair.Value)
+                    : mover.ReturnToDefaultPosition();
+
+            returnRoutines.Add(
+                StartCoroutine(
+                    routine));
+        }
+
+        foreach (Coroutine routine
+                 in returnRoutines)
+        {
+            if (routine != null)
+                yield return routine;
+        }
+
+        playback.ClearStagedMovers();
+
+        if (playback.ShouldRestoreFacing)
+        {
+            yield return ReturnFacing(
+                rootViews);
+
+            playback.ShouldRestoreFacing =
+                false;
+        }
     }
 
     private IEnumerator ShowClashPowerStep(
@@ -1296,8 +1411,26 @@ public class BattleAnimationDirector : MonoBehaviour
 
                     playback.ShouldRestoreAttackerPosition = false;
 
-                    if (shouldRestore && playback.AttackerMover != null)
-                        playback.AttackerMover.ReturnToDefaultPositionInstant();
+                    if (shouldRestore &&
+                        playback.AttackerMover != null)
+                    {
+                        playback.AttackerMover
+                            .ReturnToDefaultPositionInstant();
+                    }
+
+                    foreach (CharacterActionMover mover
+                             in playback
+                                 .StagedMoverSettings
+                                 .Keys)
+                    {
+                        if (mover != null)
+                        {
+                            mover
+                                .ReturnToDefaultPositionInstant();
+                        }
+                    }
+
+                    playback.ClearStagedMovers();
                     break;
                 }
 
@@ -1454,14 +1587,14 @@ public class BattleAnimationDirector : MonoBehaviour
         bool isOneSided = false)
     {
         if (request == null ||
-            visual?.CameraDefinition == null ||
+            visual == null ||
             cameraDirector == null)
         {
             return;
         }
 
         SkillCameraImpactPulse pulse =
-            visual.CameraDefinition.FindImpactPulse(
+            visual.FindImpactPulse(
                 timing,
                 hitIndex,
                 exchangeIndex,
@@ -1612,8 +1745,8 @@ public class BattleAnimationDirector : MonoBehaviour
         }
             
         bool useExplicitVisualFx =
-            visual.CutsceneDefinition != null &&
-            visual.CutsceneDefinition.UseExplicitVisualFxTracks;
+            visual != null &&
+            visual.UseExplicitVisualFxTracks;
 
         if (!useExplicitVisualFx)
         {

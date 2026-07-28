@@ -19,13 +19,10 @@ public static class ProjectAbyssDataAssetExporter
         "Assets/2. Data";
 
     private const string OutputFolder =
+        "AllDataTXT";
+
+    private const string LegacyAssetsOutputFolder =
         "Assets/AllDataTXT";
-
-    private const string LegacySingleFileName =
-        "Project_Abyss_All_Data_Assets_For_AI.txt";
-
-    private const string LegacyManifestFileName =
-        "Project_Abyss_All_Data_Manifest_For_AI.txt";
 
     private const string PartsFolderName =
         "Parts";
@@ -43,7 +40,7 @@ public static class ProjectAbyssDataAssetExporter
         "Tools/Project Abyss/Export All Data Assets for AI";
 
     private const string FormatVersion =
-        "3.0.0";
+        "3.1.0";
 
     private const string Separator =
         "================================================================================";
@@ -95,7 +92,8 @@ public static class ProjectAbyssDataAssetExporter
                 ".vfx",
                 ".vfxoperator",
                 ".vfxblock",
-                ".inputactions"
+                ".inputactions",
+                ".unity"
             };
 
     [MenuItem(CoreMenuPath, priority = 2002)]
@@ -186,7 +184,7 @@ public static class ProjectAbyssDataAssetExporter
             RecreateDirectory(
                 temporaryDirectory);
 
-            CleanupLegacyRootExport(
+            CleanupLegacyAssetsExport(
                 projectRoot);
 
             ExportSummary summary =
@@ -198,27 +196,11 @@ public static class ProjectAbyssDataAssetExporter
                     manifestPath,
                     profile);
 
-            AssetDatabase.Refresh(
-                ImportAssetOptions.ForceUpdate);
-
-            TextAsset manifest =
-                AssetDatabase.LoadAssetAtPath<TextAsset>(
-                    $"{profile.RelativeOutputFolder}/{profile.ManifestFileName}");
-
-            if (manifest != null)
-            {
-                Selection.activeObject =
-                    manifest;
-
-                EditorGUIUtility.PingObject(
-                    manifest);
-            }
-
             EditorUtility.DisplayDialog(
                 $"{profile.DisplayName} Export Complete",
                 $"AI 분석용 데이터 에셋 내보내기가 완료되었습니다.\n\n" +
                 $"Mode: {profile.Mode}\n" +
-                $"Manifest: {profile.RelativeOutputFolder}/{profile.ManifestFileName}\n" +
+                $"Manifest: {NormalizePath(manifestPath)}\n" +
                 $"상세 에셋: {summary.DetailAssetCount}개\n" +
                 $"TXT Part: {summary.PartCount}개\n" +
                 $"ZIP Part: {summary.PartCount}개\n" +
@@ -238,9 +220,6 @@ public static class ProjectAbyssDataAssetExporter
 
             DeleteFileIfExists(
                 manifestPath);
-
-            DeleteFileIfExists(
-                manifestPath + ".meta");
 
             EditorUtility.DisplayDialog(
                 $"{profile.DisplayName} Export Cancelled",
@@ -264,55 +243,22 @@ public static class ProjectAbyssDataAssetExporter
         }
     }
 
-    private static void CleanupLegacyRootExport(
+    private static void CleanupLegacyAssetsExport(
         string projectRoot)
     {
-        string legacyRoot =
+        string legacyAssetsRoot =
             Path.GetFullPath(
                 Path.Combine(
                     projectRoot,
-                    OutputFolder));
+                    LegacyAssetsOutputFolder));
 
-        DeleteDirectoryIfExists(
-            Path.Combine(
-                legacyRoot,
-                PartsFolderName));
+        DeleteDirectoryIfExists(legacyAssetsRoot);
+        DeleteFileIfExists(legacyAssetsRoot + ".meta");
 
-        DeleteDirectoryIfExists(
-            Path.Combine(
-                legacyRoot,
-                UploadZipFolderName));
-
-        DeleteFileIfExists(
-            Path.Combine(
-                legacyRoot,
-                PartsFolderName + ".meta"));
-
-        DeleteFileIfExists(
-            Path.Combine(
-                legacyRoot,
-                UploadZipFolderName + ".meta"));
-
-        string[] legacyFiles =
-        {
-            LegacySingleFileName,
-            LegacyManifestFileName,
-            LegacyManifestFileName + ".zip"
-        };
-
-        foreach (string legacyFile
-                 in legacyFiles)
-        {
-            DeleteFileIfExists(
-                Path.Combine(
-                    legacyRoot,
-                    legacyFile));
-
-            DeleteFileIfExists(
-                Path.Combine(
-                    legacyRoot,
-                    legacyFile + ".meta"));
-        }
+        // 이전 버전이 Assets 아래에 생성했던 파일은 AssetDatabase 대상이므로
+        // 삭제 사실만 반영한다. 새 출력은 프로젝트 루트/AllDataTXT 아래에
+        // 저장되어 Unity .meta 파일이 생성되지 않는다.
+        AssetDatabase.Refresh(ImportAssetOptions.ForceUpdate);
     }
 
     private static ExportSummary Export(
@@ -1445,7 +1391,7 @@ public static class ProjectAbyssDataAssetExporter
                             "Assets/",
                             StringComparison.Ordinal) &&
                         !path.StartsWith(
-                            OutputFolder + "/",
+                            LegacyAssetsOutputFolder + "/",
                             StringComparison.Ordinal) &&
                         !AssetDatabase.IsValidFolder(path))
                 .OrderBy(
@@ -1547,6 +1493,12 @@ public static class ProjectAbyssDataAssetExporter
 
         writer.WriteLine(
             $"EXPORTED_AT_UTC: {DateTime.UtcNow:O}");
+
+        writer.WriteLine(
+            $"EXPORTED_AT_LOCAL: {DateTimeOffset.Now:O}");
+
+        writer.WriteLine(
+            $"LOCAL_TIME_ZONE: {TimeZoneInfo.Local.Id}");
 
         writer.WriteLine(
             $"UNITY_VERSION: {Application.unityVersion}");
@@ -1803,9 +1755,8 @@ public static class ProjectAbyssDataAssetExporter
                 "MODEL_IMPORTER_META_RAW_TEXT_END");
 
             UnityEngine.Object[] subAssets =
-                AssetDatabase.LoadAllAssetsAtPath(
-                    model.AssetPath)
-                ?? Array.Empty<UnityEngine.Object>();
+                SafeLoadAllAssetsAtPath(
+                    model.AssetPath);
 
             writer.WriteLine(
                 $"MODEL_SUB_ASSET_COUNT: {subAssets.Length}");
@@ -2132,10 +2083,25 @@ public static class ProjectAbyssDataAssetExporter
             writer,
             importer);
 
+        bool isSceneAsset =
+            string.Equals(
+                asset.Extension,
+                ".unity",
+                StringComparison.OrdinalIgnoreCase);
+
         UnityEngine.Object[] allObjects =
-            AssetDatabase.LoadAllAssetsAtPath(
-                asset.AssetPath)
-            ?? Array.Empty<UnityEngine.Object>();
+            isSceneAsset
+                ? Array.Empty<UnityEngine.Object>()
+                : SafeLoadAllAssetsAtPath(asset.AssetPath);
+
+        if (isSceneAsset)
+        {
+            writer.WriteLine("SCENE_OBJECT_DESERIALIZATION: SKIPPED");
+            writer.WriteLine(
+                "SCENE_DETAIL_POLICY: dependencies + importer + raw YAML; " +
+                "scene objects are exported by ProjectAbyssHierarchyExporter");
+            writer.WriteLine();
+        }
 
         WriteSubAssetIndex(
             writer,
@@ -2167,7 +2133,7 @@ public static class ProjectAbyssDataAssetExporter
                 i);
         }
 
-        if (allObjects.Length == 0)
+        if (allObjects.Length == 0 && !isSceneAsset)
         {
             UnityEngine.Object mainObject =
                 AssetDatabase.LoadMainAssetAtPath(
@@ -2195,6 +2161,40 @@ public static class ProjectAbyssDataAssetExporter
             "ASSET_END");
 
         writer.WriteLine();
+    }
+
+    private static UnityEngine.Object[] SafeLoadAllAssetsAtPath(
+        string assetPath)
+    {
+        if (string.IsNullOrWhiteSpace(assetPath))
+            return Array.Empty<UnityEngine.Object>();
+
+        // Unity 6에서는 .unity 파일을 LoadAllAssetsAtPath로 읽으면
+        // Scene Object가 threaded deserialization 경로에 들어가
+        // "Do not use ReadObjectThreaded on scene objects!" 경고가 발생할 수 있다.
+        // Scene의 실제 Object/Component 정보는 HierarchyExporter가 담당하고,
+        // DataExporter는 dependency/importer/raw YAML만 기록한다.
+        if (string.Equals(
+                Path.GetExtension(assetPath),
+                ".unity",
+                StringComparison.OrdinalIgnoreCase))
+        {
+            return Array.Empty<UnityEngine.Object>();
+        }
+
+        try
+        {
+            return AssetDatabase.LoadAllAssetsAtPath(assetPath)
+                   ?? Array.Empty<UnityEngine.Object>();
+        }
+        catch (Exception exception)
+        {
+            Debug.LogWarning(
+                $"[ProjectAbyssDataAssetExporter] 하위 에셋 로드 생략: " +
+                $"{assetPath}\n{exception.Message}");
+
+            return Array.Empty<UnityEngine.Object>();
+        }
     }
 
     private static void WriteDependencies(
@@ -4650,6 +4650,12 @@ public static class ProjectAbyssDataAssetExporter
             $"COMPLETED_AT_UTC: {DateTime.UtcNow:O}");
 
         writer.WriteLine(
+            $"COMPLETED_AT_LOCAL: {DateTimeOffset.Now:O}");
+
+        writer.WriteLine(
+            $"LOCAL_TIME_ZONE: {TimeZoneInfo.Local.Id}");
+
+        writer.WriteLine(
             "EXPORT_FOOTER_END");
     }
 
@@ -5572,6 +5578,12 @@ public static class ProjectAbyssDataAssetExporter
                 $"EXPORTED_AT_UTC: {DateTime.UtcNow:O}");
 
             writer.WriteLine(
+                $"EXPORTED_AT_LOCAL: {DateTimeOffset.Now:O}");
+
+            writer.WriteLine(
+                $"LOCAL_TIME_ZONE: {TimeZoneInfo.Local.Id}");
+
+            writer.WriteLine(
                 $"UNITY_VERSION: {Application.unityVersion}");
 
             writer.WriteLine(
@@ -5784,6 +5796,12 @@ public static class ProjectAbyssDataAssetExporter
 
             writer.WriteLine(
                 $"COMPLETED_AT_UTC: {DateTime.UtcNow:O}");
+
+            writer.WriteLine(
+                $"COMPLETED_AT_LOCAL: {DateTimeOffset.Now:O}");
+
+            writer.WriteLine(
+                $"LOCAL_TIME_ZONE: {TimeZoneInfo.Local.Id}");
 
             writer.WriteLine(
                 "PART_FOOTER_END");

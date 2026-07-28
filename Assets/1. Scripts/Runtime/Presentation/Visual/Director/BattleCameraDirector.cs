@@ -1,5 +1,4 @@
 using System.Collections;
-using System.Collections.Generic;
 using Unity.Cinemachine;
 using UnityEngine;
 
@@ -43,10 +42,6 @@ public class BattleCameraDirector : MonoBehaviour
     private float impactPulseRestoreFov;
     private bool hasImpactPulseRestoreFov;
 
-    private readonly HashSet<string>
-        reportedCameraPointFallbacks =
-            new();
-
     private bool interactionCameraActive;
     private Vector3 interactionTargetPosition;
     private Quaternion interactionTargetRotation;
@@ -81,7 +76,7 @@ public class BattleCameraDirector : MonoBehaviour
         {
             Debug.LogError(
                 "[BattleCameraDirector] Cinemachine 3 BattleCinemachineRig 구성이 유효하지 않습니다. " +
-                "전투 씬에서는 CameraController 폴백을 사용하지 않습니다.",
+                "전투 씬의 Cinemachine 3 Rig 구성을 확인하세요.",
                 this);
         }
     }
@@ -338,30 +333,6 @@ public class BattleCameraDirector : MonoBehaviour
     public void ReturnFromInteraction()
     {
         ReturnInternal();
-    }
-
-    public void Return(SkillCameraDefinition definition)
-    {
-        if (definition != null && definition.OverrideReturnBrainBlend)
-        {
-            ApplyBlendForNextTransition(
-                definition.ReturnBlendStyle,
-                definition.ReturnBlendTime);
-        }
-
-        ReturnInternal(false);
-    }
-
-    public void Return(SkillCameraShot shot)
-    {
-        if (shot != null && shot.OverrideBrainBlend)
-        {
-            ApplyBlendForNextTransition(
-                shot.BlendStyle,
-                shot.BlendTime);
-        }
-
-        ReturnInternal(false);
     }
 
     public void Return(
@@ -703,291 +674,6 @@ public class BattleCameraDirector : MonoBehaviour
         camera.Lens = lens;
     }
 
-    public IEnumerator PlayShotsByTiming(
-        BattleVisualRequest request,
-        SkillCameraDefinition definition,
-        SkillCameraShotTiming timing)
-    {
-        if (request == null || definition?.Shots == null)
-            yield break;
-
-        foreach (SkillCameraShot shot in definition.Shots)
-        {
-            if (shot == null || shot.Timing != timing)
-                continue;
-
-            yield return PlayShot(request, shot);
-        }
-    }
-
-    public IEnumerator PlayShot(
-        BattleVisualRequest request,
-        SkillCameraShot shot)
-    {
-        if (request == null || shot == null || !EnsureRig("PlayShot"))
-            yield break;
-
-        StopInteractionFocus();
-
-        if (shot.OverrideBrainBlend)
-        {
-            ApplyBlendForNextTransition(
-                shot.BlendStyle,
-                shot.BlendTime);
-        }
-
-        bool shotStarted = false;
-
-        if (shot.UseSceneCameraPoint)
-            shotStarted = PlaySceneCameraPoint(request, shot);
-
-        if (!shotStarted)
-        {
-            switch (shot.ShotType)
-            {
-                case SkillCameraShotType.FocusBetween:
-                case SkillCameraShotType.ClashWide:
-                    shotStarted = PlayGroupShot(request, shot);
-                    break;
-
-                case SkillCameraShotType.AttackerClose:
-                case SkillCameraShotType.AttackerOverShoulder:
-                    shotStarted = PlayCharacterPoseShot(
-                        request.Attacker,
-                        request.Target,
-                        shot);
-                    break;
-
-                case SkillCameraShotType.TargetClose:
-                case SkillCameraShotType.TargetOverShoulder:
-                case SkillCameraShotType.HitImpact:
-                    shotStarted = PlayCharacterPoseShot(
-                        request.Target,
-                        request.Attacker,
-                        shot);
-                    break;
-
-                case SkillCameraShotType.ReturnOverview:
-                    Return(shot);
-                    shotStarted = true;
-                    break;
-            }
-        }
-
-        if (!shotStarted)
-        {
-            Debug.LogWarning(
-                $"[BattleCameraDirector] Camera Shot을 시작하지 못했습니다. " +
-                $"Type={shot.ShotType}, Timing={shot.Timing}",
-                this);
-            yield break;
-        }
-
-        yield return WaitAndShake(shot);
-    }
-
-    private IEnumerator WaitAndShake(SkillCameraShot shot)
-    {
-        if (shot == null)
-            yield break;
-
-        if (shot.BlendWaitTime > 0f)
-            yield return WaitUntilArrived(shot.BlendWaitTime);
-
-        if (shot.UseShake)
-            PlayShake(shot.Shake);
-
-        if (shot.Duration > 0f)
-            yield return new WaitForSeconds(shot.Duration);
-    }
-
-    private bool PlayGroupShot(
-        BattleVisualRequest request,
-        SkillCameraShot shot)
-    {
-        if (request == null || shot == null || rig?.GroupCamera == null)
-            return false;
-
-        Transform attackerTarget =
-            BattleCameraTargetResolver.GetLookAtTarget(request.Attacker);
-
-        Transform targetTarget =
-            BattleCameraTargetResolver.GetLookAtTarget(request.Target);
-
-        if (attackerTarget == null && targetTarget == null)
-            return false;
-
-        if (attackerTarget == targetTarget)
-        {
-            groupBinder?.BindOneTarget(
-                attackerTarget,
-                Mathf.Max(shot.AttackerWeight, shot.TargetWeight),
-                Mathf.Max(shot.AttackerRadius, shot.TargetRadius));
-
-            PlaceSingleTargetGroupCamera(
-                attackerTarget,
-                shot.SideDistance,
-                shot.SideHeight,
-                shot.LookAtHeight,
-                shot.FlipSide);
-        }
-        else
-        {
-            groupBinder?.BindTwoTargets(
-                attackerTarget,
-                targetTarget,
-                shot.AttackerWeight,
-                shot.TargetWeight,
-                shot.AttackerRadius,
-                shot.TargetRadius);
-
-            if (shot.UseSideViewPlacement)
-            {
-                PlaceGroupCameraSideView(
-                    attackerTarget,
-                    targetTarget,
-                    shot.SideDistance,
-                    shot.SideHeight,
-                    shot.LookAtHeight,
-                    shot.FlipSide);
-            }
-        }
-
-        if (!rig.SetLive(BattleCameraRigSlot.Group))
-            return false;
-
-        Log(
-            $"Group Shot / Timing={shot.Timing}, Type={shot.ShotType}, " +
-            $"Attacker={GetCharacterName(request.Attacker)}, " +
-            $"Target={GetCharacterName(request.Target)}");
-
-        return true;
-    }
-
-    private bool PlayCharacterPoseShot(
-        Character focusCharacter,
-        Character lookCharacter,
-        SkillCameraShot shot)
-    {
-        if (focusCharacter == null || shot == null || !EnsurePoseCamera("PlayCharacterPoseShot"))
-            return false;
-
-        Transform focusTarget =
-            BattleCameraTargetResolver.GetLookAtTarget(focusCharacter);
-
-        Transform lookTarget =
-            BattleCameraTargetResolver.GetLookAtTarget(lookCharacter);
-
-        if (focusTarget == null)
-            return false;
-
-        Vector3 lookAtPosition =
-            focusTarget.position +
-            focusTarget.TransformDirection(shot.LookAtOffset);
-
-        Vector3 positionOffset =
-            focusTarget.TransformDirection(shot.PositionOffset);
-
-        if (positionOffset.sqrMagnitude <= 0.0001f)
-        {
-            Vector3 fallbackDirection =
-                lookTarget != null
-                    ? focusTarget.position - lookTarget.position
-                    : -focusTarget.forward;
-
-            if (fallbackDirection.sqrMagnitude <= 0.0001f)
-                fallbackDirection = Vector3.back;
-
-            positionOffset =
-                fallbackDirection.normalized *
-                Mathf.Max(1f, shot.FocusDistance);
-        }
-
-        SetPoseCamera(
-            lookAtPosition + positionOffset,
-            lookAtPosition,
-            null);
-
-        Log(
-            $"Character Pose Shot / Character={GetCharacterName(focusCharacter)}, " +
-            $"ShotType={shot.ShotType}");
-
-        return true;
-    }
-
-    private bool PlaySceneCameraPoint(
-        BattleVisualRequest request,
-        SkillCameraShot shot)
-    {
-        if (request == null || shot == null || !EnsurePoseCamera("PlaySceneCameraPoint"))
-            return false;
-
-        if (!BattleCameraTargetResolver.TryResolveCameraPoint(
-                request,
-                shot.CameraPoint,
-                out Transform cameraPoint,
-                out string cameraFailure))
-        {
-            ReportCameraPointFallbackOnce(
-                shot,
-                cameraFailure);
-
-            // PlayShot()이 ShotType에 맞는 Group/Character Pose Shot으로
-            // 즉시 폴백한다.
-            return false;
-        }
-
-        Transform lookAtPoint = null;
-
-        if (shot.RotationMode == SkillCameraRotationMode.LookAtPoint)
-        {
-            if (!BattleCameraTargetResolver.TryResolveCameraPoint(
-                    request,
-                    shot.LookAtPoint,
-                    out lookAtPoint,
-                    out string lookFailure))
-            {
-                Character fallbackCharacter =
-                    BattleCameraTargetResolver.ResolveOwner(
-                        request,
-                        shot.LookAtPoint != null
-                            ? shot.LookAtPoint.Owner
-                            : SkillCameraPointOwner.Target);
-
-                lookAtPoint =
-                    BattleCameraTargetResolver.GetLookAtTarget(
-                        fallbackCharacter);
-
-                if (lookAtPoint == null)
-                {
-                    Debug.LogWarning(
-                        $"[BattleCameraDirector] LookAtPoint 찾기 실패 / {lookFailure}",
-                        this);
-                }
-            }
-        }
-
-        Quaternion rotation =
-            shot.RotationMode == SkillCameraRotationMode.CameraPointRotation ||
-            lookAtPoint == null
-                ? cameraPoint.rotation
-                : CreateLookRotation(
-                    lookAtPoint.position - cameraPoint.position,
-                    cameraPoint.rotation);
-
-        rig.PoseCamera.transform.SetPositionAndRotation(
-            cameraPoint.position,
-            rotation);
-
-        if (!rig.SetLive(BattleCameraRigSlot.Pose))
-            return false;
-
-        Log(
-            $"Scene CameraPoint Shot / CameraPoint={cameraPoint.name}");
-
-        return true;
-    }
-
     private void FocusSingleTargetWithGroupCamera(
         Transform target,
         float sideDistance,
@@ -1274,27 +960,6 @@ public class BattleCameraDirector : MonoBehaviour
         return character.Data != null
             ? character.Data.CharacterName
             : character.name;
-    }
-
-    private void ReportCameraPointFallbackOnce(
-        SkillCameraShot shot,
-        string failure)
-    {
-        string safeFailure =
-            string.IsNullOrWhiteSpace(failure)
-                ? "UNKNOWN"
-                : failure;
-
-        string key =
-            $"{shot?.CameraPoint}:{shot?.ShotType}:{safeFailure}";
-
-        if (!reportedCameraPointFallbacks.Add(key))
-            return;
-
-        Log(
-            $"CameraPoint 폴백 / " +
-            $"ShotType={shot?.ShotType}, " +
-            $"{safeFailure}");
     }
 
     private void Log(string message)

@@ -1,21 +1,34 @@
-
+using DG.Tweening;
 using TMPro;
 using UnityEngine;
 
 /// <summary>
-/// 플레이어의 현재 에너지와 계획에 예약된 에너지를 표시한다.
-/// ActionManager에는 슬롯 변경 이벤트가 없으므로 값이 바뀔 때만 텍스트를 갱신한다.
+/// 플레이어의 현재 빛과 계획에 예약된 빛을 표시한다.
+/// 선택 중인 스킬 비용도 현재 논리 슬롯 교체 기준으로 즉시 미리 보여준다.
 /// </summary>
 public sealed class BattleEnergyUI : MonoBehaviour
 {
     [SerializeField] private BattleManager battleManager;
+    [SerializeField] private BattleUIManager battleUIManager;
     [SerializeField] private TMP_Text energyText;
-    [SerializeField] private string title = "에너지";
+    [SerializeField] private string title = "빛";
     [SerializeField] private bool showPlannedCost = true;
+
+    [Header("Insufficient Light Feedback")]
+    [SerializeField] private Color insufficientColor =
+        new Color(1f, 0.18f, 0.18f, 1f);
+    [SerializeField, Min(0.05f)] private float feedbackDuration = 0.42f;
+    [SerializeField, Min(0f)] private float shakeStrength = 14f;
 
     private BattleContext context;
     private BattleEvent battleEvent;
     private string lastRenderedText;
+    private Sequence feedbackSequence;
+    private Color normalColor = Color.white;
+    private Vector2 normalPosition;
+    private Vector3 normalScale = Vector3.one;
+    private bool visualCaptured;
+    private bool feedbackActive;
 
     public void Configure(
         BattleManager manager,
@@ -23,6 +36,8 @@ public sealed class BattleEnergyUI : MonoBehaviour
     {
         battleManager = manager;
         energyText = text;
+        ResolveManager();
+        CaptureVisual();
         Rebind();
         Refresh(force: true);
     }
@@ -31,6 +46,7 @@ public sealed class BattleEnergyUI : MonoBehaviour
     {
         energyText ??= GetComponentInChildren<TMP_Text>(true);
         ResolveManager();
+        CaptureVisual();
     }
 
     private void OnEnable()
@@ -50,10 +66,12 @@ public sealed class BattleEnergyUI : MonoBehaviour
             battleManager.BattlePrepared -= HandleBattlePrepared;
 
         UnbindBattleEvent();
+        KillFeedback(restore: true);
     }
 
     private void LateUpdate()
     {
+        ResolveManager();
         Refresh(force: false);
     }
 
@@ -63,6 +81,13 @@ public sealed class BattleEnergyUI : MonoBehaviour
         {
             battleManager =
                 FindFirstObjectByType<BattleManager>(
+                    FindObjectsInactive.Include);
+        }
+
+        if (battleUIManager == null)
+        {
+            battleUIManager =
+                FindFirstObjectByType<BattleUIManager>(
                     FindObjectsInactive.Include);
         }
     }
@@ -159,17 +184,36 @@ public sealed class BattleEnergyUI : MonoBehaviour
                 battleManager?.TurnManager != null &&
                 !battleManager.TurnManager.IsResolving;
 
-            if (planning && battleManager.ActionManager != null)
+            if (planning &&
+                battleUIManager != null &&
+                battleUIManager.TryGetPlayerEnergyDisplay(
+                    player,
+                    out int available,
+                    out maximum,
+                    out int planned,
+                    out int pending,
+                    out bool hasPending))
             {
-                int planned =
+                string pendingText = hasPending
+                    ? $" · 선택 {pending}"
+                    : string.Empty;
+
+                rendered =
+                    $"<b>{title} {available}/{maximum}</b>\n" +
+                    $"계획 {planned}{pendingText}";
+            }
+            else if (planning && battleManager.ActionManager != null)
+            {
+                int fallbackPlanned =
                     battleManager.ActionManager
                         .GetPlannedEnergyCost(player);
 
-                int remaining = Mathf.Max(0, current - planned);
+                int remaining =
+                    Mathf.Max(0, current - fallbackPlanned);
 
                 rendered =
-                    $"<b>{title} {current}/{maximum}</b>\n" +
-                    $"계획 {planned} · 잔여 {remaining}";
+                    $"<b>{title} {remaining}/{maximum}</b>\n" +
+                    $"계획 {fallbackPlanned}";
             }
             else
             {
@@ -178,11 +222,99 @@ public sealed class BattleEnergyUI : MonoBehaviour
             }
         }
 
+        if (feedbackActive)
+            rendered = $"<color=#FF3030><b>빛 부족</b></color>\n{rendered}";
+
         if (!force && rendered == lastRenderedText)
             return;
 
         energyText.richText = true;
         energyText.text = rendered;
         lastRenderedText = rendered;
+    }
+
+    public void PlayInsufficientEnergyFeedback(string _ = null)
+    {
+        if (energyText == null)
+            return;
+
+        CaptureVisual();
+        KillFeedback(restore: true);
+
+        feedbackActive = true;
+        energyText.color = insufficientColor;
+
+        RectTransform rect = energyText.rectTransform;
+        rect.anchoredPosition = normalPosition;
+        rect.localScale = normalScale;
+
+        feedbackSequence = DOTween.Sequence()
+            .SetUpdate(true);
+
+        feedbackSequence.Join(
+            rect.DOShakeAnchorPos(
+                feedbackDuration,
+                new Vector2(shakeStrength, 2f),
+                22,
+                80f,
+                false,
+                true));
+
+        feedbackSequence.Join(
+            rect.DOPunchScale(
+                new Vector3(0.08f, 0.08f, 0f),
+                feedbackDuration * 0.75f,
+                8,
+                0.75f));
+
+        feedbackSequence.OnComplete(() =>
+        {
+            feedbackSequence = null;
+            feedbackActive = false;
+            RestoreVisual();
+            Refresh(force: true);
+        });
+
+        Refresh(force: true);
+    }
+
+    private void CaptureVisual()
+    {
+        if (visualCaptured || energyText == null)
+            return;
+
+        normalColor = energyText.color;
+        normalPosition = energyText.rectTransform.anchoredPosition;
+        normalScale = energyText.rectTransform.localScale;
+        visualCaptured = true;
+    }
+
+    private void KillFeedback(bool restore)
+    {
+        if (feedbackSequence != null)
+        {
+            feedbackSequence.Kill(false);
+            feedbackSequence = null;
+        }
+
+        feedbackActive = false;
+
+        if (restore)
+            RestoreVisual();
+    }
+
+    private void RestoreVisual()
+    {
+        if (!visualCaptured || energyText == null)
+            return;
+
+        energyText.color = normalColor;
+        energyText.rectTransform.anchoredPosition = normalPosition;
+        energyText.rectTransform.localScale = normalScale;
+    }
+
+    private void OnDestroy()
+    {
+        KillFeedback(restore: false);
     }
 }

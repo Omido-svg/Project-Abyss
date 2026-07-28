@@ -2182,6 +2182,12 @@ MonoBehaviour:
   toggleButtonLabel: {fileID: 0}
   startHidden: 1
   enableF8Shortcut: 1
+  toggleButtonAnchoredPosition: {x: 22, y: -24}
+  panelAnchoredPosition: {x: 22, y: 72}
+  allowToggleButtonDrag: 1
+  rememberToggleButtonPosition: 1
+  toggleSafePadding: {x: 12, y: 12}
+  togglePositionPlayerPrefsKey: ProjectAbyss.BattleAnalysis.TogglePosition
   animationDuration: 0.22
   hiddenOffset: 380
   showEase: 9
@@ -8620,6 +8626,10 @@ MonoBehaviour:
   costText: {fileID: 1635315150}
   reasonText: {fileID: 218738631}
   accentImage: {fileID: 503875186}
+  feedbackTarget: {fileID: 0}
+  rejectedColor: {r: 1, g: 0.16, b: 0.16, a: 1}
+  feedbackDuration: 0.38
+  shakeAngle: 3.2
 --- !u!114 &951586547
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -9995,6 +10005,10 @@ MonoBehaviour:
   costText: {fileID: 1952421292}
   reasonText: {fileID: 481393858}
   accentImage: {fileID: 917787838}
+  feedbackTarget: {fileID: 0}
+  rejectedColor: {r: 1, g: 0.16, b: 0.16, a: 1}
+  feedbackDuration: 0.38
+  shakeAngle: 3.2
 --- !u!114 &1045325064
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -12570,6 +12584,10 @@ MonoBehaviour:
   costText: {fileID: 1982635784}
   reasonText: {fileID: 1296672574}
   accentImage: {fileID: 1560141485}
+  feedbackTarget: {fileID: 0}
+  rejectedColor: {r: 1, g: 0.16, b: 0.16, a: 1}
+  feedbackDuration: 0.38
+  shakeAngle: 3.2
 --- !u!114 &1320922784
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -16546,11 +16564,16 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   battleManager: {fileID: 1453355684}
+  battleUIManager: {fileID: 0}
   turnText: {fileID: 68473492}
   momentumText: {fileID: 1592315114}
   lightText: {fileID: 720605656}
   enemyText: {fileID: 1000019486}
   momentumSlider: {fileID: 1805580446}
+  insufficientColor: {r: 1, g: 0.18, b: 0.18, a: 1}
+  feedbackDuration: 0.42
+  shakeStrength: 14
+  shakeVibrato: 22
 --- !u!114 &1742475261
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -17323,6 +17346,10 @@ MonoBehaviour:
   costText: {fileID: 565471762}
   reasonText: {fileID: 46474910}
   accentImage: {fileID: 1808078687}
+  feedbackTarget: {fileID: 0}
+  rejectedColor: {r: 1, g: 0.16, b: 0.16, a: 1}
+  feedbackDuration: 0.38
+  shakeAngle: 3.2
 --- !u!114 &1772295394
 MonoBehaviour:
   m_ObjectHideFlags: 0

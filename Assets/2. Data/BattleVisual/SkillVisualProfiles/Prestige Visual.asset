@@ -12,24 +12,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ece12a8468b693e4d8d7c4a5eff000ca, type: 3}
   m_Name: Prestige Visual
   m_EditorClassIdentifier: 
-  UsesTargetCamera: 1
-  ReturnCameraAfterAction: 1
-  CameraArriveTimeout: 1.5
-  CameraDefinition: {fileID: 11400000, guid: 263b4482683b48046841a9b779932851, type: 2}
-  MovesToTarget: 1
-  ReturnPositionAfterAction: 1
-  FaceEachOther: 1
-  ReturnFacingAfterAction: 1
   ShowsClashPower: 0
   ClashColor: {r: 1, g: 0.92156863, b: 0.015686275, a: 1}
   TieColor: {r: 1, g: 0.45, b: 0.1, a: 1}
   HasHitFrameDamage: 1
-  ApplyDamageIfNoHitFrame: 0
   ShowsActionAnnouncement: 1
   ActionAnnouncementDuration: 0.9
-  BeforeActionDelay: 0.25
-  AfterActionDelay: 0.45
-  AfterReturnDelay: 0.5
   DistributeDamageByHitCount: 1
   ExpectedHitFrameCount: 1
   UseHitCameraShake: 0
@@ -38,3 +26,4 @@ MonoBehaviour:
     PositionStrength: 0.08
     RotationStrength: 1.5
     Frequency: 40
+  presentationSchemaVersion: 720

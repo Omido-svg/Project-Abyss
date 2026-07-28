@@ -15,7 +15,7 @@ public static class ProjectAbyssScriptExporter
         "Assets/1. Scripts";
 
     private const string OutputFolderName =
-        "AllScriptsTXT";
+        "AllDataTXT/Scripts";
 
     private const string DefaultFileName =
         "Project_Abyss_All_Scripts_For_AI.txt";
@@ -274,6 +274,12 @@ public static class ProjectAbyssScriptExporter
 
         output.AppendLine(
             $"GENERATED_AT_UTC: {DateTime.UtcNow:O}");
+
+        output.AppendLine(
+            $"GENERATED_AT_LOCAL: {DateTimeOffset.Now:O}");
+
+        output.AppendLine(
+            $"LOCAL_TIME_ZONE: {TimeZoneInfo.Local.Id}");
 
         output.AppendLine(
             $"UNITY_PROJECT_ROOT: {NormalizePath(projectRoot)}");

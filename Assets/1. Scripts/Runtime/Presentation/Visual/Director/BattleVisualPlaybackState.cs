@@ -16,6 +16,9 @@ internal sealed class BattleVisualPlaybackState
     public HashSet<string> PlayedVfxCueKeys { get; } = new();
     public List<BattleVisualHpOverrideTarget> HpOverrideTargets { get; } = new();
 
+    public Dictionary<CharacterActionMover, CharacterActionMoveSettings>
+        StagedMoverSettings { get; } = new();
+
     public int VisualHpStart { get; set; }
     public int VisualHpFinal { get; set; }
     public int VisualDamageAccumulated { get; set; }
@@ -59,6 +62,22 @@ internal sealed class BattleVisualPlaybackState
     public void BeginCueScope()
     {
         PlayedVfxCueKeys.Clear();
+    }
+
+    public void TrackStagedMover(
+        CharacterActionMover mover,
+        CharacterActionMoveSettings settings)
+    {
+        if (mover == null)
+            return;
+
+        StagedMoverSettings[mover] =
+            settings;
+    }
+
+    public void ClearStagedMovers()
+    {
+        StagedMoverSettings.Clear();
     }
 
     public void TrackHpOverride(Character character, BodyPart part)

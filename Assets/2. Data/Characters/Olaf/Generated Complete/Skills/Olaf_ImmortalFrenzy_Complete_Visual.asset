@@ -12,32 +12,36 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ece12a8468b693e4d8d7c4a5eff000ca, type: 3}
   m_Name: Olaf_ImmortalFrenzy_Complete_Visual
   m_EditorClassIdentifier: 
+  presentationSchemaVersion: 720
   AllowAsProfileFallback: 0
-  CutsceneDefinition: {fileID: 11400000, guid: 4a4df499d16855749984ab7cf77cea8b, type: 2}
-  CameraDefinition: {fileID: 11400000, guid: 37f8030c291a91e40850a0b7b9caa21c, type: 2}
-  UsesTargetCamera: 1
-  ReturnCameraAfterAction: 1
-  CameraArriveTimeout: 1.5
-  ClashRollCameraLeadTime: 0.25
-  MovesToTarget: 0
-  ReturnPositionAfterAction: 1
-  SkipMovementForSelfTarget: 1
-  FaceEachOther: 1
-  ReturnFacingAfterAction: 1
-  SkipFacingForSelfTarget: 1
+  ActionTimeline: {fileID: 11400000, guid: 6fedcc34eb0d4284f8f34926970b8d3f, type: 2}
+  ClashAttackTimeline: {fileID: 11400000, guid: fde06f7564927dd4cbd36b0967f1f3b6, type: 2}
+  PartBreakTimeline: {fileID: 11400000, guid: ab1f9eafe6bd25544990f64e85b8258e, type: 2}
+  KillTimeline: {fileID: 11400000, guid: 51a9e44a676484141a8f70bbcd024f37, type: 2}
+  ReturnTimeline: {fileID: 11400000, guid: a1d4c836a3b58d845994f6df3669d906, type: 2}
+  CameraRigPrefab: {fileID: 251742657190129785, guid: 91abbaef34e08414c8b9a753a91eb2ce, type: 3}
+  AttackerAnimation: {fileID: 7400000, guid: d1deef05da1ae9a4da593e2c3bf9a272, type: 2}
+  TargetAnimation: {fileID: 0}
+  AuthoringFrameRate: 30
+  DefaultDurationFrames: 180
+  PrepareFacing: 1
+  PrepareMovement: 0
+  RestoreMovement: 1
+  RestoreFacing: 1
+  UseExplicitVisualFxTracks: 1
+  RestoreOverview: 1
+  RestoreTimeScale: 1
+  previewScenePath: Assets/2. Data/Characters/Olaf/Generated Complete/Skills/Cutscenes/Olaf_ImmortalFrenzy_Complete/Olaf_ImmortalFrenzy_Complete_Preview.unity
   ShowsClashPower: 0
   ClashColor: {r: 1, g: 0.92156863, b: 0.015686275, a: 1}
   TieColor: {r: 1, g: 0.45, b: 0.1, a: 1}
   HasHitFrameDamage: 1
-  ApplyDamageIfNoHitFrame: 0
   HitDamageWeights: 01000000
   DistributeDamageByHitCount: 1
   ExpectedHitFrameCount: 1
   ShowsActionAnnouncement: 1
   ActionAnnouncementDuration: 0.6
-  BeforeActionDelay: 0.05
-  AfterActionDelay: 0.08
-  AfterReturnDelay: 0.12
+  ImpactPulses: []
   UseHitCameraShake: 1
   HitShake:
     UseImpulse: 1

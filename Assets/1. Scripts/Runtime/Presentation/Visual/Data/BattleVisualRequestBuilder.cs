@@ -358,8 +358,8 @@ public class BattleVisualRequestBuilder
 
         Debug.LogError(
             "[BattleVisualRequestBuilder] Timeline-only 정책 위반: " +
-            "모든 전투 스킬은 전용 SkillVisualDefinition과 " +
-            "SkillCutsceneDefinition을 가져야 합니다. " +
+            "모든 전투 스킬은 전용 통합 SkillVisualDefinition을 " +
+            "가져야 합니다. " +
             $"Skill={action.Skill?.SkillName ?? "NULL"}. " +
             "Tools/Project Abyss/Migration/Convert All Combat Skills To Timeline을 실행하세요.");
 

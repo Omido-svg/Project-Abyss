@@ -4,16 +4,16 @@ using UnityEngine;
 
 [CustomEditor(
     typeof(
-        SkillCutsceneDefinition))]
-public sealed class SkillCutsceneDefinitionEditor :
+        SkillVisualDefinition))]
+public sealed class SkillVisualDefinitionEditor :
     Editor
 {
     public override void OnInspectorGUI()
     {
         DrawDefaultInspector();
 
-        SkillCutsceneDefinition definition =
-            (SkillCutsceneDefinition)
+        SkillVisualDefinition definition =
+            (SkillVisualDefinition)
             target;
 
         EditorGUILayout.Space(8f);
@@ -52,7 +52,7 @@ public sealed class SkillCutsceneDefinitionEditor :
 
     private static SkillDefinition
         FindOwnerSkill(
-            SkillCutsceneDefinition definition)
+            SkillVisualDefinition definition)
     {
         string[] guids =
             AssetDatabase.FindAssets(
@@ -60,20 +60,17 @@ public sealed class SkillCutsceneDefinitionEditor :
 
         foreach (string guid in guids)
         {
-            SkillDefinition skill =
-                AssetDatabase
-                    .LoadAssetAtPath<
-                        SkillDefinition>(
-                            AssetDatabase
-                                .GUIDToAssetPath(
-                                    guid));
+            string path =
+                AssetDatabase.GUIDToAssetPath(guid);
 
-            if (skill?
-                    .VisualDefinition?
-                    .CutsceneDefinition ==
-                definition)
+            foreach (UnityEngine.Object asset in
+                     AssetDatabase.LoadAllAssetsAtPath(path))
             {
-                return skill;
+                if (asset is SkillDefinition skill &&
+                    skill.VisualDefinition == definition)
+                {
+                    return skill;
+                }
             }
         }
 
@@ -138,7 +135,7 @@ public sealed class SkillCutsceneEventClipEditor :
             "Event Clip이 활성 구간에 처음 진입하는 프레임에 한 번 실행됩니다. " +
             "Hit은 전투 결과를 다시 계산하지 않고 이미 계산된 DamageContext를 표시하고, 현재 타깃의 Hit 상태를 재생합니다. " +
             "공격 Timeline의 Target Animation Track에는 특정 캐릭터 Hit Clip을 고정하지 마세요. CameraImpactPulse는 CameraImpactTiming과 " +
-            "SkillCameraDefinition의 조건에 맞는 FOV/Impulse 프리셋을 실행합니다.",
+            "SkillVisualDefinition의 Camera Impact 조건에 맞는 FOV/Impulse 프리셋을 실행합니다.",
             MessageType.None);
     }
 }

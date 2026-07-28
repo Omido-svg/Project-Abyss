@@ -25,7 +25,7 @@ public static class CharacterPrefabAssemblyUtility
         "WeaponSub",
         "Feet",
 
-        // 기존 SkillCameraDefinition / CharacterView 연출 호환 Point.
+        // CharacterView 연출 호환 Point.
         "LookAtPoint",
         "CloseCameraPoint",
         "OverShoulderCameraPoint",

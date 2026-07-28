@@ -29,7 +29,7 @@ public static class SkillCutsceneAssetBuilder
     public const string ShaderTrackName =
         "[Abyss FX] Shader";
 
-    public static SkillCutsceneDefinition EnsureForSkill(
+    public static SkillVisualDefinition EnsureForSkill(
         SkillDefinition skill,
         Character attackerPrefab,
         Character targetPrefab)
@@ -80,52 +80,11 @@ public static class SkillCutsceneAssetBuilder
                 skill);
         }
 
-        SkillCutsceneDefinition definition =
-            visual.CutsceneDefinition;
+        SkillVisualDefinition definition =
+            visual;
 
-        if (definition == null)
-        {
-            definition =
-                ScriptableObject
-                    .CreateInstance<
-                        SkillCutsceneDefinition>();
-
-            definition.name =
-                skill.name +
-                "_Cutscene";
-
-            string definitionPath =
-                AssetDatabase
-                    .GenerateUniqueAssetPath(
-                        $"{baseFolder}/" +
-                        $"{definition.name}.asset");
-
-            AssetDatabase.CreateAsset(
-                definition,
-                definitionPath);
-
-            definition.PrepareFacing =
-                visual.FaceEachOther;
-            definition.PrepareMovement =
-                visual.MovesToTarget;
-            definition.RestoreMovement =
-                visual.ReturnPositionAfterAction;
-            definition.RestoreFacing =
-                visual.ReturnFacingAfterAction;
-            definition.UseExplicitVisualFxTracks = true;
-
-            visual.CutsceneDefinition =
-                definition;
-            visual.AllowAsProfileFallback =
-                false;
-            visual.ApplyDamageIfNoHitFrame =
-                false;
-
-            EditorUtility.SetDirty(
-                definition);
-            EditorUtility.SetDirty(
-                visual);
-        }
+        definition.AllowAsProfileFallback = false;
+        definition.UseExplicitVisualFxTracks = true;
 
         if (definition.ActionTimeline ==
             null)
@@ -188,7 +147,7 @@ public static class SkillCutsceneAssetBuilder
     }
 
     public static TimelineAsset EnsureSegment(
-        SkillCutsceneDefinition definition,
+        SkillVisualDefinition definition,
         SkillCutsceneSegment segment)
     {
         if (definition == null)
@@ -291,7 +250,7 @@ public static class SkillCutsceneAssetBuilder
     }
 
     public static void EnsureTimelineStructure(
-        SkillCutsceneDefinition definition,
+        SkillVisualDefinition definition,
         TimelineAsset timeline,
         bool addDefaultClips)
     {
@@ -462,7 +421,7 @@ public static class SkillCutsceneAssetBuilder
 
     public static string CreatePreviewScene(
         SkillDefinition skill,
-        SkillCutsceneDefinition definition,
+        SkillVisualDefinition definition,
         Character attackerPrefab,
         Character targetPrefab)
     {
@@ -472,7 +431,7 @@ public static class SkillCutsceneAssetBuilder
             targetPrefab == null)
         {
             throw new InvalidOperationException(
-                "Skill, Cutscene Definition, Attacker Prefab, Target Prefab이 모두 필요합니다.");
+                "Skill, 통합 Skill Presentation, Attacker Prefab, Target Prefab이 모두 필요합니다.");
         }
 
         if (!EditorSceneManager
@@ -484,6 +443,11 @@ public static class SkillCutsceneAssetBuilder
         string definitionPath =
             AssetDatabase.GetAssetPath(
                 definition);
+
+        AssetDatabase.TryGetGUIDAndLocalFileIdentifier(
+            definition,
+            out string definitionGuid,
+            out long definitionLocalId);
 
         string folder =
             Path.GetDirectoryName(
@@ -671,9 +635,11 @@ public static class SkillCutsceneAssetBuilder
         // SaveScene 또는 에셋 import 과정에서 기존 ScriptableObject wrapper가
         // 파괴될 수 있다. 저장 전에 얻어 둔 persistent path로 다시 로드한 뒤
         // PreviewScenePath를 기록해야 MissingReferenceException이 발생하지 않는다.
-        SkillCutsceneDefinition persistentDefinition =
-            AssetDatabase.LoadAssetAtPath<SkillCutsceneDefinition>(
-                definitionPath);
+        SkillVisualDefinition persistentDefinition =
+            ReloadPersistentAsset<SkillVisualDefinition>(
+                definitionPath,
+                definitionGuid,
+                definitionLocalId);
 
         if (persistentDefinition != null)
         {
@@ -683,7 +649,7 @@ public static class SkillCutsceneAssetBuilder
         else
         {
             Debug.LogWarning(
-                "[SkillCutsceneAssetBuilder] 저장 후 Cutscene Definition을 " +
+                "[SkillCutsceneAssetBuilder] 저장 후 Skill Presentation을 " +
                 $"다시 로드하지 못했습니다. Path={definitionPath}");
         }
 
@@ -701,8 +667,45 @@ public static class SkillCutsceneAssetBuilder
         return scenePath;
     }
 
+    private static T ReloadPersistentAsset<T>(
+        string assetPath,
+        string guid,
+        long localId)
+        where T : UnityEngine.Object
+    {
+        if (string.IsNullOrWhiteSpace(assetPath))
+            return null;
+
+        foreach (UnityEngine.Object asset in
+                 AssetDatabase.LoadAllAssetsAtPath(assetPath))
+        {
+            if (asset is not T typed)
+                continue;
+
+            if (!AssetDatabase.TryGetGUIDAndLocalFileIdentifier(
+                    typed,
+                    out string candidateGuid,
+                    out long candidateLocalId))
+            {
+                continue;
+            }
+
+            if (candidateLocalId == localId &&
+                string.Equals(
+                    candidateGuid,
+                    guid,
+                    StringComparison.Ordinal))
+            {
+                return typed;
+            }
+        }
+
+        // 독립 에셋인 경우의 단순 경로 fallback.
+        return AssetDatabase.LoadAssetAtPath<T>(assetPath);
+    }
+
     private static void EnsureSegmentDefaults(
-        SkillCutsceneDefinition definition,
+        SkillVisualDefinition definition,
         TimelineAsset timeline,
         SkillCutsceneSegment segment)
     {
@@ -780,67 +783,56 @@ public static class SkillCutsceneAssetBuilder
     }
 
     public static TimelineClip AddCameraClip(
-        SkillCutsceneDefinition definition,
+        SkillVisualDefinition definition,
         TimelineAsset timeline,
         double startTime,
         string cameraKey)
     {
-        if (definition == null ||
-            timeline == null)
-        {
+        return AddCameraClipInternal(
+            definition != null ? definition.FrameRate : 0d,
+            timeline,
+            startTime,
+            cameraKey);
+    }
+
+    private static TimelineClip AddCameraClipInternal(
+        double frameRate,
+        TimelineAsset timeline,
+        double startTime,
+        string cameraKey)
+    {
+        if (timeline == null || frameRate <= 0d)
             return null;
-        }
 
         SkillCameraTimelineTrack track =
-            FindTrack<
-                SkillCameraTimelineTrack>(
-                    timeline,
-                    "Skill Camera") ??
-            timeline.CreateTrack<
-                SkillCameraTimelineTrack>(
-                    null,
-                    "Skill Camera");
+            FindTrack<SkillCameraTimelineTrack>(
+                timeline,
+                "Skill Camera") ??
+            timeline.CreateTrack<SkillCameraTimelineTrack>(
+                null,
+                "Skill Camera");
 
         TimelineClip clip =
-            track.CreateClip<
-                SkillCameraTimelineClip>();
+            track.CreateClip<SkillCameraTimelineClip>();
 
-        clip.start =
-            Math.Max(
-                0d,
-                startTime);
-
-        clip.duration =
-            30d /
-            definition.FrameRate;
-
+        clip.start = Math.Max(0d, startTime);
+        clip.duration = 30d / frameRate;
         clip.displayName =
-            string.IsNullOrWhiteSpace(
-                cameraKey)
+            string.IsNullOrWhiteSpace(cameraKey)
                 ? "Camera Shot"
                 : cameraKey;
 
-        SkillCameraTimelineClip asset =
-            clip.asset as
-                SkillCameraTimelineClip;
-
-        if (asset != null)
+        if (clip.asset is SkillCameraTimelineClip asset)
         {
             asset.CameraKey =
-                string.IsNullOrWhiteSpace(
-                    cameraKey)
+                string.IsNullOrWhiteSpace(cameraKey)
                     ? "CM_Overview"
                     : cameraKey;
-
-            EditorUtility.SetDirty(
-                asset);
+            EditorUtility.SetDirty(asset);
         }
 
-        EditorUtility.SetDirty(
-            timeline);
-
+        EditorUtility.SetDirty(timeline);
         AssetDatabase.SaveAssets();
-
         return clip;
     }
 
@@ -892,7 +884,7 @@ public static class SkillCutsceneAssetBuilder
     }
 
     public static TimelineClip AddVfxClip(
-        SkillCutsceneDefinition definition,
+        SkillVisualDefinition definition,
         TimelineAsset timeline,
         double startTime,
         BattleVfxDefinition vfxDefinition)
@@ -929,7 +921,7 @@ public static class SkillCutsceneAssetBuilder
     }
 
     public static TimelineClip AddShaderFxClip(
-        SkillCutsceneDefinition definition,
+        SkillVisualDefinition definition,
         TimelineAsset timeline,
         double startTime,
         SkillShaderEffectDefinition shaderDefinition)
@@ -964,7 +956,7 @@ public static class SkillCutsceneAssetBuilder
     }
 
     public static TimelineClip AddEventClip(
-        SkillCutsceneDefinition definition,
+        SkillVisualDefinition definition,
         TimelineAsset timeline,
         double startTime,
         SkillCutsceneEventType eventType)
@@ -1023,7 +1015,7 @@ public static class SkillCutsceneAssetBuilder
     }
 
     public static CinemachineCamera AddCameraToRig(
-        SkillCutsceneDefinition definition,
+        SkillVisualDefinition definition,
         string desiredName)
     {
         if (definition?.CameraRigPrefab ==
@@ -1144,7 +1136,7 @@ public static class SkillCutsceneAssetBuilder
     }
 
     private static TimelineAsset CreateTimeline(
-        SkillCutsceneDefinition definition,
+        SkillVisualDefinition definition,
         SkillCutsceneSegment segment,
         string folder)
     {
@@ -1171,7 +1163,7 @@ public static class SkillCutsceneAssetBuilder
     }
 
     private static GameObject CreateCameraRigPrefab(
-        SkillCutsceneDefinition definition,
+        SkillVisualDefinition definition,
         string folder)
     {
         GameObject root =
@@ -1281,7 +1273,7 @@ public static class SkillCutsceneAssetBuilder
     }
 
     private static void CreateDefaultCameraClips(
-        SkillCutsceneDefinition definition,
+        SkillVisualDefinition definition,
         SkillCameraTimelineTrack track)
     {
         double fps =
@@ -1414,7 +1406,7 @@ public static class SkillCutsceneAssetBuilder
     }
 
     private static bool ShouldCreateDefaultHit(
-        SkillCutsceneDefinition definition)
+        SkillVisualDefinition definition)
     {
         if (definition == null)
             return true;
@@ -1425,28 +1417,28 @@ public static class SkillCutsceneAssetBuilder
 
         foreach (string guid in guids)
         {
-            SkillDefinition skill =
-                AssetDatabase.LoadAssetAtPath<
-                    SkillDefinition>(
-                        AssetDatabase.GUIDToAssetPath(
-                            guid));
+            string path =
+                AssetDatabase.GUIDToAssetPath(guid);
 
-            if (skill?.VisualDefinition?
-                    .CutsceneDefinition !=
-                definition)
+            foreach (UnityEngine.Object asset in
+                     AssetDatabase.LoadAllAssetsAtPath(path))
             {
-                continue;
-            }
+                if (asset is not SkillDefinition skill ||
+                    skill.VisualDefinition != definition)
+                {
+                    continue;
+                }
 
-            return skill.VisualDefinition
-                .HasHitFrameDamage;
+                return skill.VisualDefinition
+                    .HasHitFrameDamage;
+            }
         }
 
         return true;
     }
 
     private static void CreateHitEventClip(
-        SkillCutsceneDefinition definition,
+        SkillVisualDefinition definition,
         SkillCutsceneEventTrack track,
         double startTime)
     {

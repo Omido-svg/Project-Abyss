@@ -15,7 +15,7 @@ public sealed class
     private SkillDefinition skill;
 
     [SerializeField]
-    private SkillCutsceneDefinition definition;
+    private SkillVisualDefinition definition;
 
     [SerializeField]
     private SkillCutsceneSegment segment =
@@ -39,7 +39,7 @@ public sealed class
     public SkillDefinition Skill =>
         skill;
 
-    public SkillCutsceneDefinition Definition =>
+    public SkillVisualDefinition Definition =>
         definition;
 
     public SkillCutsceneSegment Segment
@@ -62,7 +62,7 @@ public sealed class
 
     public void Configure(
         SkillDefinition newSkill,
-        SkillCutsceneDefinition newDefinition,
+        SkillVisualDefinition newDefinition,
         Character newAttacker,
         Character newTarget,
         SkillCutsceneCameraRig newCameraRig,

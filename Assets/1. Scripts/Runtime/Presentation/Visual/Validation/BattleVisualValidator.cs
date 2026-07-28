@@ -141,8 +141,8 @@ public static class BattleVisualValidator
         SkillVisualDefinition visual,
         bool logWarnings)
     {
-        SkillCutsceneDefinition definition =
-            visual?.CutsceneDefinition;
+        SkillVisualDefinition definition =
+            visual;
 
         if (definition == null)
         {
@@ -150,7 +150,7 @@ public static class BattleVisualValidator
             {
                 Debug.LogError(
                     $"[BATTLE VISUAL VALIDATION] Timeline-only 정책 위반: " +
-                    $"{visual?.name ?? "NULL"}에 SkillCutsceneDefinition이 없습니다.",
+                    $"{visual?.name ?? "NULL"}에 통합 Presentation Timeline 데이터가 없습니다.",
                     visual);
             }
             return false;
@@ -190,7 +190,7 @@ public static class BattleVisualValidator
 
     private static bool ValidateTimelineTracks(
         SkillVisualDefinition visual,
-        SkillCutsceneDefinition definition,
+        SkillVisualDefinition definition,
         TimelineAsset timeline,
         SkillCutsceneSegment segment,
         bool logWarnings)

@@ -4,6 +4,11 @@ using System.IO;
 using System.Text;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using UnityEngine.UI;
+
+#if ENABLE_INPUT_SYSTEM
+using UnityEngine.InputSystem;
+#endif
 
 [DefaultExecutionOrder(-1000)]
 public sealed class BattleBatchSimulationRunner : MonoBehaviour
@@ -27,15 +32,19 @@ public sealed class BattleBatchSimulationRunner : MonoBehaviour
 
     public bool IsRunning => batchRoutine != null;
 
-    // persistentDataPath/ProjectAbyssDiagnostics/BattleSimulation 아래에 저장한다.
+    // <ProjectRoot>/BattleSimulation 아래에 저장한다.
     public string OutputRootDirectory =>
         BattleAnalysisOutputPaths.BattleSimulationDirectory;
     public string LastOutputDirectory { get; private set; }
     public BattleSimulationSummary LastSummary { get; private set; }
 
-    private readonly BattleAverageAIPlanner playerPlanner = new();
+    private readonly PlayerAutoPlanService playerPlanner = new();
+    private readonly BattleAverageAIPlanner fallbackPlayerPlanner = new();
 
     private BattleAnalysisDebugPanel panel;
+    private BattleAnalysisDebugPanel persistentPanel;
+    private BattleAnalysisPanelToggle persistentPanelToggle;
+    private GameObject persistentOverlayRoot;
     private Coroutine batchRoutine;
     private bool stopRequested;
     private int sourceSceneBuildIndex = -1;
@@ -109,6 +118,7 @@ public sealed class BattleBatchSimulationRunner : MonoBehaviour
         EnsurePersistentRoot();
 
         Instance = this;
+        EnsurePersistentControlOverlay();
 
         SceneManager.sceneLoaded +=
             HandleSceneLoaded;
@@ -116,7 +126,14 @@ public sealed class BattleBatchSimulationRunner : MonoBehaviour
 
     private void Start()
     {
+        EnsurePersistentControlOverlay();
         StartCoroutine(BindPanelNextFrame());
+    }
+
+    private void Update()
+    {
+        if (IsRunning && WasEmergencyStopPressed())
+            StopAnalysis();
     }
 
     private void OnDestroy()
@@ -157,22 +174,44 @@ public sealed class BattleBatchSimulationRunner : MonoBehaviour
     public void RegisterPanel(
         BattleAnalysisDebugPanel debugPanel)
     {
+        if (debugPanel == null)
+            return;
+
+        debugPanel.SetRunning(IsRunning);
+        UpdatePanelStatus(debugPanel);
+
+        // Scene 재로드로 생성되는 임시 패널이 Persistent 패널 참조를 덮지 않게 한다.
+        if (persistentPanel != null &&
+            debugPanel != persistentPanel)
+        {
+            return;
+        }
+
         panel = debugPanel;
-        panel?.SetRunning(IsRunning);
+    }
+
+    private void UpdatePanelStatus(
+        BattleAnalysisDebugPanel targetPanel)
+    {
+        if (targetPanel == null)
+            return;
 
         if (LastSummary != null)
         {
-            panel?.SetStatus(
+            targetPanel.SetStatus(
                 LastSummary.ToDisplayString() +
                 "\nJSON 저장 위치:\n" +
-                LastOutputDirectory);
+                LastOutputDirectory +
+                "\nF8: 패널 / F9: 즉시 중단");
+            return;
         }
-        else
-            panel?.SetStatus(
-                "동적 로그: Play Mode 전투 시 자동 기록\n" +
-                "승률 또는 피해량 버튼으로 AI 배치 분석 실행\n" +
-                "JSON 저장 루트:\n" +
-                OutputRootDirectory);
+
+        targetPanel.SetStatus(
+            "동적 로그: Play Mode 전투 시 자동 기록\n" +
+            "승률 또는 피해량 버튼으로 AI 배치 분석 실행\n" +
+            "F8: 패널 열기/접기 / F9: 분석 중단\n" +
+            "JSON 저장 루트:\n" +
+            OutputRootDirectory);
     }
 
     public void RunWinRateAnalysis()
@@ -284,6 +323,7 @@ public sealed class BattleBatchSimulationRunner : MonoBehaviour
         panel?.SetStatus(
             $"{mode} 분석 준비 완료\n" +
             "JSON은 분석 시작 즉시 생성됩니다.\n" +
+            "F8: 패널 / F9: 즉시 중단\n" +
             "저장 위치:\n" + LastOutputDirectory);
 
         try
@@ -340,7 +380,8 @@ public sealed class BattleBatchSimulationRunner : MonoBehaviour
 
                 panel?.SetStatus(
                     $"{mode} 분석 중... {runIndex}/{runCount}\n" +
-                    "씬을 새로 불러 실제 전투 코드를 자동 실행합니다.");
+                    "씬을 새로 불러 실제 전투 코드를 자동 실행합니다.\n" +
+                    "F9: 완료 회차까지 저장하고 즉시 중단");
 
                 AppendBatchEvent(
                     "RUN_STARTED",
@@ -377,7 +418,7 @@ public sealed class BattleBatchSimulationRunner : MonoBehaviour
                     break;
                 }
 
-                yield return RunCurrentSceneBattle(result);
+                yield return RunCurrentSceneBattle(result, mode);
 
                 if (stopRequested ||
                     string.Equals(
@@ -449,7 +490,8 @@ public sealed class BattleBatchSimulationRunner : MonoBehaviour
                 panel?.SetStatus(
                     LastSummary.ToDisplayString() +
                     "\nJSON 저장 위치:\n" +
-                    LastOutputDirectory);
+                    LastOutputDirectory +
+                    "\nF8: 패널 / F9: 즉시 중단");
             }
 
             if (openOutputFolderWhenComplete)
@@ -457,6 +499,7 @@ public sealed class BattleBatchSimulationRunner : MonoBehaviour
         }
 
         if (reloadCleanSceneAfterBatch &&
+            !stopRequested &&
             sourceSceneBuildIndex >= 0)
         {
             // 중단 요청은 결과 상태에 이미 기록했으므로,
@@ -540,7 +583,8 @@ public sealed class BattleBatchSimulationRunner : MonoBehaviour
     }
 
     private IEnumerator RunCurrentSceneBattle(
-        BattleSimulationRunResult result)
+        BattleSimulationRunResult result,
+        BattleSimulationMode mode)
     {
         float readyStartedAt = Time.realtimeSinceStartup;
 
@@ -644,16 +688,46 @@ public sealed class BattleBatchSimulationRunner : MonoBehaviour
                 !turnManager.IsResolving &&
                 turnManager.CurrentTurn != lastSubmittedTurn)
             {
+                PlayerAutoPlanMode autoPlanMode =
+                    mode == BattleSimulationMode.Damage
+                        ? PlayerAutoPlanMode.Damage
+                        : PlayerAutoPlanMode.WinRate;
+
+                PlayerAutoPlanResult planResult =
+                    playerPlanner.BuildAndApply(
+                        activeManager,
+                        autoPlanMode);
+
                 int planned =
-                    playerPlanner.PlanPlayer(activeManager);
+                    planResult?.Success == true
+                        ? planResult.PlannedSlotCount
+                        : 0;
 
                 if (planned <= 0)
                 {
-                    FailRun(
-                        result,
-                        "평균 AI가 플레이어 행동을 하나도 만들지 못했습니다.");
-                    activeManager.EndBattle();
-                    break;
+                    // 드물게 최적화 Planner가 현재 부위/자원 조합에서
+                    // 유효 후보를 만들지 못해도 배치 전체를 실패시키지 않는다.
+                    // 같은 실제 전투 규칙을 사용하는 평균 AI로 해당 턴만 폴백한다.
+                    planned =
+                        fallbackPlayerPlanner.PlanPlayer(
+                            activeManager);
+
+                    if (planned <= 0)
+                    {
+                        FailRun(
+                            result,
+                            "플레이어 자동 계획이 행동을 만들지 못했습니다. " +
+                            (planResult?.Message ?? "원인 미상"));
+                        activeManager.EndBattle();
+                        break;
+                    }
+
+                    AppendBatchEvent(
+                        "PLAYER_PLAN_FALLBACK",
+                        $"Turn={turnManager.CurrentTurn}, " +
+                        $"FallbackSlots={planned}, " +
+                        $"Primary={planResult?.Message ?? "NONE"}",
+                        result.runIndex);
                 }
 
                 lastSubmittedTurn =
@@ -821,7 +895,7 @@ public sealed class BattleBatchSimulationRunner : MonoBehaviour
         Scene scene,
         LoadSceneMode mode)
     {
-        panel = null;
+        EnsurePersistentControlOverlay();
         StartCoroutine(BindPanelNextFrame());
     }
 
@@ -829,15 +903,95 @@ public sealed class BattleBatchSimulationRunner : MonoBehaviour
     {
         yield return null;
 
-        BattleAnalysisDebugPanel found =
-            FindFirstObjectByType<BattleAnalysisDebugPanel>(
-                FindObjectsInactive.Include);
+        EnsurePersistentControlOverlay();
+        DisableSceneLocalAnalysisControls();
 
-        if (found != null)
-            found.SetRunning(IsRunning);
+        if (persistentPanel == null &&
+            persistentOverlayRoot != null)
+        {
+            persistentPanel =
+                persistentOverlayRoot.GetComponentInChildren<
+                    BattleAnalysisDebugPanel>(true);
+        }
 
-        if (found != null)
-            RegisterPanel(found);
+        if (persistentPanel != null)
+        {
+            panel = persistentPanel;
+            RegisterPanel(persistentPanel);
+        }
+    }
+
+    private void EnsurePersistentControlOverlay()
+    {
+        EnsurePersistentRoot();
+
+        if (persistentOverlayRoot != null &&
+            persistentPanelToggle != null)
+        {
+            return;
+        }
+
+        GameObject overlay = new GameObject(
+            "BattleAnalysisPersistentOverlay",
+            typeof(RectTransform),
+            typeof(Canvas),
+            typeof(CanvasScaler),
+            typeof(GraphicRaycaster));
+
+        overlay.transform.SetParent(
+            transform,
+            false);
+
+        Canvas canvas = overlay.GetComponent<Canvas>();
+        canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+        canvas.sortingOrder = short.MaxValue - 8;
+
+        CanvasScaler scaler =
+            overlay.GetComponent<CanvasScaler>();
+        scaler.uiScaleMode =
+            CanvasScaler.ScaleMode.ScaleWithScreenSize;
+        scaler.referenceResolution =
+            new Vector2(1920f, 1080f);
+        scaler.screenMatchMode =
+            CanvasScaler.ScreenMatchMode.MatchWidthOrHeight;
+        scaler.matchWidthOrHeight = 0.5f;
+
+        persistentOverlayRoot = overlay;
+
+        // AddComponent의 Awake에서 Runtime Fallback UI가 즉시 생성된다.
+        persistentPanelToggle =
+            overlay.AddComponent<BattleAnalysisPanelToggle>();
+
+        persistentPanel =
+            overlay.GetComponentInChildren<
+                BattleAnalysisDebugPanel>(true);
+
+        if (persistentPanel != null)
+        {
+            panel = persistentPanel;
+            RegisterPanel(persistentPanel);
+        }
+
+        DisableSceneLocalAnalysisControls();
+    }
+
+    private void DisableSceneLocalAnalysisControls()
+    {
+        BattleAnalysisPanelToggle[] toggles =
+            FindObjectsByType<BattleAnalysisPanelToggle>(
+                FindObjectsInactive.Include,
+                FindObjectsSortMode.None);
+
+        foreach (BattleAnalysisPanelToggle toggle in toggles)
+        {
+            if (toggle == null ||
+                toggle == persistentPanelToggle)
+            {
+                continue;
+            }
+
+            toggle.DisableRuntimeControls();
+        }
     }
 
     private void EnsurePersistentRoot()
@@ -847,6 +1001,18 @@ public sealed class BattleBatchSimulationRunner : MonoBehaviour
 
         if (Application.isPlaying)
             DontDestroyOnLoad(gameObject);
+    }
+
+    private static bool WasEmergencyStopPressed()
+    {
+#if ENABLE_INPUT_SYSTEM
+        return Keyboard.current != null &&
+               Keyboard.current.f9Key.wasPressedThisFrame;
+#elif ENABLE_LEGACY_INPUT_MANAGER
+        return Input.GetKeyDown(KeyCode.F9);
+#else
+        return false;
+#endif
     }
 
     private void RestoreRuntimeState()

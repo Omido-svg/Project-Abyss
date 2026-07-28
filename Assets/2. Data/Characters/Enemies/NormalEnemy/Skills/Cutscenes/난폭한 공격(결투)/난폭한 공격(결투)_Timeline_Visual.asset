@@ -12,32 +12,36 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ece12a8468b693e4d8d7c4a5eff000ca, type: 3}
   m_Name: "\uB09C\uD3ED\uD55C \uACF5\uACA9(\uACB0\uD22C)_Timeline_Visual"
   m_EditorClassIdentifier: 
+  presentationSchemaVersion: 720
   AllowAsProfileFallback: 0
-  CutsceneDefinition: {fileID: 11400000, guid: db1f14403d88b05488263170d7816b4b, type: 2}
-  CameraDefinition: {fileID: 0}
-  UsesTargetCamera: 1
-  ReturnCameraAfterAction: 1
-  CameraArriveTimeout: 1.5
-  ClashRollCameraLeadTime: 0.25
-  MovesToTarget: 1
-  ReturnPositionAfterAction: 1
-  SkipMovementForSelfTarget: 1
-  FaceEachOther: 1
-  ReturnFacingAfterAction: 1
-  SkipFacingForSelfTarget: 1
+  ActionTimeline: {fileID: 11400000, guid: 713dbf8acd3c9aa47b38ee9efa164137, type: 2}
+  ClashAttackTimeline: {fileID: 11400000, guid: 7749c6287ba3ba44f9c9d984fffc657e, type: 2}
+  PartBreakTimeline: {fileID: 11400000, guid: fa5b8e031d3679149b5d122969513ee4, type: 2}
+  KillTimeline: {fileID: 11400000, guid: 74d2efd252e984b4686d3fbe47bbd6de, type: 2}
+  ReturnTimeline: {fileID: 11400000, guid: 17a37cc1dc250284db64ca95a99c118a, type: 2}
+  CameraRigPrefab: {fileID: 3540132869088636230, guid: c1f1250cf123a814e87a587db73e6a7d, type: 3}
+  AttackerAnimation: {fileID: 0}
+  TargetAnimation: {fileID: 0}
+  AuthoringFrameRate: 30
+  DefaultDurationFrames: 120
+  PrepareFacing: 1
+  PrepareMovement: 1
+  RestoreMovement: 1
+  RestoreFacing: 1
+  UseExplicitVisualFxTracks: 0
+  RestoreOverview: 1
+  RestoreTimeScale: 1
+  previewScenePath: 
   ShowsClashPower: 0
   ClashColor: {r: 1, g: 0.92156863, b: 0.015686275, a: 1}
   TieColor: {r: 1, g: 0.45, b: 0.1, a: 1}
   HasHitFrameDamage: 1
-  ApplyDamageIfNoHitFrame: 0
   HitDamageWeights: 01000000
   DistributeDamageByHitCount: 1
   ExpectedHitFrameCount: 1
   ShowsActionAnnouncement: 1
   ActionAnnouncementDuration: 0.75
-  BeforeActionDelay: 0.15
-  AfterActionDelay: 0.35
-  AfterReturnDelay: 0.35
+  ImpactPulses: []
   UseHitCameraShake: 0
   HitShake:
     UseImpulse: 1

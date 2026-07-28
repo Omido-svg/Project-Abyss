@@ -7,7 +7,7 @@ using UnityEngine.Playables;
 using UnityEngine.Timeline;
 
 /// <summary>
-/// SkillCutsceneDefinition을 실제 전투의 BattleVisualRequest에 바인딩해 재생한다.
+/// SkillVisualDefinition을 실제 전투의 BattleVisualRequest에 바인딩해 재생한다.
 ///
 /// 전투 판정은 기존 ClashManager / DamageManager가 이미 끝낸 상태이며,
 /// Timeline Event Track은 계산된 Hit/VFX/Shake를 어느 프레임에 보여줄지만 결정한다.
@@ -51,12 +51,13 @@ public sealed class SkillCutsceneDirector :
 
     public IEnumerator PlaySequence(
         BattleVisualRequest request,
-        SkillCutsceneDefinition definition,
+        SkillVisualDefinition definition,
         bool isClashAttack,
         float playbackSpeed,
         Action<
             SkillCutsceneEventClip>
-            onEvent)
+            onEvent,
+        bool includeReturnTimeline = true)
     {
         if (request == null ||
             definition == null)
@@ -94,7 +95,8 @@ public sealed class SkillCutsceneDirector :
             BuildSequence(
                 request,
                 definition,
-                primary);
+                primary,
+                includeReturnTimeline);
 
         try
         {
@@ -119,6 +121,46 @@ public sealed class SkillCutsceneDirector :
         }
     }
 
+    public IEnumerator PlayReturnSegment(
+        BattleVisualRequest request,
+        SkillVisualDefinition definition,
+        float playbackSpeed,
+        Action<
+            SkillCutsceneEventClip>
+            onEvent = null)
+    {
+        if (request == null ||
+            definition == null ||
+            definition.ReturnTimeline == null ||
+            definition.CameraRigPrefab == null)
+        {
+            yield break;
+        }
+
+        cancelRequested =
+            false;
+
+        if (!CreateRuntime(
+                request,
+                definition,
+                onEvent))
+        {
+            yield break;
+        }
+
+        try
+        {
+            yield return PlayTimeline(
+                definition.ReturnTimeline,
+                playbackSpeed);
+        }
+        finally
+        {
+            CleanupRuntime(
+                definition);
+        }
+    }
+
     public void Cancel()
     {
         cancelRequested =
@@ -135,7 +177,7 @@ public sealed class SkillCutsceneDirector :
 
     private bool CreateRuntime(
         BattleVisualRequest request,
-        SkillCutsceneDefinition definition,
+        SkillVisualDefinition definition,
         Action<
             SkillCutsceneEventClip>
             onEvent)
@@ -310,8 +352,9 @@ public sealed class SkillCutsceneDirector :
     private static List<TimelineAsset>
         BuildSequence(
             BattleVisualRequest request,
-            SkillCutsceneDefinition definition,
-            TimelineAsset primary)
+            SkillVisualDefinition definition,
+            TimelineAsset primary,
+            bool includeReturnTimeline)
     {
         List<TimelineAsset> result =
             new List<TimelineAsset>
@@ -339,7 +382,8 @@ public sealed class SkillCutsceneDirector :
             return result;
         }
 
-        if (definition.ReturnTimeline !=
+        if (includeReturnTimeline &&
+            definition.ReturnTimeline !=
             null)
         {
             result.Add(
@@ -362,7 +406,7 @@ public sealed class SkillCutsceneDirector :
     }
 
     private void CleanupRuntime(
-        SkillCutsceneDefinition definition)
+        SkillVisualDefinition definition)
     {
         if (context != null)
         {

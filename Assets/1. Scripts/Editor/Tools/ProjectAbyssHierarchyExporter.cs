@@ -18,7 +18,7 @@ public static class ProjectAbyssHierarchyExporter
         "Tools/Project Abyss/Export Current Hierarchy for AI";
 
     private const string OutputFolderName =
-        "AllHierarchyTXT";
+        "AllDataTXT/Hierarchy";
 
     private const string DefaultFileName =
         "Project_Abyss_Current_Hierarchy_For_AI.txt";
@@ -404,6 +404,12 @@ public static class ProjectAbyssHierarchyExporter
 
         writer.WriteLine(
             $"GENERATED_AT_UTC: {DateTime.UtcNow:O}");
+
+        writer.WriteLine(
+            $"GENERATED_AT_LOCAL: {DateTimeOffset.Now:O}");
+
+        writer.WriteLine(
+            $"LOCAL_TIME_ZONE: {TimeZoneInfo.Local.Id}");
 
         writer.WriteLine(
             $"UNITY_VERSION: {Application.unityVersion}");

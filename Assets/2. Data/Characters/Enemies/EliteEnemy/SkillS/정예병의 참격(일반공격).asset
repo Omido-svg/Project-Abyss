@@ -15,7 +15,7 @@ MonoBehaviour:
   skillId: 5a239ec7d4944c458ac5329511091871
   SkillName: "\uC815\uC608\uBCD1\uC758 \uCC38\uACA9(\uC77C\uBC18\uACF5\uACA9)"
   ActionType: 0
-  BasePower: 6
+  BasePower: 3
   CanBreakPart: 0
   GainPrestige: 1
   AttackWeight:
@@ -29,8 +29,8 @@ MonoBehaviour:
   Rolls:
   - Index: 0
     Type: 0
-    MinPower: 7
-    MaxPower: 10
+    MinPower: 4
+    MaxPower: 7
     RngSource: 1
     CoinFrontChance: 0.5
     CoinBackPower: 6
@@ -49,8 +49,8 @@ MonoBehaviour:
     OnLoseEffects: []
   - Index: 1
     Type: 0
-    MinPower: 7
-    MaxPower: 10
+    MinPower: 4
+    MaxPower: 7
     RngSource: 1
     CoinFrontChance: 0.5
     CoinBackPower: 6
@@ -69,8 +69,8 @@ MonoBehaviour:
     OnLoseEffects: []
   - Index: 2
     Type: 1
-    MinPower: 7
-    MaxPower: 10
+    MinPower: 4
+    MaxPower: 7
     RngSource: 1
     CoinFrontChance: 0.5
     CoinBackPower: 6

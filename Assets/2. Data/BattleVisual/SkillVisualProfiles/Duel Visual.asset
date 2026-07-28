@@ -13,30 +13,15 @@ MonoBehaviour:
   m_Name: Duel Visual
   m_EditorClassIdentifier: 
   AllowAsProfileFallback: 1
-  UsesTargetCamera: 1
-  ReturnCameraAfterAction: 1
-  CameraArriveTimeout: 1.5
-  CameraDefinition: {fileID: 11400000, guid: b80eba35731b13b4ab5c07c213c61152, type: 2}
-  ClashRollCameraLeadTime: 0.25
-  MovesToTarget: 1
-  ReturnPositionAfterAction: 1
-  SkipMovementForSelfTarget: 1
-  FaceEachOther: 1
-  ReturnFacingAfterAction: 1
-  SkipFacingForSelfTarget: 1
   ShowsClashPower: 1
   ClashColor: {r: 1, g: 0.92156863, b: 0.015686275, a: 1}
   TieColor: {r: 1, g: 0.45, b: 0.1, a: 1}
   HasHitFrameDamage: 1
-  ApplyDamageIfNoHitFrame: 1
   HitDamageWeights: 0100000003000000
   DistributeDamageByHitCount: 1
   ExpectedHitFrameCount: 2
   ShowsActionAnnouncement: 1
   ActionAnnouncementDuration: 0.8
-  BeforeActionDelay: 0.2
-  AfterActionDelay: 0.35
-  AfterReturnDelay: 0.45
   UseHitCameraShake: 0
   HitShake:
     Duration: 0.18
@@ -109,3 +94,4 @@ MonoBehaviour:
     ReturnAfterAction: 1
     InstantReturn: 0
   RequiredAnimatorStates: []
+  presentationSchemaVersion: 720

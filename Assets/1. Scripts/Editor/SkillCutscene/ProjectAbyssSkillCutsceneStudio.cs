@@ -153,7 +153,7 @@ public sealed class ProjectAbyssSkillCutsceneStudio :
             return;
         }
 
-        SkillCutsceneDefinition definition =
+        SkillVisualDefinition definition =
             GetDefinition();
 
         DrawCreationSection(
@@ -272,33 +272,26 @@ public sealed class ProjectAbyssSkillCutsceneStudio :
     }
 
     private void DrawCreationSection(
-        SkillCutsceneDefinition definition)
+        SkillVisualDefinition definition)
     {
         EditorGUILayout.BeginVertical(
             "box");
 
         EditorGUILayout.LabelField(
-            "1. Cutscene Asset",
+            "1. Skill Presentation",
             EditorStyles.boldLabel);
 
         EditorGUILayout.ObjectField(
-            "Skill Visual",
-            skill.VisualDefinition,
-            typeof(
-                SkillVisualDefinition),
-            false);
-
-        EditorGUILayout.ObjectField(
-            "Cutscene Definition",
+            "Skill Presentation",
             definition,
             typeof(
-                SkillCutsceneDefinition),
+                SkillVisualDefinition),
             false);
 
         if (definition == null)
         {
             EditorGUILayout.HelpBox(
-                "SkillVisualDefinition, SkillCutsceneDefinition, 필수 5-Segment Timeline, " +
+                "통합 SkillVisualDefinition, 필수 5-Segment Timeline, " +
                 "Camera Rig Prefab과 기본 Track을 한 번에 생성합니다.",
                 MessageType.None);
         }
@@ -309,7 +302,7 @@ public sealed class ProjectAbyssSkillCutsceneStudio :
                     : "Repair Complete Timeline Set",
                 GUILayout.Height(36f)))
         {
-            SkillCutsceneDefinition created =
+            SkillVisualDefinition created =
                 SkillCutsceneAssetBuilder
                     .EnsureForSkill(
                         skill,
@@ -319,7 +312,7 @@ public sealed class ProjectAbyssSkillCutsceneStudio :
             if (created != null)
             {
                 lastMessage =
-                    "Cutscene Definition, 5-Segment Timeline, Camera Rig과 " +
+                    "Skill Presentation, 5-Segment Timeline, Camera Rig과 " +
                     "기본 Track 구성을 확인했습니다.";
 
                 lastMessageType =
@@ -334,7 +327,7 @@ public sealed class ProjectAbyssSkillCutsceneStudio :
     }
 
     private void DrawTimelineSection(
-        SkillCutsceneDefinition definition)
+        SkillVisualDefinition definition)
     {
         EditorGUILayout.BeginVertical(
             "box");
@@ -494,7 +487,7 @@ public sealed class ProjectAbyssSkillCutsceneStudio :
     }
 
     private void DrawCameraAuthoringSection(
-        SkillCutsceneDefinition definition)
+        SkillVisualDefinition definition)
     {
         EditorGUILayout.BeginVertical(
             "box");
@@ -656,7 +649,7 @@ public sealed class ProjectAbyssSkillCutsceneStudio :
     }
 
     private void DrawVisualFxSection(
-        SkillCutsceneDefinition definition)
+        SkillVisualDefinition definition)
     {
         EditorGUILayout.BeginVertical("box");
         EditorGUILayout.LabelField(
@@ -790,7 +783,7 @@ public sealed class ProjectAbyssSkillCutsceneStudio :
         bool captureEnd)
     {
         ProjectAbyssSkillCutscenePreviewBinder binder = FindPreviewBinder();
-        SkillCutsceneDefinition definition = binder?.Definition;
+        SkillVisualDefinition definition = binder?.Definition;
         TimelineAsset timeline = definition?.GetTimeline(binder.Segment);
 
         return CaptureSelectedVfxTransform(
@@ -884,7 +877,7 @@ public sealed class ProjectAbyssSkillCutsceneStudio :
     }
 
     private void DrawEventSection(
-        SkillCutsceneDefinition definition)
+        SkillVisualDefinition definition)
     {
         EditorGUILayout.BeginVertical(
             "box");
@@ -940,9 +933,9 @@ public sealed class ProjectAbyssSkillCutsceneStudio :
 
         EditorGUILayout.HelpBox(
             "Hit: 계산된 피해·Damage Number와 현재 타깃의 Hit 상태를 해당 프레임에 재생\n" +
-            "Vfx: Legacy VFX Cue 호환 이벤트 — 새 제작에서는 Visual FX/VFX Track 사용\n" +
+            "Vfx: SkillVisualDefinition의 VFX Cue 실행\n" +
             "CameraShake: Hit Shake 프리셋 실행\n" +
-            "CameraImpactPulse: SkillCameraDefinition의 FOV/Impulse 프리셋 실행\n" +
+            "CameraImpactPulse: SkillVisualDefinition의 FOV/Impulse 프리셋 실행\n" +
             "TargetHitReaction: 피해 없는 추가 움찔만 필요할 때 사용(Hit에는 기본 반응 포함)\n" +
             "SetTimeScale / RestoreTimeScale: 구간 슬로모션\n" +
             "ReturnOverview: 기본 전투 카메라 복귀",
@@ -952,7 +945,7 @@ public sealed class ProjectAbyssSkillCutsceneStudio :
     }
 
     private void DrawAnimationSection(
-        SkillCutsceneDefinition definition)
+        SkillVisualDefinition definition)
     {
         EditorGUILayout.BeginVertical(
             "box");
@@ -1020,7 +1013,7 @@ public sealed class ProjectAbyssSkillCutsceneStudio :
     }
 
     private void DrawValidationSection(
-        SkillCutsceneDefinition definition)
+        SkillVisualDefinition definition)
     {
         EditorGUILayout.BeginVertical(
             "box");
@@ -1036,7 +1029,7 @@ public sealed class ProjectAbyssSkillCutsceneStudio :
         if (issues.Count == 0)
         {
             EditorGUILayout.HelpBox(
-                "Cutscene Definition, Camera Rig, Timeline Track과 Skill Visual 연결이 유효합니다.",
+                "통합 Skill Presentation, Camera Rig과 Timeline Track 연결이 유효합니다.",
                 MessageType.Info);
         }
         else
@@ -1052,7 +1045,7 @@ public sealed class ProjectAbyssSkillCutsceneStudio :
         EditorGUILayout.BeginHorizontal();
 
         if (GUILayout.Button(
-                "Ping Cutscene Definition"))
+                "Ping Skill Presentation"))
         {
             Selection.activeObject =
                 definition;
@@ -1084,7 +1077,7 @@ public sealed class ProjectAbyssSkillCutsceneStudio :
             binder =
                 FindPreviewBinder();
 
-        SkillCutsceneDefinition definition =
+        SkillVisualDefinition definition =
             binder?.Definition;
 
         TimelineAsset timeline =
@@ -1100,7 +1093,7 @@ public sealed class ProjectAbyssSkillCutsceneStudio :
 
     private static CaptureResult
         CaptureSelectedCamera(
-            SkillCutsceneDefinition definition,
+            SkillVisualDefinition definition,
             ProjectAbyssSkillCutscenePreviewBinder binder,
             TimelineAsset timeline)
     {
@@ -1237,7 +1230,7 @@ public sealed class ProjectAbyssSkillCutsceneStudio :
     }
 
     private void OpenPreviewAndTimeline(
-        SkillCutsceneDefinition definition)
+        SkillVisualDefinition definition)
     {
         if (definition == null ||
             string.IsNullOrWhiteSpace(
@@ -1395,12 +1388,11 @@ public sealed class ProjectAbyssSkillCutsceneStudio :
                     keys));
     }
 
-    private SkillCutsceneDefinition
+    private SkillVisualDefinition
         GetDefinition()
     {
         return skill?
-            .VisualDefinition?
-            .CutsceneDefinition;
+            .VisualDefinition;
     }
 
     private static void DrawProperty(
@@ -1421,7 +1413,7 @@ public sealed class ProjectAbyssSkillCutsceneStudio :
     }
 
     private static List<string> Validate(
-        SkillCutsceneDefinition definition)
+        SkillVisualDefinition definition)
     {
         List<string> issues =
             new List<string>();
@@ -1429,7 +1421,7 @@ public sealed class ProjectAbyssSkillCutsceneStudio :
         if (definition == null)
         {
             issues.Add(
-                "SkillCutsceneDefinition이 없습니다.");
+                "SkillVisualDefinition이 없습니다.");
 
             return issues;
         }
@@ -1513,36 +1505,14 @@ public sealed class ProjectAbyssSkillCutsceneStudio :
 
     private static SkillVisualDefinition
         FindSkillVisual(
-            SkillCutsceneDefinition definition)
+            SkillVisualDefinition definition)
     {
-        string[] guids =
-            AssetDatabase.FindAssets(
-                "t:SkillVisualDefinition");
-
-        foreach (string guid in guids)
-        {
-            SkillVisualDefinition visual =
-                AssetDatabase
-                    .LoadAssetAtPath<
-                        SkillVisualDefinition>(
-                            AssetDatabase
-                                .GUIDToAssetPath(
-                                    guid));
-
-            if (visual?
-                    .CutsceneDefinition ==
-                definition)
-            {
-                return visual;
-            }
-        }
-
-        return null;
+        return definition;
     }
 
     private static IEnumerable<
         TimelineAsset> EnumerateTimelines(
-            SkillCutsceneDefinition definition)
+            SkillVisualDefinition definition)
     {
         if (definition == null)
             yield break;

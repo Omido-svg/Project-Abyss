@@ -48,6 +48,73 @@ public class BattleUIManager : MonoBehaviour
     public bool IsSelectingSkill => inputMode == BattleInputMode.SelectSkill;
     public BattleManager BattleManager => battleManager;
 
+    /// <summary>
+    /// 스킬 선택/대상 선택 중에는 현재 논리 슬롯을 교체한다고 가정하여
+    /// 계획 완료 뒤 실제로 남을 빛을 실시간 계산한다.
+    /// 실제 Character.CurrentEnergy는 턴 해석 전까지 변경하지 않는다.
+    /// </summary>
+    public bool TryGetPlayerEnergyDisplay(
+        Character player,
+        out int available,
+        out int maximum,
+        out int plannedCost,
+        out int pendingCost,
+        out bool hasPendingPreview)
+    {
+        available = 0;
+        maximum = 0;
+        plannedCost = 0;
+        pendingCost = 0;
+        hasPendingPreview = false;
+
+        if (player == null)
+            return false;
+
+        maximum = Mathf.Max(0, player.MaxEnergy);
+        int current = Mathf.Max(0, player.CurrentEnergy);
+
+        bool planning =
+            battleManager?.TurnManager != null &&
+            !battleManager.TurnManager.IsResolving;
+
+        ActionManager actionManager =
+            battleManager?.ActionManager;
+
+        if (!planning || actionManager == null)
+        {
+            available = current;
+            return true;
+        }
+
+        plannedCost =
+            actionManager.GetPlannedEnergyCost(player);
+
+        Skill pendingSkill = selection.Skill;
+
+        if (selectedOwner == player &&
+            selectedOwnerPart != null &&
+            pendingSkill != null &&
+            inputMode != BattleInputMode.SelectOwner)
+        {
+            int withoutEditedSlot =
+                actionManager.GetPlannedEnergyCost(
+                    player,
+                    selectedOwnerPart,
+                    selectedActionIndex);
+
+            pendingCost =
+                Mathf.Max(0, pendingSkill.EnergyCost);
+            plannedCost =
+                withoutEditedSlot + pendingCost;
+            hasPendingPreview = true;
+        }
+
+        available =
+            Mathf.Max(0, current - plannedCost);
+
+        return true;
+    }
+
     public IReadOnlyList<Skill> GetSelectableSkillsForCurrentSlot(
         BodyPart part)
     {
@@ -1248,16 +1315,29 @@ public class BattleUIManager : MonoBehaviour
         selection.SetActionIndex(
             selectedActionIndex,
             selectedMaxActionSlots);
-        selection.SelectSkill(skill);
 
         if (!IsSkillSelectable(
                 selectedOwnerPart,
                 skill))
         {
+            string reason =
+                GetSkillSelectionReason(
+                    selectedOwnerPart,
+                    skill);
+
+            PlaySkillSelectionRejectedFeedback(
+                skill,
+                reason);
+
             Debug.Log(
-                $"[{skill.SkillName}] 사용할 수 없는 스킬입니다.");
+                $"[{skill.SkillName}] 사용할 수 없는 스킬입니다. " +
+                reason);
             return;
         }
+
+        // 이 시점부터 TopStatusBar/BattleEnergyUI가 선택한 스킬 비용을
+        // 현재 슬롯 교체 기준으로 즉시 미리 보여준다.
+        selection.SelectSkill(skill);
 
         if (skill.ActionType == ActionType.Preparation)
         {
@@ -1286,6 +1366,45 @@ public class BattleUIManager : MonoBehaviour
 
         BattleDebugLog.UIInput(
             $"[Skill Selected] {skill.SkillName} / 공격 대상을 선택하세요.");
+    }
+
+    private void PlaySkillSelectionRejectedFeedback(
+        Skill skill,
+        string reason)
+    {
+        if (!IsEnergySelectionFailure(reason))
+            return;
+
+        string message =
+            string.IsNullOrWhiteSpace(reason)
+                ? "빛이 부족합니다."
+                : reason;
+
+        BattleTopStatusBarUI[] topBars =
+            FindObjectsByType<BattleTopStatusBarUI>(
+                FindObjectsInactive.Include,
+                FindObjectsSortMode.None);
+
+        foreach (BattleTopStatusBarUI topBar in topBars)
+            topBar?.PlayInsufficientEnergyFeedback(message);
+
+        BattleEnergyUI[] energyPanels =
+            FindObjectsByType<BattleEnergyUI>(
+                FindObjectsInactive.Include,
+                FindObjectsSortMode.None);
+
+        foreach (BattleEnergyUI energyPanel in energyPanels)
+            energyPanel?.PlayInsufficientEnergyFeedback(message);
+    }
+
+    private static bool IsEnergySelectionFailure(
+        string reason)
+    {
+        if (string.IsNullOrWhiteSpace(reason))
+            return false;
+
+        return reason.Contains("에너지") ||
+               reason.Contains("빛");
     }
 
     //---------------------------------------

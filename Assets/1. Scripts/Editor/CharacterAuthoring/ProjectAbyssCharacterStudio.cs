@@ -599,7 +599,8 @@ public sealed class ProjectAbyssCharacterStudio : EditorWindow
         }
 
         if (GUILayout.Button(
-                skill.VisualDefinition?.CutsceneDefinition == null
+                skill.VisualDefinition == null ||
+                !skill.VisualDefinition.HasCompleteTimelineSet
                     ? "Timeline 생성"
                     : "Timeline 보수",
                 GUILayout.Width(92f)))
@@ -633,11 +634,6 @@ public sealed class ProjectAbyssCharacterStudio : EditorWindow
         }
 
         DrawNested("Skill Visual", skill.VisualDefinition, false);
-        DrawNested("Skill Camera", skill.VisualDefinition?.CameraDefinition, false);
-        DrawNested(
-            "Skill Timeline Cutscene",
-            skill.VisualDefinition?.CutsceneDefinition,
-            false);
         EditorGUILayout.EndVertical();
     }
 
@@ -991,11 +987,6 @@ public sealed class ProjectAbyssCharacterStudio : EditorWindow
                     ? skill.name
                     : skill.SkillName);
 
-            SkillCameraDefinition camera =
-                CreateSubAsset<SkillCameraDefinition>(
-                    $"{baseName}_Camera",
-                    false);
-
             SkillVisualDefinition visual =
                 CreateSubAsset<SkillVisualDefinition>(
                     $"{baseName}_Visual",
@@ -1004,7 +995,6 @@ public sealed class ProjectAbyssCharacterStudio : EditorWindow
             ConfigureTimelineVisualDefaults(
                 visual,
                 skill.ActionType);
-            visual.CameraDefinition = camera;
             skill.VisualDefinition = visual;
             EditorUtility.SetDirty(skill);
             AssetDatabase.SaveAssets();
@@ -1031,13 +1021,12 @@ public sealed class ProjectAbyssCharacterStudio : EditorWindow
 
         visual.AllowAsProfileFallback = false;
         visual.HasHitFrameDamage = !isPreparation;
-        visual.ApplyDamageIfNoHitFrame = false;
         visual.ExpectedHitFrameCount = 1;
         visual.DistributeDamageByHitCount = !isPreparation;
-        visual.MovesToTarget = !isPreparation;
-        visual.ReturnPositionAfterAction = !isPreparation;
-        visual.FaceEachOther = !isPreparation;
-        visual.ReturnFacingAfterAction = !isPreparation;
+        visual.PrepareMovement = !isPreparation;
+        visual.RestoreMovement = !isPreparation;
+        visual.PrepareFacing = !isPreparation;
+        visual.RestoreFacing = !isPreparation;
 
         if (visual.MoveSettings != null)
         {
@@ -1882,12 +1871,12 @@ public sealed class ProjectAbyssCharacterStudio : EditorWindow
 
                 if (!skill.VisualDefinition.HasTimelineCutscene)
                 {
-                    SkillCutsceneDefinition cutscene =
-                        skill.VisualDefinition.CutsceneDefinition;
+                    SkillVisualDefinition presentation =
+                        skill.VisualDefinition;
 
-                    string missing = cutscene == null
-                        ? "SkillCutsceneDefinition"
-                        : string.Join(", ", cutscene.GetMissingRequirements());
+                    string missing = string.Join(
+                        ", ",
+                        presentation.GetMissingRequirements());
 
                     result.Add(Error(
                         $"{skill.name}: Timeline-only 필수 구성 누락 ({missing})"));

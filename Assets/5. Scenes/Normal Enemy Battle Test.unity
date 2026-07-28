@@ -354,7 +354,7 @@ MonoBehaviour:
   m_text: part 1
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 673275fc03fb0244e9cb00df02f38e56, type: 2}
-  m_sharedMaterial: {fileID: 8694838190884598287, guid: 673275fc03fb0244e9cb00df02f38e56, type: 2}
+  m_sharedMaterial: {fileID: -3790037780576902418, guid: 673275fc03fb0244e9cb00df02f38e56, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -808,17 +808,74 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   battleManager: {fileID: 1453355684}
   battleUIManager: {fileID: 605390726}
-  liveApply: 1
-  refreshUIAfterApply: 1
   overrideMomentum: 0
   momentum: 0
-  overridePlayerPrestige: 0
-  playerCurrentPrestige: 0
-  playerMaxPrestige: 100
-  overridePlayerParts: 0
-  playerParts: []
-  overrideEnemyParts: 0
-  enemies: []
+  playerTuning:
+    enabled: 1
+    characterName: Unassigned
+    enemyIndex: -1
+    core:
+      overrideHP: 0
+      currentHP: 0
+      maxHP: 1
+      preserveCurrentHpRatioWhenMaxChanges: 0
+      overrideBlock: 0
+      currentBlock: 0
+      overridePrestige: 0
+      currentPrestige: 0
+      maxPrestige: 100
+      overrideSpeedRange: 0
+      minSpeed: 3
+      maxSpeed: 8
+      overrideOffense: 0
+      flatDamageBonus: 0
+      damageMultiplier: 1
+      overrideDefense: 0
+      defense: 0
+      defensePenetrationRate: 0
+      overridePrestigeGain: 0
+      prestigeGainMultiplier: 1
+    partSettings:
+      overrideParts: 0
+      clearNonStructuralStatusesWhenStateChanges: 1
+      syncTotalHPFromParts: 1
+      parts: []
+    additionalSettings:
+      overrideCurrentRolledSpeed: 0
+      singleHpRolledSpeed: 0
+      overrideCustomResources: 0
+      customResources: []
+      overrideOlafMadness: 0
+      olafMadness: 0
+      applyToDeadCharacter: 0
+  enemyTunings: []
+  statusOperations: []
+  applyOnStart: 0
+  applyStatusOperationsOnStart: 0
+  autoCaptureProfilesWhenEmpty: 1
+  liveApply: 1
+  liveApplyInterval: 0.25
+  preventApplyDuringResolution: 1
+  refreshUIAfterApply: 1
+  refreshCharacterViewAfterApply: 1
+  logApplySummary: 1
+  configureLogger: 1
+  enabledLogCategories: 225
+  minimumLogLevel: 1
+  includeRealtimeInLog: 0
+  includeFrameInLog: 1
+  captureRecentLogs: 1
+  recentLogCapacity: 250
+  clearRecentLogsOnStart: 1
+  legacyOverridePlayerPrestige: 0
+  legacyPlayerCurrentPrestige: 0
+  legacyPlayerMaxPrestige: 100
+  legacyOverrideEnemyPrestige: 0
+  legacyOverridePlayerParts: 0
+  legacyPlayerParts: []
+  legacyOverrideEnemyParts: 0
+  legacyEnemies: []
+  serializedVersion: 2
 --- !u!4 &269561328
 Transform:
   m_ObjectHideFlags: 0
@@ -1614,12 +1671,18 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   uiManager: {fileID: 605390726}
-  battleManager: {fileID: 0}
+  registry: {fileID: 0}
   buttonText: {fileID: 1971725357}
   buttonImage: {fileID: 0}
+  portraitView: {fileID: 0}
   ownerSelectedColor: {r: 0.25, g: 0.65, b: 1, a: 1}
   targetSelectedColor: {r: 1, g: 0.25, b: 0.25, a: 1}
   weakenedColor: {r: 1, g: 0.85, b: 0.1, a: 1}
+  brokenColor: {r: 0.45, g: 0.15, b: 0.15, a: 1}
+  isTemplate: 0
+  isRuntimeGenerated: 0
+  participantSide: 0
+  participantIndex: -1
 --- !u!1 &488980321
 GameObject:
   m_ObjectHideFlags: 0
@@ -1938,6 +2001,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   battleManager: {fileID: 1453355684}
   skillSelectPanel: {fileID: 1299797369}
+  bodyPartButtonRegistry: {fileID: 0}
+  targetButtonRegistry: {fileID: 0}
+  characterDetailPanel: {fileID: 0}
+  participantButtonFactory: {fileID: 0}
 --- !u!4 &605390727
 Transform:
   m_ObjectHideFlags: 0
@@ -2784,7 +2851,7 @@ MonoBehaviour:
   m_text: EN2
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 673275fc03fb0244e9cb00df02f38e56, type: 2}
-  m_sharedMaterial: {fileID: 8694838190884598287, guid: 673275fc03fb0244e9cb00df02f38e56, type: 2}
+  m_sharedMaterial: {fileID: -3790037780576902418, guid: 673275fc03fb0244e9cb00df02f38e56, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -3304,6 +3371,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   data: {fileID: 11400000, guid: 15b65a39a7f305a4187f5ffeb15cbfb0, type: 2}
+  equippedItems: []
+  equippedAugments: []
+  skillSet: {fileID: 0}
+  singleMaxHP: 50
 --- !u!114 &1068877089
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3316,15 +3387,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 92f3087b424726149b6cfa1041a77f91, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  character: {fileID: 1068877088}
-  popupRoot: {fileID: 459384940}
-  statusText: {fileID: 623961084}
-  outline: {fileID: 1068877090}
-  battleManager: {fileID: 1453355684}
-  selectPlayerKey: 32
-  mouseButtonSelect: 0
-  mouseButtonDeselect: 1
-  focusOffset: {x: 0, y: 2, z: 0}
 --- !u!114 &1068877090
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3337,8 +3399,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b8c950b7064a28d49984264a980ae964, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  targetRenderer: {fileID: 1068877084}
-  outlineMaterial: {fileID: 2100000, guid: 17e6f1d8373960a449484235a8751434, type: 2}
+  outlineMaterialTemplate: {fileID: 2100000, guid: 17e6f1d8373960a449484235a8751434, type: 2}
+  outlineColor: {r: 0.2, g: 0.85, b: 1, a: 1}
+  outlineWidth: 0.025
+  targetRenderers: []
 --- !u!1 &1091805356
 GameObject:
   m_ObjectHideFlags: 0
@@ -3392,12 +3456,18 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   uiManager: {fileID: 605390726}
-  battleManager: {fileID: 0}
+  registry: {fileID: 0}
   buttonText: {fileID: 1806438817}
   buttonImage: {fileID: 0}
+  portraitView: {fileID: 0}
   ownerSelectedColor: {r: 0.25, g: 0.65, b: 1, a: 1}
   targetSelectedColor: {r: 1, g: 0.25, b: 0.25, a: 1}
   weakenedColor: {r: 1, g: 0.85, b: 0.1, a: 1}
+  brokenColor: {r: 0.45, g: 0.15, b: 0.15, a: 1}
+  isTemplate: 0
+  isRuntimeGenerated: 0
+  participantSide: 0
+  participantIndex: -1
 --- !u!114 &1091805359
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3755,6 +3825,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   data: {fileID: 11400000, guid: 56feff8428bac514a8e49f36158f3ed7, type: 2}
+  equippedItems: []
+  equippedAugments: []
+  skillSet: {fileID: 0}
+  singleMaxHP: 50
 --- !u!114 &1174378450
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3767,15 +3841,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 92f3087b424726149b6cfa1041a77f91, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  character: {fileID: 1174378449}
-  popupRoot: {fileID: 1377005057}
-  statusText: {fileID: 88524752}
-  outline: {fileID: 1174378451}
-  battleManager: {fileID: 1453355684}
-  selectPlayerKey: 32
-  mouseButtonSelect: 0
-  mouseButtonDeselect: 1
-  focusOffset: {x: 0, y: 2, z: 0}
 --- !u!114 &1174378451
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3788,8 +3853,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b8c950b7064a28d49984264a980ae964, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  targetRenderer: {fileID: 1174378445}
-  outlineMaterial: {fileID: 2100000, guid: 17e6f1d8373960a449484235a8751434, type: 2}
+  outlineMaterialTemplate: {fileID: 2100000, guid: 17e6f1d8373960a449484235a8751434, type: 2}
+  outlineColor: {r: 0.2, g: 0.85, b: 1, a: 1}
+  outlineWidth: 0.025
+  targetRenderers: []
 --- !u!1 &1213347049
 GameObject:
   m_ObjectHideFlags: 0
@@ -3937,12 +4004,18 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   uiManager: {fileID: 605390726}
-  battleManager: {fileID: 0}
+  registry: {fileID: 0}
   buttonText: {fileID: 1445933611}
   buttonImage: {fileID: 0}
+  portraitView: {fileID: 0}
   ownerSelectedColor: {r: 0.25, g: 0.65, b: 1, a: 1}
   targetSelectedColor: {r: 1, g: 0.25, b: 0.25, a: 1}
   weakenedColor: {r: 1, g: 0.85, b: 0.1, a: 1}
+  brokenColor: {r: 0.45, g: 0.15, b: 0.15, a: 1}
+  isTemplate: 0
+  isRuntimeGenerated: 0
+  participantSide: 0
+  participantIndex: -1
 --- !u!1 &1244269855
 GameObject:
   m_ObjectHideFlags: 0
@@ -4070,6 +4143,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   data: {fileID: 11400000, guid: 90a4820980ad3f641a004944af763fc1, type: 2}
+  equippedItems: []
+  equippedAugments: []
+  skillSet: {fileID: 0}
+  singleMaxHP: 50
 --- !u!114 &1244269862
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -4082,15 +4159,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 92f3087b424726149b6cfa1041a77f91, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  character: {fileID: 1244269861}
-  popupRoot: {fileID: 243524347}
-  statusText: {fileID: 1151835880}
-  outline: {fileID: 1244269863}
-  battleManager: {fileID: 1453355684}
-  selectPlayerKey: 32
-  mouseButtonSelect: 0
-  mouseButtonDeselect: 1
-  focusOffset: {x: 0, y: 2, z: 0}
 --- !u!114 &1244269863
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -4103,8 +4171,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b8c950b7064a28d49984264a980ae964, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  targetRenderer: {fileID: 1244269857}
-  outlineMaterial: {fileID: 2100000, guid: 17e6f1d8373960a449484235a8751434, type: 2}
+  outlineMaterialTemplate: {fileID: 2100000, guid: 17e6f1d8373960a449484235a8751434, type: 2}
+  outlineColor: {r: 0.2, g: 0.85, b: 1, a: 1}
+  outlineWidth: 0.025
+  targetRenderers: []
 --- !u!1 &1289930839
 GameObject:
   m_ObjectHideFlags: 0
@@ -4165,17 +4235,25 @@ MonoBehaviour:
   battleManager: {fileID: 1453355684}
   canvas: {fileID: 253689328}
   arrowRoot: {fileID: 1289930840}
+  bodyPartButtonRegistry: {fileID: 0}
+  targetButtonRegistry: {fileID: 0}
   showPlayerArrows: 1
   showEnemyTargetArrows: 1
   showEnemySideOnClash: 1
+  focusOnlyCurrentActionDuringVisual: 1
+  highlightCurrentActionButtons: 1
+  drawCurrentActionArrow: 1
   playerArrowColor: {r: 0, g: 1, b: 1, a: 1}
   enemyClashArrowColor: {r: 1, g: 0, b: 0, a: 1}
   preparationArrowColor: {r: 1, g: 0.85, b: 0, a: 1}
+  currentActionArrowColor: {r: 1, g: 0.9, b: 0.1, a: 1}
+  activeActionHighlightColor: {r: 1, g: 0.9, b: 0.1, a: 0.45}
   lineThickness: 5
   startPadding: 25
   endPadding: 25
   arrowHeadLength: 28
-  arrowHeadAngle: 35
+  arrowHeadWidth: 22
+  highlightPadding: {x: 12, y: 12}
 --- !u!1 &1299797365
 GameObject:
   m_ObjectHideFlags: 0
@@ -4270,10 +4348,18 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   canvasGroup: {fileID: 1299797370}
-  normalAttackButton: {fileID: 1730484223}
-  duelButton: {fileID: 699706617}
-  preparationButton: {fileID: 842641891}
-  prestigeButton: {fileID: 2109434807}
+  modeController: {fileID: 0}
+  slotHeaderText: {fileID: 0}
+  helpText: {fileID: 0}
+  closeButton: {fileID: 0}
+  actionSlotSelector: {fileID: 0}
+  drawers: []
+  animatedRoot: {fileID: 0}
+  enterOffsetY: 120
+  showDuration: 0.24
+  hideDuration: 0.16
+  showEase: 9
+  hideEase: 8
 --- !u!225 &1299797370
 CanvasGroup:
   m_ObjectHideFlags: 0
@@ -4523,7 +4609,7 @@ MonoBehaviour:
   m_text: part 2
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 673275fc03fb0244e9cb00df02f38e56, type: 2}
-  m_sharedMaterial: {fileID: 8694838190884598287, guid: 673275fc03fb0244e9cb00df02f38e56, type: 2}
+  m_sharedMaterial: {fileID: -3790037780576902418, guid: 673275fc03fb0244e9cb00df02f38e56, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -4628,23 +4714,61 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8671775e3a562fb458508ea68fd4f4b3, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  player: {fileID: 2094296668}
-  enemies:
+  rosterController: {fileID: 0}
+  autoInitializeOnAwake: 1
+  autoStartBattle: 1
+  legacyPlayer: {fileID: 2094296668}
+  legacyEnemies:
   - {fileID: 1244269861}
   - {fileID: 1174378449}
   - {fileID: 1068877088}
   - {fileID: 1478351541}
-  playerButtons:
+  legacyPlayerButtons:
   - {fileID: 1632426706}
   - {fileID: 1213347054}
   - {fileID: 478031303}
   - {fileID: 1603813231}
-  enemyButtons:
+  legacyEnemyButtons:
   - {fileID: 1091805358}
   - {fileID: 1582033875}
   - {fileID: 2090521073}
   - {fileID: 1854957847}
+  battleRuleSettings:
+    Momentum:
+      Minimum: -100
+      Maximum: 100
+      LastStandThreshold: -70
+      DisadvantageThreshold: -30
+      AdvantageThreshold: 30
+      OverwhelmThreshold: 70
+      LastStandMultiplier: 0.5
+      DisadvantageMultiplier: 0.5
+      BalanceMultiplier: 1
+      AdvantageMultiplier: 1
+      OverwhelmMultiplier: 2
+      MaximumOverwhelmMultiplier: 2
+      HitShift: 5
+      DuelVictoryShift: 25
+      LastStandHitShiftMultiplier: 2
+    Clash:
+      DefaultExchangeRollCount: 3
+      SpeedWeight: 1
+      MaxTieRerolls: 64
+      ConsumeResourceOnActionStart: 1
+    Energy:
+      DefaultMaximum: 3
+      TurnStartGain: 1
+      StartFull: 1
+    Prestige:
+      ClashStartCharge: 1
+      HitDealtCharge: 1
+      HitTakenCharge: 1
+      ClashVictoryCharge: 1
+      PreparationDoesNotCharge: 1
+    UseLegacyAttackDefenseStats: 0
   battleUIManager: {fileID: 0}
+  battleAnimationDirector: {fileID: 0}
+  defaultVisualProfile: {fileID: 0}
 --- !u!4 &1453355685
 Transform:
   m_ObjectHideFlags: 0
@@ -4787,6 +4911,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   data: {fileID: 11400000, guid: fa44a93d52182de409a55d85f797298c, type: 2}
+  equippedItems: []
+  equippedAugments: []
+  skillSet: {fileID: 0}
+  singleMaxHP: 50
 --- !u!114 &1478351542
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -4799,15 +4927,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 92f3087b424726149b6cfa1041a77f91, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  character: {fileID: 1478351541}
-  popupRoot: {fileID: 919936395}
-  statusText: {fileID: 602221191}
-  outline: {fileID: 1478351543}
-  battleManager: {fileID: 1453355684}
-  selectPlayerKey: 32
-  mouseButtonSelect: 0
-  mouseButtonDeselect: 1
-  focusOffset: {x: 0, y: 2, z: 0}
 --- !u!114 &1478351543
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -4820,8 +4939,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b8c950b7064a28d49984264a980ae964, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  targetRenderer: {fileID: 1478351537}
-  outlineMaterial: {fileID: 2100000, guid: 17e6f1d8373960a449484235a8751434, type: 2}
+  outlineMaterialTemplate: {fileID: 2100000, guid: 17e6f1d8373960a449484235a8751434, type: 2}
+  outlineColor: {r: 0.2, g: 0.85, b: 1, a: 1}
+  outlineWidth: 0.025
+  targetRenderers: []
 --- !u!1 &1531111095
 GameObject:
   m_ObjectHideFlags: 0
@@ -4868,10 +4989,22 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   battleManager: {fileID: 1453355684}
   text: {fileID: 1824034224}
+  viewRoot: {fileID: 0}
+  viewCanvasGroup: {fileID: 0}
+  showCharactersSummary: 1
   showSelectedCharacter: 0
   showAllActionSlots: 0
   showBodyPartSkills: 0
   showStatusEffects: 1
+  hideOnStart: 1
+  clearSelectedCharacterOnStart: 1
+  showOnlyWhenCharacterSelected: 1
+  forceAllViewOptionsOnStart: 1
+  autoResizeTextHeight: 1
+  compactMode: 1
+  maxActionSlotsToShow: 12
+  updateEveryFrame: 0
+  refreshInterval: 0.25
 --- !u!1 &1582033873
 GameObject:
   m_ObjectHideFlags: 0
@@ -4925,12 +5058,18 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   uiManager: {fileID: 605390726}
-  battleManager: {fileID: 0}
+  registry: {fileID: 0}
   buttonText: {fileID: 872342652}
   buttonImage: {fileID: 0}
+  portraitView: {fileID: 0}
   ownerSelectedColor: {r: 0.25, g: 0.65, b: 1, a: 1}
   targetSelectedColor: {r: 1, g: 0.25, b: 0.25, a: 1}
   weakenedColor: {r: 1, g: 0.85, b: 0.1, a: 1}
+  brokenColor: {r: 0.45, g: 0.15, b: 0.15, a: 1}
+  isTemplate: 0
+  isRuntimeGenerated: 0
+  participantSide: 0
+  participantIndex: -1
 --- !u!114 &1582033876
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -5172,12 +5311,18 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   uiManager: {fileID: 605390726}
-  battleManager: {fileID: 0}
+  registry: {fileID: 0}
   buttonText: {fileID: 1793331189}
   buttonImage: {fileID: 0}
+  portraitView: {fileID: 0}
   ownerSelectedColor: {r: 0.25, g: 0.65, b: 1, a: 1}
   targetSelectedColor: {r: 1, g: 0.25, b: 0.25, a: 1}
   weakenedColor: {r: 1, g: 0.85, b: 0.1, a: 1}
+  brokenColor: {r: 0.45, g: 0.15, b: 0.15, a: 1}
+  isTemplate: 0
+  isRuntimeGenerated: 0
+  participantSide: 0
+  participantIndex: -1
 --- !u!1 &1632426701
 GameObject:
   m_ObjectHideFlags: 0
@@ -5325,12 +5470,18 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   uiManager: {fileID: 605390726}
-  battleManager: {fileID: 0}
+  registry: {fileID: 0}
   buttonText: {fileID: 204596918}
   buttonImage: {fileID: 0}
+  portraitView: {fileID: 0}
   ownerSelectedColor: {r: 0.25, g: 0.65, b: 1, a: 1}
   targetSelectedColor: {r: 1, g: 0.25, b: 0.25, a: 1}
   weakenedColor: {r: 1, g: 0.85, b: 0.1, a: 1}
+  brokenColor: {r: 0.45, g: 0.15, b: 0.15, a: 1}
+  isTemplate: 0
+  isRuntimeGenerated: 0
+  participantSide: 0
+  participantIndex: -1
 --- !u!1 &1665027744
 GameObject:
   m_ObjectHideFlags: 0
@@ -5617,7 +5768,6 @@ GameObject:
   - component: {fileID: 1747701452}
   - component: {fileID: 1747701451}
   - component: {fileID: 1747701454}
-  - component: {fileID: 1747701455}
   m_Layer: 0
   m_Name: Main Camera
   m_TagString: MainCamera
@@ -5743,20 +5893,6 @@ MonoBehaviour:
     m_MipBias: 0
     m_VarianceClampScale: 0.9
     m_ContrastAdaptiveSharpening: 0
---- !u!114 &1747701455
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1747701450}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: b2879f4e81bcfd34abdd22216b139b67, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  moveSpeed: 8
-  focusDistance: 5
 --- !u!1 &1793331187
 GameObject:
   m_ObjectHideFlags: 0
@@ -5819,7 +5955,7 @@ MonoBehaviour:
 '
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 673275fc03fb0244e9cb00df02f38e56, type: 2}
-  m_sharedMaterial: {fileID: 8694838190884598287, guid: 673275fc03fb0244e9cb00df02f38e56, type: 2}
+  m_sharedMaterial: {fileID: -3790037780576902418, guid: 673275fc03fb0244e9cb00df02f38e56, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -5952,6 +6088,10 @@ MonoBehaviour:
   playerAdvantageIsRight: 1
   minMomentum: -100
   maxMomentum: 100
+  animateDuration: 0.35
+  exchangeAnimateDuration: 0.18
+  useUnscaledTime: 1
+  logMomentumAnimation: 1
 --- !u!114 &1805580446
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -6063,7 +6203,7 @@ MonoBehaviour:
   m_text: EN1
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 673275fc03fb0244e9cb00df02f38e56, type: 2}
-  m_sharedMaterial: {fileID: 8694838190884598287, guid: 673275fc03fb0244e9cb00df02f38e56, type: 2}
+  m_sharedMaterial: {fileID: -3790037780576902418, guid: 673275fc03fb0244e9cb00df02f38e56, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -6337,7 +6477,7 @@ MonoBehaviour:
 '
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 673275fc03fb0244e9cb00df02f38e56, type: 2}
-  m_sharedMaterial: {fileID: 8694838190884598287, guid: 673275fc03fb0244e9cb00df02f38e56, type: 2}
+  m_sharedMaterial: {fileID: -3790037780576902418, guid: 673275fc03fb0244e9cb00df02f38e56, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -6466,12 +6606,18 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   uiManager: {fileID: 605390726}
-  battleManager: {fileID: 0}
+  registry: {fileID: 0}
   buttonText: {fileID: 1994860953}
   buttonImage: {fileID: 0}
+  portraitView: {fileID: 0}
   ownerSelectedColor: {r: 0.25, g: 0.65, b: 1, a: 1}
   targetSelectedColor: {r: 1, g: 0.25, b: 0.25, a: 1}
   weakenedColor: {r: 1, g: 0.85, b: 0.1, a: 1}
+  brokenColor: {r: 0.45, g: 0.15, b: 0.15, a: 1}
+  isTemplate: 0
+  isRuntimeGenerated: 0
+  participantSide: 0
+  participantIndex: -1
 --- !u!114 &1854957848
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -6947,7 +7093,7 @@ MonoBehaviour:
   m_text: part 3
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 673275fc03fb0244e9cb00df02f38e56, type: 2}
-  m_sharedMaterial: {fileID: 8694838190884598287, guid: 673275fc03fb0244e9cb00df02f38e56, type: 2}
+  m_sharedMaterial: {fileID: -3790037780576902418, guid: 673275fc03fb0244e9cb00df02f38e56, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -7121,7 +7267,7 @@ MonoBehaviour:
 '
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 673275fc03fb0244e9cb00df02f38e56, type: 2}
-  m_sharedMaterial: {fileID: 8694838190884598287, guid: 673275fc03fb0244e9cb00df02f38e56, type: 2}
+  m_sharedMaterial: {fileID: -3790037780576902418, guid: 673275fc03fb0244e9cb00df02f38e56, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -7633,12 +7779,18 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   uiManager: {fileID: 605390726}
-  battleManager: {fileID: 0}
+  registry: {fileID: 0}
   buttonText: {fileID: 1842025270}
   buttonImage: {fileID: 0}
+  portraitView: {fileID: 0}
   ownerSelectedColor: {r: 0.25, g: 0.65, b: 1, a: 1}
   targetSelectedColor: {r: 1, g: 0.25, b: 0.25, a: 1}
   weakenedColor: {r: 1, g: 0.85, b: 0.1, a: 1}
+  brokenColor: {r: 0.45, g: 0.15, b: 0.15, a: 1}
+  isTemplate: 0
+  isRuntimeGenerated: 0
+  participantSide: 0
+  participantIndex: -1
 --- !u!114 &2090521074
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -7860,6 +8012,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   data: {fileID: 11400000, guid: e9bc03b760a7e094eb95540f97744572, type: 2}
+  equippedItems: []
+  equippedAugments: []
+  skillSet: {fileID: 0}
 --- !u!114 &2094296669
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -7872,15 +8027,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 92f3087b424726149b6cfa1041a77f91, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  character: {fileID: 2094296668}
-  popupRoot: {fileID: 310688763}
-  statusText: {fileID: 835575120}
-  outline: {fileID: 2094296670}
-  battleManager: {fileID: 1453355684}
-  selectPlayerKey: 32
-  mouseButtonSelect: 0
-  mouseButtonDeselect: 1
-  focusOffset: {x: 0, y: 2, z: 0}
 --- !u!114 &2094296670
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -7893,8 +8039,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b8c950b7064a28d49984264a980ae964, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  targetRenderer: {fileID: 2094296665}
-  outlineMaterial: {fileID: 2100000, guid: 17e6f1d8373960a449484235a8751434, type: 2}
+  outlineMaterialTemplate: {fileID: 2100000, guid: 17e6f1d8373960a449484235a8751434, type: 2}
+  outlineColor: {r: 0.2, g: 0.85, b: 1, a: 1}
+  outlineWidth: 0.025
+  targetRenderers: []
 --- !u!1 &2109434802
 GameObject:
   m_ObjectHideFlags: 0

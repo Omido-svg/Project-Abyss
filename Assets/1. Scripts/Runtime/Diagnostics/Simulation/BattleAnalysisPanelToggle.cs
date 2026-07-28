@@ -2,6 +2,7 @@ using System.Collections;
 using DG.Tweening;
 using TMPro;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
 #if ENABLE_INPUT_SYSTEM
@@ -14,7 +15,8 @@ using UnityEngine.InputSystem;
 /// </summary>
 [DefaultExecutionOrder(-1200)]
 [DisallowMultipleComponent]
-public sealed class BattleAnalysisPanelToggle : MonoBehaviour
+public sealed class BattleAnalysisPanelToggle : MonoBehaviour,
+    IBeginDragHandler, IDragHandler, IEndDragHandler
 {
     [Header("References")]
     [SerializeField] private GameObject panelRoot;
@@ -25,6 +27,18 @@ public sealed class BattleAnalysisPanelToggle : MonoBehaviour
     [Header("Visibility")]
     [SerializeField] private bool startHidden = true;
     [SerializeField] private bool enableF8Shortcut = true;
+
+    [Header("Layout / Runtime Position")]
+    [SerializeField] private Vector2 toggleButtonAnchoredPosition =
+        new Vector2(22f, -24f);
+    [SerializeField] private Vector2 panelAnchoredPosition =
+        new Vector2(22f, 72f);
+    [SerializeField] private bool allowToggleButtonDrag = true;
+    [SerializeField] private bool rememberToggleButtonPosition = true;
+    [SerializeField] private Vector2 toggleSafePadding =
+        new Vector2(12f, 12f);
+    [SerializeField] private string togglePositionPlayerPrefsKey =
+        "ProjectAbyss.BattleAnalysis.TogglePosition";
 
     [Header("Animation")]
     [SerializeField, Min(0f)] private float animationDuration = 0.22f;
@@ -43,7 +57,17 @@ public sealed class BattleAnalysisPanelToggle : MonoBehaviour
     private Tween movementTween;
     private Tween alphaTween;
 
+    private bool togglePositionLoaded;
+    private bool draggingToggle;
+    private Vector2 dragStartPointerLocal;
+    private Vector2 dragStartAnchoredPosition;
+    private float suppressToggleClickUntil;
+
     public bool IsVisible => isVisible;
+    public Vector2 ToggleButtonAnchoredPosition =>
+        toggleButton != null
+            ? ((RectTransform)toggleButton.transform).anchoredPosition
+            : toggleButtonAnchoredPosition;
 
     public void Configure(
         GameObject panel,
@@ -119,6 +143,26 @@ public sealed class BattleAnalysisPanelToggle : MonoBehaviour
         SetPanelVisible(visible, instant: false);
     }
 
+    /// <summary>
+    /// 배치 분석 Runner가 별도의 DontDestroyOnLoad 제어 Canvas를 만들었을 때
+    /// Scene에 붙어 있는 중복 분석 UI만 비활성화한다.
+    /// 이 컴포넌트가 붙은 Battle UI Canvas 자체는 끄지 않는다.
+    /// </summary>
+    public void DisableRuntimeControls()
+    {
+        InitializeIfNeeded();
+        KillTweens();
+        UnbindButton();
+
+        if (panelRoot != null)
+            panelRoot.SetActive(false);
+
+        if (toggleButton != null)
+            toggleButton.gameObject.SetActive(false);
+
+        enabled = false;
+    }
+
     private void SetPanelVisible(bool visible, bool instant)
     {
         InitializeIfNeeded();
@@ -139,6 +183,8 @@ public sealed class BattleAnalysisPanelToggle : MonoBehaviour
             BuildRuntimeFallbackUi();
             ResolveReferences();
         }
+
+        ApplyConfiguredLayout(loadSavedPosition: true);
 
         panelRect = panelRoot != null
             ? panelRoot.GetComponent<RectTransform>()
@@ -248,7 +294,7 @@ public sealed class BattleAnalysisPanelToggle : MonoBehaviour
             panelRect = panelObject.GetComponent<RectTransform>();
             SetBottomLeftRect(
                 panelRect,
-                new Vector2(22f, 72f),
+                panelAnchoredPosition,
                 new Vector2(360f, 260f));
 
             Image background = panelObject.AddComponent<Image>();
@@ -291,7 +337,7 @@ public sealed class BattleAnalysisPanelToggle : MonoBehaviour
             Button stop = CreateButton(
                 "StopButton",
                 panelRect,
-                "여기까지 저장하고 중단",
+                "중단 [F9]",
                 new Vector2(14f, -110f),
                 new Vector2(158f, 42f),
                 sharedFont);
@@ -340,7 +386,7 @@ public sealed class BattleAnalysisPanelToggle : MonoBehaviour
                 "BattleAnalysisToggleButton",
                 host,
                 showLabel,
-                new Vector2(22f, 22f),
+                toggleButtonAnchoredPosition,
                 new Vector2(154f, 38f),
                 sharedFont);
 
@@ -462,12 +508,241 @@ public sealed class BattleAnalysisPanelToggle : MonoBehaviour
     private void BindButton()
     {
         UnbindButton();
-        toggleButton?.onClick.AddListener(TogglePanel);
+        toggleButton?.onClick.AddListener(HandleToggleButtonClicked);
     }
 
     private void UnbindButton()
     {
-        toggleButton?.onClick.RemoveListener(TogglePanel);
+        toggleButton?.onClick.RemoveListener(HandleToggleButtonClicked);
+    }
+
+    private void HandleToggleButtonClicked()
+    {
+        if (Time.unscaledTime <= suppressToggleClickUntil)
+            return;
+
+        TogglePanel();
+    }
+
+    public void SetToggleButtonAnchoredPosition(
+        Vector2 position,
+        bool save = true)
+    {
+        toggleButtonAnchoredPosition = ClampTogglePosition(position);
+
+        if (toggleButton != null)
+        {
+            RectTransform rect =
+                toggleButton.transform as RectTransform;
+
+            if (rect != null)
+                rect.anchoredPosition = toggleButtonAnchoredPosition;
+        }
+
+        if (save)
+            SaveTogglePosition();
+    }
+
+    public void ResetToggleButtonPosition()
+    {
+        togglePositionLoaded = true;
+
+        if (rememberToggleButtonPosition &&
+            !string.IsNullOrWhiteSpace(togglePositionPlayerPrefsKey))
+        {
+            PlayerPrefs.DeleteKey(togglePositionPlayerPrefsKey + ".x");
+            PlayerPrefs.DeleteKey(togglePositionPlayerPrefsKey + ".y");
+            PlayerPrefs.Save();
+        }
+
+        SetToggleButtonAnchoredPosition(
+            new Vector2(22f, -24f),
+            save: false);
+    }
+
+    private void ApplyConfiguredLayout(bool loadSavedPosition)
+    {
+        if (panelRoot != null)
+        {
+            RectTransform rect =
+                panelRoot.transform as RectTransform;
+
+            if (rect != null)
+                rect.anchoredPosition = panelAnchoredPosition;
+        }
+
+        if (loadSavedPosition)
+            LoadTogglePositionIfNeeded();
+
+        SetToggleButtonAnchoredPosition(
+            toggleButtonAnchoredPosition,
+            save: false);
+    }
+
+    private void LoadTogglePositionIfNeeded()
+    {
+        if (togglePositionLoaded)
+            return;
+
+        togglePositionLoaded = true;
+
+        if (!Application.isPlaying ||
+            !rememberToggleButtonPosition ||
+            string.IsNullOrWhiteSpace(togglePositionPlayerPrefsKey))
+        {
+            return;
+        }
+
+        string xKey = togglePositionPlayerPrefsKey + ".x";
+        string yKey = togglePositionPlayerPrefsKey + ".y";
+
+        if (!PlayerPrefs.HasKey(xKey) ||
+            !PlayerPrefs.HasKey(yKey))
+        {
+            return;
+        }
+
+        toggleButtonAnchoredPosition =
+            new Vector2(
+                PlayerPrefs.GetFloat(
+                    xKey,
+                    toggleButtonAnchoredPosition.x),
+                PlayerPrefs.GetFloat(
+                    yKey,
+                    toggleButtonAnchoredPosition.y));
+    }
+
+    private void SaveTogglePosition()
+    {
+        if (!Application.isPlaying ||
+            !rememberToggleButtonPosition ||
+            string.IsNullOrWhiteSpace(togglePositionPlayerPrefsKey))
+        {
+            return;
+        }
+
+        PlayerPrefs.SetFloat(
+            togglePositionPlayerPrefsKey + ".x",
+            toggleButtonAnchoredPosition.x);
+        PlayerPrefs.SetFloat(
+            togglePositionPlayerPrefsKey + ".y",
+            toggleButtonAnchoredPosition.y);
+        PlayerPrefs.Save();
+    }
+
+    private Vector2 ClampTogglePosition(Vector2 value)
+    {
+        RectTransform host = transform as RectTransform;
+        RectTransform buttonRect =
+            toggleButton != null
+                ? toggleButton.transform as RectTransform
+                : null;
+
+        if (host == null ||
+            buttonRect == null ||
+            host.rect.width <= 1f ||
+            host.rect.height <= 1f)
+        {
+            return value;
+        }
+
+        float minX = Mathf.Max(0f, toggleSafePadding.x);
+        float maxX = Mathf.Max(
+            minX,
+            host.rect.width - buttonRect.rect.width -
+            Mathf.Max(0f, toggleSafePadding.x));
+
+        float maxY = -Mathf.Max(0f, toggleSafePadding.y);
+        float minY = -Mathf.Max(
+            Mathf.Max(0f, toggleSafePadding.y),
+            host.rect.height - buttonRect.rect.height -
+            Mathf.Max(0f, toggleSafePadding.y));
+
+        return new Vector2(
+            Mathf.Clamp(value.x, minX, maxX),
+            Mathf.Clamp(value.y, minY, maxY));
+    }
+
+    public void OnBeginDrag(PointerEventData eventData)
+    {
+        if (!allowToggleButtonDrag ||
+            !IsPointerOnToggleButton(eventData))
+        {
+            return;
+        }
+
+        RectTransform host = transform as RectTransform;
+        RectTransform buttonRect =
+            toggleButton?.transform as RectTransform;
+
+        if (host == null || buttonRect == null)
+            return;
+
+        if (!RectTransformUtility.ScreenPointToLocalPointInRectangle(
+                host,
+                eventData.position,
+                eventData.pressEventCamera,
+                out dragStartPointerLocal))
+        {
+            return;
+        }
+
+        dragStartAnchoredPosition = buttonRect.anchoredPosition;
+        draggingToggle = true;
+    }
+
+    public void OnDrag(PointerEventData eventData)
+    {
+        if (!draggingToggle)
+            return;
+
+        RectTransform host = transform as RectTransform;
+
+        if (host == null ||
+            !RectTransformUtility.ScreenPointToLocalPointInRectangle(
+                host,
+                eventData.position,
+                eventData.pressEventCamera,
+                out Vector2 pointerLocal))
+        {
+            return;
+        }
+
+        SetToggleButtonAnchoredPosition(
+            dragStartAnchoredPosition +
+            (pointerLocal - dragStartPointerLocal),
+            save: false);
+    }
+
+    public void OnEndDrag(PointerEventData eventData)
+    {
+        if (!draggingToggle)
+            return;
+
+        draggingToggle = false;
+        suppressToggleClickUntil = Time.unscaledTime + 0.15f;
+        SaveTogglePosition();
+    }
+
+    private bool IsPointerOnToggleButton(
+        PointerEventData eventData)
+    {
+        if (toggleButton == null || eventData == null)
+            return false;
+
+        GameObject source =
+            eventData.pointerPress ??
+            eventData.pointerDrag ??
+            eventData.pointerEnter;
+
+        if (source == null)
+            return false;
+
+        Transform sourceTransform = source.transform;
+        Transform toggleTransform = toggleButton.transform;
+
+        return sourceTransform == toggleTransform ||
+               sourceTransform.IsChildOf(toggleTransform);
     }
 
     private void KillTweens()
