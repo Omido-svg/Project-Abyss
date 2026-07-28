@@ -1,0 +1,71 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 02f75a7e990b2b34480f808c74726683, type: 3}
+  m_Name: Olaf_Complete_CharacterData
+  m_EditorClassIdentifier: 
+  CharacterName: "\uC62C\uB77C\uD504"
+  CombatantTier: 0
+  Portrait: {fileID: 0}
+  DetailArtwork: {fileID: 0}
+  RoleName: "\uAD11\uC804\uC0AC / \uCD9C\uD608\xB7\uAD11\uAE30 \uC555\uBC15"
+  UiSummary: "\uBD80\uC704\uB97C \uD76C\uC0DD\uD574 \uAD11\uAE30\uB97C \uC5BB\uACE0
+    \uB2E4\uB2E8 \uACF5\uACA9\uACFC \uCD9C\uD608\uB85C \uC804\uC7A5\uC744 \uC555\uBC15\uD558\uB294
+    \uAD11\uC804\uC0AC. \uBD80\uC704\uAC00 \uD558\uB098\uB9CC \uB0A8\uC73C\uBA74
+    \uBD88\uC0AC\uC758 \uBD84\uB178\uAC00 \uBC1C\uB3D9\uD55C\uB2E4."
+  TargetMode: 1
+  SingleHpMax: 1
+  maxPrestige: 100
+  maxEnergy: 3
+  ActionSlots:
+  - SlotId: OLAF_HEAD
+    DisplayName: "\uBA38\uB9AC \uD589\uB3D9"
+    Enabled: 1
+    HasLinkedPart: 1
+    LinkedPartType: 0
+    OverrideSpeedRange: 1
+    MinSpeed: 8
+    MaxSpeed: 15
+    AllowedActionTypes: 00000000010000000200000003000000
+  - SlotId: OLAF_LEFT_HAND
+    DisplayName: "\uC67C\uC190 \uD589\uB3D9"
+    Enabled: 1
+    HasLinkedPart: 1
+    LinkedPartType: 1
+    OverrideSpeedRange: 1
+    MinSpeed: 7
+    MaxSpeed: 14
+    AllowedActionTypes: 000000000100000003000000
+  - SlotId: OLAF_RIGHT_HAND
+    DisplayName: "\uC624\uB978\uC190 \uD589\uB3D9"
+    Enabled: 1
+    HasLinkedPart: 1
+    LinkedPartType: 2
+    OverrideSpeedRange: 1
+    MinSpeed: 7
+    MaxSpeed: 14
+    AllowedActionTypes: 000000000100000003000000
+  - SlotId: OLAF_LEGS
+    DisplayName: "\uB2E4\uB9AC \uD589\uB3D9"
+    Enabled: 1
+    HasLinkedPart: 1
+    LinkedPartType: 3
+    OverrideSpeedRange: 1
+    MinSpeed: 9
+    MaxSpeed: 15
+    AllowedActionTypes: 0200000003000000
+  CombatLoadout: {fileID: 11400000, guid: 22d4638ffe86ed441831fcb29301823d, type: 2}
+  BossPhases: []
+  damageMultiplier: 1
+  defensePenetration: 0.08
+  minSpeed: 7
+  maxSpeed: 15
+  InitialResources: []

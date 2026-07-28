@@ -1,0 +1,23 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 49d0145207ae98e479835fe43892bbf6, type: 3}
+  m_Name: Olaf_BloodyAxe_Complete
+  m_EditorClassIdentifier: 
+  itemName: "\uD53C \uBB3B\uC740 \uB3C4\uB07C"
+  description: "\uC77C\uBC18\uACF5\uACA9\uC73C\uB85C \uC2E4\uC81C \uD53C\uD574\uB97C
+    \uC8FC\uBA74 \uD589\uB3D9\uB2F9 \uD55C \uBC88 \uCD9C\uD608 1\uC744 \uCD94\uAC00\uD55C\uB2E4."
+  bleedingAmount: 1
+  requireNormalAttack: 1
+  requirePositiveDamage: 1
+  ignoreStatusDamage: 1
+  triggerOncePerAction: 1
+  applyToCharacterWhenPartUnavailable: 1

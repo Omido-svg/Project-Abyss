@@ -1,0 +1,19 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1eeee832cde21fd4a889464ece49bba3, type: 3}
+  m_Name: Olaf_BattleInstinct
+  m_EditorClassIdentifier: 
+  augmentName: "\uC804\uD22C \uBCF8\uB2A5"
+  description: "\uACF5\uACA9\uB825\uACFC \uC704\uC138 \uD68D\uB4DD\uB7C9\uC744 \uB192\uC774\uB294
+    \uAE30\uBCF8 \uACF5\uACA9\uD615 \uC99D\uAC15."
+  bonusAttack: 2
+  prestigeGainBonusRate: 0.15

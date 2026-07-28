@@ -1,0 +1,33 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fee421b23d5d88b4dbbdbeda866a400f, type: 3}
+  m_Name: Olaf_ImmortalFrenzy_Complete_Cutscene
+  m_EditorClassIdentifier: 
+  ActionTimeline: {fileID: 11400000, guid: 6fedcc34eb0d4284f8f34926970b8d3f, type: 2}
+  ClashAttackTimeline: {fileID: 11400000, guid: fde06f7564927dd4cbd36b0967f1f3b6, type: 2}
+  PartBreakTimeline: {fileID: 11400000, guid: ab1f9eafe6bd25544990f64e85b8258e, type: 2}
+  KillTimeline: {fileID: 11400000, guid: 51a9e44a676484141a8f70bbcd024f37, type: 2}
+  ReturnTimeline: {fileID: 11400000, guid: a1d4c836a3b58d845994f6df3669d906, type: 2}
+  CameraRigPrefab: {fileID: 7553160259682096683, guid: 91abbaef34e08414c8b9a753a91eb2ce, type: 3}
+  AttackerAnimation: {fileID: 7400000, guid: d1deef05da1ae9a4da593e2c3bf9a272, type: 2}
+  TargetAnimation: {fileID: 7400000, guid: 599a42bf304c25a4fae9cb811956b0f6, type: 2}
+  AuthoringFrameRate: 30
+  DefaultDurationFrames: 180
+  PrepareFacing: 1
+  PrepareLegacyMovement: 0
+  RestoreLegacyMovement: 1
+  RestoreFacing: 1
+  UseLegacyAutomaticVfx: 0
+  ApplyMissingHitFallback: 1
+  RestoreOverview: 1
+  RestoreTimeScale: 1
+  previewScenePath: Assets/2. Data/Characters/Olaf/Generated Complete/Skills/Cutscenes/Olaf_ImmortalFrenzy_Complete/Olaf_ImmortalFrenzy_Complete_Preview.unity

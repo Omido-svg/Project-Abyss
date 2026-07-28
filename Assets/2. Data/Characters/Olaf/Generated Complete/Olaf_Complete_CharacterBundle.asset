@@ -1,0 +1,75 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d0163392f1e89b4448da024edd3daf3b, type: 3}
+  m_Name: Olaf_Complete_CharacterBundle
+  m_EditorClassIdentifier: 
+  kind: 0
+  displayName: "\uC62C\uB77C\uD504 - \uC644\uC131\uD615 Timeline \uC0D8\uD50C"
+  authoringNotes: "v5.1.5 \uC644\uC131\uD615 \uC62C\uB77C\uD504 \uC0D8\uD50C. Character
+    Studio\uC758 Modern Loadout, Legacy Adapter, Item/Augment, Animator/Avatar, \uD45C\uC900
+    Component/Hierarchy\uC640 Skill Cutscene Studio\uC758 Action/Clash/PartBreak/Kill/Return,
+    Camera/Event/Motion Track\uC744 \uBAA8\uB450 \uC608\uC2DC\uB85C \uAD6C\uC131\uD55C\uB2E4."
+  characterData: {fileID: 11400000, guid: 2f5ad985618c0394d9e2900fb6932886, type: 2}
+  combatLoadout: {fileID: 11400000, guid: 22d4638ffe86ed441831fcb29301823d, type: 2}
+  skillSet: {fileID: 11400000, guid: efc778afb0bc3a84fa6ba83351657eec, type: 2}
+  characterPrefab: {fileID: 104638831959828310, guid: 91d146567002eb141b1a4441227b0f59, type: 3}
+  visualProfile: {fileID: 11400000, guid: b16c630a12aa8074ebf411b088fecc4b, type: 2}
+  animatorController: {fileID: 9100000, guid: 8396239eabf98ac4787eb4682559e3e9, type: 2}
+  avatar: {fileID: 9000000, guid: 4d18000807707614eb3e8d71aac8d915, type: 3}
+  overrideAnimatorController: 1
+  overrideAvatar: 1
+  overrideLoadout: 1
+  equippedItems:
+  - {fileID: 11400000, guid: 0c81bfef7e80c0948950171f630322f4, type: 2}
+  equippedAugments:
+  - {fileID: 11400000, guid: 48c6d9e4a832b9b4ca29aed79c5215c2, type: 2}
+  - {fileID: 11400000, guid: 2818ec235f55b1e4abbeb48266e13f84, type: 2}
+  - {fileID: 11400000, guid: 8b9db351fd62c4746a58a2970c25107a, type: 2}
+  overrideNormalEnemySingleHp: 1
+  normalEnemySingleMaxHp: 50
+  useElitePostureRotation: 1
+  elitePostureSettings:
+    MinimumTurns: 2
+    MaximumTurns: 3
+    NormalAttackSlotLimit: 3
+    CrouchingAttackSlotLimit: 2
+    OffensiveAttackSlotLimit: 4
+    ExpectedMomentumDriftPerTurn: 15
+  includedAssets:
+  - {fileID: 11400000, guid: 2f5ad985618c0394d9e2900fb6932886, type: 2}
+  - {fileID: 11400000, guid: 22d4638ffe86ed441831fcb29301823d, type: 2}
+  - {fileID: 11400000, guid: 4a709a4645f00004590d3109ab0fc46b, type: 2}
+  - {fileID: 11400000, guid: efc778afb0bc3a84fa6ba83351657eec, type: 2}
+  - {fileID: 11400000, guid: b16c630a12aa8074ebf411b088fecc4b, type: 2}
+  - {fileID: 11400000, guid: d7d8727cd7506e14189a357f412d7bdc, type: 2}
+  - {fileID: 11400000, guid: 547d1b04d5b2f4a429e80bf60cadc82d, type: 2}
+  - {fileID: 11400000, guid: 339b01c4c57416b448ca1fa14403c675, type: 2}
+  - {fileID: 11400000, guid: 301588cc2e96ecd4488ef1caf66e787d, type: 2}
+  - {fileID: 11400000, guid: 9cb3223acd12a8f41b2462990ea01297, type: 2}
+  - {fileID: 11400000, guid: 0794046847886f9448435845df181da5, type: 2}
+  - {fileID: 11400000, guid: 6319d2d5dd5d5ae4a934ba13bca78a9b, type: 2}
+  - {fileID: 11400000, guid: 3b59bc59f7aa70f498d2f7f1d9837996, type: 2}
+  - {fileID: 11400000, guid: 0c81bfef7e80c0948950171f630322f4, type: 2}
+  - {fileID: 11400000, guid: 48c6d9e4a832b9b4ca29aed79c5215c2, type: 2}
+  - {fileID: 11400000, guid: 2818ec235f55b1e4abbeb48266e13f84, type: 2}
+  - {fileID: 11400000, guid: 8b9db351fd62c4746a58a2970c25107a, type: 2}
+  supportingAssets:
+  - {fileID: 9100000, guid: 8396239eabf98ac4787eb4682559e3e9, type: 2}
+  - {fileID: 7400000, guid: 56098571292824946ad54887d064dfb6, type: 2}
+  - {fileID: 7400000, guid: 6f81679836ff8be47a1c9dc56ea787d4, type: 2}
+  - {fileID: 7400000, guid: 7ecd664a2a80703468c54eb901cfcc57, type: 2}
+  - {fileID: 7400000, guid: d1deef05da1ae9a4da593e2c3bf9a272, type: 2}
+  - {fileID: 7400000, guid: 599a42bf304c25a4fae9cb811956b0f6, type: 2}
+  - {fileID: 7400000, guid: b26c65c5ec7647d418abb40edab0edfb, type: 2}
+  - {fileID: 7400000, guid: 013e733d6e7b14c46bed12b60db28d90, type: 2}
+  - {fileID: 7400000, guid: dead867c33d42134eb1c8881d33ab4cd, type: 2}
+  - {fileID: 11400000, guid: 2c4e00942f01fb74293f88c097c7e6a1, type: 2}

@@ -100,7 +100,7 @@ public sealed class ProjectAbyssCharacterStudio : EditorWindow
     private void OnGUI()
     {
         EditorGUILayout.LabelField(
-            "Project Abyss Character Studio — Prefab Assembly v4.9",
+            "Project Abyss Character Studio — Prefab + Cutscene Assembly v5.0",
             EditorStyles.boldLabel);
 
         EditorGUILayout.HelpBox(
@@ -476,6 +476,13 @@ public sealed class ProjectAbyssCharacterStudio : EditorWindow
                 type => AddEffect(skill, type));
         }
 
+        if (GUILayout.Button("Cutscene", GUILayout.Width(78f)))
+        {
+            ProjectAbyssSkillCutsceneStudio.Open(
+                skill,
+                bundle);
+        }
+
         EditorGUILayout.EndHorizontal();
         DrawNested(
             "수치 / 독립 굴림 / 공격 가중치 / 비용 / 조건",
@@ -490,6 +497,10 @@ public sealed class ProjectAbyssCharacterStudio : EditorWindow
 
         DrawNested("Skill Visual", skill.VisualDefinition, false);
         DrawNested("Skill Camera", skill.VisualDefinition?.CameraDefinition, false);
+        DrawNested(
+            "Skill Timeline Cutscene",
+            skill.VisualDefinition?.CutsceneDefinition,
+            false);
         EditorGUILayout.EndVertical();
     }
 

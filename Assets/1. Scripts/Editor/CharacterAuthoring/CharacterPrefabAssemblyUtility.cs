@@ -13,6 +13,19 @@ public static class CharacterPrefabAssemblyUtility
 {
     private static readonly string[] CameraPointNames =
     {
+        // 새 Timeline Cutscene에서 선택적으로 사용하는 의미 기반 Binding Point.
+        // 실제 Camera 위치는 Skill 전용 CameraRig Prefab 안에 자유롭게 배치한다.
+        "Root",
+        "Center",
+        "Head",
+        "Chest",
+        "LeftHand",
+        "RightHand",
+        "WeaponMain",
+        "WeaponSub",
+        "Feet",
+
+        // 기존 SkillCameraDefinition / CharacterView 연출 호환 Point.
         "LookAtPoint",
         "CloseCameraPoint",
         "OverShoulderCameraPoint",

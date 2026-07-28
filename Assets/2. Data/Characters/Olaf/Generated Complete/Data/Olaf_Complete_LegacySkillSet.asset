@@ -1,0 +1,18 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 42024a28d0568ac4cb807da56889fd57, type: 3}
+  m_Name: Olaf_Complete_LegacySkillSet
+  m_EditorClassIdentifier: 
+  NormalAttack: {fileID: 11400000, guid: d7d8727cd7506e14189a357f412d7bdc, type: 2}
+  DuelSkill: {fileID: 11400000, guid: 547d1b04d5b2f4a429e80bf60cadc82d, type: 2}
+  PreparationSkill: {fileID: 11400000, guid: 339b01c4c57416b448ca1fa14403c675, type: 2}
+  PrestigeSkill: {fileID: 11400000, guid: 301588cc2e96ecd4488ef1caf66e787d, type: 2}

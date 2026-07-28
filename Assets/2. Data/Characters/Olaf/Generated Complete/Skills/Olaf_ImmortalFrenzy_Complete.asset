@@ -1,0 +1,162 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a85a262093fed2b45a6f05cb3a256be9, type: 3}
+  m_Name: Olaf_ImmortalFrenzy_Complete
+  m_EditorClassIdentifier: 
+  skillId: 365e7e89302743558627a15f0a852c5f
+  SkillName: "\uBD88\uC0AC\uC758 \uAD11\uB780"
+  ActionType: 3
+  BasePower: 20
+  CanBreakPart: 1
+  GainPrestige: 0
+  AttackWeight:
+    Weight: 3
+    SecondaryPartMode: 2
+    SecondaryDamageMultiplier: 0.75
+    AllowBrokenSecondaryParts: 1
+  Description: "\uAE30\uC138\uAC00 \uAC00\uB4DD \uCC3C\uC744 \uB54C \uBC1C\uB3D9\uD558\uB294
+    \uC62C\uB77C\uD504\uC758 \uCD5C\uC885\uAE30. \uB124 \uC885\uB958\uC758 RNG\uB97C
+    \uC5F0\uC18D \uC0AC\uC6A9\uD558\uACE0, \uBD80\uC704 \uD30C\uAD34\uC640 \uC0AC\uB9DD
+    \uACB0\uACFC\uC5D0 \uB530\uB77C \uBCC4\uB3C4 Timeline Segment\uB85C \uBD84\uAE30\uD55C\uB2E4."
+  Keywords:
+  - Name: "\uC704\uC138"
+    Description: "\uCD5C\uB300 \uC704\uC138\uB97C \uC694\uAD6C\uD558\uACE0 \uC0AC\uC6A9
+      \uD6C4 \uC804\uBD80 \uC18C\uBE44\uD55C\uB2E4."
+  - Name: "\uBD80\uC704 \uD30C\uAD34"
+    Description: "CanBreakPart\uAC00 \uD65C\uC131\uD654\uB418\uC5B4 \uACB0\uACFC\uC5D0
+      \uB530\uB77C Part Break Segment\uAC00 \uC7AC\uC0DD\uB41C\uB2E4."
+  - Name: "\uACB0\uACFC \uBD84\uAE30"
+    Description: "\uBD80\uC704 \uD30C\uAD34, \uC0AC\uB9DD, \uC0DD\uC874 \uBCF5\uADC0\uB97C
+      \uBCC4\uB3C4 Timeline\uC73C\uB85C \uC7AC\uC0DD\uD55C\uB2E4."
+  - Name: "\uC804 RNG"
+    Description: "Coin, Dice, Slot, Chinchiro\uB97C \uD55C \uC2A4\uD0AC\uC5D0\uC11C
+      \uBAA8\uB450 \uC0AC\uC6A9\uD55C\uB2E4."
+  Rolls:
+  - Index: 0
+    Type: 0
+    MinPower: 16
+    MaxPower: 24
+    RngSource: 2
+    CoinFrontChance: 0.5
+    CoinBackPower: 16
+    CoinFrontPower: 24
+    CoinFrontIsCritical: 1
+    SlotMinimum: 1
+    SlotMaximum: 9
+    ChinchiroHifumiPower: -4
+    ChinchiroBlankPower: 3
+    ChinchiroMokuPower: 7
+    ChinchiroShigoroPower: 20
+    ChinchiroArashiPower: 24
+    JudgmentModifier: 0
+    ReuseValueAcrossAction: 0
+    OnWinEffects: []
+    OnLoseEffects: []
+  - Index: 1
+    Type: 0
+    MinPower: 18
+    MaxPower: 26
+    RngSource: 1
+    CoinFrontChance: 0.5
+    CoinBackPower: 4
+    CoinFrontPower: 12
+    CoinFrontIsCritical: 0
+    SlotMinimum: 1
+    SlotMaximum: 9
+    ChinchiroHifumiPower: -4
+    ChinchiroBlankPower: 3
+    ChinchiroMokuPower: 7
+    ChinchiroShigoroPower: 20
+    ChinchiroArashiPower: 24
+    JudgmentModifier: 2
+    ReuseValueAcrossAction: 0
+    OnWinEffects: []
+    OnLoseEffects: []
+  - Index: 2
+    Type: 0
+    MinPower: 9
+    MaxPower: 36
+    RngSource: 4
+    CoinFrontChance: 0.5
+    CoinBackPower: 4
+    CoinFrontPower: 12
+    CoinFrontIsCritical: 0
+    SlotMinimum: 3
+    SlotMaximum: 6
+    ChinchiroHifumiPower: -4
+    ChinchiroBlankPower: 3
+    ChinchiroMokuPower: 7
+    ChinchiroShigoroPower: 20
+    ChinchiroArashiPower: 24
+    JudgmentModifier: 0
+    ReuseValueAcrossAction: 0
+    OnWinEffects: []
+    OnLoseEffects: []
+  - Index: 3
+    Type: 0
+    MinPower: 0
+    MaxPower: 42
+    RngSource: 3
+    CoinFrontChance: 0.5
+    CoinBackPower: 4
+    CoinFrontPower: 12
+    CoinFrontIsCritical: 0
+    SlotMinimum: 1
+    SlotMaximum: 9
+    ChinchiroHifumiPower: -4
+    ChinchiroBlankPower: 12
+    ChinchiroMokuPower: 22
+    ChinchiroShigoroPower: 34
+    ChinchiroArashiPower: 42
+    JudgmentModifier: 0
+    ReuseValueAcrossAction: 0
+    OnWinEffects: []
+    OnLoseEffects: []
+  ExchangeRollCount: 3
+  RollReusePolicy: 0
+  MultiRollPenalty:
+    Enabled: 0
+    PreviewText: "\uC704\uC138 \uC790\uC6D0\uC744 \uC804\uBD80 \uC18C\uBAA8\uD558\uBA70
+      \uD55C \uD134\uC5D0 \uD55C \uBC88\uB9CC \uC0AC\uC6A9\uD560 \uC218 \uC788\uB2E4."
+    Timing: 2
+    TriggerAfterRollIndex: 3
+    Effects: []
+  ResolvePrestigeInCombat: 1
+  OverrideCanClash: 1
+  CanClashValue: 1
+  PreparationTier: 0
+  ResolverType: 1
+  DiceMin: 0
+  DiceMax: 0
+  CoinCount: 5
+  CoinFrontChance: 0.5
+  CoinFrontValue: 1
+  CoinBackValue: 0
+  CoinFrontIsCritical: 0
+  ChinchiroArashiBonus: 6
+  ChinchiroShigoroBonus: 6
+  ChinchiroHifumiPenalty: 1
+  ChinchiroHifumiSelfDamage: 1
+  Effects:
+  - {fileID: 11400000, guid: 1f8c4377cdfd80d4b92374425e6ed5de, type: 2}
+  OverrideEnergyCost: 1
+  EnergyCost: 0
+  OverrideResourceRules: 1
+  RequireFullPrestige: 1
+  PrestigeCost: 100
+  ConsumeAllPrestige: 1
+  CustomResourceKey: 
+  CustomResourceCost: 0
+  ConsumeAllCustomResource: 0
+  OverridePrestigeUsePolicy: 1
+  PrestigeUsePolicy: 1
+  VisualDefinition: {fileID: 11400000, guid: 3b59bc59f7aa70f498d2f7f1d9837996, type: 2}

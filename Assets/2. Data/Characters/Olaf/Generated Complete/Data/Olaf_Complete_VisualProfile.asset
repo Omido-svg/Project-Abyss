@@ -1,0 +1,18 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3c31426d8cc0fa34981701869d2c6f4f, type: 3}
+  m_Name: Olaf_Complete_VisualProfile
+  m_EditorClassIdentifier: 
+  NormalAttackVisual: {fileID: 11400000, guid: 9cb3223acd12a8f41b2462990ea01297, type: 2}
+  DuelVisual: {fileID: 11400000, guid: 0794046847886f9448435845df181da5, type: 2}
+  PreparationVisual: {fileID: 11400000, guid: 6319d2d5dd5d5ae4a934ba13bca78a9b, type: 2}
+  PrestigeVisual: {fileID: 11400000, guid: 3b59bc59f7aa70f498d2f7f1d9837996, type: 2}

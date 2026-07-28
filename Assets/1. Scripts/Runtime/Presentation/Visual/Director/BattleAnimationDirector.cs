@@ -7,6 +7,7 @@ public class BattleAnimationDirector : MonoBehaviour
 {
     [Header("References")]
     [SerializeField] private BattleCameraDirector cameraDirector;
+    [SerializeField] private SkillCutsceneDirector skillCutsceneDirector;
     [SerializeField] private BattleWorldFloatingTextManager floatingTextManager;
     [SerializeField] private DamageNumberManager damageNumberManager;
     [SerializeField] private SkillVisualProfile defaultVisualProfile;
@@ -93,6 +94,28 @@ public class BattleAnimationDirector : MonoBehaviour
     {
         if (cameraDirector == null)
             cameraDirector = FindFirstObjectByType<BattleCameraDirector>();
+
+        if (skillCutsceneDirector == null)
+        {
+            skillCutsceneDirector =
+                GetComponent<SkillCutsceneDirector>();
+
+            if (skillCutsceneDirector == null)
+            {
+                skillCutsceneDirector =
+                    FindFirstObjectByType<
+                        SkillCutsceneDirector>(
+                            FindObjectsInactive.Include);
+            }
+
+            if (skillCutsceneDirector == null &&
+                Application.isPlaying)
+            {
+                skillCutsceneDirector =
+                    gameObject.AddComponent<
+                        SkillCutsceneDirector>();
+            }
+        }
 
         if (floatingTextManager == null)
             floatingTextManager = FindFirstObjectByType<BattleWorldFloatingTextManager>();
@@ -191,6 +214,8 @@ public class BattleAnimationDirector : MonoBehaviour
             return;
 
         playback.IsCancellationRequested = true;
+
+        skillCutsceneDirector?.Cancel();
 
         StopAllCoroutines();
         cameraShotRoutine = null;
@@ -315,6 +340,24 @@ public class BattleAnimationDirector : MonoBehaviour
         playback.AttackerMover = views.AttackerMover;
         playback.AttackerFacing = views.AttackerFacing;
         playback.TargetFacing = views.TargetFacing;
+
+        if (CanPlayTimelineCutscene(
+                visual,
+                SkillCutsceneSegment.Action))
+        {
+            yield return PlayTimelineCutsceneInternal(
+                playback,
+                request,
+                visual,
+                views,
+                isClashAttack: false,
+                exchangeIndex: -1,
+                isOneSided: false,
+                playbackSpeed: 1f,
+                manageActionLifecycle: true);
+
+            yield break;
+        }
         
         PlaySkillVfx(
             playback,
@@ -574,6 +617,271 @@ public class BattleAnimationDirector : MonoBehaviour
             playback);
     }
     
+    private bool CanPlayTimelineCutscene(
+        SkillVisualDefinition visual,
+        SkillCutsceneSegment segment)
+    {
+        return
+            skillCutsceneDirector != null &&
+            visual != null &&
+            visual.UseTimelineCutscene &&
+            visual.CutsceneDefinition != null &&
+            visual.CutsceneDefinition
+                .HasTimeline(segment) &&
+            visual.CutsceneDefinition
+                .CameraRigPrefab != null;
+    }
+
+    private IEnumerator
+        PlayTimelineCutsceneInternal(
+            BattleVisualPlaybackState playback,
+            BattleVisualRequest request,
+            SkillVisualDefinition visual,
+            CharacterViewSet views,
+            bool isClashAttack,
+            int exchangeIndex,
+            bool isOneSided,
+            float playbackSpeed,
+            bool manageActionLifecycle)
+    {
+        SkillCutsceneDefinition definition =
+            visual?.CutsceneDefinition;
+
+        if (playback == null ||
+            request == null ||
+            visual == null ||
+            definition == null ||
+            skillCutsceneDirector == null)
+        {
+            yield break;
+        }
+
+        int hitFrameCount =
+            0;
+
+        if (manageActionLifecycle)
+        {
+            yield return ShowActionAnnouncement(
+                playback,
+                visual);
+        }
+
+        if (definition.PrepareFacing &&
+            request.Target != null &&
+            !request.IsSelfTarget)
+        {
+            playback.ShouldRestoreFacing =
+                definition.RestoreFacing;
+
+            yield return FaceEachOther(
+                views,
+                request.Attacker,
+                request.Target);
+        }
+
+        if (manageActionLifecycle &&
+            definition.PrepareLegacyMovement &&
+            views.AttackerMover != null &&
+            request.Target != null &&
+            !request.IsSelfTarget)
+        {
+            playback
+                .ShouldRestoreAttackerPosition =
+                    definition
+                        .RestoreLegacyMovement;
+
+            if (visual.MoveSettings != null)
+            {
+                yield return views.AttackerMover
+                    .MoveToActionStartPosition(
+                        request.Attacker,
+                        request.Target,
+                        request.TargetPart,
+                        visual.MoveSettings);
+            }
+            else
+            {
+                yield return views.AttackerMover
+                    .MoveNearTarget(
+                        request.Target,
+                        request.TargetPart);
+            }
+        }
+
+        if (definition.UseLegacyAutomaticVfx)
+        {
+            PlaySkillVfx(
+                playback,
+                request,
+                visual,
+                BattleVfxTiming.OnActionStart);
+
+            PlaySkillVfx(
+                playback,
+                request,
+                visual,
+                BattleVfxTiming
+                    .BeforeAttackAnimation);
+        }
+
+        yield return skillCutsceneDirector
+            .PlaySequence(
+                request,
+                definition,
+                isClashAttack,
+                playbackSpeed,
+                eventClip =>
+                {
+                    if (eventClip == null)
+                        return;
+
+                    switch (eventClip.EventType)
+                    {
+                        case SkillCutsceneEventType.Hit:
+                        {
+                            int hitIndex =
+                                eventClip.HitIndex >= 0
+                                    ? eventClip.HitIndex
+                                    : hitFrameCount;
+
+                            hitFrameCount =
+                                Mathf.Max(
+                                    hitFrameCount,
+                                    hitIndex + 1);
+
+                            ApplyHitFrame(
+                                playback,
+                                views,
+                                visual,
+                                hitIndex,
+                                exchangeIndex:
+                                    exchangeIndex,
+                                isClash:
+                                    isClashAttack,
+                                isOneSided:
+                                    isOneSided);
+
+                            break;
+                        }
+
+                        case SkillCutsceneEventType.Vfx:
+                            PlaySkillVfx(
+                                playback,
+                                request,
+                                visual,
+                                eventClip.VfxTiming,
+                                eventClip.HitIndex);
+                            break;
+
+                        case SkillCutsceneEventType
+                            .CameraShake:
+                            PlayHitCameraShake(
+                                visual);
+                            break;
+
+                        case SkillCutsceneEventType
+                            .TargetHitReaction:
+                            views.TargetView?
+                                .PlayHitRestart();
+                            break;
+
+                        case SkillCutsceneEventType
+                            .Custom:
+                            if (logDebug)
+                            {
+                                Debug.Log(
+                                    "[BattleAnimationDirector] " +
+                                    "Timeline Custom Event / " +
+                                    $"Key={eventClip.CustomEventKey}",
+                                    this);
+                            }
+
+                            break;
+                    }
+                });
+
+        if (definition.ApplyMissingHitFallback)
+        {
+            ApplyMissingHitFrameFallback(
+                playback,
+                views,
+                visual,
+                hitFrameCount,
+                exchangeIndex:
+                    exchangeIndex,
+                isClash:
+                    isClashAttack,
+                isOneSided:
+                    isOneSided);
+        }
+
+        views.AttackerView?
+            .RefreshVisualState();
+
+        views.TargetView?
+            .RefreshVisualState();
+
+        if (definition.UseLegacyAutomaticVfx)
+        {
+            PlaySkillVfx(
+                playback,
+                request,
+                visual,
+                BattleVfxTiming.AfterAction);
+
+            if (request.WasKilled)
+            {
+                PlaySkillVfx(
+                    playback,
+                    request,
+                    visual,
+                    BattleVfxTiming.OnKill);
+            }
+        }
+
+        if (!manageActionLifecycle)
+            yield break;
+
+        if (views.AttackerMover != null &&
+            playback
+                .ShouldRestoreAttackerPosition)
+        {
+            if (visual.MoveSettings != null)
+            {
+                yield return views.AttackerMover
+                    .ReturnToDefaultPosition(
+                        visual.MoveSettings);
+            }
+            else
+            {
+                yield return views.AttackerMover
+                    .ReturnToDefaultPosition();
+            }
+        }
+
+        playback
+            .ShouldRestoreAttackerPosition =
+                false;
+
+        if (definition.RestoreFacing &&
+            playback.ShouldRestoreFacing)
+        {
+            yield return ReturnFacing(
+                views);
+        }
+
+        playback.ShouldRestoreFacing =
+            false;
+
+        yield return HideActionAnnouncement(
+            playback,
+            visual);
+
+        yield return
+            PlayMomentumRefreshAtVisualEnd(
+                playback);
+    }
+
     private IEnumerator PlayClashSequenceInternal(
         BattleVisualPlaybackState playback)
     {
@@ -982,6 +1290,34 @@ public class BattleAnimationDirector : MonoBehaviour
         damagePresenter.Prepare(
             playback,
             visual);
+
+        if (CanPlayTimelineCutscene(
+                visual,
+                SkillCutsceneSegment.ClashAttack))
+        {
+            yield return PlayTimelineCutsceneInternal(
+                playback,
+                attackRequest,
+                visual,
+                views,
+                isClashAttack: true,
+                exchangeIndex:
+                    exchange?.ExchangeIndex ?? -1,
+                isOneSided:
+                    exchange?.IsOneSided == true,
+                playbackSpeed:
+                    animationSpeed,
+                manageActionLifecycle:
+                    false);
+
+            playback.ActiveActionView =
+                null;
+
+            playback.ActiveTargetView =
+                null;
+
+            yield break;
+        }
 
         PlaySkillVfx(
             playback,

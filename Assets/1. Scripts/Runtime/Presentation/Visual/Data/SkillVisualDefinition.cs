@@ -10,6 +10,19 @@ public class SkillVisualDefinition : ScriptableObject
     [Tooltip("캐릭터 전용 연출이면 false. 기본 프로필 폴백으로 사용되지 않습니다.")]
     public bool AllowAsProfileFallback = true;
 
+    [Header("Timeline Cutscene")]
+    [Tooltip(
+        "켜져 있고 Cutscene Definition에 해당 Timeline이 있으면 " +
+        "기존 ActionType Trigger / Camera Shot 방식 대신 Timeline 연출을 사용합니다.")]
+    public bool UseTimelineCutscene;
+
+    public SkillCutsceneDefinition CutsceneDefinition;
+
+    public bool HasTimelineCutscene =>
+        UseTimelineCutscene &&
+        CutsceneDefinition != null &&
+        CutsceneDefinition.ActionTimeline != null;
+
     [Header("Camera")]
     public bool UsesTargetCamera = true;
     public bool ReturnCameraAfterAction = true;
