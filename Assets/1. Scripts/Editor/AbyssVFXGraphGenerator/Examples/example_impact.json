@@ -1,0 +1,28 @@
+{
+  "schemaVersion": "1.0",
+  "name": "VFX_Example_Impact",
+  "description": "붉은 파편 타격",
+  "systems": [
+    {
+      "name": "Sparks",
+      "spawnMode": "Burst",
+      "capacity": 512,
+      "spawnCount": 64.0,
+      "spawnRate": 0.0,
+      "lifetime": { "min": 0.2, "max": 0.65 },
+      "size": { "min": 0.03, "max": 0.12 },
+      "positionMode": "Box",
+      "spawnBoxExtents": { "x": 0.04, "y": 0.04, "z": 0.04 },
+      "velocityMode": "Radial",
+      "direction": { "x": 0.0, "y": 1.0, "z": 0.0 },
+      "speed": { "min": 2.0, "max": 8.0 },
+      "spread": 0.3,
+      "gravity": { "x": 0.0, "y": -5.0, "z": 0.0 },
+      "drag": 1.0,
+      "startColor": { "r": 1.0, "g": 0.04, "b": 0.01, "a": 1.0 },
+      "blendMode": "Additive",
+      "textureAssetPath": "",
+      "orientToVelocity": false
+    }
+  ]
+}

@@ -107,7 +107,7 @@ public static class ProjectAbyssScriptExporter
         {
             EditorUtility.DisplayDialog(
                 "Script Export",
-                $"{SourceFolder} 아래에서 C# 스크립트를 찾지 못했습니다.",
+                $"{SourceFolder} 아래에서 C# 또는 JSON 파일을 찾지 못했습니다.",
                 "확인");
 
             return;
@@ -200,13 +200,13 @@ public static class ProjectAbyssScriptExporter
 
         Debug.Log(
             $"[ProjectAbyssScriptExporter] Export complete\n" +
-            $"Scripts : {scripts.Count}\n" +
+            $"Files   : {scripts.Count}\n" +
             $"Errors  : {readErrors.Count}\n" +
             $"Output  : {normalizedOutputPath}");
 
         string resultMessage =
             readErrors.Count == 0
-                ? $"총 {scripts.Count}개의 C# 스크립트를 내보냈습니다."
+                ? $"총 {scripts.Count}개의 C# / JSON 파일을 내보냈습니다."
                 : $"총 {scripts.Count}개 중 {readErrors.Count}개 파일을 읽지 못했습니다.\n" +
                   "출력 파일 마지막의 READ_ERRORS 항목을 확인하세요.";
 
@@ -225,9 +225,25 @@ public static class ProjectAbyssScriptExporter
     {
         string[] files =
             Directory.GetFiles(
-                absoluteSourceFolder,
-                "*.cs",
-                SearchOption.AllDirectories);
+                    absoluteSourceFolder,
+                    "*.*",
+                    SearchOption.AllDirectories)
+                .Where(
+                    path =>
+                    {
+                        string extension =
+                            Path.GetExtension(path);
+
+                        return string.Equals(
+                                   extension,
+                                   ".cs",
+                                   StringComparison.OrdinalIgnoreCase) ||
+                               string.Equals(
+                                   extension,
+                                   ".json",
+                                   StringComparison.OrdinalIgnoreCase);
+                    })
+                .ToArray();
 
         List<ScriptFileInfo> result =
             new List<ScriptFileInfo>(
@@ -288,7 +304,13 @@ public static class ProjectAbyssScriptExporter
             $"SOURCE_ROOT: {SourceFolder}");
 
         output.AppendLine(
-            $"SCRIPT_COUNT: {scripts.Count}");
+            $"SOURCE_FILE_COUNT: {scripts.Count}");
+
+        output.AppendLine(
+            $"CSHARP_FILE_COUNT: {scripts.Count(item => item.Language == "CSharp")}");
+
+        output.AppendLine(
+            $"JSON_FILE_COUNT: {scripts.Count(item => item.Language == "JSON")}");
 
         output.AppendLine(
             "ENCODING: UTF-8_NO_BOM");
@@ -317,7 +339,7 @@ public static class ProjectAbyssScriptExporter
             "- FILE_GUID는 Unity Asset GUID이며 빈 값일 수 있다.");
 
         output.AppendLine(
-            "- CONTENT_BEGIN과 CONTENT_END 사이만 실제 C# 원본 코드다.");
+            "- CONTENT_BEGIN과 CONTENT_END 사이만 실제 C# 또는 JSON 원본 내용이다.");
 
         output.AppendLine(
             "- 파일 간 동일 클래스명이나 참조 관계를 분석할 때 FILE_PATH를 기준으로 구분한다.");
@@ -385,7 +407,7 @@ public static class ProjectAbyssScriptExporter
             $"FILE_GUID: {GetAssetGuid(script.AssetPath)}");
 
         output.AppendLine(
-            "LANGUAGE: CSharp");
+            $"LANGUAGE: {script.Language}");
 
         try
         {
@@ -489,7 +511,7 @@ public static class ProjectAbyssScriptExporter
             "EXPORT_SUMMARY_BEGIN");
 
         output.AppendLine(
-            $"SCRIPT_COUNT: {scriptCount}");
+            $"SOURCE_FILE_COUNT: {scriptCount}");
 
         output.AppendLine(
             $"READ_ERROR_COUNT: {readErrors.Count}");
@@ -782,6 +804,7 @@ public static class ProjectAbyssScriptExporter
     {
         public string AbsolutePath { get; }
         public string AssetPath { get; }
+        public string Language { get; }
 
         public ScriptFileInfo(
             string absolutePath,
@@ -792,6 +815,14 @@ public static class ProjectAbyssScriptExporter
 
             AssetPath =
                 assetPath;
+
+            Language =
+                string.Equals(
+                    Path.GetExtension(assetPath),
+                    ".json",
+                    StringComparison.OrdinalIgnoreCase)
+                    ? "JSON"
+                    : "CSharp";
         }
     }
 }

@@ -1,0 +1,195 @@
+{
+  "schemaVersion": "1.0",
+  "name": "VFX_Abyss_DarkRed_SwordWave",
+  "description": "카메라를 향하는 초승달형 검기가 +Z 방향으로 짧게 전진하며 붉은 파편과 검은 연무를 남기는 예제",
+  "systems": [
+    {
+      "name": "SlashCore",
+      "spawnMode": "Burst",
+      "capacity": 16,
+      "spawnCount": 1.0,
+      "spawnRate": 0.0,
+      "lifetime": {
+        "min": 0.28,
+        "max": 0.34
+      },
+      "size": {
+        "min": 1.35,
+        "max": 1.55
+      },
+      "positionMode": "Point",
+      "spawnBoxExtents": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "velocityMode": "Directional",
+      "direction": {
+        "x": 0.0,
+        "y": 0.02,
+        "z": 1.0
+      },
+      "speed": {
+        "min": 9.5,
+        "max": 10.5
+      },
+      "spread": 0.01,
+      "gravity": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "drag": 0.15,
+      "startColor": {
+        "r": 0.72,
+        "g": 0.015,
+        "b": 0.025,
+        "a": 1.0
+      },
+      "blendMode": "Additive",
+      "textureAssetPath": "Assets/VFX/Textures/AIExamples/TX_Abyss_SwordSlash_Arc.png",
+      "orientToVelocity": false
+    },
+    {
+      "name": "SlashEdgeGlow",
+      "spawnMode": "Burst",
+      "capacity": 16,
+      "spawnCount": 2.0,
+      "spawnRate": 0.0,
+      "lifetime": {
+        "min": 0.18,
+        "max": 0.24
+      },
+      "size": {
+        "min": 1.52,
+        "max": 1.72
+      },
+      "positionMode": "Box",
+      "spawnBoxExtents": {
+        "x": 0.015,
+        "y": 0.015,
+        "z": 0.02
+      },
+      "velocityMode": "Directional",
+      "direction": {
+        "x": 0.0,
+        "y": 0.01,
+        "z": 1.0
+      },
+      "speed": {
+        "min": 9.0,
+        "max": 10.2
+      },
+      "spread": 0.015,
+      "gravity": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "drag": 0.2,
+      "startColor": {
+        "r": 1.0,
+        "g": 0.18,
+        "b": 0.055,
+        "a": 0.72
+      },
+      "blendMode": "Additive",
+      "textureAssetPath": "Assets/VFX/Textures/AIExamples/TX_Abyss_SwordSlash_Arc.png",
+      "orientToVelocity": false
+    },
+    {
+      "name": "ForwardSparks",
+      "spawnMode": "Burst",
+      "capacity": 128,
+      "spawnCount": 30.0,
+      "spawnRate": 0.0,
+      "lifetime": {
+        "min": 0.16,
+        "max": 0.52
+      },
+      "size": {
+        "min": 0.025,
+        "max": 0.075
+      },
+      "positionMode": "Box",
+      "spawnBoxExtents": {
+        "x": 0.16,
+        "y": 0.08,
+        "z": 0.03
+      },
+      "velocityMode": "Directional",
+      "direction": {
+        "x": 0.0,
+        "y": 0.18,
+        "z": 1.0
+      },
+      "speed": {
+        "min": 3.5,
+        "max": 10.5
+      },
+      "spread": 0.42,
+      "gravity": {
+        "x": 0.0,
+        "y": -3.8,
+        "z": 0.0
+      },
+      "drag": 1.25,
+      "startColor": {
+        "r": 1.0,
+        "g": 0.11,
+        "b": 0.015,
+        "a": 1.0
+      },
+      "blendMode": "Additive",
+      "textureAssetPath": "Assets/VFX/Textures/AIExamples/TX_Abyss_Spark.png",
+      "orientToVelocity": false
+    },
+    {
+      "name": "DarkMist",
+      "spawnMode": "Burst",
+      "capacity": 64,
+      "spawnCount": 12.0,
+      "spawnRate": 0.0,
+      "lifetime": {
+        "min": 0.34,
+        "max": 0.72
+      },
+      "size": {
+        "min": 0.2,
+        "max": 0.48
+      },
+      "positionMode": "Box",
+      "spawnBoxExtents": {
+        "x": 0.1,
+        "y": 0.06,
+        "z": 0.06
+      },
+      "velocityMode": "Directional",
+      "direction": {
+        "x": 0.0,
+        "y": 0.08,
+        "z": 1.0
+      },
+      "speed": {
+        "min": 1.0,
+        "max": 3.0
+      },
+      "spread": 0.28,
+      "gravity": {
+        "x": 0.0,
+        "y": 0.2,
+        "z": 0.0
+      },
+      "drag": 1.05,
+      "startColor": {
+        "r": 0.08,
+        "g": 0.005,
+        "b": 0.018,
+        "a": 0.52
+      },
+      "blendMode": "Alpha",
+      "textureAssetPath": "Assets/VFX/Textures/AIExamples/TX_Abyss_Mist.png",
+      "orientToVelocity": false
+    }
+  ]
+}

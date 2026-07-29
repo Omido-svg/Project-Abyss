@@ -1,0 +1,195 @@
+{
+  "schemaVersion": "1.0",
+  "name": "VFX_Abyss_Bleeding_Status",
+  "description": "캐릭터의 상처 앵커에 붙여 지속 재생하는 출혈 상태 VFX. 아래로 떨어지는 피방울과 미세 혈무를 반복 생성한다.",
+  "systems": [
+    {
+      "name": "SeepingDrops",
+      "spawnMode": "Rate",
+      "capacity": 128,
+      "spawnCount": 0.0,
+      "spawnRate": 7.0,
+      "lifetime": {
+        "min": 0.38,
+        "max": 0.92
+      },
+      "size": {
+        "min": 0.025,
+        "max": 0.075
+      },
+      "positionMode": "Box",
+      "spawnBoxExtents": {
+        "x": 0.055,
+        "y": 0.035,
+        "z": 0.035
+      },
+      "velocityMode": "Directional",
+      "direction": {
+        "x": 0.0,
+        "y": -1.0,
+        "z": 0.16
+      },
+      "speed": {
+        "min": 0.5,
+        "max": 1.8
+      },
+      "spread": 0.35,
+      "gravity": {
+        "x": 0.0,
+        "y": -7.8,
+        "z": 0.0
+      },
+      "drag": 0.32,
+      "startColor": {
+        "r": 0.52,
+        "g": 0.004,
+        "b": 0.007,
+        "a": 0.96
+      },
+      "blendMode": "Alpha",
+      "textureAssetPath": "Assets/VFX/Textures/AIExamples/Blood/TX_Abyss_Blood_Drop.png",
+      "orientToVelocity": false
+    },
+    {
+      "name": "MicroSpray",
+      "spawnMode": "Rate",
+      "capacity": 160,
+      "spawnCount": 0.0,
+      "spawnRate": 11.0,
+      "lifetime": {
+        "min": 0.18,
+        "max": 0.46
+      },
+      "size": {
+        "min": 0.009,
+        "max": 0.028
+      },
+      "positionMode": "Box",
+      "spawnBoxExtents": {
+        "x": 0.06,
+        "y": 0.04,
+        "z": 0.04
+      },
+      "velocityMode": "Directional",
+      "direction": {
+        "x": 0.0,
+        "y": 0.05,
+        "z": 1.0
+      },
+      "speed": {
+        "min": 0.8,
+        "max": 3.2
+      },
+      "spread": 0.82,
+      "gravity": {
+        "x": 0.0,
+        "y": -3.6,
+        "z": 0.0
+      },
+      "drag": 1.1,
+      "startColor": {
+        "r": 0.83,
+        "g": 0.012,
+        "b": 0.01,
+        "a": 0.72
+      },
+      "blendMode": "Alpha",
+      "textureAssetPath": "Assets/VFX/Textures/AIExamples/Blood/TX_Abyss_Blood_FineDrop.png",
+      "orientToVelocity": false
+    },
+    {
+      "name": "WoundMist",
+      "spawnMode": "Rate",
+      "capacity": 96,
+      "spawnCount": 0.0,
+      "spawnRate": 3.5,
+      "lifetime": {
+        "min": 0.38,
+        "max": 0.92
+      },
+      "size": {
+        "min": 0.1,
+        "max": 0.3
+      },
+      "positionMode": "Box",
+      "spawnBoxExtents": {
+        "x": 0.07,
+        "y": 0.05,
+        "z": 0.04
+      },
+      "velocityMode": "Directional",
+      "direction": {
+        "x": 0.0,
+        "y": 0.28,
+        "z": 0.5
+      },
+      "speed": {
+        "min": 0.15,
+        "max": 0.75
+      },
+      "spread": 0.95,
+      "gravity": {
+        "x": 0.0,
+        "y": 0.08,
+        "z": 0.0
+      },
+      "drag": 2.1,
+      "startColor": {
+        "r": 0.2,
+        "g": 0.001,
+        "b": 0.006,
+        "a": 0.34
+      },
+      "blendMode": "Alpha",
+      "textureAssetPath": "Assets/VFX/Textures/AIExamples/Blood/TX_Abyss_Blood_Mist.png",
+      "orientToVelocity": false
+    },
+    {
+      "name": "ClotDrops",
+      "spawnMode": "Rate",
+      "capacity": 64,
+      "spawnCount": 0.0,
+      "spawnRate": 1.4,
+      "lifetime": {
+        "min": 0.52,
+        "max": 1.15
+      },
+      "size": {
+        "min": 0.05,
+        "max": 0.13
+      },
+      "positionMode": "Box",
+      "spawnBoxExtents": {
+        "x": 0.04,
+        "y": 0.025,
+        "z": 0.025
+      },
+      "velocityMode": "Directional",
+      "direction": {
+        "x": 0.0,
+        "y": -1.0,
+        "z": 0.08
+      },
+      "speed": {
+        "min": 0.25,
+        "max": 0.9
+      },
+      "spread": 0.28,
+      "gravity": {
+        "x": 0.0,
+        "y": -9.4,
+        "z": 0.0
+      },
+      "drag": 0.22,
+      "startColor": {
+        "r": 0.18,
+        "g": 0.001,
+        "b": 0.004,
+        "a": 1.0
+      },
+      "blendMode": "Alpha",
+      "textureAssetPath": "Assets/VFX/Textures/AIExamples/Blood/TX_Abyss_Blood_Clot.png",
+      "orientToVelocity": false
+    }
+  ]
+}

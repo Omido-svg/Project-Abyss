@@ -1,0 +1,242 @@
+{
+  "schemaVersion": "1.0",
+  "name": "VFX_Abyss_BloodHit_Burst",
+  "description": "공격이 적중한 순간 상처 지점에서 전방으로 피방울, 미세 분무, 어두운 혈괴가 튀는 1회성 출혈 타격 VFX",
+  "systems": [
+    {
+      "name": "WoundFlash",
+      "spawnMode": "Burst",
+      "capacity": 8,
+      "spawnCount": 2.0,
+      "spawnRate": 0.0,
+      "lifetime": {
+        "min": 0.06,
+        "max": 0.11
+      },
+      "size": {
+        "min": 0.32,
+        "max": 0.52
+      },
+      "positionMode": "Point",
+      "spawnBoxExtents": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "velocityMode": "None",
+      "direction": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 1.0
+      },
+      "speed": {
+        "min": 0.0,
+        "max": 0.0
+      },
+      "spread": 0.0,
+      "gravity": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "drag": 0.0,
+      "startColor": {
+        "r": 1.0,
+        "g": 0.025,
+        "b": 0.012,
+        "a": 0.68
+      },
+      "blendMode": "Additive",
+      "textureAssetPath": "Assets/VFX/Textures/AIExamples/Blood/TX_Abyss_Blood_ImpactFlash.png",
+      "orientToVelocity": false
+    },
+    {
+      "name": "HeavyDrops",
+      "spawnMode": "Burst",
+      "capacity": 96,
+      "spawnCount": 16.0,
+      "spawnRate": 0.0,
+      "lifetime": {
+        "min": 0.34,
+        "max": 0.86
+      },
+      "size": {
+        "min": 0.045,
+        "max": 0.115
+      },
+      "positionMode": "Box",
+      "spawnBoxExtents": {
+        "x": 0.055,
+        "y": 0.055,
+        "z": 0.035
+      },
+      "velocityMode": "Directional",
+      "direction": {
+        "x": 0.0,
+        "y": 0.22,
+        "z": 1.0
+      },
+      "speed": {
+        "min": 2.4,
+        "max": 6.8
+      },
+      "spread": 0.56,
+      "gravity": {
+        "x": 0.0,
+        "y": -9.2,
+        "z": 0.0
+      },
+      "drag": 0.35,
+      "startColor": {
+        "r": 0.58,
+        "g": 0.006,
+        "b": 0.008,
+        "a": 0.98
+      },
+      "blendMode": "Alpha",
+      "textureAssetPath": "Assets/VFX/Textures/AIExamples/Blood/TX_Abyss_Blood_Drop.png",
+      "orientToVelocity": false
+    },
+    {
+      "name": "FineSpray",
+      "spawnMode": "Burst",
+      "capacity": 192,
+      "spawnCount": 48.0,
+      "spawnRate": 0.0,
+      "lifetime": {
+        "min": 0.16,
+        "max": 0.52
+      },
+      "size": {
+        "min": 0.012,
+        "max": 0.043
+      },
+      "positionMode": "Box",
+      "spawnBoxExtents": {
+        "x": 0.065,
+        "y": 0.05,
+        "z": 0.035
+      },
+      "velocityMode": "Directional",
+      "direction": {
+        "x": 0.0,
+        "y": 0.14,
+        "z": 1.0
+      },
+      "speed": {
+        "min": 5.2,
+        "max": 12.0
+      },
+      "spread": 0.78,
+      "gravity": {
+        "x": 0.0,
+        "y": -5.5,
+        "z": 0.0
+      },
+      "drag": 0.82,
+      "startColor": {
+        "r": 0.92,
+        "g": 0.016,
+        "b": 0.012,
+        "a": 0.95
+      },
+      "blendMode": "Alpha",
+      "textureAssetPath": "Assets/VFX/Textures/AIExamples/Blood/TX_Abyss_Blood_FineDrop.png",
+      "orientToVelocity": false
+    },
+    {
+      "name": "DarkClots",
+      "spawnMode": "Burst",
+      "capacity": 64,
+      "spawnCount": 9.0,
+      "spawnRate": 0.0,
+      "lifetime": {
+        "min": 0.44,
+        "max": 1.0
+      },
+      "size": {
+        "min": 0.06,
+        "max": 0.17
+      },
+      "positionMode": "Box",
+      "spawnBoxExtents": {
+        "x": 0.045,
+        "y": 0.045,
+        "z": 0.03
+      },
+      "velocityMode": "Directional",
+      "direction": {
+        "x": 0.0,
+        "y": 0.08,
+        "z": 1.0
+      },
+      "speed": {
+        "min": 1.4,
+        "max": 4.4
+      },
+      "spread": 0.72,
+      "gravity": {
+        "x": 0.0,
+        "y": -10.2,
+        "z": 0.0
+      },
+      "drag": 0.28,
+      "startColor": {
+        "r": 0.22,
+        "g": 0.003,
+        "b": 0.006,
+        "a": 1.0
+      },
+      "blendMode": "Alpha",
+      "textureAssetPath": "Assets/VFX/Textures/AIExamples/Blood/TX_Abyss_Blood_Clot.png",
+      "orientToVelocity": false
+    },
+    {
+      "name": "BloodMist",
+      "spawnMode": "Burst",
+      "capacity": 96,
+      "spawnCount": 18.0,
+      "spawnRate": 0.0,
+      "lifetime": {
+        "min": 0.28,
+        "max": 0.78
+      },
+      "size": {
+        "min": 0.16,
+        "max": 0.46
+      },
+      "positionMode": "Box",
+      "spawnBoxExtents": {
+        "x": 0.08,
+        "y": 0.07,
+        "z": 0.05
+      },
+      "velocityMode": "Directional",
+      "direction": {
+        "x": 0.0,
+        "y": 0.11,
+        "z": 1.0
+      },
+      "speed": {
+        "min": 0.55,
+        "max": 2.2
+      },
+      "spread": 0.9,
+      "gravity": {
+        "x": 0.0,
+        "y": 0.18,
+        "z": 0.0
+      },
+      "drag": 1.85,
+      "startColor": {
+        "r": 0.28,
+        "g": 0.002,
+        "b": 0.008,
+        "a": 0.48
+      },
+      "blendMode": "Alpha",
+      "textureAssetPath": "Assets/VFX/Textures/AIExamples/Blood/TX_Abyss_Blood_Mist.png",
+      "orientToVelocity": false
+    }
+  ]
+}
