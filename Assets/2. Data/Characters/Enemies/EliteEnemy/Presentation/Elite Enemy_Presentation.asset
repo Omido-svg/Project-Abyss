@@ -1,0 +1,27 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 388ef1d1cd6a80245afbf48c4a69b5d8, type: 3}
+  m_Name: Elite Enemy_Presentation
+  m_EditorClassIdentifier: 
+  ClashEnter: {fileID: 7400000, guid: c15cbd6155ed352408dfaa1518d10ff1, type: 2}
+  ClashContest: {fileID: 7400000, guid: c15cbd6155ed352408dfaa1518d10ff1, type: 2}
+  ClashAdvantage: {fileID: 7400000, guid: c15cbd6155ed352408dfaa1518d10ff1, type: 2}
+  ClashDisadvantage: {fileID: 7400000, guid: aefe3b2d39efe364590abe2f8e37e1ff, type: 2}
+  ClashTie: {fileID: 7400000, guid: aefe3b2d39efe364590abe2f8e37e1ff, type: 2}
+  ClashReengage: {fileID: 7400000, guid: c15cbd6155ed352408dfaa1518d10ff1, type: 2}
+  ClashExit: {fileID: 7400000, guid: c15cbd6155ed352408dfaa1518d10ff1, type: 2}
+  LightHit: {fileID: 7400000, guid: aefe3b2d39efe364590abe2f8e37e1ff, type: 2}
+  HeavyHit: {fileID: 7400000, guid: aefe3b2d39efe364590abe2f8e37e1ff, type: 2}
+  Knockback: {fileID: 0}
+  Knockdown: {fileID: 0}
+  PartBreak: {fileID: 7400000, guid: b95da8fcaaa86214aa1b3ee1f0561061, type: 2}
+  Death: {fileID: 7400000, guid: ded9e938b60b4e64681ae453434e7c4d, type: 2}

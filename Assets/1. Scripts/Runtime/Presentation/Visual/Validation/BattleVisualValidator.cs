@@ -59,6 +59,24 @@ public static class BattleVisualValidator
                 logWarnings);
         }
 
+        if (request.Target != null &&
+            logWarnings)
+        {
+            CharacterView targetView =
+                BattleCameraTargetResolver.GetView(
+                    request.Target);
+
+            if (targetView != null &&
+                targetView.PresentationProfile == null)
+            {
+                Debug.LogWarning(
+                    "[BATTLE VISUAL VALIDATION] 타깃 CharacterPresentationProfile이 없습니다. " +
+                    "피격 반응은 기존 Animator Hit/Dead 상태로 폴백합니다. " +
+                    $"Target={request.Target.Data?.CharacterName ?? request.Target.name}",
+                    targetView);
+            }
+        }
+
         return valid;
     }
 
@@ -73,6 +91,16 @@ public static class BattleVisualValidator
         bool valid = ValidateRequiredTimeline(
             visual,
             logWarnings);
+
+        if (visual.HasHitFrameDamage &&
+            visual.TargetReaction == HitReactionKey.None &&
+            logWarnings)
+        {
+            Debug.LogWarning(
+                "[BATTLE VISUAL VALIDATION] 피해가 있지만 TargetReaction=None입니다. " +
+                $"Visual={visual.name}",
+                visual);
+        }
 
         HashSet<string> cueKeys = new();
 
@@ -164,14 +192,15 @@ public static class BattleVisualValidator
             if (logWarnings)
             {
                 Debug.LogError(
-                    $"[BATTLE VISUAL VALIDATION] 완전한 Timeline 5-Segment 세트가 아닙니다. " +
+                    $"[BATTLE VISUAL VALIDATION] Action/ClashAttack Timeline과 Camera Rig가 완전하지 않습니다. " +
                     $"Visual={visual.name}, Missing={string.Join(", ", definition.GetMissingRequirements())}",
                     definition);
             }
         }
 
         foreach (SkillCutsceneSegment segment in
-                 (SkillCutsceneSegment[])Enum.GetValues(typeof(SkillCutsceneSegment)))
+                 SkillCutsceneSegmentUtility
+                     .EnumerateActiveAttackerSegments())
         {
             TimelineAsset timeline = definition.GetTimeline(segment);
             if (timeline == null)
@@ -369,25 +398,6 @@ public static class BattleVisualValidator
                     timeline,
                     $"{segment}: Explicit Visual FX가 활성화됐지만 Legacy Vfx Event가 {legacyVfxEventCount}개 남아 있습니다. " +
                     "Visual FX Migration으로 VFX Track Clip으로 변환하세요.");
-            }
-        }
-
-        if (segment == SkillCutsceneSegment.Return)
-        {
-            bool hasReturn = tracks
-                .OfType<SkillCutsceneEventTrack>()
-                .SelectMany(track => track.GetClips())
-                .Any(clip =>
-                    clip.asset is SkillCutsceneEventClip asset &&
-                    asset.EventType == SkillCutsceneEventType.ReturnOverview);
-
-            if (!hasReturn)
-            {
-                valid = false;
-                LogTimelineIssue(
-                    logWarnings,
-                    timeline,
-                    "Return: ReturnOverview Event가 없습니다.");
             }
         }
 

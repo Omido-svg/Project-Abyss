@@ -1,0 +1,187 @@
+{
+  "schemaVersion": "2.0",
+  "name": "VFX_Abyss_BurnTick_Burst",
+  "description": "화상 피해 틱 순간 붉은 화염 섬광, 주황색 불씨, 짙은 연기가 짧게 솟는 VFX Graph 전용 효과",
+  "buildMode": "Structured",
+  "templateAssetPath": "",
+  "preserveTemplateGraph": true,
+  "requiredCapabilities": [],
+  "systems": [
+    {
+      "name": "FlameFlash",
+      "spawnMode": "Burst",
+      "capacity": 16,
+      "spawnCount": 4.0,
+      "spawnRate": 0.0,
+      "lifetime": {
+        "min": 0.12,
+        "max": 0.28
+      },
+      "size": {
+        "min": 0.24,
+        "max": 0.52
+      },
+      "positionMode": "Box",
+      "spawnBoxExtents": {
+        "x": 0.08,
+        "y": 0.06,
+        "z": 0.06
+      },
+      "velocityMode": "Directional",
+      "direction": {
+        "x": 0,
+        "y": 1,
+        "z": 0.12
+      },
+      "speed": {
+        "min": 0.45,
+        "max": 1.8
+      },
+      "spread": 0.42,
+      "gravity": {
+        "x": 0,
+        "y": 0.7,
+        "z": 0
+      },
+      "drag": 1.0,
+      "startColor": {
+        "r": 1,
+        "g": 0.12,
+        "b": 0.01,
+        "a": 0.9
+      },
+      "blendMode": "Additive",
+      "outputMode": "Quad",
+      "textureAssetPath": "Assets/VFX/Textures/AIExamples/Burn/TX_Abyss_Burn_Flame.png",
+      "meshAssetPath": "",
+      "meshSubAssetName": "",
+      "materialAssetPath": "",
+      "shaderGraphAssetPath": "",
+      "useFlipbook": false,
+      "flipbookColumns": 1,
+      "flipbookRows": 1,
+      "flipbookBlend": false,
+      "orientationMode": "FaceCameraPlane",
+      "orientToVelocity": false,
+      "capabilities": []
+    },
+    {
+      "name": "HotEmbers",
+      "spawnMode": "Burst",
+      "capacity": 128,
+      "spawnCount": 34.0,
+      "spawnRate": 0.0,
+      "lifetime": {
+        "min": 0.24,
+        "max": 0.78
+      },
+      "size": {
+        "min": 0.012,
+        "max": 0.055
+      },
+      "positionMode": "Box",
+      "spawnBoxExtents": {
+        "x": 0.12,
+        "y": 0.08,
+        "z": 0.08
+      },
+      "velocityMode": "Directional",
+      "direction": {
+        "x": 0,
+        "y": 1,
+        "z": 0.18
+      },
+      "speed": {
+        "min": 1.5,
+        "max": 5.8
+      },
+      "spread": 0.85,
+      "gravity": {
+        "x": 0,
+        "y": -1.2,
+        "z": 0
+      },
+      "drag": 0.72,
+      "startColor": {
+        "r": 1,
+        "g": 0.34,
+        "b": 0.025,
+        "a": 1
+      },
+      "blendMode": "Additive",
+      "outputMode": "Quad",
+      "textureAssetPath": "Assets/VFX/Textures/AIExamples/Burn/TX_Abyss_Burn_Ember.png",
+      "meshAssetPath": "",
+      "meshSubAssetName": "",
+      "materialAssetPath": "",
+      "shaderGraphAssetPath": "",
+      "useFlipbook": false,
+      "flipbookColumns": 1,
+      "flipbookRows": 1,
+      "flipbookBlend": false,
+      "orientationMode": "FaceCameraPlane",
+      "orientToVelocity": false,
+      "capabilities": []
+    },
+    {
+      "name": "SootSmoke",
+      "spawnMode": "Burst",
+      "capacity": 64,
+      "spawnCount": 12.0,
+      "spawnRate": 0.0,
+      "lifetime": {
+        "min": 0.38,
+        "max": 0.95
+      },
+      "size": {
+        "min": 0.18,
+        "max": 0.48
+      },
+      "positionMode": "Box",
+      "spawnBoxExtents": {
+        "x": 0.1,
+        "y": 0.06,
+        "z": 0.08
+      },
+      "velocityMode": "Directional",
+      "direction": {
+        "x": 0,
+        "y": 1,
+        "z": 0.05
+      },
+      "speed": {
+        "min": 0.25,
+        "max": 1.25
+      },
+      "spread": 0.75,
+      "gravity": {
+        "x": 0,
+        "y": 0.22,
+        "z": 0
+      },
+      "drag": 1.85,
+      "startColor": {
+        "r": 0.11,
+        "g": 0.018,
+        "b": 0.008,
+        "a": 0.42
+      },
+      "blendMode": "Alpha",
+      "outputMode": "Quad",
+      "textureAssetPath": "Assets/VFX/Textures/AIExamples/Burn/TX_Abyss_Burn_Smoke.png",
+      "meshAssetPath": "",
+      "meshSubAssetName": "",
+      "materialAssetPath": "",
+      "shaderGraphAssetPath": "",
+      "useFlipbook": false,
+      "flipbookColumns": 1,
+      "flipbookRows": 1,
+      "flipbookBlend": false,
+      "orientationMode": "FaceCameraPlane",
+      "orientToVelocity": false,
+      "capabilities": []
+    }
+  ],
+  "sceneObjects": [],
+  "exposedOverrides": []
+}

@@ -18,6 +18,8 @@ namespace ProjectAbyss.Editor.VFXAI
         private bool overwrite = true;
         private bool createPrefab = true;
         private bool showAdvanced;
+        private bool showSceneObjects;
+        private bool showExposedOverrides;
         private bool showJson;
         private Vector2 scroll;
         private AbyssVFXBuildResult lastResult;
@@ -60,7 +62,7 @@ namespace ProjectAbyss.Editor.VFXAI
         private void DrawHeader()
         {
             EditorGUILayout.LabelField("Project Abyss AI VFX Graph Generator", EditorStyles.boldLabel);
-            EditorGUILayout.LabelField("Unity 6000.0.56f1 · URP/VFX Graph 17.0.4 전용 내부 API Builder", EditorStyles.miniLabel);
+            EditorGUILayout.LabelField("Unity 6000.0.56f1 · URP/VFX Graph 17.0.4 · Recipe 2.0 / Full Template Clone", EditorStyles.miniLabel);
         }
 
         private void DrawEnvironment()
@@ -133,14 +135,44 @@ namespace ProjectAbyss.Editor.VFXAI
 
                 recipe.name = EditorGUILayout.TextField("Effect Name", recipe.name);
                 recipe.description = EditorGUILayout.TextField("Description", recipe.description);
-                EditorGUILayout.LabelField($"Systems: {recipe.systems?.Count ?? 0}");
+
+                int modeIndex = string.Equals(recipe.buildMode, "CloneTemplate", StringComparison.OrdinalIgnoreCase) ? 1 : 0;
+                modeIndex = EditorGUILayout.Popup("Build Mode", modeIndex, new[] { "Structured", "CloneTemplate" });
+                recipe.buildMode = modeIndex == 1 ? "CloneTemplate" : "Structured";
+
+                if (recipe.buildMode == "CloneTemplate")
+                {
+                    VisualEffectAsset template = AssetDatabase.LoadAssetAtPath<VisualEffectAsset>(recipe.templateAssetPath);
+                    template = (VisualEffectAsset)EditorGUILayout.ObjectField("Template VFX", template, typeof(VisualEffectAsset), false);
+                    recipe.templateAssetPath = template == null ? string.Empty : AssetDatabase.GetAssetPath(template);
+                    recipe.preserveTemplateGraph = EditorGUILayout.Toggle("Preserve Full Graph", recipe.preserveTemplateGraph);
+                    EditorGUILayout.HelpBox(
+                        "Strip, GPU Event, Trigger Event, Decal, SDF, Collision, Sample Mesh/Skinned Mesh, Multiple Outputs와 모든 Operator 연결을 그대로 복제합니다.",
+                        MessageType.Info);
+                }
+
+                EditorGUILayout.LabelField($"Systems: {recipe.systems?.Count ?? 0} · Scene Mesh Objects: {recipe.sceneObjects?.Count ?? 0}");
 
                 showAdvanced = EditorGUILayout.Foldout(showAdvanced, "빠른 System 편집", true);
-                if (showAdvanced && recipe.systems != null)
+                if (showAdvanced && recipe.buildMode == "Structured" && recipe.systems != null)
                 {
                     for (int i = 0; i < recipe.systems.Count; i++)
                         DrawSystem(recipe.systems[i], i);
                 }
+
+                showSceneObjects = EditorGUILayout.Foldout(
+                    showSceneObjects,
+                    "3D Scene Mesh Objects",
+                    true);
+                if (showSceneObjects)
+                    DrawSceneObjects();
+
+                showExposedOverrides = EditorGUILayout.Foldout(
+                    showExposedOverrides,
+                    "VFX Exposed Property Defaults",
+                    true);
+                if (showExposedOverrides)
+                    DrawExposedOverrides();
 
                 showJson = EditorGUILayout.Foldout(showJson, "Recipe JSON", true);
                 if (showJson)
@@ -188,7 +220,267 @@ namespace ProjectAbyss.Editor.VFXAI
                 system.gravity = AbyssVector3.From(EditorGUILayout.Vector3Field("Gravity", system.gravity.ToVector3()));
                 system.drag = EditorGUILayout.FloatField("Drag", system.drag);
                 system.blendMode = EditorGUILayout.TextField("Blend Mode", system.blendMode);
-                system.textureAssetPath = EditorGUILayout.TextField("Texture Path", system.textureAssetPath);
+                int outputIndex = system.outputMode == "Mesh" ? 1 : 0;
+                outputIndex = EditorGUILayout.Popup("Output", outputIndex, new[] { "Quad", "Mesh" });
+                system.outputMode = outputIndex == 1 ? "Mesh" : "Quad";
+
+                Texture texture = AssetDatabase.LoadAssetAtPath<Texture>(system.textureAssetPath);
+                texture = (Texture)EditorGUILayout.ObjectField("Texture", texture, typeof(Texture), false);
+                system.textureAssetPath = texture == null ? string.Empty : AssetDatabase.GetAssetPath(texture);
+
+                if (system.outputMode == "Mesh")
+                {
+                    UnityEngine.Object meshAsset = AssetDatabase.LoadMainAssetAtPath(system.meshAssetPath);
+                    meshAsset = EditorGUILayout.ObjectField("Mesh / FBX Asset", meshAsset, typeof(UnityEngine.Object), false);
+                    system.meshAssetPath = meshAsset == null ? string.Empty : AssetDatabase.GetAssetPath(meshAsset);
+                    system.meshSubAssetName = EditorGUILayout.TextField("Mesh Sub-Asset Name", system.meshSubAssetName);
+                    Material material = AssetDatabase.LoadAssetAtPath<Material>(system.materialAssetPath);
+                    material = (Material)EditorGUILayout.ObjectField("Scene Material Metadata", material, typeof(Material), false);
+                    system.materialAssetPath = material == null ? string.Empty : AssetDatabase.GetAssetPath(material);
+
+                    UnityEngine.Object shaderGraph =
+                        AssetDatabase.LoadMainAssetAtPath(
+                            system.shaderGraphAssetPath);
+                    shaderGraph = EditorGUILayout.ObjectField(
+                        "VFX Shader Graph Asset",
+                        shaderGraph,
+                        typeof(UnityEngine.Object),
+                        false);
+                    system.shaderGraphAssetPath =
+                        shaderGraph == null
+                            ? string.Empty
+                            : AssetDatabase.GetAssetPath(shaderGraph);
+
+                    EditorGUILayout.HelpBox(
+                        "VFX Mesh Output의 Texture/Material 외형은 Output의 VFX Shader Graph와 Exposed Texture로 제어합니다. 일반 Material은 Scene Mesh Object용입니다.",
+                        MessageType.Info);
+                }
+
+                system.useFlipbook = EditorGUILayout.Toggle("Flipbook", system.useFlipbook);
+                if (system.useFlipbook)
+                {
+                    system.flipbookColumns = Mathf.Max(1, EditorGUILayout.IntField("Flipbook Columns", system.flipbookColumns));
+                    system.flipbookRows = Mathf.Max(1, EditorGUILayout.IntField("Flipbook Rows", system.flipbookRows));
+                    system.flipbookBlend = EditorGUILayout.Toggle("Flipbook Blend", system.flipbookBlend);
+                }
+            }
+        }
+
+        private void DrawSceneObjects()
+        {
+            recipe.sceneObjects ??= new List<AbyssVFXSceneObjectRecipe>();
+
+            for (int i = 0; i < recipe.sceneObjects.Count; i++)
+            {
+                AbyssVFXSceneObjectRecipe item = recipe.sceneObjects[i];
+                if (item == null)
+                {
+                    item = new AbyssVFXSceneObjectRecipe();
+                    recipe.sceneObjects[i] = item;
+                }
+
+                using (new EditorGUILayout.VerticalScope("box"))
+                {
+                    using (new EditorGUILayout.HorizontalScope())
+                    {
+                        EditorGUILayout.LabelField(
+                            $"Scene Mesh Object {i + 1}",
+                            EditorStyles.boldLabel);
+
+                        if (GUILayout.Button("Remove", GUILayout.Width(70f)))
+                        {
+                            recipe.sceneObjects.RemoveAt(i);
+                            i--;
+                            continue;
+                        }
+                    }
+
+                    item.name = EditorGUILayout.TextField("Name", item.name);
+
+                    UnityEngine.Object meshAsset =
+                        AssetDatabase.LoadMainAssetAtPath(
+                            item.meshAssetPath);
+                    meshAsset = EditorGUILayout.ObjectField(
+                        "Mesh / FBX Asset",
+                        meshAsset,
+                        typeof(UnityEngine.Object),
+                        false);
+                    item.meshAssetPath =
+                        meshAsset == null
+                            ? string.Empty
+                            : AssetDatabase.GetAssetPath(meshAsset);
+                    item.meshSubAssetName = EditorGUILayout.TextField(
+                        "Mesh Sub-Asset Name",
+                        item.meshSubAssetName);
+
+                    Material material =
+                        AssetDatabase.LoadAssetAtPath<Material>(
+                            item.materialAssetPath);
+                    material = (Material)EditorGUILayout.ObjectField(
+                        "Material",
+                        material,
+                        typeof(Material),
+                        false);
+                    item.materialAssetPath =
+                        material == null
+                            ? string.Empty
+                            : AssetDatabase.GetAssetPath(material);
+
+                    item.localPosition = AbyssVector3.From(
+                        EditorGUILayout.Vector3Field(
+                            "Local Position",
+                            item.localPosition.ToVector3()));
+                    item.localEulerAngles = AbyssVector3.From(
+                        EditorGUILayout.Vector3Field(
+                            "Local Rotation",
+                            item.localEulerAngles.ToVector3()));
+                    item.localScale = AbyssVector3.From(
+                        EditorGUILayout.Vector3Field(
+                            "Local Scale",
+                            item.localScale.ToVector3()));
+                    item.castShadows = EditorGUILayout.Toggle(
+                        "Cast Shadows",
+                        item.castShadows);
+                    item.receiveShadows = EditorGUILayout.Toggle(
+                        "Receive Shadows",
+                        item.receiveShadows);
+                }
+            }
+
+            if (GUILayout.Button("Add Scene Mesh Object"))
+                recipe.sceneObjects.Add(new AbyssVFXSceneObjectRecipe());
+
+            EditorGUILayout.HelpBox(
+                "석상처럼 고유 3D 오브젝트는 Mesh와 Material을 직접 지정합니다. Material에 텍스처를 미리 연결할 수 있고, 런타임에 바꿀 Texture/Mesh는 아래 Exposed Property로 VFX Graph에 전달할 수 있습니다.",
+                MessageType.Info);
+        }
+
+        private void DrawExposedOverrides()
+        {
+            recipe.exposedOverrides ??=
+                new List<AbyssVFXExposedOverrideRecipe>();
+
+            string[] types =
+            {
+                "Float", "Int", "Bool", "Vector3",
+                "Vector4", "Color", "Texture", "Mesh"
+            };
+
+            for (int i = 0; i < recipe.exposedOverrides.Count; i++)
+            {
+                AbyssVFXExposedOverrideRecipe item =
+                    recipe.exposedOverrides[i];
+
+                if (item == null)
+                {
+                    item = new AbyssVFXExposedOverrideRecipe();
+                    recipe.exposedOverrides[i] = item;
+                }
+
+                using (new EditorGUILayout.VerticalScope("box"))
+                {
+                    using (new EditorGUILayout.HorizontalScope())
+                    {
+                        EditorGUILayout.LabelField(
+                            $"Override {i + 1}",
+                            EditorStyles.boldLabel);
+
+                        if (GUILayout.Button("Remove", GUILayout.Width(70f)))
+                        {
+                            recipe.exposedOverrides.RemoveAt(i);
+                            i--;
+                            continue;
+                        }
+                    }
+
+                    item.propertyName =
+                        EditorGUILayout.TextField(
+                            "Property",
+                            item.propertyName);
+
+                    int typeIndex =
+                        Mathf.Max(0, Array.IndexOf(types, item.valueType));
+                    typeIndex = EditorGUILayout.Popup(
+                        "Type",
+                        typeIndex,
+                        types);
+                    item.valueType = types[typeIndex];
+
+                    switch (item.valueType)
+                    {
+                        case "Int":
+                            item.intValue = EditorGUILayout.IntField(
+                                "Value",
+                                item.intValue);
+                            break;
+                        case "Bool":
+                            item.boolValue = EditorGUILayout.Toggle(
+                                "Value",
+                                item.boolValue);
+                            break;
+                        case "Vector3":
+                            item.vectorValue = AbyssVector3.From(
+                                EditorGUILayout.Vector3Field(
+                                    "Value",
+                                    item.vectorValue.ToVector3()));
+                            break;
+                        case "Vector4":
+                        case "Color":
+                            item.colorValue = AbyssColor.From(
+                                EditorGUILayout.ColorField(
+                                    "Value",
+                                    item.colorValue.ToColor()));
+                            break;
+                        case "Texture":
+                        {
+                            Texture texture =
+                                AssetDatabase.LoadAssetAtPath<Texture>(
+                                    item.assetPath);
+                            texture = (Texture)EditorGUILayout.ObjectField(
+                                "Texture",
+                                texture,
+                                typeof(Texture),
+                                false);
+                            item.assetPath =
+                                texture == null
+                                    ? string.Empty
+                                    : AssetDatabase.GetAssetPath(texture);
+                            break;
+                        }
+                        case "Mesh":
+                        {
+                            UnityEngine.Object meshAsset =
+                                AssetDatabase.LoadMainAssetAtPath(
+                                    item.assetPath);
+                            meshAsset = EditorGUILayout.ObjectField(
+                                "Mesh / FBX Asset",
+                                meshAsset,
+                                typeof(UnityEngine.Object),
+                                false);
+                            item.assetPath =
+                                meshAsset == null
+                                    ? string.Empty
+                                    : AssetDatabase.GetAssetPath(meshAsset);
+                            item.subAssetName =
+                                EditorGUILayout.TextField(
+                                    "Mesh Sub-Asset Name",
+                                    item.subAssetName);
+                            break;
+                        }
+                        default:
+                            item.floatValue =
+                                EditorGUILayout.FloatField(
+                                    "Value",
+                                    item.floatValue);
+                            break;
+                    }
+                }
+            }
+
+            if (GUILayout.Button("Add Exposed Property Override"))
+            {
+                recipe.exposedOverrides.Add(
+                    new AbyssVFXExposedOverrideRecipe());
             }
         }
 

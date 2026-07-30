@@ -198,6 +198,10 @@ public class BattleVisualRequestBuilder
                             exchange.MomentumShift,
                         DisplayStep =
                             displayStep,
+                        WinnerAction =
+                            exchange.WinnerAction,
+                        LoserAction =
+                            exchange.LoserAction,
                         AttackRequest =
                             attackRequest
                     });

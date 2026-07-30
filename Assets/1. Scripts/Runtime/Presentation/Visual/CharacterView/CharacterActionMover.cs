@@ -13,6 +13,8 @@ public class CharacterActionMover : MonoBehaviour
 
     private Vector3 defaultLocalPosition;
 
+    public Vector3 CurrentWorldPosition => VisualRoot.position;
+
     public Transform VisualRoot
     {
         get
@@ -203,6 +205,30 @@ public class CharacterActionMover : MonoBehaviour
             destination,
             GetMoveSpeed(settings),
             GetArriveDistance(settings));
+    }
+
+
+    public IEnumerator MoveToWorldPosition(
+        Vector3 destination,
+        float speed,
+        float arrive)
+    {
+        if (visualRoot == null)
+            yield break;
+
+        yield return MoveWorldPosition(
+            destination,
+            Mathf.Max(0.01f, speed),
+            Mathf.Max(0.001f, arrive));
+    }
+
+    public void SetWorldPositionInstant(
+        Vector3 destination)
+    {
+        if (visualRoot == null)
+            return;
+
+        visualRoot.position = destination;
     }
 
     public IEnumerator ReturnToDefaultPosition()

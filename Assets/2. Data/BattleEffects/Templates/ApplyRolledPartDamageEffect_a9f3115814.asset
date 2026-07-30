@@ -1,0 +1,26 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 04c19803c8cddf44c82d701bf782987b, type: 3}
+  m_Name: ApplyRolledPartDamageEffect_a9f3115814
+  m_EditorClassIdentifier: 
+  timing: 0
+  targetSelector: 0
+  conditions: []
+  powerMultiplier: 1
+  flatBonus: 0
+  damageType: 0
+  useSkillCanBreakPart: 1
+  canBreakPart: 0
+  applyMomentum: 0
+  applyDefense: 1
+  applyGuard: 1
+  applyProtection: 1

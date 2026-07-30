@@ -1,7 +1,11 @@
 {
-  "schemaVersion": "1.0",
+  "schemaVersion": "2.0",
   "name": "VFX_Abyss_Bleeding_Status",
   "description": "캐릭터의 상처 앵커에 붙여 지속 재생하는 출혈 상태 VFX. 아래로 떨어지는 피방울과 미세 혈무를 반복 생성한다.",
+  "buildMode": "Structured",
+  "templateAssetPath": "",
+  "preserveTemplateGraph": true,
+  "requiredCapabilities": [],
   "systems": [
     {
       "name": "SeepingDrops",
@@ -47,8 +51,19 @@
         "a": 0.96
       },
       "blendMode": "Alpha",
+      "outputMode": "Quad",
       "textureAssetPath": "Assets/VFX/Textures/AIExamples/Blood/TX_Abyss_Blood_Drop.png",
-      "orientToVelocity": false
+      "meshAssetPath": "",
+      "meshSubAssetName": "",
+      "materialAssetPath": "",
+      "shaderGraphAssetPath": "",
+      "useFlipbook": false,
+      "flipbookColumns": 1,
+      "flipbookRows": 1,
+      "flipbookBlend": false,
+      "orientationMode": "FaceCameraPlane",
+      "orientToVelocity": false,
+      "capabilities": []
     },
     {
       "name": "MicroSpray",
@@ -94,8 +109,19 @@
         "a": 0.72
       },
       "blendMode": "Alpha",
+      "outputMode": "Quad",
       "textureAssetPath": "Assets/VFX/Textures/AIExamples/Blood/TX_Abyss_Blood_FineDrop.png",
-      "orientToVelocity": false
+      "meshAssetPath": "",
+      "meshSubAssetName": "",
+      "materialAssetPath": "",
+      "shaderGraphAssetPath": "",
+      "useFlipbook": false,
+      "flipbookColumns": 1,
+      "flipbookRows": 1,
+      "flipbookBlend": false,
+      "orientationMode": "FaceCameraPlane",
+      "orientToVelocity": false,
+      "capabilities": []
     },
     {
       "name": "WoundMist",
@@ -141,8 +167,19 @@
         "a": 0.34
       },
       "blendMode": "Alpha",
+      "outputMode": "Quad",
       "textureAssetPath": "Assets/VFX/Textures/AIExamples/Blood/TX_Abyss_Blood_Mist.png",
-      "orientToVelocity": false
+      "meshAssetPath": "",
+      "meshSubAssetName": "",
+      "materialAssetPath": "",
+      "shaderGraphAssetPath": "",
+      "useFlipbook": false,
+      "flipbookColumns": 1,
+      "flipbookRows": 1,
+      "flipbookBlend": false,
+      "orientationMode": "FaceCameraPlane",
+      "orientToVelocity": false,
+      "capabilities": []
     },
     {
       "name": "ClotDrops",
@@ -188,8 +225,21 @@
         "a": 1.0
       },
       "blendMode": "Alpha",
+      "outputMode": "Quad",
       "textureAssetPath": "Assets/VFX/Textures/AIExamples/Blood/TX_Abyss_Blood_Clot.png",
-      "orientToVelocity": false
+      "meshAssetPath": "",
+      "meshSubAssetName": "",
+      "materialAssetPath": "",
+      "shaderGraphAssetPath": "",
+      "useFlipbook": false,
+      "flipbookColumns": 1,
+      "flipbookRows": 1,
+      "flipbookBlend": false,
+      "orientationMode": "FaceCameraPlane",
+      "orientToVelocity": false,
+      "capabilities": []
     }
-  ]
+  ],
+  "sceneObjects": [],
+  "exposedOverrides": []
 }

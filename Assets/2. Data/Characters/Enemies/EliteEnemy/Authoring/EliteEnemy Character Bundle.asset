@@ -17,9 +17,11 @@ MonoBehaviour:
   authoringNotes: "\uC815\uC608 \uC801 SO \uAD6C\uC131. CharacterData, SkillSet,
     CombatLoadout\uACFC Animator\uB97C \uBB36\uC2B5\uB2C8\uB2E4."
   characterData: {fileID: 11400000, guid: bc59ef365359be644bc16e661b1e7240, type: 2}
+  combatLoadout: {fileID: 11400000, guid: 2dbf693936d873742afef74044506075, type: 2}
   skillSet: {fileID: 11400000, guid: de1abc5d164c1e241ba422cd9e9dc661, type: 2}
   characterPrefab: {fileID: 0}
   visualProfile: {fileID: 0}
+  presentationProfile: {fileID: 11400000, guid: caa7ae9fa3b84b94ba1c8a71193b0756, type: 2}
   animatorController: {fileID: 9100000, guid: ef38ca94e98bb5c4f8c4f636c7318a67, type: 2}
   avatar: {fileID: 0}
   overrideAnimatorController: 1

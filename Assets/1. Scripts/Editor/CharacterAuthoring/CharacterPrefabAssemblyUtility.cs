@@ -157,6 +157,7 @@ public static class CharacterPrefabAssemblyUtility
                     view,
                     character,
                     animator,
+                    bundle.PresentationProfile,
                     anchors,
                     points);
 
@@ -229,6 +230,18 @@ public static class CharacterPrefabAssemblyUtility
         if (animator == null)
             result.Add("Animator가 없습니다.");
 
+        CharacterView characterView =
+            prefab.GetComponentInChildren<CharacterView>(
+                true);
+
+        if (characterView != null &&
+            characterView.PresentationProfile == null)
+        {
+            result.Add(
+                "CharacterPresentationProfile이 없습니다. " +
+                "Structured Clash Migration을 실행하거나 Bundle에 지정하세요.");
+        }
+
         Transform visualRoot = ResolveVisualRoot(prefab);
 
         if (visualRoot.GetComponent<CharacterCameraPointSet>() == null)
@@ -293,6 +306,7 @@ public static class CharacterPrefabAssemblyUtility
         CharacterView view,
         Character character,
         Animator animator,
+        CharacterPresentationProfile presentationProfile,
         IReadOnlyDictionary<PartType, Transform> anchors,
         IReadOnlyDictionary<string, Transform> points)
     {
@@ -300,6 +314,7 @@ public static class CharacterPrefabAssemblyUtility
         so.Update();
         SetObject(so, "character", character);
         SetObject(so, "animator", animator);
+        SetObject(so, "presentationProfile", presentationProfile);
 
         SerializedProperty anchorList = so.FindProperty("bodyPartAnchors");
 

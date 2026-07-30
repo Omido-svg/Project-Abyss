@@ -1,6 +1,5 @@
 using System;
 using System.Collections;
-using System.Collections.Generic;
 using Unity.Cinemachine;
 using UnityEngine;
 using UnityEngine.Playables;
@@ -56,8 +55,7 @@ public sealed class SkillCutsceneDirector :
         float playbackSpeed,
         Action<
             SkillCutsceneEventClip>
-            onEvent,
-        bool includeReturnTimeline = true)
+            onEvent)
     {
         if (request == null ||
             definition == null)
@@ -91,68 +89,14 @@ public sealed class SkillCutsceneDirector :
             yield break;
         }
 
-        List<TimelineAsset> sequence =
-            BuildSequence(
-                request,
-                definition,
-                primary,
-                includeReturnTimeline);
-
         try
         {
-            foreach (TimelineAsset timeline
-                     in sequence)
+            if (!cancelRequested)
             {
-                if (cancelRequested ||
-                    timeline == null)
-                {
-                    break;
-                }
-
                 yield return PlayTimeline(
-                    timeline,
+                    primary,
                     playbackSpeed);
             }
-        }
-        finally
-        {
-            CleanupRuntime(
-                definition);
-        }
-    }
-
-    public IEnumerator PlayReturnSegment(
-        BattleVisualRequest request,
-        SkillVisualDefinition definition,
-        float playbackSpeed,
-        Action<
-            SkillCutsceneEventClip>
-            onEvent = null)
-    {
-        if (request == null ||
-            definition == null ||
-            definition.ReturnTimeline == null ||
-            definition.CameraRigPrefab == null)
-        {
-            yield break;
-        }
-
-        cancelRequested =
-            false;
-
-        if (!CreateRuntime(
-                request,
-                definition,
-                onEvent))
-        {
-            yield break;
-        }
-
-        try
-        {
-            yield return PlayTimeline(
-                definition.ReturnTimeline,
-                playbackSpeed);
         }
         finally
         {
@@ -347,50 +291,6 @@ public sealed class SkillCutsceneDirector :
         {
             yield return null;
         }
-    }
-
-    private static List<TimelineAsset>
-        BuildSequence(
-            BattleVisualRequest request,
-            SkillVisualDefinition definition,
-            TimelineAsset primary,
-            bool includeReturnTimeline)
-    {
-        List<TimelineAsset> result =
-            new List<TimelineAsset>
-            {
-                primary
-            };
-
-        if (request.BrokePart &&
-            definition.PartBreakTimeline !=
-            null)
-        {
-            result.Add(
-                definition.PartBreakTimeline);
-        }
-
-        if (request.WasKilled)
-        {
-            if (definition.KillTimeline !=
-                null)
-            {
-                result.Add(
-                    definition.KillTimeline);
-            }
-
-            return result;
-        }
-
-        if (includeReturnTimeline &&
-            definition.ReturnTimeline !=
-            null)
-        {
-            result.Add(
-                definition.ReturnTimeline);
-        }
-
-        return result;
     }
 
     private void ResolveReferences()

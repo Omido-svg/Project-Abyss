@@ -18,9 +18,20 @@ public sealed class BattleClashVisualExchange
     // 승자가 바뀌어도 양쪽 숫자와 라벨 위치가 뒤집히지 않는다.
     public ClashRollVisualStep DisplayStep;
 
+    // 승패 전환 모션은 실제 피해 발생 여부와 무관하게 필요하므로
+    // 판정 결과의 Winner/Loser Action을 별도로 보존한다.
+    public BattleAction WinnerAction;
+    public BattleAction LoserAction;
+
     // 피해가 발생하는 교환만 존재한다.
-    // 동률, 취소, 피해 없는 교환에서는 null이다.
+    // 수비 승리, 동률, 취소처럼 피해 없는 교환에서는 null이다.
     public BattleVisualRequest AttackRequest;
+
+    public bool HasResolvedWinner =>
+        !WasCancelled &&
+        !IsTie &&
+        WinnerAction != null &&
+        LoserAction != null;
 
     public bool HasAttack =>
         !WasCancelled &&

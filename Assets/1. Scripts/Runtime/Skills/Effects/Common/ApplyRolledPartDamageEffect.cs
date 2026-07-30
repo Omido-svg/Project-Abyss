@@ -26,6 +26,13 @@ public class ApplyRolledPartDamageEffect : SkillEffectDefinition
     public override void Apply(
         SkillEffectContext context)
     {
+        Apply(context, null);
+    }
+
+    public override void Apply(
+        SkillEffectContext context,
+        SkillEffectOverrides overrides)
+    {
         if (context?.Action == null ||
             context.Owner == null ||
             context.Target == null)
@@ -36,11 +43,16 @@ public class ApplyRolledPartDamageEffect : SkillEffectDefinition
         int rolledPower =
             GetRolledPower(context.Action);
 
+        float finalMultiplier =
+            overrides?.ResolveMultiplier(powerMultiplier) ?? powerMultiplier;
+        int finalFlatBonus =
+            overrides?.ResolveFlatValue(flatBonus) ?? flatBonus;
+
         int damage = Mathf.Max(
             0,
             Mathf.RoundToInt(
-                rolledPower * powerMultiplier) +
-            flatBonus);
+                rolledPower * finalMultiplier) +
+            finalFlatBonus);
 
         if (damage <= 0)
             return;

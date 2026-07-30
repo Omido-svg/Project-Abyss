@@ -65,6 +65,7 @@ public sealed class CharacterAuthoringLink : MonoBehaviour
         }
 
         ApplyAnimator();
+        ApplyPresentationProfile();
         return true;
     }
 
@@ -81,6 +82,19 @@ public sealed class CharacterAuthoringLink : MonoBehaviour
 
         if (bundle.OverrideAvatar && bundle.Avatar != null)
             targetAnimator.avatar = bundle.Avatar;
+    }
+
+
+    private void ApplyPresentationProfile()
+    {
+        CharacterView view =
+            targetCharacter != null
+                ? targetCharacter.GetComponentInChildren<
+                    CharacterView>(true)
+                : null;
+
+        view?.ConfigurePresentationProfile(
+            bundle?.PresentationProfile);
     }
 
     private void ResolveReferences()

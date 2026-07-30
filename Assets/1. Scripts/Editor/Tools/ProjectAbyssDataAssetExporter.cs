@@ -31,13 +31,13 @@ public static class ProjectAbyssDataAssetExporter
         "UploadZIP";
 
     private const string CoreMenuPath =
-        "Tools/Project Abyss/Export Core Data Assets for AI";
+        "Tools/Project Abyss/Exports/Export Core Data Assets for AI";
 
     private const string ModelMenuPath =
-        "Tools/Project Abyss/Export Model Assets for AI";
+        "Tools/Project Abyss/Exports/Export Model Assets for AI";
 
     private const string AllMenuPath =
-        "Tools/Project Abyss/Export All Data Assets for AI";
+        "Tools/Project Abyss/Exports/Export All Data Assets for AI";
 
     private const string FormatVersion =
         "3.1.0";
@@ -196,19 +196,22 @@ public static class ProjectAbyssDataAssetExporter
                     manifestPath,
                     profile);
 
-            EditorUtility.DisplayDialog(
-                $"{profile.DisplayName} Export Complete",
-                $"AI 분석용 데이터 에셋 내보내기가 완료되었습니다.\n\n" +
-                $"Mode: {profile.Mode}\n" +
-                $"Manifest: {NormalizePath(manifestPath)}\n" +
-                $"상세 에셋: {summary.DetailAssetCount}개\n" +
-                $"TXT Part: {summary.PartCount}개\n" +
-                $"ZIP Part: {summary.PartCount}개\n" +
-                $"최대 TXT 크기: {FormatBytes(MaximumPartBytes)}",
-                "확인");
+            if (!ProjectAbyssExportSession.IsBatch)
+            {
+                EditorUtility.DisplayDialog(
+                    $"{profile.DisplayName} Export Complete",
+                    $"AI 분석용 데이터 에셋 내보내기가 완료되었습니다.\n\n" +
+                    $"Mode: {profile.Mode}\n" +
+                    $"Manifest: {NormalizePath(manifestPath)}\n" +
+                    $"상세 에셋: {summary.DetailAssetCount}개\n" +
+                    $"TXT Part: {summary.PartCount}개\n" +
+                    $"ZIP Part: {summary.PartCount}개\n" +
+                    $"최대 TXT 크기: {FormatBytes(MaximumPartBytes)}",
+                    "확인");
 
-            EditorUtility.RevealInFinder(
-                manifestPath);
+                EditorUtility.RevealInFinder(
+                    manifestPath);
+            }
         }
         catch (OperationCanceledException)
         {

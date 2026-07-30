@@ -12,6 +12,13 @@ public class AddBodyPartStatusEffect : SkillEffectDefinition
     public override void Apply(
         SkillEffectContext context)
     {
+        Apply(context, null);
+    }
+
+    public override void Apply(
+        SkillEffectContext context,
+        SkillEffectOverrides overrides)
+    {
         if (context?.Resolver == null ||
             context.Owner == null ||
             context.Target == null)
@@ -22,8 +29,8 @@ public class AddBodyPartStatusEffect : SkillEffectDefinition
         StatusEffect effect =
             StatusEffectFactory.Create(
                 StatusEffectId,
-                Stack,
-                Duration);
+                overrides?.ResolveStack(Stack) ?? Stack,
+                overrides?.ResolveDuration(Duration) ?? Duration);
 
         if (effect == null)
             return;

@@ -5,7 +5,6 @@ using UnityEngine.VFX;
 
 public sealed class BattleVfxInstance : MonoBehaviour
 {
-    private readonly List<ParticleSystem> particles = new();
     private readonly List<VisualEffect> visualEffects = new();
     private readonly List<MonoBehaviour> lifecycleBehaviours = new();
 
@@ -103,7 +102,6 @@ public sealed class BattleVfxInstance : MonoBehaviour
         Destroy(gameObject);
     }
 
-
     private void OnDestroy()
     {
         CancelScheduledRelease();
@@ -134,26 +132,15 @@ public sealed class BattleVfxInstance : MonoBehaviour
 
     private void CacheComponents()
     {
-        particles.Clear();
         visualEffects.Clear();
         lifecycleBehaviours.Clear();
 
-        GetComponentsInChildren(true, particles);
         GetComponentsInChildren(true, visualEffects);
         GetComponentsInChildren(true, lifecycleBehaviours);
     }
 
     private void StopEffects()
     {
-        foreach (ParticleSystem particle in particles)
-        {
-            if (particle == null)
-                continue;
-
-            particle.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
-            particle.Clear(true);
-        }
-
         foreach (VisualEffect visualEffect in visualEffects)
         {
             if (visualEffect == null)

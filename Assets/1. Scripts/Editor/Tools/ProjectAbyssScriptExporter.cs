@@ -21,7 +21,7 @@ public static class ProjectAbyssScriptExporter
         "Project_Abyss_All_Scripts_For_AI.txt";
 
     private const string MenuPath =
-        "Tools/Project Abyss/Export All Scripts for AI";
+        "Tools/Project Abyss/Exports/Export All Scripts for AI";
 
     private const string Separator =
         "================================================================================";
@@ -210,13 +210,16 @@ public static class ProjectAbyssScriptExporter
                 : $"총 {scripts.Count}개 중 {readErrors.Count}개 파일을 읽지 못했습니다.\n" +
                   "출력 파일 마지막의 READ_ERRORS 항목을 확인하세요.";
 
-        EditorUtility.DisplayDialog(
-            "Script Export Complete",
-            $"{resultMessage}\n\n{normalizedOutputPath}",
-            "확인");
+        if (!ProjectAbyssExportSession.IsBatch)
+        {
+            EditorUtility.DisplayDialog(
+                "Script Export Complete",
+                $"{resultMessage}\n\n{normalizedOutputPath}",
+                "확인");
 
-        EditorUtility.RevealInFinder(
-            outputPath);
+            EditorUtility.RevealInFinder(
+                outputPath);
+        }
     }
 
     private static List<ScriptFileInfo> FindScripts(

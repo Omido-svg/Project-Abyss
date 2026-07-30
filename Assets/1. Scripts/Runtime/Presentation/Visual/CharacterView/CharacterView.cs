@@ -1,10 +1,16 @@
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Animations;
+using UnityEngine.Playables;
 
 public class CharacterView : MonoBehaviour, ISerializationCallbackReceiver
 {
     [Header("Model")]
     [SerializeField] private Character character;
+
+    [Header("Character Presentation")]
+    [SerializeField] private CharacterPresentationProfile presentationProfile;
 
     [Header("State Animator")]
     [Tooltip("Idle / Hit / Dead / 상태 표현만 담당합니다. 공격 모션은 Timeline Animation Track이 직접 재생합니다.")]
@@ -36,12 +42,19 @@ public class CharacterView : MonoBehaviour, ISerializationCallbackReceiver
     private bool hasAnimatorSpeedOverride;
     private float animatorSpeedBeforeAction = 1f;
 
+    private PlayableGraph transientAnimationGraph;
+    private Coroutine reactionRoutine;
+    private int transientAnimationGeneration;
+    private bool hasRootMotionOverride;
+    private bool rootMotionBeforeTransient;
+
     private static readonly int VisualStateHash = Animator.StringToHash("VisualState");
     private static readonly int HitHash = Animator.StringToHash("Hit");
     private static readonly int DeadHash = Animator.StringToHash("Dead");
 
     public Character Character => character;
     public Animator Animator => animator;
+    public CharacterPresentationProfile PresentationProfile => presentationProfile;
     public Transform LookAtPoint => lookAtPoint != null ? lookAtPoint : transform;
     public Transform AttackCameraPoint => attackCameraPoint != null ? attackCameraPoint : transform;
     public Transform HitCameraPoint => hitCameraPoint != null ? hitCameraPoint : transform;
@@ -60,6 +73,12 @@ public class CharacterView : MonoBehaviour, ISerializationCallbackReceiver
     private void OnDisable()
     {
         CancelActionPlayback();
+    }
+
+    private void OnDestroy()
+    {
+        StopTransientAnimation(
+            refreshVisualState: false);
     }
 
     private void OnValidate()
@@ -85,21 +104,272 @@ public class CharacterView : MonoBehaviour, ISerializationCallbackReceiver
         RefreshVisualState();
     }
 
-    public void PlayHit()
+    public void ConfigurePresentationProfile(
+        CharacterPresentationProfile value)
     {
-        if (animator == null)
+        presentationProfile = value;
+    }
+
+    public IEnumerator PlayClashMotion(
+        ClashMotionKey key,
+        float playbackSpeed = 1f,
+        float maximumDuration = 0f,
+        float fallbackDuration = 0f)
+    {
+        AnimationClip clip =
+            presentationProfile?
+                .ResolveClashMotion(key);
+
+        if (clip == null)
+        {
+            if (fallbackDuration > 0f)
+            {
+                yield return new WaitForSeconds(
+                    fallbackDuration);
+            }
+
+            yield break;
+        }
+
+        int generation =
+            BeginTransientAnimation(
+                clip,
+                playbackSpeed);
+
+        if (generation < 0)
+            yield break;
+
+        float safeSpeed =
+            Mathf.Max(0.01f, playbackSpeed);
+
+        float duration =
+            clip.length / safeSpeed;
+
+        if (maximumDuration > 0f)
+        {
+            duration = Mathf.Min(
+                duration,
+                maximumDuration);
+        }
+
+        float elapsed = 0f;
+
+        while (generation ==
+                   transientAnimationGeneration &&
+               IsTransientAnimationPlaying &&
+               elapsed < duration)
+        {
+            elapsed += Time.deltaTime;
+            yield return null;
+        }
+
+        if (generation ==
+            transientAnimationGeneration)
+        {
+            StopTransientAnimation();
+        }
+    }
+
+    public void PlayReaction(
+        HitReactionKey key,
+        float playbackSpeed = 1f)
+    {
+        if (key == HitReactionKey.None)
             return;
 
-        if (HasAnimatorParameter(HitHash, AnimatorControllerParameterType.Trigger))
-            animator.SetTrigger(HitHash);
+        if (!Application.isPlaying)
+        {
+            if (key == HitReactionKey.Death)
+                PlayDeadFromAnimatorController();
+            else
+                PlayHitFromAnimatorController();
+
+            return;
+        }
+
+        AnimationClip clip =
+            presentationProfile?
+                .ResolveReaction(key);
+
+        if (clip == null)
+        {
+            if (key == HitReactionKey.Death)
+            {
+                PlayDeadFromAnimatorController();
+            }
+            else
+            {
+                PlayHitFromAnimatorController();
+            }
+
+            return;
+        }
+
+        if (reactionRoutine != null)
+        {
+            StopCoroutine(reactionRoutine);
+            reactionRoutine = null;
+        }
+
+        reactionRoutine = StartCoroutine(
+            PlayReactionRoutine(
+                clip,
+                playbackSpeed));
+    }
+
+    public void PlayHit()
+    {
+        PlayReaction(
+            HitReactionKey.LightHit);
     }
 
     public void PlayHitRestart()
     {
+        PlayReaction(
+            HitReactionKey.HeavyHit);
+    }
+
+    private IEnumerator PlayReactionRoutine(
+        AnimationClip clip,
+        float playbackSpeed)
+    {
+        int generation =
+            BeginTransientAnimation(
+                clip,
+                playbackSpeed);
+
+        if (generation < 0)
+        {
+            reactionRoutine = null;
+            yield break;
+        }
+
+        float duration =
+            clip.length /
+            Mathf.Max(0.01f, playbackSpeed);
+
+        float elapsed = 0f;
+
+        while (generation ==
+                   transientAnimationGeneration &&
+               IsTransientAnimationPlaying &&
+               elapsed < duration)
+        {
+            elapsed += Time.deltaTime;
+            yield return null;
+        }
+
+        if (generation ==
+            transientAnimationGeneration)
+        {
+            StopTransientAnimation();
+        }
+
+        reactionRoutine = null;
+    }
+
+    private int BeginTransientAnimation(
+        AnimationClip clip,
+        float playbackSpeed)
+    {
+        if (animator == null ||
+            clip == null ||
+            !isActiveAndEnabled)
+        {
+            return -1;
+        }
+
+        StopTransientAnimation(
+            refreshVisualState: false);
+
+        transientAnimationGeneration++;
+
+        if (!hasRootMotionOverride)
+        {
+            rootMotionBeforeTransient =
+                animator.applyRootMotion;
+
+            hasRootMotionOverride = true;
+        }
+
+        // 합 위치는 CharacterActionMover가 결정합니다.
+        // 캐릭터별 모션의 Root Motion이 공통 Anchor를 밀어내지 않도록 잠시 비활성화합니다.
+        animator.applyRootMotion = false;
+
+        transientAnimationGraph =
+            PlayableGraph.Create(
+                $"{name}_PresentationMotion");
+
+        transientAnimationGraph
+            .SetTimeUpdateMode(
+                DirectorUpdateMode.GameTime);
+
+        AnimationClipPlayable clipPlayable =
+            AnimationClipPlayable.Create(
+                transientAnimationGraph,
+                clip);
+
+        clipPlayable.SetApplyFootIK(true);
+        clipPlayable.SetApplyPlayableIK(false);
+        clipPlayable.SetSpeed(
+            Mathf.Max(0.01f, playbackSpeed));
+
+        AnimationPlayableOutput output =
+            AnimationPlayableOutput.Create(
+                transientAnimationGraph,
+                "Character Presentation",
+                animator);
+
+        output.SetSourcePlayable(
+            clipPlayable);
+
+        transientAnimationGraph.Play();
+
+        return transientAnimationGeneration;
+    }
+
+    private bool IsTransientAnimationPlaying =>
+        transientAnimationGraph.IsValid() &&
+        transientAnimationGraph.IsPlaying();
+
+    private void StopTransientAnimation(
+        bool refreshVisualState = true)
+    {
+        transientAnimationGeneration++;
+
+        if (transientAnimationGraph.IsValid())
+        {
+            transientAnimationGraph.Stop();
+            transientAnimationGraph.Destroy();
+        }
+
+        if (animator != null)
+        {
+            if (hasRootMotionOverride)
+            {
+                animator.applyRootMotion =
+                    rootMotionBeforeTransient;
+
+                hasRootMotionOverride = false;
+            }
+
+            if (animator.isActiveAndEnabled)
+                animator.Update(0f);
+        }
+
+        if (refreshVisualState &&
+            isActiveAndEnabled)
+        {
+            RefreshVisualState();
+        }
+    }
+
+    private void PlayHitFromAnimatorController()
+    {
         if (logDebug)
         {
             Debug.Log(
-                $"[CharacterView] Timeline Hit 반응 재생 / ViewObject={name}, Root={transform.root.name}",
+                $"[CharacterView] Animator Controller Hit 반응 / ViewObject={name}, Root={transform.root.name}",
                 this);
         }
 
@@ -123,9 +393,6 @@ public class CharacterView : MonoBehaviour, ISerializationCallbackReceiver
         {
             if (evaluateHitImmediately)
             {
-                // PlayableDirector의 Event Mixer가 Animator 갱신 뒤에 실행될 수 있으므로
-                // CrossFade 예약만 하면 피격 포즈가 다음 프레임에 보일 수 있다.
-                // Impact 프레임에는 상태를 즉시 0초에서 평가해 타격과 포즈를 일치시킨다.
                 animator.Play(
                     hitStateHash,
                     baseLayerIndex,
@@ -164,20 +431,46 @@ public class CharacterView : MonoBehaviour, ISerializationCallbackReceiver
             missingHitPlaybackWarningLogged = true;
             Debug.LogWarning(
                 $"{name} Animator에서 Hit 상태/Trigger를 찾을 수 없습니다. " +
-                "공격 타이밍은 Timeline이 담당하지만 피격 상태 Animator 구성은 필요합니다.",
+                "CharacterPresentationProfile의 피격 Clip 또는 Animator Hit 상태가 필요합니다.",
                 this);
+        }
+    }
+
+    private void PlayDeadFromAnimatorController()
+    {
+        if (animator == null)
+            return;
+
+        if (HasAnimatorParameter(
+                DeadHash,
+                AnimatorControllerParameterType.Trigger))
+        {
+            animator.SetTrigger(DeadHash);
         }
     }
 
     public void CancelActionPlayback()
     {
+        if (reactionRoutine != null)
+        {
+            StopCoroutine(reactionRoutine);
+            reactionRoutine = null;
+        }
+
+        StopTransientAnimation(
+            refreshVisualState: false);
+
         RestoreAnimatorSpeed();
+
         if (animator != null)
             RefreshVisualState();
     }
 
     public void AbortActionPlayback()
     {
+        StopTransientAnimation(
+            refreshVisualState: false);
+
         RestoreAnimatorSpeed();
 
         if (animator == null)
@@ -199,11 +492,8 @@ public class CharacterView : MonoBehaviour, ISerializationCallbackReceiver
 
     public void PlayDead()
     {
-        if (animator == null)
-            return;
-
-        if (HasAnimatorParameter(DeadHash, AnimatorControllerParameterType.Trigger))
-            animator.SetTrigger(DeadHash);
+        PlayReaction(
+            HitReactionKey.Death);
     }
 
     public void SetVisualStateForTest(CharacterVisualState state)

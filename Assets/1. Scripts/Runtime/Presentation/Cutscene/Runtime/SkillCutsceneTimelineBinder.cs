@@ -8,7 +8,7 @@ using UnityEngine.Timeline;
 ///
 /// Track 이름 계약:
 /// [Abyss] Attacker Animation
-/// [Abyss] Target Animation
+/// [Abyss] Target Animation (legacy, runtime unbound)
 /// [AbyssRig] CM_Overview
 /// [AbyssRig] CM_Follow
 /// [Abyss FX] VFX
@@ -88,21 +88,11 @@ public static class SkillCutsceneTimelineBinder
                     StringComparison
                         .OrdinalIgnoreCase))
             {
-                // 공격 스킬 Timeline은 특정 타깃의 Hit AnimationClip을 고정 소유하지 않는다.
-                // 빈 Target Track을 Animator에 바인딩하면 Timeline 출력이 타깃의
-                // 상태 Animator(Hit/Dead/Idle)를 덮을 수 있으므로 바인딩하지 않는다.
-                if (!HasPlayableAnimationClip(
-                        track as AnimationTrack))
-                {
-                    director.ClearGenericBinding(
-                        track);
-                    continue;
-                }
-
-                BindAnimation(
-                    director,
-                    track,
-                    context.TargetAnimator);
+                // v8 구조에서는 스킬 Timeline이 타깃 Animator를 절대 제어하지 않습니다.
+                // 실제 피격 Clip은 현재 타깃의 CharacterPresentationProfile이 선택합니다.
+                // Legacy Track에 Clip이 남아 있더라도 런타임에서는 바인딩하지 않습니다.
+                director.ClearGenericBinding(
+                    track);
 
                 continue;
             }
@@ -144,28 +134,6 @@ public static class SkillCutsceneTimelineBinder
                 track,
                 animator);
         }
-    }
-
-    private static bool HasPlayableAnimationClip(
-        AnimationTrack track)
-    {
-        if (track == null)
-            return false;
-
-        foreach (TimelineClip clip in
-                 track.GetClips())
-        {
-            if (clip == null ||
-                clip.asset == null ||
-                clip.duration <= 0d)
-            {
-                continue;
-            }
-
-            return true;
-        }
-
-        return false;
     }
 
     private static void BindAnimation(

@@ -608,7 +608,7 @@ public sealed class ProjectAbyssCharacterStudio : EditorWindow
             CreateVisual(skill);
         }
 
-        if (GUILayout.Button("Effect 추가", GUILayout.Width(78f)))
+        if (GUILayout.Button("공유 Effect 추가", GUILayout.Width(98f)))
         {
             ShowTypeMenu<SkillEffectDefinition>(
                 type => AddEffect(skill, type));
@@ -627,10 +627,19 @@ public sealed class ProjectAbyssCharacterStudio : EditorWindow
             skill,
             true);
 
-        if (skill.Effects != null)
+        if (skill.EffectEntries != null && skill.EffectEntries.Count > 0)
+        {
+            for (int i = 0; i < skill.EffectEntries.Count; i++)
+            {
+                SkillEffectDefinition definition =
+                    skill.EffectEntries[i]?.Definition;
+                DrawNested($"Effect Template #{i + 1}", definition, false);
+            }
+        }
+        else if (skill.Effects != null)
         {
             for (int i = 0; i < skill.Effects.Count; i++)
-                DrawNested($"Effect #{i + 1}", skill.Effects[i], false);
+                DrawNested($"Legacy Effect #{i + 1}", skill.Effects[i], false);
         }
 
         DrawNested("Skill Visual", skill.VisualDefinition, false);
@@ -754,6 +763,7 @@ public sealed class ProjectAbyssCharacterStudio : EditorWindow
         SerializedObject so = new(bundle);
         so.Update();
         DrawProperty(so, "visualProfile");
+        DrawProperty(so, "presentationProfile");
         DrawProperty(so, "animatorController");
         DrawProperty(so, "overrideAnimatorController");
         DrawProperty(so, "avatar");
@@ -761,6 +771,10 @@ public sealed class ProjectAbyssCharacterStudio : EditorWindow
         so.ApplyModifiedProperties();
 
         DrawNested("SkillVisualProfile", bundle.VisualProfile, false);
+        DrawNested(
+            "CharacterPresentationProfile",
+            bundle.PresentationProfile,
+            false);
 
         EditorGUILayout.BeginHorizontal();
 
@@ -1040,19 +1054,40 @@ public sealed class ProjectAbyssCharacterStudio : EditorWindow
 
     private void AddEffect(SkillDefinition skill, Type type)
     {
+        const string templateFolder =
+            "Assets/2. Data/BattleEffects/Templates";
+
+        EnsureAssetFolder(templateFolder);
+
         SkillEffectDefinition effect =
-            CreateSubAsset(
-                type,
-                $"{skill.name}_{ObjectNames.NicifyVariableName(type.Name)}",
-                true) as SkillEffectDefinition;
+            ScriptableObject.CreateInstance(type)
+                as SkillEffectDefinition;
 
         if (effect == null)
             return;
 
-        skill.Effects ??= new List<SkillEffectDefinition>();
-        skill.Effects.Add(effect);
+        string baseName =
+            ObjectNames.NicifyVariableName(type.Name);
+        string assetPath =
+            AssetDatabase.GenerateUniqueAssetPath(
+                $"{templateFolder}/{baseName}.asset");
+
+        effect.name = Path.GetFileNameWithoutExtension(assetPath);
+        AssetDatabase.CreateAsset(effect, assetPath);
+
+        skill.EffectEntries ??= new List<SkillEffectEntry>();
+        skill.EffectEntries.Add(
+            new SkillEffectEntry
+            {
+                Definition = effect,
+                Overrides = new SkillEffectOverrides()
+            });
+
         EditorUtility.SetDirty(skill);
         AssetDatabase.SaveAssets();
+
+        Selection.activeObject = effect;
+        EditorGUIUtility.PingObject(effect);
     }
 
     private void AddBundleObject(string propertyName, Type type)
@@ -1985,6 +2020,8 @@ public sealed class ProjectAbyssCharacterStudio : EditorWindow
         if (bundle.CombatLoadout != null) EditorUtility.SetDirty(bundle.CombatLoadout);
         if (bundle.SkillSet != null) EditorUtility.SetDirty(bundle.SkillSet);
         if (bundle.VisualProfile != null) EditorUtility.SetDirty(bundle.VisualProfile);
+        if (bundle.PresentationProfile != null)
+            EditorUtility.SetDirty(bundle.PresentationProfile);
 
         foreach (SkillDefinition skill in bundle.EnumerateSkillDefinitions())
             if (skill != null) EditorUtility.SetDirty(skill);

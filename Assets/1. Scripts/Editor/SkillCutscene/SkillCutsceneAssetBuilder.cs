@@ -111,8 +111,8 @@ public static class SkillCutsceneAssetBuilder
             addDefaultClips: true);
 
         foreach (SkillCutsceneSegment segment in
-                 (SkillCutsceneSegment[])Enum.GetValues(
-                     typeof(SkillCutsceneSegment)))
+                 SkillCutsceneSegmentUtility
+                     .EnumerateActiveAttackerSegments())
         {
             TimelineAsset timeline =
                 segment == SkillCutsceneSegment.Action
@@ -122,9 +122,7 @@ public static class SkillCutsceneAssetBuilder
             EnsureTimelineStructure(
                 definition,
                 timeline,
-                addDefaultClips:
-                    segment == SkillCutsceneSegment.Action ||
-                    segment == SkillCutsceneSegment.ClashAttack);
+                addDefaultClips: true);
 
             EnsureSegmentDefaults(
                 definition,
@@ -152,6 +150,13 @@ public static class SkillCutsceneAssetBuilder
     {
         if (definition == null)
             return null;
+
+        if (!SkillCutsceneSegmentUtility
+                .IsActiveAttackerSegment(segment))
+        {
+            // Legacy PartBreak / Kill / Return Timeline은 더 이상 신규 생성하지 않습니다.
+            return definition.GetTimeline(segment);
+        }
 
         TimelineAsset existing =
             definition.GetTimeline(
@@ -197,36 +202,15 @@ public static class SkillCutsceneAssetBuilder
                 segment,
                 folder);
 
-        switch (segment)
+        if (segment == SkillCutsceneSegment.ClashAttack)
         {
-            case SkillCutsceneSegment
-                .ClashAttack:
-                definition
-                    .ClashAttackTimeline =
-                        timeline;
-                break;
-
-            case SkillCutsceneSegment
-                .PartBreak:
-                definition
-                    .PartBreakTimeline =
-                        timeline;
-                break;
-
-            case SkillCutsceneSegment.Kill:
-                definition.KillTimeline =
-                    timeline;
-                break;
-
-            case SkillCutsceneSegment.Return:
-                definition.ReturnTimeline =
-                    timeline;
-                break;
-
-            default:
-                definition.ActionTimeline =
-                    timeline;
-                break;
+            definition.ClashAttackTimeline =
+                timeline;
+        }
+        else
+        {
+            definition.ActionTimeline =
+                timeline;
         }
 
         EnsureTimelineStructure(
@@ -283,14 +267,17 @@ public static class SkillCutsceneAssetBuilder
                     null,
                     AttackerTrackName);
 
-        AnimationTrack targetTrack =
+        AnimationTrack legacyTargetTrack =
             FindTrack<AnimationTrack>(
                 timeline,
-                TargetTrackName) ??
-            timeline.CreateTrack<
-                AnimationTrack>(
-                    null,
-                    TargetTrackName);
+                TargetTrackName);
+
+        if (legacyTargetTrack != null &&
+            !legacyTargetTrack.GetClips().Any())
+        {
+            timeline.DeleteTrack(
+                legacyTargetTrack);
+        }
 
         SkillCameraTimelineTrack
             cameraTrack =
@@ -368,30 +355,6 @@ public static class SkillCutsceneAssetBuilder
                 Math.Max(
                     timeline.fixedDuration,
                     animationClip.duration);
-        }
-
-        if (!targetTrack.GetClips()
-            .Any() &&
-            definition.TargetAnimation !=
-            null)
-        {
-            TimelineClip targetClip =
-                targetTrack.CreateClip(
-                    definition
-                        .TargetAnimation);
-
-            targetClip.start =
-                0d;
-
-            targetClip.duration =
-                definition
-                    .TargetAnimation
-                    .length;
-
-            timeline.fixedDuration =
-                Math.Max(
-                    timeline.fixedDuration,
-                    targetClip.duration);
         }
 
         if (!cameraTrack.GetClips()

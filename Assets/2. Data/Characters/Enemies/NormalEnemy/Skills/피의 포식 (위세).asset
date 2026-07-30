@@ -44,6 +44,8 @@ MonoBehaviour:
     ChinchiroArashiPower: 24
     JudgmentModifier: 0
     ReuseValueAcrossAction: 0
+    OnWinEffectEntries: []
+    OnLoseEffectEntries: []
     OnWinEffects: []
     OnLoseEffects: []
   - Index: 1
@@ -64,6 +66,8 @@ MonoBehaviour:
     ChinchiroArashiPower: 24
     JudgmentModifier: 0
     ReuseValueAcrossAction: 0
+    OnWinEffectEntries: []
+    OnLoseEffectEntries: []
     OnWinEffects: []
     OnLoseEffects: []
   - Index: 2
@@ -84,6 +88,8 @@ MonoBehaviour:
     ChinchiroArashiPower: 24
     JudgmentModifier: 0
     ReuseValueAcrossAction: 0
+    OnWinEffectEntries: []
+    OnLoseEffectEntries: []
     OnWinEffects: []
     OnLoseEffects: []
   ExchangeRollCount: 3
@@ -93,6 +99,7 @@ MonoBehaviour:
     PreviewText: 
     Timing: 2
     TriggerAfterRollIndex: 0
+    EffectEntries: []
     Effects: []
   ResolvePrestigeInCombat: 0
   OverrideCanClash: 0
@@ -110,6 +117,51 @@ MonoBehaviour:
   ChinchiroShigoroBonus: 6
   ChinchiroHifumiPenalty: 1
   ChinchiroHifumiSelfDamage: 1
+  EffectEntries:
+  - Definition: {fileID: 11400000, guid: e997848a15141cc4294352e3aea52083, type: 2}
+    Overrides:
+      OverrideStack: 0
+      Stack: 1
+      OverrideDuration: 0
+      Duration: 3
+      OverrideAmount: 0
+      Amount: 1
+      OverrideMinimum: 0
+      Minimum: 0
+      OverrideMaximum: 0
+      Maximum: 999
+      OverrideFlatValue: 1
+      FlatValue: 0
+      OverrideMultiplier: 1
+      Multiplier: 1
+      OverrideResourceKey: 0
+      ResourceKey: 
+      OverrideForceCharacterStatus: 0
+      ForceCharacterStatus: 0
+      OverrideGiveToSelectedTarget: 0
+      GiveToSelectedTarget: 0
+  - Definition: {fileID: 11400000, guid: a200abf019adbe645837091fe29ea897, type: 2}
+    Overrides:
+      OverrideStack: 1
+      Stack: 2
+      OverrideDuration: 1
+      Duration: 3
+      OverrideAmount: 0
+      Amount: 1
+      OverrideMinimum: 0
+      Minimum: 0
+      OverrideMaximum: 0
+      Maximum: 999
+      OverrideFlatValue: 0
+      FlatValue: 0
+      OverrideMultiplier: 0
+      Multiplier: 1
+      OverrideResourceKey: 0
+      ResourceKey: 
+      OverrideForceCharacterStatus: 0
+      ForceCharacterStatus: 0
+      OverrideGiveToSelectedTarget: 0
+      GiveToSelectedTarget: 0
   Effects:
   - {fileID: 11400000, guid: faacc00a12e67cb49a20b6c972ff1cd7, type: 2}
   - {fileID: 11400000, guid: c709f54ed5bb5934eae625088ed3d772, type: 2}

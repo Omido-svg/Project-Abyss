@@ -37,9 +37,12 @@ public sealed class SkillRollData
     [Tooltip("같은 굴림 인덱스의 값을 행동 전체에서 재사용합니다.")]
     public bool ReuseValueAcrossAction;
 
-    [Header("Per-roll effects")]
-    public List<SkillEffectDefinition> OnWinEffects = new();
-    public List<SkillEffectDefinition> OnLoseEffects = new();
+    [Header("Per-roll effects — reusable template + parameters")]
+    public List<SkillEffectEntry> OnWinEffectEntries = new();
+    public List<SkillEffectEntry> OnLoseEffectEntries = new();
+
+    [HideInInspector] public List<SkillEffectDefinition> OnWinEffects = new();
+    [HideInInspector] public List<SkillEffectDefinition> OnLoseEffects = new();
 
     public int SafeMinPower => Mathf.Max(0, Mathf.Min(MinPower, MaxPower));
     public int SafeMaxPower => Mathf.Max(SafeMinPower, Mathf.Max(MinPower, MaxPower));
@@ -56,6 +59,8 @@ public sealed class SkillRollData
         CoinFrontPower = Mathf.Max(0, CoinFrontPower);
         SlotMinimum = Mathf.Clamp(SlotMinimum, 1, 9);
         SlotMaximum = Mathf.Clamp(SlotMaximum, SlotMinimum, 9);
+        OnWinEffectEntries ??= new List<SkillEffectEntry>();
+        OnLoseEffectEntries ??= new List<SkillEffectEntry>();
         OnWinEffects ??= new List<SkillEffectDefinition>();
         OnLoseEffects ??= new List<SkillEffectDefinition>();
     }

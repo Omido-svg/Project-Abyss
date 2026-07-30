@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.Serialization;
 
 [CreateAssetMenu(
     menuName = "Battle/VFX/Persistent VFX Definition",
@@ -8,7 +9,7 @@ public class PersistentBattleVfxDefinition : ScriptableObject
     [Header("Identity")]
     public string Key = "Aura";
 
-    [Header("Prefab")]
+    [Header("VFX Graph Prefab")]
     public GameObject Prefab;
 
     [Header("Pooling")]
@@ -29,7 +30,10 @@ public class PersistentBattleVfxDefinition : ScriptableObject
     [Header("Lifetime")]
     public bool ParentToAnchor = true;
     public bool PlayOnSpawn = true;
-    public bool StopParticleSystemsOnRemove = true;
+
+    [FormerlySerializedAs("StopParticleSystemsOnRemove")]
+    public bool StopVisualEffectsOnRemove = true;
+
     [Min(0f)] public float DestroyDelay = 0.5f;
 
     private void OnValidate()

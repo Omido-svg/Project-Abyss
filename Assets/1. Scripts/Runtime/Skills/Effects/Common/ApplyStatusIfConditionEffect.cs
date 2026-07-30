@@ -15,6 +15,13 @@ public class ApplyStatusIfConditionEffect : SkillEffectDefinition
     public override void Apply(
         SkillEffectContext context)
     {
+        Apply(context, null);
+    }
+
+    public override void Apply(
+        SkillEffectContext context,
+        SkillEffectOverrides overrides)
+    {
         if (context?.Resolver == null ||
             context.Owner == null ||
             context.Target == null)
@@ -25,13 +32,17 @@ public class ApplyStatusIfConditionEffect : SkillEffectDefinition
         StatusEffect effect =
             StatusEffectFactory.Create(
                 StatusEffectId,
-                Stack,
-                Duration);
+                overrides?.ResolveStack(Stack) ?? Stack,
+                overrides?.ResolveDuration(Duration) ?? Duration);
 
         if (effect == null)
             return;
 
-        if (!ForceCharacterStatus &&
+        bool forceCharacterStatus =
+            overrides?.ResolveForceCharacterStatus(ForceCharacterStatus) ??
+            ForceCharacterStatus;
+
+        if (!forceCharacterStatus &&
             context.TargetPart != null)
         {
             context.Resolver.ApplyBodyPartStatus(

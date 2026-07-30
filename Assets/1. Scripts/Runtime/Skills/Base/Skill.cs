@@ -482,28 +482,55 @@ public abstract class Skill
         }
 
         SkillRollData data = GetRollData(rollIndex);
-        IReadOnlyList<SkillEffectDefinition> effects = won
+        IReadOnlyList<SkillEffectEntry> effectEntries = won
+            ? data?.OnWinEffectEntries
+            : data?.OnLoseEffectEntries;
+        IReadOnlyList<SkillEffectDefinition> legacyEffects = won
             ? data?.OnWinEffects
             : data?.OnLoseEffects;
 
-        ExecuteExplicitEffects(
-            effects,
-            action,
-            won ? SkillEffectTiming.OnRollWin : SkillEffectTiming.OnRollLose,
-            opponentAction,
-            damageContext);
+        if (HasValidEffectEntries(effectEntries))
+        {
+            ExecuteExplicitEffects(
+                effectEntries,
+                action,
+                won ? SkillEffectTiming.OnRollWin : SkillEffectTiming.OnRollLose,
+                opponentAction,
+                damageContext);
+        }
+        else
+        {
+            ExecuteExplicitEffects(
+                legacyEffects,
+                action,
+                won ? SkillEffectTiming.OnRollWin : SkillEffectTiming.OnRollLose,
+                opponentAction,
+                damageContext);
+        }
 
         MultiRollPenaltyData penalty = RuntimeDefinition?.MultiRollPenalty;
         if (penalty?.HasExecutableEffect == true &&
             penalty.Timing == MultiRollPenaltyTiming.AfterRoll &&
             penalty.TriggerAfterRollIndex == rollIndex)
         {
-            ExecuteExplicitEffects(
-                penalty.Effects,
-                action,
-                SkillEffectTiming.OnMultiRollPenaltyAfterRoll,
-                opponentAction,
-                damageContext);
+            if (HasValidEffectEntries(penalty.EffectEntries))
+            {
+                ExecuteExplicitEffects(
+                    penalty.EffectEntries,
+                    action,
+                    SkillEffectTiming.OnMultiRollPenaltyAfterRoll,
+                    opponentAction,
+                    damageContext);
+            }
+            else
+            {
+                ExecuteExplicitEffects(
+                    penalty.Effects,
+                    action,
+                    SkillEffectTiming.OnMultiRollPenaltyAfterRoll,
+                    opponentAction,
+                    damageContext);
+            }
         }
     }
 
@@ -522,7 +549,48 @@ public abstract class Skill
             _ => SkillEffectTiming.OnMultiRollPenaltyEnd
         };
 
-        ExecuteExplicitEffects(penalty.Effects, action, effectTiming);
+        if (HasValidEffectEntries(penalty.EffectEntries))
+            ExecuteExplicitEffects(penalty.EffectEntries, action, effectTiming);
+        else
+            ExecuteExplicitEffects(penalty.Effects, action, effectTiming);
+    }
+
+    private static bool HasValidEffectEntries(
+        IReadOnlyList<SkillEffectEntry> entries)
+    {
+        if (entries == null)
+            return false;
+
+        for (int i = 0; i < entries.Count; i++)
+        {
+            if (entries[i]?.Definition != null)
+                return true;
+        }
+
+        return false;
+    }
+
+    private void ExecuteExplicitEffects(
+        IReadOnlyList<SkillEffectEntry> effects,
+        BattleAction action,
+        SkillEffectTiming timing,
+        BattleAction opponentAction = null,
+        DamageContext damageContext = null)
+    {
+        if (effects == null || action == null || RuntimeDefinition == null)
+            return;
+
+        SkillEffectContext context = new SkillEffectContext(
+            action,
+            RuntimeDefinition,
+            timing,
+            opponentAction,
+            damageContext,
+            null,
+            UseCountThisTurn);
+
+        foreach (SkillEffectEntry entry in effects)
+            entry?.TryApply(context, timing);
     }
 
     private void ExecuteExplicitEffects(
@@ -559,8 +627,9 @@ public abstract class Skill
         SkillDefinition definition = RuntimeDefinition;
 
         if (definition == null ||
-            definition.Effects == null ||
-            action == null)
+            action == null ||
+            (!definition.HasEffectEntries &&
+             (definition.Effects == null || definition.Effects.Count == 0)))
         {
             return Array.Empty<SkillEffectResult>();
         }
@@ -587,14 +656,14 @@ public abstract class Skill
 
             List<SkillEffectResult> results = new();
 
-            foreach (SkillEffectDefinition effect
-                     in definition.Effects)
+            foreach (SkillEffectEntry entry
+                     in definition.EnumerateEffectEntries())
             {
-                if (effect == null)
+                if (entry?.Definition == null)
                     continue;
 
                 SkillEffectResult result =
-                    effect.TryApply(
+                    entry.TryApply(
                         context,
                         timing);
 

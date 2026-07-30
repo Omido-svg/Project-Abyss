@@ -8,9 +8,9 @@ using UnityEngine.Timeline;
 /// <summary>
 /// 스킬의 Presentation 단일 원본.
 ///
-/// v7.0부터 Camera/Cutscene 중간 ScriptableObject를 거치지 않고
-/// 이 에셋 하나가 5-Segment Timeline, Camera Rig, Hit/Announcement,
-/// Camera Impact, VFX 호환 데이터와 이동 규칙을 모두 소유한다.
+/// v8.0부터 스킬은 공격자 중심 Action / ClashAttack Timeline만 소유한다.
+/// 합 접근·대치·승패·재정렬은 CharacterPresentationProfile과 공통 합 진행자가,
+/// 피격·부위 파괴·사망 반응은 타깃 자신의 Presentation Profile이 소유한다.
 ///
 /// SkillDefinition은 게임플레이 원본, SkillVisualDefinition은 연출 원본으로
 /// 책임을 두 단계로 고정한다.
@@ -27,19 +27,38 @@ public class SkillVisualDefinition : ScriptableObject
     [Tooltip("캐릭터 전용 연출이면 false. 기본 프로필 폴백으로 사용되지 않습니다.")]
     public bool AllowAsProfileFallback = false;
 
-    [Header("Required Timeline Set")]
+    [Header("Active Attacker Timeline Set")]
+    [Tooltip("합이 아닌 일반 행동에서 재생하는 공격자 중심 Timeline입니다.")]
     public TimelineAsset ActionTimeline;
+
+    [Tooltip("합 교환에서 승리한 뒤 재생하는 공격자 중심 Timeline입니다.")]
     public TimelineAsset ClashAttackTimeline;
-    public TimelineAsset PartBreakTimeline;
-    public TimelineAsset KillTimeline;
-    public TimelineAsset ReturnTimeline;
+
+    [Header("Legacy Timeline References (Inactive)")]
+    [SerializeField, HideInInspector]
+    private TimelineAsset PartBreakTimeline;
+
+    [SerializeField, HideInInspector]
+    private TimelineAsset KillTimeline;
+
+    [SerializeField, HideInInspector]
+    private TimelineAsset ReturnTimeline;
 
     [Header("Required Camera Rig")]
     public GameObject CameraRigPrefab;
 
     [Header("Authoring Animation")]
     public AnimationClip AttackerAnimation;
-    public AnimationClip TargetAnimation;
+
+    [SerializeField, HideInInspector]
+    private AnimationClip TargetAnimation;
+
+    [Header("Target Reaction Request")]
+    [Tooltip(
+        "Hit Event가 타깃에게 요청할 의미 기반 피격 반응입니다. " +
+        "실제 AnimationClip은 타깃 자신의 CharacterPresentationProfile이 선택합니다.")]
+    public HitReactionKey TargetReaction =
+        HitReactionKey.HeavyHit;
 
     [Header("Frame Authoring")]
     [Min(1f)] public double AuthoringFrameRate = 30d;
@@ -130,9 +149,6 @@ public class SkillVisualDefinition : ScriptableObject
     public bool HasCompleteTimelineSet =>
         ActionTimeline != null &&
         ClashAttackTimeline != null &&
-        PartBreakTimeline != null &&
-        KillTimeline != null &&
-        ReturnTimeline != null &&
         CameraRigPrefab != null;
 
     public TimelineAsset GetTimeline(SkillCutsceneSegment segment)
@@ -155,11 +171,19 @@ public class SkillVisualDefinition : ScriptableObject
         List<string> result = new();
         if (ActionTimeline == null) result.Add("Action Timeline");
         if (ClashAttackTimeline == null) result.Add("ClashAttack Timeline");
-        if (PartBreakTimeline == null) result.Add("PartBreak Timeline");
-        if (KillTimeline == null) result.Add("Kill Timeline");
-        if (ReturnTimeline == null) result.Add("Return Timeline");
         if (CameraRigPrefab == null) result.Add("Camera Rig Prefab");
         return result;
+    }
+
+    /// <summary>
+    /// 기존 데이터 손실 방지와 마이그레이션 검사만을 위한 참조입니다.
+    /// 런타임 재생 시퀀스에는 포함되지 않습니다.
+    /// </summary>
+    public IEnumerable<TimelineAsset> EnumerateLegacyTimelines()
+    {
+        if (PartBreakTimeline != null) yield return PartBreakTimeline;
+        if (KillTimeline != null) yield return KillTimeline;
+        if (ReturnTimeline != null) yield return ReturnTimeline;
     }
 
     public SkillCameraImpactPulse FindImpactPulse(
@@ -234,6 +258,9 @@ public class SkillVisualDefinition : ScriptableObject
         VfxCues ??= new List<BattleVfxCue>();
         RequiredAnimatorStates ??= new List<string>();
         HitShake ??= new BattleCameraShakeSettings();
+
+        if (!HasHitFrameDamage)
+            TargetReaction = HitReactionKey.None;
         MoveSettings ??= new CharacterActionMoveSettings();
 
         HitShake.Sanitize();

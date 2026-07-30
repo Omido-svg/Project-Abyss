@@ -1,7 +1,11 @@
 {
-  "schemaVersion": "1.0",
+  "schemaVersion": "2.0",
   "name": "VFX_Abyss_BloodHit_Burst",
   "description": "공격이 적중한 순간 상처 지점에서 전방으로 피방울, 미세 분무, 어두운 혈괴가 튀는 1회성 출혈 타격 VFX",
+  "buildMode": "Structured",
+  "templateAssetPath": "",
+  "preserveTemplateGraph": true,
+  "requiredCapabilities": [],
   "systems": [
     {
       "name": "WoundFlash",
@@ -47,8 +51,19 @@
         "a": 0.68
       },
       "blendMode": "Additive",
+      "outputMode": "Quad",
       "textureAssetPath": "Assets/VFX/Textures/AIExamples/Blood/TX_Abyss_Blood_ImpactFlash.png",
-      "orientToVelocity": false
+      "meshAssetPath": "",
+      "meshSubAssetName": "",
+      "materialAssetPath": "",
+      "shaderGraphAssetPath": "",
+      "useFlipbook": false,
+      "flipbookColumns": 1,
+      "flipbookRows": 1,
+      "flipbookBlend": false,
+      "orientationMode": "FaceCameraPlane",
+      "orientToVelocity": false,
+      "capabilities": []
     },
     {
       "name": "HeavyDrops",
@@ -94,8 +109,19 @@
         "a": 0.98
       },
       "blendMode": "Alpha",
+      "outputMode": "Quad",
       "textureAssetPath": "Assets/VFX/Textures/AIExamples/Blood/TX_Abyss_Blood_Drop.png",
-      "orientToVelocity": false
+      "meshAssetPath": "",
+      "meshSubAssetName": "",
+      "materialAssetPath": "",
+      "shaderGraphAssetPath": "",
+      "useFlipbook": false,
+      "flipbookColumns": 1,
+      "flipbookRows": 1,
+      "flipbookBlend": false,
+      "orientationMode": "FaceCameraPlane",
+      "orientToVelocity": false,
+      "capabilities": []
     },
     {
       "name": "FineSpray",
@@ -141,8 +167,19 @@
         "a": 0.95
       },
       "blendMode": "Alpha",
+      "outputMode": "Quad",
       "textureAssetPath": "Assets/VFX/Textures/AIExamples/Blood/TX_Abyss_Blood_FineDrop.png",
-      "orientToVelocity": false
+      "meshAssetPath": "",
+      "meshSubAssetName": "",
+      "materialAssetPath": "",
+      "shaderGraphAssetPath": "",
+      "useFlipbook": false,
+      "flipbookColumns": 1,
+      "flipbookRows": 1,
+      "flipbookBlend": false,
+      "orientationMode": "FaceCameraPlane",
+      "orientToVelocity": false,
+      "capabilities": []
     },
     {
       "name": "DarkClots",
@@ -188,8 +225,19 @@
         "a": 1.0
       },
       "blendMode": "Alpha",
+      "outputMode": "Quad",
       "textureAssetPath": "Assets/VFX/Textures/AIExamples/Blood/TX_Abyss_Blood_Clot.png",
-      "orientToVelocity": false
+      "meshAssetPath": "",
+      "meshSubAssetName": "",
+      "materialAssetPath": "",
+      "shaderGraphAssetPath": "",
+      "useFlipbook": false,
+      "flipbookColumns": 1,
+      "flipbookRows": 1,
+      "flipbookBlend": false,
+      "orientationMode": "FaceCameraPlane",
+      "orientToVelocity": false,
+      "capabilities": []
     },
     {
       "name": "BloodMist",
@@ -235,8 +283,21 @@
         "a": 0.48
       },
       "blendMode": "Alpha",
+      "outputMode": "Quad",
       "textureAssetPath": "Assets/VFX/Textures/AIExamples/Blood/TX_Abyss_Blood_Mist.png",
-      "orientToVelocity": false
+      "meshAssetPath": "",
+      "meshSubAssetName": "",
+      "materialAssetPath": "",
+      "shaderGraphAssetPath": "",
+      "useFlipbook": false,
+      "flipbookColumns": 1,
+      "flipbookRows": 1,
+      "flipbookBlend": false,
+      "orientationMode": "FaceCameraPlane",
+      "orientToVelocity": false,
+      "capabilities": []
     }
-  ]
+  ],
+  "sceneObjects": [],
+  "exposedOverrides": []
 }

@@ -28,7 +28,7 @@ public static class ProjectAbyssVFXExporter
         "Project_Abyss_VFX_Text_Assets_For_AI.txt";
 
     private const string MenuPath =
-        "Tools/Project Abyss/Export VFX Context for AI";
+        "Tools/Project Abyss/Exports/Export VFX Context for AI";
 
     private const long MaximumTextAssetBytes =
         4L * 1024L * 1024L;
@@ -150,21 +150,24 @@ public static class ProjectAbyssVFXExporter
                 $"Catalog     : {normalizedCatalogPath}\n" +
                 $"Text Bundle : {normalizedTextPath}");
 
-            EditorUtility.DisplayDialog(
-                "VFX Context Export Complete",
-                $"VFX AI 컨텍스트 내보내기가 완료되었습니다.\n\n" +
-                $"VFX Assets: {report.summary.assetCount}\n" +
-                $"VFX Graphs: {report.summary.graphCount}\n" +
-                $"VFX Prefabs: {report.summary.prefabCount}\n" +
-                $"Recipes: {report.summary.recipeCount}\n" +
-                $"Reverse References: {report.summary.reverseReferenceCount}\n" +
-                $"Errors: {report.errors.Count}\n\n" +
-                $"{normalizedCatalogPath}\n" +
-                $"{normalizedTextPath}",
-                "확인");
+            if (!ProjectAbyssExportSession.IsBatch)
+            {
+                EditorUtility.DisplayDialog(
+                    "VFX Context Export Complete",
+                    $"VFX AI 컨텍스트 내보내기가 완료되었습니다.\n\n" +
+                    $"VFX Assets: {report.summary.assetCount}\n" +
+                    $"VFX Graphs: {report.summary.graphCount}\n" +
+                    $"VFX Prefabs: {report.summary.prefabCount}\n" +
+                    $"Recipes: {report.summary.recipeCount}\n" +
+                    $"Reverse References: {report.summary.reverseReferenceCount}\n" +
+                    $"Errors: {report.errors.Count}\n\n" +
+                    $"{normalizedCatalogPath}\n" +
+                    $"{normalizedTextPath}",
+                    "확인");
 
-            EditorUtility.RevealInFinder(
-                catalogPath);
+                EditorUtility.RevealInFinder(
+                    catalogPath);
+            }
         }
         catch (OperationCanceledException)
         {

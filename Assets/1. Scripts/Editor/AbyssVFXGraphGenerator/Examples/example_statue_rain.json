@@ -1,0 +1,61 @@
+{
+  "schemaVersion": "2.0",
+  "name": "StatueRainComposite",
+  "description": "석상 Mesh가 중심에 배치되고 석상 위에서 빗방울 파티클이 떨어지는 복합 VFX 예시",
+  "buildMode": "Structured",
+  "templateAssetPath": "",
+  "preserveTemplateGraph": true,
+  "requiredCapabilities": [
+    "Mesh",
+    "MultipleOutputs",
+    "Collision"
+  ],
+  "systems": [
+    {
+      "name": "Rain",
+      "spawnMode": "Rate",
+      "capacity": 8192,
+      "spawnCount": 1.0,
+      "spawnRate": 900.0,
+      "lifetime": { "min": 0.7, "max": 1.4 },
+      "size": { "min": 0.01, "max": 0.025 },
+      "positionMode": "Box",
+      "spawnBoxExtents": { "x": 1.5, "y": 0.15, "z": 1.5 },
+      "velocityMode": "Directional",
+      "direction": { "x": 0.0, "y": -1.0, "z": 0.0 },
+      "speed": { "min": 8.0, "max": 14.0 },
+      "spread": 0.05,
+      "gravity": { "x": 0.0, "y": -4.0, "z": 0.0 },
+      "drag": 0.0,
+      "startColor": { "r": 0.55, "g": 0.7, "b": 0.9, "a": 0.7 },
+      "blendMode": "Alpha",
+      "outputMode": "Quad",
+      "textureAssetPath": "Assets/VFX/Textures/RainDrop.png",
+      "meshAssetPath": "",
+      "meshSubAssetName": "",
+      "materialAssetPath": "",
+      "shaderGraphAssetPath": "",
+      "useFlipbook": false,
+      "flipbookColumns": 1,
+      "flipbookRows": 1,
+      "flipbookBlend": false,
+      "orientationMode": "OrientToVelocity",
+      "orientToVelocity": true,
+      "capabilities": []
+    }
+  ],
+  "sceneObjects": [
+    {
+      "name": "Statue",
+      "meshAssetPath": "Assets/VFX/Meshes/Statue.fbx",
+      "meshSubAssetName": "Statue",
+      "materialAssetPath": "Assets/VFX/Materials/Statue.mat",
+      "localPosition": { "x": 0.0, "y": 0.0, "z": 0.0 },
+      "localEulerAngles": { "x": 0.0, "y": 0.0, "z": 0.0 },
+      "localScale": { "x": 1.0, "y": 1.0, "z": 1.0 },
+      "castShadows": true,
+      "receiveShadows": true
+    }
+  ],
+  "exposedOverrides": []
+}

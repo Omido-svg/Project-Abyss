@@ -1,7 +1,11 @@
 {
-  "schemaVersion": "1.0",
+  "schemaVersion": "2.0",
   "name": "VFX_Abyss_DarkRed_SwordWave",
   "description": "카메라를 향하는 초승달형 검기가 +Z 방향으로 짧게 전진하며 붉은 파편과 검은 연무를 남기는 예제",
+  "buildMode": "Structured",
+  "templateAssetPath": "",
+  "preserveTemplateGraph": true,
+  "requiredCapabilities": [],
   "systems": [
     {
       "name": "SlashCore",
@@ -47,8 +51,19 @@
         "a": 1.0
       },
       "blendMode": "Additive",
+      "outputMode": "Quad",
       "textureAssetPath": "Assets/VFX/Textures/AIExamples/TX_Abyss_SwordSlash_Arc.png",
-      "orientToVelocity": false
+      "meshAssetPath": "",
+      "meshSubAssetName": "",
+      "materialAssetPath": "",
+      "shaderGraphAssetPath": "",
+      "useFlipbook": false,
+      "flipbookColumns": 1,
+      "flipbookRows": 1,
+      "flipbookBlend": false,
+      "orientationMode": "FaceCameraPlane",
+      "orientToVelocity": false,
+      "capabilities": []
     },
     {
       "name": "SlashEdgeGlow",
@@ -94,8 +109,19 @@
         "a": 0.72
       },
       "blendMode": "Additive",
+      "outputMode": "Quad",
       "textureAssetPath": "Assets/VFX/Textures/AIExamples/TX_Abyss_SwordSlash_Arc.png",
-      "orientToVelocity": false
+      "meshAssetPath": "",
+      "meshSubAssetName": "",
+      "materialAssetPath": "",
+      "shaderGraphAssetPath": "",
+      "useFlipbook": false,
+      "flipbookColumns": 1,
+      "flipbookRows": 1,
+      "flipbookBlend": false,
+      "orientationMode": "FaceCameraPlane",
+      "orientToVelocity": false,
+      "capabilities": []
     },
     {
       "name": "ForwardSparks",
@@ -141,8 +167,19 @@
         "a": 1.0
       },
       "blendMode": "Additive",
+      "outputMode": "Quad",
       "textureAssetPath": "Assets/VFX/Textures/AIExamples/TX_Abyss_Spark.png",
-      "orientToVelocity": false
+      "meshAssetPath": "",
+      "meshSubAssetName": "",
+      "materialAssetPath": "",
+      "shaderGraphAssetPath": "",
+      "useFlipbook": false,
+      "flipbookColumns": 1,
+      "flipbookRows": 1,
+      "flipbookBlend": false,
+      "orientationMode": "FaceCameraPlane",
+      "orientToVelocity": false,
+      "capabilities": []
     },
     {
       "name": "DarkMist",
@@ -188,8 +225,21 @@
         "a": 0.52
       },
       "blendMode": "Alpha",
+      "outputMode": "Quad",
       "textureAssetPath": "Assets/VFX/Textures/AIExamples/TX_Abyss_Mist.png",
-      "orientToVelocity": false
+      "meshAssetPath": "",
+      "meshSubAssetName": "",
+      "materialAssetPath": "",
+      "shaderGraphAssetPath": "",
+      "useFlipbook": false,
+      "flipbookColumns": 1,
+      "flipbookRows": 1,
+      "flipbookBlend": false,
+      "orientationMode": "FaceCameraPlane",
+      "orientToVelocity": false,
+      "capabilities": []
     }
-  ]
+  ],
+  "sceneObjects": [],
+  "exposedOverrides": []
 }

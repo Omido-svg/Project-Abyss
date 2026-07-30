@@ -34,6 +34,7 @@ public sealed class CharacterAuthoringBundle : ScriptableObject
     [Header("Presentation")]
     [SerializeField] private Character characterPrefab;
     [SerializeField] private SkillVisualProfile visualProfile;
+    [SerializeField] private CharacterPresentationProfile presentationProfile;
     [SerializeField] private RuntimeAnimatorController animatorController;
     [SerializeField] private Avatar avatar;
     [SerializeField] private bool overrideAnimatorController;
@@ -65,6 +66,7 @@ public sealed class CharacterAuthoringBundle : ScriptableObject
     public ScriptableObject SkillSet => skillSet;
     public Character CharacterPrefab => characterPrefab;
     public SkillVisualProfile VisualProfile => visualProfile;
+    public CharacterPresentationProfile PresentationProfile => presentationProfile;
     public RuntimeAnimatorController AnimatorController => animatorController;
     public Avatar Avatar => avatar;
     public bool OverrideAnimatorController => overrideAnimatorController;
@@ -122,6 +124,8 @@ public sealed class CharacterAuthoringBundle : ScriptableObject
 
     public void ConfigureLegacySkillSet(ScriptableObject value) => skillSet = value;
     public void ConfigurePrefab(Character value) => characterPrefab = value;
+    public void ConfigurePresentationProfile(
+        CharacterPresentationProfile value) => presentationProfile = value;
 
     public void ConfigureLoadout(
         IReadOnlyList<CharacterItem> items,

@@ -120,13 +120,13 @@ public class CharacterPersistentVfxController : MonoBehaviour
 
         Stop(
             ResolveKey(definition),
-            definition.StopParticleSystemsOnRemove,
+            definition.StopVisualEffectsOnRemove,
             definition.DestroyDelay);
     }
 
     public void Stop(
         string key,
-        bool stopParticles = true,
+        bool stopEffects = true,
         float destroyDelay = 0.5f)
     {
         if (string.IsNullOrEmpty(key) ||
@@ -137,7 +137,7 @@ public class CharacterPersistentVfxController : MonoBehaviour
 
         activeVfx.Remove(key);
 
-        if (stopParticles)
+        if (stopEffects)
             StopAllEffects(active);
 
         active.Instance?.ReleaseAfter(Mathf.Max(0f, destroyDelay));
@@ -231,9 +231,6 @@ public class CharacterPersistentVfxController : MonoBehaviour
         if (active == null)
             return;
 
-        foreach (ParticleSystem particle in active.Particles)
-            particle?.Play(true);
-
         foreach (VisualEffect visualEffect in active.VisualEffects)
             visualEffect?.Play();
     }
@@ -244,13 +241,6 @@ public class CharacterPersistentVfxController : MonoBehaviour
 
         if (active == null)
             return;
-
-        foreach (ParticleSystem particle in active.Particles)
-        {
-            particle?.Stop(
-                true,
-                ParticleSystemStopBehavior.StopEmitting);
-        }
 
         foreach (VisualEffect visualEffect in active.VisualEffects)
             visualEffect?.Stop();
@@ -264,18 +254,15 @@ public class CharacterPersistentVfxController : MonoBehaviour
         }
 
         public BattleVfxInstance Instance { get; }
-        public List<ParticleSystem> Particles { get; } = new();
         public List<VisualEffect> VisualEffects { get; } = new();
 
         public void RefreshEffects()
         {
-            Particles.Clear();
             VisualEffects.Clear();
 
             if (Instance == null)
                 return;
 
-            Instance.GetComponentsInChildren(true, Particles);
             Instance.GetComponentsInChildren(true, VisualEffects);
         }
     }

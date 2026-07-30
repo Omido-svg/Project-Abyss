@@ -20,6 +20,17 @@ public class ModifyResourceEffect : SkillEffectDefinition
     public override void Apply(
         SkillEffectContext context)
     {
+        Apply(context, null);
+    }
+
+    public override void Apply(
+        SkillEffectContext context,
+        SkillEffectOverrides overrides)
+    {
+        int amount = overrides?.ResolveAmount(Amount) ?? Amount;
+        int minimum = overrides?.ResolveMinimum(Minimum) ?? Minimum;
+        int maximum = overrides?.ResolveMaximum(Maximum) ?? Maximum;
+        string customResourceKey = overrides?.ResolveResourceKey(CustomResourceKey) ?? CustomResourceKey;
         Character target =
             context?.Target ??
             context?.Owner;
@@ -35,17 +46,17 @@ public class ModifyResourceEffect : SkillEffectDefinition
             target.RuntimeStatus.currentPrestige =
                 Mathf.Clamp(
                     target.RuntimeStatus.currentPrestige +
-                    Amount,
-                    Minimum,
-                    target.CurrentStatus?.maxPrestige ?? Maximum);
+                    amount,
+                    minimum,
+                    target.CurrentStatus?.maxPrestige ?? maximum);
             return;
         }
 
         SkillResourceAccess.Modify(
             target,
-            CustomResourceKey,
-            Amount,
-            Minimum,
-            Maximum);
+            customResourceKey,
+            amount,
+            minimum,
+            maximum);
     }
 }

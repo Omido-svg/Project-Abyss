@@ -6,10 +6,20 @@ using UnityEngine;
 public class OlafNormalBleedEffect : SkillEffectDefinition
 {
     [SerializeField, Min(1)]
+    private int stack = 1;
+
+    [SerializeField, Min(1)]
     private int duration = 3;
 
     public override void Apply(
         SkillEffectContext context)
+    {
+        Apply(context, null);
+    }
+
+    public override void Apply(
+        SkillEffectContext context,
+        SkillEffectOverrides overrides)
     {
         if (context?.Owner is not Olaf ||
             context.Target == null ||
@@ -39,12 +49,15 @@ public class OlafNormalBleedEffect : SkillEffectDefinition
         if (madness != null)
             return;
 
-        int bleedAmount = 1;
+        int bleedAmount =
+            overrides?.ResolveStack(stack) ?? stack;
+        int bleedDuration =
+            overrides?.ResolveDuration(duration) ?? duration;
 
         Bleeding bleeding =
             new Bleeding(
                 bleedAmount,
-                duration);
+                bleedDuration);
 
         bool applied;
 
@@ -74,6 +87,6 @@ public class OlafNormalBleedEffect : SkillEffectDefinition
 
         Debug.Log(
             $"{context.Owner.Data.CharacterName} 일반공격 효과 : " +
-            $"출혈 {bleedAmount}, {duration}턴 부여");
+            $"출혈 {bleedAmount}, {bleedDuration}턴 부여");
     }
 }

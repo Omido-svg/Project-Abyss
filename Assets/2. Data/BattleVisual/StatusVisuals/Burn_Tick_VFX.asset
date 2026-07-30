@@ -12,9 +12,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 500e8a6276f78a94e9b03147ee7cd830, type: 3}
   m_Name: Burn_Tick_VFX
   m_EditorClassIdentifier: 
-  EffectPrefab: {fileID: 3910168483410216456, guid: 9916465c522c5a54cbc1829c70b1ae1c, type: 3}
+  EffectPrefab: {fileID: 7691219604639922699, guid: 315005800c37eeb4c91520c3dd191a95, type: 3}
   Lifetime: 1
   DestroyAfterLifetime: 1
+  UseUnscaledLifetime: 0
+  UsePooling: 1
+  PrewarmCount: 0
+  MaxPoolSize: 8
   PositionOffset: {x: 0, y: 0, z: 0}
   RotationOffset: {x: 0, y: 0, z: 0}
   Scale: {x: 1, y: 1, z: 1}

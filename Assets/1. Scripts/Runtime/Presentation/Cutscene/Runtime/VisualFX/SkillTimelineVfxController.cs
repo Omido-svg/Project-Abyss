@@ -328,27 +328,29 @@ public sealed class SkillTimelineVfxController : MonoBehaviour
         if (instance == null)
             return;
 
-        float simulatedTime = Mathf.Max(0f, localTime * playbackSpeed);
-        ParticleSystem[] particles =
-            instance.GetComponentsInChildren<ParticleSystem>(true);
-
-        foreach (ParticleSystem particle in particles)
-        {
-            if (particle == null)
-                continue;
-
-            particle.Simulate(simulatedTime, true, true, true);
-        }
-
+        float safeSpeed = Mathf.Max(0.01f, playbackSpeed);
+        float simulatedTime = Mathf.Max(0f, localTime * safeSpeed);
         VisualEffect[] effects =
             instance.GetComponentsInChildren<VisualEffect>(true);
+
+        const float simulationStep = 1f / 60f;
+        uint stepCount = simulatedTime <= 0f
+            ? 0u
+            : (uint)Mathf.Clamp(
+                Mathf.CeilToInt(simulatedTime / simulationStep),
+                1,
+                1800);
 
         foreach (VisualEffect effect in effects)
         {
             if (effect == null)
                 continue;
 
-            effect.playRate = Mathf.Max(0.01f, playbackSpeed);
+            effect.playRate = safeSpeed;
+            effect.Reinit();
+
+            if (stepCount > 0u)
+                effect.Simulate(simulationStep, stepCount);
         }
     }
 

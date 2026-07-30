@@ -41,6 +41,11 @@ public sealed class CharacterAuthoringBundleEditor : Editor
             bundle.SkillSet,
             typeof(ScriptableObject),
             false);
+        EditorGUILayout.ObjectField(
+            "Character Presentation",
+            bundle.PresentationProfile,
+            typeof(CharacterPresentationProfile),
+            false);
         EditorGUILayout.LabelField(
             "Initial Passives",
             (bundle.EquippedPassives?.Count ?? 0).ToString());

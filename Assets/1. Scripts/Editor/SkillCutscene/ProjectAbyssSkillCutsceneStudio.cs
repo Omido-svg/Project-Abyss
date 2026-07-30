@@ -291,7 +291,7 @@ public sealed class ProjectAbyssSkillCutsceneStudio :
         if (definition == null)
         {
             EditorGUILayout.HelpBox(
-                "통합 SkillVisualDefinition, 필수 5-Segment Timeline, " +
+                "통합 SkillVisualDefinition, 필수 2-Segment 공격자 Timeline, " +
                 "Camera Rig Prefab과 기본 Track을 한 번에 생성합니다.",
                 MessageType.None);
         }
@@ -299,7 +299,7 @@ public sealed class ProjectAbyssSkillCutsceneStudio :
         if (GUILayout.Button(
                 definition == null
                     ? "Create Required Timeline Assets"
-                    : "Repair Complete Timeline Set",
+                    : "Repair Action / ClashAttack Timelines",
                 GUILayout.Height(36f)))
         {
             SkillVisualDefinition created =
@@ -312,7 +312,7 @@ public sealed class ProjectAbyssSkillCutsceneStudio :
             if (created != null)
             {
                 lastMessage =
-                    "Skill Presentation, 5-Segment Timeline, Camera Rig과 " +
+                    "Skill Presentation, Action/ClashAttack Timeline, Camera Rig과 " +
                     "기본 Track 구성을 확인했습니다.";
 
                 lastMessageType =
@@ -336,11 +336,31 @@ public sealed class ProjectAbyssSkillCutsceneStudio :
             "2. Timeline / Preview",
             EditorStyles.boldLabel);
 
-        segment =
-            (SkillCutsceneSegment)
-            EditorGUILayout.EnumPopup(
+        if (!SkillCutsceneSegmentUtility
+                .IsActiveAttackerSegment(segment))
+        {
+            segment = SkillCutsceneSegment.Action;
+        }
+
+        int segmentIndex =
+            segment == SkillCutsceneSegment.ClashAttack
+                ? 1
+                : 0;
+
+        segmentIndex =
+            EditorGUILayout.Popup(
                 "Segment",
-                segment);
+                segmentIndex,
+                new[]
+                {
+                    "Action",
+                    "Clash Attack"
+                });
+
+        segment =
+            segmentIndex == 1
+                ? SkillCutsceneSegment.ClashAttack
+                : SkillCutsceneSegment.Action;
 
         TimelineAsset timeline =
             definition.GetTimeline(
@@ -932,7 +952,7 @@ public sealed class ProjectAbyssSkillCutsceneStudio :
         }
 
         EditorGUILayout.HelpBox(
-            "Hit: 계산된 피해·Damage Number와 현재 타깃의 Hit 상태를 해당 프레임에 재생\n" +
+            "Hit: 계산된 피해·Damage Number와 현재 타깃 Presentation Profile의 반응을 해당 프레임에 재생\n" +
             "Vfx: SkillVisualDefinition의 VFX Cue 실행\n" +
             "CameraShake: Hit Shake 프리셋 실행\n" +
             "CameraImpactPulse: SkillVisualDefinition의 FOV/Impulse 프리셋 실행\n" +
@@ -966,7 +986,7 @@ public sealed class ProjectAbyssSkillCutsceneStudio :
 
         DrawProperty(
             serialized,
-            "TargetAnimation");
+            "TargetReaction");
 
         DrawProperty(
             serialized,
@@ -1004,9 +1024,10 @@ public sealed class ProjectAbyssSkillCutsceneStudio :
             .ApplyModifiedProperties();
 
         EditorGUILayout.HelpBox(
-            "스킬별 Animation Clip은 [Abyss] Attacker Animation Track에 직접 넣습니다. " +
-            "그래서 스킬이 바뀌면 Timeline과 Clip도 함께 바뀌며, Base Animator에 상태가 추가되어도 " +
-            "이 Timeline 에셋의 직접 Clip 참조는 변경되지 않습니다.",
+            "스킬 Timeline은 공격자의 Animation Clip만 소유합니다. " +
+            "Target Reaction은 의미 키만 지정하며 실제 피격 Clip은 현재 타깃의 " +
+            "CharacterPresentationProfile이 선택합니다. 합 접근/대치/승패/재정렬 모션도 " +
+            "스킬 Timeline이 아니라 각 캐릭터 Presentation Profile에서 편집합니다.",
             MessageType.None);
 
         EditorGUILayout.EndVertical();
@@ -1523,16 +1544,6 @@ public sealed class ProjectAbyssSkillCutsceneStudio :
         yield return
             definition
                 .ClashAttackTimeline;
-
-        yield return
-            definition
-                .PartBreakTimeline;
-
-        yield return
-            definition.KillTimeline;
-
-        yield return
-            definition.ReturnTimeline;
     }
 
     public readonly struct CaptureResult

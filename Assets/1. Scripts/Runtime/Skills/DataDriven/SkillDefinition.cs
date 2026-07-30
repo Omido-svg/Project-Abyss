@@ -65,7 +65,11 @@ public class SkillDefinition : ScriptableObject
     [Min(0)] public int ChinchiroHifumiPenalty = 1;
     [Min(0)] public int ChinchiroHifumiSelfDamage = 1;
 
-    [Header("Effects")]
+    [Header("Effects — reusable template + per-skill parameters")]
+    public List<SkillEffectEntry> EffectEntries = new();
+
+    [HideInInspector]
+    [Tooltip("기존 에셋 호환용입니다. 새 스킬은 EffectEntries를 사용하세요.")]
     public List<SkillEffectDefinition> Effects = new();
 
     [Header("Energy Cost — every skill owns its cost")]
@@ -87,6 +91,34 @@ public class SkillDefinition : ScriptableObject
 
     [Header("Visual")]
     public SkillVisualDefinition VisualDefinition;
+
+
+    public bool HasEffectEntries =>
+        EffectEntries != null &&
+        EffectEntries.Exists(entry => entry?.Definition != null);
+
+    public IEnumerable<SkillEffectEntry> EnumerateEffectEntries()
+    {
+        if (HasEffectEntries)
+        {
+            foreach (SkillEffectEntry entry in EffectEntries)
+            {
+                if (entry?.Definition != null)
+                    yield return entry;
+            }
+
+            yield break;
+        }
+
+        if (Effects == null)
+            yield break;
+
+        foreach (SkillEffectDefinition effect in Effects)
+        {
+            if (effect != null)
+                yield return SkillEffectEntry.FromLegacy(effect);
+        }
+    }
 
     public int EffectiveRollCount =>
         Rolls != null && Rolls.Count > 0
@@ -135,6 +167,8 @@ public class SkillDefinition : ScriptableObject
         CoinFrontChance = Mathf.Clamp01(CoinFrontChance);
         Rolls ??= new List<SkillRollData>();
         Keywords ??= new List<SkillKeywordEntry>();
+        EffectEntries ??= new List<SkillEffectEntry>();
+        Effects ??= new List<SkillEffectDefinition>();
         MultiRollPenalty ??= new MultiRollPenaltyData();
         MultiRollPenalty.Sanitize();
         AttackWeight ??= new AttackWeightSettings();

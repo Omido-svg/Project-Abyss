@@ -46,6 +46,8 @@ MonoBehaviour:
     ChinchiroArashiPower: 24
     JudgmentModifier: 0
     ReuseValueAcrossAction: 0
+    OnWinEffectEntries: []
+    OnLoseEffectEntries: []
     OnWinEffects: []
     OnLoseEffects: []
   - Index: 1
@@ -66,6 +68,8 @@ MonoBehaviour:
     ChinchiroArashiPower: 24
     JudgmentModifier: 0
     ReuseValueAcrossAction: 0
+    OnWinEffectEntries: []
+    OnLoseEffectEntries: []
     OnWinEffects: []
     OnLoseEffects: []
   - Index: 2
@@ -86,6 +90,8 @@ MonoBehaviour:
     ChinchiroArashiPower: 24
     JudgmentModifier: 0
     ReuseValueAcrossAction: 0
+    OnWinEffectEntries: []
+    OnLoseEffectEntries: []
     OnWinEffects: []
     OnLoseEffects: []
   ExchangeRollCount: 3
@@ -95,6 +101,7 @@ MonoBehaviour:
     PreviewText: 
     Timing: 2
     TriggerAfterRollIndex: 0
+    EffectEntries: []
     Effects: []
   ResolvePrestigeInCombat: 0
   OverrideCanClash: 0
@@ -112,6 +119,29 @@ MonoBehaviour:
   ChinchiroShigoroBonus: 6
   ChinchiroHifumiPenalty: 1
   ChinchiroHifumiSelfDamage: 1
+  EffectEntries:
+  - Definition: {fileID: 11400000, guid: a200abf019adbe645837091fe29ea897, type: 2}
+    Overrides:
+      OverrideStack: 1
+      Stack: 1
+      OverrideDuration: 1
+      Duration: 3
+      OverrideAmount: 0
+      Amount: 1
+      OverrideMinimum: 0
+      Minimum: 0
+      OverrideMaximum: 0
+      Maximum: 999
+      OverrideFlatValue: 0
+      FlatValue: 0
+      OverrideMultiplier: 0
+      Multiplier: 1
+      OverrideResourceKey: 0
+      ResourceKey: 
+      OverrideForceCharacterStatus: 0
+      ForceCharacterStatus: 0
+      OverrideGiveToSelectedTarget: 0
+      GiveToSelectedTarget: 0
   Effects:
   - {fileID: 11400000, guid: 34bc95e903f945046a515c97cda52fab, type: 2}
   OverrideEnergyCost: 1

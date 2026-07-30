@@ -15,7 +15,7 @@ using UnityEngine.SceneManagement;
 public static class ProjectAbyssHierarchyExporter
 {
     private const string MenuPath =
-        "Tools/Project Abyss/Export Current Hierarchy for AI";
+        "Tools/Project Abyss/Exports/Export Current Hierarchy for AI";
 
     private const string OutputFolderName =
         "AllDataTXT/Hierarchy";
@@ -231,21 +231,24 @@ public static class ProjectAbyssHierarchyExporter
             $"ReadErrors    : {statistics.ReadErrorCount}\n" +
             $"Output        : {normalizedOutputPath}");
 
-        EditorUtility.DisplayDialog(
-            "Hierarchy Export Complete",
-            $"현재 하이어라키를 내보냈습니다.\n\n" +
-            $"Scenes: {statistics.SceneCount}\n" +
-            $"GameObjects: {statistics.ObjectCount}\n" +
-            $"Components: {statistics.ComponentCount}\n" +
-            $"Properties: {statistics.PropertyCount}\n" +
-            $"References: {references.Count}\n" +
-            $"Missing Scripts: {statistics.MissingScriptCount}\n" +
-            $"Read Errors: {statistics.ReadErrorCount}\n\n" +
-            normalizedOutputPath,
-            "확인");
+        if (!ProjectAbyssExportSession.IsBatch)
+        {
+            EditorUtility.DisplayDialog(
+                "Hierarchy Export Complete",
+                $"현재 하이어라키를 내보냈습니다.\n\n" +
+                $"Scenes: {statistics.SceneCount}\n" +
+                $"GameObjects: {statistics.ObjectCount}\n" +
+                $"Components: {statistics.ComponentCount}\n" +
+                $"Properties: {statistics.PropertyCount}\n" +
+                $"References: {references.Count}\n" +
+                $"Missing Scripts: {statistics.MissingScriptCount}\n" +
+                $"Read Errors: {statistics.ReadErrorCount}\n\n" +
+                normalizedOutputPath,
+                "확인");
 
-        EditorUtility.RevealInFinder(
-            outputPath);
+            EditorUtility.RevealInFinder(
+                outputPath);
+        }
     }
 
     private static List<SceneExportInfo> CollectLoadedScenes()

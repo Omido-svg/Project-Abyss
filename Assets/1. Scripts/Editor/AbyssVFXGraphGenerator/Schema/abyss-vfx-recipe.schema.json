@@ -1,31 +1,263 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "Project Abyss VFX Recipe",
+  "$id": "https://project-abyss.local/schemas/abyss-vfx-recipe-2.0.schema.json",
+  "title": "Project Abyss VFX Recipe 2.0",
   "type": "object",
-  "required": ["schemaVersion", "name", "systems"],
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "name",
+    "buildMode",
+    "preserveTemplateGraph",
+    "systems",
+    "sceneObjects",
+    "exposedOverrides"
+  ],
   "properties": {
-    "schemaVersion": { "const": "1.0" },
+    "schemaVersion": { "const": "2.0" },
     "name": { "type": "string", "minLength": 1 },
     "description": { "type": "string" },
+    "buildMode": { "enum": ["Structured", "CloneTemplate"] },
+    "templateAssetPath": { "type": "string" },
+    "preserveTemplateGraph": { "type": "boolean" },
+    "requiredCapabilities": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 },
+      "uniqueItems": true
+    },
     "systems": {
       "type": "array",
-      "minItems": 1,
       "maxItems": 12,
-      "items": {
-        "type": "object",
-        "required": ["name", "spawnMode", "capacity", "lifetime", "size"],
-        "properties": {
-          "name": { "type": "string" },
-          "spawnMode": { "enum": ["Burst", "Rate"] },
-          "capacity": { "type": "integer", "minimum": 1, "maximum": 1000000 },
-          "spawnCount": { "type": "number", "minimum": 0 },
-          "spawnRate": { "type": "number", "minimum": 0 },
-          "positionMode": { "enum": ["Point", "Box"] },
-          "velocityMode": { "enum": ["None", "Radial", "Directional"] },
-          "blendMode": { "enum": ["Alpha", "Additive", "Premultiplied"] },
-          "textureAssetPath": { "type": "string" }
+      "items": { "$ref": "#/$defs/system" }
+    },
+    "sceneObjects": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/sceneObject" }
+    },
+    "exposedOverrides": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/exposedOverride" }
+    }
+  },
+  "$defs": {
+    "range": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["min", "max"],
+      "properties": {
+        "min": { "type": "number" },
+        "max": { "type": "number" }
+      }
+    },
+    "positiveRange": {
+      "allOf": [
+        { "$ref": "#/$defs/range" },
+        {
+          "properties": {
+            "min": { "exclusiveMinimum": 0 },
+            "max": { "exclusiveMinimum": 0 }
+          }
         }
+      ]
+    },
+    "vector3": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["x", "y", "z"],
+      "properties": {
+        "x": { "type": "number" },
+        "y": { "type": "number" },
+        "z": { "type": "number" }
+      }
+    },
+    "color": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["r", "g", "b", "a"],
+      "properties": {
+        "r": { "type": "number" },
+        "g": { "type": "number" },
+        "b": { "type": "number" },
+        "a": { "type": "number" }
+      }
+    },
+    "system": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "spawnMode",
+        "capacity",
+        "spawnCount",
+        "spawnRate",
+        "lifetime",
+        "size",
+        "positionMode",
+        "spawnBoxExtents",
+        "velocityMode",
+        "direction",
+        "speed",
+        "spread",
+        "gravity",
+        "drag",
+        "startColor",
+        "blendMode",
+        "outputMode",
+        "textureAssetPath",
+        "meshAssetPath",
+        "meshSubAssetName",
+        "materialAssetPath",
+        "shaderGraphAssetPath",
+        "useFlipbook",
+        "flipbookColumns",
+        "flipbookRows",
+        "flipbookBlend",
+        "orientationMode",
+        "orientToVelocity",
+        "capabilities"
+      ],
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "spawnMode": { "enum": ["Burst", "Rate"] },
+        "capacity": { "type": "integer", "minimum": 1, "maximum": 1000000 },
+        "spawnCount": { "type": "number", "minimum": 0 },
+        "spawnRate": { "type": "number", "minimum": 0 },
+        "lifetime": { "$ref": "#/$defs/positiveRange" },
+        "size": { "$ref": "#/$defs/positiveRange" },
+        "positionMode": { "enum": ["Point", "Box"] },
+        "spawnBoxExtents": { "$ref": "#/$defs/vector3" },
+        "velocityMode": { "enum": ["None", "Radial", "Directional"] },
+        "direction": { "$ref": "#/$defs/vector3" },
+        "speed": { "$ref": "#/$defs/range" },
+        "spread": { "type": "number", "minimum": 0 },
+        "gravity": { "$ref": "#/$defs/vector3" },
+        "drag": { "type": "number", "minimum": 0 },
+        "startColor": { "$ref": "#/$defs/color" },
+        "blendMode": { "enum": ["Alpha", "Additive", "Premultiplied"] },
+        "outputMode": { "enum": ["Quad", "Mesh", "TemplateOnly"] },
+        "textureAssetPath": { "type": "string" },
+        "meshAssetPath": { "type": "string" },
+        "meshSubAssetName": { "type": "string" },
+        "materialAssetPath": { "type": "string" },
+        "shaderGraphAssetPath": { "type": "string" },
+        "useFlipbook": { "type": "boolean" },
+        "flipbookColumns": { "type": "integer", "minimum": 1 },
+        "flipbookRows": { "type": "integer", "minimum": 1 },
+        "flipbookBlend": { "type": "boolean" },
+        "orientationMode": { "type": "string" },
+        "orientToVelocity": { "type": "boolean" },
+        "capabilities": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 },
+          "uniqueItems": true
+        }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "spawnMode": { "const": "Burst" } } },
+          "then": { "properties": { "spawnCount": { "exclusiveMinimum": 0 } } }
+        },
+        {
+          "if": { "properties": { "spawnMode": { "const": "Rate" } } },
+          "then": { "properties": { "spawnRate": { "exclusiveMinimum": 0 } } }
+        },
+        {
+          "if": { "properties": { "outputMode": { "const": "Mesh" } } },
+          "then": { "properties": { "meshAssetPath": { "minLength": 1 } } }
+        }
+      ]
+    },
+    "sceneObject": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "meshAssetPath",
+        "meshSubAssetName",
+        "materialAssetPath",
+        "localPosition",
+        "localEulerAngles",
+        "localScale",
+        "castShadows",
+        "receiveShadows"
+      ],
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "meshAssetPath": { "type": "string", "minLength": 1 },
+        "meshSubAssetName": { "type": "string" },
+        "materialAssetPath": { "type": "string" },
+        "localPosition": { "$ref": "#/$defs/vector3" },
+        "localEulerAngles": { "$ref": "#/$defs/vector3" },
+        "localScale": { "$ref": "#/$defs/vector3" },
+        "castShadows": { "type": "boolean" },
+        "receiveShadows": { "type": "boolean" }
+      }
+    },
+    "exposedOverride": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "propertyName",
+        "valueType",
+        "floatValue",
+        "intValue",
+        "boolValue",
+        "vectorValue",
+        "colorValue",
+        "assetPath",
+        "subAssetName"
+      ],
+      "properties": {
+        "propertyName": { "type": "string", "minLength": 1 },
+        "valueType": {
+          "enum": ["Float", "Int", "Bool", "Vector3", "Vector4", "Color", "Texture", "Mesh"]
+        },
+        "floatValue": { "type": "number" },
+        "intValue": { "type": "integer" },
+        "boolValue": { "type": "boolean" },
+        "vectorValue": { "$ref": "#/$defs/vector3" },
+        "colorValue": { "$ref": "#/$defs/color" },
+        "assetPath": { "type": "string" },
+        "subAssetName": { "type": "string" }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "valueType": { "enum": ["Texture", "Mesh"] }
+            }
+          },
+          "then": {
+            "properties": { "assetPath": { "minLength": 1 } }
+          }
+        }
+      ]
+    }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "buildMode": { "const": "CloneTemplate" } } },
+      "then": {
+        "properties": { "templateAssetPath": { "minLength": 1 } }
+      }
+    },
+    {
+      "if": { "properties": { "buildMode": { "const": "Structured" } } },
+      "then": {
+        "properties": { "systems": { "minItems": 1 } }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "buildMode": { "const": "CloneTemplate" },
+          "preserveTemplateGraph": { "const": false }
+        },
+        "required": ["buildMode", "preserveTemplateGraph"]
+      },
+      "then": {
+        "properties": { "systems": { "minItems": 1 } }
       }
     }
-  }
+  ]
 }

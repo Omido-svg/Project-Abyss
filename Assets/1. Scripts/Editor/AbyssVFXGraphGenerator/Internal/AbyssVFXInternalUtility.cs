@@ -35,6 +35,66 @@ namespace ProjectAbyss.Editor.VFXAI
             }
         }
 
+        internal static bool TrySetObjectSetting(
+            VFXModel model,
+            string settingName,
+            UnityEngine.Object value,
+            out string warning)
+        {
+            warning = string.Empty;
+
+            if (model == null ||
+                string.IsNullOrWhiteSpace(settingName) ||
+                value == null)
+            {
+                warning = "Model, setting name 또는 value가 없습니다.";
+                return false;
+            }
+
+            FieldInfo field =
+                FindField(model.GetType(), settingName);
+
+            if (field != null &&
+                field.FieldType.IsInstanceOfType(value))
+            {
+                try
+                {
+                    model.SetSettingValue(settingName, value);
+                    return true;
+                }
+                catch (Exception exception)
+                {
+                    warning =
+                        $"{settingName} 설정 실패: {exception.Message}";
+                    return false;
+                }
+            }
+
+            PropertyInfo property =
+                FindProperty(model.GetType(), settingName);
+
+            if (property != null &&
+                property.CanWrite &&
+                property.PropertyType.IsInstanceOfType(value))
+            {
+                try
+                {
+                    property.SetValue(model, value);
+                    return true;
+                }
+                catch (Exception exception)
+                {
+                    warning =
+                        $"{settingName} property 설정 실패: {exception.Message}";
+                    return false;
+                }
+            }
+
+            warning =
+                $"{model.GetType().Name}.{settingName} Object setting을 찾지 못했습니다.";
+            return false;
+        }
+
         // VFX Graph 17.0.4에서 VFXSlotContainerModel은
         // VFXSlotContainerModel<ParentType, ChildrenType> 제네릭 타입이다.
         // 구체 타입 인자를 컴파일 타임에 고정하지 않고 실제 모델 타입을 Reflection으로 조회한다.

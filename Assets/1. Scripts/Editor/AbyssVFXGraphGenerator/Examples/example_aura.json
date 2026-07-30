@@ -1,7 +1,11 @@
 {
-  "schemaVersion": "1.0",
+  "schemaVersion": "2.0",
   "name": "VFX_Example_Aura",
   "description": "캐릭터 주변 보라색 오라",
+  "buildMode": "Structured",
+  "templateAssetPath": "",
+  "preserveTemplateGraph": true,
+  "requiredCapabilities": [],
   "systems": [
     {
       "name": "Aura Motes",
@@ -9,20 +13,59 @@
       "capacity": 2048,
       "spawnCount": 0.0,
       "spawnRate": 30.0,
-      "lifetime": { "min": 0.7, "max": 1.6 },
-      "size": { "min": 0.04, "max": 0.18 },
+      "lifetime": {
+        "min": 0.7,
+        "max": 1.6
+      },
+      "size": {
+        "min": 0.04,
+        "max": 0.18
+      },
       "positionMode": "Box",
-      "spawnBoxExtents": { "x": 0.45, "y": 0.75, "z": 0.45 },
+      "spawnBoxExtents": {
+        "x": 0.45,
+        "y": 0.75,
+        "z": 0.45
+      },
       "velocityMode": "Directional",
-      "direction": { "x": 0.0, "y": 1.0, "z": 0.0 },
-      "speed": { "min": 0.15, "max": 0.9 },
+      "direction": {
+        "x": 0.0,
+        "y": 1.0,
+        "z": 0.0
+      },
+      "speed": {
+        "min": 0.15,
+        "max": 0.9
+      },
       "spread": 0.3,
-      "gravity": { "x": 0.0, "y": 0.15, "z": 0.0 },
+      "gravity": {
+        "x": 0.0,
+        "y": 0.15,
+        "z": 0.0
+      },
       "drag": 0.35,
-      "startColor": { "r": 0.35, "g": 0.02, "b": 0.75, "a": 0.75 },
+      "startColor": {
+        "r": 0.35,
+        "g": 0.02,
+        "b": 0.75,
+        "a": 0.75
+      },
       "blendMode": "Additive",
+      "outputMode": "Quad",
       "textureAssetPath": "",
-      "orientToVelocity": false
+      "meshAssetPath": "",
+      "meshSubAssetName": "",
+      "materialAssetPath": "",
+      "shaderGraphAssetPath": "",
+      "useFlipbook": false,
+      "flipbookColumns": 1,
+      "flipbookRows": 1,
+      "flipbookBlend": false,
+      "orientationMode": "FaceCameraPlane",
+      "orientToVelocity": false,
+      "capabilities": []
     }
-  ]
+  ],
+  "sceneObjects": [],
+  "exposedOverrides": []
 }

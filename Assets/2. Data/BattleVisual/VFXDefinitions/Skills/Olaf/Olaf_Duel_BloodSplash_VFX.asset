@@ -12,9 +12,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 500e8a6276f78a94e9b03147ee7cd830, type: 3}
   m_Name: Olaf_Duel_BloodSplash_VFX
   m_EditorClassIdentifier: 
-  EffectPrefab: {fileID: 6473365724979156480, guid: 2379869d45356654a98e744e3ef5a88e, type: 3}
+  EffectPrefab: {fileID: 3054192513005116624, guid: e29c26009b0e40c4facc2a532cc04a85, type: 3}
   Lifetime: 1
   DestroyAfterLifetime: 1
+  UseUnscaledLifetime: 0
+  UsePooling: 1
+  PrewarmCount: 0
+  MaxPoolSize: 8
   PositionOffset: {x: 0, y: -0.5, z: 0}
   RotationOffset: {x: 0, y: 0, z: 0}
   Scale: {x: 1, y: 1, z: 1}

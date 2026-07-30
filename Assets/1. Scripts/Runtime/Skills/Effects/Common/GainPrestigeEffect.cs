@@ -11,15 +11,26 @@ public class GainPrestigeEffect : SkillEffectDefinition
     public override void Apply(
         SkillEffectContext context)
     {
+        Apply(context, null);
+    }
+
+    public override void Apply(
+        SkillEffectContext context,
+        SkillEffectOverrides overrides)
+    {
+        int amount = overrides?.ResolveAmount(Amount) ?? Amount;
+        bool giveToSelectedTarget =
+            overrides?.ResolveGiveToSelectedTarget(GiveToSelectedTarget) ??
+            GiveToSelectedTarget;
         if (context?.Resolver == null ||
             context.Owner == null ||
-            Amount <= 0)
+            amount <= 0)
         {
             return;
         }
 
         Character target =
-            GiveToSelectedTarget
+            giveToSelectedTarget
                 ? context.Target
                 : context.Owner;
 
@@ -30,6 +41,6 @@ public class GainPrestigeEffect : SkillEffectDefinition
             EffectRequest.Prestige(
                 context.Owner,
                 target,
-                Amount));
+                amount));
     }
 }

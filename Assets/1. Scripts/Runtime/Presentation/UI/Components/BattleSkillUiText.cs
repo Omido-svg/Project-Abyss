@@ -148,38 +148,41 @@ public static class BattleSkillUiText
                 "다굴림 페널티가 적용됩니다.");
         }
 
-        if (definition?.Effects != null &&
-            definition.Effects.Count > 0)
+        if (definition != null)
         {
-            builder.Append("효과: ");
-
-            bool appended =
-                false;
-
-            for (int index = 0;
-                 index < definition.Effects.Count;
-                 index++)
+            bool hasEffects = false;
+            foreach (SkillEffectEntry entry in definition.EnumerateEffectEntries())
             {
-                SkillEffectDefinition effect =
-                    definition.Effects[index];
-
-                if (effect == null)
-                    continue;
-
-                if (appended)
-                    builder.Append(", ");
-
-                builder.Append(
-                    effect.GetType().Name);
-
-                appended =
-                    true;
+                if (entry?.Definition != null)
+                {
+                    hasEffects = true;
+                    break;
+                }
             }
 
-            if (!appended)
-                builder.Append("없음");
+            if (hasEffects)
+            {
+                builder.Append("효과: ");
+                bool appended = false;
 
-            builder.AppendLine();
+                foreach (SkillEffectEntry entry in definition.EnumerateEffectEntries())
+                {
+                    SkillEffectDefinition effect = entry?.Definition;
+                    if (effect == null)
+                        continue;
+
+                    if (appended)
+                        builder.Append(", ");
+
+                    builder.Append(BuildEffectDisplayName(entry));
+                    appended = true;
+                }
+
+                if (!appended)
+                    builder.Append("없음");
+
+                builder.AppendLine();
+            }
         }
 
         return builder
@@ -290,18 +293,21 @@ public static class BattleSkillUiText
                     "부위 파괴"));
         }
 
-        if (definition?.Effects != null)
+        if (definition != null)
         {
-            foreach (SkillEffectDefinition effect
-                     in definition.Effects)
+            foreach (SkillEffectEntry entry
+                     in definition.EnumerateEffectEntries())
             {
+                SkillEffectDefinition effect = entry?.Definition;
                 if (effect == null)
                     continue;
 
                 string typeName =
                     effect.GetType().Name;
 
-                if (typeName.Contains("Bleed"))
+                if (typeName.Contains("Bleed") ||
+                    effect is AddBodyPartStatusEffect statusEffect &&
+                    statusEffect.StatusEffectId == StatusEffectId.Bleeding)
                 {
                     AddUnique(
                         result,
@@ -322,6 +328,83 @@ public static class BattleSkillUiText
         }
 
         return result;
+    }
+
+    private static string BuildEffectDisplayName(
+        SkillEffectEntry entry)
+    {
+        SkillEffectDefinition effect =
+            entry?.Definition;
+
+        if (effect == null)
+            return "없음";
+
+        SkillEffectOverrides overrides =
+            entry.Overrides;
+
+        if (effect is AddBodyPartStatusEffect status)
+        {
+            int stack =
+                overrides?.ResolveStack(status.Stack) ??
+                status.Stack;
+            int duration =
+                overrides?.ResolveDuration(status.Duration) ??
+                status.Duration;
+
+            return
+                $"{status.StatusEffectId} " +
+                $"{stack}스택 / {duration}턴";
+        }
+
+        if (effect is ApplyStatusIfConditionEffect conditionalStatus)
+        {
+            int stack =
+                overrides?.ResolveStack(conditionalStatus.Stack) ??
+                conditionalStatus.Stack;
+            int duration =
+                overrides?.ResolveDuration(conditionalStatus.Duration) ??
+                conditionalStatus.Duration;
+
+            return
+                $"{conditionalStatus.StatusEffectId} " +
+                $"{stack}스택 / {duration}턴";
+        }
+
+        if (effect is GainPrestigeEffect prestige)
+        {
+            int amount =
+                overrides?.ResolveAmount(prestige.Amount) ??
+                prestige.Amount;
+            return $"위세 +{amount}";
+        }
+
+        if (effect is GainCustomResourceEffect resource)
+        {
+            string key =
+                overrides?.ResolveResourceKey(resource.ResourceKey) ??
+                resource.ResourceKey;
+            int amount =
+                overrides?.ResolveAmount(resource.Amount) ??
+                resource.Amount;
+            return $"{key} {(amount >= 0 ? "+" : string.Empty)}{amount}";
+        }
+
+        if (effect is ModifyResourceEffect modify)
+        {
+            int amount =
+                overrides?.ResolveAmount(modify.Amount) ??
+                modify.Amount;
+            string key =
+                modify.ResourceType == SkillResourceType.Prestige
+                    ? "위세"
+                    : overrides?.ResolveResourceKey(
+                          modify.CustomResourceKey) ??
+                      modify.CustomResourceKey;
+
+            return $"{key} {(amount >= 0 ? "+" : string.Empty)}{amount}";
+        }
+
+        return effect.GetType().Name;
     }
 
     public static string GetActionTypeName(

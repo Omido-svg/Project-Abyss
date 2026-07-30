@@ -38,6 +38,7 @@ internal sealed class BattleVisualPlaybackState
 
     // 전체 합에서 고정되는 첫 번째 참가자 기준 참조.
     public CharacterActionMover AttackerMover { get; set; }
+    public CharacterActionMover TargetMover { get; set; }
     public CharacterView AttackerView { get; set; }
     public CharacterView TargetView { get; set; }
     public CharacterFacingController AttackerFacing { get; set; }
@@ -46,6 +47,10 @@ internal sealed class BattleVisualPlaybackState
     // 현재 교환에서 실제 공격 애니메이션을 재생 중인 View.
     public CharacterView ActiveActionView { get; set; }
     public CharacterView ActiveTargetView { get; set; }
+
+    // 마지막 Hit Event가 재생한 타깃 반응은 정상 종료 cleanup에서 자르지 않습니다.
+    // 다음 합 모션/피격 반응이 시작되면 CharacterView가 스스로 교체합니다.
+    public CharacterView ActiveReactionView { get; set; }
 
     public void SetCurrentRequest(BattleVisualRequest request)
     {
@@ -71,8 +76,14 @@ internal sealed class BattleVisualPlaybackState
         if (mover == null)
             return;
 
-        StagedMoverSettings[mover] =
-            settings;
+        // 전체 합 진입에서 이미 추적한 Mover의 복귀 정책을
+        // 개별 스킬의 이동 설정으로 덮어쓰지 않습니다.
+        if (!StagedMoverSettings.ContainsKey(mover))
+        {
+            StagedMoverSettings.Add(
+                mover,
+                settings);
+        }
     }
 
     public void ClearStagedMovers()

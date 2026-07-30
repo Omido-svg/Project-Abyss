@@ -332,18 +332,6 @@ public class BattleVfxManager : MonoBehaviour
         if (instance == null)
             return;
 
-        ParticleSystem[] particles =
-            instance.GetComponentsInChildren<ParticleSystem>(true);
-
-        foreach (ParticleSystem particle in particles)
-        {
-            if (particle == null)
-                continue;
-
-            ParticleSystem.MainModule main = particle.main;
-            main.simulationSpeed = playbackSpeed;
-        }
-
         VisualEffect[] effects =
             instance.GetComponentsInChildren<VisualEffect>(true);
 

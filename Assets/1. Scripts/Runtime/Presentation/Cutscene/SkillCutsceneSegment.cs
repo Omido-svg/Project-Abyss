@@ -1,8 +1,8 @@
 /// <summary>
-/// 스킬 컷씬을 구성하는 독립 Timeline Segment.
+/// 스킬 컷씬 Timeline Segment의 직렬화 호환 enum.
 ///
-/// 이 파일이 SkillCutsceneSegment의 유일한 영구 정의다.
-/// Legacy Cutscene SO 또는 SkillVisualDefinition에 같은 enum을 다시 선언하지 않는다.
+/// v8 런타임에서 활성 Segment는 Action / ClashAttack 두 개뿐입니다.
+/// PartBreak / Kill / Return 값은 기존 에셋의 정수 직렬화 호환을 위해 남겨 둡니다.
 /// </summary>
 public enum SkillCutsceneSegment
 {

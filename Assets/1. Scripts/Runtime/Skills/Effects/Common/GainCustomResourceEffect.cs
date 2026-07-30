@@ -13,26 +13,37 @@ public class GainCustomResourceEffect : SkillEffectDefinition
     public override void Apply(
         SkillEffectContext context)
     {
+        Apply(context, null);
+    }
+
+    public override void Apply(
+        SkillEffectContext context,
+        SkillEffectOverrides overrides)
+    {
+        string resourceKey = overrides?.ResolveResourceKey(ResourceKey) ?? ResourceKey;
+        int amount = overrides?.ResolveAmount(Amount) ?? Amount;
+        int maximum = overrides?.ResolveMaximum(Maximum) ?? Maximum;
+        bool giveToSelectedTarget = overrides?.ResolveGiveToSelectedTarget(GiveToSelectedTarget) ?? GiveToSelectedTarget;
         Character target =
-            GiveToSelectedTarget
+            giveToSelectedTarget
                 ? context?.Target
                 : context?.Owner;
 
         if (target == null ||
-            string.IsNullOrWhiteSpace(ResourceKey))
+            string.IsNullOrWhiteSpace(resourceKey))
         {
             return;
         }
 
         int result = SkillResourceAccess.Modify(
             target,
-            ResourceKey,
-            Amount,
+            resourceKey,
+            amount,
             0,
-            Maximum);
+            maximum);
 
         Debug.Log(
             $"{target.Data?.CharacterName} 특수 자원 " +
-            $"{ResourceKey} : {result}");
+            $"{resourceKey} : {result}");
     }
 }

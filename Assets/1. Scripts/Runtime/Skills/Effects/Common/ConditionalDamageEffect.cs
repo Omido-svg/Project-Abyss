@@ -23,6 +23,13 @@ public class ConditionalDamageEffect : SkillEffectDefinition
     public override void Apply(
         SkillEffectContext context)
     {
+        Apply(context, null);
+    }
+
+    public override void Apply(
+        SkillEffectContext context,
+        SkillEffectOverrides overrides)
+    {
         if (context?.Action == null ||
             context.Owner == null ||
             context.Target == null)
@@ -30,7 +37,10 @@ public class ConditionalDamageEffect : SkillEffectDefinition
             return;
         }
 
-        int baseValue = flatDamage;
+        int baseValue =
+            overrides?.ResolveFlatValue(flatDamage) ?? flatDamage;
+        float finalMultiplier =
+            overrides?.ResolveMultiplier(multiplier) ?? multiplier;
 
         if (useResolvedDamage &&
             context.DamageContext != null)
@@ -50,7 +60,7 @@ public class ConditionalDamageEffect : SkillEffectDefinition
         int damage = Mathf.Max(
             0,
             Mathf.RoundToInt(
-                baseValue * multiplier));
+                baseValue * finalMultiplier));
 
         if (damage <= 0)
             return;

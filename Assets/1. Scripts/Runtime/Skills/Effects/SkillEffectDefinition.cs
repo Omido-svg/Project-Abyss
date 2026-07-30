@@ -26,6 +26,14 @@ public abstract class SkillEffectDefinition : ScriptableObject
         SkillEffectContext context,
         SkillEffectTiming currentTiming)
     {
+        return TryApply(context, currentTiming, null);
+    }
+
+    public SkillEffectResult TryApply(
+        SkillEffectContext context,
+        SkillEffectTiming currentTiming,
+        SkillEffectOverrides overrides)
+    {
         if (currentTiming != timing)
         {
             return SkillEffectResult.NotScheduled(
@@ -56,7 +64,7 @@ public abstract class SkillEffectDefinition : ScriptableObject
                 failureMessage);
         }
 
-        Apply(selectedContext);
+        Apply(selectedContext, overrides);
 
         return SkillEffectResult.Applied(
             this,
@@ -66,6 +74,13 @@ public abstract class SkillEffectDefinition : ScriptableObject
 
     public abstract void Apply(
         SkillEffectContext context);
+
+    public virtual void Apply(
+        SkillEffectContext context,
+        SkillEffectOverrides overrides)
+    {
+        Apply(context);
+    }
 
     private bool EvaluateConditions(
         SkillEffectContext context,
