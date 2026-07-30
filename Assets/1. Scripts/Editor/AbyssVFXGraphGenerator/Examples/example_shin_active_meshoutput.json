@@ -1,0 +1,6 @@
+{
+  "name": "Abyss_Shin_Active_MeshOutputSupport",
+  "representationMode": "MeshOutputSupport",
+  "backend": "MeshOutputSupport",
+  "notes": "Support bundle for future VFX Graph Mesh Output generation from Shin motif"
+}

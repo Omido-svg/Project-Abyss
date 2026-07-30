@@ -1,0 +1,193 @@
+{
+  "schemaVersion": "4.2",
+  "name": "VFX_Limbus_Shin_BackSilhouette",
+  "description": "Limbus Company Shin (心), not Mang (望). A broad golden procedural flame silhouette rises behind the animated character. The common HLSL skinned aura is the primary effect; VFX Graph contributes only a few tiny embers. No ring, torus, sprite, flipbook, billboard, or shard mantle.",
+  "buildMode": "NodeGraph3D",
+  "requiredCapabilities": [
+    "MeshOutput",
+    "NodeExpressions",
+    "Procedural3D",
+    "TextureFree"
+  ],
+  "surfaceAura": {
+    "enabled": true,
+    "shaderFamily": "SkinnedFlameAura",
+    "shaderAssetPath": "Assets/VFX/Shaders/AbyssSkinnedFlameAura.shader",
+    "rendererMode": "BackSilhouette",
+    "autoBindToParent": true,
+    "includeInactiveRenderers": true,
+    "previewInEditMode": true,
+    "excludedNameContains": [
+      "Weapon",
+      "Sword",
+      "Blade",
+      "Gun",
+      "Rifle",
+      "Bow",
+      "Axe"
+    ],
+    "baseColor": {
+      "r": 1.0,
+      "g": 0.12,
+      "b": 0.004,
+      "a": 1.0
+    },
+    "edgeColor": {
+      "r": 1.0,
+      "g": 0.68,
+      "b": 0.055,
+      "a": 1.0
+    },
+    "hotColor": {
+      "r": 1.0,
+      "g": 0.96,
+      "b": 0.66,
+      "a": 1.0
+    },
+    "coreEmission": 4.8,
+    "coreOpacity": 0.38,
+    "coreFresnelPower": 3.1,
+    "innerWidth": 0.032,
+    "flameEmission": 9.6,
+    "flameOpacity": 0.86,
+    "flameFresnelPower": 1.18,
+    "outerWidth": 0.18,
+    "rearOffset": 0.068,
+    "flameLift": 0.28,
+    "lateralWobble": 0.058,
+    "noiseScale": 1.28,
+    "detailNoiseScale": 3.35,
+    "noiseSpeed": 0.82,
+    "flameStretch": 3.2,
+    "cutoff": 0.49,
+    "edgeSoftness": 0.09,
+    "rearBias": 1.0,
+    "pulseSpeed": 0.88,
+    "pulseAmount": 0.08,
+    "boundsPadding": 0.62
+  },
+  "systems": [
+    {
+      "name": "Shin_MinimalEmbers",
+      "spawnMode": "Rate",
+      "capacity": 96,
+      "spawnCount": 1,
+      "spawnRate": 4,
+      "lifetime": {
+        "min": 0.45,
+        "max": 0.85
+      },
+      "size": {
+        "min": 0.005,
+        "max": 0.016
+      },
+      "positionMode": "Box",
+      "spawnBoxExtents": {
+        "x": 0.32,
+        "y": 0.72,
+        "z": 0.18
+      },
+      "velocityMode": "None",
+      "direction": {
+        "x": 0,
+        "y": 1,
+        "z": 0
+      },
+      "speed": {
+        "min": 0.35,
+        "max": 0.75
+      },
+      "spread": 0.08,
+      "gravity": {
+        "x": 0,
+        "y": 0.08,
+        "z": 0
+      },
+      "drag": 0.45,
+      "turbulenceEnabled": true,
+      "turbulenceIntensity": 0.12,
+      "turbulenceFrequency": 1.8,
+      "turbulenceDrag": 0.1,
+      "turbulenceOctaves": 2,
+      "turbulenceRoughness": 0.4,
+      "turbulenceLacunarity": 2.0,
+      "startColor": {
+        "r": 1.0,
+        "g": 0.72,
+        "b": 0.12,
+        "a": 0.38
+      },
+      "blendMode": "Additive",
+      "outputMode": "Mesh",
+      "proceduralMesh": "Sphere",
+      "meshAssetPath": "",
+      "meshSubAssetName": "",
+      "torusMajorRadius": 0.5,
+      "torusMinorRadius": 0.08,
+      "torusRadialSegments": 48,
+      "torusTubeSegments": 12,
+      "shaderGraphAssetPath": "",
+      "orientationMode": "FixedAxis",
+      "orientToVelocity": false,
+      "positionExpression": {
+        "kind": "Add",
+        "valueType": "Vector3",
+        "inputs": [
+          {
+            "kind": "RandomVector3",
+            "valueType": "Vector3",
+            "vectorMin": {
+              "x": -0.32,
+              "y": -0.72,
+              "z": -0.18
+            },
+            "vectorMax": {
+              "x": 0.32,
+              "y": 0.72,
+              "z": 0.18
+            }
+          },
+          {
+            "kind": "LiteralVector3",
+            "valueType": "Vector3",
+            "vectorValue": {
+              "x": 0,
+              "y": 0.95,
+              "z": 0.02
+            }
+          }
+        ]
+      },
+      "velocityExpression": {
+        "kind": "LiteralVector3",
+        "valueType": "Vector3",
+        "vectorValue": {
+          "x": 0,
+          "y": 0.58,
+          "z": 0
+        }
+      },
+      "alphaExpression": {
+        "kind": "RandomFloat",
+        "valueType": "Float",
+        "floatRange": {
+          "min": 0.12,
+          "max": 0.36
+        }
+      },
+      "customBlocks": [],
+      "textureAssetPath": "",
+      "materialAssetPath": "",
+      "useFlipbook": false,
+      "flipbookColumns": 1,
+      "flipbookRows": 1,
+      "flipbookBlend": false,
+      "capabilities": [
+        "MeshOutput",
+        "NodeExpressions",
+        "TextureFree"
+      ]
+    }
+  ],
+  "exposedOverrides": []
+}

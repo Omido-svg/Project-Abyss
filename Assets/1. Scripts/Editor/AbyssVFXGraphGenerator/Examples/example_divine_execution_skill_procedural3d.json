@@ -1,0 +1,21 @@
+{
+  "name": "Abyss_Divine_Execution_Skill_Procedural3D",
+  "representationMode": "Procedural3D",
+  "backend": "Procedural3D",
+  "notes": "More complex skill VFX example",
+  "characterHeight": 1.8,
+  "globalScale": 1.0,
+  "baseColor": { "r": 1.0, "g": 0.35, "b": 0.18, "a": 0.42 },
+  "edgeColor": { "r": 1.0, "g": 0.98, "b": 0.82, "a": 1.0 },
+  "emission": 6.0,
+  "elements": [
+    { "id": "ImpactCore", "type": "Core", "localPosition": { "x": 0.0, "y": 0.9, "z": 1.0 }, "radius": 0.20, "pulseSpeed": 4.0, "pulseAmount": 0.24, "alpha": 0.55, "fresnelPower": 2.5 },
+    { "id": "ShockAura", "type": "AuraShell", "localPosition": { "x": 0.0, "y": 0.9, "z": 1.0 }, "localScale": { "x": 0.55, "y": 0.55, "z": 0.55 }, "pulseSpeed": 3.2, "pulseAmount": 0.18, "noiseFrequency": 4.5, "noiseAmplitude": 0.10, "alpha": 0.26, "fresnelPower": 5.4 },
+    { "id": "ExecutionRing_A", "type": "Ring", "localPosition": { "x": 0.0, "y": 0.9, "z": 1.0 }, "localRotation": { "x": 12.0, "y": 0.0, "z": 0.0 }, "radius": 0.62, "thickness": 0.03, "speed": 2.0, "alpha": 0.38, "fresnelPower": 4.8 },
+    { "id": "ExecutionRing_B", "type": "Ring", "localPosition": { "x": 0.0, "y": 0.9, "z": 1.0 }, "localRotation": { "x": 90.0, "y": 0.0, "z": 32.0 }, "radius": 0.52, "thickness": 0.022, "speed": -2.3, "alpha": 0.34, "fresnelPower": 5.2 },
+    { "id": "ExecutionRing_C", "type": "Ring", "localPosition": { "x": 0.0, "y": 0.9, "z": 1.0 }, "localRotation": { "x": 45.0, "y": 35.0, "z": -18.0 }, "radius": 0.45, "thickness": 0.018, "speed": 2.6, "alpha": 0.30, "fresnelPower": 5.8 },
+    { "id": "ShardMotes", "type": "Motes", "count": 36, "localPosition": { "x": 0.0, "y": 0.9, "z": 1.0 }, "radius": 0.08, "orbitRadius": 0.58, "height": 1.35, "speed": 3.4, "alpha": 0.42, "fresnelPower": 6.5 },
+    { "id": "StrikeLines", "type": "Streaks", "count": 14, "localPosition": { "x": 0.0, "y": 0.7, "z": 1.0 }, "radius": 0.05, "orbitRadius": 0.52, "height": 1.85, "pulseSpeed": 3.6, "pulseAmount": 0.08, "alpha": 0.22, "fresnelPower": 7.2 },
+    { "id": "FinisherBeam", "type": "Beam", "localPosition": { "x": 0.0, "y": 0.95, "z": 1.0 }, "height": 2.1, "width": 0.10, "pulseSpeed": 4.2, "pulseAmount": 0.10, "alpha": 0.18, "fresnelPower": 8.0 }
+  ]
+}
