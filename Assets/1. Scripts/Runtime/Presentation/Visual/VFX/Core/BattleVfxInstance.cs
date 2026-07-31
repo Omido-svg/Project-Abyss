@@ -6,6 +6,7 @@ using UnityEngine.VFX;
 public sealed class BattleVfxInstance : MonoBehaviour
 {
     private readonly List<VisualEffect> visualEffects = new();
+    private readonly List<ParticleSystem> particleSystems = new();
     private readonly List<MonoBehaviour> lifecycleBehaviours = new();
 
     private BattleVfxPool ownerPool;
@@ -133,9 +134,11 @@ public sealed class BattleVfxInstance : MonoBehaviour
     private void CacheComponents()
     {
         visualEffects.Clear();
+        particleSystems.Clear();
         lifecycleBehaviours.Clear();
 
         GetComponentsInChildren(true, visualEffects);
+        GetComponentsInChildren(true, particleSystems);
         GetComponentsInChildren(true, lifecycleBehaviours);
     }
 
@@ -148,6 +151,17 @@ public sealed class BattleVfxInstance : MonoBehaviour
 
             visualEffect.Stop();
             visualEffect.Reinit();
+        }
+
+        foreach (ParticleSystem particleSystem in particleSystems)
+        {
+            if (particleSystem == null)
+                continue;
+
+            particleSystem.Stop(
+                true,
+                ParticleSystemStopBehavior.StopEmittingAndClear);
+            particleSystem.Clear(true);
         }
     }
 }

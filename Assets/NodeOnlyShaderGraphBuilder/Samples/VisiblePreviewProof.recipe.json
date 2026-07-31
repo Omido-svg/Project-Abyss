@@ -1,0 +1,47 @@
+{
+  "schemaVersion": 1,
+  "graphName": "NodeOnly_VisiblePreviewProof",
+  "nodes": [
+    {
+      "id": "color",
+      "type": "Color",
+      "title": "Visible HDR Color",
+      "x": -420.0,
+      "y": -40.0,
+      "members": [
+        {
+          "name": "color",
+          "value": "0.15,1.2,3.0,1.0"
+        }
+      ],
+      "inputDefaults": []
+    },
+    {
+      "id": "alpha",
+      "type": "Vector1",
+      "title": "Visible Alpha",
+      "x": -420.0,
+      "y": 180.0,
+      "members": [
+        {
+          "name": "value",
+          "value": "1.0"
+        }
+      ],
+      "inputDefaults": []
+    }
+  ],
+  "edges": [],
+  "outputs": [
+    {
+      "fromNode": "color",
+      "fromPort": "Out",
+      "block": "Base Color"
+    },
+    {
+      "fromNode": "alpha",
+      "fromPort": "Out",
+      "block": "Alpha"
+    }
+  ]
+}

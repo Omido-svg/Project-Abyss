@@ -1,0 +1,1214 @@
+{
+  "schemaVersion": 3,
+  "graphName": "Project_Abyss_Shin_Golden_Flame_Shell",
+  "graphSettings": [
+    {
+      "target": "UniversalTarget",
+      "member": "surfaceType",
+      "value": "Transparent",
+      "optional": false
+    },
+    {
+      "target": "UniversalTarget",
+      "member": "alphaMode",
+      "value": "Additive",
+      "optional": false
+    },
+    {
+      "target": "UniversalTarget",
+      "member": "renderFace",
+      "value": "Back",
+      "optional": true
+    },
+    {
+      "target": "UniversalTarget",
+      "member": "supportVFX",
+      "value": "true",
+      "optional": true
+    }
+  ],
+  "properties": [
+    {
+      "id": "auraColor",
+      "type": "Color",
+      "displayName": "Aura Color",
+      "referenceName": "_AuraColor",
+      "defaultValue": "2.6,0.35,0.015,1",
+      "exposed": true,
+      "hdr": true
+    },
+    {
+      "id": "coreColor",
+      "type": "Color",
+      "displayName": "Core Color",
+      "referenceName": "_CoreColor",
+      "defaultValue": "6.5,2.4,0.18,1",
+      "exposed": true,
+      "hdr": true
+    },
+    {
+      "id": "intensity",
+      "type": "Slider",
+      "displayName": "Intensity",
+      "referenceName": "_Intensity",
+      "defaultValue": "2.8",
+      "rangeMin": 0.0,
+      "rangeMax": 10.0,
+      "exposed": true
+    },
+    {
+      "id": "alpha",
+      "type": "Slider",
+      "displayName": "Alpha",
+      "referenceName": "_Alpha",
+      "defaultValue": "0.9",
+      "rangeMin": 0.0,
+      "rangeMax": 1.0,
+      "exposed": true
+    },
+    {
+      "id": "shellWidth",
+      "type": "Slider",
+      "displayName": "Shell Width",
+      "referenceName": "_ShellWidth",
+      "defaultValue": "0.025",
+      "rangeMin": 0.0,
+      "rangeMax": 0.2,
+      "exposed": true
+    },
+    {
+      "id": "flameHeight",
+      "type": "Slider",
+      "displayName": "Flame Height",
+      "referenceName": "_FlameHeight",
+      "defaultValue": "0.075",
+      "rangeMin": 0.0,
+      "rangeMax": 0.3,
+      "exposed": true
+    },
+    {
+      "id": "noiseScale",
+      "type": "Slider",
+      "displayName": "Noise Scale",
+      "referenceName": "_NoiseScale",
+      "defaultValue": "3.2",
+      "rangeMin": 0.1,
+      "rangeMax": 20.0,
+      "exposed": true
+    },
+    {
+      "id": "detailScale",
+      "type": "Slider",
+      "displayName": "Detail Scale",
+      "referenceName": "_DetailScale",
+      "defaultValue": "10.0",
+      "rangeMin": 0.1,
+      "rangeMax": 40.0,
+      "exposed": true
+    },
+    {
+      "id": "noiseSpeed",
+      "type": "Slider",
+      "displayName": "Rise Speed",
+      "referenceName": "_NoiseSpeed",
+      "defaultValue": "-0.85",
+      "rangeMin": -5.0,
+      "rangeMax": 5.0,
+      "exposed": true
+    },
+    {
+      "id": "breakupThreshold",
+      "type": "Slider",
+      "displayName": "Flame Breakup",
+      "referenceName": "_BreakupThreshold",
+      "defaultValue": "0.42",
+      "rangeMin": 0.0,
+      "rangeMax": 1.5,
+      "exposed": true
+    },
+    {
+      "id": "breakupSoftness",
+      "type": "Slider",
+      "displayName": "Edge Softness",
+      "referenceName": "_BreakupSoftness",
+      "defaultValue": "0.18",
+      "rangeMin": 0.001,
+      "rangeMax": 0.75,
+      "exposed": true
+    },
+    {
+      "id": "pulseSpeed",
+      "type": "Slider",
+      "displayName": "Pulse Speed",
+      "referenceName": "_PulseSpeed",
+      "defaultValue": "4.0",
+      "rangeMin": 0.0,
+      "rangeMax": 12.0,
+      "exposed": true
+    },
+    {
+      "id": "pulseAmount",
+      "type": "Slider",
+      "displayName": "Pulse Amount",
+      "referenceName": "_PulseAmount",
+      "defaultValue": "0.18",
+      "rangeMin": 0.0,
+      "rangeMax": 1.0,
+      "exposed": true
+    }
+  ],
+  "groups": [
+    {
+      "id": "vertexShell",
+      "title": "01 Vertex Flame Shell",
+      "x": -2300.0,
+      "y": -200.0
+    },
+    {
+      "id": "fragmentNoise",
+      "title": "02 Object-Space Flame Turbulence",
+      "x": -1500.0,
+      "y": 600.0
+    },
+    {
+      "id": "pulseColor",
+      "title": "03 Pulse, Color And Alpha",
+      "x": 500.0,
+      "y": 600.0
+    }
+  ],
+  "stickyNotes": [
+    {
+      "id": "usage",
+      "title": "Shin Aura Usage",
+      "content": "Apply this material to a duplicated SkinnedMeshRenderer such as 'Alpha_Surface shin', not to the original character material. The Vertex branch expands the duplicate mesh along Object-space normals. Back-face additive rendering leaves the irregular golden shell mainly outside the original silhouette.",
+      "x": -2300.0,
+      "y": -520.0,
+      "width": 560.0,
+      "height": 190.0,
+      "theme": "Classic",
+      "textSize": "Medium"
+    },
+    {
+      "id": "tuning",
+      "title": "Material Tuning",
+      "content": "Start with Shell Width 0.015-0.04 and Flame Height 0.04-0.10. If the shell moves inward, reverse Rise Speed. Use Noise Scale for large tongues and Detail Scale for broken flame edges.",
+      "x": 520.0,
+      "y": 1600.0,
+      "width": 520.0,
+      "height": 160.0,
+      "theme": "Classic",
+      "textSize": "Medium"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "time",
+      "type": "Time",
+      "title": "Time",
+      "x": -2220.0,
+      "y": 900.0,
+      "group": "vertexShell",
+      "members": [],
+      "inputDefaults": []
+    },
+    {
+      "id": "noiseSpeedProperty",
+      "type": "Property",
+      "title": "Rise Speed",
+      "property": "noiseSpeed",
+      "x": -2220.0,
+      "y": 1080.0,
+      "group": "vertexShell",
+      "members": [],
+      "inputDefaults": []
+    },
+    {
+      "id": "noiseTime",
+      "type": "Multiply",
+      "title": "Time × Rise Speed",
+      "x": -1940.0,
+      "y": 980.0,
+      "group": "vertexShell",
+      "members": [],
+      "inputDefaults": []
+    },
+    {
+      "id": "noiseScroll",
+      "type": "Combine",
+      "title": "Vertical Noise Scroll",
+      "x": -1660.0,
+      "y": 980.0,
+      "group": "vertexShell",
+      "members": [],
+      "inputDefaults": [
+        {
+          "port": "R",
+          "value": "0"
+        }
+      ]
+    },
+    {
+      "id": "vertexPositionOS",
+      "type": "Position",
+      "title": "Vertex Position (Object)",
+      "x": -2220.0,
+      "y": 0.0,
+      "group": "vertexShell",
+      "members": [
+        {
+          "name": "space",
+          "value": "Object"
+        }
+      ],
+      "inputDefaults": []
+    },
+    {
+      "id": "vertexNormalOS",
+      "type": "NormalVector",
+      "title": "Vertex Normal (Object)",
+      "x": -2220.0,
+      "y": 180.0,
+      "group": "vertexShell",
+      "members": [
+        {
+          "name": "space",
+          "value": "Object"
+        }
+      ],
+      "inputDefaults": []
+    },
+    {
+      "id": "vertexPositionSplit",
+      "type": "Split",
+      "title": "Split Vertex Position",
+      "x": -1940.0,
+      "y": 0.0,
+      "group": "vertexShell",
+      "members": [],
+      "inputDefaults": []
+    },
+    {
+      "id": "vertexObjectXY",
+      "type": "Combine",
+      "title": "Object XY Coordinates",
+      "x": -1660.0,
+      "y": 80.0,
+      "group": "vertexShell",
+      "members": [],
+      "inputDefaults": []
+    },
+    {
+      "id": "vertexAnimatedCoord",
+      "type": "Add",
+      "title": "Animated Vertex Coordinates",
+      "x": -1380.0,
+      "y": 140.0,
+      "group": "vertexShell",
+      "members": [],
+      "inputDefaults": []
+    },
+    {
+      "id": "noiseScaleProperty",
+      "type": "Property",
+      "title": "Noise Scale",
+      "property": "noiseScale",
+      "x": -1380.0,
+      "y": 360.0,
+      "group": "vertexShell",
+      "members": [],
+      "inputDefaults": []
+    },
+    {
+      "id": "vertexNoise",
+      "type": "GradientNoise",
+      "title": "Vertex Flame Noise",
+      "x": -1100.0,
+      "y": 160.0,
+      "group": "vertexShell",
+      "members": [],
+      "inputDefaults": []
+    },
+    {
+      "id": "flameHeightProperty",
+      "type": "Property",
+      "title": "Flame Height",
+      "property": "flameHeight",
+      "x": -1100.0,
+      "y": 390.0,
+      "group": "vertexShell",
+      "members": [],
+      "inputDefaults": []
+    },
+    {
+      "id": "vertexNoiseHeight",
+      "type": "Multiply",
+      "title": "Noise × Flame Height",
+      "x": -820.0,
+      "y": 190.0,
+      "group": "vertexShell",
+      "members": [],
+      "inputDefaults": []
+    },
+    {
+      "id": "shellWidthProperty",
+      "type": "Property",
+      "title": "Shell Width",
+      "property": "shellWidth",
+      "x": -820.0,
+      "y": 420.0,
+      "group": "vertexShell",
+      "members": [],
+      "inputDefaults": []
+    },
+    {
+      "id": "vertexShellAmount",
+      "type": "Add",
+      "title": "Base Shell + Flame Height",
+      "x": -540.0,
+      "y": 260.0,
+      "group": "vertexShell",
+      "members": [],
+      "inputDefaults": []
+    },
+    {
+      "id": "vertexNormalOffset",
+      "type": "Multiply",
+      "title": "Normal × Shell Amount",
+      "x": -260.0,
+      "y": 150.0,
+      "group": "vertexShell",
+      "members": [],
+      "inputDefaults": []
+    },
+    {
+      "id": "expandedPosition",
+      "type": "Add",
+      "title": "Expanded Aura Position",
+      "x": 20.0,
+      "y": 70.0,
+      "group": "vertexShell",
+      "members": [],
+      "inputDefaults": []
+    },
+    {
+      "id": "fragmentPositionOS",
+      "type": "Position",
+      "title": "Fragment Position (Object)",
+      "x": -1420.0,
+      "y": 720.0,
+      "group": "fragmentNoise",
+      "members": [
+        {
+          "name": "space",
+          "value": "Object"
+        }
+      ],
+      "inputDefaults": []
+    },
+    {
+      "id": "fragmentPositionSplit",
+      "type": "Split",
+      "title": "Split Fragment Position",
+      "x": -1140.0,
+      "y": 720.0,
+      "group": "fragmentNoise",
+      "members": [],
+      "inputDefaults": []
+    },
+    {
+      "id": "fragmentObjectXY",
+      "type": "Combine",
+      "title": "Fragment Object XY",
+      "x": -860.0,
+      "y": 790.0,
+      "group": "fragmentNoise",
+      "members": [],
+      "inputDefaults": []
+    },
+    {
+      "id": "fragmentAnimatedCoord",
+      "type": "Add",
+      "title": "Rising Flame Coordinates",
+      "x": -580.0,
+      "y": 800.0,
+      "group": "fragmentNoise",
+      "members": [],
+      "inputDefaults": []
+    },
+    {
+      "id": "largeNoise",
+      "type": "GradientNoise",
+      "title": "Large Flame Tongues",
+      "x": -300.0,
+      "y": 680.0,
+      "group": "fragmentNoise",
+      "members": [],
+      "inputDefaults": []
+    },
+    {
+      "id": "detailScaleProperty",
+      "type": "Property",
+      "title": "Detail Scale",
+      "property": "detailScale",
+      "x": -300.0,
+      "y": 980.0,
+      "group": "fragmentNoise",
+      "members": [],
+      "inputDefaults": []
+    },
+    {
+      "id": "detailNoise",
+      "type": "SimpleNoise",
+      "title": "Fine Flame Breakup",
+      "x": -20.0,
+      "y": 860.0,
+      "group": "fragmentNoise",
+      "members": [],
+      "inputDefaults": []
+    },
+    {
+      "id": "detailWeighted",
+      "type": "Multiply",
+      "title": "Fine Noise Weight",
+      "x": 260.0,
+      "y": 860.0,
+      "group": "fragmentNoise",
+      "members": [],
+      "inputDefaults": [
+        {
+          "port": "B",
+          "value": "0.55"
+        }
+      ]
+    },
+    {
+      "id": "voronoiNoise",
+      "type": "Voronoi",
+      "title": "Hot Fragment Cells",
+      "x": -20.0,
+      "y": 1110.0,
+      "group": "fragmentNoise",
+      "members": [],
+      "inputDefaults": [
+        {
+          "port": "Angle Offset",
+          "value": "0"
+        }
+      ]
+    },
+    {
+      "id": "voronoiInvert",
+      "type": "OneMinus",
+      "title": "Invert Fragment Cells",
+      "x": 260.0,
+      "y": 1110.0,
+      "group": "fragmentNoise",
+      "members": [],
+      "inputDefaults": []
+    },
+    {
+      "id": "voronoiWeighted",
+      "type": "Multiply",
+      "title": "Cell Detail Weight",
+      "x": 540.0,
+      "y": 1110.0,
+      "group": "fragmentNoise",
+      "members": [],
+      "inputDefaults": [
+        {
+          "port": "B",
+          "value": "0.35"
+        }
+      ]
+    },
+    {
+      "id": "largeDetailAdd",
+      "type": "Add",
+      "title": "Large + Fine Noise",
+      "x": 540.0,
+      "y": 760.0,
+      "group": "fragmentNoise",
+      "members": [],
+      "inputDefaults": []
+    },
+    {
+      "id": "turbulenceAdd",
+      "type": "Add",
+      "title": "Add Fragment Cells",
+      "x": 820.0,
+      "y": 850.0,
+      "group": "fragmentNoise",
+      "members": [],
+      "inputDefaults": []
+    },
+    {
+      "id": "turbulence",
+      "type": "Saturate",
+      "title": "Final Flame Turbulence",
+      "x": 1100.0,
+      "y": 850.0,
+      "group": "fragmentNoise",
+      "members": [],
+      "inputDefaults": []
+    },
+    {
+      "id": "breakupThresholdProperty",
+      "type": "Property",
+      "title": "Flame Breakup",
+      "property": "breakupThreshold",
+      "x": 540.0,
+      "y": 1350.0,
+      "group": "fragmentNoise",
+      "members": [],
+      "inputDefaults": []
+    },
+    {
+      "id": "breakupSoftnessProperty",
+      "type": "Property",
+      "title": "Edge Softness",
+      "property": "breakupSoftness",
+      "x": 540.0,
+      "y": 1510.0,
+      "group": "fragmentNoise",
+      "members": [],
+      "inputDefaults": []
+    },
+    {
+      "id": "breakupEnd",
+      "type": "Add",
+      "title": "Breakup End",
+      "x": 820.0,
+      "y": 1430.0,
+      "group": "fragmentNoise",
+      "members": [],
+      "inputDefaults": []
+    },
+    {
+      "id": "flameMask",
+      "type": "Smoothstep",
+      "title": "Animated Flame Mask",
+      "x": 1380.0,
+      "y": 1010.0,
+      "group": "fragmentNoise",
+      "members": [],
+      "inputDefaults": []
+    },
+    {
+      "id": "flamePresence",
+      "type": "Lerp",
+      "title": "Keep A Thin Continuous Aura",
+      "x": 1660.0,
+      "y": 1010.0,
+      "group": "fragmentNoise",
+      "members": [],
+      "inputDefaults": [
+        {
+          "port": "A",
+          "value": "0.18"
+        },
+        {
+          "port": "B",
+          "value": "1.0"
+        }
+      ]
+    },
+    {
+      "id": "pulseSpeedProperty",
+      "type": "Property",
+      "title": "Pulse Speed",
+      "property": "pulseSpeed",
+      "x": 600.0,
+      "y": 720.0,
+      "group": "pulseColor",
+      "members": [],
+      "inputDefaults": []
+    },
+    {
+      "id": "pulseTime",
+      "type": "Multiply",
+      "title": "Time × Pulse Speed",
+      "x": 880.0,
+      "y": 650.0,
+      "group": "pulseColor",
+      "members": [],
+      "inputDefaults": []
+    },
+    {
+      "id": "pulseSine",
+      "type": "Sine",
+      "title": "Heartbeat Sine",
+      "x": 1160.0,
+      "y": 650.0,
+      "group": "pulseColor",
+      "members": [],
+      "inputDefaults": []
+    },
+    {
+      "id": "pulseHalf",
+      "type": "Multiply",
+      "title": "Sine × 0.5",
+      "x": 1440.0,
+      "y": 650.0,
+      "group": "pulseColor",
+      "members": [],
+      "inputDefaults": [
+        {
+          "port": "B",
+          "value": "0.5"
+        }
+      ]
+    },
+    {
+      "id": "pulse01",
+      "type": "Add",
+      "title": "Pulse 0 To 1",
+      "x": 1720.0,
+      "y": 650.0,
+      "group": "pulseColor",
+      "members": [],
+      "inputDefaults": [
+        {
+          "port": "B",
+          "value": "0.5"
+        }
+      ]
+    },
+    {
+      "id": "pulseAmountProperty",
+      "type": "Property",
+      "title": "Pulse Amount",
+      "property": "pulseAmount",
+      "x": 1160.0,
+      "y": 830.0,
+      "group": "pulseColor",
+      "members": [],
+      "inputDefaults": []
+    },
+    {
+      "id": "pulseMinimum",
+      "type": "OneMinus",
+      "title": "Minimum Pulse Brightness",
+      "x": 1440.0,
+      "y": 830.0,
+      "group": "pulseColor",
+      "members": [],
+      "inputDefaults": []
+    },
+    {
+      "id": "pulse",
+      "type": "Lerp",
+      "title": "Final Heartbeat Pulse",
+      "x": 2000.0,
+      "y": 720.0,
+      "group": "pulseColor",
+      "members": [],
+      "inputDefaults": [
+        {
+          "port": "B",
+          "value": "1.0"
+        }
+      ]
+    },
+    {
+      "id": "auraColorProperty",
+      "type": "Property",
+      "title": "Aura Color",
+      "property": "auraColor",
+      "x": 600.0,
+      "y": 1040.0,
+      "group": "pulseColor",
+      "members": [],
+      "inputDefaults": []
+    },
+    {
+      "id": "coreColorProperty",
+      "type": "Property",
+      "title": "Core Color",
+      "property": "coreColor",
+      "x": 600.0,
+      "y": 1210.0,
+      "group": "pulseColor",
+      "members": [],
+      "inputDefaults": []
+    },
+    {
+      "id": "colorBlend",
+      "type": "Lerp",
+      "title": "Gold To White-Gold",
+      "x": 2000.0,
+      "y": 1040.0,
+      "group": "pulseColor",
+      "members": [],
+      "inputDefaults": []
+    },
+    {
+      "id": "intensityProperty",
+      "type": "Property",
+      "title": "Intensity",
+      "property": "intensity",
+      "x": 2000.0,
+      "y": 1260.0,
+      "group": "pulseColor",
+      "members": [],
+      "inputDefaults": []
+    },
+    {
+      "id": "colorIntensity",
+      "type": "Multiply",
+      "title": "HDR Color × Intensity",
+      "x": 2280.0,
+      "y": 1080.0,
+      "group": "pulseColor",
+      "members": [],
+      "inputDefaults": []
+    },
+    {
+      "id": "finalColor",
+      "type": "Multiply",
+      "title": "Pulsed Shin Aura Color",
+      "x": 2560.0,
+      "y": 1080.0,
+      "group": "pulseColor",
+      "members": [],
+      "inputDefaults": []
+    },
+    {
+      "id": "alphaProperty",
+      "type": "Property",
+      "title": "Alpha",
+      "property": "alpha",
+      "x": 2000.0,
+      "y": 1460.0,
+      "group": "pulseColor",
+      "members": [],
+      "inputDefaults": []
+    },
+    {
+      "id": "alphaPulse",
+      "type": "Multiply",
+      "title": "Flame Mask × Pulse",
+      "x": 2280.0,
+      "y": 1370.0,
+      "group": "pulseColor",
+      "members": [],
+      "inputDefaults": []
+    },
+    {
+      "id": "finalAlpha",
+      "type": "Multiply",
+      "title": "Final Shin Aura Alpha",
+      "x": 2560.0,
+      "y": 1370.0,
+      "group": "pulseColor",
+      "members": [],
+      "inputDefaults": []
+    }
+  ],
+  "edges": [
+    {
+      "fromNode": "time",
+      "fromPort": "Time",
+      "toNode": "noiseTime",
+      "toPort": "A"
+    },
+    {
+      "fromNode": "noiseSpeedProperty",
+      "fromPort": "Out",
+      "toNode": "noiseTime",
+      "toPort": "B"
+    },
+    {
+      "fromNode": "noiseTime",
+      "fromPort": "Out",
+      "toNode": "noiseScroll",
+      "toPort": "G"
+    },
+    {
+      "fromNode": "vertexPositionOS",
+      "fromPort": "Out",
+      "toNode": "vertexPositionSplit",
+      "toPort": "In"
+    },
+    {
+      "fromNode": "vertexPositionSplit",
+      "fromPort": "R",
+      "toNode": "vertexObjectXY",
+      "toPort": "R"
+    },
+    {
+      "fromNode": "vertexPositionSplit",
+      "fromPort": "G",
+      "toNode": "vertexObjectXY",
+      "toPort": "G"
+    },
+    {
+      "fromNode": "vertexObjectXY",
+      "fromPort": "RG",
+      "toNode": "vertexAnimatedCoord",
+      "toPort": "A"
+    },
+    {
+      "fromNode": "noiseScroll",
+      "fromPort": "RG",
+      "toNode": "vertexAnimatedCoord",
+      "toPort": "B"
+    },
+    {
+      "fromNode": "vertexAnimatedCoord",
+      "fromPort": "Out",
+      "toNode": "vertexNoise",
+      "toPort": "UV"
+    },
+    {
+      "fromNode": "noiseScaleProperty",
+      "fromPort": "Out",
+      "toNode": "vertexNoise",
+      "toPort": "Scale"
+    },
+    {
+      "fromNode": "vertexNoise",
+      "fromPort": "Out",
+      "toNode": "vertexNoiseHeight",
+      "toPort": "A"
+    },
+    {
+      "fromNode": "flameHeightProperty",
+      "fromPort": "Out",
+      "toNode": "vertexNoiseHeight",
+      "toPort": "B"
+    },
+    {
+      "fromNode": "shellWidthProperty",
+      "fromPort": "Out",
+      "toNode": "vertexShellAmount",
+      "toPort": "A"
+    },
+    {
+      "fromNode": "vertexNoiseHeight",
+      "fromPort": "Out",
+      "toNode": "vertexShellAmount",
+      "toPort": "B"
+    },
+    {
+      "fromNode": "vertexNormalOS",
+      "fromPort": "Out",
+      "toNode": "vertexNormalOffset",
+      "toPort": "A"
+    },
+    {
+      "fromNode": "vertexShellAmount",
+      "fromPort": "Out",
+      "toNode": "vertexNormalOffset",
+      "toPort": "B"
+    },
+    {
+      "fromNode": "vertexPositionOS",
+      "fromPort": "Out",
+      "toNode": "expandedPosition",
+      "toPort": "A"
+    },
+    {
+      "fromNode": "vertexNormalOffset",
+      "fromPort": "Out",
+      "toNode": "expandedPosition",
+      "toPort": "B"
+    },
+    {
+      "fromNode": "fragmentPositionOS",
+      "fromPort": "Out",
+      "toNode": "fragmentPositionSplit",
+      "toPort": "In"
+    },
+    {
+      "fromNode": "fragmentPositionSplit",
+      "fromPort": "R",
+      "toNode": "fragmentObjectXY",
+      "toPort": "R"
+    },
+    {
+      "fromNode": "fragmentPositionSplit",
+      "fromPort": "G",
+      "toNode": "fragmentObjectXY",
+      "toPort": "G"
+    },
+    {
+      "fromNode": "fragmentObjectXY",
+      "fromPort": "RG",
+      "toNode": "fragmentAnimatedCoord",
+      "toPort": "A"
+    },
+    {
+      "fromNode": "noiseScroll",
+      "fromPort": "RG",
+      "toNode": "fragmentAnimatedCoord",
+      "toPort": "B"
+    },
+    {
+      "fromNode": "fragmentAnimatedCoord",
+      "fromPort": "Out",
+      "toNode": "largeNoise",
+      "toPort": "UV"
+    },
+    {
+      "fromNode": "noiseScaleProperty",
+      "fromPort": "Out",
+      "toNode": "largeNoise",
+      "toPort": "Scale"
+    },
+    {
+      "fromNode": "fragmentAnimatedCoord",
+      "fromPort": "Out",
+      "toNode": "detailNoise",
+      "toPort": "UV"
+    },
+    {
+      "fromNode": "detailScaleProperty",
+      "fromPort": "Out",
+      "toNode": "detailNoise",
+      "toPort": "Scale"
+    },
+    {
+      "fromNode": "detailNoise",
+      "fromPort": "Out",
+      "toNode": "detailWeighted",
+      "toPort": "A"
+    },
+    {
+      "fromNode": "fragmentAnimatedCoord",
+      "fromPort": "Out",
+      "toNode": "voronoiNoise",
+      "toPort": "UV"
+    },
+    {
+      "fromNode": "noiseTime",
+      "fromPort": "Out",
+      "toNode": "voronoiNoise",
+      "toPort": "Angle Offset"
+    },
+    {
+      "fromNode": "detailScaleProperty",
+      "fromPort": "Out",
+      "toNode": "voronoiNoise",
+      "toPort": "Cell Density"
+    },
+    {
+      "fromNode": "voronoiNoise",
+      "fromPort": "Out",
+      "toNode": "voronoiInvert",
+      "toPort": "In"
+    },
+    {
+      "fromNode": "voronoiInvert",
+      "fromPort": "Out",
+      "toNode": "voronoiWeighted",
+      "toPort": "A"
+    },
+    {
+      "fromNode": "largeNoise",
+      "fromPort": "Out",
+      "toNode": "largeDetailAdd",
+      "toPort": "A"
+    },
+    {
+      "fromNode": "detailWeighted",
+      "fromPort": "Out",
+      "toNode": "largeDetailAdd",
+      "toPort": "B"
+    },
+    {
+      "fromNode": "largeDetailAdd",
+      "fromPort": "Out",
+      "toNode": "turbulenceAdd",
+      "toPort": "A"
+    },
+    {
+      "fromNode": "voronoiWeighted",
+      "fromPort": "Out",
+      "toNode": "turbulenceAdd",
+      "toPort": "B"
+    },
+    {
+      "fromNode": "turbulenceAdd",
+      "fromPort": "Out",
+      "toNode": "turbulence",
+      "toPort": "In"
+    },
+    {
+      "fromNode": "breakupThresholdProperty",
+      "fromPort": "Out",
+      "toNode": "breakupEnd",
+      "toPort": "A"
+    },
+    {
+      "fromNode": "breakupSoftnessProperty",
+      "fromPort": "Out",
+      "toNode": "breakupEnd",
+      "toPort": "B"
+    },
+    {
+      "fromNode": "breakupThresholdProperty",
+      "fromPort": "Out",
+      "toNode": "flameMask",
+      "toPort": "Edge1"
+    },
+    {
+      "fromNode": "breakupEnd",
+      "fromPort": "Out",
+      "toNode": "flameMask",
+      "toPort": "Edge2"
+    },
+    {
+      "fromNode": "turbulence",
+      "fromPort": "Out",
+      "toNode": "flameMask",
+      "toPort": "In"
+    },
+    {
+      "fromNode": "flameMask",
+      "fromPort": "Out",
+      "toNode": "flamePresence",
+      "toPort": "T"
+    },
+    {
+      "fromNode": "time",
+      "fromPort": "Time",
+      "toNode": "pulseTime",
+      "toPort": "A"
+    },
+    {
+      "fromNode": "pulseSpeedProperty",
+      "fromPort": "Out",
+      "toNode": "pulseTime",
+      "toPort": "B"
+    },
+    {
+      "fromNode": "pulseTime",
+      "fromPort": "Out",
+      "toNode": "pulseSine",
+      "toPort": "In"
+    },
+    {
+      "fromNode": "pulseSine",
+      "fromPort": "Out",
+      "toNode": "pulseHalf",
+      "toPort": "A"
+    },
+    {
+      "fromNode": "pulseHalf",
+      "fromPort": "Out",
+      "toNode": "pulse01",
+      "toPort": "A"
+    },
+    {
+      "fromNode": "pulseAmountProperty",
+      "fromPort": "Out",
+      "toNode": "pulseMinimum",
+      "toPort": "In"
+    },
+    {
+      "fromNode": "pulseMinimum",
+      "fromPort": "Out",
+      "toNode": "pulse",
+      "toPort": "A"
+    },
+    {
+      "fromNode": "pulse01",
+      "fromPort": "Out",
+      "toNode": "pulse",
+      "toPort": "T"
+    },
+    {
+      "fromNode": "auraColorProperty",
+      "fromPort": "Out",
+      "toNode": "colorBlend",
+      "toPort": "A"
+    },
+    {
+      "fromNode": "coreColorProperty",
+      "fromPort": "Out",
+      "toNode": "colorBlend",
+      "toPort": "B"
+    },
+    {
+      "fromNode": "flameMask",
+      "fromPort": "Out",
+      "toNode": "colorBlend",
+      "toPort": "T"
+    },
+    {
+      "fromNode": "colorBlend",
+      "fromPort": "Out",
+      "toNode": "colorIntensity",
+      "toPort": "A"
+    },
+    {
+      "fromNode": "intensityProperty",
+      "fromPort": "Out",
+      "toNode": "colorIntensity",
+      "toPort": "B"
+    },
+    {
+      "fromNode": "colorIntensity",
+      "fromPort": "Out",
+      "toNode": "finalColor",
+      "toPort": "A"
+    },
+    {
+      "fromNode": "pulse",
+      "fromPort": "Out",
+      "toNode": "finalColor",
+      "toPort": "B"
+    },
+    {
+      "fromNode": "flamePresence",
+      "fromPort": "Out",
+      "toNode": "alphaPulse",
+      "toPort": "A"
+    },
+    {
+      "fromNode": "pulse",
+      "fromPort": "Out",
+      "toNode": "alphaPulse",
+      "toPort": "B"
+    },
+    {
+      "fromNode": "alphaPulse",
+      "fromPort": "Out",
+      "toNode": "finalAlpha",
+      "toPort": "A"
+    },
+    {
+      "fromNode": "alphaProperty",
+      "fromPort": "Out",
+      "toNode": "finalAlpha",
+      "toPort": "B"
+    }
+  ],
+  "outputs": [
+    {
+      "fromNode": "expandedPosition",
+      "fromPort": "Out",
+      "block": "Position",
+      "optional": false
+    },
+    {
+      "fromNode": "finalColor",
+      "fromPort": "Out",
+      "block": "Base Color",
+      "optional": false
+    },
+    {
+      "fromNode": "finalColor",
+      "fromPort": "Out",
+      "block": "Emission",
+      "optional": true
+    },
+    {
+      "fromNode": "finalAlpha",
+      "fromPort": "Out",
+      "block": "Alpha",
+      "optional": false
+    }
+  ]
+}

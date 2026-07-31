@@ -1,0 +1,262 @@
+{
+  "schemaVersion": 3,
+  "graphName": "SchemaV3_Properties_VertexShell",
+  "graphSettings": [
+    {
+      "target": "UniversalTarget",
+      "member": "surfaceType",
+      "value": "Transparent",
+      "optional": false
+    },
+    {
+      "target": "UniversalTarget",
+      "member": "alphaMode",
+      "value": "Additive",
+      "optional": false
+    },
+    {
+      "target": "UniversalTarget",
+      "member": "renderFace",
+      "value": "Back",
+      "optional": true
+    },
+    {
+      "target": "UniversalTarget",
+      "member": "supportVFX",
+      "value": "true",
+      "optional": true
+    }
+  ],
+  "properties": [
+    {
+      "id": "auraColor",
+      "type": "Color",
+      "displayName": "Aura Color",
+      "referenceName": "_AuraColor",
+      "defaultValue": "3.5,0.65,0.05,1",
+      "exposed": true,
+      "hdr": true
+    },
+    {
+      "id": "intensity",
+      "type": "Slider",
+      "displayName": "Intensity",
+      "referenceName": "_Intensity",
+      "defaultValue": "1.5",
+      "rangeMin": 0.0,
+      "rangeMax": 8.0,
+      "exposed": true
+    },
+    {
+      "id": "alpha",
+      "type": "Slider",
+      "displayName": "Alpha",
+      "referenceName": "_Alpha",
+      "defaultValue": "0.8",
+      "rangeMin": 0.0,
+      "rangeMax": 1.0,
+      "exposed": true
+    },
+    {
+      "id": "shellWidth",
+      "type": "Slider",
+      "displayName": "Shell Width",
+      "referenceName": "_ShellWidth",
+      "defaultValue": "0.05",
+      "rangeMin": 0.0,
+      "rangeMax": 0.25,
+      "exposed": true
+    }
+  ],
+  "groups": [
+    {
+      "id": "vertexShell",
+      "title": "Vertex Shell Expansion",
+      "x": -1250.0,
+      "y": -100.0
+    },
+    {
+      "id": "fragmentColor",
+      "title": "Material Controlled Color",
+      "x": -650.0,
+      "y": 500.0
+    }
+  ],
+  "stickyNotes": [
+    {
+      "id": "usage",
+      "title": "Schema v3 proof",
+      "content": "The four Blackboard properties appear in the generated Material Inspector. Position + Normal expands an aura shell in the Vertex stage.",
+      "x": -1300.0,
+      "y": -450.0,
+      "width": 420.0,
+      "height": 150.0,
+      "theme": "Classic",
+      "textSize": "Medium"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "positionOS",
+      "type": "Position",
+      "title": "Object Position",
+      "x": -1200.0,
+      "y": 0.0,
+      "group": "vertexShell",
+      "members": [
+        {
+          "name": "space",
+          "value": "Object"
+        }
+      ],
+      "inputDefaults": []
+    },
+    {
+      "id": "normalOS",
+      "type": "NormalVector",
+      "title": "Object Normal",
+      "x": -1200.0,
+      "y": 180.0,
+      "group": "vertexShell",
+      "members": [
+        {
+          "name": "space",
+          "value": "Object"
+        }
+      ],
+      "inputDefaults": []
+    },
+    {
+      "id": "shellWidthProperty",
+      "type": "Property",
+      "title": "Shell Width",
+      "property": "shellWidth",
+      "x": -1200.0,
+      "y": 360.0,
+      "group": "vertexShell",
+      "members": [],
+      "inputDefaults": []
+    },
+    {
+      "id": "normalOffset",
+      "type": "Multiply",
+      "title": "Normal × Shell Width",
+      "x": -900.0,
+      "y": 170.0,
+      "group": "vertexShell",
+      "members": [],
+      "inputDefaults": []
+    },
+    {
+      "id": "expandedPosition",
+      "type": "Add",
+      "title": "Expanded Vertex Position",
+      "x": -620.0,
+      "y": 60.0,
+      "group": "vertexShell",
+      "members": [],
+      "inputDefaults": []
+    },
+    {
+      "id": "auraColorProperty",
+      "type": "Property",
+      "title": "Aura Color",
+      "property": "auraColor",
+      "x": -600.0,
+      "y": 560.0,
+      "group": "fragmentColor",
+      "members": [],
+      "inputDefaults": []
+    },
+    {
+      "id": "intensityProperty",
+      "type": "Property",
+      "title": "Intensity",
+      "property": "intensity",
+      "x": -600.0,
+      "y": 720.0,
+      "group": "fragmentColor",
+      "members": [],
+      "inputDefaults": []
+    },
+    {
+      "id": "finalColor",
+      "type": "Multiply",
+      "title": "HDR Aura Color",
+      "x": -280.0,
+      "y": 590.0,
+      "group": "fragmentColor",
+      "members": [],
+      "inputDefaults": []
+    },
+    {
+      "id": "alphaProperty",
+      "type": "Property",
+      "title": "Alpha",
+      "property": "alpha",
+      "x": -280.0,
+      "y": 790.0,
+      "group": "fragmentColor",
+      "members": [],
+      "inputDefaults": []
+    }
+  ],
+  "edges": [
+    {
+      "fromNode": "normalOS",
+      "fromPort": "Out",
+      "toNode": "normalOffset",
+      "toPort": "A"
+    },
+    {
+      "fromNode": "shellWidthProperty",
+      "fromPort": "Out",
+      "toNode": "normalOffset",
+      "toPort": "B"
+    },
+    {
+      "fromNode": "positionOS",
+      "fromPort": "Out",
+      "toNode": "expandedPosition",
+      "toPort": "A"
+    },
+    {
+      "fromNode": "normalOffset",
+      "fromPort": "Out",
+      "toNode": "expandedPosition",
+      "toPort": "B"
+    },
+    {
+      "fromNode": "auraColorProperty",
+      "fromPort": "Out",
+      "toNode": "finalColor",
+      "toPort": "A"
+    },
+    {
+      "fromNode": "intensityProperty",
+      "fromPort": "Out",
+      "toNode": "finalColor",
+      "toPort": "B"
+    }
+  ],
+  "outputs": [
+    {
+      "fromNode": "expandedPosition",
+      "fromPort": "Out",
+      "block": "Position",
+      "optional": false
+    },
+    {
+      "fromNode": "finalColor",
+      "fromPort": "Out",
+      "block": "Base Color",
+      "optional": false
+    },
+    {
+      "fromNode": "alphaProperty",
+      "fromPort": "Out",
+      "block": "Alpha",
+      "optional": false
+    }
+  ]
+}

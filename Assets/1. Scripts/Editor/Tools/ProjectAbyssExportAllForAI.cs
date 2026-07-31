@@ -44,6 +44,7 @@ public static class ProjectAbyssExportAllForAI
                 ProjectAbyssDataAssetExporter.ExportModelAssetsForAI();
                 ProjectAbyssDataAssetExporter.ExportAllDataAssetsForAI();
                 ProjectAbyssVFXExporter.ExportVFXContextForAI();
+                ProjectAbyssShaderGraphExporter.ExportShaderGraphContextForAI();
             }
 
             IReadOnlyList<string> packages =

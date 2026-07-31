@@ -233,6 +233,9 @@ public class CharacterPersistentVfxController : MonoBehaviour
 
         foreach (VisualEffect visualEffect in active.VisualEffects)
             visualEffect?.Play();
+
+        foreach (ParticleSystem particleSystem in active.ParticleSystems)
+            particleSystem?.Play(true);
     }
 
     private static void StopAllEffects(ActivePersistentVfx active)
@@ -244,6 +247,16 @@ public class CharacterPersistentVfxController : MonoBehaviour
 
         foreach (VisualEffect visualEffect in active.VisualEffects)
             visualEffect?.Stop();
+
+        foreach (ParticleSystem particleSystem in active.ParticleSystems)
+        {
+            if (particleSystem == null)
+                continue;
+
+            particleSystem.Stop(
+                true,
+                ParticleSystemStopBehavior.StopEmitting);
+        }
     }
 
     private sealed class ActivePersistentVfx
@@ -255,15 +268,18 @@ public class CharacterPersistentVfxController : MonoBehaviour
 
         public BattleVfxInstance Instance { get; }
         public List<VisualEffect> VisualEffects { get; } = new();
+        public List<ParticleSystem> ParticleSystems { get; } = new();
 
         public void RefreshEffects()
         {
             VisualEffects.Clear();
+            ParticleSystems.Clear();
 
             if (Instance == null)
                 return;
 
             Instance.GetComponentsInChildren(true, VisualEffects);
+            Instance.GetComponentsInChildren(true, ParticleSystems);
         }
     }
 }

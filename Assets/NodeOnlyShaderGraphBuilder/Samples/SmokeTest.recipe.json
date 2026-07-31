@@ -1,0 +1,47 @@
+{
+  "schemaVersion": 1,
+  "graphName": "NodeOnly_SmokeTest",
+  "nodes": [
+    {
+      "id": "color",
+      "type": "Color",
+      "title": "Smoke HDR Color",
+      "x": -420,
+      "y": -40,
+      "members": [
+        {
+          "name": "color",
+          "value": "2.0,0.15,0.015,1.0"
+        }
+      ],
+      "inputDefaults": []
+    },
+    {
+      "id": "alpha",
+      "type": "Vector1",
+      "title": "Alpha",
+      "x": -420,
+      "y": 180,
+      "members": [
+        {
+          "name": "value",
+          "value": "1.0"
+        }
+      ],
+      "inputDefaults": []
+    }
+  ],
+  "edges": [],
+  "outputs": [
+    {
+      "fromNode": "color",
+      "fromPort": "Out",
+      "block": "Base Color"
+    },
+    {
+      "fromNode": "alpha",
+      "fromPort": "Out",
+      "block": "Alpha"
+    }
+  ]
+}

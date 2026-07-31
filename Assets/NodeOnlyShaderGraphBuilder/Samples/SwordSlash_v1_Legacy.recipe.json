@@ -1,0 +1,477 @@
+{
+  "schemaVersion": 1,
+  "graphName": "NodeOnly_SwordSlash",
+  "nodes": [
+    {
+      "id": "uv",
+      "type": "UV",
+      "title": "UV0",
+      "x": -1250,
+      "y": 0,
+      "members": [],
+      "inputDefaults": []
+    },
+    {
+      "id": "split",
+      "type": "Split",
+      "title": "Split UV",
+      "x": -1020,
+      "y": 0,
+      "members": [],
+      "inputDefaults": []
+    },
+    {
+      "id": "startA",
+      "type": "Vector1",
+      "title": "Start Edge 1",
+      "x": -1040,
+      "y": -240,
+      "members": [
+        {
+          "name": "value",
+          "value": "0.02"
+        }
+      ],
+      "inputDefaults": []
+    },
+    {
+      "id": "startB",
+      "type": "Vector1",
+      "title": "Start Edge 2",
+      "x": -1040,
+      "y": -150,
+      "members": [
+        {
+          "name": "value",
+          "value": "0.18"
+        }
+      ],
+      "inputDefaults": []
+    },
+    {
+      "id": "startMask",
+      "type": "Smoothstep",
+      "title": "Slash Start Fade",
+      "x": -760,
+      "y": -150,
+      "members": [],
+      "inputDefaults": []
+    },
+    {
+      "id": "endA",
+      "type": "Vector1",
+      "title": "End Edge 1",
+      "x": -1040,
+      "y": 300,
+      "members": [
+        {
+          "name": "value",
+          "value": "0.72"
+        }
+      ],
+      "inputDefaults": []
+    },
+    {
+      "id": "endB",
+      "type": "Vector1",
+      "title": "End Edge 2",
+      "x": -1040,
+      "y": 390,
+      "members": [
+        {
+          "name": "value",
+          "value": "0.98"
+        }
+      ],
+      "inputDefaults": []
+    },
+    {
+      "id": "endMask",
+      "type": "Smoothstep",
+      "title": "Slash End Fade",
+      "x": -760,
+      "y": 330,
+      "members": [],
+      "inputDefaults": []
+    },
+    {
+      "id": "endInvert",
+      "type": "OneMinus",
+      "title": "Invert End Fade",
+      "x": -520,
+      "y": 330,
+      "members": [],
+      "inputDefaults": []
+    },
+    {
+      "id": "horizontal",
+      "type": "Multiply",
+      "title": "Horizontal Window",
+      "x": -270,
+      "y": 40,
+      "members": [],
+      "inputDefaults": []
+    },
+    {
+      "id": "center",
+      "type": "Vector1",
+      "title": "Vertical Center",
+      "x": -1000,
+      "y": 590,
+      "members": [
+        {
+          "name": "value",
+          "value": "0.5"
+        }
+      ],
+      "inputDefaults": []
+    },
+    {
+      "id": "centeredY",
+      "type": "Subtract",
+      "title": "Center UV Y",
+      "x": -760,
+      "y": 560,
+      "members": [],
+      "inputDefaults": []
+    },
+    {
+      "id": "absY",
+      "type": "Absolute",
+      "title": "Distance From Center",
+      "x": -520,
+      "y": 560,
+      "members": [],
+      "inputDefaults": []
+    },
+    {
+      "id": "widthA",
+      "type": "Vector1",
+      "title": "Core Width",
+      "x": -520,
+      "y": 720,
+      "members": [
+        {
+          "name": "value",
+          "value": "0.16"
+        }
+      ],
+      "inputDefaults": []
+    },
+    {
+      "id": "widthB",
+      "type": "Vector1",
+      "title": "Outer Width",
+      "x": -520,
+      "y": 810,
+      "members": [
+        {
+          "name": "value",
+          "value": "0.46"
+        }
+      ],
+      "inputDefaults": []
+    },
+    {
+      "id": "verticalEdge",
+      "type": "Smoothstep",
+      "title": "Vertical Edge",
+      "x": -270,
+      "y": 620,
+      "members": [],
+      "inputDefaults": []
+    },
+    {
+      "id": "verticalMask",
+      "type": "OneMinus",
+      "title": "Vertical Slash Mask",
+      "x": -20,
+      "y": 620,
+      "members": [],
+      "inputDefaults": []
+    },
+    {
+      "id": "shape",
+      "type": "Multiply",
+      "title": "Base Slash Shape",
+      "x": 220,
+      "y": 210,
+      "members": [],
+      "inputDefaults": []
+    },
+    {
+      "id": "noise",
+      "type": "SimpleNoise",
+      "title": "Simple Noise",
+      "x": -270,
+      "y": 930,
+      "members": [],
+      "inputDefaults": []
+    },
+    {
+      "id": "noiseScale",
+      "type": "Vector1",
+      "title": "Noise Scale",
+      "x": -520,
+      "y": 1010,
+      "members": [
+        {
+          "name": "value",
+          "value": "8.0"
+        }
+      ],
+      "inputDefaults": []
+    },
+    {
+      "id": "noiseLow",
+      "type": "Vector1",
+      "title": "Noise Low",
+      "x": -20,
+      "y": 900,
+      "members": [
+        {
+          "name": "value",
+          "value": "0.25"
+        }
+      ],
+      "inputDefaults": []
+    },
+    {
+      "id": "noiseHigh",
+      "type": "Vector1",
+      "title": "Noise High",
+      "x": -20,
+      "y": 990,
+      "members": [
+        {
+          "name": "value",
+          "value": "0.78"
+        }
+      ],
+      "inputDefaults": []
+    },
+    {
+      "id": "noiseMask",
+      "type": "Smoothstep",
+      "title": "Noise Erosion",
+      "x": 220,
+      "y": 910,
+      "members": [],
+      "inputDefaults": []
+    },
+    {
+      "id": "finalMask",
+      "type": "Multiply",
+      "title": "Final Slash Mask",
+      "x": 490,
+      "y": 330,
+      "members": [],
+      "inputDefaults": []
+    },
+    {
+      "id": "slashColor",
+      "type": "Color",
+      "title": "Slash HDR Color",
+      "x": 250,
+      "y": -120,
+      "members": [
+        {
+          "name": "color",
+          "value": "0.25,1.4,2.5,1.0"
+        }
+      ],
+      "inputDefaults": []
+    },
+    {
+      "id": "colored",
+      "type": "Multiply",
+      "title": "Color × Mask",
+      "x": 760,
+      "y": 100,
+      "members": [],
+      "inputDefaults": []
+    }
+  ],
+  "edges": [
+    {
+      "fromNode": "uv",
+      "fromPort": "Out",
+      "toNode": "split",
+      "toPort": "In"
+    },
+    {
+      "fromNode": "startA",
+      "fromPort": "Out",
+      "toNode": "startMask",
+      "toPort": "Edge1"
+    },
+    {
+      "fromNode": "startB",
+      "fromPort": "Out",
+      "toNode": "startMask",
+      "toPort": "Edge2"
+    },
+    {
+      "fromNode": "split",
+      "fromPort": "R",
+      "toNode": "startMask",
+      "toPort": "In"
+    },
+    {
+      "fromNode": "endA",
+      "fromPort": "Out",
+      "toNode": "endMask",
+      "toPort": "Edge1"
+    },
+    {
+      "fromNode": "endB",
+      "fromPort": "Out",
+      "toNode": "endMask",
+      "toPort": "Edge2"
+    },
+    {
+      "fromNode": "split",
+      "fromPort": "R",
+      "toNode": "endMask",
+      "toPort": "In"
+    },
+    {
+      "fromNode": "endMask",
+      "fromPort": "Out",
+      "toNode": "endInvert",
+      "toPort": "In"
+    },
+    {
+      "fromNode": "startMask",
+      "fromPort": "Out",
+      "toNode": "horizontal",
+      "toPort": "A"
+    },
+    {
+      "fromNode": "endInvert",
+      "fromPort": "Out",
+      "toNode": "horizontal",
+      "toPort": "B"
+    },
+    {
+      "fromNode": "split",
+      "fromPort": "G",
+      "toNode": "centeredY",
+      "toPort": "A"
+    },
+    {
+      "fromNode": "center",
+      "fromPort": "Out",
+      "toNode": "centeredY",
+      "toPort": "B"
+    },
+    {
+      "fromNode": "centeredY",
+      "fromPort": "Out",
+      "toNode": "absY",
+      "toPort": "In"
+    },
+    {
+      "fromNode": "widthA",
+      "fromPort": "Out",
+      "toNode": "verticalEdge",
+      "toPort": "Edge1"
+    },
+    {
+      "fromNode": "widthB",
+      "fromPort": "Out",
+      "toNode": "verticalEdge",
+      "toPort": "Edge2"
+    },
+    {
+      "fromNode": "absY",
+      "fromPort": "Out",
+      "toNode": "verticalEdge",
+      "toPort": "In"
+    },
+    {
+      "fromNode": "verticalEdge",
+      "fromPort": "Out",
+      "toNode": "verticalMask",
+      "toPort": "In"
+    },
+    {
+      "fromNode": "horizontal",
+      "fromPort": "Out",
+      "toNode": "shape",
+      "toPort": "A"
+    },
+    {
+      "fromNode": "verticalMask",
+      "fromPort": "Out",
+      "toNode": "shape",
+      "toPort": "B"
+    },
+    {
+      "fromNode": "uv",
+      "fromPort": "Out",
+      "toNode": "noise",
+      "toPort": "UV"
+    },
+    {
+      "fromNode": "noiseScale",
+      "fromPort": "Out",
+      "toNode": "noise",
+      "toPort": "Scale"
+    },
+    {
+      "fromNode": "noiseLow",
+      "fromPort": "Out",
+      "toNode": "noiseMask",
+      "toPort": "Edge1"
+    },
+    {
+      "fromNode": "noiseHigh",
+      "fromPort": "Out",
+      "toNode": "noiseMask",
+      "toPort": "Edge2"
+    },
+    {
+      "fromNode": "noise",
+      "fromPort": "Out",
+      "toNode": "noiseMask",
+      "toPort": "In"
+    },
+    {
+      "fromNode": "shape",
+      "fromPort": "Out",
+      "toNode": "finalMask",
+      "toPort": "A"
+    },
+    {
+      "fromNode": "noiseMask",
+      "fromPort": "Out",
+      "toNode": "finalMask",
+      "toPort": "B"
+    },
+    {
+      "fromNode": "slashColor",
+      "fromPort": "Out",
+      "toNode": "colored",
+      "toPort": "A"
+    },
+    {
+      "fromNode": "finalMask",
+      "fromPort": "Out",
+      "toNode": "colored",
+      "toPort": "B"
+    }
+  ],
+  "outputs": [
+    {
+      "fromNode": "colored",
+      "fromPort": "Out",
+      "block": "Base Color"
+    },
+    {
+      "fromNode": "finalMask",
+      "fromPort": "Out",
+      "block": "Alpha"
+    }
+  ]
+}

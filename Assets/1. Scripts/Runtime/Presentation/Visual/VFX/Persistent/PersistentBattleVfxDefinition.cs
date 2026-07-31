@@ -9,7 +9,8 @@ public class PersistentBattleVfxDefinition : ScriptableObject
     [Header("Identity")]
     public string Key = "Aura";
 
-    [Header("VFX Graph Prefab")]
+    [Header("Effect Prefab (VFX Graph or Particle System)")]
+
     public GameObject Prefab;
 
     [Header("Pooling")]

@@ -340,6 +340,18 @@ public class BattleVfxManager : MonoBehaviour
             if (effect != null)
                 effect.playRate = playbackSpeed;
         }
+
+        ParticleSystem[] particleSystems =
+            instance.GetComponentsInChildren<ParticleSystem>(true);
+
+        foreach (ParticleSystem particleSystem in particleSystems)
+        {
+            if (particleSystem == null)
+                continue;
+
+            ParticleSystem.MainModule main = particleSystem.main;
+            main.simulationSpeed = playbackSpeed;
+        }
     }
 
     private bool TryResolveSpawnPose(
