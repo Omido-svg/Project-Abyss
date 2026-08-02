@@ -1,0 +1,45 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8e03ed514d788a244870e9d951986ee3, type: 3}
+  m_Name: Olaf_TODO_Loadout
+  m_EditorClassIdentifier: 
+  NormalSkills:
+  - {fileID: 11400000, guid: e70601f0335d00c47bd0d08fd718d968, type: 2}
+  - {fileID: 11400000, guid: 08327fbfacacf5c4e959f3b9b229c84c, type: 2}
+  - {fileID: 11400000, guid: b14cb4e5a33f73b41a9e7b1af4707767, type: 2}
+  DuelSkills:
+  - {fileID: 11400000, guid: d685378dcfe71d3418bf9cde7ff0542d, type: 2}
+  - {fileID: 11400000, guid: 89dac212b351004409724d78764b1d7f, type: 2}
+  PreparationSkills:
+  - {fileID: 11400000, guid: 65c14acfdfd08ed419fc20225869874b, type: 2}
+  - {fileID: 11400000, guid: c43fe45e72577d544b2699d16a8e2055, type: 2}
+  - {fileID: 11400000, guid: 0cd53d9b56e64a24b82911598f800af9, type: 2}
+  PrestigeSkills:
+  - {fileID: 11400000, guid: a2179a7ca9707b24c83c4bf189ed7fbb, type: 2}
+  Catalog: {fileID: 0}
+  IncludeCatalogCandidates: 0
+  NormalSkillPool:
+  - {fileID: 11400000, guid: e70601f0335d00c47bd0d08fd718d968, type: 2}
+  - {fileID: 11400000, guid: 08327fbfacacf5c4e959f3b9b229c84c, type: 2}
+  - {fileID: 11400000, guid: b14cb4e5a33f73b41a9e7b1af4707767, type: 2}
+  DuelSkillPool:
+  - {fileID: 11400000, guid: d685378dcfe71d3418bf9cde7ff0542d, type: 2}
+  - {fileID: 11400000, guid: 89dac212b351004409724d78764b1d7f, type: 2}
+  PrestigeSkillPool:
+  - {fileID: 11400000, guid: a2179a7ca9707b24c83c4bf189ed7fbb, type: 2}
+  - {fileID: 11400000, guid: cba7738ef39dc8a479e4080c3ffac687, type: 2}
+  - {fileID: 11400000, guid: 0a734c4202ffb29479c533fa9446c5fe, type: 2}
+  CommonPreparationPool: []
+  CharacterPreparationPool:
+  - {fileID: 11400000, guid: 65c14acfdfd08ed419fc20225869874b, type: 2}
+  - {fileID: 11400000, guid: c43fe45e72577d544b2699d16a8e2055, type: 2}
+  - {fileID: 11400000, guid: 0cd53d9b56e64a24b82911598f800af9, type: 2}

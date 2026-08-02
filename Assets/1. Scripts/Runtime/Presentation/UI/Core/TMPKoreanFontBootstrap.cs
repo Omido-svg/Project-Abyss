@@ -3,6 +3,10 @@ using System.Text;
 using TMPro;
 using UnityEngine;
 
+#if UNITY_EDITOR
+using UnityEditor;
+#endif
+
 [DefaultExecutionOrder(-10000)]
 [DisallowMultipleComponent]
 public sealed class TMPKoreanFontBootstrap :
@@ -188,6 +192,14 @@ public sealed class TMPKoreanFontBootstrap :
         if (koreanFontAsset == null)
             return;
 
+#if UNITY_EDITOR
+        // Editor Play Mode에서 프로젝트 TMP 에셋의 Fallback 목록을 바꾸면
+        // TMP Editor의 EndOfFrame Import와 충돌할 수 있다.
+        // Edit Mode의 Runtime Log Repair 메뉴가 영구 참조를 저장한다.
+        if (Application.isPlaying)
+            return;
+#endif
+
         koreanFontAsset.fallbackFontAssetTable ??=
             new List<TMP_FontAsset>();
 
@@ -368,6 +380,20 @@ public sealed class TMPKoreanFontBootstrap :
                 AtlasPopulationMode.Dynamic &&
             font.sourceFontFile != null)
         {
+#if UNITY_EDITOR
+            // Editor Play Mode에서 프로젝트 에셋인 TMP_FontAsset을 동적으로
+            // 변경하면 TMP_EditorResourceManager의 EndOfFrame Import와 충돌해
+            // "generated inconsistent result"가 발생할 수 있다.
+            // 글리프 생성은 전용 Editor Repair 메뉴에서 Edit Mode에 수행한다.
+            if (Application.isPlaying &&
+                AssetDatabase.Contains(font))
+            {
+                return FilterMissingCharacters(
+                    font,
+                    characters);
+            }
+#endif
+
             font.isMultiAtlasTexturesEnabled =
                 true;
 
@@ -379,6 +405,21 @@ public sealed class TMPKoreanFontBootstrap :
             return
                 missingCharacters ??
                 string.Empty;
+        }
+
+        return FilterMissingCharacters(
+            font,
+            characters);
+    }
+
+    private static string FilterMissingCharacters(
+        TMP_FontAsset font,
+        string characters)
+    {
+        if (font == null ||
+            string.IsNullOrEmpty(characters))
+        {
+            return characters ?? string.Empty;
         }
 
         StringBuilder missing =

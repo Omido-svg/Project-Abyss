@@ -353,7 +353,7 @@ public class CharacterView : MonoBehaviour, ISerializationCallbackReceiver
                 hasRootMotionOverride = false;
             }
 
-            if (animator.isActiveAndEnabled)
+            if (CanDriveAnimatorController(tryInitialize: false))
                 animator.Update(0f);
         }
 
@@ -382,6 +382,9 @@ public class CharacterView : MonoBehaviour, ISerializationCallbackReceiver
             }
             return;
         }
+
+        if (!CanDriveAnimatorController(tryInitialize: true))
+            return;
 
         bool hasHitTrigger =
             HasAnimatorParameter(HitHash, AnimatorControllerParameterType.Trigger);
@@ -438,7 +441,7 @@ public class CharacterView : MonoBehaviour, ISerializationCallbackReceiver
 
     private void PlayDeadFromAnimatorController()
     {
-        if (animator == null)
+        if (!CanDriveAnimatorController(tryInitialize: true))
             return;
 
         if (HasAnimatorParameter(
@@ -462,7 +465,7 @@ public class CharacterView : MonoBehaviour, ISerializationCallbackReceiver
 
         RestoreAnimatorSpeed();
 
-        if (animator != null)
+        if (CanDriveAnimatorController(tryInitialize: false))
             RefreshVisualState();
     }
 
@@ -473,13 +476,12 @@ public class CharacterView : MonoBehaviour, ISerializationCallbackReceiver
 
         RestoreAnimatorSpeed();
 
-        if (animator == null)
+        if (!CanDriveAnimatorController(tryInitialize: false))
             return;
 
         bool isDead = character != null && character.IsDead;
 
-        if (animator.isActiveAndEnabled)
-            animator.Rebind();
+        animator.Rebind();
 
         RefreshVisualState();
 
@@ -498,10 +500,17 @@ public class CharacterView : MonoBehaviour, ISerializationCallbackReceiver
 
     public void SetVisualStateForTest(CharacterVisualState state)
     {
-        if (animator == null)
+        if (!CanDriveAnimatorController(tryInitialize: true) ||
+            !HasAnimatorParameter(
+                VisualStateHash,
+                AnimatorControllerParameterType.Float))
+        {
             return;
+        }
 
-        animator.SetFloat(VisualStateHash, (float)state);
+        animator.SetFloat(
+            VisualStateHash,
+            (float)state);
     }
 
     public void RefreshVisualState()
@@ -516,8 +525,23 @@ public class CharacterView : MonoBehaviour, ISerializationCallbackReceiver
             return;
         }
 
+        // Animator가 비활성화되는 프레임, Controller가 아직 바인딩되지 않은
+        // 프레임, 또는 PlayableGraph 정리 중에는 SetFloat를 호출하지 않는다.
+        // Unity 6은 이 상태의 SetFloat에서
+        // "Animator is not playing an AnimatorController" 경고를 출력한다.
+        if (!CanDriveAnimatorController(tryInitialize: true) ||
+            !HasAnimatorParameter(
+                VisualStateHash,
+                AnimatorControllerParameterType.Float))
+        {
+            return;
+        }
+
         CharacterVisualState state = CalculateVisualState();
-        animator.SetFloat(VisualStateHash, (float)state);
+
+        animator.SetFloat(
+            VisualStateHash,
+            (float)state);
 
         if (logDebug)
             Debug.Log($"{name} VisualState 갱신 : {state}", this);
@@ -603,8 +627,11 @@ public class CharacterView : MonoBehaviour, ISerializationCallbackReceiver
         int parameterHash,
         AnimatorControllerParameterType expectedType)
     {
-        if (animator == null || animator.parameters == null)
+        if (!CanDriveAnimatorController(tryInitialize: false) ||
+            animator.parameters == null)
+        {
             return false;
+        }
 
         foreach (AnimatorControllerParameter parameter in animator.parameters)
         {
@@ -619,8 +646,10 @@ public class CharacterView : MonoBehaviour, ISerializationCallbackReceiver
     {
         stateHash = 0;
 
-        if (animator == null || string.IsNullOrWhiteSpace(hitStateName) ||
-            baseLayerIndex < 0 || baseLayerIndex >= animator.layerCount)
+        if (!CanDriveAnimatorController(tryInitialize: false) ||
+            string.IsNullOrWhiteSpace(hitStateName) ||
+            baseLayerIndex < 0 ||
+            baseLayerIndex >= animator.layerCount)
         {
             return false;
         }
@@ -642,6 +671,29 @@ public class CharacterView : MonoBehaviour, ISerializationCallbackReceiver
 
         stateHash = fullPathHash;
         return true;
+    }
+
+    private bool CanDriveAnimatorController(
+        bool tryInitialize)
+    {
+        if (animator == null ||
+            !animator.isActiveAndEnabled ||
+            !animator.gameObject.activeInHierarchy ||
+            animator.runtimeAnimatorController == null)
+        {
+            return false;
+        }
+
+        if (!animator.isInitialized &&
+            tryInitialize)
+        {
+            // CharacterAuthoringLink가 같은 초기화 구간에 Controller를
+            // 연결한 직후라면 Animator Graph가 아직 평가되지 않았을 수 있다.
+            animator.Rebind();
+            animator.Update(0f);
+        }
+
+        return animator.isInitialized;
     }
 
     private CharacterVisualState CalculateVisualState()

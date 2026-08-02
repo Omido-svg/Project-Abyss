@@ -16,6 +16,8 @@ public sealed class SkillDrawerCategoryUI : MonoBehaviour
     [SerializeField] private RectTransform content;
     [SerializeField] private BattleSkillCardButtonUI cardTemplate;
     [SerializeField, Min(0f)] private float expandedHeight = 500f;
+    [SerializeField, Min(0f)] private float drawerVerticalPadding = 12f;
+    [SerializeField, Min(32f)] private float minimumExpandedHeight = 64f;
     [SerializeField, Min(0.01f)] private float animationDuration = 0.22f;
     [SerializeField] private Ease openEase = Ease.OutCubic;
     [SerializeField] private Ease closeEase = Ease.InCubic;
@@ -24,9 +26,13 @@ public sealed class SkillDrawerCategoryUI : MonoBehaviour
     private readonly List<BattleSkillCardButtonUI> generatedCards = new();
     private Sequence drawerSequence;
     private bool isOpen;
+    private int visibleSkillCount;
+    private float calculatedExpandedHeight;
 
     public ActionType ActionType => actionType;
     public bool IsOpen => isOpen;
+    public int VisibleSkillCount => visibleSkillCount;
+    public bool HasVisibleSkills => visibleSkillCount > 0;
 
     public void Configure(
         ActionType type,
@@ -48,6 +54,7 @@ public sealed class SkillDrawerCategoryUI : MonoBehaviour
         content = contentRoot;
         cardTemplate = template;
         expandedHeight = Mathf.Max(1f, height);
+        calculatedExpandedHeight = expandedHeight;
 
         BindHeader();
         ConfigureHeaderText();
@@ -56,6 +63,9 @@ public sealed class SkillDrawerCategoryUI : MonoBehaviour
 
     private void Awake()
     {
+        calculatedExpandedHeight =
+            Mathf.Max(1f, expandedHeight);
+
         BindHeader();
         ConfigureHeaderText();
         SetOpenImmediate(startOpen);
@@ -130,6 +140,8 @@ public sealed class SkillDrawerCategoryUI : MonoBehaviour
             }
         }
 
+        visibleSkillCount = count;
+
         if (headerText != null)
         {
             headerText.text =
@@ -143,7 +155,13 @@ public sealed class SkillDrawerCategoryUI : MonoBehaviour
             SetOpenImmediate(false);
 
         if (content != null)
+        {
             LayoutRebuilder.ForceRebuildLayoutImmediate(content);
+            RecalculateExpandedHeight();
+        }
+
+        if (isOpen && count > 0)
+            SetOpenImmediate(true);
     }
 
     public void Toggle()
@@ -153,6 +171,9 @@ public sealed class SkillDrawerCategoryUI : MonoBehaviour
 
     public void SetOpen(bool open, bool animate)
     {
+        if (open && !HasVisibleSkills)
+            open = false;
+
         isOpen = open;
         KillDrawerTween();
 
@@ -169,7 +190,9 @@ public sealed class SkillDrawerCategoryUI : MonoBehaviour
             ? Mathf.Max(0f, drawerLayout.preferredHeight)
             : 0f;
 
-        float toHeight = open ? expandedHeight : 0f;
+        float toHeight = open
+            ? ResolveExpandedHeight()
+            : 0f;
         float toAlpha = open ? 1f : 0f;
 
         if (drawerCanvasGroup != null)
@@ -237,7 +260,7 @@ public sealed class SkillDrawerCategoryUI : MonoBehaviour
 
         if (drawerLayout != null)
             drawerLayout.preferredHeight = open
-                ? expandedHeight
+                ? ResolveExpandedHeight()
                 : 0f;
 
         if (drawerCanvasGroup != null)
@@ -249,6 +272,60 @@ public sealed class SkillDrawerCategoryUI : MonoBehaviour
 
         if (drawerRoot != null)
             drawerRoot.gameObject.SetActive(open);
+    }
+
+    private void RecalculateExpandedHeight()
+    {
+        float preferred = 0f;
+
+        if (content != null)
+        {
+            Canvas.ForceUpdateCanvases();
+            LayoutRebuilder.ForceRebuildLayoutImmediate(content);
+
+            preferred =
+                LayoutUtility.GetPreferredHeight(content);
+
+            if (preferred <= 0f)
+                preferred = content.rect.height;
+        }
+
+        float minimum =
+            Mathf.Max(32f, minimumExpandedHeight);
+
+        float maximum =
+            Mathf.Max(minimum, expandedHeight);
+
+        calculatedExpandedHeight =
+            Mathf.Clamp(
+                preferred +
+                Mathf.Max(0f, drawerVerticalPadding),
+                minimum,
+                maximum);
+
+        if (content != null)
+        {
+            content.anchorMin =
+                new Vector2(0f, 1f);
+            content.anchorMax =
+                new Vector2(1f, 1f);
+            content.pivot =
+                new Vector2(0.5f, 1f);
+            content.anchoredPosition = Vector2.zero;
+            content.SetSizeWithCurrentAnchors(
+                RectTransform.Axis.Vertical,
+                Mathf.Max(1f, preferred));
+        }
+    }
+
+    private float ResolveExpandedHeight()
+    {
+        if (calculatedExpandedHeight <= 0f)
+            RecalculateExpandedHeight();
+
+        return Mathf.Max(
+            Mathf.Max(32f, minimumExpandedHeight),
+            calculatedExpandedHeight);
     }
 
     private static bool openingRequired(bool open)

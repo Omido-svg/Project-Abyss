@@ -1,0 +1,129 @@
+PROJECT ABYSS CHARACTER VERIFICATION
+Character: 유진
+Profile: 유진_Verification (character.Yujin.060a5617ffe7f004f979c24bc775dc19)
+Bundle: Yujin_TODO_Bundle
+Started: 2026-08-03T01:12:58.2774178+09:00
+Finished: 2026-08-03T01:12:58.2992663+09:00
+PASS 16 / FAIL 1 / SKIP 0 / ERROR 0
+========================================================================
+[Pass] generic.data.core_references / Core 데이터 참조
+Category: Data / Mode: DataOnly / Time: 0ms
+Expected: 필수 Core 참조가 모두 연결됨
+Actual: Bundle/Data/Loadout/Prefab 연결 정상
+Initial: Character=NULL
+Final: Character=NULL
+------------------------------------------------------------------------
+[Pass] generic.data.prefab_compatibility / Prefab·Bundle 호환성
+Category: Data / Mode: DataOnly / Time: 1ms
+Expected: Bundle Kind와 표준 Prefab Component가 호환됨
+Actual: Yujin 호환 정상
+Initial: Character=NULL
+Final: Character=NULL
+------------------------------------------------------------------------
+[Pass] generic.data.loadout_integrity / 스킬 장착·슬롯 노출
+Category: Data / Mode: DataOnly / Time: 0ms
+Expected: 카테고리 한도·타입·슬롯 노출 정상
+Actual: 일반 2, 결투 2, 도사림 2, 위세 1
+Initial: Character=NULL
+Final: Character=NULL
+------------------------------------------------------------------------
+[Pass] generic.data.skill_definitions / SkillDefinition 무결성
+Category: Data / Mode: DataOnly / Time: 0ms
+Expected: 모든 SkillDefinition ID와 Runtime 생성 정상
+Actual: 9개 스킬 정상
+Initial: Character=NULL
+Final: Character=NULL
+------------------------------------------------------------------------
+[Fail] generic.presentation.timeline_and_animator / Timeline·Animator 연결
+Category: Presentation / Mode: DataOnly / Time: 0ms
+Expected: Animator·Presentation·Timeline 연결 정상
+Actual: 1개 오류
+Initial: Character=NULL
+Final: Character=NULL
+Details:
+RuntimeAnimatorController가 없습니다.
+------------------------------------------------------------------------
+[Pass] generic.runtime.initialization / 격리 런타임 초기화
+Category: Boundary / Mode: IsolatedRuntime / Time: 3ms
+Expected: Isolated BattleContext 초기화와 메커닉 구독 성공
+Actual: 유진 / Initialized=True / HP=720/720 / Block=0 / Prestige=0 / Resources=Energy:3 / Parts=[HEAD 180/180 Normal, LEFT_HAND 180/180 Normal, RIGHT_HAND 180/180 Normal, LEGS 180/180 Normal]
+Initial: 유진 / Initialized=True / HP=720/720 / Block=0 / Prestige=0 / Resources=Energy:3 / Parts=[HEAD 180/180 Normal, LEFT_HAND 180/180 Normal, RIGHT_HAND 180/180 Normal, LEGS 180/180 Normal]
+Final: 유진 / Initialized=True / HP=720/720 / Block=0 / Prestige=0 / Resources=Energy:3 / Parts=[HEAD 180/180 Normal, LEFT_HAND 180/180 Normal, RIGHT_HAND 180/180 Normal, LEGS 180/180 Normal]
+------------------------------------------------------------------------
+[Pass] generic.runtime.body_parts / 부위 런타임 상태
+Category: Status / Mode: IsolatedRuntime / Time: 2ms
+Expected: 부위 Owner·HP·타입·초기 상태 정상
+Actual: 4개 부위 정상
+Initial: 유진 / Initialized=True / HP=720/720 / Block=0 / Prestige=0 / Resources=Energy:3 / Parts=[HEAD 180/180 Normal, LEFT_HAND 180/180 Normal, RIGHT_HAND 180/180 Normal, LEGS 180/180 Normal]
+Final: 유진 / Initialized=True / HP=720/720 / Block=0 / Prestige=0 / Resources=Energy:3 / Parts=[HEAD 180/180 Normal, LEFT_HAND 180/180 Normal, RIGHT_HAND 180/180 Normal, LEGS 180/180 Normal]
+------------------------------------------------------------------------
+[Pass] generic.runtime.skill_binding / 런타임 스킬 바인딩
+Category: Data / Mode: IsolatedRuntime / Time: 1ms
+Expected: 모든 장착 스킬이 RuntimeSkill로 생성됨
+Actual: 9개 RuntimeSkill
+Initial: 유진 / Initialized=True / HP=720/720 / Block=0 / Prestige=0 / Resources=Energy:3 / Parts=[HEAD 180/180 Normal, LEFT_HAND 180/180 Normal, RIGHT_HAND 180/180 Normal, LEGS 180/180 Normal]
+Final: 유진 / Initialized=True / HP=720/720 / Block=0 / Prestige=0 / Resources=Energy:3 / Parts=[HEAD 180/180 Normal, LEFT_HAND 180/180 Normal, RIGHT_HAND 180/180 Normal, LEGS 180/180 Normal]
+------------------------------------------------------------------------
+[Pass] generic.runtime.deterministic_random / 결정론적 굴림 재현
+Category: Boundary / Mode: IsolatedRuntime / Time: 2ms
+Expected: 동일 Seed·Sample은 동일 RollResult
+Actual: 🎲 5 + 1
+Initial: 유진 / Initialized=True / HP=720/720 / Block=0 / Prestige=0 / Resources=Energy:3 / Parts=[HEAD 180/180 Normal, LEFT_HAND 180/180 Normal, RIGHT_HAND 180/180 Normal, LEGS 180/180 Normal]
+Final: 유진 / Initialized=True / HP=720/720 / Block=0 / Prestige=0 / Resources=Energy:3 / Parts=[HEAD 180/180 Normal, LEFT_HAND 180/180 Normal, RIGHT_HAND 180/180 Normal, LEGS 180/180 Normal]
+------------------------------------------------------------------------
+[Pass] generic.live.scene_binding / 실전 Scene UI·전투 연결
+Category: UI / Mode: LiveScene / Time: 2ms
+Expected: 실전 플레이어와 전투 UI 연결 정상
+Actual: 유진 / 9개 스킬
+Initial: 유진 / Initialized=True / HP=720/720 / Block=0 / Prestige=0 / Resources=Energy:3 / Parts=[HEAD 180/180 Normal, LEFT_HAND 180/180 Normal, RIGHT_HAND 180/180 Normal, LEGS 180/180 Normal]
+Final: 유진 / Initialized=True / HP=720/720 / Block=0 / Prestige=0 / Resources=Energy:3 / Parts=[HEAD 180/180 Normal, LEFT_HAND 180/180 Normal, RIGHT_HAND 180/180 Normal, LEGS 180/180 Normal]
+------------------------------------------------------------------------
+[Pass] yujin.data.skill_coverage / 유진 스킬 ID 전체 등록
+Category: Data / Mode: DataOnly / Time: 0ms
+Expected: 유진 고유 스킬 ID 9개 존재
+Actual: 9/9 등록
+Initial: Character=NULL
+Final: Character=NULL
+------------------------------------------------------------------------
+[Pass] yujin.passive.mechanic_registration / 유진 통합 메커닉 등록
+Category: Passive / Mode: IsolatedRuntime / Time: 0ms
+Expected: YujinMechanic 생성·등록·Owner 연결
+Actual: Registered
+Initial: 유진 / Initialized=True / HP=720/720 / Block=0 / Prestige=0 / Resources=Energy:3 / Parts=[HEAD 180/180 Normal, LEFT_HAND 180/180 Normal, RIGHT_HAND 180/180 Normal, LEGS 180/180 Normal]
+Final: 유진 / Initialized=True / HP=720/720 / Block=0 / Prestige=0 / Resources=Energy:3 / Parts=[HEAD 180/180 Normal, LEFT_HAND 180/180 Normal, RIGHT_HAND 180/180 Normal, LEGS 180/180 Normal]
+------------------------------------------------------------------------
+[Pass] yujin.passive.unlimited_weapon_switch / 무기 무제한 전환
+Category: Passive / Mode: IsolatedRuntime / Time: 1ms
+Expected: 동일 턴 3회 연속 전환과 이벤트 3회
+Actual: Baeku->Jeokseol, Jeokseol->Nakil, Nakil->Baeku
+Initial: 유진 / Initialized=True / HP=720/720 / Block=0 / Prestige=0 / Resources=Energy:3 / Parts=[HEAD 180/180 Normal, LEFT_HAND 180/180 Normal, RIGHT_HAND 180/180 Normal, LEGS 180/180 Normal]
+Final: 유진 / Initialized=True / HP=720/720 / Block=0 / Prestige=0 / Resources=Energy:3 / Parts=[HEAD 180/180 Normal, LEFT_HAND 180/180 Normal, RIGHT_HAND 180/180 Normal, LEGS 180/180 Normal]
+------------------------------------------------------------------------
+[Pass] yujin.passive.weapon_profiles / 무기 프로필 수치
+Category: Data / Mode: DataOnly / Time: 0ms
+Expected: 백우 3/40%/12/4, 적설 2/30%/15/6, 낙일 1/25%/19/8
+Actual: 무기 프로필 일치
+Initial: Character=NULL
+Final: Character=NULL
+------------------------------------------------------------------------
+[Pass] yujin.passive.sense_turn_start / 살수의 감 턴 시작 획득
+Category: Passive / Mode: IsolatedRuntime / Time: 0ms
+Expected: TurnStart마다 감 +1
+Actual: 0→1→2
+Initial: 유진 / Initialized=True / HP=720/720 / Block=0 / Prestige=0 / Resources=Energy:3 / Parts=[HEAD 180/180 Normal, LEFT_HAND 180/180 Normal, RIGHT_HAND 180/180 Normal, LEGS 180/180 Normal]
+Final: 유진 / Initialized=True / HP=720/720 / Block=0 / Prestige=0 / Resources=Energy:3 / Parts=[HEAD 180/180 Normal, LEFT_HAND 180/180 Normal, RIGHT_HAND 180/180 Normal, LEGS 180/180 Normal]
+------------------------------------------------------------------------
+[Pass] yujin.duel.sense_reroll / 살수의 감 자동 재굴림
+Category: Duel / Mode: IsolatedRuntime / Time: 2ms
+Expected: 패배·비크리·자동 ON에서 감 1 소모 후 1회 재굴림
+Actual: Requested=True, Sense=0, Second=False
+Initial: 유진 / Initialized=True / HP=720/720 / Block=0 / Prestige=0 / Resources=Energy:3 / Parts=[HEAD 180/180 Normal, LEFT_HAND 180/180 Normal, RIGHT_HAND 180/180 Normal, LEGS 180/180 Normal]
+Final: 유진 / Initialized=True / HP=720/720 / Block=0 / Prestige=0 / Resources=Energy:3 / Parts=[HEAD 180/180 Normal, LEFT_HAND 180/180 Normal, RIGHT_HAND 180/180 Normal, LEGS 180/180 Normal]
+------------------------------------------------------------------------
+[Pass] yujin.passive.mark_ignition_nakil / 표식 44·낙일 발화
+Category: Passive / Mode: IsolatedRuntime / Time: 3ms
+Expected: 표식 43→44 발화, 표식 0, 낙일 약화
+Actual: Mark=43→0, State=Weakened
+Initial: 유진 / Initialized=True / HP=720/720 / Block=0 / Prestige=0 / Resources=Energy:3 / Parts=[HEAD 180/180 Normal, LEFT_HAND 180/180 Normal, RIGHT_HAND 180/180 Normal, LEGS 180/180 Normal]
+Final: 유진 / Initialized=True / HP=720/720 / Block=0 / Prestige=0 / Resources=Energy:3 / Parts=[HEAD 1/180 Weakened, LEFT_HAND 180/180 Normal, RIGHT_HAND 180/180 Normal, LEGS 180/180 Normal]
+------------------------------------------------------------------------

@@ -158,6 +158,24 @@ public abstract class Character : MonoBehaviour
 
     public abstract IReadOnlyList<BodyPart> BodyParts { get; }
 
+    public BodyPart GetBodyPart(
+        PartType type)
+    {
+        if (BodyParts == null)
+            return null;
+
+        foreach (BodyPart part in BodyParts)
+        {
+            if (part != null &&
+                part.Type == type)
+            {
+                return part;
+            }
+        }
+
+        return null;
+    }
+
     // 기존 외부 코드 호환용 ICombatTargetModel 노출.
     public ICombatTargetModel TargetModel =>
         targetModel?.Model;
@@ -1379,6 +1397,65 @@ public abstract class Character : MonoBehaviour
         }
 
         return value;
+    }
+
+    public int ModifyExchangeRollCount(
+        BattleAction action,
+        int rollCount)
+    {
+        int value = Mathf.Max(1, rollCount);
+
+        foreach (StatusEffect effect in StatusEffects)
+        {
+            if (effect != null)
+            {
+                value = Mathf.Max(
+                    1,
+                    effect.ModifyExchangeRollCount(
+                        action,
+                        value));
+            }
+        }
+
+        if (action?.OwnerPart != null)
+        {
+            foreach (StatusEffect effect
+                     in action.OwnerPart.StatusEffects)
+            {
+                if (effect != null)
+                {
+                    value = Mathf.Max(
+                        1,
+                        effect.ModifyExchangeRollCount(
+                            action,
+                            value));
+                }
+            }
+        }
+
+        return mechanicController == null
+            ? value
+            : mechanicController.ModifyExchangeRollCount(
+                action,
+                value);
+    }
+
+    public bool TryRequestExchangeReroll(
+        ExchangeRerollContext context)
+    {
+        return mechanicController != null &&
+               mechanicController.TryRequestExchangeReroll(
+                   context);
+    }
+
+    public bool CanBreakPart(
+        BodyPart part,
+        BattleAction sourceAction)
+    {
+        return mechanicController == null ||
+               mechanicController.CanBreakOwnerPart(
+                   part,
+                   sourceAction);
     }
 
     public bool CanUseSkill(

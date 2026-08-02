@@ -1,0 +1,101 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e19daa19565c4da4889234089ec44149, type: 3}
+  m_Name: "\uD6C8\uB828\uC6A9_\uBCF4\uC2A4_Verification"
+  m_EditorClassIdentifier: 
+  profileId: character.EliteEnemy.a4db292def3e6f5489eab81eeca0e115
+  bundle: {fileID: 11400000, guid: a4db292def3e6f5489eab81eeca0e115, type: 2}
+  strictPresentationValidation: 1
+  cases:
+  - CaseId: generic.data.core_references
+    DisplayName: "Core \uB370\uC774\uD130 \uCC38\uC870"
+    Category: 0
+    ExecutionMode: 0
+    Enabled: 1
+    Seed: 1207
+    Description: "Bundle, CharacterData, CombatLoadout, Prefab\uC758 \uD544\uC218
+      \uCC38\uC870\uB97C \uAC80\uC0AC\uD569\uB2C8\uB2E4."
+  - CaseId: generic.data.prefab_compatibility
+    DisplayName: "Prefab\xB7Bundle \uD638\uD658\uC131"
+    Category: 0
+    ExecutionMode: 0
+    Enabled: 1
+    Seed: 1207
+    Description: "Bundle Kind\uC640 Character Component \uC870\uD569 \uBC0F \uD544\uC218
+      Prefab Component\uB97C \uAC80\uC0AC\uD569\uB2C8\uB2E4."
+  - CaseId: generic.data.loadout_integrity
+    DisplayName: "\uC2A4\uD0AC \uC7A5\uCC29\xB7\uC2AC\uB86F \uB178\uCD9C"
+    Category: 0
+    ExecutionMode: 0
+    Enabled: 1
+    Seed: 1207
+    Description: "\uCE74\uD14C\uACE0\uB9AC\uBCC4 \uC7A5\uCC29 \uD55C\uB3C4, \uD0C0\uC785,
+      \uC911\uBCF5\uACFC \uD589\uB3D9 \uC2AC\uB86F\uC5D0\uC11C\uC758 \uB178\uCD9C
+      \uAC00\uB2A5\uC131\uC744 \uAC80\uC0AC\uD569\uB2C8\uB2E4."
+  - CaseId: generic.data.skill_definitions
+    DisplayName: "SkillDefinition \uBB34\uACB0\uC131"
+    Category: 0
+    ExecutionMode: 0
+    Enabled: 1
+    Seed: 1207
+    Description: "\uC2A4\uD0AC ID, \uAD74\uB9BC \uC218, \uC911\uBCF5 ID\uC640 \uB7F0\uD0C0\uC784
+      \uC0DD\uC131 \uAC00\uB2A5 \uC5EC\uBD80\uB97C \uAC80\uC0AC\uD569\uB2C8\uB2E4."
+  - CaseId: generic.presentation.timeline_and_animator
+    DisplayName: "Timeline\xB7Animator \uC5F0\uACB0"
+    Category: 8
+    ExecutionMode: 0
+    Enabled: 1
+    Seed: 1207
+    Description: "Animator, CharacterPresentationProfile, \uC2A4\uD0AC Timeline \uC138\uD2B8\uB97C
+      \uAC80\uC0AC\uD569\uB2C8\uB2E4."
+  - CaseId: generic.runtime.initialization
+    DisplayName: "\uACA9\uB9AC \uB7F0\uD0C0\uC784 \uCD08\uAE30\uD654"
+    Category: 9
+    ExecutionMode: 1
+    Enabled: 1
+    Seed: 1207
+    Description: "\uC2E4\uC81C Prefab Clone\uC744 \uBCC4\uB3C4 BattleContext\uC5D0
+      \uCD08\uAE30\uD654\uD574 \uAD6C\uB3C5\uACFC \uB7F0\uD0C0\uC784 \uC0DD\uC131
+      \uC2E4\uD328\uB97C \uAC80\uC0AC\uD569\uB2C8\uB2E4."
+  - CaseId: generic.runtime.body_parts
+    DisplayName: "\uBD80\uC704 \uB7F0\uD0C0\uC784 \uC0C1\uD0DC"
+    Category: 6
+    ExecutionMode: 1
+    Enabled: 1
+    Seed: 1207
+    Description: "\uBD80\uC704 \uC18C\uC720\uC790, HP, \uD0C0\uC785 \uC911\uBCF5,
+      \uCD08\uAE30 \uC0C1\uD0DC\uB97C \uAC80\uC0AC\uD569\uB2C8\uB2E4."
+  - CaseId: generic.runtime.skill_binding
+    DisplayName: "\uB7F0\uD0C0\uC784 \uC2A4\uD0AC \uBC14\uC778\uB529"
+    Category: 0
+    ExecutionMode: 1
+    Enabled: 1
+    Seed: 1207
+    Description: "\uC7A5\uCC29 SkillDefinition\uC774 \uCE90\uB9AD\uD130 \uACE0\uC720
+      RuntimeSkill\uB85C \uC0DD\uC131\uB418\uC5C8\uB294\uC9C0 \uAC80\uC0AC\uD569\uB2C8\uB2E4."
+  - CaseId: generic.runtime.deterministic_random
+    DisplayName: "\uACB0\uC815\uB860\uC801 \uAD74\uB9BC \uC7AC\uD604"
+    Category: 9
+    ExecutionMode: 1
+    Enabled: 1
+    Seed: 1207
+    Description: "CharacterRandomDebugOverride\uAC00 \uAC19\uC740 Seed\uC640 Sample\uC5D0\uC11C
+      \uAC19\uC740 RollResult\uB97C \uC0DD\uC131\uD558\uB294\uC9C0 \uAC80\uC0AC\uD569\uB2C8\uB2E4."
+  - CaseId: generic.live.scene_binding
+    DisplayName: "\uC2E4\uC804 Scene UI\xB7\uC804\uD22C \uC5F0\uACB0"
+    Category: 7
+    ExecutionMode: 2
+    Enabled: 1
+    Seed: 1207
+    Description: "\uD604\uC7AC BattleManager\uC758 \uD50C\uB808\uC774\uC5B4, HUD,
+      \uC2A4\uD0AC \uD328\uB110\uC774 \uC120\uD0DD Bundle\uACFC \uC5F0\uACB0\uB418\uC5B4
+      \uC788\uB294\uC9C0 \uAC80\uC0AC\uD569\uB2C8\uB2E4."

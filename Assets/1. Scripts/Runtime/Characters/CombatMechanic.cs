@@ -170,6 +170,17 @@ public abstract class CombatMechanic : IBattleEventListener
         BattleAction action,
         int roll) => roll;
 
+    public virtual int ModifyExchangeRollCount(
+        BattleAction action,
+        int rollCount) => rollCount;
+
+    public virtual bool TryRequestExchangeReroll(
+        ExchangeRerollContext context) => false;
+
+    public virtual bool CanBreakOwnerPart(
+        BodyPart part,
+        BattleAction sourceAction) => true;
+
     public virtual int ModifyDamageDealt(
         DamageContext context,
         int damage) => damage;

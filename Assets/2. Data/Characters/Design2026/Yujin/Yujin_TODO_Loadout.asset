@@ -1,0 +1,41 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8e03ed514d788a244870e9d951986ee3, type: 3}
+  m_Name: Yujin_TODO_Loadout
+  m_EditorClassIdentifier: 
+  NormalSkills:
+  - {fileID: 11400000, guid: 1448146363980f847ae3e1714b6ffdcb, type: 2}
+  - {fileID: 11400000, guid: 24544eb000f3c9947af73299509299c4, type: 2}
+  DuelSkills:
+  - {fileID: 11400000, guid: 1db95755eb2fbd54aaa224149c590035, type: 2}
+  - {fileID: 11400000, guid: b0efec565ed21fc47905b522fbe535b5, type: 2}
+  PreparationSkills:
+  - {fileID: 11400000, guid: 6b294901926d0964097c1dcf2c9654ff, type: 2}
+  - {fileID: 11400000, guid: da43df7d4b59e2e48b6831197481a11a, type: 2}
+  PrestigeSkills:
+  - {fileID: 11400000, guid: 1f9711e1c7d003f4b8932c12a6f07a47, type: 2}
+  Catalog: {fileID: 0}
+  IncludeCatalogCandidates: 0
+  NormalSkillPool:
+  - {fileID: 11400000, guid: 1448146363980f847ae3e1714b6ffdcb, type: 2}
+  - {fileID: 11400000, guid: 24544eb000f3c9947af73299509299c4, type: 2}
+  DuelSkillPool:
+  - {fileID: 11400000, guid: 1db95755eb2fbd54aaa224149c590035, type: 2}
+  - {fileID: 11400000, guid: b0efec565ed21fc47905b522fbe535b5, type: 2}
+  PrestigeSkillPool:
+  - {fileID: 11400000, guid: 1f9711e1c7d003f4b8932c12a6f07a47, type: 2}
+  - {fileID: 11400000, guid: 85a085f253cb1c244bbb7a6216ca176b, type: 2}
+  - {fileID: 11400000, guid: 1bcaa22fa7f23ab4898351c37badae86, type: 2}
+  CommonPreparationPool: []
+  CharacterPreparationPool:
+  - {fileID: 11400000, guid: 6b294901926d0964097c1dcf2c9654ff, type: 2}
+  - {fileID: 11400000, guid: da43df7d4b59e2e48b6831197481a11a, type: 2}

@@ -30,9 +30,18 @@ public sealed class ClashExchangeResult
         SecondaryDamageContexts =
             new List<DamageContext>();
 
+    public bool IsDuelExchange;
+
     public int MomentumBefore;
     public int MomentumAfter;
     public int MomentumShift;
+    public int HitMomentumShift;
+    public int DuelMomentumShift;
+
+    public int FirstPrestigeGain;
+    public int SecondPrestigeGain;
+
+    // 기존 집계 코드 호환.
     public int PrestigeDealtGain;
     public int PrestigeTakenGain;
 

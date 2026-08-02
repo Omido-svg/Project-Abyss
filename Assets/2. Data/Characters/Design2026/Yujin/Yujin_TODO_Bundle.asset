@@ -1,0 +1,42 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d0163392f1e89b4448da024edd3daf3b, type: 3}
+  m_Name: Yujin_TODO_Bundle
+  m_EditorClassIdentifier: 
+  kind: 4
+  displayName: "\uC720\uC9C4"
+  authoringNotes: 
+  characterData: {fileID: 11400000, guid: 126a7beb68f696d46a33afe0fa593b7d, type: 2}
+  combatLoadout: {fileID: 11400000, guid: 15fff042e85379e4a91a2d84caaf29b8, type: 2}
+  skillSet: {fileID: 0}
+  characterPrefab: {fileID: 258767931383796853, guid: ea11df0417bea274eac13fc3866cbb31, type: 3}
+  visualProfile: {fileID: 0}
+  presentationProfile: {fileID: 11400000, guid: 1edc335ea2b100d429b763275f3eaa42, type: 2}
+  animatorController: {fileID: 0}
+  avatar: {fileID: 0}
+  overrideAnimatorController: 1
+  overrideAvatar: 0
+  overrideLoadout: 1
+  equippedItems: []
+  equippedAugments: []
+  overrideNormalEnemySingleHp: 1
+  normalEnemySingleMaxHp: 50
+  useElitePostureRotation: 1
+  elitePostureSettings:
+    MinimumTurns: 2
+    MaximumTurns: 3
+    NormalAttackSlotLimit: 3
+    CrouchingAttackSlotLimit: 2
+    OffensiveAttackSlotLimit: 4
+    ExpectedMomentumDriftPerTurn: 15
+  includedAssets: []
+  supportingAssets: []

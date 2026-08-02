@@ -160,6 +160,20 @@ public class BattleAction
         LastDamageEventResult = null;
     }
 
+    public int GetEffectiveExchangeRollCount()
+    {
+        int baseCount =
+            Mathf.Max(
+                1,
+                Skill?.ExchangeRollCount ?? 1);
+
+        return Owner == null
+            ? baseCount
+            : Owner.ModifyExchangeRollCount(
+                this,
+                baseCount);
+    }
+
     public int RollPower()
     {
         return RollPowerForExchange(

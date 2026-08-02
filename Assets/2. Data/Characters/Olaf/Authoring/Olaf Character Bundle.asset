@@ -13,13 +13,13 @@ MonoBehaviour:
   m_Name: Olaf Character Bundle
   m_EditorClassIdentifier: 
   kind: 0
-  displayName: Olaf
+  displayName: "\uC62C\uB77C\uD504"
   authoringNotes: "SO \uAE30\uBC18 \uC62C\uB77C\uD504 \uC644\uC131\uBCF8. CharacterData,
     SkillSet, CombatLoadout, VisualProfile\uACFC Animator\uB97C \uBB36\uC2B5\uB2C8\uB2E4."
-  characterData: {fileID: 11400000, guid: e9bc03b760a7e094eb95540f97744572, type: 2}
-  combatLoadout: {fileID: 11400000, guid: 8d9c3aad2944dca45b238efa251d57d1, type: 2}
+  characterData: {fileID: 11400000, guid: d1cf9da0e7b9f1645adef9d684f92c62, type: 2}
+  combatLoadout: {fileID: 11400000, guid: aa867f91465455d4b9c77fd4450ea019, type: 2}
   skillSet: {fileID: 11400000, guid: 3d75845fdbab70e4790338bfc8e669ab, type: 2}
-  characterPrefab: {fileID: 0}
+  characterPrefab: {fileID: 8201016950708553361, guid: 118c7124273a79d40b501f3dd44f7ec1, type: 3}
   visualProfile: {fileID: 11400000, guid: 6ad6ee546df81ab4ebe3dcb118388219, type: 2}
   presentationProfile: {fileID: 11400000, guid: 8b73c2f992017504c92293dbe0f48bc3, type: 2}
   animatorController: {fileID: 9100000, guid: 8396239eabf98ac4787eb4682559e3e9, type: 2}

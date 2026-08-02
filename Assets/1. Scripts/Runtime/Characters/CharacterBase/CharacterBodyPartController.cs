@@ -77,6 +77,13 @@ public class CharacterBodyPartController
             return false;
         }
 
+        if (!owner.CanBreakPart(
+                part,
+                sourceAction))
+        {
+            return false;
+        }
+
         if (!part.IsWeakened)
         {
             Debug.Log(
@@ -112,6 +119,17 @@ public class CharacterBodyPartController
             (part.Owner != null && part.Owner != owner) ||
             part.IsBroken)
         {
+            return;
+        }
+
+        if (!owner.CanBreakPart(
+                part,
+                sourceAction))
+        {
+            WeakenPart(
+                part,
+                source,
+                sourceAction);
             return;
         }
 

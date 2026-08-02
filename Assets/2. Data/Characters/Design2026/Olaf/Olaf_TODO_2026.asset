@@ -1,0 +1,68 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 02f75a7e990b2b34480f808c74726683, type: 3}
+  m_Name: Olaf_TODO_2026
+  m_EditorClassIdentifier: 
+  CharacterName: "\uC62C\uB77C\uD504"
+  CombatantTier: 0
+  Portrait: {fileID: 0}
+  DetailArtwork: {fileID: 0}
+  RoleName: 
+  UiSummary: 
+  TargetMode: 1
+  SingleHpMax: 1
+  maxPrestige: 70
+  maxEnergy: 3
+  ActionSlots:
+  - SlotId: HEAD
+    DisplayName: "\uBA38\uB9AC"
+    Enabled: 1
+    HasLinkedPart: 1
+    LinkedPartType: 0
+    OverrideSpeedRange: 0
+    MinSpeed: 3
+    MaxSpeed: 8
+    AllowedActionTypes: 00000000010000000200000003000000
+  - SlotId: LEFT_ARM
+    DisplayName: "\uC67C\uD314"
+    Enabled: 1
+    HasLinkedPart: 1
+    LinkedPartType: 1
+    OverrideSpeedRange: 0
+    MinSpeed: 3
+    MaxSpeed: 8
+    AllowedActionTypes: 000000000100000003000000
+  - SlotId: RIGHT_ARM
+    DisplayName: "\uC624\uB978\uD314"
+    Enabled: 1
+    HasLinkedPart: 1
+    LinkedPartType: 2
+    OverrideSpeedRange: 0
+    MinSpeed: 3
+    MaxSpeed: 8
+    AllowedActionTypes: 000000000100000003000000
+  - SlotId: LEGS
+    DisplayName: "\uB2E4\uB9AC"
+    Enabled: 1
+    HasLinkedPart: 1
+    LinkedPartType: 3
+    OverrideSpeedRange: 0
+    MinSpeed: 3
+    MaxSpeed: 8
+    AllowedActionTypes: 0200000003000000
+  CombatLoadout: {fileID: 11400000, guid: aa867f91465455d4b9c77fd4450ea019, type: 2}
+  BossPhases: []
+  damageMultiplier: 1
+  defensePenetration: 0
+  minSpeed: 1
+  maxSpeed: 6
+  InitialResources: []

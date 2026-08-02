@@ -208,9 +208,9 @@ public class ClashManager
             };
 
         int firstRemaining =
-            Mathf.Max(1, first.Skill.ExchangeRollCount);
+            first.GetEffectiveExchangeRollCount();
         int secondRemaining =
-            Mathf.Max(1, second.Skill.ExchangeRollCount);
+            second.GetEffectiveExchangeRollCount();
 
         int exchangeIndex = 0;
         bool firstSkillExecuted = false;
@@ -350,6 +350,11 @@ public class ClashManager
                 };
             }
 
+            ApplyCharacterRerolls(
+                first,
+                second,
+                exchangeIndex);
+
             if (first.ClashPower != second.ClashPower)
                 break;
 
@@ -432,16 +437,43 @@ public class ClashManager
                     exchangeIndex,
                     applyMomentum: true);
 
-            dealtGain = prestigeChargeService.ChargeHitDealt(
-                winner.Owner, loser.Owner, winner);
-            takenGain = prestigeChargeService.ChargeHitTaken(
-                loser.Owner, winner.Owner, winner);
-
             winner.Skill?.NotifyExchangeWin(winner, loser, damageContext);
             loser.Skill?.NotifyExchangeLose(loser, winner, damageContext);
         }
 
-        MomentumShiftResult momentum = momentumManager.ApplyHit(winner.Owner);
+        int firstPrestigeGain =
+            prestigeChargeService.ChargeExchangeParticipant(
+                first.Owner,
+                second.Owner,
+                first);
+
+        int secondPrestigeGain =
+            prestigeChargeService.ChargeExchangeParticipant(
+                second.Owner,
+                first.Owner,
+                second);
+
+        dealtGain = firstPrestigeGain;
+        takenGain = secondPrestigeGain;
+
+        MomentumShiftResult hitMomentum =
+            momentumManager.ApplyHit(
+                winner.Owner);
+
+        bool duelVsDuel =
+            first.ActionType == ActionType.Duel &&
+            second.ActionType == ActionType.Duel;
+
+        MomentumShiftResult duelMomentum =
+            duelVsDuel
+                ? momentumManager.ApplyDuelExchangeVictory(
+                    winner.Owner,
+                    winner.Skill?.GetMomentumPushBonus(winner) ?? 0)
+                : new MomentumShiftResult(
+                    hitMomentum.After,
+                    hitMomentum.After,
+                    0,
+                    MomentumShiftReason.DuelVictory);
 
         winner.Skill?.NotifyRollResolved(
             winner, loser, exchangeIndex, true, damageContext);
@@ -464,9 +496,16 @@ public class ClashManager
             WinnerAction = winner,
             LoserAction = loser,
             DamageContext = damageContext,
-            MomentumBefore = momentum.Before,
-            MomentumAfter = momentum.After,
-            MomentumShift = momentum.SignedShift,
+            IsDuelExchange = duelVsDuel,
+            MomentumBefore = hitMomentum.Before,
+            MomentumAfter = duelMomentum.After,
+            MomentumShift =
+                hitMomentum.SignedShift +
+                duelMomentum.SignedShift,
+            HitMomentumShift = hitMomentum.SignedShift,
+            DuelMomentumShift = duelMomentum.SignedShift,
+            FirstPrestigeGain = firstPrestigeGain,
+            SecondPrestigeGain = secondPrestigeGain,
             PrestigeDealtGain = dealtGain,
             PrestigeTakenGain = takenGain
         };
@@ -475,6 +514,8 @@ public class ClashManager
             secondaryDamageContexts);
 
         LogExchange(exchange, isClash: true);
+        battleContext._battleEvent
+            .RaiseExchangeResolved(exchange);
         return exchange;
     }
 
@@ -494,9 +535,8 @@ public class ClashManager
                     momentumManager.CurrentMomentum
             };
 
-        int rollCount = Mathf.Max(
-            1,
-            action.Skill.ExchangeRollCount);
+        int rollCount =
+            action.GetEffectiveExchangeRollCount();
 
         bool skillExecuted = false;
 
@@ -604,13 +644,28 @@ public class ClashManager
                     exchangeIndex,
                     applyMomentum: true);
 
-        MomentumShiftResult momentum = momentumManager.ApplyHit(action.Owner);
         Character target = action.Target;
 
-        int dealtGain = prestigeChargeService.ChargeHitDealt(
-            action.Owner, target, action);
-        int takenGain = prestigeChargeService.ChargeHitTaken(
-            target, action.Owner, action);
+        int dealtGain =
+            prestigeChargeService.ChargeOneSidedParticipant(
+                action.Owner,
+                target,
+                action);
+
+        int takenGain =
+            prestigeChargeService.ChargeOneSidedParticipant(
+                target,
+                action.Owner,
+                action);
+
+        // 최신 규칙: 일방타격은 피해와 위세 충전은 발생하지만
+        // 기세 바의 Hit +5는 발생하지 않는다.
+        MomentumShiftResult momentum =
+            new MomentumShiftResult(
+                momentumBefore,
+                momentumBefore,
+                0,
+                MomentumShiftReason.Hit);
 
         if (action.ActionType != ActionType.Duel)
             action.Skill?.NotifyOneSideHit(action, damageContext);
@@ -632,7 +687,11 @@ public class ClashManager
             DamageContext = damageContext,
             MomentumBefore = momentum.Before,
             MomentumAfter = momentum.After,
-            MomentumShift = momentum.SignedShift,
+            MomentumShift = 0,
+            HitMomentumShift = 0,
+            DuelMomentumShift = 0,
+            FirstPrestigeGain = dealtGain,
+            SecondPrestigeGain = takenGain,
             PrestigeDealtGain = dealtGain,
             PrestigeTakenGain = takenGain
         };
@@ -641,6 +700,8 @@ public class ClashManager
             secondaryDamageContexts);
 
         LogExchange(exchange, isClash: cameFromClash);
+        battleContext._battleEvent
+            .RaiseExchangeResolved(exchange);
         return exchange;
     }
 
@@ -721,6 +782,25 @@ public class ClashManager
     {
         if (result == null)
             return;
+
+        if (!clashRules.UseLegacyClashMajorityRewards)
+        {
+            result.Gap = Mathf.Abs(
+                result.FirstExchangeWins -
+                result.SecondExchangeWins);
+
+            result.IsDraw =
+                result.FirstExchangeWins ==
+                result.SecondExchangeWins;
+
+            // 최신 설계에서는 전체 합 승자와 최종 +25가 존재하지 않는다.
+            // 교환별 승패와 결과 목록만 남긴다.
+            result.WinnerAction = null;
+            result.LoserAction = null;
+
+            FinalizeCompatibilityFields(result);
+            return;
+        }
 
         if (result.FirstExchangeWins ==
             result.SecondExchangeWins)
@@ -960,6 +1040,79 @@ public class ClashManager
         result.LoserWasCritical =
             result.LoserAction?.RollHistory.Exists(
                 roll => roll != null && roll.IsCritical) == true;
+    }
+
+    private void ApplyCharacterRerolls(
+        BattleAction first,
+        BattleAction second,
+        int exchangeIndex)
+    {
+        int maximum =
+            Mathf.Max(
+                1,
+                clashRules.MaxCharacterRerollsPerExchange);
+
+        for (int rerollIndex = 0;
+             rerollIndex < maximum;
+             rerollIndex++)
+        {
+            bool rerolled = false;
+
+            if (TryCharacterReroll(
+                    first,
+                    second,
+                    exchangeIndex,
+                    rerollIndex))
+            {
+                rerolled = true;
+            }
+
+            if (TryCharacterReroll(
+                    second,
+                    first,
+                    exchangeIndex,
+                    rerollIndex))
+            {
+                rerolled = true;
+            }
+
+            if (!rerolled)
+                break;
+        }
+    }
+
+    private bool TryCharacterReroll(
+        BattleAction action,
+        BattleAction opponent,
+        int exchangeIndex,
+        int rerollIndex)
+    {
+        if (action?.Owner == null ||
+            opponent == null)
+        {
+            return false;
+        }
+
+        ExchangeRerollContext context =
+            new ExchangeRerollContext(
+                action,
+                opponent,
+                exchangeIndex,
+                rerollIndex);
+
+        if (!action.Owner.TryRequestExchangeReroll(context))
+            return false;
+
+        action.InvalidateCachedRoll(exchangeIndex);
+        RollClashPower(
+            action,
+            opponent,
+            exchangeIndex);
+
+        if (action.LastRollResult != null)
+            action.LastRollResult.WasRerolled = true;
+
+        return true;
     }
 
     private void RollClashPower(

@@ -3,9 +3,13 @@ using UnityEngine;
 
 public class Olaf : Character, ICharacterAuthoringTarget
 {
-    [Header("Skill Set")]
+    [Header("Legacy Skill Set Fallback")]
     [SerializeField]
     private OlafSkillSet skillSet;
+
+    [Header("Body Parts")]
+    [SerializeField, Min(1)]
+    private int partHitPoints = 180;
 
     private readonly List<BodyPart> bodyParts = new();
 
@@ -36,17 +40,20 @@ public class Olaf : Character, ICharacterAuthoringTarget
 
         return definition.ActionType switch
         {
+            ActionType.NormalAttack =>
+                new OlafNormalRuntimeSkill(definition),
+
             ActionType.Duel =>
-                new OlafDuelRuntimeSkill(
-                    definition),
+                new OlafDuelRuntimeSkill(definition),
 
             ActionType.Preparation =>
-                new OlafPreparationRuntimeSkill(
-                    definition),
+                new OlafPreparationRuntimeSkill(definition),
+
+            ActionType.Prestige =>
+                new OlafPrestigeRuntimeSkill(definition),
 
             _ =>
-                base.CreateRuntimeSkillForLoadout(
-                    definition)
+                base.CreateRuntimeSkillForLoadout(definition)
         };
     }
 
@@ -54,48 +61,39 @@ public class Olaf : Character, ICharacterAuthoringTarget
     {
         bodyParts.Clear();
 
-        if (skillSet == null)
-        {
-            Debug.LogWarning(
-                $"{nameof(Olaf)} SkillSet이 연결되지 않았습니다. " +
-                "부위는 생성되지만 사용할 수 있는 스킬이 없습니다.");
-        }
+        int hp = Mathf.Max(1, partHitPoints);
 
         bodyParts.Add(
             new BodyPart(
                 PartType.HEAD,
-                40,
-                CreateSkillArray(
-                    skillSet?.CreateNormalAttack(),
-                    skillSet?.CreateDuelSkill(),
-                    skillSet?.CreatePreparationSkill(),
-                    skillSet?.CreatePrestigeSkill())));
+                hp,
+                CreateLegacySkillArray(
+                    includePreparation: true,
+                    includeAttacks: true)));
 
         bodyParts.Add(
             new BodyPart(
                 PartType.LEFT_HAND,
-                30,
-                CreateSkillArray(
-                    skillSet?.CreateNormalAttack(),
-                    skillSet?.CreateDuelSkill(),
-                    skillSet?.CreatePrestigeSkill())));
+                hp,
+                CreateLegacySkillArray(
+                    includePreparation: false,
+                    includeAttacks: true)));
 
         bodyParts.Add(
             new BodyPart(
                 PartType.RIGHT_HAND,
-                30,
-                CreateSkillArray(
-                    skillSet?.CreateNormalAttack(),
-                    skillSet?.CreateDuelSkill(),
-                    skillSet?.CreatePrestigeSkill())));
+                hp,
+                CreateLegacySkillArray(
+                    includePreparation: false,
+                    includeAttacks: true)));
 
         bodyParts.Add(
             new BodyPart(
                 PartType.LEGS,
-                50,
-                CreateSkillArray(
-                    skillSet?.CreatePreparationSkill(),
-                    skillSet?.CreatePrestigeSkill())));
+                hp,
+                CreateLegacySkillArray(
+                    includePreparation: true,
+                    includeAttacks: false)));
     }
 
     protected override void BuildMechanics()
@@ -105,30 +103,21 @@ public class Olaf : Character, ICharacterAuthoringTarget
 
         AddMechanic(
             new OlafImmortalFuryMechanic());
-
-        // 피 묻은 도끼는 OlafBloodyAxeItem이 장착되었을 때
-        // CharacterBuildController가 메커닉을 추가한다.
-        // 기본 메커닉으로 중복 추가하지 않는다.
     }
 
     protected override StatusEffect CreateDisabledDebuff(
         BodyPart part)
     {
-        if (part == null)
-            return null;
-
-        return part.Type switch
+        return part?.Type switch
         {
             PartType.HEAD =>
                 new HeadDisabled(),
 
             PartType.LEFT_HAND =>
-                new ArmDisabled(
-                    PartType.LEFT_HAND),
+                new ArmDisabled(PartType.LEFT_HAND),
 
             PartType.RIGHT_HAND =>
-                new ArmDisabled(
-                    PartType.RIGHT_HAND),
+                new ArmDisabled(PartType.RIGHT_HAND),
 
             PartType.LEGS =>
                 new LegsDisabled(),
@@ -140,21 +129,16 @@ public class Olaf : Character, ICharacterAuthoringTarget
     protected override StatusEffect CreateBrokenPartStatus(
         BodyPart part)
     {
-        if (part == null)
-            return null;
-
-        return part.Type switch
+        return part?.Type switch
         {
             PartType.HEAD =>
                 new BrokenHead(),
 
             PartType.LEFT_HAND =>
-                new BrokenArm(
-                    PartType.LEFT_HAND),
+                new BrokenArm(PartType.LEFT_HAND),
 
             PartType.RIGHT_HAND =>
-                new BrokenArm(
-                    PartType.RIGHT_HAND),
+                new BrokenArm(PartType.RIGHT_HAND),
 
             PartType.LEGS =>
                 new BrokenLegs(),
@@ -163,20 +147,45 @@ public class Olaf : Character, ICharacterAuthoringTarget
         };
     }
 
-    private Skill[] CreateSkillArray(
-        params Skill[] skills)
+    private Skill[] CreateLegacySkillArray(
+        bool includePreparation,
+        bool includeAttacks)
     {
-        List<Skill> result = new();
+        List<Skill> skills = new();
 
-        if (skills == null)
-            return result.ToArray();
+        if (skillSet == null)
+            return skills.ToArray();
 
-        foreach (Skill skill in skills)
+        if (includeAttacks)
         {
-            if (skill != null)
-                result.Add(skill);
+            AddIfNotNull(
+                skills,
+                skillSet.CreateNormalAttack());
+
+            AddIfNotNull(
+                skills,
+                skillSet.CreateDuelSkill());
         }
 
-        return result.ToArray();
+        if (includePreparation)
+        {
+            AddIfNotNull(
+                skills,
+                skillSet.CreatePreparationSkill());
+        }
+
+        AddIfNotNull(
+            skills,
+            skillSet.CreatePrestigeSkill());
+
+        return skills.ToArray();
+    }
+
+    private static void AddIfNotNull(
+        ICollection<Skill> destination,
+        Skill skill)
+    {
+        if (skill != null)
+            destination.Add(skill);
     }
 }

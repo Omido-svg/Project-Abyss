@@ -1,15 +1,15 @@
-using UnityEngine;
-
 public sealed class HeadDisabled : PartDisabledStatus
 {
-    public HeadDisabled() : base("Head Weakened") { }
-
-    public override int ModifyRoll(BattleAction action, int roll) =>
-        IsOwnerAction(action) ? Mathf.Max(0, roll - 1) : roll;
-
-    public override bool CanUseSkill(BodyPart part, Skill skill)
+    public HeadDisabled()
+        : base("Head Weakened")
     {
-        if (skill == null) return false;
-        return skill.ActionType != ActionType.Prestige;
+    }
+
+    public override bool CanUseSkill(
+        BodyPart part,
+        Skill skill)
+    {
+        return skill != null &&
+               skill.ActionType == ActionType.NormalAttack;
     }
 }

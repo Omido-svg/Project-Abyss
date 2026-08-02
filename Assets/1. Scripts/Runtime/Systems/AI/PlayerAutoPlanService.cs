@@ -15,6 +15,8 @@ public sealed class PlayerAutoPlanResult
     public int PlannedSlotCount;
     public int MatchedThreatCount;
     public int EnemyThreatCount;
+    public int UtilitySlotCount;
+    public int CombatSlotCapacity;
     public float EstimatedAverageWinRate;
     public float EstimatedDamage;
     public string Message;
@@ -49,6 +51,43 @@ public sealed class PlayerAutoPlanService
 
         public string Key =>
             $"{Part?.Type.ToString() ?? "CHAR"}:{ActionIndex}";
+
+        public bool HasCombatSkill =>
+            ContainsPhase(ActionPhase.COMBAT);
+
+        public bool HasPreparationSkill
+        {
+            get
+            {
+                if (Skills == null)
+                    return false;
+
+                foreach (Skill skill in Skills)
+                {
+                    if (skill?.ActionType == ActionType.Preparation)
+                        return true;
+                }
+
+                return false;
+            }
+        }
+
+        private bool ContainsPhase(ActionPhase phase)
+        {
+            if (Skills == null)
+                return false;
+
+            foreach (Skill skill in Skills)
+            {
+                if (skill != null &&
+                    skill.DefaultPhase == phase)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
     }
 
     private sealed class Candidate
@@ -69,6 +108,7 @@ public sealed class PlayerAutoPlanService
         public Character Player;
         public int PlannedEnergy;
         public int PlannedCombatSlots;
+        public int PlannedUtilitySlots;
         public int PlannedPrestigeCount;
         public readonly List<ActionSlot> Slots =
             new List<ActionSlot>();
@@ -139,12 +179,36 @@ public sealed class PlayerAutoPlanService
 
             if (slot.Phase == ActionPhase.COMBAT)
                 PlannedCombatSlots++;
+            else
+                PlannedUtilitySlots++;
 
             if (slot.Skill?.ActionType ==
                 ActionType.Prestige)
             {
                 PlannedPrestigeCount++;
             }
+        }
+
+        public int CountSkill(
+            Skill skill)
+        {
+            if (skill == null)
+                return 0;
+
+            int count = 0;
+
+            foreach (ActionSlot slot in Slots)
+            {
+                if (slot?.Skill == skill ||
+                    (!string.IsNullOrEmpty(skill.Definition?.SkillId) &&
+                     slot?.Skill?.Definition?.SkillId ==
+                     skill.Definition.SkillId))
+                {
+                    count++;
+                }
+            }
+
+            return count;
         }
     }
 
@@ -224,6 +288,11 @@ public sealed class PlayerAutoPlanService
             return result;
         }
 
+        CharacterAutoPlanAdvisorRegistry.PreparePlan(
+            context,
+            player,
+            mode);
+
         List<ActionSlot> enemySlots =
             CollectEnemySlots(
                 context,
@@ -259,6 +328,27 @@ public sealed class PlayerAutoPlanService
 
         HashSet<ActionSlot> assignedThreats =
             new HashSet<ActionSlot>();
+
+        // 0단계:
+        // 전투 스킬이 없는 전용 부위(예: 유진/올라프의 다리)는
+        // 도사림을 먼저 계획한다. 이렇게 해야 공격 스킬이 빛을 전부 소비해
+        // 고유 메커닉 슬롯이 영구적으로 비는 탐욕적 계획 문제를 막을 수 있다.
+        while (true)
+        {
+            Candidate utility =
+                FindBestMandatoryUtilityCandidate(
+                    context,
+                    state,
+                    sources,
+                    mode);
+
+            if (utility == null)
+                break;
+
+            state.Register(
+                utility.Source,
+                CreatePlannedSlot(utility));
+        }
 
         // 1단계:
         // 적의 합 가능 행동을 실제 행동 원천 부위 기준으로 최대한 덮는다.
@@ -363,21 +453,34 @@ public sealed class PlayerAutoPlanService
         result.PlannedSlotCount = applied;
         result.MatchedThreatCount = matched;
         result.EnemyThreatCount = enemyThreats.Count;
+        result.UtilitySlotCount = state.PlannedUtilitySlots;
+        result.CombatSlotCapacity =
+            Mathf.Max(0, player.GetMaxCombatActionSlots());
         result.EstimatedAverageWinRate =
             averageWinRate;
         result.EstimatedDamage =
             totalDamage;
 
+        string mechanicSummary =
+            CharacterAutoPlanAdvisorRegistry.GetPlanSummary(player);
+
         result.Message =
             mode == PlayerAutoPlanMode.WinRate
-                ? $"승률 자동 지정 · 합 {matched}/{enemyThreats.Count} · 행동 {applied}"
-                : $"피해량 자동 지정 · 예상 피해 {totalDamage:0.0} · 행동 {applied}";
+                ? $"승률 자동 지정 · 합 {matched}/{enemyThreats.Count}" +
+                  $"(전투 슬롯 {player.GetMaxCombatActionSlots()}) · " +
+                  $"비전투 {state.PlannedUtilitySlots} · 행동 {applied}"
+                : $"피해량 자동 지정 · 예상 피해 {totalDamage:0.0} · " +
+                  $"비전투 {state.PlannedUtilitySlots} · 행동 {applied}";
+
+        if (!string.IsNullOrWhiteSpace(mechanicSummary))
+            result.Message += $" · {mechanicSummary}";
 
         Debug.Log(
             "[PlayerAutoPlan][APPLIED] " +
             $"Mode={mode}, " +
             $"Slots={applied}, " +
             $"Matched={matched}/{enemyThreats.Count}, " +
+            $"Utility={state.PlannedUtilitySlots}, " +
             $"AverageWinRate={averageWinRate:P1}, " +
             $"ExpectedDamage={totalDamage:0.00}");
 
@@ -636,6 +739,123 @@ public sealed class PlayerAutoPlanService
         }
     }
 
+    private Candidate FindBestMandatoryUtilityCandidate(
+        BattleContext context,
+        PlanningState state,
+        IReadOnlyList<SourceSlot> sources,
+        PlayerAutoPlanMode mode)
+    {
+        Candidate best = null;
+
+        if (context == null ||
+            state == null ||
+            sources == null)
+        {
+            return null;
+        }
+
+        foreach (SourceSlot source in sources)
+        {
+            if (source == null ||
+                source.Used ||
+                source.Skills == null ||
+                source.HasCombatSkill ||
+                !source.HasPreparationSkill)
+            {
+                continue;
+            }
+
+            foreach (Skill skill in source.Skills)
+            {
+                if (skill?.ActionType != ActionType.Preparation ||
+                    !CanPlanSkill(
+                        context,
+                        state,
+                        source,
+                        skill,
+                        requireClash: false))
+                {
+                    continue;
+                }
+
+                Candidate candidate =
+                    BuildUtilityCandidate(
+                        context,
+                        source,
+                        skill,
+                        mode);
+
+                if (candidate == null)
+                    continue;
+
+                candidate.Score -=
+                    state.CountSkill(skill) * 180f;
+
+                if (best == null ||
+                    candidate.Score > best.Score)
+                {
+                    best = candidate;
+                }
+            }
+        }
+
+        return best;
+    }
+
+    private Candidate BuildUtilityCandidate(
+        BattleContext context,
+        SourceSlot source,
+        Skill skill,
+        PlayerAutoPlanMode mode)
+    {
+        if (source?.Owner == null ||
+            skill == null ||
+            skill.ActionType != ActionType.Preparation)
+        {
+            return null;
+        }
+
+        BodyPart targetPart =
+            source.Part != null &&
+            !source.Part.IsBroken
+                ? source.Part
+                : null;
+
+        float score =
+            mode == PlayerAutoPlanMode.WinRate
+                ? 18000f
+                : 14000f;
+
+        score += CharacterAutoPlanAdvisorRegistry.ScoreCandidate(
+            new AutoPlanCandidateContext(
+                context,
+                mode,
+                source.Owner,
+                source.Part,
+                skill,
+                source.Owner,
+                targetPart,
+                null,
+                0f,
+                0f));
+
+        // 같은 효과라면 빛을 적게 쓰고, 실행 속도가 빠른 도사림을 선호한다.
+        score -= Mathf.Max(0, skill.EnergyCost) * 120f;
+        score += source.Speed * 0.01f;
+        score -= source.ActionIndex * 0.001f;
+
+        return new Candidate
+        {
+            Source = source,
+            Skill = skill,
+            Target = source.Owner,
+            TargetPart = targetPart,
+            Score = score,
+            WinRate = 0f,
+            ExpectedDamage = 0f
+        };
+    }
+
     private Candidate FindBestThreatCandidate(
         BattleContext context,
         PlanningState state,
@@ -702,6 +922,12 @@ public sealed class PlayerAutoPlanService
                     if (candidate == null)
                         continue;
 
+                    candidate.Score -=
+                        state.CountSkill(skill) *
+                        (mode == PlayerAutoPlanMode.WinRate
+                            ? 220f
+                            : 120f);
+
                     if (best == null ||
                         candidate.Score > best.Score)
                     {
@@ -751,8 +977,8 @@ public sealed class PlayerAutoPlanService
                     continue;
                 }
 
-                // 자동 "딸깍"은 전투 행동 지정용이다.
-                // PRETURN/FORESIGHT 전용 스킬은 수동 선택에 남긴다.
+                // 비전투 전용 부위의 도사림은 0단계에서 먼저 처리한다.
+                // 이 단계는 남은 COMBAT 행동만 공격 대상으로 채운다.
                 if (skill.DefaultPhase !=
                     ActionPhase.COMBAT)
                 {
@@ -807,6 +1033,12 @@ public sealed class PlayerAutoPlanService
 
                         if (candidate == null)
                             continue;
+
+                        candidate.Score -=
+                            state.CountSkill(skill) *
+                            (mode == PlayerAutoPlanMode.WinRate
+                                ? 220f
+                                : 120f);
 
                         if (best == null ||
                             candidate.Score > best.Score)
@@ -936,6 +1168,19 @@ public sealed class PlayerAutoPlanService
         }
 
         // 같은 점수에서는 빠른 슬롯과 낮은 행동 인덱스를 안정적으로 선호한다.
+        score += CharacterAutoPlanAdvisorRegistry.ScoreCandidate(
+            new AutoPlanCandidateContext(
+                context,
+                mode,
+                source.Owner,
+                source.Part,
+                skill,
+                threat.Owner,
+                threat.Part,
+                threat,
+                estimate.WinRate,
+                estimate.ExpectedDamage));
+
         score += source.Speed * 0.01f;
         score -= source.ActionIndex * 0.001f;
 
@@ -1035,6 +1280,19 @@ public sealed class PlayerAutoPlanService
 
         if (targetPart?.IsBroken == true)
             score += 160f;
+
+        score += CharacterAutoPlanAdvisorRegistry.ScoreCandidate(
+            new AutoPlanCandidateContext(
+                context,
+                mode,
+                source.Owner,
+                source.Part,
+                skill,
+                target,
+                targetPart,
+                possibleThreat,
+                winRate,
+                expectedDamage));
 
         score += source.Speed * 0.01f;
         score -= source.ActionIndex * 0.001f;
@@ -2131,6 +2389,9 @@ public sealed class PlayerAutoPlanService
                  in playerSlots)
         {
             if (playerSlot?.Skill == null)
+                continue;
+
+            if (playerSlot.Phase != ActionPhase.COMBAT)
                 continue;
 
             ActionSlot threat =

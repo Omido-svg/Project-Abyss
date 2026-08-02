@@ -219,6 +219,11 @@ public sealed class BattleAutoPlanButtonPanel :
     private void TogglePlan(
         PlayerAutoPlanMode mode)
     {
+        // Button 클릭과 같은 프레임의 마우스 입력이 월드 캐릭터 선택으로
+        // 재사용되지 않도록 먼저 차단한다.
+        BattleCharacterPointerRouter
+            .BlockWorldInputForFrames(2);
+
         ResolveReferences();
 
         // 현재 선택된 모드를 한 번 더 누르면
@@ -265,6 +270,9 @@ public sealed class BattleAutoPlanButtonPanel :
 
     private void CancelAllPlayerActions()
     {
+        BattleCharacterPointerRouter
+            .BlockWorldInputForFrames(2);
+
         battleUiManager?
             .CancelCurrentSelection();
 

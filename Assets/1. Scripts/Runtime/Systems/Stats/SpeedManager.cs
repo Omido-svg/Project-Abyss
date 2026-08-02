@@ -78,9 +78,26 @@ public class SpeedManager
         if (character?.CurrentStatus == null)
             return 0;
 
+        int minSpeed =
+            character.CurrentStatus.minSpeed;
+
+        int maxSpeed =
+            character.CurrentStatus.maxSpeed;
+
+        BodyPart legs =
+            character.GetBodyPart(
+                PartType.LEGS);
+
+        if (legs?.IsWeakened == true)
+        {
+            maxSpeed = Mathf.Max(
+                minSpeed,
+                maxSpeed - 1);
+        }
+
         return Random.Range(
-            character.CurrentStatus.minSpeed,
-            character.CurrentStatus.maxSpeed + 1);
+            minSpeed,
+            maxSpeed + 1);
     }
 
     public int GetSpeed(

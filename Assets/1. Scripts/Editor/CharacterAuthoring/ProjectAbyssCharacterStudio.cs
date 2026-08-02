@@ -11,7 +11,8 @@ public enum CharacterStudioBootstrapKind
     Olaf = 0,
     EliteEnemy = 1,
     NormalEnemy = 2,
-    Custom = 3
+    Custom = 3,
+    Yujin = 4
 }
 
 /// <summary>
@@ -1606,6 +1607,7 @@ public sealed class ProjectAbyssCharacterStudio : EditorWindow
             CharacterStudioBootstrapKind.Olaf => typeof(Olaf),
             CharacterStudioBootstrapKind.EliteEnemy => typeof(EliteEnemy),
             CharacterStudioBootstrapKind.NormalEnemy => typeof(NormalEnemy),
+            CharacterStudioBootstrapKind.Yujin => typeof(Yujin),
             _ => bootstrapCustomCharacterScript != null
                 ? bootstrapCustomCharacterScript.GetClass()
                 : null
@@ -1926,8 +1928,12 @@ public sealed class ProjectAbyssCharacterStudio : EditorWindow
             result.Add(Error("CharacterData.CombatLoadout과 Bundle Loadout이 다릅니다."));
         }
 
-        if (value.Kind != CharacterAuthoringKind.Custom && value.SkillSet == null)
+        if (value.Kind != CharacterAuthoringKind.Custom &&
+            value.Kind != CharacterAuthoringKind.Yujin &&
+            value.SkillSet == null)
+        {
             result.Add(Error("Legacy Runtime Adapter가 없습니다."));
+        }
 
         if (value.CharacterPrefab != null)
         {
@@ -2232,6 +2238,7 @@ public sealed class ProjectAbyssCharacterStudio : EditorWindow
             Olaf => CharacterAuthoringKind.Olaf,
             EliteEnemy => CharacterAuthoringKind.EliteEnemy,
             NormalEnemy => CharacterAuthoringKind.NormalEnemy,
+            Yujin => CharacterAuthoringKind.Yujin,
             _ => CharacterAuthoringKind.Custom
         };
 
@@ -2241,6 +2248,7 @@ public sealed class ProjectAbyssCharacterStudio : EditorWindow
             Olaf => "플레이어블 — Olaf",
             EliteEnemy => "정예 적 — 부위형",
             NormalEnemy => "일반 적 — 단일 HP",
+            Yujin => "플레이어블 — Yujin",
             Enemy => "Custom Enemy",
             null => "미지정",
             _ => "Playable / Custom"

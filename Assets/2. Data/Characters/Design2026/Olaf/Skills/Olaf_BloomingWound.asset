@@ -1,0 +1,69 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a85a262093fed2b45a6f05cb3a256be9, type: 3}
+  m_Name: Olaf_BloomingWound
+  m_EditorClassIdentifier: 
+  skillId: olaf.prestige.blooming_wound
+  SkillName: "\uB9CC\uAC1C\uD558\uB294 \uC0C1\uCC98"
+  ActionType: 3
+  BasePower: 0
+  CanBreakPart: 0
+  GainPrestige: 1
+  AttackWeight:
+    Weight: 1
+    SecondaryPartMode: 0
+    SecondaryDamageMultiplier: 1
+    AllowBrokenSecondaryParts: 0
+  Description: "\uC870\uC900 \uBD80\uC704\uC5D0 \uCD9C\uD608 3 + \uAD11\uAE30 5\uB2F9
+    1\uC744 \uBD80\uC5EC\uD55C\uB2E4. \uCD5C\uC885 \uBD80\uC5EC\uB7C9\uC740 3~5\uC774\uBA70
+    \uC989\uC2DC \uD3ED\uBC1C\uD558\uC9C0 \uC54A\uB294\uB2E4."
+  Keywords: []
+  Rolls: []
+  ExchangeRollCount: 1
+  RollReusePolicy: 0
+  MultiRollPenalty:
+    Enabled: 0
+    PreviewText: 
+    Timing: 2
+    TriggerAfterRollIndex: 0
+    EffectEntries: []
+    Effects: []
+  ResolvePrestigeInCombat: 0
+  OverrideCanClash: 0
+  CanClashValue: 0
+  PreparationTier: 0
+  ResolverType: 0
+  DiceMin: 0
+  DiceMax: 0
+  CoinCount: 1
+  CoinFrontChance: 0.5
+  CoinFrontValue: 1
+  CoinBackValue: 0
+  CoinFrontIsCritical: 0
+  ChinchiroArashiBonus: 6
+  ChinchiroShigoroBonus: 6
+  ChinchiroHifumiPenalty: 1
+  ChinchiroHifumiSelfDamage: 1
+  EffectEntries: []
+  Effects: []
+  OverrideEnergyCost: 1
+  EnergyCost: 0
+  OverrideResourceRules: 1
+  RequireFullPrestige: 0
+  PrestigeCost: 60
+  ConsumeAllPrestige: 1
+  CustomResourceKey: 
+  CustomResourceCost: 0
+  ConsumeAllCustomResource: 0
+  OverridePrestigeUsePolicy: 1
+  PrestigeUsePolicy: 1
+  VisualDefinition: {fileID: 11400000, guid: b870be71ac7a7e0478be8c91d768de6c, type: 2}

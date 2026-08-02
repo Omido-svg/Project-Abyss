@@ -11,7 +11,11 @@ public class ActionSlot
     public ActionPhase Phase;
     public Character TargetCharacter;
     public BodyPart TargetPart;
+    public BodyPart SecondaryTargetPart;
     public ActionSlot TargetSlot;
+
+    // 유진 결투 스킬처럼 캐릭터 고유 재굴림 자원을 자동 사용한다.
+    public bool UseCharacterRerollResource;
 
     public bool HasActionId => ActionId > 0;
 

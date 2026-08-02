@@ -1,0 +1,70 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a85a262093fed2b45a6f05cb3a256be9, type: 3}
+  m_Name: Yujin_Retrial
+  m_EditorClassIdentifier: 
+  skillId: yujin.prestige.retrial
+  SkillName: "\uC7AC\uC2EC"
+  ActionType: 3
+  BasePower: 0
+  CanBreakPart: 0
+  GainPrestige: 1
+  AttackWeight:
+    Weight: 1
+    SecondaryPartMode: 0
+    SecondaryDamageMultiplier: 1
+    AllowBrokenSecondaryParts: 0
+  Description: "\uD574\uB2F9 \uD134 \uB4B7\uBA74\uC774 \uB098\uC628 \uAC01 \uCF54\uC778\uC744
+    \uC790\uB3D9\uC73C\uB85C \uD55C \uBC88 \uC7AC\uAD74\uB9BC\uD55C\uB2E4. \uAC19\uC740
+    \uAD50\uD658\uC5D0\uB294 \uD55C \uBC88\uB9CC \uC801\uC6A9\uB418\uACE0 \uC0B4\uC218\uC758
+    \uAC10\uC744 \uC18C\uBE44\uD558\uC9C0 \uC54A\uB294\uB2E4."
+  Keywords: []
+  Rolls: []
+  ExchangeRollCount: 1
+  RollReusePolicy: 0
+  MultiRollPenalty:
+    Enabled: 0
+    PreviewText: 
+    Timing: 2
+    TriggerAfterRollIndex: 0
+    EffectEntries: []
+    Effects: []
+  ResolvePrestigeInCombat: 0
+  OverrideCanClash: 0
+  CanClashValue: 0
+  PreparationTier: 0
+  ResolverType: 0
+  DiceMin: 0
+  DiceMax: 0
+  CoinCount: 1
+  CoinFrontChance: 0.5
+  CoinFrontValue: 1
+  CoinBackValue: 0
+  CoinFrontIsCritical: 0
+  ChinchiroArashiBonus: 6
+  ChinchiroShigoroBonus: 6
+  ChinchiroHifumiPenalty: 1
+  ChinchiroHifumiSelfDamage: 1
+  EffectEntries: []
+  Effects: []
+  OverrideEnergyCost: 1
+  EnergyCost: 0
+  OverrideResourceRules: 1
+  RequireFullPrestige: 0
+  PrestigeCost: 50
+  ConsumeAllPrestige: 1
+  CustomResourceKey: 
+  CustomResourceCost: 0
+  ConsumeAllCustomResource: 0
+  OverridePrestigeUsePolicy: 1
+  PrestigeUsePolicy: 1
+  VisualDefinition: {fileID: 11400000, guid: aa491328f4ad0de40a0d5e0308ee7f74, type: 2}

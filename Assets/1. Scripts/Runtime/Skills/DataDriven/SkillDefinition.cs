@@ -31,11 +31,11 @@ public class SkillDefinition : ScriptableObject
     [Tooltip("클릭 가능한 고유 키워드입니다. 비어 있으면 행동 타입과 효과에서 자동 추론합니다.")]
     public List<SkillKeywordEntry> Keywords = new();
 
-    [Header("Independent rolls — 2 to 8")]
+    [Header("Independent rolls — 1 to 8")]
     public List<SkillRollData> Rolls = new();
 
     [Header("Legacy roll fallback")]
-    [Range(2, 8)] public int ExchangeRollCount = 3;
+    [Range(1, 8)] public int ExchangeRollCount = 3;
     public SkillRollReusePolicy RollReusePolicy = SkillRollReusePolicy.RollEachExchange;
 
     [Header("High-roll-count risk")]
@@ -122,8 +122,8 @@ public class SkillDefinition : ScriptableObject
 
     public int EffectiveRollCount =>
         Rolls != null && Rolls.Count > 0
-            ? Mathf.Clamp(Rolls.Count, 2, 8)
-            : Mathf.Clamp(ExchangeRollCount, 2, 8);
+            ? Mathf.Clamp(Rolls.Count, 1, 8)
+            : Mathf.Clamp(ExchangeRollCount, 1, 8);
 
     public SkillRollData GetRollData(int exchangeIndex)
     {
@@ -161,7 +161,7 @@ public class SkillDefinition : ScriptableObject
     private void OnValidate()
     {
         EnsureSkillId();
-        ExchangeRollCount = Mathf.Clamp(ExchangeRollCount, 2, 8);
+        ExchangeRollCount = Mathf.Clamp(ExchangeRollCount, 1, 8);
         EnergyCost = Mathf.Max(0, EnergyCost);
         CoinCount = Mathf.Max(1, CoinCount);
         CoinFrontChance = Mathf.Clamp01(CoinFrontChance);
@@ -174,7 +174,6 @@ public class SkillDefinition : ScriptableObject
         AttackWeight ??= new AttackWeightSettings();
         AttackWeight.Sanitize();
         while (Rolls.Count > 8) Rolls.RemoveAt(Rolls.Count - 1);
-        if (Rolls.Count == 1) Rolls.Add(new SkillRollData());
         for (int i = 0; i < Rolls.Count; i++) Rolls[i]?.Sanitize(i);
         if (ResolvePrestigeInCombat && ActionType != ActionType.Prestige) ResolvePrestigeInCombat = false;
         if (ActionType != ActionType.Preparation) PreparationTier = PreparationTier.Weak;

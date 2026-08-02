@@ -1,18 +1,13 @@
-using UnityEngine;
-
 public sealed class LegsDisabled : PartDisabledStatus
 {
-    public LegsDisabled() : base("Legs Weakened") { }
-
-    public override int ModifySpeed(BodyPart part, int speed) =>
-        Mathf.Max(0, speed - 2);
-
-    public override bool CanUseSkill(BodyPart part, Skill skill) => skill != null;
-
-    public override int ModifyDamage(BattleAction action, int damage)
+    public LegsDisabled()
+        : base("Legs Weakened")
     {
-        if (!IsOwnerAction(action) || action.ActionType != ActionType.Preparation)
-            return damage;
-        return Mathf.Max(0, damage - 1);
     }
+
+    // 속도 최대치 -1은 SpeedManager가 캐릭터 전체에 한 번만 적용한다.
+    public override bool CanUseSkill(
+        BodyPart part,
+        Skill skill) =>
+        skill != null;
 }

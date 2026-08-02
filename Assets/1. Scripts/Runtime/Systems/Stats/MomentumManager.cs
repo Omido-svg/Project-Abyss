@@ -168,6 +168,25 @@ public class MomentumManager
             MomentumShiftReason.Hit);
     }
 
+
+    /// <summary>
+    /// 결투 대 결투의 개별 교환 승자가 받는 추가 이동.
+    /// 최신 규칙은 최종 다수결 푸시를 사용하지 않는다.
+    /// </summary>
+    public MomentumShiftResult ApplyDuelExchangeVictory(
+        Character winner,
+        int skillBonus = 0)
+    {
+        int amount =
+            settings.DuelExchangeShift +
+            Mathf.Max(0, skillBonus);
+
+        return ApplyShift(
+            winner,
+            amount,
+            MomentumShiftReason.DuelVictory);
+    }
+
     /// <summary>
     /// 결투 대 결투의 최종 다수결 승자에게 주는 추가 푸시.
     /// 교환별 히트 이동과 별개로 한 번만 적용한다.

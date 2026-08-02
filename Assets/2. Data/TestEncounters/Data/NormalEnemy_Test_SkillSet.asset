@@ -1,0 +1,17 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 920512c00a01a524f84524cdb889dbd1, type: 3}
+  m_Name: NormalEnemy_Test_SkillSet
+  m_EditorClassIdentifier: 
+  NormalAttack: {fileID: 11400000, guid: 69d741c3b79cab74597d237af3cbae70, type: 2}
+  DuelSkill: {fileID: 11400000, guid: d9bed570c95d2444f9576f26b014151d, type: 2}
+  PrestigeSkill: {fileID: 0}

@@ -59,6 +59,20 @@ public sealed class AttackWeightTargetResolver
             return action.AttackWeightTargets;
         }
 
+        if (action.Skill.SecondaryAttackWeightPartMode ==
+            AttackWeightSecondaryPartMode.AnotherPartOnPrimaryCharacter)
+        {
+            ResolveAdditionalPartsOnPrimaryCharacter(
+                action,
+                resolved,
+                requestedWeight - 1);
+
+            action.SetAttackWeightTargets(
+                resolved);
+
+            return action.AttackWeightTargets;
+        }
+
         List<Character> candidates =
             BuildSameSideCandidatePool(
                 action);
@@ -98,6 +112,63 @@ public sealed class AttackWeightTargetResolver
             resolved);
 
         return action.AttackWeightTargets;
+    }
+
+    private static void ResolveAdditionalPartsOnPrimaryCharacter(
+        BattleAction action,
+        ICollection<AttackWeightTarget> resolved,
+        int requiredCount)
+    {
+        if (action?.Target == null ||
+            resolved == null ||
+            requiredCount <= 0)
+        {
+            return;
+        }
+
+        List<BodyPart> candidates =
+            new List<BodyPart>();
+
+        BodyPart requested =
+            action.Slot?.SecondaryTargetPart;
+
+        if (requested != null &&
+            requested.Owner == action.Target &&
+            requested != action.TargetPart &&
+            !requested.IsBroken)
+        {
+            candidates.Add(requested);
+        }
+
+        if (action.Target.BodyParts != null)
+        {
+            foreach (BodyPart part
+                     in action.Target.BodyParts)
+            {
+                if (part == null ||
+                    part == action.TargetPart ||
+                    part.IsBroken ||
+                    candidates.Contains(part))
+                {
+                    continue;
+                }
+
+                candidates.Add(part);
+            }
+        }
+
+        for (int i = 0;
+             i < candidates.Count &&
+             i < requiredCount;
+             i++)
+        {
+            resolved.Add(
+                new AttackWeightTarget(
+                    resolved.Count,
+                    action.Target,
+                    candidates[i],
+                    isPrimary: false));
+        }
     }
 
     private List<Character> BuildSameSideCandidatePool(

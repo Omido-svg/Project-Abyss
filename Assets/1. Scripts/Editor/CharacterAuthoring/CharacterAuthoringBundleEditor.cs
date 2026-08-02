@@ -20,6 +20,13 @@ public sealed class CharacterAuthoringBundleEditor : Editor
         if (GUILayout.Button("Open Character Studio", GUILayout.Height(34f)))
             ProjectAbyssCharacterStudio.Open(bundle);
 
+        if (GUILayout.Button(
+                "Open Character Verification",
+                GUILayout.Height(30f)))
+        {
+            CharacterVerificationWindow.Open(bundle);
+        }
+
         EditorGUILayout.Space(5f);
         EditorGUILayout.ObjectField(
             "Character Prefab",

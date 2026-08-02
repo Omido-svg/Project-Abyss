@@ -45,13 +45,17 @@ public sealed class MomentumRuleSettings
 
     [Header("Shift")]
     [Min(0)] public int HitShift = 5;
-    [Min(0)] public int DuelVictoryShift = 25;
+
+    [Tooltip("결투 대 결투에서 개별 교환 승자가 받는 추가 기세 이동량입니다.")]
+    [Min(0)] public int DuelExchangeShift = 15;
+
+    [Tooltip("구형 다수결 결투 승리 보상. 최신 규칙에서는 0입니다.")]
+    [Min(0)] public int DuelVictoryShift;
+
     [Min(1)] public int LastStandHitShiftMultiplier = 2;
 
     public void Normalize()
     {
-        // 2026-07-26 확정 규칙. 기존 Scene/Prefab에 직렬화된 구 수치도
-        // 런타임에서는 이 고정값으로 정규화한다.
         Minimum = -100;
         Maximum = 100;
         LastStandThreshold = -70;
@@ -67,7 +71,8 @@ public sealed class MomentumRuleSettings
         MaximumOverwhelmMultiplier = 2f;
 
         HitShift = 5;
-        DuelVictoryShift = 25;
+        DuelExchangeShift = 15;
+        DuelVictoryShift = 0;
         LastStandHitShiftMultiplier = 2;
     }
 }
@@ -75,16 +80,25 @@ public sealed class MomentumRuleSettings
 [Serializable]
 public sealed class ClashRuleSettings
 {
-    [Range(2, 8)] public int DefaultExchangeRollCount = 3;
+    [Range(1, 8)] public int DefaultExchangeRollCount = 3;
     [Min(0)] public int SpeedWeight = 1;
     [Min(1)] public int MaxTieRerolls = 64;
+    [Min(1)] public int MaxCharacterRerollsPerExchange = 64;
     public bool ConsumeResourceOnActionStart = true;
+
+    [Tooltip(
+        "구형 OnClashWin/OnClashLose, 다수결 위세 충전, 최종 결투 푸시를 유지합니다. " +
+        "올라프·유진 최신 설계에서는 false여야 합니다.")]
+    public bool UseLegacyClashMajorityRewards;
 
     public void Normalize()
     {
-        DefaultExchangeRollCount = Mathf.Clamp(DefaultExchangeRollCount, 2, 8);
+        DefaultExchangeRollCount = Mathf.Clamp(DefaultExchangeRollCount, 1, 8);
         SpeedWeight = Mathf.Max(0, SpeedWeight);
         MaxTieRerolls = Mathf.Max(1, MaxTieRerolls);
+        MaxCharacterRerollsPerExchange =
+            Mathf.Max(1, MaxCharacterRerollsPerExchange);
+        UseLegacyClashMajorityRewards = false;
     }
 }
 
@@ -105,17 +119,25 @@ public sealed class EnergyRuleSettings
 [Serializable]
 public sealed class PrestigeRuleSettings
 {
-    [Min(0)] public int ClashStartCharge = 1;
-    [Min(0)] public int HitDealtCharge = 1;
-    [Min(0)] public int HitTakenCharge = 1;
-    [Min(0)] public int ClashVictoryCharge = 1;
+    [Header("Latest exchange-based charge")]
+    [Min(0)] public int ExchangeParticipantCharge = 5;
+    [Min(0)] public int OneSidedParticipantCharge = 5;
+
+    [Header("Legacy compatibility")]
+    [Min(0)] public int ClashStartCharge;
+    [Min(0)] public int HitDealtCharge;
+    [Min(0)] public int HitTakenCharge;
+    [Min(0)] public int ClashVictoryCharge;
     public bool PreparationDoesNotCharge = true;
 
     public void Normalize()
     {
-        ClashStartCharge = Mathf.Max(0, ClashStartCharge);
-        HitDealtCharge = Mathf.Max(0, HitDealtCharge);
-        HitTakenCharge = Mathf.Max(0, HitTakenCharge);
-        ClashVictoryCharge = Mathf.Max(0, ClashVictoryCharge);
+        ExchangeParticipantCharge = 5;
+        OneSidedParticipantCharge = 5;
+
+        ClashStartCharge = 0;
+        HitDealtCharge = 0;
+        HitTakenCharge = 0;
+        ClashVictoryCharge = 0;
     }
 }

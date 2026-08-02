@@ -308,6 +308,80 @@ public sealed class BattleRosterController : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// Prefab Asset을 지정된 Spawn Point에 복제해 전투 명단을 구성합니다.
+    /// 테스트 전투처럼 같은 Scene에서 여러 조합을 바꿀 때 사용합니다.
+    /// managedSceneCharacterCandidates에 현재 Scene의 원본 캐릭터를 넘기면
+    /// 실제 Roster에 포함되지 않은 원본은 자동으로 비활성화됩니다.
+    /// </summary>
+    public void ConfigurePrefabRoster(
+        Character playerPrefab,
+        IReadOnlyList<Character> enemyPrefabs,
+        Transform playerSpawnPoint,
+        IReadOnlyList<Transform> enemySpawnPoints,
+        Transform spawnedRuntimeRoot,
+        IReadOnlyList<Character> managedSceneCharacterCandidates = null)
+    {
+        runtimeRoot = spawnedRuntimeRoot;
+
+        player ??= new BattleParticipantSource();
+        player.Configure(
+            playerPrefab,
+            BattleParticipantSourceMode.InstantiateCopy,
+            playerSpawnPoint);
+
+        enemies ??= new List<BattleParticipantSource>();
+        enemies.Clear();
+
+        if (enemyPrefabs != null)
+        {
+            for (int i = 0; i < enemyPrefabs.Count; i++)
+            {
+                Character enemyPrefab = enemyPrefabs[i];
+
+                if (enemyPrefab == null)
+                    continue;
+
+                Transform spawnPoint =
+                    enemySpawnPoints != null &&
+                    i < enemySpawnPoints.Count
+                        ? enemySpawnPoints[i]
+                        : null;
+
+                BattleParticipantSource slot = new();
+                slot.Configure(
+                    enemyPrefab,
+                    BattleParticipantSourceMode.InstantiateCopy,
+                    spawnPoint);
+
+                enemies.Add(slot);
+            }
+        }
+
+        managedSceneCharacters ??= new List<Character>();
+        managedSceneCharacters.Clear();
+
+        if (managedSceneCharacterCandidates == null)
+            return;
+
+        for (int i = 0;
+             i < managedSceneCharacterCandidates.Count;
+             i++)
+        {
+            Character candidate =
+                managedSceneCharacterCandidates[i];
+
+            if (candidate == null ||
+                !candidate.gameObject.scene.IsValid() ||
+                managedSceneCharacters.Contains(candidate))
+            {
+                continue;
+            }
+
+            managedSceneCharacters.Add(candidate);
+        }
+    }
+
     public void ConfigureSceneRoster(
         Character playerInstance,
         IReadOnlyList<Character> enemyInstances,

@@ -150,7 +150,9 @@ public sealed class SkillSelectPanelUI : MonoBehaviour
 
         RefreshSlotHeader();
         RebuildActionSlotButtons();
-        RebuildDrawers();
+        RebuildDrawers(
+            openAllNonEmpty: true,
+            animateOpening: true);
 
         if (canvasGroup != null)
         {
@@ -293,7 +295,9 @@ public sealed class SkillSelectPanelUI : MonoBehaviour
 
         RefreshSlotHeader();
         RebuildActionSlotButtons();
-        RebuildDrawers();
+        RebuildDrawers(
+            openAllNonEmpty: false,
+            animateOpening: false);
     }
 
     private void RefreshSlotHeader()
@@ -321,31 +325,103 @@ public sealed class SkillSelectPanelUI : MonoBehaviour
             maxActionSlots);
     }
 
-    private void RebuildDrawers()
+    private void RebuildDrawers(
+        bool openAllNonEmpty,
+        bool animateOpening)
     {
         IReadOnlyList<Skill> skills =
             uiManager?.GetSelectableSkillsForCurrentSlot(
                 selectedPart);
 
-        int total = skills?.Count ?? 0;
+        if (drawers == null ||
+            drawers.Length == 0)
+        {
+            if (helpText != null)
+                helpText.text = "스킬 카테고리 서랍이 연결되지 않았습니다.";
+
+            return;
+        }
+
+        int total = 0;
+        List<string> categoryCounts =
+            new List<string>();
+
+        foreach (SkillDrawerCategoryUI drawer in drawers)
+        {
+            if (drawer == null)
+                continue;
+
+            drawer.Rebuild(
+                skills,
+                selectedActionIndex,
+                uiManager);
+
+            int count =
+                drawer.VisibleSkillCount;
+
+            total += count;
+
+            categoryCounts.Add(
+                $"{BattleSkillUiText.GetActionTypeName(drawer.ActionType)} {count}");
+
+            if (count <= 0)
+            {
+                drawer.SetOpenImmediate(false);
+                continue;
+            }
+
+            if (openAllNonEmpty)
+            {
+                drawer.SetOpen(
+                    true,
+                    animateOpening);
+            }
+        }
+
+        ForceDrawerLayouts();
 
         if (helpText != null)
         {
             helpText.text = total > 0
-                ? $"장착 스킬 {total}개 · 행동 유형을 누르면 서랍이 열립니다."
+                ? string.Join(" · ", categoryCounts) +
+                  $" · 총 {total}개 · 모든 서랍 펼침"
                 : "이 행동 슬롯에 장착된 스킬이 없습니다.";
         }
+    }
 
+    private void ForceDrawerLayouts()
+    {
         if (drawers == null)
             return;
 
+        RectTransform drawerRow = null;
+
         foreach (SkillDrawerCategoryUI drawer in drawers)
         {
-            drawer?.Rebuild(
-                skills,
-                selectedActionIndex,
-                uiManager);
+            if (drawer == null)
+                continue;
+
+            RectTransform drawerRect =
+                drawer.transform as RectTransform;
+
+            if (drawerRect != null)
+            {
+                LayoutRebuilder.ForceRebuildLayoutImmediate(
+                    drawerRect);
+
+                drawerRow ??=
+                    drawerRect.parent as RectTransform;
+            }
         }
+
+        if (drawerRow != null)
+            LayoutRebuilder.ForceRebuildLayoutImmediate(drawerRow);
+
+        RectTransform panelRect =
+            transform as RectTransform;
+
+        if (panelRect != null)
+            LayoutRebuilder.ForceRebuildLayoutImmediate(panelRect);
     }
 
     private void ApplyTextSettings()

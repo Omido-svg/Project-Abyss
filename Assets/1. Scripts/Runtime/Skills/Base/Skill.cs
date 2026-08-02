@@ -76,7 +76,7 @@ public abstract class Skill
 
             return ActionType == ActionType.NormalAttack ||
                    ActionType == ActionType.Duel
-                ? Mathf.Clamp(fallback, 2, 8)
+                ? Mathf.Clamp(fallback, 1, 8)
                 : 2;
         }
     }
@@ -429,7 +429,7 @@ public abstract class Skill
     public SkillRollData GetRollData(int exchangeIndex) =>
         RuntimeDefinition?.GetRollData(exchangeIndex);
 
-    public CombatRollType GetRollType(int exchangeIndex) =>
+    public virtual CombatRollType GetRollType(int exchangeIndex) =>
         GetRollData(exchangeIndex)?.Type ?? CombatRollType.Attack;
 
     public bool ShouldReuseRollData(int exchangeIndex) =>

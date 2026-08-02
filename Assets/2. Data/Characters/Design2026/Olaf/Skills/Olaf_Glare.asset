@@ -1,0 +1,68 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a85a262093fed2b45a6f05cb3a256be9, type: 3}
+  m_Name: Olaf_Glare
+  m_EditorClassIdentifier: 
+  skillId: olaf.preparation.glare
+  SkillName: "\uB178\uB824\uBCF4\uAE30"
+  ActionType: 2
+  BasePower: 0
+  CanBreakPart: 0
+  GainPrestige: 1
+  AttackWeight:
+    Weight: 1
+    SecondaryPartMode: 0
+    SecondaryDamageMultiplier: 1
+    AllowBrokenSecondaryParts: 0
+  Description: "\uD574\uB2F9 \uD134 \uBAA8\uB4E0 \uD569 \uD310\uC815\uAC12\uC5D0
+    +1\uC744 \uC801\uC6A9\uD55C\uB2E4."
+  Keywords: []
+  Rolls: []
+  ExchangeRollCount: 1
+  RollReusePolicy: 0
+  MultiRollPenalty:
+    Enabled: 0
+    PreviewText: 
+    Timing: 2
+    TriggerAfterRollIndex: 0
+    EffectEntries: []
+    Effects: []
+  ResolvePrestigeInCombat: 0
+  OverrideCanClash: 0
+  CanClashValue: 0
+  PreparationTier: 0
+  ResolverType: 0
+  DiceMin: 0
+  DiceMax: 0
+  CoinCount: 1
+  CoinFrontChance: 0.5
+  CoinFrontValue: 1
+  CoinBackValue: 0
+  CoinFrontIsCritical: 0
+  ChinchiroArashiBonus: 6
+  ChinchiroShigoroBonus: 6
+  ChinchiroHifumiPenalty: 1
+  ChinchiroHifumiSelfDamage: 1
+  EffectEntries: []
+  Effects: []
+  OverrideEnergyCost: 1
+  EnergyCost: 1
+  OverrideResourceRules: 0
+  RequireFullPrestige: 0
+  PrestigeCost: 0
+  ConsumeAllPrestige: 0
+  CustomResourceKey: 
+  CustomResourceCost: 0
+  ConsumeAllCustomResource: 0
+  OverridePrestigeUsePolicy: 0
+  PrestigeUsePolicy: 1
+  VisualDefinition: {fileID: 11400000, guid: b64deb5914eb4c24eb3ed8f758a8db4a, type: 2}

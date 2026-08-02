@@ -291,7 +291,7 @@ public sealed class CharacterCombatRulesRuntime
         foreach (Skill skill in runtimeSkills)
         {
             if (skill == null ||
-                !slot.AllowsSkill(skill) ||
+                !IsAllowedForSlot(slot, skill) ||
                 !IsAllowedByActiveSkillSet(skill))
             {
                 continue;
@@ -301,6 +301,31 @@ public sealed class CharacterCombatRulesRuntime
         }
 
         return result;
+    }
+
+    /// <summary>
+    /// 유진은 네 부위가 각각 하나의 행동 원천이며, 현재 장착한
+    /// 일반/결투/도사림/위세를 어느 정상 부위에서든 선택할 수 있다.
+    /// 위세 1회 제한은 슬롯 카테고리가 아니라 PrestigeUsePolicy가 담당한다.
+    /// 다른 캐릭터는 기존 CharacterSlotConfig 제한을 그대로 사용한다.
+    /// </summary>
+    private bool IsAllowedForSlot(
+        ActionSlot slot,
+        Skill skill)
+    {
+        if (slot == null ||
+            skill == null)
+        {
+            return false;
+        }
+
+        if (owner is Yujin)
+        {
+            return slot.Part == null ||
+                   !slot.Part.IsBroken;
+        }
+
+        return slot.AllowsSkill(skill);
     }
 
     public bool TryEquipSkill(

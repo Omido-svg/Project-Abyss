@@ -1,473 +1,65 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class OlafMadnessMechanic : CombatMechanic
+/// <summary>
+/// 올라프의 출혈, 광기, 만개, 도사림, 위세를 한 곳에서 처리한다.
+/// 모든 결투 부가효과는 합 전체가 아니라 OnExchangeResolved의 개별 교환 단위다.
+/// </summary>
+public sealed class OlafMadnessMechanic : CombatMechanic
 {
-    private const int MaxMadnessValue = 5;
-
-    private const int DuelLoseMadnessGain = 2;
-    private const int PartBreakMadnessGain = 1;
-
-    private const int ExchangeBleedAmount = 1;
-    private const int DuelPartBreakBleedThreshold = 5;
-
-    private const int BleedExplosionDamagePerStack = 5;
-    private const int DefaultPrestigeDamagePerMadness = 5;
+    public const int MaxMadnessValue = 10;
 
     private int madness;
-    private int suppressPartBreakMadnessDepth;
-
-    // 위세 효과가 최대 광기를 먼저 소모하더라도
-    // 같은 행동의 처치 보상 자격은 Kill 이벤트까지 보존한다.
-    private readonly HashSet<long>
-        killRewardEligibleActionIds = new();
 
     public int CurrentMadness => madness;
     public int MaxMadness => MaxMadnessValue;
+    public bool IsBlooming => madness >= MaxMadnessValue;
 
     public override string MechanicName =>
-        "광전사의 광기";
+        "Olaf Bleeding / Madness";
 
     public override void OnRegister()
     {
         SubscribeToBattleEvent(
-            () => battleEvent.OnClashWin += OnClashWin,
-            () => battleEvent.OnClashWin -= OnClashWin,
-            "OnClashWin");
-
-        SubscribeToBattleEvent(
-            () => battleEvent.OnDamageResolved += OnDamageResolved,
-            () => battleEvent.OnDamageResolved -= OnDamageResolved,
-            "OnDamageResolved");
-
-        SubscribeToBattleEvent(
-            () => battleEvent.OnClashLose += OnClashLose,
-            () => battleEvent.OnClashLose -= OnClashLose,
-            "OnClashLose");
+            () => battleEvent.OnExchangeResolved += OnExchangeResolved,
+            () => battleEvent.OnExchangeResolved -= OnExchangeResolved,
+            "OnExchangeResolved");
 
         SubscribeToBattleEvent(
             () => battleEvent.OnBodyPartBreakResolved += OnBodyPartBreakResolved,
             () => battleEvent.OnBodyPartBreakResolved -= OnBodyPartBreakResolved,
             "OnBodyPartBreakResolved");
-
-        SubscribeToBattleEvent(
-            () => battleEvent.OnKillResolved += OnKillResolved,
-            () => battleEvent.OnKillResolved -= OnKillResolved,
-            "OnKillResolved");
-
-        SubscribeToBattleEvent(
-            () => battleEvent.OnActionEnd += OnActionEnd,
-            () => battleEvent.OnActionEnd -= OnActionEnd,
-            "OnActionEnd");
     }
 
     public override void OnUnregister()
     {
-        killRewardEligibleActionIds.Clear();
-        suppressPartBreakMadnessDepth = 0;
         madness = 0;
     }
 
-    private void OnClashWin(
-        BattleAction winnerAction,
-        BattleAction loserAction)
+    public override int ModifyRoll(
+        BattleAction action,
+        int roll)
     {
-        if (winnerAction?.Owner != owner ||
-            winnerAction.Skill == null ||
-            winnerAction.ActionType != ActionType.Duel ||
-            loserAction?.ActionType != ActionType.Duel)
-        {
-            return;
-        }
+        if (action?.Owner != owner)
+            return roll;
 
-        ApplyDuelWinEffect(
-            winnerAction);
+        return roll +
+               Mathf.FloorToInt(
+                   CurrentMadness / 5f);
     }
 
-    private void ApplyDuelWinEffect(
-        BattleAction action)
+    public override int ModifyDamageTaken(
+        DamageContext context,
+        int damage)
     {
-        if (action?.Target == null ||
-            action.TargetPart == null ||
-            action.TargetPart.IsBroken ||
-            owner?.BattleContext?.EffectResolver == null)
-        {
-            return;
-        }
-
-        Bleeding bleeding =
-            action.Target.GetPartStatus<Bleeding>(
-                action.TargetPart);
-
-        int stacks = Mathf.Max(0, bleeding?.Stack ?? 0);
-        if (stacks < DuelPartBreakBleedThreshold)
-            return;
-
-        EffectRequest request = EffectRequest.ForceBreak(
-            owner,
-            action.Target,
-            action.TargetPart);
-        request.SourceAction = action;
-
-        bool broke = owner.BattleContext.EffectResolver
-            .ForceBreakPart(request);
-
-        if (!broke)
-            return;
-
-        RemoveBleeding(
-            action.Target,
-            action.TargetPart,
-            bleeding);
-
-        Debug.Log(
-            $"{owner.Data?.CharacterName} 고유 파괴 루트 / " +
-            $"출혈 {stacks} + 결투 승리로 " +
-            $"{action.Target.Data?.CharacterName} {action.TargetPart.Type} 파괴");
-    }
-
-    private void OnDamageResolved(DamageContext context)
-    {
-        if (context?.Attacker != owner ||
-            context.Action == null ||
-            !context.IsClashDamage ||
-            context.Target == null ||
-            context.Target.IsDead)
-        {
-            return;
-        }
-
-        if (context.Action.ActionType != ActionType.NormalAttack &&
-            context.Action.ActionType != ActionType.Duel)
-        {
-            return;
-        }
-
-        // 합에서 이긴 교환 한 번마다 출혈 1스택.
-        // 피해가 방어도에 전부 흡수되어도 교환 승리 자체가 연료다.
-        ApplyBleeding(
-            context.Target,
-            context.TargetPart,
-            ExchangeBleedAmount);
-    }
-
-    private void OnClashLose(
-        BattleAction loserAction,
-        BattleAction winnerAction)
-    {
-        if (loserAction?.Owner != owner ||
-            loserAction.Skill == null ||
-            loserAction.ActionType != ActionType.Duel)
-        {
-            return;
-        }
-
-        AddMadness(
-            DuelLoseMadnessGain);
-
-        Debug.Log(
-            $"{owner.Data.CharacterName} 결투 패배 : " +
-            $"광기 {DuelLoseMadnessGain} 증가");
-    }
-
-    private void OnBodyPartBreakResolved(
-        BodyPartBreakEventContext context)
-    {
-        if (context?.Target != owner ||
-            context.Part == null)
-        {
-            return;
-        }
-
-        if (suppressPartBreakMadnessDepth > 0)
-        {
-            Debug.Log(
-                $"{owner.Data.CharacterName} 억제 구간의 부위 파괴 : " +
-                "광기 증가 무시");
-            return;
-        }
-
-        AddMadness(
-            PartBreakMadnessGain);
-    }
-
-    private void OnKillResolved(
-        KillEventContext context)
-    {
-        if (context?.Killer != owner ||
-            context.Victim == null)
-        {
-            return;
-        }
-
-        bool preservedEligibility =
-            ConsumeKillRewardEligibility(
-                context.SourceAction);
-
-        if (!IsMaxMadness() &&
-            !preservedEligibility)
-        {
-            return;
-        }
-
-        int recoveredCount =
-            RecoverBrokenOrWeakenedParts(
-                2);
-
-        ResetMadness();
-
-        Debug.Log(
-            $"{owner.Data.CharacterName} 광기 5스택 처치 보상 : " +
-            $"부위 {recoveredCount}개 회복");
-    }
-
-    private void OnActionEnd(
-        BattleAction action)
-    {
-        if (action == null)
-            return;
-
-        // 처치가 없었던 행동의 임시 자격은 행동 종료 시 폐기한다.
-        killRewardEligibleActionIds.Remove(
-            action.ActionId);
-    }
-
-    private void ApplyBleeding(
-        Character target,
-        BodyPart targetPart,
-        int amount)
-    {
-        if (target == null ||
-            amount <= 0)
-        {
-            return;
-        }
-
-        BattleEffectResolver resolver =
-            owner.BattleContext?.EffectResolver;
-
-        if (resolver == null)
-            return;
-
-        Bleeding bleeding =
-            new Bleeding(amount);
-
-        if (targetPart != null &&
-            !targetPart.IsBroken)
-        {
-            resolver.ApplyBodyPartStatus(
-                EffectRequest.BodyPartStatus(
-                    owner,
-                    target,
-                    targetPart,
-                    bleeding));
-        }
-        else
-        {
-            resolver.ApplyCharacterStatus(
-                EffectRequest.CharacterStatus(
-                    owner,
-                    target,
-                    bleeding));
-        }
-    }
-
-    private void TryExplodeBleedingByDuel(
-        BattleAction action)
-    {
-        if (action?.Target == null)
-            return;
-
-        Bleeding bleeding =
-            action.TargetPart != null
-                ? action.Target.GetPartStatus<Bleeding>(
-                    action.TargetPart)
-                : action.Target.GetStatus<Bleeding>();
-
-        if (bleeding == null ||
-            !bleeding.CanExplode)
-        {
-            return;
-        }
-
-        int explosionDamage =
-            Mathf.Max(0, bleeding.Stack) *
-            BleedExplosionDamagePerStack;
-
-        DamageType damageType =
-            action.TargetPart == null
-                ? DamageType.BleedExplosion
-                : DamageType.StatusPart;
-
-        DamageRequest request =
-            DamageRequest.Custom(
-                damageType,
-                owner,
-                action.Target,
-                action.TargetPart,
-                explosionDamage,
-                1f,
-                false,
-                false,
-                false,
-                false,
-                false,
-                action,
-                bleeding);
-
-        OlafCombatPipeline.ApplyDamage(
-            owner,
-            request);
-
-        RemoveBleeding(
-            action.Target,
-            action.TargetPart,
-            bleeding);
-
-        Debug.Log(
-            $"{owner.Data.CharacterName} 출혈 폭발 : " +
-            $"{action.Target.Data.CharacterName}에 " +
-            $"{explosionDamage} 피해 / 부위 파괴 불가");
-    }
-
-    private void RemoveBleeding(
-        Character target,
-        BodyPart targetPart,
-        Bleeding bleeding)
-    {
-        if (target == null ||
-            bleeding == null)
-        {
-            return;
-        }
-
-        if (targetPart != null)
-        {
-            owner.BattleContext?.EffectResolver
-                ?.RemoveBodyPartStatus(
-                    EffectRequest.RemoveBodyPartStatus(
-                        owner,
-                        target,
-                        targetPart,
-                        bleeding));
-            return;
-        }
-
-        target.RemoveStatus(
-            bleeding,
-            StatusEffectRemoveReason.Manual);
-    }
-
-    private int RecoverBrokenOrWeakenedParts(
-        int maximumCount)
-    {
-        if (owner?.BodyParts == null ||
-            maximumCount <= 0 ||
-            owner.BattleContext?.EffectResolver == null)
-        {
-            return 0;
-        }
-
-        List<BodyPart> candidates = new();
-
-        foreach (BodyPart part in owner.BodyParts)
-        {
-            if (part != null &&
-                (part.IsBroken || part.IsWeakened))
-            {
-                candidates.Add(part);
-            }
-        }
-
-        for (int i = 0; i < candidates.Count; i++)
-        {
-            int randomIndex =
-                Random.Range(
-                    i,
-                    candidates.Count);
-
-            (candidates[i], candidates[randomIndex]) =
-                (candidates[randomIndex], candidates[i]);
-        }
-
-        int recoveredCount = 0;
-        int attemptCount =
-            Mathf.Min(
-                maximumCount,
-                candidates.Count);
-
-        for (int i = 0; i < attemptCount; i++)
-        {
-            BodyPart part =
-                candidates[i];
-
-            bool recovered =
-                owner.BattleContext.EffectResolver
-                    .RecoverPart(
-                        EffectRequest.RecoverPart(
-                            owner,
-                            owner,
-                            part));
-
-            if (!recovered)
-                continue;
-
-            recoveredCount++;
-
-            Debug.Log(
-                $"{owner.Data.CharacterName} 광기 효과 : " +
-                $"{part.Type} 부위 회복");
-        }
-
-        return recoveredCount;
-    }
-
-    public int GetNormalAttackBleedAmount() => ExchangeBleedAmount;
-
-    public int GetDuelWinBleedAmount() => 0;
-
-    public int GetDuelPushBonus() => 0;
-
-    public int ConsumeMadnessForPrestigeDamage()
-    {
-        return ConsumeMadnessForPrestigeDamage(
-            null,
-            DefaultPrestigeDamagePerMadness,
-            true);
-    }
-
-    public int ConsumeMadnessForPrestigeDamage(
-        BattleAction sourceAction,
-        int damagePerMadness,
-        bool consumeMadness)
-    {
-        int stack =
-            Mathf.Max(0, madness);
-
-        int damage =
-            stack *
-            Mathf.Max(0, damagePerMadness);
-
-        if (!consumeMadness ||
-            stack <= 0)
-        {
+        if (context?.Target != owner)
             return damage;
-        }
 
-        if (stack >= MaxMadness &&
-            sourceAction != null)
-        {
-            killRewardEligibleActionIds.Add(
-                sourceAction.ActionId);
-        }
-
-        ResetMadness();
-        return damage;
-    }
-
-    public void ClearMadness()
-    {
-        ResetMadness();
+        return Mathf.Max(
+            0,
+            damage +
+            Mathf.FloorToInt(
+                CurrentMadness / 5f));
     }
 
     public void AddMadness(int amount)
@@ -475,79 +67,432 @@ public class OlafMadnessMechanic : CombatMechanic
         if (amount <= 0)
             return;
 
-        madness =
-            Mathf.Clamp(
-                madness + amount,
-                0,
-                MaxMadness);
-
-        Debug.Log(
-            $"{owner.Data.CharacterName} 광기 증가 : " +
-            $"{madness}/{MaxMadness}");
-    }
-
-    public void ResetMadness()
-    {
-        madness = 0;
-
-        Debug.Log(
-            $"{owner.Data.CharacterName} 광기 초기화 : " +
-            $"{madness}/{MaxMadness}");
-    }
-
-    public bool IsMaxMadness()
-    {
-        return madness >= MaxMadness;
+        madness = Mathf.Clamp(
+            madness + amount,
+            0,
+            MaxMadnessValue);
     }
 
     public void SetMadnessToMax()
     {
-        madness = MaxMadness;
-
-        Debug.Log(
-            $"{owner.Data.CharacterName} 광기 최대치 : " +
-            $"{madness}/{MaxMadness}");
+        madness = MaxMadnessValue;
     }
 
+    /// <summary>
+    /// BattleDebugTuner 호환 API.
+    /// 디버그 값은 새 설계의 광기 상한 10을 기준으로 즉시 설정한다.
+    /// 패시브 발동이나 로그 같은 부수효과는 발생시키지 않는다.
+    /// </summary>
     public void SetMadnessForDebug(
         int value)
     {
-        madness =
+        madness = Mathf.Clamp(
+            value,
+            0,
+            MaxMadnessValue);
+    }
+
+    /// <summary>
+    /// 구형 데이터 기반 OlafPrestigeEffect 호환 API.
+    /// 새 TODO형 「터뜨리는 광기」는 ExecuteSkill에서 별도로 처리하므로
+    /// 이 메서드는 해당 SkillEffectDefinition이 실제로 연결된 경우에만 사용된다.
+    /// </summary>
+    public int ConsumeMadnessForPrestigeDamage()
+    {
+        return ConsumeMadnessForPrestigeDamage(
+            null,
+            5,
+            true);
+    }
+
+    /// <summary>
+    /// 현재 광기 × 광기당 피해를 반환한다.
+    /// consumeMadness가 true일 때만 계산 후 광기를 0으로 만든다.
+    /// sourceAction은 기존 호출 시그니처 보존용이며 새 설계에서는 별도 처치 자격을 만들지 않는다.
+    /// </summary>
+    public int ConsumeMadnessForPrestigeDamage(
+        BattleAction sourceAction,
+        int damagePerMadness,
+        bool consumeMadness)
+    {
+        int stack = Mathf.Max(0, madness);
+        int damage =
+            stack *
+            Mathf.Max(0, damagePerMadness);
+
+        if (consumeMadness &&
+            stack > 0)
+        {
+            madness = 0;
+        }
+
+        return damage;
+    }
+
+    public void ExecuteSkill(
+        BattleAction action)
+    {
+        if (action?.Owner != owner ||
+            action.Skill?.Definition == null)
+        {
+            return;
+        }
+
+        string id =
+            action.Skill.Definition.SkillId;
+
+        switch (id)
+        {
+            case OlafSkillIds.Crouch:
+                if (owner.RuntimeStatus != null)
+                    owner.RuntimeStatus.currentBlock = 12;
+                break;
+
+            case OlafSkillIds.Glare:
+                owner.AddTurnClashPowerBonus(1);
+                break;
+
+            case OlafSkillIds.ShowOff:
+                WeakenLowestNormalPart();
+                AddMadness(2);
+                break;
+
+            case OlafSkillIds.BloomingWound:
+                ApplyBloomingWound(action);
+                break;
+
+            case OlafSkillIds.BurstingMadness:
+                ApplyBurstingMadness(action);
+                break;
+
+            case OlafSkillIds.BacksToWall:
+                owner.GetMechanic<OlafImmortalFuryMechanic>()
+                    ?.Activate(action);
+                break;
+        }
+    }
+
+    private void OnExchangeResolved(
+        ClashExchangeResult exchange)
+    {
+        if (exchange == null ||
+            exchange.WasCancelled ||
+            exchange.IsTie)
+        {
+            return;
+        }
+
+        BattleAction myAction =
+            exchange.FirstAction?.Owner == owner
+                ? exchange.FirstAction
+                : exchange.SecondAction?.Owner == owner
+                    ? exchange.SecondAction
+                    : null;
+
+        BattleAction opponentAction =
+            myAction == exchange.FirstAction
+                ? exchange.SecondAction
+                : exchange.FirstAction;
+
+        if (myAction == null ||
+            opponentAction == null ||
+            exchange.IsOneSided)
+        {
+            return;
+        }
+
+        bool won =
+            exchange.WinnerAction == myAction;
+
+        bool attackWonAndHit =
+            won &&
+            myAction.CurrentRollType == CombatRollType.Attack &&
+            exchange.DamageContext != null;
+
+        if (attackWonAndHit)
+        {
+            int commonAmount =
+                CurrentMadness >= 3
+                    ? 2
+                    : 1;
+
+            ApplyBleeding(
+                myAction.Target,
+                myAction.TargetPart,
+                ScaleBleeding(commonAmount));
+        }
+
+        if (myAction.ActionType != ActionType.Duel ||
+            opponentAction.ActionType != ActionType.Duel)
+        {
+            return;
+        }
+
+        string id =
+            myAction.Skill?.Definition?.SkillId;
+
+        if (id == OlafSkillIds.Standard &&
+            won)
+        {
+            ApplyBleeding(
+                myAction.Target,
+                myAction.TargetPart,
+                ScaleBleeding(1));
+
+            AddMadness(1);
+            TryExplodeBleeding(myAction);
+        }
+        else if (id == OlafSkillIds.Rend)
+        {
+            ApplyBleeding(
+                myAction.Target,
+                myAction.TargetPart,
+                ScaleBleeding(1));
+
+            AddMadness(1);
+        }
+    }
+
+    private void OnBodyPartBreakResolved(
+        BodyPartBreakEventContext context)
+    {
+        if (context?.Part == null)
+            return;
+
+        AddMadness(2);
+
+        if (!IsBlooming ||
+            context.Target == owner ||
+            context.Target == null)
+        {
+            return;
+        }
+
+        NormalizeWeakenedParts(2);
+    }
+
+    private int ScaleBleeding(int amount)
+    {
+        int safe = Mathf.Max(0, amount);
+        return IsBlooming
+            ? safe * 2
+            : safe;
+    }
+
+    private void ApplyBleeding(
+        Character target,
+        BodyPart part,
+        int amount)
+    {
+        if (target == null ||
+            part == null ||
+            part.IsBroken ||
+            amount <= 0)
+        {
+            return;
+        }
+
+        battleContext?.EffectResolver
+            ?.ApplyBodyPartStatus(
+                EffectRequest.BodyPartStatus(
+                    owner,
+                    target,
+                    part,
+                    new Bleeding(amount)));
+    }
+
+    private void TryExplodeBleeding(
+        BattleAction action)
+    {
+        Character target =
+            action?.Target;
+
+        BodyPart part =
+            action?.TargetPart;
+
+        Bleeding bleeding =
+            target?.GetPartStatus<Bleeding>(part);
+
+        if (bleeding == null ||
+            !bleeding.CanExplode ||
+            part == null ||
+            part.IsBroken)
+        {
+            return;
+        }
+
+        int stack =
+            bleeding.ConsumeAll();
+
+        target.RemovePartStatus(
+            part,
+            bleeding,
+            StatusEffectRemoveReason.Manual);
+
+        int damage =
+            stack * 10;
+
+        int hpBefore =
+            Mathf.CeilToInt(part.PartHP);
+
+        DamageRequest request =
+            DamageRequest.Custom(
+                DamageType.BleedExplosion,
+                owner,
+                target,
+                part,
+                damage,
+                1f,
+                canBreakPart: false,
+                applyMomentum: false,
+                applyDefense: false,
+                applyGuard: false,
+                applyProtection: false,
+                sourceAction: action);
+
+        request.ApplyFlatDamageBonus = false;
+        request.ApplyOwnerMultiplier = false;
+        request.ApplyAttackerModifiers = false;
+        request.ApplyTargetModifiers = false;
+
+        battleContext?.battleManager?.DamageManager
+            ?.ApplyDamageContext(request);
+
+        if (damage >= hpBefore &&
+            !part.IsBroken)
+        {
+            target.ForceBreakPart(
+                part,
+                owner,
+                action);
+        }
+    }
+
+    private void ApplyBloomingWound(
+        BattleAction action)
+    {
+        int amount =
             Mathf.Clamp(
-                value,
-                0,
-                MaxMadness);
+                3 + CurrentMadness / 5,
+                3,
+                5);
+
+        // 위세 자체의 3~5는 이미 만개 값을 포함한 최종량이므로 재배율하지 않는다.
+        ApplyBleeding(
+            action.Target,
+            action.TargetPart,
+            amount);
     }
 
-    public void BeginSuppressPartBreakMadness()
+    private void ApplyBurstingMadness(
+        BattleAction action)
     {
-        suppressPartBreakMadnessDepth++;
+        AddMadness(2);
+
+        int bleeding =
+            action.Target?.GetPartStatus<Bleeding>(
+                action.TargetPart)?.Stack ?? 0;
+
+        int damage =
+            CurrentMadness * 5 +
+            Mathf.Max(0, bleeding);
+
+        if (damage <= 0 ||
+            action.Target == null)
+        {
+            return;
+        }
+
+        DamageRequest request =
+            DamageRequest.Custom(
+                action.TargetPart == null
+                    ? DamageType.Direct
+                    : DamageType.SkillPart,
+                owner,
+                action.Target,
+                action.TargetPart,
+                damage,
+                1f,
+                canBreakPart: false,
+                applyMomentum: false,
+                applyDefense: true,
+                applyGuard: true,
+                applyProtection: true,
+                sourceAction: action);
+
+        battleContext?.battleManager?.DamageManager
+            ?.ApplyDamageContext(request);
     }
 
-    public void EndSuppressPartBreakMadness()
+    private void WeakenLowestNormalPart()
     {
-        suppressPartBreakMadnessDepth =
-            Mathf.Max(
-                0,
-                suppressPartBreakMadnessDepth - 1);
+        BodyPart selected = null;
+
+        if (owner?.BodyParts == null)
+            return;
+
+        foreach (BodyPart part in owner.BodyParts)
+        {
+            if (part == null ||
+                part.IsBroken ||
+                part.IsWeakened)
+            {
+                continue;
+            }
+
+            if (selected == null ||
+                part.PartHP < selected.PartHP)
+            {
+                selected = part;
+            }
+        }
+
+        if (selected != null)
+        {
+            owner.WeakenPart(
+                selected,
+                owner,
+                null);
+        }
     }
 
-    private bool ConsumeKillRewardEligibility(
-        BattleAction sourceAction)
+    private void NormalizeWeakenedParts(int count)
     {
-        if (sourceAction == null)
-            return false;
+        if (owner?.BodyParts == null ||
+            count <= 0)
+        {
+            return;
+        }
 
-        return killRewardEligibleActionIds.Remove(
-            sourceAction.ActionId);
-    }
+        List<BodyPart> candidates =
+            new List<BodyPart>();
 
-    private bool IsImmortalFuryActive()
-    {
-        OlafImmortalFuryMechanic fury =
-            owner?.GetMechanic<OlafImmortalFuryMechanic>();
+        foreach (BodyPart part in owner.BodyParts)
+        {
+            if (part?.IsWeakened == true)
+                candidates.Add(part);
+        }
 
-        return fury != null &&
-               fury.IsActive;
+        candidates.Sort(
+            (left, right) =>
+                left.PartHP.CompareTo(
+                    right.PartHP));
+
+        int normalized = 0;
+
+        foreach (BodyPart part in candidates)
+        {
+            if (normalized >= count)
+                break;
+
+            owner.SetBodyPartStateForDebug(
+                part,
+                Mathf.Max(1f, part.PartHP),
+                part.MaxPartHP,
+                BodyPartState.Normal,
+                clearNonStructuralStatuses: false);
+
+            normalized++;
+        }
     }
 }

@@ -1,23 +1,27 @@
 using UnityEngine;
 
-public class OlafImmortalFuryMechanic :
-    CombatMechanic,
-    IBodyPartBreakImmediateReaction
+/// <summary>
+/// 올라프 위세 3형 「배수진」.
+/// 발동한 턴 동안 전신 HP와 부위 HP가 1 아래로 내려가지 않고
+/// 부위 파괴와 사망을 막는다.
+/// </summary>
+public sealed class OlafImmortalFuryMechanic :
+    CombatMechanic
 {
-    public override string MechanicName =>
-        "불사의 분노";
-
-    private const int Duration = 3;
-    private const int SelfDamagePerTurn = 5;
-
     private bool isActive;
-    private int turnsLeft;
 
     public bool IsActive => isActive;
-    public int TurnsLeft => turnsLeft;
+
+    public override string MechanicName =>
+        "Olaf Backs To Wall";
 
     public override void OnRegister()
     {
+        SubscribeToBattleEvent(
+            () => battleEvent.OnExchangeResolved += OnExchangeResolved,
+            () => battleEvent.OnExchangeResolved -= OnExchangeResolved,
+            "OnExchangeResolved");
+
         SubscribeToBattleEvent(
             () => battleEvent.OnTurnEnd += OnTurnEnd,
             () => battleEvent.OnTurnEnd -= OnTurnEnd,
@@ -27,60 +31,57 @@ public class OlafImmortalFuryMechanic :
     public override void OnUnregister()
     {
         isActive = false;
-        turnsLeft = 0;
     }
 
-    // 마지막에서 두 번째 부위가 파괴된 직후,
-    // CharacterLifeController의 사망 판정보다 먼저 호출된다.
-    public void OnBodyPartBrokenBeforeDeath(
-        BodyPartBreakEventContext context)
+    public void Activate(
+        BattleAction sourceAction)
     {
-        if (context?.Target != owner ||
-            context.Part == null ||
-            owner == null ||
+        if (owner == null ||
             owner.IsDead)
         {
             return;
         }
 
-        TryEnterImmortalFury();
-    }
-
-    private void TryEnterImmortalFury()
-    {
-        if (isActive || owner == null)
-            return;
-
-        if (CountAliveParts() != 1)
-            return;
-
         isActive = true;
-        turnsLeft = Duration;
-
-        owner.GetMechanic<OlafMadnessMechanic>()
-            ?.SetMadnessToMax();
-
-        Debug.Log(
-            $"{owner.Data.CharacterName} 불사의 분노 발동! " +
-            $"{turnsLeft}턴 동안 사망하지 않음");
     }
 
-    public override void ModifyActionSlotPolicy(
-        ActionSlotPolicyContext context)
+    public override int ModifyDamageTaken(
+        DamageContext context,
+        int damage)
     {
-        if (context == null ||
-            context.Owner != owner ||
-            !isActive ||
-            context.Part == null ||
-            context.Part.IsBroken)
+        if (!isActive ||
+            context?.Target != owner ||
+            damage <= 0)
         {
-            return;
+            return damage;
         }
 
-        context.MaxSlots =
+        int maximum =
             Mathf.Max(
-                context.MaxSlots,
-                2);
+                0,
+                owner.CurrentHP - 1);
+
+        if (context.TargetPart != null &&
+            !context.TargetPart.IsBroken)
+        {
+            maximum = Mathf.Min(
+                maximum,
+                Mathf.Max(
+                    0,
+                    Mathf.CeilToInt(
+                        context.TargetPart.PartHP) - 1));
+        }
+
+        return Mathf.Min(
+            damage,
+            maximum);
+    }
+
+    public override bool CanBreakOwnerPart(
+        BodyPart part,
+        BattleAction sourceAction)
+    {
+        return !isActive;
     }
 
     public override bool CanOwnerDie()
@@ -88,63 +89,25 @@ public class OlafImmortalFuryMechanic :
         return !isActive;
     }
 
-    private void OnTurnEnd(int turn)
+    private void OnExchangeResolved(
+        ClashExchangeResult exchange)
     {
         if (!isActive ||
-            owner == null ||
-            owner.IsDead)
+            exchange == null ||
+            exchange.IsOneSided ||
+            exchange.WasCancelled ||
+            exchange.LoserAction?.Owner != owner ||
+            exchange.DamageContext == null)
         {
             return;
         }
 
         owner.GetMechanic<OlafMadnessMechanic>()
-            ?.SetMadnessToMax();
-
-        // 자해도 DamageRequest → DamageContext → 이벤트 경로를 탄다.
-        OlafCombatPipeline.ApplyDamage(
-            owner,
-            DamageRequest.SelfCost(
-                owner,
-                SelfDamagePerTurn));
-
-        turnsLeft =
-            Mathf.Max(0, turnsLeft - 1);
-
-        Debug.Log(
-            $"{owner.Data.CharacterName} 불사의 분노 지속 중 : " +
-            $"남은 턴 {turnsLeft}");
-
-        if (turnsLeft > 0)
-            return;
-
-        Debug.Log(
-            $"{owner.Data.CharacterName} 불사의 분노 종료 : 강제 사망");
-
-        // 먼저 비활성화해야 CanOwnerDie()가 true가 된다.
-        isActive = false;
-
-        owner.BattleContext?.EffectResolver?.ForceKill(
-            EffectRequest.ForceKill(
-                owner,
-                owner));
+            ?.AddMadness(1);
     }
 
-    private int CountAliveParts()
+    private void OnTurnEnd(int turn)
     {
-        if (owner?.BodyParts == null)
-            return 0;
-
-        int count = 0;
-
-        foreach (BodyPart part in owner.BodyParts)
-        {
-            if (part != null &&
-                !part.IsBroken)
-            {
-                count++;
-            }
-        }
-
-        return count;
+        isActive = false;
     }
 }

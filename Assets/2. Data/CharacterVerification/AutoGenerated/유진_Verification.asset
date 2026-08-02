@@ -1,0 +1,160 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e19daa19565c4da4889234089ec44149, type: 3}
+  m_Name: "\uC720\uC9C4_Verification"
+  m_EditorClassIdentifier: 
+  profileId: character.Yujin.060a5617ffe7f004f979c24bc775dc19
+  bundle: {fileID: 11400000, guid: 060a5617ffe7f004f979c24bc775dc19, type: 2}
+  strictPresentationValidation: 1
+  cases:
+  - CaseId: generic.data.core_references
+    DisplayName: "Core \uB370\uC774\uD130 \uCC38\uC870"
+    Category: 0
+    ExecutionMode: 0
+    Enabled: 1
+    Seed: 1207
+    Description: "Bundle, CharacterData, CombatLoadout, Prefab\uC758 \uD544\uC218
+      \uCC38\uC870\uB97C \uAC80\uC0AC\uD569\uB2C8\uB2E4."
+  - CaseId: generic.data.prefab_compatibility
+    DisplayName: "Prefab\xB7Bundle \uD638\uD658\uC131"
+    Category: 0
+    ExecutionMode: 0
+    Enabled: 1
+    Seed: 1207
+    Description: "Bundle Kind\uC640 Character Component \uC870\uD569 \uBC0F \uD544\uC218
+      Prefab Component\uB97C \uAC80\uC0AC\uD569\uB2C8\uB2E4."
+  - CaseId: generic.data.loadout_integrity
+    DisplayName: "\uC2A4\uD0AC \uC7A5\uCC29\xB7\uC2AC\uB86F \uB178\uCD9C"
+    Category: 0
+    ExecutionMode: 0
+    Enabled: 1
+    Seed: 1207
+    Description: "\uCE74\uD14C\uACE0\uB9AC\uBCC4 \uC7A5\uCC29 \uD55C\uB3C4, \uD0C0\uC785,
+      \uC911\uBCF5\uACFC \uD589\uB3D9 \uC2AC\uB86F\uC5D0\uC11C\uC758 \uB178\uCD9C
+      \uAC00\uB2A5\uC131\uC744 \uAC80\uC0AC\uD569\uB2C8\uB2E4."
+  - CaseId: generic.data.skill_definitions
+    DisplayName: "SkillDefinition \uBB34\uACB0\uC131"
+    Category: 0
+    ExecutionMode: 0
+    Enabled: 1
+    Seed: 1207
+    Description: "\uC2A4\uD0AC ID, \uAD74\uB9BC \uC218, \uC911\uBCF5 ID\uC640 \uB7F0\uD0C0\uC784
+      \uC0DD\uC131 \uAC00\uB2A5 \uC5EC\uBD80\uB97C \uAC80\uC0AC\uD569\uB2C8\uB2E4."
+  - CaseId: generic.presentation.timeline_and_animator
+    DisplayName: "Timeline\xB7Animator \uC5F0\uACB0"
+    Category: 8
+    ExecutionMode: 0
+    Enabled: 1
+    Seed: 1207
+    Description: "Animator, CharacterPresentationProfile, \uC2A4\uD0AC Timeline \uC138\uD2B8\uB97C
+      \uAC80\uC0AC\uD569\uB2C8\uB2E4."
+  - CaseId: generic.runtime.initialization
+    DisplayName: "\uACA9\uB9AC \uB7F0\uD0C0\uC784 \uCD08\uAE30\uD654"
+    Category: 9
+    ExecutionMode: 1
+    Enabled: 1
+    Seed: 1207
+    Description: "\uC2E4\uC81C Prefab Clone\uC744 \uBCC4\uB3C4 BattleContext\uC5D0
+      \uCD08\uAE30\uD654\uD574 \uAD6C\uB3C5\uACFC \uB7F0\uD0C0\uC784 \uC0DD\uC131
+      \uC2E4\uD328\uB97C \uAC80\uC0AC\uD569\uB2C8\uB2E4."
+  - CaseId: generic.runtime.body_parts
+    DisplayName: "\uBD80\uC704 \uB7F0\uD0C0\uC784 \uC0C1\uD0DC"
+    Category: 6
+    ExecutionMode: 1
+    Enabled: 1
+    Seed: 1207
+    Description: "\uBD80\uC704 \uC18C\uC720\uC790, HP, \uD0C0\uC785 \uC911\uBCF5,
+      \uCD08\uAE30 \uC0C1\uD0DC\uB97C \uAC80\uC0AC\uD569\uB2C8\uB2E4."
+  - CaseId: generic.runtime.skill_binding
+    DisplayName: "\uB7F0\uD0C0\uC784 \uC2A4\uD0AC \uBC14\uC778\uB529"
+    Category: 0
+    ExecutionMode: 1
+    Enabled: 1
+    Seed: 1207
+    Description: "\uC7A5\uCC29 SkillDefinition\uC774 \uCE90\uB9AD\uD130 \uACE0\uC720
+      RuntimeSkill\uB85C \uC0DD\uC131\uB418\uC5C8\uB294\uC9C0 \uAC80\uC0AC\uD569\uB2C8\uB2E4."
+  - CaseId: generic.runtime.deterministic_random
+    DisplayName: "\uACB0\uC815\uB860\uC801 \uAD74\uB9BC \uC7AC\uD604"
+    Category: 9
+    ExecutionMode: 1
+    Enabled: 1
+    Seed: 1207
+    Description: "CharacterRandomDebugOverride\uAC00 \uAC19\uC740 Seed\uC640 Sample\uC5D0\uC11C
+      \uAC19\uC740 RollResult\uB97C \uC0DD\uC131\uD558\uB294\uC9C0 \uAC80\uC0AC\uD569\uB2C8\uB2E4."
+  - CaseId: generic.live.scene_binding
+    DisplayName: "\uC2E4\uC804 Scene UI\xB7\uC804\uD22C \uC5F0\uACB0"
+    Category: 7
+    ExecutionMode: 2
+    Enabled: 1
+    Seed: 1207
+    Description: "\uD604\uC7AC BattleManager\uC758 \uD50C\uB808\uC774\uC5B4, HUD,
+      \uC2A4\uD0AC \uD328\uB110\uC774 \uC120\uD0DD Bundle\uACFC \uC5F0\uACB0\uB418\uC5B4
+      \uC788\uB294\uC9C0 \uAC80\uC0AC\uD569\uB2C8\uB2E4."
+  - CaseId: yujin.data.skill_coverage
+    DisplayName: "\uC720\uC9C4 \uC2A4\uD0AC ID \uC804\uCCB4 \uB4F1\uB85D"
+    Category: 0
+    ExecutionMode: 0
+    Enabled: 1
+    Seed: 1207
+    Description: "\uC77C\uBC18 2, \uACB0\uD22C 2, \uB3C4\uC0AC\uB9BC 2, \uC704\uC138
+      3\uC758 \uACE0\uC720 SkillId\uAC00 \uB370\uC774\uD130 \uADF8\uB798\uD504\uC5D0
+      \uBAA8\uB450 \uC874\uC7AC\uD558\uB294\uC9C0 \uAC80\uC0AC\uD569\uB2C8\uB2E4."
+  - CaseId: yujin.passive.mechanic_registration
+    DisplayName: "\uC720\uC9C4 \uD1B5\uD569 \uBA54\uCEE4\uB2C9 \uB4F1\uB85D"
+    Category: 1
+    ExecutionMode: 1
+    Enabled: 1
+    Seed: 1207
+    Description: "\uBB34\uAE30\xB7\uC0B4\uC218\uC758 \uAC10\xB7\uD45C\uC2DD \uBA54\uCEE4\uB2C9
+      \uC0DD\uC131\uACFC BattleEvent \uAD6C\uB3C5\uC744 \uAC80\uC0AC\uD569\uB2C8\uB2E4."
+  - CaseId: yujin.passive.unlimited_weapon_switch
+    DisplayName: "\uBB34\uAE30 \uBB34\uC81C\uD55C \uC804\uD658"
+    Category: 1
+    ExecutionMode: 1
+    Enabled: 1
+    Seed: 1207
+    Description: "\uAC19\uC740 \uD134\uC5D0 \uBC31\uC6B0\u2192\uC801\uC124\u2192\uB099\uC77C\u2192\uBC31\uC6B0
+      \uC804\uD658\uACFC WeaponChanged \uC774\uBCA4\uD2B8\uB97C \uAC80\uC0AC\uD569\uB2C8\uB2E4."
+  - CaseId: yujin.passive.weapon_profiles
+    DisplayName: "\uBB34\uAE30 \uD504\uB85C\uD544 \uC218\uCE58"
+    Category: 0
+    ExecutionMode: 0
+    Enabled: 1
+    Seed: 1207
+    Description: "\uBC31\uC6B0\xB7\uC801\uC124\xB7\uB099\uC77C\uC758 \uCF54\uC778
+      \uC218, \uC55E\uBA74 \uD655\uB960, \uD06C\uB9AC\uAC12, \uD45C\uC2DD\uB7C9\uC744
+      \uAC80\uC0AC\uD569\uB2C8\uB2E4."
+  - CaseId: yujin.passive.sense_turn_start
+    DisplayName: "\uC0B4\uC218\uC758 \uAC10 \uD134 \uC2DC\uC791 \uD68D\uB4DD"
+    Category: 1
+    ExecutionMode: 1
+    Enabled: 1
+    Seed: 1207
+    Description: "TurnStart \uC774\uBCA4\uD2B8 \uD55C \uBC88\uC5D0 \uC0B4\uC218\uC758
+      \uAC10\uC774 \uC815\uD655\uD788 1 \uC99D\uAC00\uD558\uB294\uC9C0 \uAC80\uC0AC\uD569\uB2C8\uB2E4."
+  - CaseId: yujin.duel.sense_reroll
+    DisplayName: "\uC0B4\uC218\uC758 \uAC10 \uC790\uB3D9 \uC7AC\uAD74\uB9BC"
+    Category: 3
+    ExecutionMode: 1
+    Enabled: 1
+    Seed: 1207
+    Description: "\uAC01\uC778\xB7\uCD94\uACA9 \uD328\uBC30, \uBE44\uD06C\uB9AC\uD2F0\uCEEC,
+      \uC790\uB3D9 \uC0AC\uC6A9 ON\uC5D0\uC11C \uAC10 1 \uC18C\uBAA8\uC640 1\uD68C
+      \uC7AC\uAD74\uB9BC\uC744 \uAC80\uC0AC\uD569\uB2C8\uB2E4."
+  - CaseId: yujin.passive.mark_ignition_nakil
+    DisplayName: "\uD45C\uC2DD 44\xB7\uB099\uC77C \uBC1C\uD654"
+    Category: 1
+    ExecutionMode: 1
+    Enabled: 1
+    Seed: 1207
+    Description: "\uD45C\uC2DD 44 \uB3C4\uB2EC \uC2DC \uD45C\uC2DD \uCD08\uAE30\uD654\uC640
+      \uB099\uC77C\uC758 \uB300\uC0C1 \uBD80\uC704 \uC57D\uD654\uB97C \uAC80\uC0AC\uD569\uB2C8\uB2E4."

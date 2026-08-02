@@ -131,6 +131,94 @@ public sealed class CharacterMechanicController : IDisposable
         return value;
     }
 
+    public int ModifyExchangeRollCount(
+        BattleAction action,
+        int rollCount)
+    {
+        int value = Mathf.Max(1, rollCount);
+
+        foreach (CombatMechanic mechanic in mechanics)
+        {
+            if (mechanic == null)
+                continue;
+
+            try
+            {
+                value = Mathf.Max(
+                    1,
+                    mechanic.ModifyExchangeRollCount(
+                        action,
+                        value));
+            }
+            catch (Exception exception)
+            {
+                LogMechanicException(
+                    mechanic,
+                    nameof(ModifyExchangeRollCount),
+                    exception);
+            }
+        }
+
+        return value;
+    }
+
+    public bool TryRequestExchangeReroll(
+        ExchangeRerollContext context)
+    {
+        foreach (CombatMechanic mechanic in mechanics)
+        {
+            if (mechanic == null)
+                continue;
+
+            try
+            {
+                if (mechanic.TryRequestExchangeReroll(context))
+                    return true;
+            }
+            catch (Exception exception)
+            {
+                LogMechanicException(
+                    mechanic,
+                    nameof(TryRequestExchangeReroll),
+                    exception);
+            }
+        }
+
+        return false;
+    }
+
+    public bool CanBreakOwnerPart(
+        BodyPart part,
+        BattleAction sourceAction)
+    {
+        foreach (CombatMechanic mechanic in mechanics)
+        {
+            if (mechanic == null)
+                continue;
+
+            try
+            {
+                if (!mechanic.CanBreakOwnerPart(
+                        part,
+                        sourceAction))
+                {
+                    return false;
+                }
+            }
+            catch (Exception exception)
+            {
+                LogMechanicException(
+                    mechanic,
+                    nameof(CanBreakOwnerPart),
+                    exception);
+
+                return false;
+            }
+        }
+
+        return true;
+    }
+
     public bool CanUseSkill(
         BodyPart part,
         Skill skill)

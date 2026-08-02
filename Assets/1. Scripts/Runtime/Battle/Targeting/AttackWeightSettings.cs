@@ -5,7 +5,13 @@ public enum AttackWeightSecondaryPartMode
 {
     RandomValidTargetPoint = 0,
     MatchPrimaryPartType = 1,
-    CharacterLevelDirect = 2
+    CharacterLevelDirect = 2,
+
+    /// <summary>
+    /// 같은 캐릭터의 다른 부위를 추가 타깃으로 사용합니다.
+    /// 유진 적설처럼 한 적의 두 부위를 동시에 공격할 때 사용합니다.
+    /// </summary>
+    AnotherPartOnPrimaryCharacter = 3
 }
 
 [Serializable]

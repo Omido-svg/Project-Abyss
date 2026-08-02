@@ -1,0 +1,42 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 02f75a7e990b2b34480f808c74726683, type: 3}
+  m_Name: NormalEnemy_Test_Data
+  m_EditorClassIdentifier: 
+  CharacterName: "\uD6C8\uB828\uC6A9 \uC77C\uBC18 \uC801"
+  CombatantTier: 1
+  Portrait: {fileID: 0}
+  DetailArtwork: {fileID: 0}
+  RoleName: "\uC77C\uBC18 \uC801"
+  UiSummary: "\uC77C\uBC18\uC804\uD22C\uC640 \uD63C\uD569\uC804\uD22C \uAC80\uC99D\uC6A9
+    \uB2E8\uC77C \uCCB4\uB825 \uC801."
+  TargetMode: 2
+  SingleHpMax: 60
+  maxPrestige: 50
+  maxEnergy: 3
+  ActionSlots:
+  - SlotId: BODY
+    DisplayName: "\uBAB8\uCCB4"
+    Enabled: 1
+    HasLinkedPart: 0
+    LinkedPartType: 0
+    OverrideSpeedRange: 0
+    MinSpeed: 3
+    MaxSpeed: 8
+    AllowedActionTypes: 000000000100000003000000
+  CombatLoadout: {fileID: 11400000, guid: f68a08fd84d18ce4fb520e2a72a8966d, type: 2}
+  BossPhases: []
+  damageMultiplier: 1
+  defensePenetration: 0
+  minSpeed: 1
+  maxSpeed: 6
+  InitialResources: []

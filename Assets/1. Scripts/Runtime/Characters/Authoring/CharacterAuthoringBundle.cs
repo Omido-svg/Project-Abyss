@@ -6,7 +6,8 @@ public enum CharacterAuthoringKind
     Olaf = 0,
     EliteEnemy = 1,
     NormalEnemy = 2,
-    Custom = 3
+    Custom = 3,
+    Yujin = 4
 }
 
 /// <summary>
@@ -211,6 +212,8 @@ public sealed class CharacterAuthoringBundle : ScriptableObject
                 character is EliteEnemy && skillSet is EliteEnemySkillSet,
             CharacterAuthoringKind.NormalEnemy =>
                 character is NormalEnemy && skillSet is NormalEnemySkillSet,
+            CharacterAuthoringKind.Yujin =>
+                character is Yujin && skillSet == null,
             _ => character is ICharacterAuthoringTarget || skillSet == null
         };
 

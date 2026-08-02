@@ -215,6 +215,13 @@ public abstract class StatusEffect
         return roll;
     }
 
+    public virtual int ModifyExchangeRollCount(
+        BattleAction action,
+        int rollCount)
+    {
+        return rollCount;
+    }
+
     public virtual int ModifyDamage(BattleAction action, int damage)
     {
         return damage;

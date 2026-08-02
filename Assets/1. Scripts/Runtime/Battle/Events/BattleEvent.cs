@@ -530,7 +530,20 @@ public class BattleEvent : IDisposable
     // Clash result
     //-----------------------------------
 
+    public event Action<ClashExchangeResult> OnExchangeResolved;
     public event Action<ClashResultContext> OnClashResolved;
+
+    public void RaiseExchangeResolved(
+        ClashExchangeResult context)
+    {
+        if (IsDisposed)
+            return;
+
+        InvokeSafely(
+            OnExchangeResolved,
+            context,
+            nameof(OnExchangeResolved));
+    }
 
     public void RaiseClashResolved(
         ClashResultContext context)
@@ -567,6 +580,7 @@ public class BattleEvent : IDisposable
         OnClashStart = null;
         OnClashWin = null;
         OnClashLose = null;
+        OnExchangeResolved = null;
         OnClashResolved = null;
 
         OnDamageTaken = null;

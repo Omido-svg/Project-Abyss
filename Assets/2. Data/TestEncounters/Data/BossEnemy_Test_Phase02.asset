@@ -1,0 +1,34 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: df35dd2545060294fb3cd4a249d36769, type: 3}
+  m_Name: BossEnemy_Test_Phase02
+  m_EditorClassIdentifier: 
+  PhaseId: PHASE_02
+  DisplayName: "\uACA9\uB178"
+  EnterAtOrBelowHpRate: 0.5
+  MinimumTurn: 1
+  RequireMomentumAtOrBelow: 0
+  MomentumAtOrBelow: 0
+  SlotConfigs: []
+  NormalSkillPool:
+  - {fileID: 11400000, guid: 6a7df3e678fffd4439fd494c51209239, type: 2}
+  DuelSkillPool:
+  - {fileID: 11400000, guid: 4b80d9ad43d0de14bb655a20d16b1cb4, type: 2}
+  PreparationSkillPool:
+  - {fileID: 11400000, guid: f9c5728c648630849a9ba0afe641d02a, type: 2}
+  PrestigeSkillPool:
+  - {fileID: 11400000, guid: 5ac5af8c409583342b1bd34c2572f671, type: 2}
+  NormalWeight: 1.2
+  DuelWeight: 1.25
+  PreparationWeight: 0.1
+  PrestigeWeight: 1.4
+  QueuedActionPolicy: 0

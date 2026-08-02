@@ -25,6 +25,11 @@ public sealed class BattleCharacterPointerRouter : MonoBehaviour
     private readonly List<Candidate> candidates =
         new();
 
+    private readonly List<RaycastResult> uiRaycastResults =
+        new();
+
+    private static int worldInputBlockedUntilFrame = -1;
+
     private Character hoveredCharacter;
     private Character selectedCharacter;
 
@@ -42,7 +47,27 @@ public sealed class BattleCharacterPointerRouter : MonoBehaviour
     private static void ResetStaticState()
     {
         Instance = null;
+        worldInputBlockedUntilFrame = -1;
     }
+
+    /// <summary>
+    /// UGUI Button의 onClick과 월드 클릭 Router가 같은 마우스 업/다운을
+    /// 처리하지 않도록 몇 프레임 동안 월드 입력을 차단한다.
+    /// </summary>
+    public static void BlockWorldInputForFrames(
+        int frameCount = 2)
+    {
+        int safeFrameCount =
+            Mathf.Max(1, frameCount);
+
+        worldInputBlockedUntilFrame =
+            Mathf.Max(
+                worldInputBlockedUntilFrame,
+                Time.frameCount + safeFrameCount);
+    }
+
+    public static bool IsWorldInputTemporarilyBlocked =>
+        Time.frameCount <= worldInputBlockedUntilFrame;
 
     public void Configure(
         Camera camera,
@@ -98,14 +123,31 @@ public sealed class BattleCharacterPointerRouter : MonoBehaviour
             return;
         }
 
+        bool pointerOverEventSystemUi =
+            IsPointerOverEventSystemUi(
+                Input.mousePosition);
+
+        bool pointerOverTestPanel =
+            BattleTestScenarioSwitcher
+                .IsPointerBlockedByRuntimePanel(
+                    Input.mousePosition);
+
+        bool pointerBlockedByUiAction =
+            IsWorldInputTemporarilyBlocked;
+
         bool pointerOverUi =
-            EventSystem.current != null &&
-            EventSystem.current.IsPointerOverGameObject();
+            pointerOverEventSystemUi ||
+            pointerOverTestPanel ||
+            pointerBlockedByUiAction;
 
         string hoverDiagnostics =
-            pointerOverUi
-                ? "PointerOverUI=True"
-                : string.Empty;
+            pointerBlockedByUiAction
+                ? "WorldInputTemporarilyBlocked=True"
+                : pointerOverTestPanel
+                    ? "PointerOverTestPanel=True"
+                    : pointerOverEventSystemUi
+                        ? "PointerOverUI=True"
+                        : string.Empty;
 
         Character nextHover =
             pointerOverUi
@@ -120,6 +162,9 @@ public sealed class BattleCharacterPointerRouter : MonoBehaviour
 
         if (Input.GetMouseButtonDown(1))
         {
+            if (pointerOverUi)
+                return;
+
             HandleRightClick();
             return;
         }
@@ -150,6 +195,35 @@ public sealed class BattleCharacterPointerRouter : MonoBehaviour
 
         OpenCharacterDetails(
             nextHover);
+    }
+
+    private bool IsPointerOverEventSystemUi(
+        Vector2 screenPosition)
+    {
+        EventSystem eventSystem =
+            EventSystem.current;
+
+        if (eventSystem == null)
+            return false;
+
+        // StandaloneInputModule/InputSystemUIInputModule의 포인터 캐시를 먼저 사용한다.
+        if (eventSystem.IsPointerOverGameObject())
+            return true;
+
+        // 런타임에 생성된 Canvas나 같은 프레임에 활성화된 Graphic은
+        // 위 캐시에 아직 없을 수 있으므로 실제 GraphicRaycaster 결과도 검사한다.
+        PointerEventData pointerData =
+            new PointerEventData(eventSystem)
+            {
+                position = screenPosition
+            };
+
+        uiRaycastResults.Clear();
+        eventSystem.RaycastAll(
+            pointerData,
+            uiRaycastResults);
+
+        return uiRaycastResults.Count > 0;
     }
 
     private void HandleRightClick()

@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 42024a28d0568ac4cb807da56889fd57, type: 3}
   m_Name: OlafSkillSet
   m_EditorClassIdentifier: 
-  NormalAttack: {fileID: 11400000, guid: d186584d80e209d44a0aa4fd4c31b939, type: 2}
-  DuelSkill: {fileID: 11400000, guid: 9307bc19f87268e49b814a05778f430c, type: 2}
-  PreparationSkill: {fileID: 11400000, guid: 6acf50d52cbb5c94581da06a0a953647, type: 2}
-  PrestigeSkill: {fileID: 11400000, guid: 55bc5414689646c4e9ada845127e9149, type: 2}
+  NormalAttack: {fileID: 11400000, guid: e70601f0335d00c47bd0d08fd718d968, type: 2}
+  DuelSkill: {fileID: 11400000, guid: d685378dcfe71d3418bf9cde7ff0542d, type: 2}
+  PreparationSkill: {fileID: 11400000, guid: 65c14acfdfd08ed419fc20225869874b, type: 2}
+  PrestigeSkill: {fileID: 11400000, guid: a2179a7ca9707b24c83c4bf189ed7fbb, type: 2}

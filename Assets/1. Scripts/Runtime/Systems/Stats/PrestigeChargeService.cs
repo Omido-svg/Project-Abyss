@@ -2,6 +2,10 @@ using UnityEngine;
 
 public enum PrestigeChargeReason
 {
+    ExchangeParticipant,
+    OneSidedParticipant,
+
+    // Legacy compatibility
     ClashStart,
     HitDealt,
     HitTaken,
@@ -17,10 +21,6 @@ public sealed class PrestigeChargeContext
     public int BaseAmount;
 }
 
-/// <summary>
-/// 김삿갓처럼 표준 위세 게이지 대신 고유 자원을 사용하는 메커닉이 구현한다.
-/// 0을 반환하면 해당 표준 충전을 완전히 차단할 수 있다.
-/// </summary>
 public interface IPrestigeChargeModifier
 {
     int ModifyPrestigeCharge(
@@ -42,7 +42,7 @@ public sealed class PrestigeChargeService
         settings.Normalize();
     }
 
-    public int ChargeClashStart(
+    public int ChargeExchangeParticipant(
         Character recipient,
         Character other,
         BattleAction sourceAction)
@@ -51,48 +51,66 @@ public sealed class PrestigeChargeService
             recipient,
             other,
             sourceAction,
+            PrestigeChargeReason.ExchangeParticipant,
+            settings.ExchangeParticipantCharge);
+    }
+
+    public int ChargeOneSidedParticipant(
+        Character recipient,
+        Character other,
+        BattleAction sourceAction)
+    {
+        return Charge(
+            recipient,
+            other,
+            sourceAction,
+            PrestigeChargeReason.OneSidedParticipant,
+            settings.OneSidedParticipantCharge);
+    }
+
+    public int ChargeClashStart(
+        Character recipient,
+        Character other,
+        BattleAction sourceAction) =>
+        Charge(
+            recipient,
+            other,
+            sourceAction,
             PrestigeChargeReason.ClashStart,
             settings.ClashStartCharge);
-    }
 
     public int ChargeHitDealt(
         Character recipient,
         Character target,
-        BattleAction sourceAction)
-    {
-        return Charge(
+        BattleAction sourceAction) =>
+        Charge(
             recipient,
             target,
             sourceAction,
             PrestigeChargeReason.HitDealt,
             settings.HitDealtCharge);
-    }
 
     public int ChargeHitTaken(
         Character recipient,
         Character attacker,
-        BattleAction sourceAction)
-    {
-        return Charge(
+        BattleAction sourceAction) =>
+        Charge(
             recipient,
             attacker,
             sourceAction,
             PrestigeChargeReason.HitTaken,
             settings.HitTakenCharge);
-    }
 
     public int ChargeClashVictory(
         Character recipient,
         Character loser,
-        BattleAction sourceAction)
-    {
-        return Charge(
+        BattleAction sourceAction) =>
+        Charge(
             recipient,
             loser,
             sourceAction,
             PrestigeChargeReason.ClashVictory,
             settings.ClashVictoryCharge);
-    }
 
     private int Charge(
         Character recipient,
@@ -104,6 +122,12 @@ public sealed class PrestigeChargeService
         if (recipient == null ||
             recipient.IsDead ||
             baseAmount <= 0)
+        {
+            return 0;
+        }
+
+        if (settings.PreparationDoesNotCharge &&
+            sourceAction?.ActionType == ActionType.Preparation)
         {
             return 0;
         }
@@ -131,22 +155,15 @@ public sealed class PrestigeChargeService
                     continue;
                 }
 
-                amount = modifier.ModifyPrestigeCharge(
-                    context,
-                    amount);
-
-                amount = Mathf.Max(0, amount);
+                amount = Mathf.Max(
+                    0,
+                    modifier.ModifyPrestigeCharge(
+                        context,
+                        amount));
             }
         }
 
         if (amount <= 0)
-            return 0;
-
-        // 위세 획득 배율은 CharacterResourceController.AddPrestige에서
-        // 중앙 적용한다. 이 서비스에서 다시 곱하면 배율이 제곱된다.
-        int finalAmount = Mathf.Max(0, amount);
-
-        if (finalAmount <= 0)
             return 0;
 
         bool applied =
@@ -154,7 +171,7 @@ public sealed class PrestigeChargeService
                 EffectRequest.Prestige(
                     sourceAction?.Owner ?? recipient,
                     recipient,
-                    finalAmount)) == true;
+                    amount)) == true;
 
         if (!applied)
             return 0;
@@ -162,8 +179,8 @@ public sealed class PrestigeChargeService
         Debug.Log(
             $"[PrestigeCharge] " +
             $"Target={recipient.Data?.CharacterName}, " +
-            $"Reason={reason}, Amount={finalAmount}");
+            $"Reason={reason}, Amount={amount}");
 
-        return finalAmount;
+        return amount;
     }
 }
