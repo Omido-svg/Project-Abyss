@@ -9,7 +9,7 @@ public class CharacterData : ScriptableObject
     public CombatantTier CombatantTier = CombatantTier.Player;
 
     [Header("Battle UI Presentation")]
-    [Tooltip("우측 상단 결투 현황과 상세 화면에서 사용하는 초상화입니다.")]
+    [Tooltip("캐릭터 상세 화면과 월드 HUD 보조 표시에서 사용하는 초상화입니다.")]
     public Sprite Portrait;
 
     [Tooltip("상세 화면의 큰 일러스트입니다. 비어 있으면 Portrait를 확대해 사용합니다.")]
@@ -42,9 +42,14 @@ public class CharacterData : ScriptableObject
     [Header("Boss phases")]
     public List<BossPhaseData> BossPhases = new();
 
-    [Header("Damage")]
-    [Min(0f)] public float damageMultiplier = 1f;
-    [Range(0f, 1f)] public float defensePenetration = 0f;
+    [Header("Physical Resistance — 절단 / 둔격 / 관통")]
+    public PhysicalResistanceProfile PhysicalResistances =
+        new PhysicalResistanceProfile();
+
+    [Header("Stagger Gauge")]
+    public bool EnableStaggerGauge = true;
+    [Min(1)] public int MaxStaggerGauge = 100;
+    [Min(0f)] public float StaggerDamageRatio = 1f;
 
     [Header("Speed")]
     public int minSpeed = 3;
@@ -59,9 +64,11 @@ public class CharacterData : ScriptableObject
         SingleHpMax = Mathf.Max(1, SingleHpMax);
         maxPrestige = Mathf.Max(0, maxPrestige);
         maxEnergy = Mathf.Max(3, maxEnergy);
-        damageMultiplier = Mathf.Max(0f, damageMultiplier);
-        defensePenetration = Mathf.Clamp01(defensePenetration);
         if (maxSpeed < minSpeed) maxSpeed = minSpeed;
+        PhysicalResistances ??= new PhysicalResistanceProfile();
+        PhysicalResistances.Sanitize();
+        MaxStaggerGauge = Mathf.Max(1, MaxStaggerGauge);
+        StaggerDamageRatio = Mathf.Max(0f, StaggerDamageRatio);
         InitialResources ??= new List<CombatResourceDefinition>();
         ActionSlots ??= new List<CharacterSlotConfig>();
         BossPhases ??= new List<BossPhaseData>();

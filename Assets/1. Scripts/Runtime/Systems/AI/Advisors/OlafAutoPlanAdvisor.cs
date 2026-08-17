@@ -7,7 +7,7 @@ public sealed class OlafAutoPlanAdvisor : ICharacterAutoPlanAdvisor
     public void PreparePlan(BattleContext context, Character character, PlayerAutoPlanMode mode)
     {
         // 올라프는 계획 시 즉시 변경해야 하는 토글이 없다.
-        // 광기/만개/출혈/자신 부위 상태는 후보 평가에서 직접 읽는다.
+        // 광기/만개/혈상/자신 부위 상태는 후보 평가에서 직접 읽는다.
     }
 
     public float ScoreCandidate(in AutoPlanCandidateContext context)

@@ -142,10 +142,6 @@ public class MomentumManager
         }
     }
 
-    // 기존 호출부 호환. 새 설계에서는 대상 측 배율을 별도로 곱하지 않는다.
-    public float GetDamageTakenMultiplier(
-        Character target) => 1f;
-
     /// <summary>
     /// 성공한 교환 또는 일방 공격 한 번의 히트 이동.
     /// 발악 구간에서는 히트 이동량만 배수 적용한다.
@@ -168,7 +164,6 @@ public class MomentumManager
             MomentumShiftReason.Hit);
     }
 
-
     /// <summary>
     /// 결투 대 결투의 개별 교환 승자가 받는 추가 이동.
     /// 최신 규칙은 최종 다수결 푸시를 사용하지 않는다.
@@ -179,24 +174,6 @@ public class MomentumManager
     {
         int amount =
             settings.DuelExchangeShift +
-            Mathf.Max(0, skillBonus);
-
-        return ApplyShift(
-            winner,
-            amount,
-            MomentumShiftReason.DuelVictory);
-    }
-
-    /// <summary>
-    /// 결투 대 결투의 최종 다수결 승자에게 주는 추가 푸시.
-    /// 교환별 히트 이동과 별개로 한 번만 적용한다.
-    /// </summary>
-    public MomentumShiftResult ApplyDuelVictory(
-        Character winner,
-        int skillBonus = 0)
-    {
-        int amount =
-            settings.DuelVictoryShift +
             Mathf.Max(0, skillBonus);
 
         return ApplyShift(
@@ -264,61 +241,6 @@ public class MomentumManager
     {
         return character != null &&
                character == battleContext?.Player;
-    }
-
-    // -------------------------------------------------
-    // Legacy compatibility APIs
-    // -------------------------------------------------
-
-    /// <summary>
-    /// 기세는 스스로 중앙으로 돌아오지 않는다.
-    /// 과거 호출부가 남아 있어도 아무 변화가 없도록 유지한다.
-    /// </summary>
-    public void DecayMomentum()
-    {
-    }
-
-    /// <summary>
-    /// 발악은 더 이상 합 위력 보너스가 아니다.
-    /// 히트의 기세 이동량을 두 배로 만드는 규칙이다.
-    /// </summary>
-    public int ApplyLastStand(
-        Character owner,
-        int power) => power;
-
-    public bool ApplyClashResult(
-        Character winner,
-        int clashGap,
-        int bonusShift = 0)
-    {
-        MomentumState before = GetState(winner);
-
-        MomentumShiftResult result =
-            ApplySkillShift(
-                winner,
-                CalculateMomentumShift(clashGap) +
-                Mathf.Max(0, bonusShift));
-
-        return result.Changed &&
-               before != MomentumState.Overwhelm &&
-               GetState(winner) == MomentumState.Overwhelm;
-    }
-
-    public int CalculateMomentumShift(
-        int gap)
-    {
-        return gap > 0
-            ? settings.HitShift
-            : 0;
-    }
-
-    public int CalculatePrestigeGain(
-        int gap)
-    {
-        return gap > 0
-            ? battleContext?.Rules?.Prestige
-                ?.ClashVictoryCharge ?? 0
-            : 0;
     }
 
     public void SetMomentumForDebug(

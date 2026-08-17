@@ -65,7 +65,7 @@ public static class CharacterVerificationRunner
 
         IReadOnlyList<CharacterVerificationCaseDefinition>
             definitions =
-                profile.Cases;
+                BuildEffectiveDefinitions(profile);
 
         if (definitions == null ||
             definitions.Count == 0)
@@ -122,6 +122,77 @@ public static class CharacterVerificationRunner
             writeReport);
 
         return report;
+    }
+
+
+    public static IReadOnlyList<CharacterVerificationCaseDefinition>
+        BuildEffectiveDefinitions(
+            CharacterVerificationProfile profile)
+    {
+        List<CharacterVerificationCaseDefinition> result =
+            new List<CharacterVerificationCaseDefinition>();
+
+        Dictionary<string, CharacterVerificationCaseDefinition> serialized =
+            new Dictionary<string, CharacterVerificationCaseDefinition>(
+                StringComparer.Ordinal);
+
+        if (profile?.Cases != null)
+        {
+            foreach (CharacterVerificationCaseDefinition definition
+                     in profile.Cases)
+            {
+                if (definition == null ||
+                    string.IsNullOrWhiteSpace(definition.CaseId))
+                {
+                    continue;
+                }
+
+                serialized[definition.CaseId] = definition;
+            }
+        }
+
+        HashSet<string> used =
+            new HashSet<string>(StringComparer.Ordinal);
+
+        IEnumerable<CharacterVerificationCaseDefinition> defaults =
+            CharacterVerificationCaseProviderRegistry.BuildDefaultCases(
+                profile?.Bundle);
+
+        if (defaults != null)
+        {
+            foreach (CharacterVerificationCaseDefinition generated
+                     in defaults)
+            {
+                if (generated == null ||
+                    string.IsNullOrWhiteSpace(generated.CaseId) ||
+                    !used.Add(generated.CaseId))
+                {
+                    continue;
+                }
+
+                if (serialized.TryGetValue(
+                        generated.CaseId,
+                        out CharacterVerificationCaseDefinition configured))
+                {
+                    generated.Enabled = configured.Enabled;
+                    generated.Seed = configured.Seed;
+                }
+
+                result.Add(generated);
+            }
+        }
+
+        foreach (CharacterVerificationCaseDefinition definition
+                 in serialized.Values)
+        {
+            if (definition != null &&
+                used.Add(definition.CaseId))
+            {
+                result.Add(definition);
+            }
+        }
+
+        return result;
     }
 
     public static List<CharacterVerificationReport> RunAll(

@@ -19,15 +19,29 @@ public sealed class SkillDrawerCategoryUI : MonoBehaviour
     [SerializeField, Min(0f)] private float drawerVerticalPadding = 12f;
     [SerializeField, Min(32f)] private float minimumExpandedHeight = 64f;
     [SerializeField, Min(0.01f)] private float animationDuration = 0.22f;
+
+    [Header("Runtime Card Layout")]
+    [SerializeField, Min(32f)] private float fallbackCardHeight = 132f;
+    [SerializeField, Min(0f)] private float runtimeCardSpacing = 8f;
+    [SerializeField, Min(0)] private int runtimeHorizontalPadding = 8;
+    [SerializeField, Min(0)] private int runtimeVerticalPadding = 8;
+
     [SerializeField] private Ease openEase = Ease.OutCubic;
     [SerializeField] private Ease closeEase = Ease.InCubic;
     [SerializeField] private bool startOpen;
+
+    [Header("Part Access Visual")]
+    [SerializeField] private Color unavailableHeaderColor =
+        new Color(0.44f, 0.46f, 0.50f, 1f);
 
     private readonly List<BattleSkillCardButtonUI> generatedCards = new();
     private Sequence drawerSequence;
     private bool isOpen;
     private int visibleSkillCount;
     private float calculatedExpandedHeight;
+    private bool partAccessAllowed = true;
+    private Color availableHeaderColor = Color.white;
+    private bool availableHeaderColorCaptured;
 
     public ActionType ActionType => actionType;
     public bool IsOpen => isOpen;
@@ -58,6 +72,8 @@ public sealed class SkillDrawerCategoryUI : MonoBehaviour
 
         BindHeader();
         ConfigureHeaderText();
+        CaptureHeaderColor();
+        NormalizeCategoryLayout();
         SetOpenImmediate(startOpen);
     }
 
@@ -68,6 +84,8 @@ public sealed class SkillDrawerCategoryUI : MonoBehaviour
 
         BindHeader();
         ConfigureHeaderText();
+        CaptureHeaderColor();
+        NormalizeCategoryLayout();
         SetOpenImmediate(startOpen);
     }
 
@@ -80,16 +98,29 @@ public sealed class SkillDrawerCategoryUI : MonoBehaviour
         headerButton.onClick.AddListener(Toggle);
     }
 
+
+    public void SetPartAccess(bool allowed)
+    {
+        partAccessAllowed = allowed;
+
+        if (!partAccessAllowed)
+            SetOpenImmediate(false);
+
+        RefreshHeaderVisual();
+    }
+
     public void Rebuild(
         IReadOnlyList<Skill> skills,
         int actionIndex,
         BattleUIManager manager)
     {
         ClearGeneratedCards();
+        NormalizeContentLayout();
 
         int count = 0;
 
-        if (skills != null &&
+        if (partAccessAllowed &&
+            skills != null &&
             content != null &&
             cardTemplate != null)
         {
@@ -135,6 +166,8 @@ public sealed class SkillDrawerCategoryUI : MonoBehaviour
                     reason,
                     onSelected);
 
+                PrepareGeneratedCardLayout(card);
+
                 generatedCards.Add(card);
                 count++;
             }
@@ -142,22 +175,23 @@ public sealed class SkillDrawerCategoryUI : MonoBehaviour
 
         visibleSkillCount = count;
 
-        if (headerText != null)
-        {
-            headerText.text =
-                $"{BattleSkillUiText.GetActionTypeName(actionType)}  ({count})";
-        }
+        RefreshHeaderVisual();
 
         if (headerButton != null)
-            headerButton.interactable = count > 0;
+            headerButton.interactable =
+                partAccessAllowed &&
+                count > 0;
 
-        if (count == 0)
+        if (!partAccessAllowed ||
+            count == 0)
+        {
             SetOpenImmediate(false);
+        }
 
         if (content != null)
         {
-            LayoutRebuilder.ForceRebuildLayoutImmediate(content);
             RecalculateExpandedHeight();
+            LayoutRebuilder.ForceRebuildLayoutImmediate(content);
         }
 
         if (isOpen && count > 0)
@@ -215,11 +249,7 @@ public sealed class SkillDrawerCategoryUI : MonoBehaviour
                         if (drawerLayout == null)
                             return;
 
-                        drawerLayout.preferredHeight = value;
-
-                        RectTransform rect = transform as RectTransform;
-                        if (rect != null)
-                            LayoutRebuilder.MarkLayoutForRebuild(rect);
+                        ApplyBodyHeight(value);
                     })
                 .SetEase(open ? openEase : closeEase);
 
@@ -236,8 +266,7 @@ public sealed class SkillDrawerCategoryUI : MonoBehaviour
 
         drawerSequence.OnComplete(() =>
         {
-            if (drawerLayout != null)
-                drawerLayout.preferredHeight = toHeight;
+            ApplyBodyHeight(toHeight);
 
             if (drawerCanvasGroup != null)
             {
@@ -258,10 +287,13 @@ public sealed class SkillDrawerCategoryUI : MonoBehaviour
         KillDrawerTween();
         isOpen = open;
 
-        if (drawerLayout != null)
-            drawerLayout.preferredHeight = open
+        if (drawerRoot != null)
+            drawerRoot.gameObject.SetActive(open);
+
+        ApplyBodyHeight(
+            open
                 ? ResolveExpandedHeight()
-                : 0f;
+                : 0f);
 
         if (drawerCanvasGroup != null)
         {
@@ -270,38 +302,45 @@ public sealed class SkillDrawerCategoryUI : MonoBehaviour
             drawerCanvasGroup.blocksRaycasts = open;
         }
 
-        if (drawerRoot != null)
-            drawerRoot.gameObject.SetActive(open);
+        if (open)
+        {
+            if (content != null)
+                LayoutRebuilder.ForceRebuildLayoutImmediate(content);
+
+            RectTransform drawerRect =
+                transform as RectTransform;
+
+            if (drawerRect != null)
+                LayoutRebuilder.ForceRebuildLayoutImmediate(drawerRect);
+        }
     }
 
     private void RecalculateExpandedHeight()
     {
-        float preferred = 0f;
+        NormalizeContentLayout();
 
-        if (content != null)
-        {
-            Canvas.ForceUpdateCanvases();
-            LayoutRebuilder.ForceRebuildLayoutImmediate(content);
-
-            preferred =
-                LayoutUtility.GetPreferredHeight(content);
-
-            if (preferred <= 0f)
-                preferred = content.rect.height;
-        }
+        float preferred =
+            CalculateGeneratedCardsPreferredHeight();
 
         float minimum =
             Mathf.Max(32f, minimumExpandedHeight);
 
-        float maximum =
-            Mathf.Max(minimum, expandedHeight);
+        if (preferred <= 0f)
+        {
+            preferred =
+                Mathf.Max(
+                    minimum,
+                    expandedHeight);
+        }
 
+        // 기존 코드는 비활성 DrawerBody에서 LayoutUtility를 호출해
+        // 카드 2~3장이 있어도 첫 카드 높이만 계산되는 경우가 있었다.
+        // 생성된 카드의 LayoutElement를 직접 합산하므로 부모 활성 상태와 무관하다.
         calculatedExpandedHeight =
-            Mathf.Clamp(
-                preferred +
-                Mathf.Max(0f, drawerVerticalPadding),
+            Mathf.Max(
                 minimum,
-                maximum);
+                preferred +
+                Mathf.Max(0f, drawerVerticalPadding));
 
         if (content != null)
         {
@@ -311,11 +350,295 @@ public sealed class SkillDrawerCategoryUI : MonoBehaviour
                 new Vector2(1f, 1f);
             content.pivot =
                 new Vector2(0.5f, 1f);
-            content.anchoredPosition = Vector2.zero;
+            content.anchoredPosition =
+                Vector2.zero;
             content.SetSizeWithCurrentAnchors(
                 RectTransform.Axis.Vertical,
                 Mathf.Max(1f, preferred));
         }
+
+        if (drawerLayout != null)
+        {
+            drawerLayout.minHeight = 0f;
+            drawerLayout.flexibleHeight = 0f;
+        }
+
+        ApplyBodyHeight(
+            isOpen
+                ? calculatedExpandedHeight
+                : 0f);
+    }
+
+    private void NormalizeCategoryLayout()
+    {
+        VerticalLayoutGroup categoryLayout =
+            GetComponent<VerticalLayoutGroup>();
+
+        if (categoryLayout != null)
+        {
+            categoryLayout.childControlWidth = true;
+            categoryLayout.childControlHeight = true;
+            categoryLayout.childForceExpandWidth = true;
+            categoryLayout.childForceExpandHeight = false;
+        }
+
+        HorizontalLayoutGroup rowLayout =
+            transform.parent != null
+                ? transform.parent.GetComponent<HorizontalLayoutGroup>()
+                : null;
+
+        if (rowLayout != null)
+        {
+            rowLayout.childControlWidth = true;
+            rowLayout.childControlHeight = true;
+            rowLayout.childForceExpandWidth = true;
+            rowLayout.childForceExpandHeight = false;
+        }
+    }
+
+    private void ApplyBodyHeight(float requestedHeight)
+    {
+        float safeHeight =
+            Mathf.Max(0f, requestedHeight);
+
+        if (drawerLayout != null)
+        {
+            drawerLayout.minHeight = 0f;
+            drawerLayout.preferredHeight = safeHeight;
+            drawerLayout.flexibleHeight = 0f;
+        }
+
+        if (drawerRoot != null)
+        {
+            drawerRoot.SetSizeWithCurrentAnchors(
+                RectTransform.Axis.Vertical,
+                safeHeight);
+        }
+
+        UpdateCategoryPreferredHeight(safeHeight);
+
+        RectTransform categoryRect =
+            transform as RectTransform;
+
+        if (categoryRect != null)
+            LayoutRebuilder.MarkLayoutForRebuild(categoryRect);
+
+        RectTransform rowRect =
+            transform.parent as RectTransform;
+
+        if (rowRect != null)
+            LayoutRebuilder.MarkLayoutForRebuild(rowRect);
+    }
+
+    private void UpdateCategoryPreferredHeight(float bodyHeight)
+    {
+        LayoutElement categoryElement =
+            GetComponent<LayoutElement>();
+
+        if (categoryElement == null)
+            return;
+
+        NormalizeCategoryLayout();
+
+        VerticalLayoutGroup categoryLayout =
+            GetComponent<VerticalLayoutGroup>();
+
+        float fixedChildrenHeight = 0f;
+        int activeChildCount = 0;
+
+        for (int index = 0;
+             index < transform.childCount;
+             index++)
+        {
+            RectTransform child =
+                transform.GetChild(index) as RectTransform;
+
+            if (child == null ||
+                child == drawerRoot ||
+                !child.gameObject.activeSelf)
+            {
+                continue;
+            }
+
+            float preferred =
+                LayoutUtility.GetPreferredHeight(child);
+
+            if (preferred <= 0f)
+                preferred = child.rect.height;
+
+            fixedChildrenHeight +=
+                Mathf.Max(0f, preferred);
+            activeChildCount++;
+        }
+
+        float spacing =
+            categoryLayout != null
+                ? categoryLayout.spacing *
+                  Mathf.Max(0, activeChildCount)
+                : 0f;
+
+        float padding =
+            categoryLayout?.padding != null
+                ? categoryLayout.padding.top +
+                  categoryLayout.padding.bottom
+                : 0f;
+
+        float preferredHeight =
+            Mathf.Max(0f, fixedChildrenHeight) +
+            Mathf.Max(0f, bodyHeight) +
+            Mathf.Max(0f, spacing) +
+            Mathf.Max(0f, padding);
+
+        categoryElement.minHeight = preferredHeight;
+        categoryElement.preferredHeight = preferredHeight;
+        categoryElement.flexibleHeight = 0f;
+    }
+
+    private void NormalizeContentLayout()
+    {
+        if (content == null)
+            return;
+
+        VerticalLayoutGroup vertical =
+            content.GetComponent<VerticalLayoutGroup>();
+
+        if (vertical == null)
+        {
+            LayoutGroup existing =
+                content.GetComponent<LayoutGroup>();
+
+            // 현재 Scene에는 VerticalLayoutGroup이 존재한다.
+            // 다른 LayoutGroup이 수동으로 배치된 경우 중복 Component를 추가하지 않는다.
+            if (existing != null)
+                return;
+
+            vertical =
+                content.gameObject.AddComponent<VerticalLayoutGroup>();
+        }
+
+        vertical.padding =
+            new RectOffset(
+                Mathf.Max(0, runtimeHorizontalPadding),
+                Mathf.Max(0, runtimeHorizontalPadding),
+                Mathf.Max(0, runtimeVerticalPadding),
+                Mathf.Max(0, runtimeVerticalPadding));
+        vertical.spacing =
+            Mathf.Max(0f, runtimeCardSpacing);
+        vertical.childAlignment =
+            TextAnchor.UpperLeft;
+        vertical.childControlWidth = true;
+        vertical.childControlHeight = true;
+        vertical.childForceExpandWidth = true;
+        vertical.childForceExpandHeight = false;
+    }
+
+    private void PrepareGeneratedCardLayout(
+        BattleSkillCardButtonUI card)
+    {
+        if (card == null)
+            return;
+
+        RectTransform rect =
+            card.transform as RectTransform;
+
+        if (rect != null)
+            rect.localScale = Vector3.one;
+
+        LayoutElement layout =
+            card.GetComponent<LayoutElement>();
+
+        if (layout == null)
+            layout = card.gameObject.AddComponent<LayoutElement>();
+
+        layout.ignoreLayout = false;
+        layout.minHeight =
+            Mathf.Max(
+                32f,
+                layout.minHeight > 0f
+                    ? layout.minHeight
+                    : fallbackCardHeight);
+        layout.preferredHeight =
+            Mathf.Max(
+                layout.minHeight,
+                layout.preferredHeight > 0f
+                    ? layout.preferredHeight
+                    : fallbackCardHeight);
+        layout.flexibleHeight = 0f;
+
+        card.transform.SetAsLastSibling();
+    }
+
+    private float CalculateGeneratedCardsPreferredHeight()
+    {
+        if (generatedCards.Count == 0)
+            return 0f;
+
+        float preferred = 0f;
+        int activeCount = 0;
+
+        for (int index = 0;
+             index < generatedCards.Count;
+             index++)
+        {
+            BattleSkillCardButtonUI card =
+                generatedCards[index];
+
+            if (card == null ||
+                !card.gameObject.activeSelf)
+            {
+                continue;
+            }
+
+            LayoutElement layout =
+                card.GetComponent<LayoutElement>();
+
+            RectTransform rect =
+                card.transform as RectTransform;
+
+            float height =
+                layout != null &&
+                layout.preferredHeight > 0f
+                    ? layout.preferredHeight
+                    : rect != null &&
+                      rect.rect.height > 0f
+                        ? rect.rect.height
+                        : fallbackCardHeight;
+
+            preferred +=
+                Mathf.Max(32f, height);
+            activeCount++;
+        }
+
+        if (activeCount <= 0)
+            return 0f;
+
+        VerticalLayoutGroup vertical =
+            content != null
+                ? content.GetComponent<VerticalLayoutGroup>()
+                : null;
+
+        float spacing =
+            vertical != null
+                ? vertical.spacing
+                : Mathf.Max(0f, runtimeCardSpacing);
+
+        preferred +=
+            spacing *
+            Mathf.Max(0, activeCount - 1);
+
+        if (vertical?.padding != null)
+        {
+            preferred +=
+                vertical.padding.top +
+                vertical.padding.bottom;
+        }
+        else
+        {
+            preferred +=
+                Mathf.Max(0, runtimeVerticalPadding) * 2f;
+        }
+
+        return preferred;
     }
 
     private float ResolveExpandedHeight()
@@ -331,6 +654,38 @@ public sealed class SkillDrawerCategoryUI : MonoBehaviour
     private static bool openingRequired(bool open)
     {
         return open;
+    }
+
+    private void CaptureHeaderColor()
+    {
+        if (headerText == null ||
+            availableHeaderColorCaptured)
+        {
+            return;
+        }
+
+        availableHeaderColor = headerText.color;
+        availableHeaderColorCaptured = true;
+    }
+
+    private void RefreshHeaderVisual()
+    {
+        if (headerText == null)
+            return;
+
+        CaptureHeaderColor();
+
+        string categoryName =
+            BattleSkillUiText.GetActionTypeName(
+                actionType);
+
+        headerText.text = partAccessAllowed
+            ? $"{categoryName}  ({visibleSkillCount})"
+            : $"{categoryName}  (사용 불가)";
+
+        headerText.color = partAccessAllowed
+            ? availableHeaderColor
+            : unavailableHeaderColor;
     }
 
     private void ConfigureHeaderText()

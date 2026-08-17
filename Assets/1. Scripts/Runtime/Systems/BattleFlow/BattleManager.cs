@@ -2,7 +2,6 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.Serialization;
 
 public class BattleManager : MonoBehaviour
 {
@@ -10,24 +9,6 @@ public class BattleManager : MonoBehaviour
     [SerializeField] private BattleRosterController rosterController;
     [SerializeField] private bool autoInitializeOnAwake = true;
     [SerializeField] private bool autoStartBattle = true;
-
-    [Header("Legacy Scene Roster Fallback")]
-    [FormerlySerializedAs("player")]
-    [SerializeField, HideInInspector]
-    private Character legacyPlayer;
-
-    [FormerlySerializedAs("enemies")]
-    [SerializeField, HideInInspector]
-    private List<Character> legacyEnemies = new();
-
-    [Header("Legacy Button Migration")]
-    [FormerlySerializedAs("playerButtons")]
-    [SerializeField, HideInInspector]
-    private List<BodyPartButton> legacyPlayerButtons = new();
-
-    [FormerlySerializedAs("enemyButtons")]
-    [SerializeField, HideInInspector]
-    private List<BodyPartButton> legacyEnemyButtons = new();
 
     [Header("Battle Rules")]
     [SerializeField]
@@ -57,13 +38,6 @@ public class BattleManager : MonoBehaviour
     public BattleRosterController RosterController => rosterController;
     public BattleUIManager BattleUIManager => battleUIManager;
     public BattleRuleSettings BattleRules => battleRuleSettings;
-
-    public Character LegacyPlayerForMigration => legacyPlayer;
-    public IReadOnlyList<Character> LegacyEnemiesForMigration => legacyEnemies;
-    public IReadOnlyList<BodyPartButton> LegacyPlayerButtonsForMigration =>
-        legacyPlayerButtons;
-    public IReadOnlyList<BodyPartButton> LegacyEnemyButtonsForMigration =>
-        legacyEnemyButtons;
 
     public bool IsInitialized => initializedSuccessfully;
     public bool IsEndingOrEnded => endingOrEnded;
@@ -134,9 +108,7 @@ public class BattleManager : MonoBehaviour
             InitializeCharacters();
 
             battleUIManager?.BuildParticipantButtons(
-                BattleContext,
-                legacyPlayerButtons,
-                legacyEnemyButtons);
+                BattleContext);
 
             SelectedCharacter = BattleContext.Player;
 
@@ -199,16 +171,6 @@ public class BattleManager : MonoBehaviour
         rosterController = controller;
     }
 
-    public void ClearLegacyMigrationData()
-    {
-        if (initializationStarted)
-            return;
-
-        legacyPlayer = null;
-        legacyEnemies?.Clear();
-        legacyPlayerButtons?.Clear();
-        legacyEnemyButtons?.Clear();
-    }
 
     public void SetAutoLifecycle(
         bool initializeOnAwake,
@@ -242,18 +204,11 @@ public class BattleManager : MonoBehaviour
             return true;
         }
 
-        player = legacyPlayer;
+        Debug.LogError(
+            "[BattleManager] BattleRosterController에 Player/Enemy Roster가 구성되어 있지 않습니다. " +
+            "구형 Scene 직렬화 Roster fallback은 제거되었습니다.");
 
-        if (legacyEnemies != null)
-        {
-            foreach (Character enemy in legacyEnemies)
-            {
-                if (enemy != null)
-                    enemies.Add(enemy);
-            }
-        }
-
-        return player != null;
+        return false;
     }
 
     private static void ValidateRoster(

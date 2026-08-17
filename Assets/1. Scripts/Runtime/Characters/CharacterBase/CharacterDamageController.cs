@@ -125,13 +125,10 @@ public sealed class CharacterDamageController
 
         if (targetPart.IsWeakened)
         {
-            // 약화 부위 타격은 캐릭터 직접 피해다.
-            // 파괴 가능 공격이면 사망 판정보다 먼저 부위 파괴를 완료해
-            // 불사의 분노 등의 즉시 반응이 개입할 수 있게 한다.
-            ApplyDirectDamage(
-                request,
-                checkDead: false);
-
+            // 약화는 파괴 전 단계다.
+            // 이 타격에서는 부위 HP와 캐릭터 HP를 감소시키지 않는다.
+            // 파괴 권한이 있는 공격만 상태를 Broken으로 전환하며,
+            // 직접 HP 피해는 이후 Broken 부위를 다시 공격할 때부터 발생한다.
             if (request.CanBreakPart)
             {
                 bodyPartController?.TryBreakWeakenedPart(
@@ -139,8 +136,13 @@ public sealed class CharacterDamageController
                     owner.ActiveDamageContext?.Attacker,
                     owner.ActiveDamageContext?.Action);
             }
+            else
+            {
+                Debug.Log(
+                    $"{OwnerName()}의 {targetPart.Type} 부위는 약화 상태입니다. " +
+                    "파괴 권한이 없는 공격은 피해를 주지 못합니다.");
+            }
 
-            owner.CheckDead();
             return;
         }
 
@@ -248,7 +250,7 @@ public sealed class CharacterDamageController
             Mathf.CeilToInt(targetPart.PartHP));
 
         // Normal 부위 피해는 실제 남은 부위 HP까지만 전체 HP에서 차감한다.
-        // 초과분은 약화 부위 직접 피해 규칙을 우회해 넘기지 않는다.
+        // 초과분은 다음 상태로 넘기지 않고 소멸한다.
         int actualDamage = targetPart.ApplyDamage(damage);
 
         if (actualDamage <= 0)

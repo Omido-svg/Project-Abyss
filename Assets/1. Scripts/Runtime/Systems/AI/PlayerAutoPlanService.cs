@@ -329,25 +329,26 @@ public sealed class PlayerAutoPlanService
         HashSet<ActionSlot> assignedThreats =
             new HashSet<ActionSlot>();
 
-        // 0단계:
-        // 전투 스킬이 없는 전용 부위(예: 유진/올라프의 다리)는
-        // 도사림을 먼저 계획한다. 이렇게 해야 공격 스킬이 빛을 전부 소비해
-        // 고유 메커닉 슬롯이 영구적으로 비는 탐욕적 계획 문제를 막을 수 있다.
-        while (true)
+        // 0단계: 도사림도 수동 계획과 동일하게 FORESIGHT ActionSlot로 계획한다.
+        // START 전에는 효과/자원을 확정하지 않으며 우클릭/Reset 가능한 동일한 계획 모델을 사용한다.
+        Candidate utility =
+            FindBestMandatoryUtilityCandidate(
+                context,
+                state,
+                sources,
+                mode);
+
+        if (utility != null)
         {
-            Candidate utility =
-                FindBestMandatoryUtilityCandidate(
-                    context,
-                    state,
-                    sources,
-                    mode);
+            ActionSlot utilitySlot =
+                CreatePlannedSlot(utility);
 
-            if (utility == null)
-                break;
-
-            state.Register(
-                utility.Source,
-                CreatePlannedSlot(utility));
+            if (utilitySlot != null)
+            {
+                state.Register(
+                    utility.Source,
+                    utilitySlot);
+            }
         }
 
         // 1단계:
@@ -910,6 +911,31 @@ public sealed class PlayerAutoPlanService
                         continue;
                     }
 
+                    ActionSlot challengeProbe =
+                        new ActionSlot
+                        {
+                            Owner = source.Owner,
+                            Part = source.Part,
+                            Skill = skill,
+                            TargetCharacter = threat.Owner,
+                            TargetPart = threat.Part,
+                            TargetSlot = threat,
+                            Speed = source.Speed,
+                            ActionIndex = source.ActionIndex,
+                            Phase = ActionPhase.COMBAT
+                        };
+
+                    ClashMatchPolicy focusedPolicy =
+                        new ClashMatchPolicy(
+                            new ActionPhaseSorter());
+
+                    if (!focusedPolicy.CanChallenge(
+                            challengeProbe,
+                            threat))
+                    {
+                        continue;
+                    }
+
                     Candidate candidate =
                         BuildThreatCandidate(
                             context,
@@ -1254,6 +1280,11 @@ public sealed class PlayerAutoPlanService
                     targetPart);
         }
 
+        // 약화 부위는 파괴 전 단계이므로 이번 타격의 HP 기대 피해는 0이다.
+        // CanBreakPart 스킬의 가치는 아래 vulnerability/utility 점수로만 반영한다.
+        if (targetPart?.IsWeakened == true)
+            expectedDamage = 0f;
+
         float vulnerability =
             ScoreTargetVulnerability(
                 target,
@@ -1336,10 +1367,30 @@ public sealed class PlayerAutoPlanService
             ActionIndex =
                 candidate.Source.ActionIndex,
 
-            // 실제 ClashBuilder가 동일한 규칙으로 최종 연결한다.
-            // 자동 계획 단계에서 TargetSlot을 선점하지 않는다.
-            TargetSlot = null
+            // 자동 계획도 수동 Focused Encounter 입력과 동일하게
+            // 선택한 정확한 적 ActionSlot을 TargetSlot로 기록한다.
+            TargetSlot =
+                candidate.Skill?.DefaultPhase == ActionPhase.COMBAT
+                    ? candidate.Threat
+                    : null,
+            UseCharacterRerollResource =
+                ResolveCharacterRerollChoice(
+                    candidate.Source.Owner,
+                    candidate.Skill)
         };
+    }
+
+    private static bool ResolveCharacterRerollChoice(
+        Character owner,
+        Skill skill)
+    {
+        YujinMechanic mechanic =
+            owner?.GetMechanic<YujinMechanic>();
+
+        return mechanic != null &&
+               mechanic.AutoUseSense &&
+               YujinMechanic.IsSenseEligibleSkill(
+                   skill?.Definition?.SkillId);
     }
 
     private static bool CanTarget(
@@ -1390,6 +1441,53 @@ public sealed class PlayerAutoPlanService
         }
 
         return null;
+    }
+
+    /// <summary>
+    /// 전술 UI용 간이 합 승률 프리뷰.
+    /// 자동계획이 실제로 사용하는 동일한 굴림 분포/속도/턴 보정 계산을 재사용하며
+    /// 전투 상태와 RNG를 변경하지 않는다.
+    /// </summary>
+    public bool TryEstimateClashWinRate(
+        BattleContext context,
+        Character playerOwner,
+        BodyPart playerPart,
+        int playerSpeed,
+        Skill playerSkill,
+        ActionSlot enemySlot,
+        out float winRate)
+    {
+        winRate = 0f;
+
+        if (playerOwner == null ||
+            playerSkill == null ||
+            enemySlot?.Owner == null ||
+            enemySlot.Skill == null ||
+            playerSkill.DefaultPhase != ActionPhase.COMBAT ||
+            enemySlot.Phase != ActionPhase.COMBAT ||
+            !playerSkill.CanClash ||
+            !enemySlot.Skill.CanClash)
+        {
+            return false;
+        }
+
+        ClashEstimate estimate =
+            EstimateClash(
+                context,
+                playerOwner,
+                playerPart,
+                playerSpeed,
+                playerSkill,
+                enemySlot.Owner,
+                enemySlot.Part,
+                enemySlot.Speed,
+                enemySlot.Skill);
+
+        winRate =
+            Mathf.Clamp01(
+                estimate.WinRate);
+
+        return true;
     }
 
     private ClashEstimate EstimateClash(
@@ -1751,8 +1849,10 @@ public sealed class PlayerAutoPlanService
 
                 _ =>
                     BuildUniformOutcomes(
-                        data.SafeMinPower,
-                        data.SafeMaxPower)
+                        data.GetDiceFinalMinPower(
+                            skill.BasePower),
+                        data.GetDiceFinalMaxPower(
+                            skill.BasePower))
             };
         }
 
@@ -2245,14 +2345,13 @@ public sealed class PlayerAutoPlanService
         if (part != null)
         {
             if (part.IsBroken)
-                multiplier += 0.30f;
-            else if (part.IsWeakened)
-                multiplier += 0.18f;
-
-            if (part.IsWeakened &&
-                skill?.CanBreakPart == true)
             {
-                multiplier += 0.12f;
+                multiplier += 0.30f;
+            }
+            else if (part.IsWeakened)
+            {
+                // 약화 부위 타격은 이번 공격에서 HP 피해를 만들지 않는다.
+                return 0f;
             }
         }
 
@@ -2300,7 +2399,7 @@ public sealed class PlayerAutoPlanService
             else if (targetPart.IsWeakened)
                 score += skill?.CanBreakPart == true
                     ? 260f
-                    : 100f;
+                    : -200f;
 
             if (targetPart.MaxPartHP > 0f)
             {

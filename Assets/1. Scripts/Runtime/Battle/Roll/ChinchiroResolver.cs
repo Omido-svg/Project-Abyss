@@ -52,9 +52,32 @@ public sealed class ChinchiroResolver : SkillResolver
     public override RollResult RollResult(
         Skill skill)
     {
-        int a = UnityEngine.Random.Range(1, 7);
-        int b = UnityEngine.Random.Range(1, 7);
-        int c = UnityEngine.Random.Range(1, 7);
+        int a;
+        int b;
+        int c;
+
+        HifumiMechanic hifumi =
+            skill?.Owner?.GetMechanic<HifumiMechanic>();
+
+        if (hifumi != null &&
+            hifumi.TryGetForcedChinchiro(out ChinchiroCombination forced))
+        {
+            if (forced == ChinchiroCombination.Hifumi)
+            {
+                a = 1; b = 2; c = 3;
+            }
+            else
+            {
+                // 속임수 기본 고정 결과는 아라시.
+                a = 6; b = 6; c = 6;
+            }
+        }
+        else
+        {
+            a = UnityEngine.Random.Range(1, 7);
+            b = UnityEngine.Random.Range(1, 7);
+            c = UnityEngine.Random.Range(1, 7);
+        }
 
         List<int> sorted = new() { a, b, c };
         sorted.Sort();

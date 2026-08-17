@@ -123,37 +123,6 @@ Transform:
   m_Children: []
   m_Father: {fileID: 6079149134940615200}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &1050329944128356946
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 3010120156285409733}
-  m_Layer: 0
-  m_Name: Head
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &3010120156285409733
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1050329944128356946}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 2.25, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 6079149134940615200}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1153757763961211190
 GameObject:
   m_ObjectHideFlags: 0
@@ -278,6 +247,37 @@ Transform:
   m_Children:
   - {fileID: 8333984647743241477}
   m_Father: {fileID: 6321243493289304336}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &2011086084104364691
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1712916417292374868}
+  m_Layer: 0
+  m_Name: Head
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1712916417292374868
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2011086084104364691}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 2.25, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 6079149134940615200}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &2057349995358777364
 GameObject:
@@ -458,7 +458,7 @@ Transform:
   m_Children:
   - {fileID: 8525285958616717746}
   - {fileID: 1794730292884473623}
-  - {fileID: 3010120156285409733}
+  - {fileID: 1712916417292374868}
   - {fileID: 6708682311888847315}
   - {fileID: 6044069129854615855}
   - {fileID: 5312634701822185468}
@@ -1504,14 +1504,14 @@ GameObject:
   - component: {fileID: 6718443221503833836}
   - component: {fileID: 258767931383796853}
   - component: {fileID: 4450929680246938420}
-  - component: {fileID: 7634472158242932106}
-  - component: {fileID: 5249059090794126648}
-  - component: {fileID: 6803817533503823853}
-  - component: {fileID: 3096576272023834508}
-  - component: {fileID: 4012661864150243611}
-  - component: {fileID: 8865618644442066925}
-  - component: {fileID: 3017358073004375375}
-  - component: {fileID: 8513576446995785285}
+  - component: {fileID: 7322672763466307133}
+  - component: {fileID: 479886691073739621}
+  - component: {fileID: 3892180666495664882}
+  - component: {fileID: 992022034207708278}
+  - component: {fileID: 1624014181436764666}
+  - component: {fileID: 369603562173350029}
+  - component: {fileID: 2062635262716355167}
+  - component: {fileID: 6487463886554051180}
   m_Layer: 0
   m_Name: Yujin_Test
   m_TagString: Untagged
@@ -1549,9 +1549,13 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   data: {fileID: 11400000, guid: 126a7beb68f696d46a33afe0fa593b7d, type: 2}
   equippedItems: []
-  equippedAugments: []
+  equippedAugments:
+  - {fileID: 11400000, guid: 7e2e9f7eb1f565342b8432de76931154, type: 2}
   partHitPoints: 180
   startingWeapon: 0
+  baekuPhysicalType: 0
+  jeokseolPhysicalType: 2
+  nakilPhysicalType: 0
 --- !u!136 &4450929680246938420
 CapsuleCollider:
   m_ObjectHideFlags: 0
@@ -1575,7 +1579,7 @@ CapsuleCollider:
   m_Height: 2.35
   m_Direction: 1
   m_Center: {x: 0, y: 1.1, z: 0}
---- !u!114 &7634472158242932106
+--- !u!114 &7322672763466307133
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -1591,7 +1595,7 @@ MonoBehaviour:
   targetCharacter: {fileID: 258767931383796853}
   targetAnimator: {fileID: 5323665484118878043}
   applyOnAwake: 1
---- !u!114 &5249059090794126648
+--- !u!114 &479886691073739621
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -1623,7 +1627,7 @@ MonoBehaviour:
   evaluateHitImmediately: 1
   baseLayerIndex: 0
   logDebug: 0
---- !u!114 &6803817533503823853
+--- !u!114 &3892180666495664882
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -1636,8 +1640,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   character: {fileID: 258767931383796853}
-  characterView: {fileID: 5249059090794126648}
---- !u!114 &3096576272023834508
+  characterView: {fileID: 479886691073739621}
+--- !u!114 &992022034207708278
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -1653,7 +1657,7 @@ MonoBehaviour:
   turnSpeed: 720
   yawOffset: 0
   returnToDefaultAfterAction: 1
---- !u!114 &4012661864150243611
+--- !u!114 &1624014181436764666
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -1669,7 +1673,7 @@ MonoBehaviour:
   approachDistance: 1.8
   moveSpeed: 8
   arriveDistance: 0.03
---- !u!114 &8865618644442066925
+--- !u!114 &369603562173350029
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -1684,7 +1688,7 @@ MonoBehaviour:
   character: {fileID: 258767931383796853}
   battleUiManager: {fileID: 0}
   detailPanel: {fileID: 0}
---- !u!114 &3017358073004375375
+--- !u!114 &2062635262716355167
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -1707,7 +1711,7 @@ MonoBehaviour:
   - {fileID: 4197050435585575477}
   - {fileID: 3816510769243051683}
   - {fileID: 5121581856328750002}
---- !u!114 &8513576446995785285
+--- !u!114 &6487463886554051180
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -1763,8 +1767,8 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 5723896768815557162}
-  - component: {fileID: 2639639063987146528}
-  - component: {fileID: 915798189727231108}
+  - component: {fileID: 61067526196644617}
+  - component: {fileID: 8395207319299731901}
   m_Layer: 0
   m_Name: Yujin_View
   m_TagString: Untagged
@@ -1790,7 +1794,7 @@ Transform:
   - {fileID: 6079149134940615200}
   m_Father: {fileID: 6718443221503833836}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &2639639063987146528
+--- !u!114 &61067526196644617
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -1805,7 +1809,7 @@ MonoBehaviour:
   cameraPointsRoot: {fileID: 6079149134940615200}
   points: []
   warnDuplicateKeys: 1
---- !u!114 &915798189727231108
+--- !u!114 &8395207319299731901
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -1818,7 +1822,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   character: {fileID: 258767931383796853}
-  characterView: {fileID: 5249059090794126648}
+  characterView: {fileID: 479886691073739621}
   pool: {fileID: 0}
   initialVfx: []
   logDebug: 0

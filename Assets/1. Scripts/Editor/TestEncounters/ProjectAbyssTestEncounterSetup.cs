@@ -38,11 +38,20 @@ public static class ProjectAbyssTestEncounterSetup
     private const string YujinDataPath =
         "Assets/2. Data/Characters/Design2026/Yujin/Yujin_TODO_2026.asset";
 
+    private const string HifumiBundlePath =
+        "Assets/2. Data/Characters/Design2026/Hifumi/Hifumi_Bundle.asset";
+
+    private const string HifumiDataPath =
+        "Assets/2. Data/Characters/Design2026/Hifumi/Hifumi_Data.asset";
+
     private const string OlafDesignRoot =
         "Assets/2. Data/Characters/Design2026/Olaf";
 
     private const string YujinDesignRoot =
         "Assets/2. Data/Characters/Design2026/Yujin";
+
+    private const string HifumiDesignRoot =
+        "Assets/2. Data/Characters/Design2026/Hifumi";
 
     [MenuItem(MenuRoot + "Build All Test Prefabs + Scene Switcher", false, 10)]
     public static void BuildAll()
@@ -50,9 +59,6 @@ public static class ProjectAbyssTestEncounterSetup
         try
         {
             EnsureFolders();
-
-            // TODO형 올라프·유진 데이터가 아직 없다면 먼저 생성한다.
-            ProjectAbyssOlafYujinDesignMigration.Apply();
 
             Olaf sceneOlaf =
                 Object.FindFirstObjectByType<Olaf>(
@@ -83,6 +89,12 @@ public static class ProjectAbyssTestEncounterSetup
                     new Color(0.16f, 0.22f, 0.34f, 1f),
                     new Color(0.08f, 0.2f, 0.5f, 1f));
 
+            Material hifumiMaterial =
+                CreateOrUpdateMaterial(
+                    MaterialRoot + "/Hifumi_Test.mat",
+                    new Color(0.31f, 0.12f, 0.09f, 1f),
+                    new Color(0.52f, 0.09f, 0.04f, 1f));
+
             Material normalMaterial =
                 CreateOrUpdateMaterial(
                     MaterialRoot + "/NormalEnemy_Test.mat",
@@ -112,6 +124,11 @@ public static class ProjectAbyssTestEncounterSetup
                     animationAssets,
                     yujinMaterial);
 
+            Character hifumiPrefab =
+                BuildHifumiPrefab(
+                    animationAssets,
+                    hifumiMaterial);
+
             NormalEnemy normalEnemyPrefab =
                 BuildNormalEnemyPrefab(
                     animationAssets,
@@ -127,6 +144,7 @@ public static class ProjectAbyssTestEncounterSetup
                 EnsureGeneratedSkillTimelines(
                     olafPrefab,
                     yujinPrefab,
+                    hifumiPrefab,
                     normalEnemyPrefab,
                     elitePrefab,
                     bossPrefab,
@@ -135,6 +153,7 @@ public static class ProjectAbyssTestEncounterSetup
             SetupCurrentScene(
                 olafPrefab,
                 yujinPrefab,
+                hifumiPrefab,
                 normalEnemyPrefab,
                 elitePrefab,
                 bossPrefab);
@@ -152,6 +171,7 @@ public static class ProjectAbyssTestEncounterSetup
                 "생성 완료\n\n" +
                 "- 올라프 테스트 Prefab\n" +
                 "- 유진 간이 모델 + Animator Prefab\n" +
+                "- 히후미 간이 모델 + Animator Prefab\n" +
                 "- 일반 적 Prefab\n" +
                 "- 정예 테스트 Prefab\n" +
                 "- 보스 Prefab\n" +
@@ -186,6 +206,10 @@ public static class ProjectAbyssTestEncounterSetup
                 LoadCharacterPrefab(
                     PrefabRoot + "/Yujin_Test.prefab");
 
+            Character hifumiPrefab =
+                LoadCharacterPrefab(
+                    PrefabRoot + "/Hifumi_Test.prefab");
+
             Character normalEnemyPrefab =
                 LoadCharacterPrefab(
                     PrefabRoot + "/NormalEnemy_Test.prefab");
@@ -199,6 +223,7 @@ public static class ProjectAbyssTestEncounterSetup
                     PrefabRoot + "/BossEnemy_Test.prefab");
 
             if (yujinPrefab == null ||
+                hifumiPrefab == null ||
                 normalEnemyPrefab == null)
             {
                 throw new InvalidOperationException(
@@ -216,6 +241,7 @@ public static class ProjectAbyssTestEncounterSetup
                 EnsureGeneratedSkillTimelines(
                     olafPrefab,
                     yujinPrefab,
+                    hifumiPrefab,
                     normalEnemyPrefab,
                     eliteEnemyPrefab,
                     bossEnemyPrefab,
@@ -470,8 +496,8 @@ public static class ProjectAbyssTestEncounterSetup
         if (bundle == null || data == null)
         {
             throw new InvalidOperationException(
-                "유진 TODO 데이터가 생성되지 않았습니다. " +
-                "Apply Olaf + Yujin TODO Design 실행 결과를 확인하세요.");
+                "유진 CharacterAuthoringBundle 또는 CharacterData가 없습니다. " +
+                "Character Studio에서 유진 데이터를 구성한 뒤 다시 실행하세요.");
         }
 
         string prefabPath =
@@ -524,6 +550,77 @@ public static class ProjectAbyssTestEncounterSetup
         return AssetDatabase
             .LoadAssetAtPath<GameObject>(prefabPath)
             ?.GetComponent<Yujin>();
+    }
+
+    private static Character BuildHifumiPrefab(
+        TestAnimationAssets animations,
+        Material material)
+    {
+        CharacterAuthoringBundle bundle =
+            AssetDatabase.LoadAssetAtPath<CharacterAuthoringBundle>(
+                HifumiBundlePath);
+
+        CharacterData data =
+            AssetDatabase.LoadAssetAtPath<CharacterData>(
+                HifumiDataPath);
+
+        if (bundle == null || data == null)
+        {
+            throw new InvalidOperationException(
+                "히후미 CharacterAuthoringBundle 또는 CharacterData 생성에 실패했습니다.");
+        }
+
+        string prefabPath =
+            PrefabRoot + "/Hifumi_Test.prefab";
+
+        GameObject root =
+            CreatePrimitiveCharacter<Hifumi>(
+                "Hifumi_Test",
+                "Hifumi_View",
+                animations.Controller,
+                material,
+                PrimitiveCharacterStyle.Hifumi,
+                1f);
+
+        try
+        {
+            Hifumi hifumi = root.GetComponent<Hifumi>();
+
+            hifumi.ConfigureAuthoringCore(
+                data,
+                data.CombatLoadout);
+
+            PrefabUtility.SaveAsPrefabAsset(
+                root,
+                prefabPath);
+        }
+        finally
+        {
+            Object.DestroyImmediate(root);
+        }
+
+        Hifumi prefab =
+            AssetDatabase.LoadAssetAtPath<GameObject>(prefabPath)
+                ?.GetComponent<Hifumi>();
+
+        bundle.ConfigurePrefab(prefab);
+        bundle.ConfigurePresentationProfile(animations.Profile);
+        ConfigureBundleAnimator(
+            bundle,
+            animations.Controller,
+            null);
+
+        EditorUtility.SetDirty(bundle);
+        AssetDatabase.SaveAssets();
+
+        CharacterPrefabAssemblyUtility.Assemble(
+            bundle,
+            ensureStandardComponents: true,
+            createStandardHierarchy: true);
+
+        return AssetDatabase
+            .LoadAssetAtPath<GameObject>(prefabPath)
+            ?.GetComponent<Hifumi>();
     }
 
     private static NormalEnemy BuildNormalEnemyPrefab(
@@ -1071,7 +1168,9 @@ public static class ProjectAbyssTestEncounterSetup
                 "WeaponPivot",
                 style == PrimitiveCharacterStyle.Yujin
                     ? new Vector3(0.95f, 1.45f, 0f)
-                    : new Vector3(0.9f, 1.4f, 0f),
+                    : style == PrimitiveCharacterStyle.Hifumi
+                        ? new Vector3(0.92f, 1.35f, 0f)
+                        : new Vector3(0.9f, 1.4f, 0f),
                 Quaternion.Euler(0f, 0f, -15f));
 
         GameObject weapon =
@@ -1083,7 +1182,9 @@ public static class ProjectAbyssTestEncounterSetup
                 Quaternion.identity,
                 style == PrimitiveCharacterStyle.Yujin
                     ? new Vector3(0.08f, 0.75f, 0.12f)
-                    : new Vector3(0.14f, 0.62f, 0.18f),
+                    : style == PrimitiveCharacterStyle.Hifumi
+                        ? new Vector3(0.10f, 0.68f, 0.16f)
+                        : new Vector3(0.14f, 0.62f, 0.18f),
                 material);
 
         CreateAnchors(view.transform);
@@ -1259,6 +1360,7 @@ public static class ProjectAbyssTestEncounterSetup
     private static void SetupCurrentScene(
         Character olafPrefab,
         Character yujinPrefab,
+        Character hifumiPrefab,
         Character normalEnemyPrefab,
         Character eliteEnemyPrefab,
         Character bossEnemyPrefab)
@@ -1335,6 +1437,7 @@ public static class ProjectAbyssTestEncounterSetup
         switcher.ConfigureAssets(
             olafPrefab,
             yujinPrefab,
+            hifumiPrefab,
             normalEnemyPrefab,
             eliteEnemyPrefab,
             bossEnemyPrefab);
@@ -1440,6 +1543,7 @@ public static class ProjectAbyssTestEncounterSetup
     private static int EnsureGeneratedSkillTimelines(
         Character olafPrefab,
         Character yujinPrefab,
+        Character hifumiPrefab,
         Character normalEnemyPrefab,
         Character eliteEnemyPrefab,
         Character bossEnemyPrefab,
@@ -1449,7 +1553,8 @@ public static class ProjectAbyssTestEncounterSetup
         {
             SkillRoot,
             OlafDesignRoot,
-            YujinDesignRoot
+            YujinDesignRoot,
+            HifumiDesignRoot
         };
 
         HashSet<SkillDefinition> skills =
@@ -1497,13 +1602,14 @@ public static class ProjectAbyssTestEncounterSetup
                     path,
                     olafPrefab,
                     yujinPrefab,
+                    hifumiPrefab,
                     normalEnemyPrefab,
                     eliteEnemyPrefab,
                     bossEnemyPrefab);
 
             Character target =
                 attacker is Enemy
-                    ? yujinPrefab ?? olafPrefab
+                    ? yujinPrefab ?? hifumiPrefab ?? olafPrefab
                     : normalEnemyPrefab ??
                       eliteEnemyPrefab ??
                       bossEnemyPrefab;
@@ -1558,6 +1664,7 @@ public static class ProjectAbyssTestEncounterSetup
         string assetPath,
         Character olafPrefab,
         Character yujinPrefab,
+        Character hifumiPrefab,
         Character normalEnemyPrefab,
         Character eliteEnemyPrefab,
         Character bossEnemyPrefab)
@@ -1567,6 +1674,13 @@ public static class ProjectAbyssTestEncounterSetup
                 "/Yujin/"))
         {
             return yujinPrefab;
+        }
+
+        if (ContainsPathToken(
+                assetPath,
+                "/Hifumi/"))
+        {
+            return hifumiPrefab;
         }
 
         if (ContainsPathToken(
@@ -1709,8 +1823,7 @@ public static class ProjectAbyssTestEncounterSetup
                     "LEGS",
                     "다리",
                     PartType.LEGS,
-                    ActionType.Preparation,
-                    ActionType.Prestige));
+                    ActionType.Preparation));
 
             return result;
         }
@@ -2295,7 +2408,8 @@ public static class ProjectAbyssTestEncounterSetup
     private enum PrimitiveCharacterStyle
     {
         Yujin = 0,
-        NormalEnemy = 1
+        NormalEnemy = 1,
+        Hifumi = 2
     }
 }
 #endif

@@ -47,6 +47,7 @@ public class CharacterView : MonoBehaviour, ISerializationCallbackReceiver
     private int transientAnimationGeneration;
     private bool hasRootMotionOverride;
     private bool rootMotionBeforeTransient;
+    private bool deathPresentationStarted;
 
     private static readonly int VisualStateHash = Animator.StringToHash("VisualState");
     private static readonly int HitHash = Animator.StringToHash("Hit");
@@ -55,6 +56,7 @@ public class CharacterView : MonoBehaviour, ISerializationCallbackReceiver
     public Character Character => character;
     public Animator Animator => animator;
     public CharacterPresentationProfile PresentationProfile => presentationProfile;
+    public bool DeathPresentationStarted => deathPresentationStarted;
     public Transform LookAtPoint => lookAtPoint != null ? lookAtPoint : transform;
     public Transform AttackCameraPoint => attackCameraPoint != null ? attackCameraPoint : transform;
     public Transform HitCameraPoint => hitCameraPoint != null ? hitCameraPoint : transform;
@@ -101,6 +103,7 @@ public class CharacterView : MonoBehaviour, ISerializationCallbackReceiver
     public void Bind(Character targetCharacter)
     {
         character = targetCharacter;
+        deathPresentationStarted = false;
         RefreshVisualState();
     }
 
@@ -176,6 +179,16 @@ public class CharacterView : MonoBehaviour, ISerializationCallbackReceiver
     {
         if (key == HitReactionKey.None)
             return;
+
+        if (key == HitReactionKey.Death)
+        {
+            // Damage/Kill 판정은 연출보다 먼저 끝나지만, Death 반응은
+            // Timeline의 마지막 Hit Event가 호출한 단 한 번만 시작한다.
+            if (deathPresentationStarted)
+                return;
+
+            deathPresentationStarted = true;
+        }
 
         if (!Application.isPlaying)
         {
@@ -515,6 +528,9 @@ public class CharacterView : MonoBehaviour, ISerializationCallbackReceiver
 
     public void RefreshVisualState()
     {
+        if (character != null && !character.IsDead)
+            deathPresentationStarted = false;
+
         if (animator == null)
         {
             if (!missingAnimatorWarningLogged)

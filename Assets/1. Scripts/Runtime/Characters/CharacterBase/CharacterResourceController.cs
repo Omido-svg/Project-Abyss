@@ -269,8 +269,8 @@ public sealed class CharacterResourceController
         owner.RuntimeStatus.currentBlock += amount;
 
         Debug.Log(
-            $"{owner.Data?.CharacterName ?? owner.name} 방어도 {amount} 획득 " +
-            $"현재 방어도 : {owner.RuntimeStatus.currentBlock}");
+            $"{owner.Data?.CharacterName ?? owner.name} 가드 {amount} 획득 " +
+            $"현재 가드 : {owner.RuntimeStatus.currentBlock}");
     }
 
     public void ClearBlock()

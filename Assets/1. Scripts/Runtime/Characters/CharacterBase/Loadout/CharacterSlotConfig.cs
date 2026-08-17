@@ -13,9 +13,16 @@ public sealed class CharacterSlotConfig
     public bool HasLinkedPart = true;
     public PartType LinkedPartType = PartType.HEAD;
 
-    [Header("Optional speed override")]
+    [Header("Optional shared body-part speed override")]
+    [Tooltip(
+        "이 슬롯 하나만의 속도가 아니라, 같은 BodyPart에 연결된 모든 행동 슬롯이 " +
+        "공유하는 턴 속도 범위를 Override합니다.")]
     public bool OverrideSpeedRange;
+
+    [Min(0)]
     public int MinSpeed = 3;
+
+    [Min(0)]
     public int MaxSpeed = 8;
 
     [Header("Allowed skill categories")]

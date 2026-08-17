@@ -53,11 +53,9 @@ public class BattleVisualRequest
     public DamageResult DamageResult;
 
     public int RawPower;
-    public int RawDamage;
-    public int DefenseValue;
+    public int BaseDamage;
     public int GuardValue;
-    public int ProtectionValue;
-    public int DamageAfterDefense;
+    public int DamageAfterGuard;
 
     public int FinalHpDamage;
     public int PartHpDamage;
@@ -135,11 +133,9 @@ public class BattleVisualRequest
         TargetPoint = new TargetPoint(Target, TargetPart);
 
         RawPower = context.RawPower;
-        RawDamage = context.RawDamage;
-        DefenseValue = context.DefenseValue;
+        BaseDamage = context.BaseDamage;
         GuardValue = context.GuardValue;
-        ProtectionValue = context.ProtectionValue;
-        DamageAfterDefense = context.DamageAfterDefense;
+        DamageAfterGuard = context.DamageAfterGuard;
 
         FinalHpDamage = context.FinalHpDamage;
         PartHpDamage = context.PartHpDamage;

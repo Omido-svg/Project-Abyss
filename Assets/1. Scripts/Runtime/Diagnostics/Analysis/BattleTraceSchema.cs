@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 public static class BattleTraceSchema
 {
-    public const string Version = "1.2.0";
+    public const string Version = "2.1.0";
     public const string ConsolePrefix = "[PA_TRACE]";
 }
 
@@ -52,15 +52,17 @@ public sealed class BattleTraceRuleSnapshot
     public float maximumOverwhelmMultiplier;
 
     public int hitShift;
-    public int duelVictoryShift;
+    public int duelExchangeShift;
     public int lastStandHitShiftMultiplier;
+
     public int defaultExchangeRollCount;
     public int speedWeight;
+    public int maxTieRerolls;
+    public int maxCharacterRerollsPerExchange;
 
-    public int prestigeClashStart;
-    public int prestigeHitDealt;
-    public int prestigeHitTaken;
-    public int prestigeClashVictory;
+    public int prestigeExchangeParticipant;
+    public int prestigeOneSidedParticipant;
+    public bool prestigeExcludesPreparation;
 }
 
 [Serializable]
@@ -200,8 +202,8 @@ public sealed class BattleTraceExchange
     public string loserOwnerId;
     public int damage;
     public int momentumShift;
-    public int prestigeDealtGain;
-    public int prestigeTakenGain;
+    public int firstPrestigeGain;
+    public int secondPrestigeGain;
     public BattleTraceRoll firstRoll;
     public BattleTraceRoll secondRoll;
 }
@@ -210,40 +212,43 @@ public sealed class BattleTraceExchange
 public sealed class BattleTraceDamage
 {
     public string damageType;
+
     public int rawPower;
-    public float skillMultiplier;
-    public int flatDamageBonus;
-    public float ownerDamageMultiplier;
+    public float damageCoefficient;
     public float momentumMultiplier;
+
     public int baseDamage;
-    public int rawDamage;
     public int attackerModifiedDamage;
     public bool critical;
-    public int damageAfterCritical;
-    public int defenseValue;
-    public int damageAfterArmor;
+
     public int guardBefore;
     public int guardAbsorbed;
     public int guardAfter;
+    public int damageAfterGuard;
+
     public int targetModifiedDamage;
-    public int protectionValue;
-    public int protectionAbsorbed;
+
+
     public int finalDamage;
     public int appliedDamage;
     public int hpDamage;
     public int partDamage;
     public int directHpDamage;
+
     public int targetHpBefore;
     public int targetHpAfter;
+
     public bool hasPartSnapshot;
     public int targetPartHpBefore;
     public int targetPartHpAfter;
     public string targetPartStateBefore;
     public string targetPartStateAfter;
+
     public bool weakened;
     public bool broken;
     public bool killed;
     public bool directHpRoute;
+
     public List<BattleTraceDamageStage> stages = new();
 }
 
@@ -255,7 +260,6 @@ public sealed class BattleTraceDamageStage
     public int targetHp;
     public int targetPartHp;
     public int guardValue;
-    public int protectionValue;
     public bool hasTargetPart;
     public string targetPartState;
 }

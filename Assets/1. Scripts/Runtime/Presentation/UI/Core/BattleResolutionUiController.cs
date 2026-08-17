@@ -24,6 +24,7 @@ public sealed class BattleResolutionUiController : MonoBehaviour
 
     [Header("Behavior")]
     [SerializeField] private bool detectResolutionState = true;
+    [SerializeField] private bool retireLegacyClashOverview = true;
 
     private readonly List<ActiveState> rootStates = new();
     private readonly List<ActiveState> defaultLayerStates = new();
@@ -72,6 +73,7 @@ public sealed class BattleResolutionUiController : MonoBehaviour
         characterDetailPanel = detailPanel;
         clashRollPresentation = rollPresentation;
         ResolveReferences();
+        ApplyLegacyOverviewRetirement();
     }
 
     private void Awake()
@@ -85,6 +87,7 @@ public sealed class BattleResolutionUiController : MonoBehaviour
 
         Instance = this;
         ResolveReferences();
+        ApplyLegacyOverviewRetirement();
     }
 
     private void OnEnable()
@@ -93,6 +96,7 @@ public sealed class BattleResolutionUiController : MonoBehaviour
             Instance = this;
 
         ResolveReferences();
+        ApplyLegacyOverviewRetirement();
     }
 
     private void Update()
@@ -146,6 +150,7 @@ public sealed class BattleResolutionUiController : MonoBehaviour
         }
 
         ResolveReferences();
+        ApplyLegacyOverviewRetirement();
         CaptureStates();
 
         isResolutionPresentationActive = true;
@@ -162,7 +167,9 @@ public sealed class BattleResolutionUiController : MonoBehaviour
 
         Debug.Log(
             "[BattleResolutionUI][BEGIN] " +
-            "TopStatusBar와 ClashOverviewPanel을 유지하고 전투 연출 입력을 잠급니다.",
+            (retireLegacyClashOverview
+                ? "TopStatusBar만 유지하고 구형 전체 결투 현황을 숨긴 채 전투 연출 입력을 잠급니다."
+                : "TopStatusBar와 ClashOverviewPanel을 유지하고 전투 연출 입력을 잠급니다."),
             this);
     }
 
@@ -240,6 +247,14 @@ public sealed class BattleResolutionUiController : MonoBehaviour
                 clashPresentationLayer.GetComponent<
                     BattleClashRollPresentationUI>();
         }
+    }
+
+    private void ApplyLegacyOverviewRetirement()
+    {
+        if (!retireLegacyClashOverview || clashOverviewPanel == null)
+            return;
+
+        clashOverviewPanel.SetActive(false);
     }
 
     private void CaptureStates()
@@ -331,15 +346,17 @@ public sealed class BattleResolutionUiController : MonoBehaviour
                 root.GetChild(index).gameObject;
 
             child.SetActive(
+                !retireLegacyClashOverview &&
                 child == clashOverviewPanel);
         }
 
-        clashOverviewPanel?.SetActive(true);
+        if (!retireLegacyClashOverview)
+            clashOverviewPanel?.SetActive(true);
     }
 
     private void DisableOverviewInteraction()
     {
-        if (clashOverviewPanel == null)
+        if (retireLegacyClashOverview || clashOverviewPanel == null)
             return;
 
         clashOverviewCanvasGroup =

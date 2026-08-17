@@ -11,43 +11,8 @@ public sealed class YujinAutoPlanAdvisor : ICharacterAutoPlanAdvisor
         if (mechanic == null)
             return;
 
-        int livingEnemies = 0;
-        int usefulParts = 0;
-        int weakenedOrMarked = 0;
-
-        if (context?.Enemies != null)
-        {
-            foreach (Character enemy in context.Enemies)
-            {
-                if (enemy == null || enemy.IsDead)
-                    continue;
-
-                livingEnemies++;
-                if (enemy.BodyParts == null)
-                    continue;
-
-                foreach (BodyPart part in enemy.BodyParts)
-                {
-                    if (part == null || part.IsBroken)
-                        continue;
-                    usefulParts++;
-                    if (part.IsWeakened || mechanic.GetMark(part) >= 28)
-                        weakenedOrMarked++;
-                }
-            }
-        }
-
-        YujinWeaponType desired;
-        if (mode == PlayerAutoPlanMode.WinRate)
-            desired = YujinWeaponType.Baeku;
-        else if (weakenedOrMarked > 0)
-            desired = YujinWeaponType.Nakil;
-        else if (livingEnemies > 1 || usefulParts > 2)
-            desired = YujinWeaponType.Jeokseol;
-        else
-            desired = YujinWeaponType.Nakil;
-
-        mechanic.TrySwitchWeapon(desired);
+        // 환형은 이제 전용 UI/직접 호출이 아니라 도사림 스킬로 예약한다.
+        // AI의 실제 무기 전환은 아래 ScoreCandidate에서 환형 스킬을 선택하도록 유도한다.
         mechanic.AutoUseSense =
             mechanic.Sense > 0 &&
             (mode == PlayerAutoPlanMode.WinRate || mechanic.Sense >= 2);
@@ -76,7 +41,22 @@ public sealed class YujinAutoPlanAdvisor : ICharacterAutoPlanAdvisor
                 score += mark * (context.Mode == PlayerAutoPlanMode.Damage ? 12f : 5f);
         }
 
-        if (id == YujinSkillIds.Breakfast)
+        if (YujinMechanic.TryGetHwanhyeongWeapon(
+                id,
+                out YujinWeaponType skillWeapon))
+        {
+            YujinWeaponType desiredWeapon =
+                ResolveDesiredWeapon(
+                    context,
+                    mechanic);
+
+            score +=
+                desiredWeapon == skillWeapon &&
+                mechanic.CanSwitchWeapon(skillWeapon)
+                    ? 1600f
+                    : -800f;
+        }
+        else if (id == YujinSkillIds.Breakfast)
             score += mechanic.Sense <= 1 ? 520f : -120f;
         else if (id == YujinSkillIds.Inscription)
             score += mechanic.AutoUseSense && mechanic.Sense > 0 ? 700f : 160f;
@@ -117,11 +97,35 @@ public sealed class YujinAutoPlanAdvisor : ICharacterAutoPlanAdvisor
         return score;
     }
 
+    private static YujinWeaponType ResolveDesiredWeapon(
+        in AutoPlanCandidateContext context,
+        YujinMechanic mechanic)
+    {
+        if (context.Mode == PlayerAutoPlanMode.WinRate)
+            return YujinWeaponType.Baeku;
+
+        if (context.TargetPart != null &&
+            (context.TargetPart.IsWeakened || mechanic.GetMark(context.TargetPart) >= 28))
+            return YujinWeaponType.Nakil;
+
+        if (context.Target?.BodyParts != null && context.Target.BodyParts.Count > 2)
+            return YujinWeaponType.Jeokseol;
+
+        return YujinWeaponType.Nakil;
+    }
+
     public string GetSummary(Character character)
     {
         YujinMechanic mechanic = (character as Yujin)?.YujinMechanic;
-        return mechanic == null
-            ? string.Empty
-            : $"{mechanic.CurrentWeapon} / 감 자동 {(mechanic.AutoUseSense ? "ON" : "OFF")} / 감 {mechanic.Sense}";
+        if (mechanic == null)
+            return string.Empty;
+
+        string weapon =
+            mechanic.HasPendingWeapon
+                ? $"{mechanic.CurrentWeapon}→{mechanic.PendingWeapon}"
+                : mechanic.CurrentWeapon.ToString();
+
+        return
+            $"{weapon} / 감 자동 {(mechanic.AutoUseSense ? "ON" : "OFF")} / 감 {mechanic.Sense}";
     }
 }

@@ -13,6 +13,7 @@ public sealed class BattleWorldCharacterPlateManager : MonoBehaviour
     [SerializeField] private bool showPlayerPlate;
     [SerializeField] private Vector3 worldOffset = new(0f, 0.48f, 0f);
     [SerializeField] private float canvasScale = 0.0062f;
+    [SerializeField] private BattleWorldSlotArrowOverlayUI slotArrowOverlay;
 
     private readonly List<GameObject> generated = new();
     private readonly Dictionary<Character, BattleWorldCharacterPlateUI> plates = new();
@@ -27,6 +28,7 @@ public sealed class BattleWorldCharacterPlateManager : MonoBehaviour
         battleUiManager = uiManager;
         detailPanel = panel;
         targetCamera = camera;
+        EnsureSlotArrowOverlay();
     }
 
     private void Awake()
@@ -45,6 +47,11 @@ public sealed class BattleWorldCharacterPlateManager : MonoBehaviour
         }
 
         targetCamera ??= Camera.main;
+        EnsureSlotArrowOverlay();
+
+        // 2026-08-17 전술 UI에서는 플레이어 슬롯도 머리 위에서 직접 드래그해야 한다.
+        // 과거 Scene에 showPlayerPlate=false가 직렬화되어 있어도 런타임 계약을 우선한다.
+        showPlayerPlate = true;
 
         if (battleManager != null)
             battleManager.BattlePrepared += OnBattlePrepared;
@@ -90,6 +97,20 @@ public sealed class BattleWorldCharacterPlateManager : MonoBehaviour
 
     }
 
+    private void EnsureSlotArrowOverlay()
+    {
+        if (slotArrowOverlay == null)
+            slotArrowOverlay = GetComponent<BattleWorldSlotArrowOverlayUI>();
+
+        if (slotArrowOverlay == null)
+            slotArrowOverlay = gameObject.AddComponent<BattleWorldSlotArrowOverlayUI>();
+
+        slotArrowOverlay.Configure(
+            battleManager,
+            battleUiManager,
+            targetCamera);
+    }
+
     private void CreateForCharacter(Character character)
     {
         if (character == null)
@@ -118,8 +139,10 @@ public sealed class BattleWorldCharacterPlateManager : MonoBehaviour
         Transform followTarget =
             ResolvePlateFollowTarget(character);
 
+        // UI를 캐릭터 VisualRoot의 자식으로 두면 모델 회전/스케일을 상속해
+        // 카메라 billboard 정렬이 흔들릴 수 있다. Battle World UI 아래에 독립시킨다.
         root.transform.SetParent(
-            followTarget,
+            transform,
             false);
 
         Vector3 initialWorldPosition =
@@ -132,8 +155,10 @@ public sealed class BattleWorldCharacterPlateManager : MonoBehaviour
 
         RectTransform rect = root.GetComponent<RectTransform>();
         rect.sizeDelta = new Vector2(360f, 92f);
+        // 초기값만 주고 실제 화면상 크기는 BattleWorldCharacterPlateUI가
+        // 현재 Camera 투영에 맞춰 LateUpdate에서 정규화한다.
         rect.localScale = Vector3.one * canvasScale;
-        rect.localPosition = followLocalPosition;
+        rect.position = initialWorldPosition;
 
         Canvas canvas = root.GetComponent<Canvas>();
         canvas.renderMode = RenderMode.WorldSpace;
@@ -186,6 +211,17 @@ public sealed class BattleWorldCharacterPlateManager : MonoBehaviour
             new Vector2(0.04f, 0.16f),
             new Vector2(0.96f, 0.39f));
 
+        Image hpDamageTrail =
+            CreateImage(
+                "HpDamageTrail",
+                hpTrack.rectTransform,
+                new Color(1f, 0.72f, 0.18f, 1f));
+
+        Stretch(hpDamageTrail.rectTransform);
+        hpDamageTrail.type = Image.Type.Simple;
+        hpDamageTrail.preserveAspect = false;
+        hpDamageTrail.rectTransform.pivot = new Vector2(0f, 0.5f);
+
         Image hpFill =
             CreateImage(
                 "HpFill",
@@ -193,9 +229,9 @@ public sealed class BattleWorldCharacterPlateManager : MonoBehaviour
                 new Color(0.86f, 0.16f, 0.16f, 1f));
 
         Stretch(hpFill.rectTransform);
-        hpFill.type = Image.Type.Filled;
-        hpFill.fillMethod = Image.FillMethod.Horizontal;
-        hpFill.fillOrigin = 0;
+        hpFill.type = Image.Type.Simple;
+        hpFill.preserveAspect = false;
+        hpFill.rectTransform.pivot = new Vector2(0f, 0.5f);
 
         BattleWorldCharacterPlateUI plate =
             root.GetComponent<BattleWorldCharacterPlateUI>();
@@ -206,6 +242,7 @@ public sealed class BattleWorldCharacterPlateManager : MonoBehaviour
             name,
             hp,
             hpFill,
+            hpDamageTrail,
             followTarget,
             followLocalPosition);
 
@@ -213,7 +250,10 @@ public sealed class BattleWorldCharacterPlateManager : MonoBehaviour
         generated.Add(root);
     }
 
-    public void SetVisualHpOverride(Character character, int hp)
+    public void SetVisualHpOverride(
+        Character character,
+        int hp,
+        bool forceImmediate = false)
     {
         if (character == null)
             return;
@@ -221,7 +261,23 @@ public sealed class BattleWorldCharacterPlateManager : MonoBehaviour
         if (plates.TryGetValue(character, out BattleWorldCharacterPlateUI plate) &&
             plate != null)
         {
-            plate.SetHpOverride(hp);
+            plate.SetHpOverride(
+                hp,
+                forceImmediate);
+        }
+    }
+
+    public void SetVisualHpOverrideAtHit(
+        Character character,
+        int hp)
+    {
+        if (character == null)
+            return;
+
+        if (plates.TryGetValue(character, out BattleWorldCharacterPlateUI plate) &&
+            plate != null)
+        {
+            plate.SetHpOverrideAtHit(hp);
         }
     }
 

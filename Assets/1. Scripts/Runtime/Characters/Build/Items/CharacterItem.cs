@@ -21,6 +21,18 @@ public abstract class CharacterItem : ScriptableObject
     {
     }
 
+    /// <summary>
+    /// 스킬 장착 상한을 아이템이 수정하는 확장점.
+    /// 기본값(일반/결투/도사림/위세 = 3/3/3/1)에 가감 또는 교체 규칙을 적용할 수 있다.
+    /// </summary>
+    public virtual int ModifySkillEquipLimit(
+        Character owner,
+        ActionType actionType,
+        int currentLimit)
+    {
+        return currentLimit;
+    }
+
     //--------------------------------
     // 스탯도 조금 바꾸는 아이템이면 사용
     //--------------------------------

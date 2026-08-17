@@ -52,6 +52,7 @@ public static class CharacterAutoPlanAdvisorRegistry
     private static readonly ICharacterAutoPlanAdvisor[] Advisors =
     {
         new YujinAutoPlanAdvisor(),
+        new HifumiAutoPlanAdvisor(),
         new OlafAutoPlanAdvisor()
     };
 

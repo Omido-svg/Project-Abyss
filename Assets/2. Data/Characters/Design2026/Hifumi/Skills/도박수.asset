@@ -1,0 +1,68 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a85a262093fed2b45a6f05cb3a256be9, type: 3}
+  m_Name: "\uB3C4\uBC15\uC218"
+  m_EditorClassIdentifier: 
+  skillId: hifumi.prestige.gambler_move
+  SkillName: "\uB3C4\uBC15\uC218"
+  ActionType: 3
+  BasePower: 0
+  PhysicalType: 0
+  CanBreakPart: 0
+  GainPrestige: 0
+  AttackWeight:
+    Weight: 1
+    SecondaryPartMode: 0
+    SecondaryDamageMultiplier: 1
+    AllowBrokenSecondaryParts: 1
+  Description: 
+  Keywords: []
+  Rolls: []
+  ExchangeRollCount: 1
+  RollReusePolicy: 0
+  MultiRollPenalty:
+    Enabled: 0
+    PreviewText: 
+    Timing: 2
+    TriggerAfterRollIndex: 0
+    EffectEntries: []
+    Effects: []
+  ResolvePrestigeInCombat: 0
+  OverrideCanClash: 0
+  CanClashValue: 0
+  PreparationTier: 0
+  ResolverType: 0
+  DiceMin: 0
+  DiceMax: 0
+  CoinCount: 1
+  CoinFrontChance: 0.5
+  CoinFrontValue: 1
+  CoinBackValue: 0
+  CoinFrontIsCritical: 0
+  ChinchiroArashiBonus: 6
+  ChinchiroShigoroBonus: 6
+  ChinchiroHifumiPenalty: 1
+  ChinchiroHifumiSelfDamage: 1
+  EffectEntries: []
+  Effects: []
+  OverrideEnergyCost: 1
+  EnergyCost: 0
+  OverrideResourceRules: 1
+  RequireFullPrestige: 0
+  PrestigeCost: 50
+  ConsumeAllPrestige: 0
+  CustomResourceKey: 
+  CustomResourceCost: 0
+  ConsumeAllCustomResource: 0
+  OverridePrestigeUsePolicy: 1
+  PrestigeUsePolicy: 1
+  VisualDefinition: {fileID: 11400000, guid: 2e7f9af93f7750c46b7bc89a68853f6d, type: 2}

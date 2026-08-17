@@ -411,15 +411,17 @@ public abstract class Character : MonoBehaviour
             {
                 foreach (Skill skill in extraSkills)
                 {
-                    if (skill != null)
-                        characterSkills.Add(skill);
+                    AddRuntimeSkillIfUnique(
+                        characterSkills,
+                        skill);
                 }
             }
 
             foreach (Skill skill in combatRulesRuntime.CreateRuntimeSkills())
             {
-                if (skill != null && !characterSkills.Contains(skill))
-                    characterSkills.Add(skill);
+                AddRuntimeSkillIfUnique(
+                    characterSkills,
+                    skill);
             }
 
             eventBinder.BindSkills(
@@ -432,6 +434,14 @@ public abstract class Character : MonoBehaviour
             // 5. 메커닉 생성 및 구독
             //--------------------------------
             BuildMechanics();
+
+            if (Data?.EnableStaggerGauge == true)
+            {
+                AddMechanic(
+                    new StaggerGaugeMechanic(
+                        Data.MaxStaggerGauge,
+                        Data.StaggerDamageRatio));
+            }
 
             foreach (CombatMechanic mechanic
                      in buildController.CreateMechanics())
@@ -537,6 +547,56 @@ public abstract class Character : MonoBehaviour
             data);
     }
 
+    /// <summary>
+    /// 여러 런타임 스킬 공급원이 같은 SkillDefinition을 제공하더라도
+    /// RuntimeSkill을 한 번만 등록한다.
+    /// 참조 동일성뿐 아니라 SkillId도 비교해 중복 이벤트 구독을 차단한다.
+    /// </summary>
+    private static void AddRuntimeSkillIfUnique(
+        ICollection<Skill> destination,
+        Skill candidate)
+    {
+        if (destination == null || candidate == null)
+            return;
+
+        SkillDefinition candidateDefinition =
+            candidate.Definition;
+
+        foreach (Skill existing in destination)
+        {
+            if (ReferenceEquals(existing, candidate))
+                return;
+
+            SkillDefinition existingDefinition =
+                existing?.Definition;
+
+            if (candidateDefinition == null ||
+                existingDefinition == null)
+            {
+                continue;
+            }
+
+            if (ReferenceEquals(
+                    existingDefinition,
+                    candidateDefinition))
+            {
+                return;
+            }
+
+            if (!string.IsNullOrWhiteSpace(
+                    candidateDefinition.SkillId) &&
+                string.Equals(
+                    existingDefinition.SkillId,
+                    candidateDefinition.SkillId,
+                    System.StringComparison.Ordinal))
+            {
+                return;
+            }
+        }
+
+        destination.Add(candidate);
+    }
+
     protected virtual void BuildMechanics()
     {
     }
@@ -616,46 +676,55 @@ public abstract class Character : MonoBehaviour
         CharacterSlotConfig config =
             combatRulesRuntime?.GetSlotConfig(slot.Part, slot.ActionIndex);
 
-        bool configurationChanged =
-            !ReferenceEquals(slot.SlotConfig, config) ||
-            !string.Equals(
-                slot.SlotId,
-                config?.SlotId,
-                System.StringComparison.Ordinal);
-
         slot.SlotConfig = config;
         slot.SlotId = config?.SlotId ??
-                      $"LEGACY_{slot.Part?.Type.ToString() ?? "CHARACTER"}_{slot.ActionIndex:00}";
+                      $"RUNTIME_{slot.Part?.Type.ToString() ?? "CHARACTER"}_{slot.ActionIndex:00}";
 
-        if (configurationChanged &&
-            config?.OverrideSpeedRange == true)
-        {
-            slot.Speed =
-                Random.Range(
-                    config.MinSpeed,
-                    config.MaxSpeed + 1);
-        }
+        // Speed는 ActionSlot 개별 속성이 아니라 BodyPart의 턴 속도를 복사한 값이다.
+        // 같은 부위의 ActionIndex 0/1/2...는 반드시 하나의 SpeedManager 굴림을 공유한다.
+        // CharacterSlotConfig의 속도 Override도 SpeedManager에서 "부위 단위"로만 해석한다.
+        // 여기서 개별 슬롯을 다시 굴리면 같은 머리의 두 슬롯 속도가 달라지는 문제가 생긴다.
     }
 
     public bool CanUseActionSlot(ActionSlot slot)
     {
         if (slot == null || slot.Owner != this)
             return false;
+
         ConfigureActionSlot(slot);
+
         if (slot.SlotConfig?.HasLinkedPart == true &&
             slot.Part?.IsBroken == true)
         {
             return false;
         }
 
-        return slot.SlotConfig == null ||
-               slot.SlotConfig.Enabled;
+        if (slot.SlotConfig != null &&
+            !slot.SlotConfig.Enabled)
+        {
+            return false;
+        }
+
+        // 부위형 캐릭터는 과거 CharacterSlotConfig의 AllowedActionTypes보다
+        // 현재 게임의 부위별 스킬 카테고리 계약을 최우선한다.
+        if (slot.Skill != null &&
+            slot.Part != null &&
+            !BodyPartSkillAccessPolicy.Allows(
+                slot.Part,
+                slot.Skill.ActionType))
+        {
+            return false;
+        }
+
+        return true;
     }
 
     public IReadOnlyList<Skill> GetSelectableSkills(
         BodyPart part,
         int actionIndex = 0)
     {
+        IReadOnlyList<Skill> selectable;
+
         if (combatRulesRuntime?.HasStructuredRules == true)
         {
             ActionSlot probe = new ActionSlot
@@ -664,14 +733,25 @@ public abstract class Character : MonoBehaviour
                 Part = part,
                 ActionIndex = Mathf.Max(0, actionIndex)
             };
+
             ConfigureActionSlot(probe);
-            return combatRulesRuntime.GetAvailableSkillsForSlot(probe, characterSkills);
+            selectable =
+                combatRulesRuntime.GetAvailableSkillsForSlot(
+                    probe,
+                    characterSkills);
+        }
+        else if (part != null)
+        {
+            selectable = part.AvailableSkills;
+        }
+        else
+        {
+            selectable = characterSkills;
         }
 
-        if (part != null)
-            return part.AvailableSkills;
-
-        return characterSkills;
+        return BodyPartSkillAccessPolicy.Filter(
+            part,
+            selectable);
     }
 
     public T GetStatus<T>() where T : StatusEffect
@@ -833,9 +913,17 @@ public abstract class Character : MonoBehaviour
         if (RuntimeStatus == null || amount <= 0)
             return;
 
+        int modified = amount;
+        foreach (StatusEffect effect in StatusEffects)
+        {
+            if (effect != null)
+                modified = effect.ModifyHealing(modified);
+        }
+
+        modified = Mathf.Max(0, modified);
         RuntimeStatus.currentHP =
             Mathf.Min(
-                RuntimeStatus.currentHP + amount,
+                RuntimeStatus.currentHP + modified,
                 MaxCombatHP);
     }
 
@@ -992,6 +1080,15 @@ public abstract class Character : MonoBehaviour
             return;
 
         bodyPartController.RecoverPart(part);
+    }
+
+    public void RestoreTemporaryWeakenedPart(
+        BodyPart part,
+        float hpBeforeTemporaryWeaken)
+    {
+        bodyPartController?.RestoreTemporaryWeakenedPart(
+            part,
+            hpBeforeTemporaryWeaken);
     }
 
     //------------------------------------------------
@@ -1171,7 +1268,7 @@ public abstract class Character : MonoBehaviour
     }
     //------------------------------------------------
     // 고유 파괴 루트용
-    // 올라프 출혈 3스택, 유진 처형, 김삿갓 뼈 스택 등에서 사용
+    // 올라프 혈상 3스택, 유진 처형, 김삿갓 뼈 스택 등에서 사용
     //------------------------------------------------
 
     public void ForceBreakPart(BodyPart part)
@@ -1276,6 +1373,11 @@ public abstract class Character : MonoBehaviour
             StatusEffectRemoveReason.PartRecovered);
     }
 
+    public void RemoveDisabledStatusForPart(BodyPart part)
+    {
+        statusController?.RemoveDisabledStatusForPart(part);
+    }
+
     //------------------------------------------------
 
     public void AddPrestige(int amount)
@@ -1367,25 +1469,24 @@ public abstract class Character : MonoBehaviour
         int roll)
     {
         int value = roll;
+        int commonShift = 0;
+        int commonMaxReduction = 0;
 
-        foreach (StatusEffect effect in StatusEffects)
+        ApplyRollStatusList(
+            StatusEffects,
+            action,
+            ref value,
+            ref commonShift,
+            ref commonMaxReduction);
+
+        if (action?.OwnerPart != null)
         {
-            if (effect == null)
-                continue;
-
-            value = effect.ModifyRoll(action, value);
-        }
-
-        if (action != null &&
-            action.OwnerPart != null)
-        {
-            foreach (StatusEffect effect in action.OwnerPart.StatusEffects)
-            {
-                if (effect == null)
-                    continue;
-
-                value = effect.ModifyRoll(action, value);
-            }
+            ApplyRollStatusList(
+                action.OwnerPart.StatusEffects,
+                action,
+                ref value,
+                ref commonShift,
+                ref commonMaxReduction);
         }
 
         if (mechanicController != null)
@@ -1396,7 +1497,57 @@ public abstract class Character : MonoBehaviour
                     value);
         }
 
+        // 공용 상태이상은 "범위 전체 이동"과 "최댓값 절단"을 별도 누산한다.
+        // 따라서 힘 +1 & 골절 1은 상쇄되지 않고 바닥 +1 / 천장 유지가 된다.
+        int nonCommonDelta = value - roll;
+        value += commonShift;
+
+        if (commonMaxReduction > 0 && action?.Skill != null)
+        {
+            int shiftedMaximum = Mathf.Max(
+                1,
+                action.Skill.MaxPower +
+                nonCommonDelta +
+                commonShift -
+                commonMaxReduction);
+
+            value = Mathf.Min(value, shiftedMaximum);
+        }
+
         return value;
+    }
+
+    private static void ApplyRollStatusList(
+        IReadOnlyList<StatusEffect> statuses,
+        BattleAction action,
+        ref int value,
+        ref int commonShift,
+        ref int commonMaxReduction)
+    {
+        if (statuses == null)
+            return;
+
+        foreach (StatusEffect effect in statuses)
+        {
+            if (effect == null)
+                continue;
+
+            if (effect is ICommonRollShiftStatus shiftStatus)
+            {
+                commonShift += shiftStatus.GetRollShift(action);
+                continue;
+            }
+
+            if (effect is ICommonRollMaxReductionStatus maxStatus)
+            {
+                commonMaxReduction += Mathf.Max(
+                    0,
+                    maxStatus.GetMaxReduction(action));
+                continue;
+            }
+
+            value = effect.ModifyRoll(action, value);
+        }
     }
 
     public int ModifyExchangeRollCount(
@@ -1464,6 +1615,14 @@ public abstract class Character : MonoBehaviour
     {
         if (skill == null)
             return false;
+
+        if (part != null &&
+            !BodyPartSkillAccessPolicy.Allows(
+                part,
+                skill.ActionType))
+        {
+            return false;
+        }
 
         if (part == null)
         {

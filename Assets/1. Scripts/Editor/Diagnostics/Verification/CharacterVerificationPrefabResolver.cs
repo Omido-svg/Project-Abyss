@@ -347,6 +347,9 @@ public static class CharacterVerificationPrefabResolver
             CharacterAuthoringKind.Yujin =>
                 root + "Yujin_Test.prefab",
 
+            CharacterAuthoringKind.Hifumi =>
+                root + "Hifumi_Test.prefab",
+
             CharacterAuthoringKind.EliteEnemy =>
                 root + "EliteEnemy_Test.prefab",
 

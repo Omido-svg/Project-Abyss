@@ -76,7 +76,7 @@ public class EliteEnemyMechanic : CombatMechanic
 
         Debug.Log(
             $"{GetOwnerName()} 메커닉 발동 : {MechanicName} / " +
-            $"합 승리 위세 +{ClashWinPrestigeGain}, 출혈 1, " +
+            $"합 승리 위세 +{ClashWinPrestigeGain}, 혈상 1, " +
             $"Target={GetTargetName(winnerAction)}");
     }
 

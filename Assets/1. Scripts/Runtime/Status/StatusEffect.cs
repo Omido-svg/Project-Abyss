@@ -232,6 +232,11 @@ public abstract class StatusEffect
         return damage;
     }
 
+    public virtual int ModifyHealing(int amount)
+    {
+        return amount;
+    }
+
     public virtual int ModifySpeed(BodyPart part, int speed)
     {
         return speed;

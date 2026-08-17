@@ -12,7 +12,8 @@ public enum CharacterStudioBootstrapKind
     EliteEnemy = 1,
     NormalEnemy = 2,
     Custom = 3,
-    Yujin = 4
+    Yujin = 4,
+    Hifumi = 5
 }
 
 /// <summary>
@@ -454,7 +455,7 @@ public sealed class ProjectAbyssCharacterStudio : EditorWindow
         EditorGUILayout.HelpBox(
             "후보 목록은 소유/교체 가능한 전체 SkillDefinition이고, " +
             "최초 장착 목록은 전투 시작 시 장착되는 스킬입니다. " +
-            "한도는 일반 3 / 결투 2 / 도사림 3 / 위세 1입니다.",
+            "기본 한도는 일반 3 / 결투 3 / 도사림 3 / 위세 1이며, 아이템이 상한을 변경할 수 있습니다.",
             MessageType.Info);
 
         DrawSkillCategory(
@@ -1464,15 +1465,15 @@ public sealed class ProjectAbyssCharacterStudio : EditorWindow
 
         data.ActionSlots.Add(Slot(
             "LEFT_HAND_SLOT_01", "왼손", true, PartType.LEFT_HAND,
-            ActionType.NormalAttack, ActionType.Duel, ActionType.Prestige));
+            ActionType.NormalAttack, ActionType.Duel));
 
         data.ActionSlots.Add(Slot(
             "RIGHT_HAND_SLOT_01", "오른손", true, PartType.RIGHT_HAND,
-            ActionType.NormalAttack, ActionType.Duel, ActionType.Prestige));
+            ActionType.NormalAttack, ActionType.Duel));
 
         data.ActionSlots.Add(Slot(
             "LEGS_SLOT_01", "다리", true, PartType.LEGS,
-            ActionType.Preparation, ActionType.Prestige));
+            ActionType.Preparation));
     }
 
     private static CharacterSlotConfig Slot(
@@ -1608,6 +1609,7 @@ public sealed class ProjectAbyssCharacterStudio : EditorWindow
             CharacterStudioBootstrapKind.EliteEnemy => typeof(EliteEnemy),
             CharacterStudioBootstrapKind.NormalEnemy => typeof(NormalEnemy),
             CharacterStudioBootstrapKind.Yujin => typeof(Yujin),
+            CharacterStudioBootstrapKind.Hifumi => typeof(Hifumi),
             _ => bootstrapCustomCharacterScript != null
                 ? bootstrapCustomCharacterScript.GetClass()
                 : null
@@ -1930,6 +1932,7 @@ public sealed class ProjectAbyssCharacterStudio : EditorWindow
 
         if (value.Kind != CharacterAuthoringKind.Custom &&
             value.Kind != CharacterAuthoringKind.Yujin &&
+            value.Kind != CharacterAuthoringKind.Hifumi &&
             value.SkillSet == null)
         {
             result.Add(Error("Legacy Runtime Adapter가 없습니다."));
@@ -2239,6 +2242,7 @@ public sealed class ProjectAbyssCharacterStudio : EditorWindow
             EliteEnemy => CharacterAuthoringKind.EliteEnemy,
             NormalEnemy => CharacterAuthoringKind.NormalEnemy,
             Yujin => CharacterAuthoringKind.Yujin,
+            Hifumi => CharacterAuthoringKind.Hifumi,
             _ => CharacterAuthoringKind.Custom
         };
 
@@ -2249,6 +2253,7 @@ public sealed class ProjectAbyssCharacterStudio : EditorWindow
             EliteEnemy => "정예 적 — 부위형",
             NormalEnemy => "일반 적 — 단일 HP",
             Yujin => "플레이어블 — Yujin",
+            Hifumi => "플레이어블 — Hifumi",
             Enemy => "Custom Enemy",
             null => "미지정",
             _ => "Playable / Custom"

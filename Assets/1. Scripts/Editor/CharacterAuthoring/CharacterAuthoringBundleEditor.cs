@@ -14,7 +14,7 @@ public sealed class CharacterAuthoringBundleEditor : Editor
         EditorGUILayout.HelpBox(
             "Character Bundle은 Character Prefab Assembly의 최상위 에셋입니다. " +
             "Character Studio에서 Modern CombatLoadout, 최초 장착 스킬, " +
-            "Passive/Item, Legacy Adapter와 Presentation을 편집하세요.",
+            "Passive/Item과 Presentation을 편집하세요.",
             MessageType.Info);
 
         if (GUILayout.Button("Open Character Studio", GUILayout.Height(34f)))
@@ -44,7 +44,7 @@ public sealed class CharacterAuthoringBundleEditor : Editor
             typeof(CharacterCombatLoadout),
             false);
         EditorGUILayout.ObjectField(
-            "Legacy Runtime Adapter",
+            "Runtime Skill Adapter",
             bundle.SkillSet,
             typeof(ScriptableObject),
             false);

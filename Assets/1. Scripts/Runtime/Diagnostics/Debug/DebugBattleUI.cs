@@ -23,7 +23,6 @@ public class DebugBattleUI : MonoBehaviour
     [Header("Initial Visibility")]
     [SerializeField] private bool hideOnStart = true;
     [SerializeField] private bool clearSelectedCharacterOnStart = true;
-    
 
     [Header("Behavior")]
     [SerializeField] private bool showOnlyWhenCharacterSelected = true;
@@ -604,10 +603,6 @@ public class DebugBattleUI : MonoBehaviour
         }
 
         sb.AppendLine($"{Label("Speed")}    : {ValueText($"{current.minSpeed} ~ {current.maxSpeed}")}");
-        sb.AppendLine($"{Label("ATK+")}     : {ColorText(C_GOOD, Bold(current.flatDamageBonus.ToString()))}");
-        sb.AppendLine($"{Label("DamageM")}  : {ColorText(C_GOOD, Bold(current.damageMultiplier.ToString("0.00")))}");
-        sb.AppendLine($"{Label("Defense")}  : {ColorText(C_WARN, Bold(current.defense.ToString()))}");
-        sb.AppendLine($"{Label("Pierce")}   : {ColorText(C_TARGET, Bold($"{current.defensePenetrationRate * 100f:0.#}%"))}");
         sb.AppendLine($"{Label("PrestigeGainM")} : {ColorText(C_INFO, Bold(current.prestigeGainMultiplier.ToString("0.00")))}");
 
         sb.AppendLine();

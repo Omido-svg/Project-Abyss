@@ -24,6 +24,86 @@ internal sealed class BattleVisualDamagePresenter
         BeginHpOverride(playback);
     }
 
+    public void PrepareSequence(
+        BattleVisualPlaybackState playback)
+    {
+        BattleVisualRequest root =
+            playback?.RootRequest;
+
+        if (root?.HasClashSequence != true)
+            return;
+
+        ResolveBattleUiManager();
+        ResolveWorldPlateManager();
+
+        List<BattleVisualHpOverrideTarget> initializedTargets =
+            new List<BattleVisualHpOverrideTarget>();
+
+        HashSet<Character> initializedWorldCharacters =
+            new HashSet<Character>();
+
+        foreach (BattleClashVisualExchange exchange
+                 in root.ClashExchanges)
+        {
+            BattleVisualRequest request =
+                exchange?.AttackRequest;
+
+            int totalDamage =
+                DamageDistributionUtility.Sum(
+                    request?.HitDamages);
+
+            if (request?.Target == null ||
+                totalDamage <= 0)
+            {
+                continue;
+            }
+
+            ResolveHpRange(
+                request,
+                totalDamage,
+                out int visualStartHp,
+                out _);
+
+            if (!ContainsOverrideTarget(
+                    initializedTargets,
+                    request.Target,
+                    request.TargetPart))
+            {
+                BattleVisualHpOverrideTarget target =
+                    new BattleVisualHpOverrideTarget(
+                        request.Target,
+                        request.TargetPart);
+
+                initializedTargets.Add(target);
+                playback.TrackHpOverride(
+                    request.Target,
+                    request.TargetPart);
+
+                battleUIManager?.SetTargetHpOverride(
+                    request.Target,
+                    request.TargetPart,
+                    visualStartHp);
+            }
+
+            if (initializedWorldCharacters.Add(
+                    request.Target))
+            {
+                worldPlateManager?.SetVisualHpOverride(
+                    request.Target,
+                    ResolveWorldVisualStartHp(
+                        request,
+                        totalDamage),
+                    forceImmediate: true);
+            }
+        }
+
+        // 합 결과는 로직 단계에서 이미 계산되지만,
+        // 화면은 첫 Hit Event 전까지 각 대상의 합 시작 HP를 유지한다.
+        // 이 잠금을 합 안내 UI와 진입 모션보다 먼저 끝내
+        // 실제 HP가 잠깐 노출됐다가 되돌아오는 현상을 막는다.
+        Canvas.ForceUpdateCanvases();
+    }
+
     public int GetDamageForHitIndex(
         BattleVisualPlaybackState playback,
         int hitIndex)
@@ -179,7 +259,8 @@ internal sealed class BattleVisualDamagePresenter
         ResolveWorldPlateManager();
         worldPlateManager?.SetVisualHpOverride(
             request.Target,
-            ResolveWorldVisualStartHp(request, totalDamage));
+            ResolveWorldVisualStartHp(request, totalDamage),
+            forceImmediate: true);
 
         RefreshBattleUi(request, -1, 0);
     }
@@ -284,7 +365,7 @@ internal sealed class BattleVisualDamagePresenter
             worldFinalHp,
             worldStartHp - playback.VisualDamageAccumulated);
 
-        worldPlateManager?.SetVisualHpOverride(
+        worldPlateManager?.SetVisualHpOverrideAtHit(
             request.Target,
             worldDisplayHp);
     }
@@ -377,6 +458,36 @@ internal sealed class BattleVisualDamagePresenter
             $"Hit={hitIndex}, Damage={damage}");
     }
     
+    private static bool ContainsOverrideTarget(
+        List<BattleVisualHpOverrideTarget> targets,
+        Character character,
+        BodyPart part)
+    {
+        if (targets == null ||
+            character == null)
+        {
+            return false;
+        }
+
+        for (int i = 0; i < targets.Count; i++)
+        {
+            BattleVisualHpOverrideTarget target =
+                targets[i];
+
+            if (ReferenceEquals(
+                    target.Character,
+                    character) &&
+                ReferenceEquals(
+                    target.Part,
+                    part))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     private void ResolveWorldPlateManager()
     {
         if (worldPlateManager != null)

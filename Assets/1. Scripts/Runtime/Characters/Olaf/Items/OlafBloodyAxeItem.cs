@@ -1,7 +1,7 @@
 using UnityEngine;
 
 // 올라프가 일반공격으로 실제 피해를 준 뒤
-// 대상에게 출혈을 추가 부여한다.
+// 대상에게 혈상을 추가 부여한다.
 
 [CreateAssetMenu(
     menuName = "Battle/Item/Olaf/Bloody Axe")]

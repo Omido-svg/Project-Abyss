@@ -12,53 +12,46 @@ public class DamageContext
     public BodyPart TargetPart;
 
     public DamageType DamageType;
+    public PhysicalDamageType PhysicalType;
+    public float PhysicalResistanceMultiplier = 1f;
 
     public DamageStage CurrentStage;
     public readonly List<DamageSnapshot> StageSnapshots = new();
 
     //--------------------------------
-    // 계산 단계
+    // 피해 계산 파이프라인
     //--------------------------------
 
+    // 합 결과로 확정된 피해 기준 위력.
     public int RawPower;
 
-    public float SkillMultiplier = 1f;
-    public int FlatDamageBonus;
-    public float OwnerDamageMultiplier = 1f;
+    // 표준 행동은 1.0. ActionType별 보정은 존재하지 않는다.
+    // 보조 대상/Custom 피해처럼 명시적으로 요청된 경우에만 다른 값이 들어온다.
+    public float DamageCoefficient = 1f;
     public float MomentumMultiplier = 1f;
 
+    // RawPower × DamageCoefficient × MomentumMultiplier를 버림한 값.
     public int BaseDamage;
-    public int RawDamage;
+
+    // 공격자 고유 효과 적용 후 값.
     public int AttackerModifiedDamage;
 
+    // 크리티컬 여부는 굴림 결과 메타데이터다.
+    // 별도의 추가 곱연산은 수행하지 않는다.
     public bool WasCritical;
-    public float CriticalMultiplier = 1f;
-    public int DamageAfterCritical;
-
-    public int DefenseValue;
-    public float PenetrationRate;
-    public int PiercingDamage;
-    public int BlockableDamage;
-    public int DamageAfterArmor;
 
     public int GuardBefore;
     public int GuardAbsorbed;
     public int GuardAfter;
-
     public int GuardValue => GuardBefore;
 
-    public int DamageAfterDefense;
-
+    // 대상 고유 효과 적용 후 값.
     public int TargetModifiedDamage;
 
-    public int ProtectionValue;
-    public int ProtectionAbsorbed;
-    public int DamageAfterProtection;
+    // 대상 보정까지 끝난 피해를 가드가 흡수한 뒤의 값.
+    public int DamageAfterGuard;
 
-    // 기존 호출부 호환용 최종 수정값
-    public int ModifiedDamage;
-
-    // 실제 적용 요청값
+    // 실제 적용 요청값.
     public int FinalDamage;
 
     //--------------------------------
@@ -71,7 +64,6 @@ public class DamageContext
     public int AppliedHpDamage;
     public int AppliedPartDamage;
 
-    // 신규 표준 결과 이름
     public int FinalHpDamage;
     public int PartHpDamage;
     public int DirectHpDamage;
@@ -122,6 +114,7 @@ public class DamageContext
         TargetPart = request.TargetPart;
 
         DamageType = request.Type;
+        PhysicalType = request.PhysicalType;
 
         RawPower = Mathf.Max(
             0,
@@ -129,12 +122,10 @@ public class DamageContext
                 ? request.RawPower
                 : request.Damage);
 
-        SkillMultiplier = request.SkillMultiplier;
-
-        CriticalMultiplier =
-            request.CriticalMultiplier > 0f
-                ? request.CriticalMultiplier
-                : 1f;
+        DamageCoefficient =
+            request.DamageCoefficient > 0f
+                ? request.DamageCoefficient
+                : 0f;
 
         WasCritical = request.WasCritical;
         CanBreakPart = request.CanBreakPart;
@@ -148,14 +139,6 @@ public class DamageContext
             RawPower);
     }
 
-    public void AddProtection(
-        int amount)
-    {
-        if (amount <= 0)
-            return;
-
-        ProtectionValue += amount;
-    }
 
     public void RecordStage(
         DamageStage stage,
@@ -169,8 +152,7 @@ public class DamageContext
                 Mathf.Max(0, damage),
                 Target,
                 TargetPart,
-                GuardBefore,
-                ProtectionValue));
+                GuardBefore));
     }
 
     public DamageSnapshot GetSnapshot(

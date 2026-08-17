@@ -1,0 +1,20 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 94b0e1f5c7b679944bdcc8a2eb87dbe7, type: 3}
+  m_Name: Yujin_HwanhyeongFlow
+  m_EditorClassIdentifier: 
+  augmentName: "\uD658\uD615\uC758 \uD750\uB984"
+  description: "\uD658\uD615\uC73C\uB85C \uB2E4\uB978 \uBB34\uAE30\uB85C \uC804\uD658\uC774
+    \uC2E4\uC81C \uC644\uB8CC\uB420 \uB54C \uC0B4\uC218\uC758 \uAC10 +1. \uC804\uD658\uC740
+    \uD658\uD615\uC744 \uC0AC\uC6A9\uD55C \uB2E4\uC74C \uD134 \uC2DC\uC791\uC5D0
+    \uC644\uB8CC\uB41C\uB2E4."
+  senseGainOnWeaponSwitch: 1

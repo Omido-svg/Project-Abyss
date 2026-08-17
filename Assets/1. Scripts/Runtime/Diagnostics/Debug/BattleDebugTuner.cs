@@ -44,17 +44,6 @@ public sealed class BattleDebugCoreBalance
     public int minSpeed = 3;
     public int maxSpeed = 8;
 
-    [Header("Offense")]
-    public bool overrideOffense;
-    public int flatDamageBonus;
-    [Min(0f)] public float damageMultiplier = 1f;
-
-    [Header("Defense")]
-    public bool overrideDefense;
-    [Min(0)] public int defense;
-    [Range(0f, 1f)]
-    public float defensePenetrationRate;
-
     [Header("Prestige Gain")]
     public bool overridePrestigeGain;
     [Min(0f)]
@@ -97,18 +86,6 @@ public sealed class BattleDebugCoreBalance
         maxSpeed =
             current.maxSpeed;
 
-        flatDamageBonus =
-            current.flatDamageBonus;
-
-        damageMultiplier =
-            current.damageMultiplier;
-
-        defense =
-            current.defense;
-
-        defensePenetrationRate =
-            current.defensePenetrationRate;
-
         prestigeGainMultiplier =
             current.prestigeGainMultiplier;
     }
@@ -145,20 +122,6 @@ public sealed class BattleDebugCoreBalance
             Mathf.Max(
                 minSpeed,
                 maxSpeed);
-
-        damageMultiplier =
-            Mathf.Max(
-                0f,
-                damageMultiplier);
-
-        defense =
-            Mathf.Max(
-                0,
-                defense);
-
-        defensePenetrationRate =
-            Mathf.Clamp01(
-                defensePenetrationRate);
 
         prestigeGainMultiplier =
             Mathf.Max(
@@ -247,7 +210,7 @@ public sealed class BattleDebugPartSettings
     public bool overrideParts;
 
     [Tooltip(
-        "부위 상태를 바꿀 때 기존 출혈/화상 등 비구조 상태도 제거합니다. " +
+        "부위 상태를 바꿀 때 기존 혈상/화상 등 비구조 상태도 제거합니다. " +
         "초기 전투 상황 구성에는 true를 권장합니다.")]
     public bool clearNonStructuralStatusesWhenStateChanges = true;
 
@@ -1336,24 +1299,6 @@ public sealed class BattleDebugTuner : MonoBehaviour
 
             status.maxSpeed =
                 core.maxSpeed;
-        }
-
-        if (core.overrideOffense)
-        {
-            status.flatDamageBonus =
-                core.flatDamageBonus;
-
-            status.damageMultiplier =
-                core.damageMultiplier;
-        }
-
-        if (core.overrideDefense)
-        {
-            status.defense =
-                core.defense;
-
-            status.defensePenetrationRate =
-                core.defensePenetrationRate;
         }
 
         if (core.overridePrestigeGain)

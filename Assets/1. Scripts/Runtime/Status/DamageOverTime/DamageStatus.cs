@@ -57,14 +57,10 @@ public abstract class DamageStatus : StatusEffect
                 1f,
                 canBreakPart: false,
                 applyMomentum: false,
-                applyDefense: false,
                 applyGuard: false,
-                applyProtection: false,
                 sourceAction: null,
                 sourceEffect: this);
 
-        request.ApplyFlatDamageBonus = false;
-        request.ApplyOwnerMultiplier = false;
         request.ApplyAttackerModifiers = false;
         request.ApplyTargetModifiers = false;
         request.WasCritical = false;

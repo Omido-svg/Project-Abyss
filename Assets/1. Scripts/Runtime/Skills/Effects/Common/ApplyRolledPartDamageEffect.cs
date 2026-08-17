@@ -19,9 +19,7 @@ public class ApplyRolledPartDamageEffect : SkillEffectDefinition
 
     [Header("Pipeline")]
     [SerializeField] private bool applyMomentum;
-    [SerializeField] private bool applyDefense = true;
     [SerializeField] private bool applyGuard = true;
-    [SerializeField] private bool applyProtection = true;
 
     public override void Apply(
         SkillEffectContext context)
@@ -75,9 +73,7 @@ public class ApplyRolledPartDamageEffect : SkillEffectDefinition
                     ? context.SkillDefinition?.CanBreakPart == true
                     : canBreakPart,
                 applyMomentum,
-                applyDefense,
                 applyGuard,
-                applyProtection,
                 context.Action);
 
         context.ApplyDamage(request);

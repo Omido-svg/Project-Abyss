@@ -16,6 +16,7 @@ MonoBehaviour:
   SkillName: "\uAC01\uC778"
   ActionType: 1
   BasePower: 0
+  PhysicalType: 0
   CanBreakPart: 0
   GainPrestige: 1
   AttackWeight:
@@ -25,12 +26,15 @@ MonoBehaviour:
     AllowBrokenSecondaryParts: 0
   Description: "\uACB0\uD22C \uB300 \uACB0\uD22C\uC758 \uAD50\uD658 \uC2B9\uB9AC\uB9C8\uB2E4
     \uD45C\uC2DD\uC744 \uBC31\uC6B0 8, \uC801\uC124 12, \uB099\uC77C 16 \uBD80\uC5EC\uD55C\uB2E4.
-    \uC0B4\uC218\uC758 \uAC10 \uC790\uB3D9 \uC0AC\uC6A9\uC744 \uCF1C\uBA74 \uC774\uAE38
-    \uB54C\uAE4C\uC9C0 \uC790\uC6D0\uC744 \uC18C\uBAA8\uD574 \uC7AC\uAD74\uB9BC\uD55C\uB2E4."
+    \uC2A4\uD0AC \uC120\uD0DD \uC2DC \uC0B4\uC218\uC758 \uAC10 \uC0AC\uC6A9 \uC5EC\uBD80\uB97C
+    \uC815\uD558\uBA70, \uC0AC\uC6A9\uC744 \uC120\uD0DD\uD55C \uD589\uB3D9\uC740
+    \uC774\uAE38 \uB54C\uAE4C\uC9C0 \uB610\uB294 \uAC10\uC774 \uC18C\uC9C4\uB420
+    \uB54C\uAE4C\uC9C0 \uC7AC\uAD74\uB9BC\uD55C\uB2E4."
   Keywords: []
   Rolls:
   - Index: 0
     Type: 0
+    DiceMode: 0
     MinPower: 14
     MaxPower: 44
     RngSource: 2

@@ -64,8 +64,13 @@ MonoBehaviour:
   BossPhases:
   - {fileID: 11400000, guid: f65e7f883bdcfdc4ea9edf893548744f, type: 2}
   - {fileID: 11400000, guid: 285c5a69b7cd55543bc0d6b15e3dc391, type: 2}
-  damageMultiplier: 1
-  defensePenetration: 0
+  PhysicalResistances:
+    CutMultiplier: 1
+    BluntMultiplier: 1
+    PierceMultiplier: 1
+  EnableStaggerGauge: 1
+  MaxStaggerGauge: 100
+  StaggerDamageRatio: 1
   minSpeed: 2
   maxSpeed: 6
   InitialResources: []

@@ -13,6 +13,31 @@ public sealed class CharacterVerificationContext
     public BattleContext BattleContext { get; }
     public bool IsLiveScene { get; }
 
+    public Character OpponentCharacter
+    {
+        get
+        {
+            if (BattleContext?.Enemies == null)
+                return null;
+
+            for (int i = 0;
+                 i < BattleContext.Enemies.Count;
+                 i++)
+            {
+                Character candidate =
+                    BattleContext.Enemies[i];
+
+                if (candidate != null &&
+                    candidate != Character)
+                {
+                    return candidate;
+                }
+            }
+
+            return null;
+        }
+    }
+
     private readonly List<string> eventLog =
         new List<string>();
 

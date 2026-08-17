@@ -2,10 +2,11 @@ using System;
 using DG.Tweening;
 using TMPro;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
 [DisallowMultipleComponent]
-public sealed class BattleSkillCardButtonUI : MonoBehaviour
+public sealed class BattleSkillCardButtonUI : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHandler
 {
     [SerializeField] private Button button;
     [SerializeField] private TMP_Text titleText;
@@ -13,6 +14,7 @@ public sealed class BattleSkillCardButtonUI : MonoBehaviour
     [SerializeField] private TMP_Text costText;
     [SerializeField] private TMP_Text reasonText;
     [SerializeField] private Image accentImage;
+    [SerializeField] private CanvasGroup dragCanvasGroup;
 
     [Header("Rejected Selection Feedback")]
     [Tooltip("비워 두면 카드 내부의 안전한 비주얼 RectTransform을 자동으로 찾습니다.")]
@@ -61,6 +63,9 @@ public sealed class BattleSkillCardButtonUI : MonoBehaviour
     private void Awake()
     {
         button ??= GetComponent<Button>();
+        dragCanvasGroup ??= GetComponent<CanvasGroup>();
+        if (dragCanvasGroup == null)
+            dragCanvasGroup = gameObject.AddComponent<CanvasGroup>();
         ResolveFeedbackTarget();
         CaptureVisual();
     }
@@ -150,6 +155,37 @@ public sealed class BattleSkillCardButtonUI : MonoBehaviour
         }
 
         callback?.Invoke(skill, actionIndex);
+    }
+
+    public void OnBeginDrag(PointerEventData eventData)
+    {
+        if (!usable || skill == null || skill.ActionType == ActionType.Preparation)
+            return;
+
+        BattleSkillDragContext.Begin(this, skill, actionIndex);
+
+        if (dragCanvasGroup != null)
+        {
+            dragCanvasGroup.alpha = 0.72f;
+            dragCanvasGroup.blocksRaycasts = false;
+        }
+    }
+
+    public void OnDrag(PointerEventData eventData)
+    {
+        // 카드 자체는 레이아웃 위치를 바꾸지 않는다.
+        // PointerEventData만 드롭 슬롯까지 전달한다.
+    }
+
+    public void OnEndDrag(PointerEventData eventData)
+    {
+        if (dragCanvasGroup != null)
+        {
+            dragCanvasGroup.alpha = 1f;
+            dragCanvasGroup.blocksRaycasts = true;
+        }
+
+        BattleSkillDragContext.Clear();
     }
 
     private void PlayRejectedFeedback()

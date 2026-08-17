@@ -16,6 +16,7 @@ MonoBehaviour:
   SkillName: "\uBC30\uC218\uC9C4"
   ActionType: 3
   BasePower: 0
+  PhysicalType: 0
   CanBreakPart: 0
   GainPrestige: 1
   AttackWeight:

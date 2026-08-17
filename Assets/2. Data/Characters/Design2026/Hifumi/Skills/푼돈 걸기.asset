@@ -1,0 +1,69 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a85a262093fed2b45a6f05cb3a256be9, type: 3}
+  m_Name: "\uD47C\uB3C8 \uAC78\uAE30"
+  m_EditorClassIdentifier: 
+  skillId: hifumi.normal.small_change
+  SkillName: "\uD47C\uB3C8 \uAC78\uAE30"
+  ActionType: 0
+  BasePower: 12
+  PhysicalType: 0
+  CanBreakPart: 0
+  GainPrestige: 1
+  AttackWeight:
+    Weight: 1
+    SecondaryPartMode: 0
+    SecondaryDamageMultiplier: 1
+    AllowBrokenSecondaryParts: 1
+  Description: "\uCE5C\uCE58\uB85C \uD310\uC815. \uB300\uC2E4\uD328 1-2-3\uC740 \uD134\uB2F9
+    1\uD68C 60 \uC790\uD574 \uD6C4 \uAC19\uC740 \uD53C\uD574\uB97C \uBF08\uB85C \uC751\uCD95\uD55C\uB2E4."
+  Keywords: []
+  Rolls: []
+  ExchangeRollCount: 2
+  RollReusePolicy: 0
+  MultiRollPenalty:
+    Enabled: 0
+    PreviewText: 
+    Timing: 2
+    TriggerAfterRollIndex: 0
+    EffectEntries: []
+    Effects: []
+  ResolvePrestigeInCombat: 0
+  OverrideCanClash: 0
+  CanClashValue: 0
+  PreparationTier: 0
+  ResolverType: 3
+  DiceMin: 0
+  DiceMax: 0
+  CoinCount: 1
+  CoinFrontChance: 0.5
+  CoinFrontValue: 1
+  CoinBackValue: 0
+  CoinFrontIsCritical: 0
+  ChinchiroArashiBonus: 18
+  ChinchiroShigoroBonus: 18
+  ChinchiroHifumiPenalty: 3
+  ChinchiroHifumiSelfDamage: 60
+  EffectEntries: []
+  Effects: []
+  OverrideEnergyCost: 1
+  EnergyCost: 0
+  OverrideResourceRules: 0
+  RequireFullPrestige: 0
+  PrestigeCost: 0
+  ConsumeAllPrestige: 0
+  CustomResourceKey: 
+  CustomResourceCost: 0
+  ConsumeAllCustomResource: 0
+  OverridePrestigeUsePolicy: 0
+  PrestigeUsePolicy: 1
+  VisualDefinition: {fileID: 11400000, guid: 545daedfebfc045488c2f94b6d883ac3, type: 2}

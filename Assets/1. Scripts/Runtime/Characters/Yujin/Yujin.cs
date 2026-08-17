@@ -11,6 +11,11 @@ public sealed class Yujin : Character, ICharacterAuthoringTarget
     private YujinWeaponType startingWeapon =
         YujinWeaponType.Baeku;
 
+    [Header("Weapon Physical Types — provisional, inspector-overridable")]
+    [SerializeField] private PhysicalDamageType baekuPhysicalType = PhysicalDamageType.Cut;
+    [SerializeField] private PhysicalDamageType jeokseolPhysicalType = PhysicalDamageType.Pierce;
+    [SerializeField] private PhysicalDamageType nakilPhysicalType = PhysicalDamageType.Cut;
+
     private readonly List<BodyPart> bodyParts = new();
 
     public override IReadOnlyList<BodyPart> BodyParts =>
@@ -21,6 +26,18 @@ public sealed class Yujin : Character, ICharacterAuthoringTarget
 
     public YujinWeaponType StartingWeapon =>
         startingWeapon;
+
+    public PhysicalDamageType ResolveWeaponPhysicalType() =>
+        ResolveWeaponPhysicalType(YujinMechanic?.CurrentWeapon ?? startingWeapon);
+
+    public PhysicalDamageType ResolveWeaponPhysicalType(YujinWeaponType weapon) =>
+        weapon switch
+        {
+            YujinWeaponType.Baeku => baekuPhysicalType,
+            YujinWeaponType.Jeokseol => jeokseolPhysicalType,
+            YujinWeaponType.Nakil => nakilPhysicalType,
+            _ => PhysicalDamageType.Cut
+        };
 
     public bool ApplyCharacterAuthoring(
         CharacterAuthoringBundle bundle)

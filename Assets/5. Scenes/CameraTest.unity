@@ -2351,12 +2351,6 @@ MonoBehaviour:
       overrideSpeedRange: 0
       minSpeed: 3
       maxSpeed: 8
-      overrideOffense: 0
-      flatDamageBonus: 0
-      damageMultiplier: 1
-      overrideDefense: 0
-      defense: 0
-      defensePenetrationRate: 0
       overridePrestigeGain: 0
       prestigeGainMultiplier: 1
     partSettings:
@@ -2560,9 +2554,14 @@ MonoBehaviour:
   drawerVerticalPadding: 12
   minimumExpandedHeight: 64
   animationDuration: 0.18
+  fallbackCardHeight: 132
+  runtimeCardSpacing: 8
+  runtimeHorizontalPadding: 8
+  runtimeVerticalPadding: 8
   openEase: 9
   closeEase: 8
   startOpen: 0
+  unavailableHeaderColor: {r: 0.44, g: 0.46, b: 0.5, a: 1}
 --- !u!114 &312153421
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3794,6 +3793,7 @@ MonoBehaviour:
   showPlayerPlate: 0
   worldOffset: {x: 0, y: 0.48, z: 0}
   canvasScale: 0.0062
+  slotArrowOverlay: {fileID: 0}
 --- !u!1 &412709227
 GameObject:
   m_ObjectHideFlags: 0
@@ -4388,7 +4388,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &464331436
 RectTransform:
   m_ObjectHideFlags: 0
@@ -6002,7 +6002,7 @@ MonoBehaviour:
   enemyContainer: {fileID: 555769435}
   playerButtonTemplate: {fileID: 1001776220}
   enemyButtonTemplate: {fileID: 1492334760}
-  removeLegacyButtonsOnBuild: 1
+  cleanupStaleSceneButtonsOnBuild: 1
   cellSize: {x: 156, y: 112}
   spacing: {x: 12, y: 8}
   playerColumns: 4
@@ -6884,7 +6884,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &738242483
 RectTransform:
   m_ObjectHideFlags: 0
@@ -6916,6 +6916,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 411d4b1ab0da3214c856aeffbf0d4b31, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  enableLegacyCharacterPanel: 0
   battleManager: {fileID: 0}
   summaryText: {fileID: 0}
   yujinControls: {fileID: 0}
@@ -8924,6 +8925,7 @@ MonoBehaviour:
   costText: {fileID: 1635315150}
   reasonText: {fileID: 218738631}
   accentImage: {fileID: 503875186}
+  dragCanvasGroup: {fileID: 0}
   feedbackTarget: {fileID: 0}
   rejectedColor: {r: 1, g: 0.16, b: 0.16, a: 1}
   feedbackDuration: 0.38
@@ -10318,6 +10320,7 @@ MonoBehaviour:
   costText: {fileID: 1952421292}
   reasonText: {fileID: 481393858}
   accentImage: {fileID: 917787838}
+  dragCanvasGroup: {fileID: 0}
   feedbackTarget: {fileID: 0}
   rejectedColor: {r: 1, g: 0.16, b: 0.16, a: 1}
   feedbackDuration: 0.38
@@ -11680,6 +11683,7 @@ MonoBehaviour:
   characterDetailPanel: {fileID: 953186388}
   clashRollPresentation: {fileID: 164071973}
   detectResolutionState: 1
+  retireLegacyClashOverview: 1
 --- !u!4 &1228394948 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 162054922902212949, guid: 1bc64ea4d78d46d4d8905c341217be68, type: 3}
@@ -12944,6 +12948,7 @@ MonoBehaviour:
   costText: {fileID: 1982635784}
   reasonText: {fileID: 1296672574}
   accentImage: {fileID: 1560141485}
+  dragCanvasGroup: {fileID: 0}
   feedbackTarget: {fileID: 0}
   rejectedColor: {r: 1, g: 0.16, b: 0.16, a: 1}
   feedbackDuration: 0.38
@@ -13297,9 +13302,14 @@ MonoBehaviour:
   drawerVerticalPadding: 12
   minimumExpandedHeight: 64
   animationDuration: 0.18
+  fallbackCardHeight: 132
+  runtimeCardSpacing: 8
+  runtimeHorizontalPadding: 8
+  runtimeVerticalPadding: 8
   openEase: 9
   closeEase: 8
   startOpen: 0
+  unavailableHeaderColor: {r: 0.44, g: 0.46, b: 0.5, a: 1}
 --- !u!114 &1371718435
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -13536,9 +13546,14 @@ MonoBehaviour:
   drawerVerticalPadding: 12
   minimumExpandedHeight: 64
   animationDuration: 0.18
+  fallbackCardHeight: 132
+  runtimeCardSpacing: 8
+  runtimeHorizontalPadding: 8
+  runtimeVerticalPadding: 8
   openEase: 9
   closeEase: 8
   startOpen: 0
+  unavailableHeaderColor: {r: 0.44, g: 0.46, b: 0.5, a: 1}
 --- !u!114 &1398823324
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -13646,7 +13661,7 @@ MonoBehaviour:
     NearClipPlane: 0.1
     FarClipPlane: 5000
     Dutch: 0
-    ModeOverride: 0
+    ModeOverride: 2
     PhysicalProperties:
       GateFit: 2
       SensorSize: {x: 21.946, y: 16.002}
@@ -14284,10 +14299,6 @@ MonoBehaviour:
   rosterController: {fileID: 1453355686}
   autoInitializeOnAwake: 1
   autoStartBattle: 1
-  legacyPlayer: {fileID: 0}
-  legacyEnemies: []
-  legacyPlayerButtons: []
-  legacyEnemyButtons: []
   battleRuleSettings:
     Momentum:
       Minimum: -100
@@ -14304,7 +14315,6 @@ MonoBehaviour:
       MaximumOverwhelmMultiplier: 2.5
       HitShift: 5
       DuelExchangeShift: 15
-      DuelVictoryShift: 20
       LastStandHitShiftMultiplier: 2
     Clash:
       DefaultExchangeRollCount: 3
@@ -14312,7 +14322,6 @@ MonoBehaviour:
       MaxTieRerolls: 64
       MaxCharacterRerollsPerExchange: 64
       ConsumeResourceOnActionStart: 1
-      UseLegacyClashMajorityRewards: 0
     Energy:
       DefaultMaximum: 3
       TurnStartGain: 1
@@ -14320,12 +14329,7 @@ MonoBehaviour:
     Prestige:
       ExchangeParticipantCharge: 5
       OneSidedParticipantCharge: 5
-      ClashStartCharge: 1
-      HitDealtCharge: 1
-      HitTakenCharge: 1
-      ClashVictoryCharge: 1
-      PreparationDoesNotCharge: 1
-    UseLegacyAttackDefenseStats: 0
+      ExcludePreparationActions: 1
   battleUIManager: {fileID: 605390726}
   battleAnimationDirector: {fileID: 2113237152}
   defaultVisualProfile: {fileID: 11400000, guid: 6ad6ee546df81ab4ebe3dcb118388219, type: 2}
@@ -14413,6 +14417,7 @@ MonoBehaviour:
   rosterController: {fileID: 1453355686}
   olafPrefab: {fileID: 8201016950708553361, guid: 118c7124273a79d40b501f3dd44f7ec1, type: 3}
   yujinPrefab: {fileID: 258767931383796853, guid: ea11df0417bea274eac13fc3866cbb31, type: 3}
+  hifumiPrefab: {fileID: 7880117517003933912, guid: 12e08e754595419458f634cfb606665e, type: 3}
   normalEnemyPrefab: {fileID: 3843437535053194325, guid: e9cde9de4d585b442aaad3d55f50c257, type: 3}
   eliteEnemyPrefab: {fileID: 3805066174418032028, guid: 313514a8600fa0745baa91b72c409ffc, type: 3}
   bossEnemyPrefab: {fileID: 1019170679933438790, guid: 1bff6af710b4d50448304be29f5a383e, type: 3}
@@ -14424,8 +14429,8 @@ MonoBehaviour:
   runtimeParticipantsRoot: {fileID: 222939110}
   scenePrototypeCharacters:
   - {fileID: 2094296668}
-  - {fileID: 1903827112}
   - {fileID: 1244269864}
+  - {fileID: 1903827112}
   defaultPlayer: 1
   defaultEncounter: 0
   rememberSelection: 1
@@ -14527,7 +14532,7 @@ MonoBehaviour:
     NearClipPlane: 0.1
     FarClipPlane: 5000
     Dutch: 0
-    ModeOverride: 0
+    ModeOverride: 2
     PhysicalProperties:
       GateFit: 2
       SensorSize: {x: 21.946, y: 16.002}
@@ -14877,9 +14882,14 @@ MonoBehaviour:
   drawerVerticalPadding: 12
   minimumExpandedHeight: 64
   animationDuration: 0.18
+  fallbackCardHeight: 132
+  runtimeCardSpacing: 8
+  runtimeHorizontalPadding: 8
+  runtimeVerticalPadding: 8
   openEase: 9
   closeEase: 8
   startOpen: 0
+  unavailableHeaderColor: {r: 0.44, g: 0.46, b: 0.5, a: 1}
 --- !u!114 &1489235355
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -16684,6 +16694,8 @@ MonoBehaviour:
   InactivePriority: 0
   activateOverviewOnStart: 1
   validateOnAwake: 1
+  forceOrthographic: 1
+  overviewOrthographicSize: 3.4
 --- !u!1 &1665027744
 GameObject:
   m_ObjectHideFlags: 0
@@ -17364,8 +17376,8 @@ Camera:
   near clip plane: 0.1
   far clip plane: 5000
   field of view: 40
-  orthographic: 0
-  orthographic size: 10
+  orthographic: 1
+  orthographic size: 3.4
   m_Depth: -1
   m_CullingMask:
     serializedVersion: 2
@@ -17389,8 +17401,8 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1747701450}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: -0.7071068, z: 0, w: 0.7071068}
-  m_LocalPosition: {x: 7.7816744, y: 2.4131587, z: 1.1853269}
+  m_LocalRotation: {x: 0.09730756, y: -0.8734487, z: 0.05282442, w: 0.4741606}
+  m_LocalPosition: {x: 5.051675, y: 4.603159, z: 2.325327}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -17460,7 +17472,7 @@ MonoBehaviour:
   UpdateMethod: 2
   BlendUpdateMethod: 1
   LensModeOverride:
-    Enabled: 0
+    Enabled: 1
     DefaultMode: 2
   DefaultBlend:
     Style: 0
@@ -17860,6 +17872,7 @@ MonoBehaviour:
   costText: {fileID: 565471762}
   reasonText: {fileID: 46474910}
   accentImage: {fileID: 1808078687}
+  dragCanvasGroup: {fileID: 0}
   feedbackTarget: {fileID: 0}
   rejectedColor: {r: 1, g: 0.16, b: 0.16, a: 1}
   feedbackDuration: 0.38
@@ -20036,6 +20049,9 @@ MonoBehaviour:
   equippedAugments: []
   partHitPoints: 180
   startingWeapon: 0
+  baekuPhysicalType: 0
+  jeokseolPhysicalType: 2
+  nakilPhysicalType: 0
 --- !u!1 &1916743039
 GameObject:
   m_ObjectHideFlags: 0
@@ -21757,13 +21773,13 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2044571730}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: -0.7071068, z: 0, w: 0.7071068}
-  m_LocalPosition: {x: 9.11, y: -0.04, z: -0.26}
+  m_LocalRotation: {x: 0.09730758, y: -0.8734487, z: 0.052824426, w: 0.4741606}
+  m_LocalPosition: {x: 6.38, y: 2.15, z: 0.88}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 1653399052}
-  m_LocalEulerAnglesHint: {x: 0, y: -90, z: 0}
+  m_LocalEulerAnglesHint: {x: 10.635, y: -123.661, z: -7.007}
 --- !u!114 &2044571732
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -21789,11 +21805,11 @@ MonoBehaviour:
     CustomLookAtTarget: 0
   Lens:
     FieldOfView: 40
-    OrthographicSize: 10
+    OrthographicSize: 3.4
     NearClipPlane: 0.1
     FarClipPlane: 5000
     Dutch: 0
-    ModeOverride: 0
+    ModeOverride: 1
     PhysicalProperties:
       GateFit: 2
       SensorSize: {x: 21.946, y: 16.002}

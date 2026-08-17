@@ -15,7 +15,8 @@ MonoBehaviour:
   skillId: olaf.normal.overhead_smash
   SkillName: "\uB0B4\uB824\uCC0D\uAE30"
   ActionType: 0
-  BasePower: 0
+  BasePower: 14
+  PhysicalType: 0
   CanBreakPart: 0
   GainPrestige: 1
   AttackWeight:
@@ -30,8 +31,9 @@ MonoBehaviour:
   Rolls:
   - Index: 0
     Type: 0
-    MinPower: 15
-    MaxPower: 20
+    DiceMode: 1
+    MinPower: 1
+    MaxPower: 8
     RngSource: 1
     CoinFrontChance: 0.5
     CoinBackPower: 4
@@ -52,8 +54,9 @@ MonoBehaviour:
     OnLoseEffects: []
   - Index: 1
     Type: 0
-    MinPower: 15
-    MaxPower: 20
+    DiceMode: 1
+    MinPower: 1
+    MaxPower: 8
     RngSource: 1
     CoinFrontChance: 0.5
     CoinBackPower: 4
@@ -87,7 +90,7 @@ MonoBehaviour:
   PreparationTier: 0
   ResolverType: 0
   DiceMin: 1
-  DiceMax: 6
+  DiceMax: 8
   CoinCount: 1
   CoinFrontChance: 0.5
   CoinFrontValue: 1

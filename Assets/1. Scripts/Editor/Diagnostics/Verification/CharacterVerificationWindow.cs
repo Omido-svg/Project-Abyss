@@ -234,9 +234,11 @@ public sealed class CharacterVerificationWindow :
 
         EditorGUILayout.HelpBox(
             Application.isPlaying
-                ? "Data, Isolated Runtime, Live Scene 검증을 모두 실행할 수 있습니다."
-                : "Data 검증은 즉시 실행됩니다. Full 검증은 자동으로 Play Mode에 진입해 " +
-                  "격리 Prefab Clone과 현재 Scene 연결을 검사합니다.",
+                ? "Full Character Coverage는 캐릭터별 모든 SkillDefinition을 각각 강제 실행하고, " +
+                  "모든 Effect 조건과 패시브 이벤트를 Assert한 뒤 현재 Roster 통합 전투까지 진행합니다."
+                : "Data 검증은 즉시 실행됩니다. Full Character Coverage는 Play Mode에 진입해 " +
+                  "캐릭터별 결정론적 강제 시나리오를 전부 실행한 뒤, " +
+                  "승률 자동계획으로 현재 Roster 한 판을 종료까지 진행합니다.",
             MessageType.Info);
     }
 
@@ -260,19 +262,18 @@ public sealed class CharacterVerificationWindow :
         if (Application.isPlaying)
         {
             if (GUILayout.Button(
-                    "Run Full Verification",
+                    "Run Full Character Coverage",
                     GUILayout.Height(34f)))
             {
-                RunProfile(
-                    profile,
-                    includeRuntime: true,
-                    includeLiveScene: true);
+                CharacterVerificationPlayModeQueue
+                    .QueueProfiles(
+                        new[] { profile });
             }
         }
         else
         {
             if (GUILayout.Button(
-                    "Enter Play Mode + Run Full",
+                    "Enter Play + Full Character Coverage",
                     GUILayout.Height(34f)))
             {
                 CharacterVerificationPlayModeQueue
@@ -282,22 +283,22 @@ public sealed class CharacterVerificationWindow :
         }
 
         if (GUILayout.Button(
-                "Run All Characters",
+                "Run All Character Coverage",
                 GUILayout.Height(34f)))
         {
-            if (Application.isPlaying)
-            {
-                RunAllProfiles();
-            }
-            else
-            {
-                CharacterVerificationPlayModeQueue
-                    .QueueProfiles(
-                        profiles);
-            }
+            CharacterVerificationPlayModeQueue
+                .QueueProfiles(
+                    profiles);
         }
 
         EditorGUILayout.EndHorizontal();
+
+        EditorGUILayout.HelpBox(
+            "Coverage: 모든 스킬의 자원·굴림·피해 대상·Effect Entry 조건을 강제로 실행하고, " +
+            "모든 필수 패시브 메커닉의 이벤트 분기를 Assert합니다. " +
+            "새 Effect/Mechanic에 검증 계약이 없으면 조용히 PASS하지 않고 FAIL합니다. " +
+            "마지막에는 Time Scale 30배 승률 자동 전투로 현재 Roster 통합 동작도 확인합니다.",
+            MessageType.None);
     }
 
     private void DrawCaseList(
@@ -315,7 +316,8 @@ public sealed class CharacterVerificationWindow :
 
         IReadOnlyList<CharacterVerificationCaseDefinition>
             cases =
-                profile?.Cases;
+                CharacterVerificationRunner
+                    .BuildEffectiveDefinitions(profile);
 
         if (cases != null)
         {

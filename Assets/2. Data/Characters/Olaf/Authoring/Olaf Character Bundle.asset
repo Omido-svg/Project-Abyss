@@ -25,7 +25,7 @@ MonoBehaviour:
   animatorController: {fileID: 9100000, guid: 8396239eabf98ac4787eb4682559e3e9, type: 2}
   avatar: {fileID: 9000000, guid: 94efb0b38c24977489a9282dcf7b7068, type: 2}
   overrideAnimatorController: 1
-  overrideAvatar: 0
+  overrideAvatar: 1
   overrideLoadout: 0
   equippedItems: []
   equippedAugments: []

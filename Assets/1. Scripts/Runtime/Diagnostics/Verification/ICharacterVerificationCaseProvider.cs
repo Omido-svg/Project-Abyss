@@ -20,9 +20,11 @@ public static class CharacterVerificationCaseProviderRegistry
     private static readonly List<ICharacterVerificationCaseProvider>
         Providers = new()
         {
+            new CharacterFeatureCoverageCaseProvider(),
             new GenericCharacterVerificationCaseProvider(),
             new OlafCharacterVerificationCaseProvider(),
-            new YujinCharacterVerificationCaseProvider()
+            new YujinCharacterVerificationCaseProvider(),
+            new HifumiCharacterVerificationCaseProvider()
         };
 
     public static IEnumerable<CharacterVerificationCaseDefinition>

@@ -360,6 +360,9 @@ public static class CharacterVerificationProjectRepair
                 CharacterAuthoringKind.Yujin =>
                     TestControllerPath,
 
+                CharacterAuthoringKind.Hifumi =>
+                    TestControllerPath,
+
                 CharacterAuthoringKind.NormalEnemy =>
                     TestControllerPath,
 
@@ -424,6 +427,7 @@ public static class CharacterVerificationProjectRepair
         CharacterAuthoringBundle bundle)
     {
         if (bundle.Kind == CharacterAuthoringKind.Yujin ||
+            bundle.Kind == CharacterAuthoringKind.Hifumi ||
             bundle.Kind == CharacterAuthoringKind.NormalEnemy)
         {
             return AssetDatabase.LoadAssetAtPath<

@@ -2,21 +2,29 @@ using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>
-/// 올라프의 출혈, 광기, 만개, 도사림, 위세를 한 곳에서 처리한다.
+/// 올라프의 혈상, 광기, 만개, 도사림, 위세를 한 곳에서 처리한다.
 /// 모든 결투 부가효과는 합 전체가 아니라 OnExchangeResolved의 개별 교환 단위다.
 /// </summary>
-public sealed class OlafMadnessMechanic : CombatMechanic
+public sealed class OlafMadnessMechanic : CombatMechanic, ICharacterUniqueGaugeProvider
 {
     public const int MaxMadnessValue = 10;
 
     private int madness;
 
+    // 「표준」의 혈상 폭발은 BattleAction 한 번당 최대 1회만 허용한다.
+    private readonly HashSet<BattleAction>
+        standardExplosionActions = new();
+
     public int CurrentMadness => madness;
     public int MaxMadness => MaxMadnessValue;
     public bool IsBlooming => madness >= MaxMadnessValue;
 
+    public string GaugeLabel => "광기";
+    public float GaugeNormalized => (float)CurrentMadness / MaxMadnessValue;
+    public string GaugeValueText => $"{CurrentMadness}/{MaxMadnessValue}";
+
     public override string MechanicName =>
-        "Olaf Bleeding / Madness";
+        "Olaf Blood Wound / Madness";
 
     public override void OnRegister()
     {
@@ -29,11 +37,17 @@ public sealed class OlafMadnessMechanic : CombatMechanic
             () => battleEvent.OnBodyPartBreakResolved += OnBodyPartBreakResolved,
             () => battleEvent.OnBodyPartBreakResolved -= OnBodyPartBreakResolved,
             "OnBodyPartBreakResolved");
+
+        SubscribeToBattleEvent(
+            () => battleEvent.OnActionEnd += OnActionEnd,
+            () => battleEvent.OnActionEnd -= OnActionEnd,
+            "OnActionEnd");
     }
 
     public override void OnUnregister()
     {
         madness = 0;
+        standardExplosionActions.Clear();
     }
 
     public override int ModifyRoll(
@@ -93,7 +107,7 @@ public sealed class OlafMadnessMechanic : CombatMechanic
     }
 
     /// <summary>
-    /// 구형 데이터 기반 OlafPrestigeEffect 호환 API.
+    /// DataDriven OlafPrestigeEffect가 사용하는 호환 API.
     /// 새 TODO형 「터뜨리는 광기」는 ExecuteSkill에서 별도로 처리하므로
     /// 이 메서드는 해당 SkillEffectDefinition이 실제로 연결된 경우에만 사용된다.
     /// </summary>
@@ -231,26 +245,44 @@ public sealed class OlafMadnessMechanic : CombatMechanic
         string id =
             myAction.Skill?.Definition?.SkillId;
 
-        if (id == OlafSkillIds.Standard &&
-            won)
+        if (id == OlafSkillIds.Standard)
         {
-            ApplyBleeding(
-                myAction.Target,
-                myAction.TargetPart,
-                ScaleBleeding(1));
+            if (won)
+            {
+                ApplyBleeding(
+                    myAction.Target,
+                    myAction.TargetPart,
+                    ScaleBleeding(1));
 
-            AddMadness(1);
-            TryExplodeBleeding(myAction);
+                TryExplodeBleeding(myAction);
+            }
+            else
+            {
+                // 최신 설계: 「표준」은 진 교환에서만 광기 +1.
+                AddMadness(1);
+            }
         }
         else if (id == OlafSkillIds.Rend)
         {
+            // 「난도질」의 고유 혈상은 결투 대 결투의 매 교환에 부여한다.
             ApplyBleeding(
                 myAction.Target,
                 myAction.TargetPart,
                 ScaleBleeding(1));
 
-            AddMadness(1);
+            if (!won)
+            {
+                // 최신 설계: 「난도질」도 진 교환에서만 광기 +1.
+                AddMadness(1);
+            }
         }
+    }
+
+    private void OnActionEnd(
+        BattleAction action)
+    {
+        if (action != null)
+            standardExplosionActions.Remove(action);
     }
 
     private void OnBodyPartBreakResolved(
@@ -301,14 +333,20 @@ public sealed class OlafMadnessMechanic : CombatMechanic
                     new Bleeding(amount)));
     }
 
-    private void TryExplodeBleeding(
+    private bool TryExplodeBleeding(
         BattleAction action)
     {
+        if (action == null ||
+            standardExplosionActions.Contains(action))
+        {
+            return false;
+        }
+
         Character target =
-            action?.Target;
+            action.Target;
 
         BodyPart part =
-            action?.TargetPart;
+            action.TargetPart;
 
         Bleeding bleeding =
             target?.GetPartStatus<Bleeding>(part);
@@ -318,8 +356,11 @@ public sealed class OlafMadnessMechanic : CombatMechanic
             part == null ||
             part.IsBroken)
         {
-            return;
+            return false;
         }
+
+        // 혈상이 실제로 폭발 가능한 순간에만 사용 횟수를 소모한다.
+        standardExplosionActions.Add(action);
 
         int stack =
             bleeding.ConsumeAll();
@@ -345,17 +386,13 @@ public sealed class OlafMadnessMechanic : CombatMechanic
                 1f,
                 canBreakPart: false,
                 applyMomentum: false,
-                applyDefense: false,
                 applyGuard: false,
-                applyProtection: false,
                 sourceAction: action);
 
-        request.ApplyFlatDamageBonus = false;
-        request.ApplyOwnerMultiplier = false;
         request.ApplyAttackerModifiers = false;
         request.ApplyTargetModifiers = false;
 
-        battleContext?.battleManager?.DamageManager
+        battleContext?.ResolveDamageManager()
             ?.ApplyDamageContext(request);
 
         if (damage >= hpBefore &&
@@ -366,6 +403,8 @@ public sealed class OlafMadnessMechanic : CombatMechanic
                 owner,
                 action);
         }
+
+        return true;
     }
 
     private void ApplyBloomingWound(
@@ -415,12 +454,10 @@ public sealed class OlafMadnessMechanic : CombatMechanic
                 1f,
                 canBreakPart: false,
                 applyMomentum: false,
-                applyDefense: true,
                 applyGuard: true,
-                applyProtection: true,
                 sourceAction: action);
 
-        battleContext?.battleManager?.DamageManager
+        battleContext?.ResolveDamageManager()
             ?.ApplyDamageContext(request);
     }
 

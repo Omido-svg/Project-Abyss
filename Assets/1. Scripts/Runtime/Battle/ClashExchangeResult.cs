@@ -41,10 +41,6 @@ public sealed class ClashExchangeResult
     public int FirstPrestigeGain;
     public int SecondPrestigeGain;
 
-    // 기존 집계 코드 호환.
-    public int PrestigeDealtGain;
-    public int PrestigeTakenGain;
-
     public int Damage =>
         DamageContext?.GetDisplayDamage() ?? 0;
 

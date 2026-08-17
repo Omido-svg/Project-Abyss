@@ -263,9 +263,11 @@ public sealed class AITargetSelector
 
         if (targetPart.IsWeakened)
         {
+            // 약화 부위는 파괴 전까지 HP 피해를 받지 않는다.
+            // 파괴 권한이 있는 스킬만 상태 전환 가치가 있다.
             score += skill.CanBreakPart
                 ? 130f
-                : 60f;
+                : -180f;
         }
 
         if (targetPart.MaxPartHP > 0f)

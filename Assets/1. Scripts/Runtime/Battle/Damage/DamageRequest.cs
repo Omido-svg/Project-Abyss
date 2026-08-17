@@ -8,13 +8,18 @@ public struct DamageRequest
     public Character TargetCharacter;
     public BodyPart TargetPart;
 
-    // Action 기반 피해에서는 순수 위력이다.
+    // Action 기반 피해에서는 합 결과로 확정된 피해 기준 위력이다.
     // 외부 효과 기반 피해에서는 계산 시작값이다.
     public int Damage;
     public int RawPower;
 
-    public float SkillMultiplier;
-    public float CriticalMultiplier;
+    public PhysicalDamageType PhysicalType;
+    public bool ApplyPhysicalResistance;
+
+    // ActionType 보정이 아니다.
+    // 표준 행동은 항상 1이며, Attack Weight 보조 대상이나 명시적 Custom 요청만
+    // 필요한 경우 별도 계수를 전달한다.
+    public float DamageCoefficient;
 
     public bool CanBreakPart;
     public bool WasCritical;
@@ -23,21 +28,16 @@ public struct DamageRequest
     public bool TargetLostClash;
     public bool IsPrestigeClash;
 
-    public bool ApplyFlatDamageBonus;
-    public bool ApplyOwnerMultiplier;
     public bool ApplyMomentum;
     public bool ApplyAttackerModifiers;
-    public bool ApplyDefense;
     public bool ApplyGuard;
     public bool ApplyTargetModifiers;
-    public bool ApplyProtection;
 
     public StatusEffect SourceEffect;
 
     public static DamageRequest FromAction(
         BattleAction action,
         DamageType damageType,
-        float skillMultiplier,
         bool canBreakPart,
         bool isClashDamage,
         bool targetLostClash)
@@ -55,8 +55,11 @@ public struct DamageRequest
             Damage = action?.RolledPower ?? 0,
             RawPower = action?.RolledPower ?? 0,
 
-            SkillMultiplier = skillMultiplier,
-            CriticalMultiplier = 1f,
+            PhysicalType = PhysicalDamageResolver.Resolve(action),
+            ApplyPhysicalResistance = action != null,
+
+            // 일반공격/결투/도사림/위세 같은 ActionType으로 피해를 보정하지 않는다.
+            DamageCoefficient = 1f,
 
             CanBreakPart = canBreakPart,
             WasCritical = action?.Critical == true,
@@ -67,14 +70,10 @@ public struct DamageRequest
                 isClashDamage &&
                 action?.ActionType == ActionType.Prestige,
 
-            ApplyFlatDamageBonus = true,
-            ApplyOwnerMultiplier = true,
             ApplyMomentum = true,
             ApplyAttackerModifiers = true,
-            ApplyDefense = true,
             ApplyGuard = true,
             ApplyTargetModifiers = true,
-            ApplyProtection = true,
 
             SourceEffect = null
         };
@@ -93,9 +92,7 @@ public struct DamageRequest
             damage,
             canBreakPart,
             null,
-            applyDefense: true,
-            applyGuard: true,
-            applyProtection: true);
+            applyGuard: true);
     }
 
     public static DamageRequest SkillPart(
@@ -109,7 +106,6 @@ public struct DamageRequest
                 action?.TargetPart == null
                     ? DamageType.Direct
                     : DamageType.SkillPart,
-                1f,
                 canBreakPart,
                 false,
                 false);
@@ -132,9 +128,7 @@ public struct DamageRequest
             damage,
             false,
             sourceEffect,
-            applyDefense: false,
-            applyGuard: false,
-            applyProtection: false);
+            applyGuard: false);
     }
 
     public static DamageRequest Direct(
@@ -148,9 +142,7 @@ public struct DamageRequest
             damage,
             false,
             null,
-            applyDefense: false,
-            applyGuard: false,
-            applyProtection: false);
+            applyGuard: false);
     }
 
     public static DamageRequest Direct(
@@ -168,17 +160,13 @@ public struct DamageRequest
                 damage,
                 false,
                 null,
-                applyDefense: true,
-                applyGuard: true,
-                applyProtection: true);
+                applyGuard: true);
 
         request.SourceAction = sourceAction;
+        request.PhysicalType = PhysicalDamageResolver.Resolve(sourceAction);
+        request.ApplyPhysicalResistance = sourceAction != null;
         request.WasCritical =
             sourceAction?.Critical == true;
-        request.ApplyFlatDamageBonus =
-            sourceAction != null;
-        request.ApplyOwnerMultiplier =
-            sourceAction != null;
         request.ApplyMomentum =
             sourceAction != null;
         request.ApplyAttackerModifiers =
@@ -200,9 +188,7 @@ public struct DamageRequest
             damage,
             false,
             sourceEffect,
-            applyDefense: false,
-            applyGuard: false,
-            applyProtection: false);
+            applyGuard: false);
     }
 
     public static DamageRequest True(
@@ -219,9 +205,7 @@ public struct DamageRequest
             damage,
             false,
             sourceEffect,
-            applyDefense: false,
-            applyGuard: false,
-            applyProtection: false);
+            applyGuard: false);
     }
 
     public static DamageRequest SelfCost(
@@ -237,9 +221,7 @@ public struct DamageRequest
                 damage,
                 false,
                 null,
-                applyDefense: false,
-                applyGuard: false,
-                applyProtection: false);
+                applyGuard: false);
 
         request.ApplyTargetModifiers = false;
         return request;
@@ -254,7 +236,6 @@ public struct DamageRequest
             FromAction(
                 action,
                 DamageType.Counter,
-                1f,
                 canBreakPart,
                 false,
                 false);
@@ -270,12 +251,10 @@ public struct DamageRequest
         Character target,
         BodyPart targetPart,
         int rawPower,
-        float skillMultiplier,
+        float damageCoefficient,
         bool canBreakPart,
         bool applyMomentum,
-        bool applyDefense,
         bool applyGuard,
-        bool applyProtection,
         BattleAction sourceAction = null,
         StatusEffect sourceEffect = null)
     {
@@ -292,24 +271,23 @@ public struct DamageRequest
             Damage = rawPower,
             RawPower = rawPower,
 
-            SkillMultiplier = skillMultiplier,
-            CriticalMultiplier = 1f,
+            PhysicalType = PhysicalDamageResolver.Resolve(sourceAction),
+            ApplyPhysicalResistance = sourceAction != null,
+
+            DamageCoefficient =
+                UnityEngine.Mathf.Max(
+                    0f,
+                    damageCoefficient),
 
             CanBreakPart = canBreakPart,
             WasCritical =
                 sourceAction?.Critical == true,
 
-            ApplyFlatDamageBonus =
-                sourceAction != null,
-            ApplyOwnerMultiplier =
-                sourceAction != null,
             ApplyMomentum = applyMomentum,
             ApplyAttackerModifiers =
                 sourceAction != null,
-            ApplyDefense = applyDefense,
             ApplyGuard = applyGuard,
             ApplyTargetModifiers = true,
-            ApplyProtection = applyProtection,
 
             SourceEffect = sourceEffect
         };
@@ -323,9 +301,7 @@ public struct DamageRequest
         int damage,
         bool canBreakPart,
         StatusEffect sourceEffect,
-        bool applyDefense,
-        bool applyGuard,
-        bool applyProtection)
+        bool applyGuard)
     {
         return new DamageRequest
         {
@@ -340,8 +316,10 @@ public struct DamageRequest
             Damage = damage,
             RawPower = damage,
 
-            SkillMultiplier = 1f,
-            CriticalMultiplier = 1f,
+            PhysicalType = PhysicalDamageType.Cut,
+            ApplyPhysicalResistance = false,
+
+            DamageCoefficient = 1f,
 
             CanBreakPart = canBreakPart,
             WasCritical = false,
@@ -350,14 +328,10 @@ public struct DamageRequest
             TargetLostClash = false,
             IsPrestigeClash = false,
 
-            ApplyFlatDamageBonus = false,
-            ApplyOwnerMultiplier = false,
             ApplyMomentum = false,
             ApplyAttackerModifiers = false,
-            ApplyDefense = applyDefense,
             ApplyGuard = applyGuard,
             ApplyTargetModifiers = false,
-            ApplyProtection = applyProtection,
 
             SourceEffect = sourceEffect
         };

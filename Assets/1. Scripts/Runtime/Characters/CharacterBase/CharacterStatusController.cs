@@ -275,6 +275,29 @@ public class CharacterStatusController
         }
     }
 
+    /// <summary>
+    /// 무력화 게이지의 임시 약화를 되돌릴 때 해당 부위에서 파생된
+    /// PartDisabledStatus만 제거한다. 다른 버프/디버프는 보존한다.
+    /// </summary>
+    public void RemoveDisabledStatusForPart(BodyPart part)
+    {
+        if (part == null)
+            return;
+
+        foreach (StatusEffect effect in characterStatuses.ToArray())
+        {
+            if (effect is not PartDisabledStatus)
+                continue;
+
+            if (effect.SourcePart != part)
+                continue;
+
+            RemoveStatus(
+                effect,
+                StatusEffectRemoveReason.PartRecovered);
+        }
+    }
+
     public void TransferPartStatusesToCharacter(BodyPart part)
     {
         if (owner == null || part == null)

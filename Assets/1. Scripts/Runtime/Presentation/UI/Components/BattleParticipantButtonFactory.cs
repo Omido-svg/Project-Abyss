@@ -42,7 +42,7 @@ public sealed class BattleParticipantButtonFactory : MonoBehaviour
     [SerializeField] private BodyPartButton enemyButtonTemplate;
 
     [Header("Runtime Cleanup")]
-    [SerializeField] private bool removeLegacyButtonsOnBuild = true;
+    [SerializeField] private bool cleanupStaleSceneButtonsOnBuild = true;
 
     [SerializeField] private Vector2 cellSize = new(150f, 120f);
     [SerializeField] private Vector2 spacing = new(10f, 10f);
@@ -167,33 +167,6 @@ public sealed class BattleParticipantButtonFactory : MonoBehaviour
         PrepareTemplates();
     }
 
-    public void ConfigureFromLegacy(
-        IReadOnlyList<BodyPartButton> playerButtons,
-        IReadOnlyList<BodyPartButton> enemyButtons)
-    {
-        if (playerButtonTemplate == null)
-            playerButtonTemplate = FindFirstValid(playerButtons);
-
-        if (enemyButtonTemplate == null)
-            enemyButtonTemplate = FindFirstValid(enemyButtons);
-
-        if (playerContainer == null &&
-            playerButtonTemplate != null)
-        {
-            playerContainer =
-                playerButtonTemplate.transform.parent as RectTransform;
-        }
-
-        if (enemyContainer == null &&
-            enemyButtonTemplate != null)
-        {
-            enemyContainer =
-                enemyButtonTemplate.transform.parent as RectTransform;
-        }
-
-        PrepareTemplates();
-    }
-
     public bool Rebuild(
         BattleContext context,
         BattleUIManager uiManager,
@@ -229,7 +202,7 @@ public sealed class BattleParticipantButtonFactory : MonoBehaviour
 
         ClearGeneratedButtons();
 
-        if (removeLegacyButtonsOnBuild)
+        if (cleanupStaleSceneButtonsOnBuild)
         {
             RemoveRuntimeGroupObjects(playerContainer);
             RemoveRuntimeGroupObjects(enemyContainer);
@@ -1254,9 +1227,9 @@ public sealed class BattleParticipantButtonFactory : MonoBehaviour
             overviewTitleText.raycastTarget = false;
         }
 
-        HideLegacyOverviewLabel("PlayerSideLabel");
-        HideLegacyOverviewLabel("EnemySideLabel");
-        HideLegacyOverviewLabel("OverviewHint");
+        HideObsoleteOverviewLabel("PlayerSideLabel");
+        HideObsoleteOverviewLabel("EnemySideLabel");
+        HideObsoleteOverviewLabel("OverviewHint");
 
         Transform arrow =
             overviewRoot.Find("ClashArrowLayer");
@@ -1447,7 +1420,7 @@ public sealed class BattleParticipantButtonFactory : MonoBehaviour
         group.blocksRaycasts = false;
     }
 
-    private void HideLegacyOverviewLabel(
+    private void HideObsoleteOverviewLabel(
         string childName)
     {
         if (overviewRoot == null ||

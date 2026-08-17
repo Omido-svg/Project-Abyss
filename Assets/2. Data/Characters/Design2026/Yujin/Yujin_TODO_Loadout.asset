@@ -19,8 +19,9 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 1db95755eb2fbd54aaa224149c590035, type: 2}
   - {fileID: 11400000, guid: b0efec565ed21fc47905b522fbe535b5, type: 2}
   PreparationSkills:
-  - {fileID: 11400000, guid: 6b294901926d0964097c1dcf2c9654ff, type: 2}
-  - {fileID: 11400000, guid: da43df7d4b59e2e48b6831197481a11a, type: 2}
+  - {fileID: 11400000, guid: e8a41074dacfb8c4584f41f10d4df1e3, type: 2}
+  - {fileID: 11400000, guid: edda9d388113a0d4da467da7a4fb960a, type: 2}
+  - {fileID: 11400000, guid: 4163c15182e268842abb1a1600be75ad, type: 2}
   PrestigeSkills:
   - {fileID: 11400000, guid: 1f9711e1c7d003f4b8932c12a6f07a47, type: 2}
   Catalog: {fileID: 0}
@@ -39,3 +40,6 @@ MonoBehaviour:
   CharacterPreparationPool:
   - {fileID: 11400000, guid: 6b294901926d0964097c1dcf2c9654ff, type: 2}
   - {fileID: 11400000, guid: da43df7d4b59e2e48b6831197481a11a, type: 2}
+  - {fileID: 11400000, guid: e8a41074dacfb8c4584f41f10d4df1e3, type: 2}
+  - {fileID: 11400000, guid: edda9d388113a0d4da467da7a4fb960a, type: 2}
+  - {fileID: 11400000, guid: 4163c15182e268842abb1a1600be75ad, type: 2}

@@ -1,4 +1,11 @@
 using UnityEngine;
+using UnityEngine.Serialization;
+
+public enum StatusApplicationTiming
+{
+    Immediate = 0,
+    NextTurn = 1
+}
 
 [CreateAssetMenu(
     menuName = "Battle/Skill Effect/Add Status",
@@ -8,6 +15,10 @@ public class AddBodyPartStatusEffect : SkillEffectDefinition
     public StatusEffectId StatusEffectId;
     [Min(1)] public int Stack = 1;
     [Min(1)] public int Duration = 3;
+    [Tooltip("이번 턴 즉시 적용하거나 다음 TurnStart에 예약 적용합니다.")]
+    [FormerlySerializedAs("Timing")]
+    public StatusApplicationTiming ApplicationTiming =
+        StatusApplicationTiming.Immediate;
 
     public override void Apply(
         SkillEffectContext context)
@@ -26,11 +37,18 @@ public class AddBodyPartStatusEffect : SkillEffectDefinition
             return;
         }
 
-        StatusEffect effect =
-            StatusEffectFactory.Create(
+        int resolvedStack = overrides?.ResolveStack(Stack) ?? Stack;
+        int resolvedDuration = overrides?.ResolveDuration(Duration) ?? Duration;
+
+        StatusEffect effect = ApplicationTiming == StatusApplicationTiming.NextTurn
+            ? new DeferredStatusEffect(
                 StatusEffectId,
-                overrides?.ResolveStack(Stack) ?? Stack,
-                overrides?.ResolveDuration(Duration) ?? Duration);
+                resolvedStack,
+                resolvedDuration)
+            : StatusEffectFactory.Create(
+                StatusEffectId,
+                resolvedStack,
+                resolvedDuration);
 
         if (effect == null)
             return;

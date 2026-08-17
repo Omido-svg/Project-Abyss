@@ -39,8 +39,16 @@ public class BattleCinemachineRig : MonoBehaviour
     [SerializeField] private bool activateOverviewOnStart = true;
     [SerializeField] private bool validateOnAwake = true;
 
+    [Header("Projection Policy")]
+    [Tooltip("CM_Overview만 Orthographic으로 사용합니다. 나머지 Battle Cinemachine Camera는 Perspective로 강제합니다.")]
+    [SerializeField] private bool forceOrthographic = true;
+    [Tooltip("Overview Orthographic half-height. 기존 5.5보다 가까운 전술 구도를 위해 3.4를 기본값으로 사용합니다.")]
+    [SerializeField, Min(0.1f)] private float overviewOrthographicSize = 3.4f;
+
     private CinemachineBlendDefinition baseBlend;
     private bool hasBaseBlend;
+    private float lastAppliedOverviewOrthographicSize = float.NaN;
+    private bool lastAppliedForceOrthographic;
 
     public BattleCameraRigSlot ActiveSlot { get; private set; }
     public CinemachineCamera ActiveCamera { get; private set; }
@@ -48,6 +56,19 @@ public class BattleCinemachineRig : MonoBehaviour
     public bool HasBrain => Brain != null;
     public bool HasOverview => OverviewCamera != null;
     public bool IsCoreReady => Brain != null && OverviewCamera != null;
+
+    /// <summary>
+    /// Play Mode Inspector 또는 디버그 UI에서 값을 바꾸면 즉시 CM_Overview와 Output Camera에 반영된다.
+    /// </summary>
+    public float OverviewOrthographicSize
+    {
+        get => overviewOrthographicSize;
+        set
+        {
+            overviewOrthographicSize = Mathf.Max(0.1f, value);
+            ApplyOverviewProjectionIfChanged(force: true);
+        }
+    }
 
     public CinemachineBlendDefinition BaseBlend
     {
@@ -62,6 +83,7 @@ public class BattleCinemachineRig : MonoBehaviour
     {
         ResolveReferences();
         NormalizePriorities();
+        ApplyProjectionPolicy();
         CaptureBaseBlendIfNeeded();
 
         if (validateOnAwake)
@@ -72,6 +94,21 @@ public class BattleCinemachineRig : MonoBehaviour
     {
         if (activateOverviewOnStart && OverviewCamera != null)
             SetLive(BattleCameraRigSlot.Overview);
+    }
+
+    private void Update()
+    {
+        // Unity Inspector는 Play Mode에서도 SerializeField 값을 즉시 바꿀 수 있다.
+        // 기존에는 Awake에서만 Lens를 갱신해 값이 바뀌어도 GameView가 변하지 않았다.
+        ApplyOverviewProjectionIfChanged(force: false);
+    }
+
+    private void OnValidate()
+    {
+        overviewOrthographicSize = Mathf.Max(0.1f, overviewOrthographicSize);
+
+        if (Application.isPlaying)
+            ApplyOverviewProjectionIfChanged(force: true);
     }
 
     private void OnDisable()
@@ -243,7 +280,134 @@ public class BattleCinemachineRig : MonoBehaviour
             ? slot
             : ResolveSlot(targetCamera);
 
+        // Overview -> Orthographic, 그 외 -> Perspective를 카메라 전환과 같은 프레임에 적용한다.
+        ApplyLiveProjectionImmediately();
+
         return true;
+    }
+
+    /// <summary>
+    /// 전투 카메라 투영 계약. CM_Overview만 Orthographic이며,
+    /// Group/Pose/Prestige 및 ModeOverride가 없는 다른 Cinemachine 카메라는
+    /// Brain의 Perspective 기본 모드를 따른다.
+    /// </summary>
+    public void ApplyProjectionPolicy()
+    {
+        if (Brain != null)
+        {
+            CinemachineBrain.LensModeOverrideSettings settings =
+                Brain.LensModeOverride;
+
+            settings.Enabled = true;
+            settings.DefaultMode = LensSettings.OverrideModes.Perspective;
+            Brain.LensModeOverride = settings;
+        }
+
+        ConfigureProjection(
+            OverviewCamera,
+            forceOrthographic
+                ? LensSettings.OverrideModes.Orthographic
+                : LensSettings.OverrideModes.Perspective,
+            overviewOrthographicSize);
+
+        ConfigureProjection(
+            GroupCamera,
+            LensSettings.OverrideModes.Perspective);
+
+        ConfigureProjection(
+            PoseCamera,
+            LensSettings.OverrideModes.Perspective);
+
+        ConfigureProjection(
+            PrestigeCamera,
+            LensSettings.OverrideModes.Perspective);
+
+        lastAppliedOverviewOrthographicSize = overviewOrthographicSize;
+        lastAppliedForceOrthographic = forceOrthographic;
+
+        // 현재 ActiveCamera가 아직 정해지지 않은 Awake 시점에는
+        // 시작 카메라 계약(Overview)을 Main Camera에 즉시 반영한다.
+        if (ActiveCamera == null && activateOverviewOnStart)
+            ApplyOutputProjection(BattleCameraRigSlot.Overview);
+        else
+            ApplyLiveProjectionImmediately();
+    }
+
+    private void ApplyOverviewProjectionIfChanged(bool force)
+    {
+        float clamped = Mathf.Max(0.1f, overviewOrthographicSize);
+        if (!Mathf.Approximately(clamped, overviewOrthographicSize))
+            overviewOrthographicSize = clamped;
+
+        bool changed =
+            force ||
+            !Mathf.Approximately(lastAppliedOverviewOrthographicSize, clamped) ||
+            lastAppliedForceOrthographic != forceOrthographic;
+
+        if (!changed)
+            return;
+
+        ConfigureProjection(
+            OverviewCamera,
+            forceOrthographic
+                ? LensSettings.OverrideModes.Orthographic
+                : LensSettings.OverrideModes.Perspective,
+            clamped);
+
+        lastAppliedOverviewOrthographicSize = clamped;
+        lastAppliedForceOrthographic = forceOrthographic;
+
+        if (ActiveSlot == BattleCameraRigSlot.Overview ||
+            ActiveCamera == null && activateOverviewOnStart)
+        {
+            ApplyOutputProjection(BattleCameraRigSlot.Overview);
+        }
+    }
+
+    private static void ConfigureProjection(
+        CinemachineCamera camera,
+        LensSettings.OverrideModes mode,
+        float orthographicSize = 0f)
+    {
+        if (camera == null)
+            return;
+
+        LensSettings lens = camera.Lens;
+        lens.ModeOverride = mode;
+
+        if (mode == LensSettings.OverrideModes.Orthographic &&
+            orthographicSize > 0f)
+        {
+            lens.OrthographicSize = orthographicSize;
+        }
+
+        camera.Lens = lens;
+    }
+
+    private void ApplyLiveProjectionImmediately()
+    {
+        BattleCameraRigSlot slot =
+            ActiveSlot != BattleCameraRigSlot.None
+                ? ActiveSlot
+                : ResolveSlot(ActiveCamera);
+
+        ApplyOutputProjection(slot);
+    }
+
+    private void ApplyOutputProjection(BattleCameraRigSlot slot)
+    {
+        Camera output = Brain != null ? Brain.OutputCamera : null;
+        if (output == null)
+            return;
+
+        bool useOrthographic =
+            forceOrthographic &&
+            slot == BattleCameraRigSlot.Overview;
+
+        output.orthographic = useOrthographic;
+
+        if (useOrthographic)
+            output.orthographicSize = overviewOrthographicSize;
     }
 
     private void ResolveCamerasByNameWhenMissing()

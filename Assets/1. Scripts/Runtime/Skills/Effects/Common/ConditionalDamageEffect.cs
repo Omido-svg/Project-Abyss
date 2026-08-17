@@ -16,9 +16,7 @@ public class ConditionalDamageEffect : SkillEffectDefinition
         DamageType.SkillPart;
     [SerializeField] private bool canBreakPart;
     [SerializeField] private bool applyMomentum;
-    [SerializeField] private bool applyDefense = true;
     [SerializeField] private bool applyGuard = true;
-    [SerializeField] private bool applyProtection = true;
 
     public override void Apply(
         SkillEffectContext context)
@@ -81,9 +79,7 @@ public class ConditionalDamageEffect : SkillEffectDefinition
                 1f,
                 canBreakPart,
                 applyMomentum,
-                applyDefense,
                 applyGuard,
-                applyProtection,
                 context.Action);
 
         context.ApplyDamage(request);

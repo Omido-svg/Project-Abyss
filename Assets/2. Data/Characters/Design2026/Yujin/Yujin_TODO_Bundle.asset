@@ -21,13 +21,14 @@ MonoBehaviour:
   characterPrefab: {fileID: 258767931383796853, guid: ea11df0417bea274eac13fc3866cbb31, type: 3}
   visualProfile: {fileID: 0}
   presentationProfile: {fileID: 11400000, guid: 1edc335ea2b100d429b763275f3eaa42, type: 2}
-  animatorController: {fileID: 0}
+  animatorController: {fileID: 9100000, guid: d980188e9d21d0e45a2367a1982456c7, type: 2}
   avatar: {fileID: 0}
   overrideAnimatorController: 1
   overrideAvatar: 0
   overrideLoadout: 1
   equippedItems: []
-  equippedAugments: []
+  equippedAugments:
+  - {fileID: 11400000, guid: 7e2e9f7eb1f565342b8432de76931154, type: 2}
   overrideNormalEnemySingleHp: 1
   normalEnemySingleMaxHp: 50
   useElitePostureRotation: 1
@@ -38,5 +39,7 @@ MonoBehaviour:
     CrouchingAttackSlotLimit: 2
     OffensiveAttackSlotLimit: 4
     ExpectedMomentumDriftPerTurn: 15
-  includedAssets: []
+  includedAssets:
+  - {fileID: 11400000, guid: 15fff042e85379e4a91a2d84caaf29b8, type: 2}
+  - {fileID: 11400000, guid: 7e2e9f7eb1f565342b8432de76931154, type: 2}
   supportingAssets: []

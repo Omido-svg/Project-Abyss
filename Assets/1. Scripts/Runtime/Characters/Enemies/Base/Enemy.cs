@@ -281,7 +281,7 @@ public abstract class Enemy : Character
         }
 
         if (targetPart.IsWeakened)
-            score += 20f;
+            score -= 80f;
 
         if (targetPart.MaxPartHP > 0f)
         {

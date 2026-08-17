@@ -540,12 +540,12 @@ public class ActionManager : IDisposable
                     excludedSlotId,
                     StringComparison.Ordinal);
 
-            bool excludedByLegacyKey =
+            bool excludedByActionKey =
                 excludedActionIndex >= 0 &&
                 slot.Part == excludedPart &&
                 slot.ActionIndex == excludedActionIndex;
 
-            if (excludedBySlotId || excludedByLegacyKey)
+            if (excludedBySlotId || excludedByActionKey)
                 continue;
 
             total += Mathf.Max(0, slot.Skill.EnergyCost);

@@ -1,0 +1,46 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8e03ed514d788a244870e9d951986ee3, type: 3}
+  m_Name: Hifumi_Loadout
+  m_EditorClassIdentifier: 
+  NormalSkills:
+  - {fileID: 11400000, guid: bb6c6e3bc462df449b153038e6cdae7c, type: 2}
+  - {fileID: 11400000, guid: 44cda1bf6e35a8b458d31a0314e67802, type: 2}
+  DuelSkills:
+  - {fileID: 11400000, guid: 42d310614e662a145add939248651ade, type: 2}
+  - {fileID: 11400000, guid: 93f76f7ee38b8c44c8e7825fdf0ca0a0, type: 2}
+  - {fileID: 11400000, guid: d478d76fe844e2c45af9636e06ebf587, type: 2}
+  PreparationSkills:
+  - {fileID: 11400000, guid: b771dcdad9de31d4b9692e2abbe59710, type: 2}
+  - {fileID: 11400000, guid: 7607896986f43b44d976e90f11cf8724, type: 2}
+  - {fileID: 11400000, guid: 6f5c081cf2681094fb464cb7cf6af4bb, type: 2}
+  PrestigeSkills:
+  - {fileID: 11400000, guid: df86e02ab1756f54697dc8b899d334f4, type: 2}
+  Catalog: {fileID: 0}
+  IncludeCatalogCandidates: 0
+  NormalSkillPool:
+  - {fileID: 11400000, guid: bb6c6e3bc462df449b153038e6cdae7c, type: 2}
+  - {fileID: 11400000, guid: 44cda1bf6e35a8b458d31a0314e67802, type: 2}
+  DuelSkillPool:
+  - {fileID: 11400000, guid: 42d310614e662a145add939248651ade, type: 2}
+  - {fileID: 11400000, guid: 93f76f7ee38b8c44c8e7825fdf0ca0a0, type: 2}
+  - {fileID: 11400000, guid: d478d76fe844e2c45af9636e06ebf587, type: 2}
+  PrestigeSkillPool:
+  - {fileID: 11400000, guid: df86e02ab1756f54697dc8b899d334f4, type: 2}
+  - {fileID: 11400000, guid: edc62875544c4684ea32e1cbdacf523e, type: 2}
+  - {fileID: 11400000, guid: dc10498ec354f92409cdc868d88563cb, type: 2}
+  CommonPreparationPool: []
+  CharacterPreparationPool:
+  - {fileID: 11400000, guid: b771dcdad9de31d4b9692e2abbe59710, type: 2}
+  - {fileID: 11400000, guid: 7607896986f43b44d976e90f11cf8724, type: 2}
+  - {fileID: 11400000, guid: 6f5c081cf2681094fb464cb7cf6af4bb, type: 2}
+  - {fileID: 11400000, guid: e6cf2224b5802bf4ea5fb7a33d3fc0ee, type: 2}

@@ -724,13 +724,82 @@ public sealed class GenericCharacterVerificationCaseProvider :
             }
         }
 
+        Dictionary<string, List<Skill>> bySkillId =
+            new Dictionary<string, List<Skill>>(
+                StringComparer.Ordinal);
+
+        if (runtimeSkills != null)
+        {
+            for (int i = 0; i < runtimeSkills.Count; i++)
+            {
+                Skill skill = runtimeSkills[i];
+                SkillDefinition definition = skill?.Definition;
+
+                if (skill == null)
+                {
+                    errors.Add($"RuntimeSkills[{i}]가 null입니다.");
+                    continue;
+                }
+
+                if (definition == null)
+                {
+                    errors.Add(
+                        $"{skill.SkillName ?? skill.GetType().Name}: " +
+                        "SkillDefinition이 없습니다.");
+                    continue;
+                }
+
+                string skillId = definition.SkillId;
+
+                if (string.IsNullOrWhiteSpace(skillId))
+                {
+                    errors.Add(
+                        $"{definition.SkillName}: SkillId가 비어 있습니다.");
+                    continue;
+                }
+
+                if (!bySkillId.TryGetValue(
+                        skillId,
+                        out List<Skill> sameIdSkills))
+                {
+                    sameIdSkills = new List<Skill>();
+                    bySkillId.Add(skillId, sameIdSkills);
+                }
+
+                sameIdSkills.Add(skill);
+            }
+        }
+
+        foreach (KeyValuePair<string, List<Skill>> pair
+                 in bySkillId)
+        {
+            if (pair.Value.Count <= 1)
+                continue;
+
+            string names = string.Join(
+                ", ",
+                pair.Value.Select(
+                    skill =>
+                        $"{skill.SkillName ?? skill.GetType().Name}" +
+                        $"<{skill.GetType().Name}>")
+                    .ToArray());
+
+            errors.Add(
+                $"SkillId={pair.Key}: RuntimeSkill이 " +
+                $"{pair.Value.Count}개 중복 생성됨 ({names})");
+        }
+
+        int total = runtimeSkills?.Count ?? 0;
+        int unique = bySkillId.Count;
+
         return errors.Count == 0
             ? context.Pass(
-                "모든 장착 스킬이 RuntimeSkill로 생성됨",
-                $"{runtimeSkills?.Count ?? 0}개 RuntimeSkill")
+                "모든 장착 스킬 생성 및 RuntimeSkill ID 중복 없음",
+                $"{total}개 RuntimeSkill / {unique}개 고유 SkillId")
             : context.Fail(
-                "모든 장착 스킬이 RuntimeSkill로 생성됨",
-                $"{errors.Count}개 누락",
+                "모든 장착 스킬 생성 및 RuntimeSkill ID 중복 없음",
+                $"{errors.Count}개 오류 · " +
+                $"{total}개 RuntimeSkill / {unique}개 고유 SkillId",
                 string.Join("\n", errors));
     }
 
@@ -808,61 +877,168 @@ public sealed class GenericCharacterVerificationCaseProvider :
         BattleManager manager =
             UnityEngine.Object.FindFirstObjectByType<BattleManager>();
 
+        BattleContext liveContext =
+            manager?.BattleContext;
+
         if (manager == null ||
             !manager.IsInitialized ||
-            manager.BattleContext?.Player == null)
+            liveContext?.Player == null)
         {
             return context.Skip(
                 "현재 초기화된 실전 BattleManager가 없습니다.");
         }
 
-        Character livePlayer =
-            manager.BattleContext.Player;
+        List<Character> roster =
+            new List<Character>();
 
-        if (!context.Bundle.IsCompatibleWith(
-                livePlayer,
-                out string reason))
+        roster.Add(liveContext.Player);
+
+        if (liveContext.Enemies != null)
         {
-            return context.Skip(
-                "현재 Scene 플레이어가 선택한 Bundle과 다릅니다. " +
-                reason);
+            foreach (Character enemy in liveContext.Enemies)
+            {
+                if (enemy != null && !roster.Contains(enemy))
+                    roster.Add(enemy);
+            }
         }
+
+        Character liveCharacter = null;
+        string lastReason = string.Empty;
+
+        for (int i = 0; i < roster.Count; i++)
+        {
+            Character candidate = roster[i];
+
+            if (MatchesBundleCharacter(
+                    context.Bundle,
+                    candidate,
+                    out string reason))
+            {
+                liveCharacter = candidate;
+                break;
+            }
+
+            if (!string.IsNullOrWhiteSpace(reason))
+                lastReason = reason;
+        }
+
+        if (liveCharacter == null)
+        {
+            string rosterNames = string.Join(
+                ", ",
+                roster.Select(
+                    character =>
+                        character?.Data?.CharacterName ??
+                        character?.name ??
+                        "NULL")
+                    .ToArray());
+
+            return context.Skip(
+                "현재 Scene Roster에 선택한 Bundle 캐릭터가 없습니다. " +
+                $"Roster=[{rosterNames}]" +
+                (string.IsNullOrWhiteSpace(lastReason)
+                    ? string.Empty
+                    : $" / LastReason={lastReason}"));
+        }
+
+        bool isPlayer =
+            ReferenceEquals(
+                liveCharacter,
+                liveContext.Player);
 
         List<string> errors =
             new List<string>();
 
-        if (UnityEngine.Object.FindFirstObjectByType<
-                CharacterMechanicHudUI>(
-                    FindObjectsInactive.Include) == null)
-        {
-            errors.Add("CharacterMechanicHudUI가 없습니다.");
-        }
-
-        if (UnityEngine.Object.FindFirstObjectByType<
-                SkillSelectPanelUI>(
-                    FindObjectsInactive.Include) == null)
-        {
-            errors.Add("SkillSelectPanelUI가 없습니다.");
-        }
-
         if (manager.BattleUIManager == null)
             errors.Add("BattleUIManager가 연결되지 않았습니다.");
 
-        if (livePlayer.RuntimeSkills == null ||
-            livePlayer.RuntimeSkills.Count == 0)
+        if (liveCharacter.RuntimeSkills == null ||
+            liveCharacter.RuntimeSkills.Count == 0)
         {
-            errors.Add("실전 플레이어 RuntimeSkills가 비어 있습니다.");
+            errors.Add(
+                "실전 Roster 캐릭터 RuntimeSkills가 비어 있습니다.");
         }
+
+        if (isPlayer)
+        {
+            // 2026-08-17: 캐릭터별 전용 패널(CharacterMechanicHudUI)은 폐기됐다.
+            // 실전 UI 계약은 월드 캐릭터 플레이트 + 머리 위 슬롯 + 공용 스킬 패널이다.
+            if (UnityEngine.Object.FindFirstObjectByType<
+                    BattleWorldCharacterPlateManager>(
+                        FindObjectsInactive.Include) == null)
+            {
+                errors.Add("BattleWorldCharacterPlateManager가 없습니다.");
+            }
+
+            if (UnityEngine.Object.FindFirstObjectByType<
+                    SkillSelectPanelUI>(
+                        FindObjectsInactive.Include) == null)
+            {
+                errors.Add("SkillSelectPanelUI가 없습니다.");
+            }
+        }
+        else if (liveCharacter.GetComponentInChildren<
+                     CharacterViewEventBinder>(true) == null)
+        {
+            errors.Add(
+                "적 캐릭터 CharacterViewEventBinder가 없습니다.");
+        }
+
+        string role = isPlayer ? "PLAYER" : "ENEMY";
+        string name =
+            liveCharacter.Data?.CharacterName ??
+            liveCharacter.name;
+
+        int skillCount =
+            liveCharacter.RuntimeSkills?.Count ?? 0;
 
         return errors.Count == 0
             ? context.Pass(
-                "실전 플레이어와 전투 UI 연결 정상",
-                $"{livePlayer.Data?.CharacterName ?? livePlayer.name} / " +
-                $"{livePlayer.RuntimeSkills.Count}개 스킬")
+                "실전 Roster 캐릭터와 전투 연결 정상",
+                $"{role} · {name} / {skillCount}개 스킬")
             : context.Fail(
-                "실전 플레이어와 전투 UI 연결 정상",
-                $"{errors.Count}개 오류",
+                "실전 Roster 캐릭터와 전투 연결 정상",
+                $"{errors.Count}개 오류 · {role} · {name}",
                 string.Join("\n", errors));
+    }
+
+    private static bool MatchesBundleCharacter(
+        CharacterAuthoringBundle bundle,
+        Character candidate,
+        out string reason)
+    {
+        reason = string.Empty;
+
+        if (bundle == null || candidate == null)
+        {
+            reason = "Bundle 또는 Character가 null입니다.";
+            return false;
+        }
+
+        CharacterData expectedData = bundle.CharacterData;
+        CharacterData actualData = candidate.Data;
+
+        if (expectedData != null)
+        {
+            if (actualData == null)
+            {
+                reason =
+                    $"{candidate.name}: CharacterData가 없습니다.";
+                return false;
+            }
+
+            if (!ReferenceEquals(expectedData, actualData))
+            {
+                reason =
+                    $"Data 불일치 · Expected={expectedData.name}, " +
+                    $"Actual={actualData.name}";
+                return false;
+            }
+        }
+
+        return bundle.IsCompatibleWith(
+            candidate,
+            out reason);
     }
 
     private static void ValidateCategory(

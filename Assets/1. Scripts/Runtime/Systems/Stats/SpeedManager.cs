@@ -46,7 +46,9 @@ public class SpeedManager
         if (character.IsSingleHpTarget)
         {
             speedByCharacter[character] =
-                RollSpeed(character);
+                RollSpeed(
+                    character,
+                    part: null);
 
             return;
         }
@@ -65,15 +67,19 @@ public class SpeedManager
                 continue;
             }
 
-            // 각 부위 슬롯은 독립적으로 속도를 굴린다.
-            // 굴린 값을 정렬해서 특정 부위에 재배치하지 않는다.
+            // 속도 굴림 단위는 ActionSlot이 아니라 BodyPart다.
+            // 한 부위에 슬롯이 2개, 3개로 늘어나도 여기서 딱 한 번만 굴리고
+            // 모든 ActionIndex가 speedByPart[part] 값을 공유한다.
             speedByPart[part] =
-                RollSpeed(character);
+                RollSpeed(
+                    character,
+                    part);
         }
     }
 
     private int RollSpeed(
-        Character character)
+        Character character,
+        BodyPart part)
     {
         if (character?.CurrentStatus == null)
             return 0;
@@ -83,6 +89,18 @@ public class SpeedManager
 
         int maxSpeed =
             character.CurrentStatus.maxSpeed;
+
+        // 과거 슬롯별 OverrideSpeedRange 데이터가 있더라도
+        // 이제는 같은 부위 전체가 공유하는 범위로 해석한다.
+        if (character.CombatRulesRuntime
+                ?.TryGetSharedSpeedRange(
+                    part,
+                    out int sharedMin,
+                    out int sharedMax) == true)
+        {
+            minSpeed = sharedMin;
+            maxSpeed = sharedMax;
+        }
 
         BodyPart legs =
             character.GetBodyPart(

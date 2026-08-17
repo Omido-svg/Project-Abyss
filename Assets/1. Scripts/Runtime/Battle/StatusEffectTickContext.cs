@@ -34,7 +34,7 @@ public class StatusEffectTickContext
 
     public DamageManager DamageManager =>
         TargetCharacter?.BattleContext?
-            .battleManager?.DamageManager;
+            .ResolveDamageManager();
 
     public bool IsPartStatus => TargetPart != null;
     public bool IsCharacterStatus => TargetPart == null;

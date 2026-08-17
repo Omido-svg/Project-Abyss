@@ -13,12 +13,53 @@ public class BattleAction
 {
     public ActionSlot Slot;
 
+    private Character resolutionTarget;
+    private BodyPart resolutionTargetPart;
+    private bool hasResolutionTargetOverride;
+
     public long ActionId => Slot == null ? 0 : Slot.ActionId;
     public int ActionIndex => Slot == null ? 0 : Slot.ActionIndex;
     public Character Owner => Slot == null ? null : Slot.Owner;
-    public Character Target => Slot == null ? null : Slot.TargetCharacter;
+
+    /// <summary>
+    /// 행동을 계획할 때 선택했던 원래 대상입니다.
+    /// 합에 끌려 들어간 행동은 실제 교환 상대와 다를 수 있습니다.
+    /// </summary>
+    public Character DeclaredTarget =>
+        Slot == null
+            ? null
+            : Slot.TargetCharacter;
+
+    public BodyPart DeclaredTargetPart =>
+        Slot == null
+            ? null
+            : Slot.TargetPart;
+
+    /// <summary>
+    /// 현재 해석에서 실제 효과와 피해를 받을 대상입니다.
+    /// 일반·일방 행동에서는 계획 대상이고,
+    /// 합에서는 상대 BattleAction의 Owner/OwnerPart로 고정됩니다.
+    /// </summary>
+    public Character Target =>
+        hasResolutionTargetOverride
+            ? resolutionTarget
+            : DeclaredTarget;
+
     public BodyPart OwnerPart => Slot == null ? null : Slot.Part;
-    public BodyPart TargetPart => Slot == null ? null : Slot.TargetPart;
+
+    public BodyPart TargetPart =>
+        hasResolutionTargetOverride
+            ? resolutionTargetPart
+            : DeclaredTargetPart;
+
+    public bool HasResolutionTargetOverride =>
+        hasResolutionTargetOverride;
+
+    public bool WasRedirectedByClash =>
+        hasResolutionTargetOverride &&
+        (resolutionTarget != DeclaredTarget ||
+         resolutionTargetPart != DeclaredTargetPart);
+
     public Skill Skill => Slot == null ? null : Slot.Skill;
     public int Speed => Slot == null ? 0 : Slot.Speed;
     public ActionPhase Phase => Slot == null ? ActionPhase.COMBAT : Slot.Phase;
@@ -138,6 +179,61 @@ public class BattleAction
 
             return total;
         }
+    }
+
+    /// <summary>
+    /// ActionSlot의 계획 타깃을 변경하지 않고,
+    /// 현재 해석에서만 사용할 타깃을 고정합니다.
+    /// UI 화살표와 다음 턴 계획에는 영향을 주지 않습니다.
+    /// </summary>
+    public void BindResolutionTarget(
+        Character target,
+        BodyPart targetPart)
+    {
+        if (targetPart != null &&
+            targetPart.Owner != null &&
+            targetPart.Owner != target)
+        {
+            Debug.LogError(
+                "[BattleAction] 해석 타깃 부위의 Owner가 대상 캐릭터와 다릅니다. " +
+                $"ActionId={ActionId}, " +
+                $"Owner={GetCharacterName(Owner)}, " +
+                $"Target={GetCharacterName(target)}, " +
+                $"PartOwner={GetCharacterName(targetPart.Owner)}, " +
+                $"Part={targetPart.Type}");
+
+            targetPart = null;
+        }
+
+        resolutionTarget = target;
+        resolutionTargetPart = targetPart;
+        hasResolutionTargetOverride = true;
+    }
+
+    public void BindClashOpponent(
+        BattleAction opponent)
+    {
+        if (opponent == null)
+            return;
+
+        BindResolutionTarget(
+            opponent.Owner,
+            opponent.OwnerPart);
+    }
+
+    public void ClearResolutionTarget()
+    {
+        resolutionTarget = null;
+        resolutionTargetPart = null;
+        hasResolutionTargetOverride = false;
+    }
+
+    private static string GetCharacterName(
+        Character character)
+    {
+        return character?.Data?.CharacterName ??
+               character?.name ??
+               "NULL";
     }
 
     public void BeginResolutionSequence()

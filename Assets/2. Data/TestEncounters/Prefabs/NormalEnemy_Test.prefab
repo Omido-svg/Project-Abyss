@@ -9,8 +9,8 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 3547329627826723958}
-  - component: {fileID: 3058750838027910834}
-  - component: {fileID: 6947083340361732623}
+  - component: {fileID: 5236782081108328881}
+  - component: {fileID: 1601388982903591158}
   m_Layer: 0
   m_Name: NormalEnemy_View
   m_TagString: Untagged
@@ -36,7 +36,7 @@ Transform:
   - {fileID: 1865199879163700354}
   m_Father: {fileID: 1686767062103003047}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &3058750838027910834
+--- !u!114 &5236782081108328881
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -51,7 +51,7 @@ MonoBehaviour:
   cameraPointsRoot: {fileID: 1865199879163700354}
   points: []
   warnDuplicateKeys: 1
---- !u!114 &6947083340361732623
+--- !u!114 &1601388982903591158
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -64,7 +64,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   character: {fileID: 3843437535053194325}
-  characterView: {fileID: 3799422957321365443}
+  characterView: {fileID: 7957366876510422896}
   pool: {fileID: 0}
   initialVfx: []
   logDebug: 0
@@ -434,7 +434,7 @@ Transform:
   m_Children:
   - {fileID: 1604695592936006429}
   - {fileID: 6287777224106254572}
-  - {fileID: 370551930857096460}
+  - {fileID: 253378221624167753}
   - {fileID: 7183919445265169203}
   - {fileID: 561153128218684069}
   - {fileID: 6270118726102376517}
@@ -1147,37 +1147,6 @@ Transform:
   m_Children: []
   m_Father: {fileID: 1865199879163700354}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &7546634262586618306
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 370551930857096460}
-  m_Layer: 0
-  m_Name: Head
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &370551930857096460
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7546634262586618306}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 2.25, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 1865199879163700354}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &7792740004966427106
 GameObject:
   m_ObjectHideFlags: 0
@@ -1276,13 +1245,13 @@ GameObject:
   - component: {fileID: 3843437535053194325}
   - component: {fileID: 8271209258265707190}
   - component: {fileID: 7286808959512412126}
-  - component: {fileID: 3799422957321365443}
-  - component: {fileID: 7499978531788453512}
-  - component: {fileID: 1444223840746074131}
-  - component: {fileID: 2968852313894593259}
-  - component: {fileID: 7732253492537675655}
-  - component: {fileID: 4404896368956794717}
-  - component: {fileID: 5231419260366706170}
+  - component: {fileID: 7957366876510422896}
+  - component: {fileID: 6999283768503988352}
+  - component: {fileID: 8133461749370500018}
+  - component: {fileID: 5744475392445928168}
+  - component: {fileID: 2091150083943078109}
+  - component: {fileID: 689031626760375382}
+  - component: {fileID: 2284137113133855681}
   m_Layer: 0
   m_Name: NormalEnemy_Test
   m_TagString: Untagged
@@ -1362,7 +1331,7 @@ MonoBehaviour:
   targetCharacter: {fileID: 3843437535053194325}
   targetAnimator: {fileID: 8815133106352822166}
   applyOnAwake: 1
---- !u!114 &3799422957321365443
+--- !u!114 &7957366876510422896
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -1394,7 +1363,7 @@ MonoBehaviour:
   evaluateHitImmediately: 1
   baseLayerIndex: 0
   logDebug: 0
---- !u!114 &7499978531788453512
+--- !u!114 &6999283768503988352
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -1407,8 +1376,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   character: {fileID: 3843437535053194325}
-  characterView: {fileID: 3799422957321365443}
---- !u!114 &1444223840746074131
+  characterView: {fileID: 7957366876510422896}
+--- !u!114 &8133461749370500018
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -1424,7 +1393,7 @@ MonoBehaviour:
   turnSpeed: 720
   yawOffset: 0
   returnToDefaultAfterAction: 1
---- !u!114 &2968852313894593259
+--- !u!114 &5744475392445928168
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -1440,7 +1409,7 @@ MonoBehaviour:
   approachDistance: 1.8
   moveSpeed: 8
   arriveDistance: 0.03
---- !u!114 &7732253492537675655
+--- !u!114 &2091150083943078109
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -1455,7 +1424,7 @@ MonoBehaviour:
   character: {fileID: 3843437535053194325}
   battleUiManager: {fileID: 0}
   detailPanel: {fileID: 0}
---- !u!114 &4404896368956794717
+--- !u!114 &689031626760375382
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -1478,7 +1447,7 @@ MonoBehaviour:
   - {fileID: 1247551360014168970}
   - {fileID: 4940412724789576531}
   - {fileID: 7976257525052077672}
---- !u!114 &5231419260366706170
+--- !u!114 &2284137113133855681
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -1525,6 +1494,37 @@ MonoBehaviour:
   ChinchiroHifumiPower: -4
   ChinchiroHifumiSelfDamage: 1
   UsePairFaceAsMokuPower: 0
+--- !u!1 &8220335894394450178
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 253378221624167753}
+  m_Layer: 0
+  m_Name: Head
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &253378221624167753
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8220335894394450178}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 2.25, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1865199879163700354}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &8245459512375899130
 GameObject:
   m_ObjectHideFlags: 0

@@ -17,6 +17,8 @@ public class SkillDefinition : ScriptableObject
     public string SkillName;
     public ActionType ActionType;
     public int BasePower;
+    [Tooltip("공격 스킬의 물리 속성: 절단 / 둔격 / 관통. 유진은 현재 무기가 이 값을 덮어씁니다.")]
+    public PhysicalDamageType PhysicalType = PhysicalDamageType.Cut;
     public bool CanBreakPart;
     public bool GainPrestige = true;
 

@@ -236,35 +236,6 @@ public class SkillEffectContext
 
     private DamageManager ResolveDamageManager()
     {
-        object battleManager =
-            BattleContext?.battleManager;
-
-        if (battleManager == null)
-            return null;
-
-        Type type = battleManager.GetType();
-
-        PropertyInfo property =
-            type.GetProperty(
-                "DamageManager",
-                BindingFlags.Instance |
-                BindingFlags.Public |
-                BindingFlags.NonPublic);
-
-        if (property?.GetValue(battleManager)
-            is DamageManager propertyManager)
-        {
-            return propertyManager;
-        }
-
-        FieldInfo field =
-            type.GetField(
-                "damageManager",
-                BindingFlags.Instance |
-                BindingFlags.Public |
-                BindingFlags.NonPublic);
-
-        return field?.GetValue(battleManager)
-            as DamageManager;
+        return BattleContext?.ResolveDamageManager();
     }
 }

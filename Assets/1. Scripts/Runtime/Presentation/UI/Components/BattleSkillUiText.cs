@@ -77,10 +77,12 @@ public static class BattleSkillUiText
 
                 default:
                     builder.Append(
-                        roll.MinPower);
+                        roll.GetDiceFinalMinPower(
+                            skill.BasePower));
                     builder.Append('~');
                     builder.Append(
-                        roll.MaxPower);
+                        roll.GetDiceFinalMaxPower(
+                            skill.BasePower));
                     break;
             }
         }
@@ -118,6 +120,18 @@ public static class BattleSkillUiText
 
         builder.AppendLine(
             $"빛 비용: {skill.EnergyCost}");
+
+        if (skill.ActionType == ActionType.NormalAttack ||
+            skill.ActionType == ActionType.Duel ||
+            (skill.ActionType == ActionType.Prestige && skill.CanClash))
+        {
+            PhysicalDamageType physical =
+                skill.Owner is Yujin yujin
+                    ? yujin.ResolveWeaponPhysicalType()
+                    : definition?.PhysicalType ?? PhysicalDamageType.Cut;
+
+            builder.AppendLine($"물리 속성: {GetPhysicalTypeName(physical)}");
+        }
 
         builder.AppendLine(
             $"합 가능: " +
@@ -311,9 +325,9 @@ public static class BattleSkillUiText
                 {
                     AddUnique(
                         result,
-                        "출혈",
+                        "혈상",
                         BattleKeywordGlossary.GetDescription(
-                            "출혈"));
+                            "혈상"));
                 }
 
                 if (typeName.Contains("Momentum"))
@@ -406,6 +420,14 @@ public static class BattleSkillUiText
 
         return effect.GetType().Name;
     }
+
+    public static string GetPhysicalTypeName(PhysicalDamageType type) => type switch
+    {
+        PhysicalDamageType.Cut => "절단",
+        PhysicalDamageType.Blunt => "둔격",
+        PhysicalDamageType.Pierce => "관통",
+        _ => "절단"
+    };
 
     public static string GetActionTypeName(
         ActionType actionType)

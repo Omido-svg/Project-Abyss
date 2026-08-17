@@ -10,7 +10,6 @@ public sealed class DamageSnapshot
     public int TargetPartHp;
 
     public int GuardValue;
-    public int ProtectionValue;
 
     public bool HasTargetPart;
     public BodyPartState TargetPartState;
@@ -20,15 +19,13 @@ public sealed class DamageSnapshot
         int damage,
         Character target,
         BodyPart targetPart,
-        int guardValue,
-        int protectionValue)
+        int guardValue)
     {
         Stage = stage;
         Damage = damage;
 
         TargetHp = target?.CurrentHP ?? 0;
         GuardValue = guardValue;
-        ProtectionValue = protectionValue;
 
         HasTargetPart = targetPart != null;
 

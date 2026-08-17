@@ -44,6 +44,66 @@ public sealed class BattleAutoPlanButtonPanel :
     public PlayerAutoPlanMode? ActiveMode =>
         activeMode;
 
+    /// <summary>
+    /// Character Verification 자동 전투에서 승률 버튼과 동일한 계획을
+    /// 매 턴 반복 적용한다. 일반 버튼의 "같은 모드 재클릭 시 취소" 동작은
+    /// 자동 분석에 부적합하므로 이 경로에서는 계획을 취소하지 않는다.
+    /// </summary>
+    public PlayerAutoPlanResult ApplyWinRatePlanForAutomation()
+    {
+        return ApplyPlanForAutomation(
+            PlayerAutoPlanMode.WinRate);
+    }
+
+    public PlayerAutoPlanResult ApplyPlanForAutomation(
+        PlayerAutoPlanMode mode)
+    {
+        ResolveReferences();
+
+        PlayerAutoPlanResult blocked =
+            new PlayerAutoPlanResult
+            {
+                Mode = mode
+            };
+
+        if (!CanApplyPlan())
+        {
+            blocked.Message =
+                "현재 자동 지정 불가";
+
+            SetStatus(
+                "검증 자동 진행 · 현재 자동 지정 불가");
+
+            return blocked;
+        }
+
+        battleUiManager?
+            .CancelCurrentSelection();
+
+        PlayerAutoPlanResult result =
+            service.BuildAndApply(
+                battleManager,
+                mode);
+
+        if (result?.Success == true)
+            activeMode = mode;
+
+        SetStatus(
+            "검증 자동 진행 · " +
+            (result?.Message ??
+             "자동 지정 결과 없음"));
+
+        battleUiManager?
+            .RefreshAllBodyPartButtons();
+
+        ApplyModeVisuals();
+
+        RefreshInteractableState(
+            force: true);
+
+        return result ?? blocked;
+    }
+
     public void Configure(
         BattleManager manager,
         BattleUIManager uiManager,

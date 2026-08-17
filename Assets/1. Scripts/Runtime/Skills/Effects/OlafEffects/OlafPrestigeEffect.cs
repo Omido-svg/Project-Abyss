@@ -21,7 +21,7 @@ public class OlafPrestigeEffect : SkillEffectDefinition
 
     // 부위 파괴는 이 효과에서 처리하지 않는다.
     // 확정된 고유 파괴 루트:
-    // 출혈 5스택 + 결투 대 결투에서 올라프가 최종 승리했을 때만 별도 전투 규칙이 처리한다.
+    // 혈상 5스택 + 결투 대 결투에서 올라프가 최종 승리했을 때만 별도 전투 규칙이 처리한다.
     public override void Apply(
         SkillEffectContext context)
     {
@@ -83,8 +83,6 @@ public class OlafPrestigeEffect : SkillEffectDefinition
                     false,
                     false,
                     false,
-                    false,
-                    true,
                     context.Action);
 
             damageContext =
@@ -100,7 +98,7 @@ public class OlafPrestigeEffect : SkillEffectDefinition
         Debug.Log(
             $"{olaf.Data.CharacterName} 위세 효과 : " +
             $"{target.Data.CharacterName} {targetPoint} / " +
-            $"출혈 피해={bleedingDamage}, " +
+            $"혈상 피해={bleedingDamage}, " +
             $"광기 피해={madnessDamage}, " +
             $"실제 피해={damageContext?.GetDisplayDamage() ?? totalExtraDamage}, " +
             "부위 파괴=위세 효과에서 미수행");

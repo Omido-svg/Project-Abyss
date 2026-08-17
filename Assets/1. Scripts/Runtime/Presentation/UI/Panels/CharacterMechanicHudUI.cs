@@ -11,6 +11,9 @@ using UnityEngine.UI;
 [DisallowMultipleComponent]
 public sealed class CharacterMechanicHudUI : MonoBehaviour
 {
+    [Header("Legacy — retired by 2026-08-17 UI revision")]
+    [SerializeField] private bool enableLegacyCharacterPanel = false;
+
     [SerializeField]
     private BattleManager battleManager;
 
@@ -94,6 +97,12 @@ public sealed class CharacterMechanicHudUI : MonoBehaviour
 
     private void Awake()
     {
+        if (!enableLegacyCharacterPanel)
+        {
+            gameObject.SetActive(false);
+            return;
+        }
+
         ResolveBattleManager();
         EnsureView();
         BindControls();
@@ -202,11 +211,11 @@ public sealed class CharacterMechanicHudUI : MonoBehaviour
         builder.AppendLine();
         builder.AppendLine();
         builder.AppendLine(
-            "<color=#FF8B7B><b>적 출혈</b></color>");
+            "<color=#FF8B7B><b>적 혈상</b></color>");
         AppendEnemyPartValues(
             (enemy, part) =>
                 enemy.GetPartStatus<Bleeding>(part)?.Stack ?? 0,
-            "출혈");
+            "혈상");
 
         if (summaryText != null)
             summaryText.text = builder.ToString();
@@ -234,12 +243,14 @@ public sealed class CharacterMechanicHudUI : MonoBehaviour
         builder.Append("<color=#E8C875><b>살수의 감</b></color>  ");
         builder.Append(mechanic?.Sense ?? 0);
         builder.AppendLine();
-        builder.Append("자동 재굴림  ");
+        builder.Append("다음 각인·추격 감 사용  ");
         builder.Append(
             mechanic?.AutoUseSense == true
                 ? "<color=#72E0A2><b>ON</b></color>"
                 : "<color=#9AA6B2><b>OFF</b></color>");
         builder.AppendLine();
+        builder.AppendLine(
+            "<color=#A9B8C8>환형  빛 1 · 턴당 1회 · 행동 선택 전</color>");
         builder.AppendLine();
         builder.AppendLine(
             "<color=#8DCBFF><b>내 부위 상태</b></color>");
@@ -1376,7 +1387,7 @@ public sealed class CharacterMechanicHudUI : MonoBehaviour
                 new Vector2(170f, 0f);
 
             label.text =
-                "살수의 감 자동 재굴림";
+                "다음 각인·추격 감 사용";
             label.fontSize = 14f;
             label.fontStyle = FontStyles.Bold;
             label.alignment =
@@ -1430,7 +1441,7 @@ public sealed class CharacterMechanicHudUI : MonoBehaviour
             new Vector2(174f, 48f);
 
         autoSenseHelpText.text =
-            "각인·추격이 합에서 지고 크리티컬이 아니면\n감 1을 소모해 자동 재굴림";
+            "각인·추격 선택 전에 설정합니다.\n선택값은 해당 행동에 저장됩니다.";
         autoSenseHelpText.fontSize = 11.5f;
         autoSenseHelpText.color =
             new Color(0.68f, 0.76f, 0.82f, 1f);
@@ -1953,7 +1964,7 @@ public sealed class CharacterMechanicHudUI : MonoBehaviour
         labelRect.anchoredPosition = new Vector2(52f, 0f);
         labelRect.sizeDelta = new Vector2(170f, 0f);
 
-        label.text = "살수의 감 자동 재굴림";
+        label.text = "다음 각인·추격 감 사용";
         label.fontStyle = FontStyles.Bold;
         label.alignment = TextAlignmentOptions.Left;
         label.raycastTarget = false;

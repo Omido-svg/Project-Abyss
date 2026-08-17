@@ -477,20 +477,6 @@ public sealed class BattleDebugTunerEditor : Editor
 
         DrawOverrideGroup(
             core,
-            "overrideOffense",
-            "Offense",
-            "flatDamageBonus",
-            "damageMultiplier");
-
-        DrawOverrideGroup(
-            core,
-            "overrideDefense",
-            "Defense / Penetration",
-            "defense",
-            "defensePenetrationRate");
-
-        DrawOverrideGroup(
-            core,
             "overridePrestigeGain",
             "Prestige Gain",
             "prestigeGainMultiplier");

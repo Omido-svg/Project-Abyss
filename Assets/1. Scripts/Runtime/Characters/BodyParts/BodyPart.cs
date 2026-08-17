@@ -137,6 +137,23 @@ public class BodyPart
             $"{OwnerName()}의 {Type} 부위 회복");
     }
 
+    /// <summary>
+    /// 무력화 게이지처럼 일시적으로 부여된 약화를 해제한다.
+    /// 일반 Recover와 달리 부위 HP를 최대치로 치유하지 않고 약화 전 HP를 복원한다.
+    /// </summary>
+    public void RestoreTemporaryWeaken(float restoredHp)
+    {
+        if (State != BodyPartState.Weakened)
+            return;
+
+        State = BodyPartState.Normal;
+        PartHP = Mathf.Clamp(restoredHp, 1f, MaxPartHP);
+        Revision++;
+
+        Debug.Log(
+            $"{OwnerName()}의 {Type} 일시 약화 해제 / HP={PartHP}/{MaxPartHP}");
+    }
+
     public void AddStatus(StatusEffect effect)
     {
         if (effect == null || statusEffects.Contains(effect))

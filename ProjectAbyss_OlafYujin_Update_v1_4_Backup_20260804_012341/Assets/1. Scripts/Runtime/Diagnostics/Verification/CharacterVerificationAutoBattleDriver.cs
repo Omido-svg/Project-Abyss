@@ -1,0 +1,975 @@
+using System;
+using System.Collections.Generic;
+using System.Text;
+using UnityEngine;
+
+[Serializable]
+public sealed class CharacterVerificationAutoBattleResult
+{
+    public bool CompletedNormally;
+    public bool PlayerWon;
+    public bool PlayerLost;
+    public bool TimedOut;
+    public bool TurnLimitReached;
+    public bool UsedFallbackPlanner;
+
+    public int Turns;
+    public int WinRatePlanAttempts;
+    public int SuccessfulWinRatePlans;
+    public int FallbackPlanCount;
+    public int PlannedActionCount;
+    public int PlayerRuntimeSkillCount;
+    public int RuntimeErrorCount;
+    public int RuntimeWarningCount;
+    public int CriticalInvariantCount;
+
+    public float RequestedTimeScale;
+    public long ElapsedMilliseconds;
+
+    public string Outcome;
+    public string FailureMessage;
+    public string PlayerName;
+
+    public readonly List<string> ParticipantNames =
+        new List<string>();
+
+    public readonly List<string> ParticipantIdentities =
+        new List<string>();
+
+    public readonly List<string> UsedPlayerSkills =
+        new List<string>();
+
+    public readonly List<string> RuntimeProblemSamples =
+        new List<string>();
+
+    public readonly List<string> WarningSamples =
+        new List<string>();
+
+    public string BuildDetails()
+    {
+        StringBuilder builder =
+            new StringBuilder();
+
+        string outcome =
+            string.IsNullOrWhiteSpace(Outcome)
+                ? "UNKNOWN"
+                : Outcome;
+
+        builder.AppendLine(
+            $"Outcome={outcome}");
+
+        builder.AppendLine(
+            $"Turns={Turns}");
+
+        builder.AppendLine(
+            $"WinRatePlanAttempts={WinRatePlanAttempts}");
+
+        builder.AppendLine(
+            $"SuccessfulWinRatePlans={SuccessfulWinRatePlans}");
+
+        builder.AppendLine(
+            $"FallbackPlanCount={FallbackPlanCount}");
+
+        builder.AppendLine(
+            $"PlannedActionCount={PlannedActionCount}");
+
+        builder.AppendLine(
+            $"PlayerSkillUsage={UsedPlayerSkills.Count}/{PlayerRuntimeSkillCount}");
+
+        builder.AppendLine(
+            "UsedPlayerSkills=" +
+            (UsedPlayerSkills.Count == 0
+                ? "NONE"
+                : string.Join(", ", UsedPlayerSkills)));
+
+        builder.AppendLine(
+            $"RuntimeErrors={RuntimeErrorCount}");
+
+        builder.AppendLine(
+            $"RuntimeWarnings={RuntimeWarningCount}");
+
+        builder.AppendLine(
+            $"CriticalInvariants={CriticalInvariantCount}");
+
+        builder.AppendLine(
+            $"RequestedTimeScale={RequestedTimeScale:0.##}");
+
+        builder.AppendLine(
+            $"ElapsedMilliseconds={ElapsedMilliseconds}");
+
+        builder.AppendLine(
+            "Participants=" +
+            (ParticipantNames.Count == 0
+                ? "NONE"
+                : string.Join(", ", ParticipantNames)));
+
+        if (RuntimeProblemSamples.Count > 0)
+        {
+            builder.AppendLine(
+                "RuntimeProblemSamples=" +
+                string.Join(" || ", RuntimeProblemSamples));
+        }
+
+        if (WarningSamples.Count > 0)
+        {
+            builder.AppendLine(
+                "WarningSamples=" +
+                string.Join(" || ", WarningSamples));
+        }
+
+        if (!string.IsNullOrWhiteSpace(FailureMessage))
+        {
+            builder.AppendLine(
+                $"Failure={FailureMessage}");
+        }
+
+        return builder.ToString().TrimEnd();
+    }
+}
+
+/// <summary>
+/// Character Verification의 Live Scene 분석을 실제 한 판 전투로 확장한다.
+/// 매 턴 BattleAutoPlanButtonPanel의 승률 자동 지정과 같은 경로를 호출하고,
+/// 계획이 완성되면 BattleManager.NextTurn()을 호출해 전투 종료까지 반복한다.
+///
+/// 화면 위치·카메라·Timeline을 직접 조작하지 않으며,
+/// 분석 중에만 Time.timeScale을 높였다가 반드시 원래 값으로 복구한다.
+/// </summary>
+[DefaultExecutionOrder(10000)]
+[DisallowMultipleComponent]
+public sealed class CharacterVerificationAutoBattleDriver :
+    MonoBehaviour
+{
+    private const float DefaultAnalysisTimeScale = 30f;
+    private const int DefaultMaximumTurns = 80;
+    private const float DefaultReadyTimeoutSeconds = 12f;
+    private const float DefaultNoProgressTimeoutSeconds = 30f;
+
+    public static CharacterVerificationAutoBattleDriver Active
+    {
+        get;
+        private set;
+    }
+
+    public static bool TryStart(
+        BattleManager manager,
+        Action<CharacterVerificationAutoBattleResult> completed,
+        out string failure,
+        float analysisTimeScale = DefaultAnalysisTimeScale,
+        int maximumTurns = DefaultMaximumTurns)
+    {
+        failure = string.Empty;
+
+        if (Active != null)
+        {
+            failure =
+                "Character Verification 자동 전투가 이미 실행 중입니다.";
+
+            return false;
+        }
+
+        if (manager == null)
+        {
+            failure =
+                "BattleManager를 찾지 못했습니다.";
+
+            return false;
+        }
+
+        if (BattleBatchSimulationRunner.Instance != null &&
+            BattleBatchSimulationRunner.Instance.IsRunning)
+        {
+            failure =
+                "BattleBatchSimulationRunner가 실행 중이어서 " +
+                "Character Verification 자동 전투를 동시에 시작할 수 없습니다.";
+
+            return false;
+        }
+
+        GameObject root =
+            new GameObject(
+                "CharacterVerificationAutoBattle");
+
+        CharacterVerificationAutoBattleDriver driver =
+            root.AddComponent<
+                CharacterVerificationAutoBattleDriver>();
+
+        driver.Configure(
+            manager,
+            completed,
+            Mathf.Max(1f, analysisTimeScale),
+            Mathf.Max(1, maximumTurns));
+
+        return true;
+    }
+
+    private readonly PlayerAutoPlanService winRatePlanner =
+        new PlayerAutoPlanService();
+
+    private readonly BattleAverageAIPlanner fallbackPlanner =
+        new BattleAverageAIPlanner();
+
+    private BattleManager manager;
+    private BattleContext context;
+    private Character player;
+    private BattleAutoPlanButtonPanel autoPlanPanel;
+
+    private Action<CharacterVerificationAutoBattleResult>
+        completionCallback;
+
+    private CharacterVerificationAutoBattleResult result;
+
+    private float requestedTimeScale;
+    private int maximumTurns;
+    private int lastSubmittedTurn = -1;
+    private int lastObservedTurn = -1;
+    private bool lastObservedResolving;
+    private bool battleObservedRunning;
+    private bool configured;
+    private bool completed;
+
+    private float savedTimeScale = 1f;
+    private float startedAt;
+    private float lastProgressAt;
+    private bool logCaptureBound;
+    private bool actionCaptureBound;
+
+    private void Configure(
+        BattleManager battleManager,
+        Action<CharacterVerificationAutoBattleResult> callback,
+        float analysisTimeScale,
+        int maxTurns)
+    {
+        manager = battleManager;
+        context = battleManager?.BattleContext;
+        player = context?.Player;
+        completionCallback = callback;
+        requestedTimeScale = analysisTimeScale;
+        maximumTurns = maxTurns;
+
+        result =
+            new CharacterVerificationAutoBattleResult
+            {
+                RequestedTimeScale = analysisTimeScale,
+                PlayerName = DescribeCharacter(player),
+                PlayerRuntimeSkillCount =
+                    CountUniqueRuntimeSkills(
+                        player?.RuntimeSkills)
+            };
+
+        CaptureParticipants();
+        BindRuntimeObservation();
+
+        autoPlanPanel =
+            FindFirstObjectByType<
+                BattleAutoPlanButtonPanel>(
+                    FindObjectsInactive.Include);
+
+        savedTimeScale = Time.timeScale;
+        Time.timeScale =
+            Mathf.Max(
+                1f,
+                analysisTimeScale);
+
+        startedAt =
+            Time.realtimeSinceStartup;
+
+        lastProgressAt = startedAt;
+        configured = true;
+        Active = this;
+
+        Debug.Log(
+            "[CharacterVerification][AutoBattle] 시작 / " +
+            $"Player={result.PlayerName}, " +
+            $"TimeScale={Time.timeScale:0.##}, " +
+            $"MaxTurns={maximumTurns}",
+            this);
+    }
+
+    private void Update()
+    {
+        if (!configured || completed)
+            return;
+
+        if (manager == null)
+        {
+            FinishAsError(
+                "자동 전투 도중 BattleManager가 사라졌습니다.");
+
+            return;
+        }
+
+        if (BattleBatchSimulationRunner.Instance != null &&
+            BattleBatchSimulationRunner.Instance.IsRunning)
+        {
+            FinishAsError(
+                "실행 도중 BattleBatchSimulationRunner가 시작되어 " +
+                "자동 전투를 중단했습니다.");
+
+            return;
+        }
+
+        context ??= manager.BattleContext;
+        player ??= context?.Player;
+
+        if (!actionCaptureBound)
+            BindRuntimeObservation();
+
+        if (result.PlayerRuntimeSkillCount == 0)
+        {
+            result.PlayerRuntimeSkillCount =
+                CountUniqueRuntimeSkills(
+                    player?.RuntimeSkills);
+        }
+
+        TurnManager turnManager =
+            manager.TurnManager;
+
+        if (!manager.IsInitialized ||
+            turnManager == null ||
+            context == null ||
+            player == null)
+        {
+            if (Time.realtimeSinceStartup - startedAt >
+                DefaultReadyTimeoutSeconds)
+            {
+                FinishAsError(
+                    "전투 준비가 제한 시간 안에 완료되지 않았습니다.");
+            }
+
+            return;
+        }
+
+        if (manager.IsEndingOrEnded)
+        {
+            FinishFromBattleState();
+            return;
+        }
+
+        if (!turnManager.IsBattleRunning)
+        {
+            if (battleObservedRunning)
+            {
+                FinishFromBattleState();
+            }
+            else if (Time.realtimeSinceStartup - startedAt >
+                     DefaultReadyTimeoutSeconds)
+            {
+                FinishAsError(
+                    "TurnManager가 전투 실행 상태로 진입하지 않았습니다.");
+            }
+
+            return;
+        }
+
+        battleObservedRunning = true;
+
+        if (turnManager.CurrentTurn != lastObservedTurn ||
+            turnManager.IsResolving != lastObservedResolving)
+        {
+            lastObservedTurn =
+                turnManager.CurrentTurn;
+
+            lastObservedResolving =
+                turnManager.IsResolving;
+
+            lastProgressAt =
+                Time.realtimeSinceStartup;
+        }
+
+        if (turnManager.CurrentTurn > maximumTurns)
+        {
+            result.TurnLimitReached = true;
+            result.Outcome = "TURN_LIMIT";
+            result.FailureMessage =
+                $"전투가 최대 {maximumTurns}턴을 초과했습니다.";
+
+            manager.EndBattle();
+            Finish(forceNormalCompletion: false);
+            return;
+        }
+
+        if (!turnManager.IsResolving &&
+            turnManager.CurrentTurn != lastSubmittedTurn)
+        {
+            SubmitWinRateTurn(turnManager);
+        }
+
+        if (!completed &&
+            Time.realtimeSinceStartup - lastProgressAt >
+            DefaultNoProgressTimeoutSeconds)
+        {
+            result.TimedOut = true;
+            result.Outcome = "NO_PROGRESS_TIMEOUT";
+            result.FailureMessage =
+                "전투 상태가 " +
+                $"{DefaultNoProgressTimeoutSeconds:0}초 동안 진행되지 않았습니다.";
+
+            manager.EndBattle();
+            Finish(forceNormalCompletion: false);
+        }
+    }
+
+    private void SubmitWinRateTurn(
+        TurnManager turnManager)
+    {
+        result.WinRatePlanAttempts++;
+
+        PlayerAutoPlanResult planResult =
+            autoPlanPanel != null
+                ? autoPlanPanel
+                    .ApplyWinRatePlanForAutomation()
+                : winRatePlanner.BuildAndApply(
+                    manager,
+                    PlayerAutoPlanMode.WinRate);
+
+        int planned =
+            planResult?.Success == true
+                ? planResult.PlannedSlotCount
+                : 0;
+
+        if (planned > 0)
+        {
+            result.SuccessfulWinRatePlans++;
+        }
+        else
+        {
+            planned =
+                fallbackPlanner.PlanPlayer(
+                    manager);
+
+            if (planned <= 0)
+            {
+                result.Outcome =
+                    "PLAYER_PLAN_FAILED";
+
+                result.FailureMessage =
+                    "승률 자동 지정과 평균 AI 폴백이 모두 " +
+                    "플레이어 행동을 만들지 못했습니다. " +
+                    (planResult?.Message ?? "원인 미상");
+
+                manager.EndBattle();
+                Finish(forceNormalCompletion: false);
+                return;
+            }
+
+            result.UsedFallbackPlanner = true;
+            result.FallbackPlanCount++;
+
+            string primaryFailure =
+                string.IsNullOrWhiteSpace(planResult?.Message)
+                    ? "NONE"
+                    : planResult.Message;
+
+            Debug.LogWarning(
+                "[CharacterVerification][AutoBattle] " +
+                "승률 계획 실패로 현재 턴만 평균 AI 폴백 / " +
+                $"Turn={turnManager.CurrentTurn}, " +
+                $"Slots={planned}, " +
+                $"Primary={primaryFailure}",
+                this);
+        }
+
+        result.PlannedActionCount += planned;
+        lastSubmittedTurn = turnManager.CurrentTurn;
+        lastProgressAt = Time.realtimeSinceStartup;
+
+        Debug.Log(
+            "[CharacterVerification][AutoBattle] " +
+            "승률 자동 지정 후 턴 진행 / " +
+            $"Turn={turnManager.CurrentTurn}, " +
+            $"Slots={planned}, " +
+            $"Fallback={result.FallbackPlanCount}",
+            this);
+
+        manager.NextTurn();
+    }
+
+    private void FinishFromBattleState()
+    {
+        bool playerDead =
+            player == null ||
+            player.IsDead;
+
+        bool anyEnemyAlive = false;
+
+        if (context?.Enemies != null)
+        {
+            foreach (Character enemy in context.Enemies)
+            {
+                if (enemy != null && !enemy.IsDead)
+                {
+                    anyEnemyAlive = true;
+                    break;
+                }
+            }
+        }
+
+        result.PlayerLost = playerDead;
+        result.PlayerWon =
+            !playerDead &&
+            !anyEnemyAlive;
+
+        if (result.PlayerWon)
+        {
+            result.Outcome = "VICTORY";
+            Finish(forceNormalCompletion: true);
+            return;
+        }
+
+        if (result.PlayerLost)
+        {
+            result.Outcome = "DEFEAT";
+            Finish(forceNormalCompletion: true);
+            return;
+        }
+
+        result.Outcome = "ABORTED";
+        result.FailureMessage =
+            "승패 조건이 충족되지 않은 상태에서 전투가 종료되었습니다.";
+
+        Finish(forceNormalCompletion: false);
+    }
+
+    private void FinishAsError(
+        string message)
+    {
+        result.Outcome = "ERROR";
+        result.FailureMessage = message;
+        Finish(forceNormalCompletion: false);
+    }
+
+    private void Finish(
+        bool forceNormalCompletion)
+    {
+        if (completed)
+            return;
+
+        completed = true;
+
+        TurnManager turnManager =
+            manager?.TurnManager;
+
+        result.Turns =
+            Mathf.Max(
+                0,
+                Mathf.Max(
+                    lastSubmittedTurn,
+                    (turnManager?.CurrentTurn ?? 1) - 1));
+
+        bool hasCriticalRuntimeProblem =
+            result.RuntimeErrorCount > 0 ||
+            result.CriticalInvariantCount > 0;
+
+        if (forceNormalCompletion &&
+            hasCriticalRuntimeProblem)
+        {
+            string terminalOutcome =
+                string.IsNullOrWhiteSpace(result.Outcome)
+                    ? "COMPLETED"
+                    : result.Outcome;
+
+            result.Outcome =
+                terminalOutcome +
+                "_WITH_RUNTIME_ERRORS";
+
+            result.FailureMessage =
+                "전투는 승패까지 진행됐지만 실행 중 오류 또는 " +
+                "전투 타깃 불변식 위반이 감지되었습니다.";
+        }
+
+        result.CompletedNormally =
+            forceNormalCompletion &&
+            !result.TimedOut &&
+            !result.TurnLimitReached &&
+            !hasCriticalRuntimeProblem &&
+            string.IsNullOrWhiteSpace(
+                result.FailureMessage);
+
+        result.ElapsedMilliseconds =
+            (long)Math.Round(
+                (Time.realtimeSinceStartup - startedAt) *
+                1000d);
+
+        RestoreTimeScale();
+        UnbindRuntimeObservation();
+
+        Debug.Log(
+            "[CharacterVerification][AutoBattle] 완료 / " +
+            $"Outcome={result.Outcome}, " +
+            $"Turns={result.Turns}, " +
+            $"Plans={result.SuccessfulWinRatePlans}/" +
+            $"{result.WinRatePlanAttempts}, " +
+            $"Fallback={result.FallbackPlanCount}, " +
+            $"Elapsed={result.ElapsedMilliseconds}ms",
+            this);
+
+        Action<CharacterVerificationAutoBattleResult>
+            callback = completionCallback;
+
+        completionCallback = null;
+
+        try
+        {
+            callback?.Invoke(result);
+        }
+        catch (Exception exception)
+        {
+            Debug.LogException(exception, this);
+        }
+
+        if (Active == this)
+            Active = null;
+
+        Destroy(gameObject);
+    }
+
+    private void CaptureParticipants()
+    {
+        result.ParticipantNames.Clear();
+        result.ParticipantIdentities.Clear();
+
+        AddParticipant(player);
+
+        if (context?.Enemies == null)
+            return;
+
+        foreach (Character enemy in context.Enemies)
+            AddParticipant(enemy);
+    }
+
+    private void AddParticipant(
+        Character character)
+    {
+        if (character == null)
+            return;
+
+        AddUnique(
+            result.ParticipantNames,
+            DescribeCharacter(character));
+
+        AddUnique(
+            result.ParticipantIdentities,
+            DescribeCharacter(character));
+
+        AddUnique(
+            result.ParticipantIdentities,
+            character.Data?.name);
+
+        AddUnique(
+            result.ParticipantIdentities,
+            character.name);
+    }
+
+    private static void AddUnique(
+        IList<string> destination,
+        string value)
+    {
+        if (destination == null ||
+            string.IsNullOrWhiteSpace(value))
+        {
+            return;
+        }
+
+        string normalized = value.Trim();
+
+        for (int i = 0; i < destination.Count; i++)
+        {
+            if (string.Equals(
+                    destination[i],
+                    normalized,
+                    StringComparison.OrdinalIgnoreCase))
+            {
+                return;
+            }
+        }
+
+        destination.Add(normalized);
+    }
+
+    private static string DescribeCharacter(
+        Character character)
+    {
+        return character?.Data?.CharacterName ??
+               character?.name ??
+               "Unknown Character";
+    }
+
+    private void BindRuntimeObservation()
+    {
+        if (!logCaptureBound)
+        {
+            Application.logMessageReceived +=
+                HandleRuntimeLog;
+
+            logCaptureBound = true;
+        }
+
+        BattleEvent battleEvent =
+            context?._battleEvent;
+
+        if (!actionCaptureBound &&
+            battleEvent != null)
+        {
+            battleEvent.OnActionStart +=
+                HandleActionStart;
+
+            actionCaptureBound = true;
+        }
+    }
+
+    private void UnbindRuntimeObservation()
+    {
+        if (logCaptureBound)
+        {
+            Application.logMessageReceived -=
+                HandleRuntimeLog;
+
+            logCaptureBound = false;
+        }
+
+        BattleEvent battleEvent =
+            context?._battleEvent;
+
+        if (actionCaptureBound &&
+            battleEvent != null)
+        {
+            battleEvent.OnActionStart -=
+                HandleActionStart;
+        }
+
+        actionCaptureBound = false;
+    }
+
+    private void HandleActionStart(
+        BattleAction action)
+    {
+        if (completed ||
+            action?.Owner != player ||
+            action.Skill == null)
+        {
+            return;
+        }
+
+        string skillId =
+            action.Skill.Definition?.SkillId;
+
+        string label =
+            string.IsNullOrWhiteSpace(skillId)
+                ? action.Skill.SkillName ??
+                  action.Skill.GetType().Name
+                : $"{action.Skill.SkillName ?? skillId}" +
+                  $"<{skillId}>";
+
+        AddUnique(
+            result.UsedPlayerSkills,
+            label);
+    }
+
+    private void HandleRuntimeLog(
+        string condition,
+        string stackTrace,
+        LogType type)
+    {
+        if (completed || result == null)
+            return;
+
+        string message =
+            string.IsNullOrWhiteSpace(condition)
+                ? type.ToString()
+                : condition.Trim();
+
+        bool isError =
+            type == LogType.Error ||
+            type == LogType.Exception ||
+            type == LogType.Assert;
+
+        bool isWarning =
+            type == LogType.Warning;
+
+        bool invariant =
+            IsCriticalCombatInvariant(message);
+
+        if (isError)
+            result.RuntimeErrorCount++;
+
+        if (isWarning)
+            result.RuntimeWarningCount++;
+
+        if (invariant)
+            result.CriticalInvariantCount++;
+
+        if (isError || invariant)
+        {
+            AddSample(
+                result.RuntimeProblemSamples,
+                BuildLogSample(
+                    type,
+                    message,
+                    stackTrace));
+        }
+        else if (isWarning)
+        {
+            AddSample(
+                result.WarningSamples,
+                BuildLogSample(
+                    type,
+                    message,
+                    stackTrace));
+        }
+    }
+
+    private static bool IsCriticalCombatInvariant(
+        string message)
+    {
+        if (string.IsNullOrWhiteSpace(message))
+            return false;
+
+        if (message.IndexOf(
+                "NullReferenceException",
+                StringComparison.Ordinal) >= 0 ||
+            message.IndexOf(
+                "MissingReferenceException",
+                StringComparison.Ordinal) >= 0 ||
+            message.IndexOf(
+                "InvalidOperationException",
+                StringComparison.Ordinal) >= 0)
+        {
+            return true;
+        }
+
+        bool targetManager =
+            message.IndexOf(
+                "[DamageManager]",
+                StringComparison.OrdinalIgnoreCase) >= 0 ||
+            message.IndexOf(
+                "[ClashManager]",
+                StringComparison.OrdinalIgnoreCase) >= 0;
+
+        bool targetViolation =
+            message.IndexOf(
+                "불일치",
+                StringComparison.Ordinal) >= 0 ||
+            message.IndexOf(
+                "타깃",
+                StringComparison.Ordinal) >= 0 ||
+            message.IndexOf(
+                "TargetPart.Owner",
+                StringComparison.OrdinalIgnoreCase) >= 0 ||
+            message.IndexOf(
+                "차단",
+                StringComparison.Ordinal) >= 0;
+
+        return targetManager && targetViolation;
+    }
+
+    private static string BuildLogSample(
+        LogType type,
+        string message,
+        string stackTrace)
+    {
+        string firstStackLine = string.Empty;
+
+        if (!string.IsNullOrWhiteSpace(stackTrace))
+        {
+            string[] lines = stackTrace.Split(
+                new[]
+                {
+                    '\r',
+                    '\n'
+                },
+                StringSplitOptions.RemoveEmptyEntries);
+
+            if (lines.Length > 0)
+                firstStackLine = lines[0].Trim();
+        }
+
+        string sample =
+            $"{type}: {message}";
+
+        if (!string.IsNullOrWhiteSpace(firstStackLine))
+            sample += $" @ {firstStackLine}";
+
+        return sample;
+    }
+
+    private static void AddSample(
+        IList<string> destination,
+        string sample)
+    {
+        const int MaximumSamples = 8;
+
+        if (destination == null ||
+            string.IsNullOrWhiteSpace(sample) ||
+            destination.Count >= MaximumSamples)
+        {
+            return;
+        }
+
+        for (int i = 0; i < destination.Count; i++)
+        {
+            if (string.Equals(
+                    destination[i],
+                    sample,
+                    StringComparison.Ordinal))
+            {
+                return;
+            }
+        }
+
+        destination.Add(sample);
+    }
+
+    private static int CountUniqueRuntimeSkills(
+        IReadOnlyList<Skill> skills)
+    {
+        if (skills == null)
+            return 0;
+
+        HashSet<string> identities =
+            new HashSet<string>(
+                StringComparer.Ordinal);
+
+        for (int i = 0; i < skills.Count; i++)
+        {
+            Skill skill = skills[i];
+
+            if (skill == null)
+                continue;
+
+            string identity =
+                skill.Definition?.SkillId;
+
+            if (string.IsNullOrWhiteSpace(identity))
+            {
+                identity =
+                    skill.SkillName ??
+                    skill.GetType().FullName;
+            }
+
+            if (!string.IsNullOrWhiteSpace(identity))
+                identities.Add(identity);
+        }
+
+        return identities.Count;
+    }
+
+    private void RestoreTimeScale()
+    {
+        Time.timeScale =
+            Mathf.Max(
+                0f,
+                savedTimeScale);
+    }
+
+    private void OnDestroy()
+    {
+        UnbindRuntimeObservation();
+
+        if (!completed)
+            RestoreTimeScale();
+
+        if (Active == this)
+            Active = null;
+    }
+}

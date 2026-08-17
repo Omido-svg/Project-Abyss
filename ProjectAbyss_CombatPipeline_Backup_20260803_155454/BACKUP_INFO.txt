@@ -1,0 +1,4 @@
+﻿ProjectRoot=F:\GitCorp\Project-Abyss
+AppliedAt=2026-08-03T15:54:54.7528660+09:00
+PatchVersion=1.0.0
+BackupRoot=F:\GitCorp\Project-Abyss\ProjectAbyss_CombatPipeline_Backup_20260803_155454

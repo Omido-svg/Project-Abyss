@@ -39,6 +39,16 @@ public sealed class SkillSelectPanelUI : MonoBehaviour
         gameObject.activeInHierarchy &&
         !isHiding;
 
+    /// <summary>
+    /// 패널이 보이는 동안(닫힘 Tween 포함) 월드 전투 화살표가
+    /// 패널 위로 관통해 보이지 않도록 하는 표시 계약.
+    /// IsVisible과 달리 isHiding 중에도 alpha가 남아 있으면 true다.
+    /// </summary>
+    public bool BlocksWorldPlanningOverlay =>
+        canvasGroup != null &&
+        canvasGroup.alpha > 0.001f &&
+        gameObject.activeInHierarchy;
+
     public void Configure(
         CanvasGroup group,
         BattleScreenModeController screenMode,
@@ -312,7 +322,9 @@ public sealed class SkillSelectPanelUI : MonoBehaviour
 
         slotHeaderText.text =
             $"{ownerName} · {GetPartName(selectedPart.Type)} · " +
-            $"행동 슬롯 {selectedActionIndex + 1}/{maxActionSlots}";
+            $"행동 슬롯 {selectedActionIndex + 1}/{maxActionSlots} · " +
+            BodyPartSkillAccessPolicy.GetAccessLabel(
+                selectedPart);
     }
 
     private void RebuildActionSlotButtons()
@@ -351,6 +363,14 @@ public sealed class SkillSelectPanelUI : MonoBehaviour
             if (drawer == null)
                 continue;
 
+            bool categoryAllowed =
+                BodyPartSkillAccessPolicy.Allows(
+                    selectedPart,
+                    drawer.ActionType);
+
+            drawer.SetPartAccess(
+                categoryAllowed);
+
             drawer.Rebuild(
                 skills,
                 selectedActionIndex,
@@ -359,12 +379,16 @@ public sealed class SkillSelectPanelUI : MonoBehaviour
             int count =
                 drawer.VisibleSkillCount;
 
-            total += count;
+            if (categoryAllowed)
+                total += count;
 
             categoryCounts.Add(
-                $"{BattleSkillUiText.GetActionTypeName(drawer.ActionType)} {count}");
+                categoryAllowed
+                    ? $"{BattleSkillUiText.GetActionTypeName(drawer.ActionType)} {count}"
+                    : $"{BattleSkillUiText.GetActionTypeName(drawer.ActionType)} 사용 불가");
 
-            if (count <= 0)
+            if (!categoryAllowed ||
+                count <= 0)
             {
                 drawer.SetOpenImmediate(false);
                 continue;
@@ -384,8 +408,8 @@ public sealed class SkillSelectPanelUI : MonoBehaviour
         {
             helpText.text = total > 0
                 ? string.Join(" · ", categoryCounts) +
-                  $" · 총 {total}개 · 모든 서랍 펼침"
-                : "이 행동 슬롯에 장착된 스킬이 없습니다.";
+                  $" · 총 {total}개 · 현재 부위·행동 슬롯 사용 가능 스킬"
+                : "현재 부위·행동 슬롯에서 사용할 수 있는 스킬이 없습니다.";
         }
     }
 

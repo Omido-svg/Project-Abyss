@@ -16,6 +16,7 @@ MonoBehaviour:
   SkillName: "\uC870\uC2DD"
   ActionType: 0
   BasePower: 0
+  PhysicalType: 0
   CanBreakPart: 0
   GainPrestige: 1
   AttackWeight:
@@ -30,6 +31,7 @@ MonoBehaviour:
   Rolls:
   - Index: 0
     Type: 0
+    DiceMode: 0
     MinPower: 14
     MaxPower: 44
     RngSource: 2

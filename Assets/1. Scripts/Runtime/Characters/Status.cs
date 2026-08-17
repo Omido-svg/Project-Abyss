@@ -8,15 +8,10 @@ public class CurrentStatus
     public int minSpeed;
     public int maxSpeed;
 
-    public int flatDamageBonus;
-    public float damageMultiplier = 1f;
-
-    public int defense;
-    public float defensePenetrationRate;
-
     public float prestigeGainMultiplier = 1f;
 
-    public CurrentStatus(CharacterData data)
+    public CurrentStatus(
+        CharacterData data)
     {
         if (data == null)
         {
@@ -25,29 +20,46 @@ public class CurrentStatus
             return;
         }
 
-        maxPrestige = Mathf.Max(0, data.maxPrestige);
-        maxEnergy = Mathf.Max(3, data.maxEnergy);
-        damageMultiplier = Mathf.Max(0f, data.damageMultiplier);
-        defensePenetrationRate =
-            Mathf.Clamp01(data.defensePenetration);
+        maxPrestige =
+            Mathf.Max(
+                0,
+                data.maxPrestige);
 
-        minSpeed = data.minSpeed;
-        maxSpeed = Mathf.Max(
-            minSpeed,
-            data.maxSpeed);
+        maxEnergy =
+            Mathf.Max(
+                3,
+                data.maxEnergy);
+
+        minSpeed =
+            data.minSpeed;
+
+        maxSpeed =
+            Mathf.Max(
+                minSpeed,
+                data.maxSpeed);
     }
 
     public void Clamp()
     {
-        maxPrestige = Mathf.Max(0, maxPrestige);
-        maxEnergy = Mathf.Max(3, maxEnergy);
-        maxSpeed = Mathf.Max(minSpeed, maxSpeed);
-        damageMultiplier = Mathf.Max(0f, damageMultiplier);
-        defense = Mathf.Max(0, defense);
-        defensePenetrationRate =
-            Mathf.Clamp01(defensePenetrationRate);
+        maxPrestige =
+            Mathf.Max(
+                0,
+                maxPrestige);
+
+        maxEnergy =
+            Mathf.Max(
+                3,
+                maxEnergy);
+
+        maxSpeed =
+            Mathf.Max(
+                minSpeed,
+                maxSpeed);
+
         prestigeGainMultiplier =
-            Mathf.Max(0f, prestigeGainMultiplier);
+            Mathf.Max(
+                0f,
+                prestigeGainMultiplier);
     }
 }
 
@@ -57,39 +69,53 @@ public class RuntimeStatus
     public int currentBlock;
     public int currentPrestige;
 
-    public RuntimeStatus(CurrentStatus status)
+    public RuntimeStatus(
+        CurrentStatus status)
     {
-        Reset(status);
+        Reset(
+            status);
     }
 
-    public void Reset(CurrentStatus status)
+    public void Reset(
+        CurrentStatus status)
     {
         currentHP = 0;
         currentBlock = 0;
         currentPrestige = 0;
 
-        Clamp(status, int.MaxValue);
+        Clamp(
+            status,
+            int.MaxValue);
     }
 
     public void Clamp(
         CurrentStatus status,
         int maxHP)
     {
-        currentHP = Mathf.Clamp(
-            currentHP,
-            0,
-            Mathf.Max(0, maxHP));
+        currentHP =
+            Mathf.Clamp(
+                currentHP,
+                0,
+                Mathf.Max(
+                    0,
+                    maxHP));
 
-        currentBlock = Mathf.Max(0, currentBlock);
+        currentBlock =
+            Mathf.Max(
+                0,
+                currentBlock);
 
         int maxPrestige =
             status == null
                 ? 0
-                : Mathf.Max(0, status.maxPrestige);
+                : Mathf.Max(
+                    0,
+                    status.maxPrestige);
 
-        currentPrestige = Mathf.Clamp(
-            currentPrestige,
-            0,
-            maxPrestige);
+        currentPrestige =
+            Mathf.Clamp(
+                currentPrestige,
+                0,
+                maxPrestige);
     }
 }

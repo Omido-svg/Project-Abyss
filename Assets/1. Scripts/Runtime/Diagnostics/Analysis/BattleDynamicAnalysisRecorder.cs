@@ -53,7 +53,6 @@ public sealed class BattleDynamicAnalysisRecorder : MonoBehaviour
         battleManager = manager;
     }
 
-
     /// <summary>
     /// 배치 분석 버튼을 누르기 전에 일반 동적 Recorder가 만든 대기 세션을 정리한다.
     /// 실제 행동/피해가 하나라도 있었다면 세션을 보존하고, 아무 행동도 없었다면
@@ -1067,8 +1066,10 @@ public sealed class BattleDynamicAnalysisRecorder : MonoBehaviour
                             exchange.LoserAction?.Owner),
                         damage = exchange.Damage,
                         momentumShift = exchange.MomentumShift,
-                        prestigeDealtGain = exchange.PrestigeDealtGain,
-                        prestigeTakenGain = exchange.PrestigeTakenGain,
+                        firstPrestigeGain =
+                            exchange.FirstPrestigeGain,
+                        secondPrestigeGain =
+                            exchange.SecondPrestigeGain,
                         firstRoll = CreateRoll(exchange.FirstRollResult),
                         secondRoll = CreateRoll(exchange.SecondRollResult)
                     });
@@ -1127,23 +1128,19 @@ public sealed class BattleDynamicAnalysisRecorder : MonoBehaviour
             {
                 damageType = context.DamageType.ToString(),
                 rawPower = context.RawPower,
-                skillMultiplier = context.SkillMultiplier,
-                flatDamageBonus = context.FlatDamageBonus,
-                ownerDamageMultiplier = context.OwnerDamageMultiplier,
+                damageCoefficient = context.DamageCoefficient,
                 momentumMultiplier = context.MomentumMultiplier,
                 baseDamage = context.BaseDamage,
-                rawDamage = context.RawDamage,
-                attackerModifiedDamage = context.AttackerModifiedDamage,
+                attackerModifiedDamage =
+                    context.AttackerModifiedDamage,
                 critical = context.WasCritical,
-                damageAfterCritical = context.DamageAfterCritical,
-                defenseValue = context.DefenseValue,
-                damageAfterArmor = context.DamageAfterArmor,
                 guardBefore = context.GuardBefore,
                 guardAbsorbed = context.GuardAbsorbed,
                 guardAfter = context.GuardAfter,
-                targetModifiedDamage = context.TargetModifiedDamage,
-                protectionValue = context.ProtectionValue,
-                protectionAbsorbed = context.ProtectionAbsorbed,
+                damageAfterGuard =
+                    context.DamageAfterGuard,
+                targetModifiedDamage =
+                    context.TargetModifiedDamage,
                 finalDamage = context.FinalDamage,
                 appliedDamage = context.AppliedDamage,
                 hpDamage = context.FinalHpDamage,
@@ -1177,7 +1174,6 @@ public sealed class BattleDynamicAnalysisRecorder : MonoBehaviour
                     targetHp = snapshot.TargetHp,
                     targetPartHp = snapshot.TargetPartHp,
                     guardValue = snapshot.GuardValue,
-                    protectionValue = snapshot.ProtectionValue,
                     hasTargetPart = snapshot.HasTargetPart,
                     targetPartState =
                         snapshot.TargetPartState.ToString()
@@ -1272,16 +1268,23 @@ public sealed class BattleDynamicAnalysisRecorder : MonoBehaviour
             maximumOverwhelmMultiplier =
                 momentum?.MaximumOverwhelmMultiplier ?? 1f,
             hitShift = momentum?.HitShift ?? 0,
-            duelVictoryShift = momentum?.DuelVictoryShift ?? 0,
+            duelExchangeShift =
+                momentum?.DuelExchangeShift ?? 0,
             lastStandHitShiftMultiplier =
                 momentum?.LastStandHitShiftMultiplier ?? 0,
             defaultExchangeRollCount =
                 clash?.DefaultExchangeRollCount ?? 0,
             speedWeight = clash?.SpeedWeight ?? 0,
-            prestigeClashStart = prestige?.ClashStartCharge ?? 0,
-            prestigeHitDealt = prestige?.HitDealtCharge ?? 0,
-            prestigeHitTaken = prestige?.HitTakenCharge ?? 0,
-            prestigeClashVictory = prestige?.ClashVictoryCharge ?? 0
+            maxTieRerolls =
+                clash?.MaxTieRerolls ?? 0,
+            maxCharacterRerollsPerExchange =
+                clash?.MaxCharacterRerollsPerExchange ?? 0,
+            prestigeExchangeParticipant =
+                prestige?.ExchangeParticipantCharge ?? 0,
+            prestigeOneSidedParticipant =
+                prestige?.OneSidedParticipantCharge ?? 0,
+            prestigeExcludesPreparation =
+                prestige?.ExcludePreparationActions ?? true
         };
     }
 

@@ -1,0 +1,89 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a85a262093fed2b45a6f05cb3a256be9, type: 3}
+  m_Name: Yujin_Inscription
+  m_EditorClassIdentifier: 
+  skillId: yujin.duel.inscription
+  SkillName: "\uAC01\uC778"
+  ActionType: 1
+  BasePower: 0
+  CanBreakPart: 0
+  GainPrestige: 1
+  AttackWeight:
+    Weight: 1
+    SecondaryPartMode: 0
+    SecondaryDamageMultiplier: 1
+    AllowBrokenSecondaryParts: 0
+  Description: "\uacb0\ud22c \ub300 \uacb0\ud22c\uc758 \uad50\ud658 \uc2b9\ub9ac\ub9c8\ub2e4 \ud45c\uc2dd\uc744 \ubc31\uc6b0 8, \uc801\uc124 12, \ub099\uc77c 16 \ubd80\uc5ec\ud55c\ub2e4. \uc2a4\ud0ac \uc120\ud0dd \uc2dc \uc0b4\uc218\uc758 \uac10 \uc0ac\uc6a9 \uc5ec\ubd80\ub97c \uc815\ud558\uba70, \uc0ac\uc6a9\uc744 \uc120\ud0dd\ud55c \ud589\ub3d9\uc740 \uc774\uae38 \ub54c\uae4c\uc9c0 \ub610\ub294 \uac10\uc774 \uc18c\uc9c4\ub420 \ub54c\uae4c\uc9c0 \uc7ac\uad74\ub9bc\ud55c\ub2e4."
+  Keywords: []
+  Rolls:
+  - Index: 0
+    Type: 0
+    MinPower: 14
+    MaxPower: 44
+    RngSource: 2
+    CoinFrontChance: 0.5
+    CoinBackPower: 14
+    CoinFrontPower: 44
+    CoinFrontIsCritical: 1
+    SlotMinimum: 1
+    SlotMaximum: 9
+    ChinchiroHifumiPower: -4
+    ChinchiroBlankPower: 3
+    ChinchiroMokuPower: 7
+    ChinchiroShigoroPower: 20
+    ChinchiroArashiPower: 24
+    JudgmentModifier: 0
+    ReuseValueAcrossAction: 0
+    OnWinEffectEntries: []
+    OnLoseEffectEntries: []
+    OnWinEffects: []
+    OnLoseEffects: []
+  ExchangeRollCount: 3
+  RollReusePolicy: 0
+  MultiRollPenalty:
+    Enabled: 0
+    PreviewText: 
+    Timing: 2
+    TriggerAfterRollIndex: 0
+    EffectEntries: []
+    Effects: []
+  ResolvePrestigeInCombat: 0
+  OverrideCanClash: 0
+  CanClashValue: 0
+  PreparationTier: 0
+  ResolverType: 1
+  DiceMin: 0
+  DiceMax: 0
+  CoinCount: 1
+  CoinFrontChance: 0.5
+  CoinFrontValue: 1
+  CoinBackValue: 0
+  CoinFrontIsCritical: 1
+  ChinchiroArashiBonus: 6
+  ChinchiroShigoroBonus: 6
+  ChinchiroHifumiPenalty: 1
+  ChinchiroHifumiSelfDamage: 1
+  EffectEntries: []
+  Effects: []
+  OverrideEnergyCost: 1
+  EnergyCost: 1
+  OverrideResourceRules: 0
+  RequireFullPrestige: 0
+  PrestigeCost: 0
+  ConsumeAllPrestige: 0
+  CustomResourceKey: 
+  CustomResourceCost: 0
+  ConsumeAllCustomResource: 0
+  OverridePrestigeUsePolicy: 0
+  PrestigeUsePolicy: 1
+  VisualDefinition: {fileID: 11400000, guid: f32eaf5a7aad57d42b1bf7f20c0f281c, type: 2}

@@ -13,12 +13,25 @@ MonoBehaviour:
   m_Name: Normal EN Data 4
   m_EditorClassIdentifier: 
   CharacterName: Normal Enemy 4
+  CombatantTier: 0
+  Portrait: {fileID: 0}
+  DetailArtwork: {fileID: 0}
+  RoleName: 
+  UiSummary: 
   TargetMode: 0
   SingleHpMax: 1
   maxPrestige: 100
-  maxEnergy: 2
-  damageMultiplier: 1
-  defensePenetration: 0
+  maxEnergy: 3
+  ActionSlots: []
+  CombatLoadout: {fileID: 0}
+  BossPhases: []
+  PhysicalResistances:
+    CutMultiplier: 1
+    BluntMultiplier: 1
+    PierceMultiplier: 1
+  EnableStaggerGauge: 1
+  MaxStaggerGauge: 100
+  StaggerDamageRatio: 1
   minSpeed: 3
   maxSpeed: 8
   InitialResources: []

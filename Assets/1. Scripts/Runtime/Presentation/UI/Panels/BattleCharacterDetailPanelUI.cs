@@ -33,7 +33,6 @@ public sealed class BattleCharacterDetailPanelUI : MonoBehaviour
     [SerializeField] private Ease showEase = Ease.OutCubic;
     [SerializeField] private Ease hideEase = Ease.InCubic;
 
-
     [Header("Header")]
     [SerializeField] private Image artworkImage;
     [SerializeField] private TMP_Text nameText;
@@ -531,7 +530,7 @@ public sealed class BattleCharacterDetailPanelUI : MonoBehaviour
             resourceText.text =
                 $"빛 <b>{character.CurrentEnergy}/{character.MaxEnergy}</b>  " +
                 $"위세 <b>{prestige}/{maxPrestige}</b>  " +
-                $"Block <b>{character.RuntimeStatus?.currentBlock ?? 0}</b>";
+                $"가드 <b>{character.RuntimeStatus?.currentBlock ?? 0}</b>";
         }
 
         if (artworkImage != null)
@@ -589,10 +588,17 @@ public sealed class BattleCharacterDetailPanelUI : MonoBehaviour
         builder.AppendLine(
             $"속도  {character.CurrentStatus?.minSpeed ?? 0}" +
             $"~{character.CurrentStatus?.maxSpeed ?? 0}");
-        builder.AppendLine(
-            $"피해 배율  ×{character.CurrentStatus?.damageMultiplier ?? 1f:0.##}");
-        builder.AppendLine(
-            $"방어 관통  {(character.CurrentStatus?.defensePenetrationRate ?? 0f) * 100f:0.#}%");
+
+        PhysicalResistanceProfile resistance = data?.PhysicalResistances;
+        if (resistance != null)
+        {
+            builder.AppendLine();
+            builder.AppendLine("<b>물리 내성</b>");
+            builder.AppendLine(
+                $"절단 ×{resistance.GetMultiplier(PhysicalDamageType.Cut):0.##}   " +
+                $"둔격 ×{resistance.GetMultiplier(PhysicalDamageType.Blunt):0.##}   " +
+                $"관통 ×{resistance.GetMultiplier(PhysicalDamageType.Pierce):0.##}");
+        }
 
         summaryText.text = builder.ToString();
 
@@ -1429,7 +1435,6 @@ public sealed class BattleCharacterDetailPanelUI : MonoBehaviour
             $"DetailArtwork={(data != null && data.DetailArtwork != null ? data.DetailArtwork.name : "NULL")}",
             target);
     }
-
 
     private static Transform FindOwnedCameraPoint(
         Character target,

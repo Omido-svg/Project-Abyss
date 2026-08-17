@@ -29,6 +29,19 @@ public sealed class TMPKoreanFontBootstrap :
         ReportedPrewarmFailures =
             new HashSet<int>();
 
+#if UNITY_EDITOR
+    // Project TMP_FontAsset을 Editor Play Mode에서 직접 동적으로 수정하면
+    // TMP_EditorResourceManager의 EndOfFrame import와 경합할 수 있다.
+    // Play Mode에서는 font/material/atlas를 메모리 전용 복제본으로 분리한다.
+    private readonly Dictionary<int, TMP_FontAsset>
+        editorPlayFontClones =
+            new Dictionary<int, TMP_FontAsset>();
+
+    private readonly List<UnityEngine.Object>
+        editorPlayRuntimeObjects =
+            new List<UnityEngine.Object>();
+#endif
+
     [RuntimeInitializeOnLoadMethod(
         RuntimeInitializeLoadType.SubsystemRegistration)]
     private static void ResetStaticState()
@@ -72,6 +85,11 @@ public sealed class TMPKoreanFontBootstrap :
     private void Awake()
     {
         ResolveFontAssets();
+
+#if UNITY_EDITOR
+        if (Application.isPlaying)
+            DetachEditorPlayModeFontAssets();
+#endif
 
         if (koreanFontAsset == null)
         {
@@ -148,6 +166,199 @@ public sealed class TMPKoreanFontBootstrap :
         }
     }
 
+#if UNITY_EDITOR
+    /// <summary>
+    /// Editor Play Mode에서 Project asset인 Dynamic TMP_FontAsset을 직접 사용하면
+    /// 텍스트 렌더링 중 glyph/atlas 갱신이 원본 asset을 dirty 상태로 만들고,
+    /// TMP_EditorResourceManager의 EndOfFrame ImportAsset과 경합할 수 있다.
+    ///
+    /// 따라서 Play Mode에서는 FontAsset + Material + AtlasTexture를 메모리 전용으로
+    /// 복제하고, fallback graph도 project asset 대신 동일한 runtime clone을 사용한다.
+    /// Build에서는 이 경로가 컴파일되지 않는다.
+    /// </summary>
+    private void DetachEditorPlayModeFontAssets()
+    {
+        TMP_FontAsset sourcePrimary =
+            koreanFontAsset;
+
+        TMP_FontAsset sourceFallback =
+            koreanFallbackFontAsset;
+
+        koreanFontAsset =
+            GetOrCreateEditorPlayFontClone(
+                sourcePrimary);
+
+        koreanFallbackFontAsset =
+            sourceFallback == sourcePrimary
+                ? koreanFontAsset
+                : GetOrCreateEditorPlayFontClone(
+                    sourceFallback);
+
+        if (koreanFontAsset == null ||
+            koreanFallbackFontAsset == null ||
+            koreanFallbackFontAsset == koreanFontAsset)
+        {
+            return;
+        }
+
+        koreanFontAsset.fallbackFontAssetTable ??=
+            new List<TMP_FontAsset>();
+
+        // 알려진 한국어 fallback은 항상 첫 번째로 둔다.
+        koreanFontAsset.fallbackFontAssetTable.Remove(
+            koreanFallbackFontAsset);
+        koreanFontAsset.fallbackFontAssetTable.Insert(
+            0,
+            koreanFallbackFontAsset);
+    }
+
+    private TMP_FontAsset GetOrCreateEditorPlayFontClone(
+        TMP_FontAsset source)
+    {
+        if (source == null ||
+            !AssetDatabase.Contains(source))
+        {
+            return source;
+        }
+
+        int sourceId =
+            source.GetInstanceID();
+
+        if (editorPlayFontClones.TryGetValue(
+                sourceId,
+                out TMP_FontAsset existing))
+        {
+            return existing;
+        }
+
+        TMP_FontAsset clone =
+            Instantiate(source);
+
+        clone.name =
+            source.name + " [Editor PlayMode]";
+        clone.hideFlags =
+            HideFlags.HideAndDontSave;
+
+        // 먼저 등록해서 fallback graph가 순환 참조여도 재귀가 끝나게 한다.
+        editorPlayFontClones.Add(
+            sourceId,
+            clone);
+        editorPlayRuntimeObjects.Add(clone);
+
+        Texture2D[] sourceAtlases =
+            source.atlasTextures;
+
+        if (sourceAtlases != null &&
+            sourceAtlases.Length > 0)
+        {
+            Texture2D[] runtimeAtlases =
+                new Texture2D[sourceAtlases.Length];
+
+            for (int i = 0;
+                 i < sourceAtlases.Length;
+                 i++)
+            {
+                Texture2D sourceAtlas =
+                    sourceAtlases[i];
+
+                if (sourceAtlas == null)
+                    continue;
+
+                Texture2D atlasClone =
+                    Instantiate(sourceAtlas);
+
+                atlasClone.name =
+                    sourceAtlas.name + " [Editor PlayMode]";
+                atlasClone.hideFlags =
+                    HideFlags.HideAndDontSave;
+
+                runtimeAtlases[i] =
+                    atlasClone;
+
+                editorPlayRuntimeObjects.Add(
+                    atlasClone);
+            }
+
+            clone.atlasTextures =
+                runtimeAtlases;
+        }
+
+        if (source.material != null)
+        {
+            Material materialClone =
+                Instantiate(source.material);
+
+            materialClone.name =
+                source.material.name + " [Editor PlayMode]";
+            materialClone.hideFlags =
+                HideFlags.HideAndDontSave;
+
+            Texture2D[] cloneAtlases =
+                clone.atlasTextures;
+
+            if (cloneAtlases != null &&
+                cloneAtlases.Length > 0 &&
+                cloneAtlases[0] != null)
+            {
+                materialClone.mainTexture =
+                    cloneAtlases[0];
+            }
+
+            clone.material =
+                materialClone;
+
+            editorPlayRuntimeObjects.Add(
+                materialClone);
+        }
+
+        List<TMP_FontAsset> runtimeFallbacks =
+            new List<TMP_FontAsset>();
+
+        if (source.fallbackFontAssetTable != null)
+        {
+            foreach (TMP_FontAsset sourceFallback
+                     in source.fallbackFontAssetTable)
+            {
+                TMP_FontAsset runtimeFallback =
+                    GetOrCreateEditorPlayFontClone(
+                        sourceFallback);
+
+                if (runtimeFallback != null &&
+                    runtimeFallback != clone &&
+                    !runtimeFallbacks.Contains(
+                        runtimeFallback))
+                {
+                    runtimeFallbacks.Add(
+                        runtimeFallback);
+                }
+            }
+        }
+
+        clone.fallbackFontAssetTable =
+            runtimeFallbacks;
+
+        return clone;
+    }
+
+    private void OnDestroy()
+    {
+        // HideAndDontSave runtime copies만 파괴한다. Project asset에는 손대지 않는다.
+        for (int i = editorPlayRuntimeObjects.Count - 1;
+             i >= 0;
+             i--)
+        {
+            UnityEngine.Object runtimeObject =
+                editorPlayRuntimeObjects[i];
+
+            if (runtimeObject != null)
+                Destroy(runtimeObject);
+        }
+
+        editorPlayRuntimeObjects.Clear();
+        editorPlayFontClones.Clear();
+    }
+#endif
+
     private static TMP_FontAsset FindLoadedFont(
         IEnumerable<TMP_FontAsset> fonts,
         string exactName)
@@ -193,11 +404,13 @@ public sealed class TMPKoreanFontBootstrap :
             return;
 
 #if UNITY_EDITOR
-        // Editor Play Mode에서 프로젝트 TMP 에셋의 Fallback 목록을 바꾸면
-        // TMP Editor의 EndOfFrame Import와 충돌할 수 있다.
-        // Edit Mode의 Runtime Log Repair 메뉴가 영구 참조를 저장한다.
-        if (Application.isPlaying)
+        // 정상적인 Play Mode 경로에서는 Awake가 project asset을 runtime clone으로
+        // 분리한다. 혹시 분리에 실패해 여전히 project asset이면 절대 수정하지 않는다.
+        if (Application.isPlaying &&
+            AssetDatabase.Contains(koreanFontAsset))
+        {
             return;
+        }
 #endif
 
         koreanFontAsset.fallbackFontAssetTable ??=
@@ -217,6 +430,13 @@ public sealed class TMPKoreanFontBootstrap :
                     0,
                     koreanFallbackFontAsset);
         }
+
+#if UNITY_EDITOR
+        // TMP_Settings 자체도 Project asset이다. Editor Play Mode에서는 runtime clone의
+        // fallback table만 사용하고 Global Settings asset은 건드리지 않는다.
+        if (Application.isPlaying)
+            return;
+#endif
 
         if (!addAsGlobalFallback)
             return;

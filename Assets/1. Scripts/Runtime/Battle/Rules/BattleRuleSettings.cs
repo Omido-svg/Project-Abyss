@@ -1,5 +1,6 @@
 using System;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 [Serializable]
 public sealed class BattleRuleSettings
@@ -9,15 +10,13 @@ public sealed class BattleRuleSettings
     public EnergyRuleSettings Energy = new();
     public PrestigeRuleSettings Prestige = new();
 
-    [Header("Legacy Compatibility")]
-    public bool UseLegacyAttackDefenseStats;
-
     public void Normalize()
     {
         Momentum ??= new MomentumRuleSettings();
         Clash ??= new ClashRuleSettings();
         Energy ??= new EnergyRuleSettings();
         Prestige ??= new PrestigeRuleSettings();
+
         Momentum.Normalize();
         Clash.Normalize();
         Energy.Normalize();
@@ -43,14 +42,11 @@ public sealed class MomentumRuleSettings
     [Min(0f)] public float OverwhelmMultiplier = 2f;
     [HideInInspector] public float MaximumOverwhelmMultiplier = 2f;
 
-    [Header("Shift")]
+    [Header("Exchange shifts")]
     [Min(0)] public int HitShift = 5;
 
     [Tooltip("결투 대 결투에서 개별 교환 승자가 받는 추가 기세 이동량입니다.")]
     [Min(0)] public int DuelExchangeShift = 15;
-
-    [Tooltip("구형 다수결 결투 승리 보상. 최신 규칙에서는 0입니다.")]
-    [Min(0)] public int DuelVictoryShift;
 
     [Min(1)] public int LastStandHitShiftMultiplier = 2;
 
@@ -72,7 +68,6 @@ public sealed class MomentumRuleSettings
 
         HitShift = 5;
         DuelExchangeShift = 15;
-        DuelVictoryShift = 0;
         LastStandHitShiftMultiplier = 2;
     }
 }
@@ -86,19 +81,26 @@ public sealed class ClashRuleSettings
     [Min(1)] public int MaxCharacterRerollsPerExchange = 64;
     public bool ConsumeResourceOnActionStart = true;
 
-    [Tooltip(
-        "구형 OnClashWin/OnClashLose, 다수결 위세 충전, 최종 결투 푸시를 유지합니다. " +
-        "올라프·유진 최신 설계에서는 false여야 합니다.")]
-    public bool UseLegacyClashMajorityRewards;
-
     public void Normalize()
     {
-        DefaultExchangeRollCount = Mathf.Clamp(DefaultExchangeRollCount, 1, 8);
-        SpeedWeight = Mathf.Max(0, SpeedWeight);
-        MaxTieRerolls = Mathf.Max(1, MaxTieRerolls);
+        DefaultExchangeRollCount =
+            Mathf.Clamp(
+                DefaultExchangeRollCount,
+                1,
+                8);
+
+        SpeedWeight = Mathf.Max(
+            0,
+            SpeedWeight);
+
+        MaxTieRerolls = Mathf.Max(
+            1,
+            MaxTieRerolls);
+
         MaxCharacterRerollsPerExchange =
-            Mathf.Max(1, MaxCharacterRerollsPerExchange);
-        UseLegacyClashMajorityRewards = false;
+            Mathf.Max(
+                1,
+                MaxCharacterRerollsPerExchange);
     }
 }
 
@@ -111,33 +113,31 @@ public sealed class EnergyRuleSettings
 
     public void Normalize()
     {
-        DefaultMaximum = Mathf.Max(1, DefaultMaximum);
-        TurnStartGain = Mathf.Max(0, TurnStartGain);
+        DefaultMaximum = Mathf.Max(
+            1,
+            DefaultMaximum);
+
+        TurnStartGain = Mathf.Max(
+            0,
+            TurnStartGain);
     }
 }
 
 [Serializable]
 public sealed class PrestigeRuleSettings
 {
-    [Header("Latest exchange-based charge")]
+    [Header("Exchange-based charge")]
     [Min(0)] public int ExchangeParticipantCharge = 5;
     [Min(0)] public int OneSidedParticipantCharge = 5;
 
-    [Header("Legacy compatibility")]
-    [Min(0)] public int ClashStartCharge;
-    [Min(0)] public int HitDealtCharge;
-    [Min(0)] public int HitTakenCharge;
-    [Min(0)] public int ClashVictoryCharge;
-    public bool PreparationDoesNotCharge = true;
+    [Tooltip("준비 행동은 교환 위세 충전 대상에서 제외합니다.")]
+    [FormerlySerializedAs("PreparationDoesNotCharge")]
+    public bool ExcludePreparationActions = true;
 
     public void Normalize()
     {
+        // 현재 전투 밸런스의 확정값을 유지합니다.
         ExchangeParticipantCharge = 5;
         OneSidedParticipantCharge = 5;
-
-        ClashStartCharge = 0;
-        HitDealtCharge = 0;
-        HitTakenCharge = 0;
-        ClashVictoryCharge = 0;
     }
 }

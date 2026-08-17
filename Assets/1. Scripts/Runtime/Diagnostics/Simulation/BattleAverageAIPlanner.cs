@@ -406,7 +406,7 @@ public sealed class BattleAverageAIPlanner
             {
                 score += skill.CanBreakPart
                     ? 130f
-                    : 60f;
+                    : -180f;
             }
 
             if (targetPart.MaxPartHP > 0f)

@@ -32,6 +32,8 @@ public abstract class Skill
     protected Character owner;
     protected BattleEvent battleEvent;
 
+    public Character Owner => owner;
+
     private BattleEvent registeredBattleEvent;
     private readonly HashSet<SkillEffectDispatchKey> activeEffectDispatches = new();
 

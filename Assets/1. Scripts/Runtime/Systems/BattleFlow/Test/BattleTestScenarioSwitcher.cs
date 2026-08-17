@@ -12,7 +12,8 @@ public enum BattleTestEncounterMode
 public enum BattleTestPlayerMode
 {
     Olaf = 0,
-    Yujin = 1
+    Yujin = 1,
+    Hifumi = 2
 }
 
 /// <summary>
@@ -51,6 +52,7 @@ public sealed class BattleTestScenarioSwitcher : MonoBehaviour
     [Header("Player Prefabs")]
     [SerializeField] private Character olafPrefab;
     [SerializeField] private Character yujinPrefab;
+    [SerializeField] private Character hifumiPrefab;
 
     [Header("Enemy Prefabs")]
     [SerializeField] private Character normalEnemyPrefab;
@@ -98,6 +100,7 @@ public sealed class BattleTestScenarioSwitcher : MonoBehaviour
 
     public Character OlafPrefab => olafPrefab;
     public Character YujinPrefab => yujinPrefab;
+    public Character HifumiPrefab => hifumiPrefab;
     public Character NormalEnemyPrefab => normalEnemyPrefab;
     public Character EliteEnemyPrefab => eliteEnemyPrefab;
     public Character BossEnemyPrefab => bossEnemyPrefab;
@@ -160,12 +163,14 @@ public sealed class BattleTestScenarioSwitcher : MonoBehaviour
     public void ConfigureAssets(
         Character newOlafPrefab,
         Character newYujinPrefab,
+        Character newHifumiPrefab,
         Character newNormalEnemyPrefab,
         Character newEliteEnemyPrefab,
         Character newBossEnemyPrefab)
     {
         olafPrefab = newOlafPrefab;
         yujinPrefab = newYujinPrefab;
+        hifumiPrefab = newHifumiPrefab;
         normalEnemyPrefab = newNormalEnemyPrefab;
         eliteEnemyPrefab = newEliteEnemyPrefab;
         bossEnemyPrefab = newBossEnemyPrefab;
@@ -260,7 +265,6 @@ public sealed class BattleTestScenarioSwitcher : MonoBehaviour
             scenePrototypeCharacters);
 
         battleManager.AssignRosterController(rosterController);
-        battleManager.ClearLegacyMigrationData();
 
         lastApplyMessage =
             $"{GetPlayerLabel(selectedPlayer)} / " +
@@ -285,6 +289,13 @@ public sealed class BattleTestScenarioSwitcher : MonoBehaviour
     {
         ChangeSelection(
             BattleTestPlayerMode.Yujin,
+            selectedEncounter);
+    }
+
+    public void SelectHifumi()
+    {
+        ChangeSelection(
+            BattleTestPlayerMode.Hifumi,
             selectedEncounter);
     }
 
@@ -419,7 +430,7 @@ public sealed class BattleTestScenarioSwitcher : MonoBehaviour
                         PlayerPreferenceKey,
                         (int)defaultPlayer),
                     (int)BattleTestPlayerMode.Olaf,
-                    (int)BattleTestPlayerMode.Yujin);
+                    (int)BattleTestPlayerMode.Hifumi);
         }
 
         if (PlayerPrefs.HasKey(EncounterPreferenceKey))
@@ -452,17 +463,23 @@ public sealed class BattleTestScenarioSwitcher : MonoBehaviour
 
     private Character ResolvePlayerPrefab()
     {
-        Character selected =
-            selectedPlayer == BattleTestPlayerMode.Yujin
-                ? yujinPrefab
-                : olafPrefab;
+        Character selected = selectedPlayer switch
+        {
+            BattleTestPlayerMode.Yujin => yujinPrefab,
+            BattleTestPlayerMode.Hifumi => hifumiPrefab,
+            _ => olafPrefab
+        };
 
         if (selected != null)
             return selected;
 
-        return olafPrefab != null
-            ? olafPrefab
-            : yujinPrefab;
+        if (olafPrefab != null)
+            return olafPrefab;
+
+        if (yujinPrefab != null)
+            return yujinPrefab;
+
+        return hifumiPrefab;
     }
 
     private List<Character> BuildEnemyPrefabList()
@@ -593,6 +610,9 @@ public sealed class BattleTestScenarioSwitcher : MonoBehaviour
         if (GUILayout.Button("유진"))
             SelectYujin();
 
+        if (GUILayout.Button("히후미"))
+            SelectHifumi();
+
         GUILayout.EndHorizontal();
         GUILayout.Space(6f);
 
@@ -621,9 +641,12 @@ public sealed class BattleTestScenarioSwitcher : MonoBehaviour
     private static string GetPlayerLabel(
         BattleTestPlayerMode mode)
     {
-        return mode == BattleTestPlayerMode.Yujin
-            ? "유진"
-            : "올라프";
+        return mode switch
+        {
+            BattleTestPlayerMode.Yujin => "유진",
+            BattleTestPlayerMode.Hifumi => "히후미",
+            _ => "올라프"
+        };
     }
 
     private static string GetEncounterLabel(

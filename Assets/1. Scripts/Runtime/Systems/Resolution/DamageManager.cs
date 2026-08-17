@@ -5,7 +5,7 @@ public class DamageManager
     private readonly BattleContext battleContext;
     private readonly MomentumManager momentumManager;
 
-    private readonly DamageCalculator calculator;
+    private readonly DamagePipeline pipeline;
     private readonly DamageEventDispatcher eventDispatcher;
 
     public DamageManager(
@@ -15,27 +15,13 @@ public class DamageManager
         this.battleContext = battleContext;
         this.momentumManager = momentumManager;
 
-        calculator =
-            new DamageCalculator(
-                momentumManager,
-                battleContext?.Rules);
+        pipeline =
+            new DamagePipeline(
+                momentumManager);
 
         eventDispatcher =
             new DamageEventDispatcher(
                 battleContext);
-    }
-
-    //--------------------------------
-    // 기존 호출부 호환 API
-    //--------------------------------
-
-    public int ApplyDamage(
-        BattleAction action)
-    {
-        DamageContext context =
-            ApplyDamageContext(action);
-
-        return context?.GetDisplayDamage() ?? 0;
     }
 
     //--------------------------------
@@ -57,7 +43,6 @@ public class DamageManager
             DamageRequest.FromAction(
                 action,
                 damageType,
-                GetSkillMultiplier(action),
                 ShouldBreakPart(action),
                 isClashDamage,
                 targetLostClash);
@@ -78,14 +63,12 @@ public class DamageManager
         DamageRequest request = DamageRequest.FromAction(
             action,
             ResolveActionDamageType(action),
-            GetSkillMultiplier(action),
             ShouldBreakPart(action),
             isClashDamage,
             targetLostClash);
 
-        // 합에서 공격 굴림이 승리해 이 API에 도달했다면,
-        // 순수 굴림값이 0 이하라도 실제 피해는 최소 1에서 시작한다.
-        // 판정값 보정은 rawPower에 섞지 않는다.
+        // 판정 보정은 피해 기준 위력에 섞지 않습니다.
+        // 유효한 공격의 시작 위력은 최소 1입니다.
         int resolvedRawPower = Mathf.Max(1, rawPower);
         request.Damage = resolvedRawPower;
         request.RawPower = resolvedRawPower;
@@ -104,6 +87,8 @@ public class DamageManager
             action.Owner == null ||
             action.Owner.IsDead ||
             action.Skill == null ||
+            (action.ActionType != ActionType.NormalAttack &&
+             action.ActionType != ActionType.Duel) ||
             weightedTarget == null ||
             weightedTarget.IsPrimary ||
             weightedTarget.TargetCharacter == null ||
@@ -123,13 +108,12 @@ public class DamageManager
             return null;
         }
 
-        float skillMultiplier =
-            GetSkillMultiplier(action) *
+        float damageCoefficient =
             Mathf.Max(
                 0f,
                 secondaryDamageMultiplier);
 
-        if (skillMultiplier <= 0f)
+        if (damageCoefficient <= 0f)
             return null;
 
         int resolvedRawPower =
@@ -143,12 +127,14 @@ public class DamageManager
                 ResolveActionDamageType(
                     action,
                     targetPart),
-                skillMultiplier,
                 ShouldBreakPart(
                     action,
                     targetPart),
                 isClashDamage: false,
                 targetLostClash: false);
+
+        request.DamageCoefficient =
+            damageCoefficient;
 
         request.TargetCharacter =
             weightedTarget.TargetCharacter;
@@ -193,7 +179,7 @@ public class DamageManager
 
         CaptureBeforeSnapshot(context);
 
-        calculator.Calculate(context);
+        pipeline.Calculate(context);
 
         Character target =
             context.Target;
@@ -250,7 +236,7 @@ public class DamageManager
             context.Target.RuntimeStatus;
 
         // 계산 단계에서는 값만 보존하고,
-        // 실제 적용 단계에서 한 번만 방어도를 차감한다.
+        // 실제 적용 단계에서 한 번만 가드 수치를 차감합니다.
         if (runtime != null &&
             context.GuardAbsorbed > 0)
         {
@@ -261,8 +247,7 @@ public class DamageManager
         if (context.FinalDamage <= 0)
         {
             context.WasApplied =
-                context.GuardAbsorbed > 0 ||
-                context.ProtectionAbsorbed > 0;
+                context.GuardAbsorbed > 0;
 
             return;
         }
@@ -368,9 +353,10 @@ public class DamageManager
         context.TargetPartStateBefore =
             context.TargetPart.State;
 
+        // 약화는 아직 부위 피해 경로다. 파괴된 부위만 직접 HP 경로다.
         context.WasDirectHPDamage =
-            context.TargetPartStateBefore !=
-            BodyPartState.Normal;
+            context.TargetPartStateBefore ==
+            BodyPartState.Broken;
     }
 
     private void CaptureAfterSnapshot(
@@ -456,13 +442,6 @@ public class DamageManager
                 context.FinalDamage,
                 observedDamage);
 
-        if (context.FinalDamage > 0 &&
-            context.WasApplied &&
-            context.AppliedDamage <= 0)
-        {
-            context.AppliedDamage =
-                context.FinalDamage;
-        }
     }
 
     private bool IsValidAction(
@@ -478,6 +457,14 @@ public class DamageManager
 
         if (action.Owner.IsDead ||
             action.Target.IsDead)
+        {
+            return false;
+        }
+
+        // 표준 Action 기반 피해는 실제 공격 행동만 사용한다.
+        // 도사림/위세가 피해를 주려면 SkillEffect에서 명시적 DamageRequest를 만든다.
+        if (action.ActionType != ActionType.NormalAttack &&
+            action.ActionType != ActionType.Duel)
         {
             return false;
         }
@@ -500,19 +487,70 @@ public class DamageManager
         if (request.TargetCharacter.IsDead)
             return false;
 
+        if (request.TargetPart != null &&
+            request.TargetPart.Owner != null &&
+            request.TargetPart.Owner !=
+            request.TargetCharacter)
+        {
+            Debug.LogError(
+                "[DamageManager] 피해 대상 캐릭터와 대상 부위의 Owner가 다릅니다. " +
+                $"Source={GetCharacterName(request.SourceCharacter)}, " +
+                $"Target={GetCharacterName(request.TargetCharacter)}, " +
+                $"PartOwner={GetCharacterName(request.TargetPart.Owner)}, " +
+                $"Part={request.TargetPart.Type}");
+
+            return false;
+        }
+
+        BattleAction sourceAction =
+            request.SourceAction;
+
+        if (request.IsClashDamage &&
+            sourceAction != null &&
+            (request.TargetCharacter != sourceAction.Target ||
+             request.TargetPart != sourceAction.TargetPart))
+        {
+            Debug.LogError(
+                "[DamageManager] 합 피해 요청이 BattleAction의 해석 타깃과 다릅니다. " +
+                $"ActionId={sourceAction.ActionId}, " +
+                $"Owner={GetCharacterName(sourceAction.Owner)}, " +
+                $"ActionTarget={GetCharacterName(sourceAction.Target)}/" +
+                $"{GetPartName(sourceAction.TargetPart)}, " +
+                $"RequestTarget={GetCharacterName(request.TargetCharacter)}/" +
+                $"{GetPartName(request.TargetPart)}");
+
+            return false;
+        }
+
         if (request.Damage < 0 ||
             request.RawPower < 0)
         {
             return false;
         }
 
-        if (request.SourceAction?.OwnerPart != null &&
-            request.SourceAction.OwnerPart.IsBroken)
+        if (sourceAction?.OwnerPart != null &&
+            sourceAction.OwnerPart.IsBroken)
         {
             return false;
         }
 
         return true;
+    }
+
+    private static string GetCharacterName(
+        Character character)
+    {
+        return character?.Data?.CharacterName ??
+               character?.name ??
+               "NULL";
+    }
+
+    private static string GetPartName(
+        BodyPart part)
+    {
+        return part == null
+            ? "CHARACTER"
+            : part.Type.ToString();
     }
 
     private DamageType ResolveActionDamageType(
@@ -536,22 +574,6 @@ public class DamageManager
         return targetPart == null
             ? DamageType.Direct
             : DamageType.SkillPart;
-    }
-
-    private float GetSkillMultiplier(
-        BattleAction action)
-    {
-        if (action == null)
-            return 0f;
-
-        return action.ActionType switch
-        {
-            ActionType.Prestige => 0f,
-            ActionType.Preparation => 0f,
-            ActionType.NormalAttack => 1f,
-            ActionType.Duel => 1f,
-            _ => 1f
-        };
     }
 
     private bool ShouldBreakPart(

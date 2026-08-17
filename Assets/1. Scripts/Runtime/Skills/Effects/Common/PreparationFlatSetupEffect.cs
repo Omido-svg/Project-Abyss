@@ -45,7 +45,7 @@ public sealed class PreparationFlatSetupEffect : SkillEffectDefinition
 
         Debug.Log(
             $"{target.Data?.CharacterName ?? target.name} 도사림 셋업 / " +
-            $"방어도 +{effectiveBlock}, " +
+            $"가드 +{effectiveBlock}, " +
             $"이번 턴 합 +{effectiveClashBonus}, " +
             $"WeakenedLegSource=" +
             $"{PreparationEffectUtility.IsWeakenedLegSource(context)}");

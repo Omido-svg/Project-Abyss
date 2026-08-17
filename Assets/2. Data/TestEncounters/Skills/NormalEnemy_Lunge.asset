@@ -16,6 +16,7 @@ MonoBehaviour:
   SkillName: "\uB2EC\uB824\uB4E4\uAE30"
   ActionType: 1
   BasePower: 0
+  PhysicalType: 0
   CanBreakPart: 0
   GainPrestige: 1
   AttackWeight:
@@ -29,6 +30,7 @@ MonoBehaviour:
   Rolls:
   - Index: 0
     Type: 0
+    DiceMode: 0
     MinPower: 13
     MaxPower: 19
     RngSource: 1
@@ -51,6 +53,7 @@ MonoBehaviour:
     OnLoseEffects: []
   - Index: 1
     Type: 0
+    DiceMode: 0
     MinPower: 13
     MaxPower: 19
     RngSource: 1
@@ -73,6 +76,7 @@ MonoBehaviour:
     OnLoseEffects: []
   - Index: 2
     Type: 0
+    DiceMode: 0
     MinPower: 13
     MaxPower: 19
     RngSource: 1

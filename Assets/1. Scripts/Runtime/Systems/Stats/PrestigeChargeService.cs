@@ -2,14 +2,8 @@ using UnityEngine;
 
 public enum PrestigeChargeReason
 {
-    ExchangeParticipant,
-    OneSidedParticipant,
-
-    // Legacy compatibility
-    ClashStart,
-    HitDealt,
-    HitTaken,
-    ClashVictory
+    ExchangeParticipant = 0,
+    OneSidedParticipant = 1
 }
 
 public sealed class PrestigeChargeContext
@@ -37,8 +31,11 @@ public sealed class PrestigeChargeService
         BattleContext battleContext)
     {
         this.battleContext = battleContext;
-        settings = battleContext?.Rules?.Prestige ??
-                   new PrestigeRuleSettings();
+
+        settings =
+            battleContext?.Rules?.Prestige ??
+            new PrestigeRuleSettings();
+
         settings.Normalize();
     }
 
@@ -68,50 +65,6 @@ public sealed class PrestigeChargeService
             settings.OneSidedParticipantCharge);
     }
 
-    public int ChargeClashStart(
-        Character recipient,
-        Character other,
-        BattleAction sourceAction) =>
-        Charge(
-            recipient,
-            other,
-            sourceAction,
-            PrestigeChargeReason.ClashStart,
-            settings.ClashStartCharge);
-
-    public int ChargeHitDealt(
-        Character recipient,
-        Character target,
-        BattleAction sourceAction) =>
-        Charge(
-            recipient,
-            target,
-            sourceAction,
-            PrestigeChargeReason.HitDealt,
-            settings.HitDealtCharge);
-
-    public int ChargeHitTaken(
-        Character recipient,
-        Character attacker,
-        BattleAction sourceAction) =>
-        Charge(
-            recipient,
-            attacker,
-            sourceAction,
-            PrestigeChargeReason.HitTaken,
-            settings.HitTakenCharge);
-
-    public int ChargeClashVictory(
-        Character recipient,
-        Character loser,
-        BattleAction sourceAction) =>
-        Charge(
-            recipient,
-            loser,
-            sourceAction,
-            PrestigeChargeReason.ClashVictory,
-            settings.ClashVictoryCharge);
-
     private int Charge(
         Character recipient,
         Character other,
@@ -126,8 +79,9 @@ public sealed class PrestigeChargeService
             return 0;
         }
 
-        if (settings.PreparationDoesNotCharge &&
-            sourceAction?.ActionType == ActionType.Preparation)
+        if (settings.ExcludePreparationActions &&
+            sourceAction?.ActionType ==
+            ActionType.Preparation)
         {
             return 0;
         }
@@ -155,11 +109,12 @@ public sealed class PrestigeChargeService
                     continue;
                 }
 
-                amount = Mathf.Max(
-                    0,
-                    modifier.ModifyPrestigeCharge(
-                        context,
-                        amount));
+                amount =
+                    Mathf.Max(
+                        0,
+                        modifier.ModifyPrestigeCharge(
+                            context,
+                            amount));
             }
         }
 

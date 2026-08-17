@@ -14,9 +14,9 @@ public static class CombatRollResolver
         return type switch
         {
             SkillResolverType.Coin => RollCoin(data),
-            SkillResolverType.Chinchiro => RollChinchiro(data),
+            SkillResolverType.Chinchiro => RollChinchiro(skill, data),
             SkillResolverType.Slot => RollSlot(data),
-            _ => RollDice(data, SkillResolverType.Dice)
+            _ => RollDice(skill, data, SkillResolverType.Dice)
         };
     }
 
@@ -35,14 +35,23 @@ public static class CombatRollResolver
     }
 
     private static RollResult RollDice(
+        Skill skill,
         SkillRollData data,
         SkillResolverType resolverType)
     {
         int min = data.SafeMinPower;
         int max = data.SafeMaxPower;
         int value = Random.Range(min, max + 1);
+        int basePower =
+            data.ResolveDiceBasePower(
+                skill?.BasePower ?? 0);
 
-        RollResult result = Create(data, resolverType, value);
+        RollResult result =
+            Create(
+                data,
+                resolverType,
+                value,
+                basePower);
         result.DiceMin = min;
         result.DiceMax = max;
         result.DiceValues.Add(value);
@@ -107,11 +116,37 @@ public static class CombatRollResolver
         return result;
     }
 
-    private static RollResult RollChinchiro(SkillRollData data)
+    private static RollResult RollChinchiro(Skill skill, SkillRollData data)
     {
-        int a = Random.Range(1, 7);
-        int b = Random.Range(1, 7);
-        int c = Random.Range(1, 7);
+        int a;
+        int b;
+        int c;
+
+        HifumiMechanic hifumi =
+            skill?.Owner?.GetMechanic<HifumiMechanic>();
+
+        if (hifumi != null &&
+            hifumi.TryGetForcedChinchiro(out ChinchiroCombination forced))
+        {
+            if (forced == ChinchiroCombination.Hifumi)
+            {
+                a = 1;
+                b = 2;
+                c = 3;
+            }
+            else
+            {
+                a = 6;
+                b = 6;
+                c = 6;
+            }
+        }
+        else
+        {
+            a = Random.Range(1, 7);
+            b = Random.Range(1, 7);
+            c = Random.Range(1, 7);
+        }
         int[] values = { a, b, c };
         System.Array.Sort(values);
 
@@ -159,7 +194,8 @@ public static class CombatRollResolver
     private static RollResult Create(
         SkillRollData data,
         SkillResolverType resolverType,
-        int power)
+        int power,
+        int basePower = 0)
     {
         RollResult result = new RollResult
         {
@@ -167,12 +203,12 @@ public static class CombatRollResolver
             RollIndex = data.Index,
             RollType = data.Type,
             JudgmentModifier = data.JudgmentModifier,
-            BasePower = 0,
+            BasePower = basePower,
             RawValue = power,
             ModifiedValue = power,
-            FinalPower = power
+            ExternalModifier = 0
         };
-        result.RecalculateClashPower();
+        result.RecalculateFinalPower();
         return result;
     }
 }

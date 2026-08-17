@@ -63,8 +63,13 @@ MonoBehaviour:
     AllowedActionTypes: 0200000003000000
   CombatLoadout: {fileID: 11400000, guid: 8d9c3aad2944dca45b238efa251d57d1, type: 2}
   BossPhases: []
-  damageMultiplier: 1
-  defensePenetration: 0
+  PhysicalResistances:
+    CutMultiplier: 1
+    BluntMultiplier: 1
+    PierceMultiplier: 1
+  EnableStaggerGauge: 1
+  MaxStaggerGauge: 100
+  StaggerDamageRatio: 1
   minSpeed: 7
   maxSpeed: 15
   InitialResources: []

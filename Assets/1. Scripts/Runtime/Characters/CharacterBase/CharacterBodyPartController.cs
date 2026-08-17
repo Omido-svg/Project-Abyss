@@ -205,6 +205,28 @@ public class CharacterBodyPartController
             sourceAction);
     }
 
+    public void RestoreTemporaryWeakenedPart(
+        BodyPart part,
+        float hpBeforeTemporaryWeaken)
+    {
+        if (owner == null ||
+            part == null ||
+            (part.Owner != null && part.Owner != owner) ||
+            !part.IsWeakened)
+        {
+            return;
+        }
+
+        // 임시 약화는 일반 부위 회복과 다르다. 부위에 걸린 다른 상태이상은 유지하고
+        // 약화 때문에 생성된 PartDisabledStatus만 제거한다.
+        part.RestoreTemporaryWeaken(hpBeforeTemporaryWeaken);
+        owner.RemoveDisabledStatusForPart(part);
+
+        owner.BattleEvent?.RaiseBodyPartRecovered(
+            owner,
+            part);
+    }
+
     public void RecoverPart(BodyPart part)
     {
         if (owner == null ||

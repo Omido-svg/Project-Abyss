@@ -64,10 +64,16 @@ public class BattleStatusVisualDirector : MonoBehaviour
             {
                 QueuedStatusVisual visual = queue.Dequeue();
 
-                if (visual.DamageRequest != null)
+                if (visual.DamageRequest != null &&
+                    visual.DamageRequest.Target != null)
+                {
                     PlayDamage(visual.DamageRequest);
-                else if (visual.LifecycleRequest != null)
+                }
+                else if (visual.LifecycleRequest != null &&
+                         visual.LifecycleRequest.Target != null)
+                {
                     PlayLifecycle(visual.LifecycleRequest);
+                }
 
                 if (delayBetweenRequests <= 0f)
                 {
@@ -91,6 +97,11 @@ public class BattleStatusVisualDirector : MonoBehaviour
 
     private void PlayLifecycle(StatusEffectLifecycleVisualRequest request)
     {
+        if (request == null || request.Target == null)
+            return;
+
+        Character target = request.Target;
+
         ResolveReferences();
 
         StatusEffectVisualDefinition visual =
@@ -100,7 +111,7 @@ public class BattleStatusVisualDirector : MonoBehaviour
             return;
 
         CharacterPersistentVfxController persistentController =
-            request.Target.GetComponentInChildren<CharacterPersistentVfxController>(true);
+            target.GetComponentInChildren<CharacterPersistentVfxController>(true);
 
         bool isApplyLike =
             request.Phase == StatusEffectVisualPhase.Applied ||
@@ -120,10 +131,10 @@ public class BattleStatusVisualDirector : MonoBehaviour
         if (definition != null && vfxManager != null)
         {
             CharacterView targetView =
-                BattleCameraTargetResolver.GetView(request.Target);
+                BattleCameraTargetResolver.GetView(target);
 
             BattleVfxContext context = BattleVfxContext.ForStatus(
-                request.Target,
+                target,
                 request.TargetPart,
                 request.StatusKey,
                 request.Phase,
@@ -146,13 +157,18 @@ public class BattleStatusVisualDirector : MonoBehaviour
             Debug.Log(
                 $"[BattleStatusVisualDirector] Lifecycle / " +
                 $"Status={request.StatusKey}, Phase={request.Phase}, " +
-                $"Target={request.Target.Data?.CharacterName}, " +
+                $"Target={target.Data?.CharacterName}, " +
                 $"Part={(request.TargetPart == null ? "NONE" : request.TargetPart.Type.ToString())}");
         }
     }
 
     private void PlayDamage(StatusDamageVisualRequest request)
     {
+        if (request == null || request.Target == null)
+            return;
+
+        Character target = request.Target;
+
         ResolveReferences();
 
         StatusEffectVisualDefinition visual =
@@ -162,7 +178,7 @@ public class BattleStatusVisualDirector : MonoBehaviour
             return;
 
         CharacterView targetView =
-            BattleCameraTargetResolver.GetView(request.Target);
+            BattleCameraTargetResolver.GetView(target);
 
         Color damageColor = request.HasDamageColorOverride
             ? request.DamageColor
@@ -179,7 +195,7 @@ public class BattleStatusVisualDirector : MonoBehaviour
         if (visual.TickDamageVfx != null && vfxManager != null)
         {
             BattleVfxContext context = BattleVfxContext.ForStatus(
-                request.Target,
+                target,
                 request.TargetPart,
                 request.StatusKey,
                 StatusEffectVisualPhase.Stacked,
@@ -202,7 +218,7 @@ public class BattleStatusVisualDirector : MonoBehaviour
             Debug.Log(
                 $"[BattleStatusVisualDirector] Tick / " +
                 $"Status={request.StatusKey}, Damage={request.Damage}, " +
-                $"Target={request.Target.Data?.CharacterName}");
+                $"Target={target.Data?.CharacterName}");
         }
     }
 

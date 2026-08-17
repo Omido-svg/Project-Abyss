@@ -14,6 +14,7 @@ public class CharacterViewEventBinder :
 
     private BattleEvent battleEvent;
     private Coroutine bindRoutine;
+    private Coroutine deferredDeathRoutine;
 
     public bool IsSubscribed =>
         battleEvent != null &&
@@ -33,12 +34,14 @@ public class CharacterViewEventBinder :
     private void OnDisable()
     {
         StopBindRoutine();
+        StopDeferredDeathRoutine();
         Unsubscribe();
     }
 
     private void OnDestroy()
     {
         StopBindRoutine();
+        StopDeferredDeathRoutine();
         Unsubscribe();
         subscriptions.Dispose();
     }
@@ -183,6 +186,7 @@ public class CharacterViewEventBinder :
 
     private void HandleBattleEnded()
     {
+        StopDeferredDeathRoutine();
         Unsubscribe();
     }
 
@@ -235,6 +239,59 @@ public class CharacterViewEventBinder :
         if (context?.Victim != character)
             return;
 
+        // Action 기반 피해는 로직 단계에서 먼저 사망 판정된다.
+        // 이 이벤트에서 즉시 Dead를 발동하면 공격 Timeline이 타격하기 전에
+        // 대상이 먼저 죽기 때문에, 실제 마지막 Hit Event가 Death 반응을 담당한다.
+        if (context.SourceAction != null)
+        {
+            StopDeferredDeathRoutine();
+            deferredDeathRoutine =
+                StartCoroutine(
+                    PlayDeferredDeathFallback());
+            return;
+        }
+
+        // 턴 종료 상태이상, 강제 처형처럼 별도 공격 Timeline이 없는 사망은 즉시 표시한다.
         characterView?.PlayDead();
+    }
+
+    private IEnumerator PlayDeferredDeathFallback()
+    {
+        // OnCharacterDeathResolved는 ActionResolver가 VisualRequest를 재생하기 직전에
+        // 동기적으로 발생한다. 한 프레임 양보해 Director가 현재 연출을 잡도록 한다.
+        yield return null;
+
+        BattleAnimationDirector director =
+            FindFirstObjectByType<BattleAnimationDirector>(
+                FindObjectsInactive.Include);
+
+        while (isActiveAndEnabled &&
+               director != null &&
+               director.IsPlaying)
+        {
+            yield return null;
+        }
+
+        if (isActiveAndEnabled &&
+            character != null &&
+            character.IsDead &&
+            characterView != null &&
+            !characterView.DeathPresentationStarted)
+        {
+            // Timeline 누락/취소처럼 Hit Event가 끝내 오지 않은 경우에만
+            // 연출 종료 후 안전한 fallback으로 Dead를 한 번 재생한다.
+            characterView.PlayDead();
+        }
+
+        deferredDeathRoutine = null;
+    }
+
+    private void StopDeferredDeathRoutine()
+    {
+        if (deferredDeathRoutine == null)
+            return;
+
+        StopCoroutine(deferredDeathRoutine);
+        deferredDeathRoutine = null;
     }
 }

@@ -111,9 +111,6 @@ public static class Utils
                 $"{current.minSpeed} ~ " +
                 $"{current.maxSpeed}");
 
-            builder.AppendLine(
-                $"  DamageM   : " +
-                $"{current.damageMultiplier:0.00}");
         }
         else
         {

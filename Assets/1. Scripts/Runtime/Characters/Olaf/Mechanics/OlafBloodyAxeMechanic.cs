@@ -106,7 +106,7 @@ public sealed class OlafBloodyAxeMechanic :
 
         Debug.Log(
             $"{GetOwnerName()} 아이템 발동 : " +
-            $"{MechanicName} / 출혈 {bleedingAmount} 추가 / " +
+            $"{MechanicName} / 혈상 {bleedingAmount} 추가 / " +
             $"ActionId={actionId}, " +
             $"Target={GetTargetName(context)}");
     }

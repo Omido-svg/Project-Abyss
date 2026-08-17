@@ -35,6 +35,7 @@ public class BattleUIManager : MonoBehaviour
     private readonly Dictionary<BodyPart, int>
         actionIndexCursorByPart = new();
 
+
     private Character selectedTarget;
     private BodyPart selectedTargetPart;
 
@@ -47,6 +48,81 @@ public class BattleUIManager : MonoBehaviour
     public bool IsSelectingTarget => inputMode == BattleInputMode.SelectTarget;
     public bool IsSelectingSkill => inputMode == BattleInputMode.SelectSkill;
     public BattleManager BattleManager => battleManager;
+
+    /// <summary>
+    /// 월드 플레이어 행동 슬롯이 스킬 지정 전에도 표시할 현재 턴 부위 속도.
+    /// </summary>
+    public int GetWorldPlanningSlotSpeed(
+        Character owner,
+        BodyPart part)
+    {
+        if (owner == null ||
+            battleManager?.SpeedManager == null)
+        {
+            return 0;
+        }
+
+        return battleManager.SpeedManager.GetSpeed(
+            owner,
+            part);
+    }
+
+    /// <summary>
+    /// 월드 머리 위 슬롯이 현재 편집 대상으로 선택되었는지 반환한다.
+    /// Hover/Select 애니메이션과 Pending 화살표가 동일한 선택 상태를 공유한다.
+    /// </summary>
+    public bool IsWorldPlanningSlotSelected(
+        Character owner,
+        BodyPart part,
+        int actionIndex)
+    {
+        return owner != null &&
+               part != null &&
+               selectedOwner == owner &&
+               IsSamePart(selectedOwnerPart, part) &&
+               selectedActionIndex == actionIndex &&
+               inputMode != BattleInputMode.SelectOwner;
+    }
+
+    /// <summary>
+    /// 스킬 선택이 끝나 정확한 적 ActionSlot을 고르는 중인 플레이어 슬롯.
+    /// 이 상태에서 해당 슬롯은 느리게 반짝이고 Mouse Arrow의 시작점이 된다.
+    /// </summary>
+    public bool IsWorldPlanningSlotPendingTarget(
+        Character owner,
+        BodyPart part,
+        int actionIndex)
+    {
+        return IsWorldPlanningSlotSelected(owner, part, actionIndex) &&
+               inputMode == BattleInputMode.SelectTarget &&
+               selection.Skill != null &&
+               selection.Skill.ActionType != ActionType.Preparation;
+    }
+
+    /// <summary>
+    /// 현재 플레이어 계획 중 하나가 해당 적 ActionSlot을 정확히 TargetSlot로 지정했는지 반환한다.
+    /// </summary>
+    public bool IsWorldTargetSlotAssigned(ActionSlot targetSlot)
+    {
+        if (targetSlot == null || battleManager?.ActionManager?.Slots == null)
+            return false;
+
+        foreach (ActionSlot slot in battleManager.ActionManager.Slots)
+        {
+            if (slot == null || !IsPlayer(slot.Owner))
+                continue;
+
+            if (slot.TargetSlot == targetSlot ||
+                slot.TargetSlot != null &&
+                slot.TargetSlot.ActionId == targetSlot.ActionId &&
+                slot.TargetSlot.Owner == targetSlot.Owner)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
 
     /// <summary>
     /// 스킬 선택/대상 선택 중에는 현재 논리 슬롯을 교체한다고 가정하여
@@ -127,6 +203,17 @@ public class BattleUIManager : MonoBehaviour
                System.Array.Empty<Skill>();
     }
 
+    /// <summary>
+    /// 스킬 서랍에는 현재 선택한 부위와 행동 슬롯의 구조 규칙을 통과한
+    /// 장착 스킬만 표시한다. 카드의 자원·상태 조건은 기존 선택 검증이
+    /// 별도로 처리한다.
+    /// </summary>
+    public IReadOnlyList<Skill> GetSkillsForCurrentSlotDrawer(
+        BodyPart part)
+    {
+        return GetSelectableSkillsForCurrentSlot(part);
+    }
+
     //---------------------------------------
 
     private void Awake()
@@ -201,16 +288,9 @@ public class BattleUIManager : MonoBehaviour
     }
 
     public void BuildParticipantButtons(
-        BattleContext context,
-        IReadOnlyList<BodyPartButton> legacyPlayerButtons,
-        IReadOnlyList<BodyPartButton> legacyEnemyButtons)
+        BattleContext context)
     {
         EnsureReferences();
-
-        participantButtonFactory?.ConfigureFromLegacy(
-            legacyPlayerButtons,
-            legacyEnemyButtons);
-
         ClearSelection();
 
         participantButtonFactory?.Rebuild(
@@ -1341,11 +1421,18 @@ public class BattleUIManager : MonoBehaviour
 
         if (skill.ActionType == ActionType.Preparation)
         {
+            // 도사림도 START 전까지는 실제 ActionSlot 계획으로 유지한다.
+            // 이 시점에는 효과/빛을 소비하지 않기 때문에 우클릭/Reset이
+            // UI뿐 아니라 백엔드에서도 완전한 행동 취소가 된다.
             if (!CreateSlot(skill))
                 return;
 
             if (skillSelectPanel != null)
                 skillSelectPanel.Hide();
+
+            BattleDebugLog.UIInput(
+                $"[Preparation Planned] {skill.SkillName} / " +
+                $"Part={selectedOwnerPart?.Type}, Index={selectedActionIndex}");
 
             ClearSelection();
             RefreshAllBodyPartButtons();
@@ -1366,6 +1453,256 @@ public class BattleUIManager : MonoBehaviour
 
         BattleDebugLog.UIInput(
             $"[Skill Selected] {skill.SkillName} / 공격 대상을 선택하세요.");
+    }
+
+    /// <summary>
+    /// 머리 위 슬롯 UI에서 플레이어 행동 슬롯을 바로 선택하고 스킬 패널을 연다.
+    /// </summary>
+    public bool SelectOwnerSlotAndOpenSkills(
+        Character owner,
+        BodyPart part,
+        int actionIndex)
+    {
+        if (!TrySelectOwnerSlot(owner, part, actionIndex))
+            return false;
+
+        inputMode = BattleInputMode.SelectSkill;
+        ShowSkillPanel();
+        return true;
+    }
+
+    /// <summary>
+    /// 스킬 패널에서 카드 클릭을 끝낸 뒤 적 머리 위 ActionSlot을 클릭했을 때 사용한다.
+    /// 정확한 TargetSlot을 "플레이어의 타깃 의도"로 저장한다.
+    /// 속도에 따른 가로채기/합 성립 여부는 이 입력 단계가 아니라 ClashBuilder가 별도로 판정한다.
+    /// </summary>
+    public bool TryAssignSelectedSkillToActionSlot(ActionSlot targetSlot)
+    {
+        Skill skill = selection.Skill;
+
+        if (skill == null ||
+            inputMode != BattleInputMode.SelectTarget)
+        {
+            return false;
+        }
+
+        return TryAssignSkillToActionSlot(
+            skill,
+            selectedActionIndex,
+            targetSlot);
+    }
+
+    /// <summary>
+    /// 현재 선택한 플레이어 부위/행동 인덱스에 스킬을 배치하고
+    /// 적의 정확한 ActionSlot을 TargetSlot 의도로 저장한다.
+    /// TargetSlot 지정 성공은 합 성립을 의미하지 않는다.
+    /// </summary>
+    public bool TryAssignDraggedSkillToActionSlot(
+        Skill skill,
+        int actionIndex,
+        ActionSlot targetSlot)
+    {
+        return TryAssignSkillToActionSlot(
+            skill,
+            actionIndex,
+            targetSlot);
+    }
+
+    private bool TryAssignSkillToActionSlot(
+        Skill skill,
+        int actionIndex,
+        ActionSlot targetSlot)
+    {
+        if (skill == null || targetSlot == null ||
+            selectedOwner == null || selectedOwnerPart == null ||
+            targetSlot.Owner == null || IsPlayer(targetSlot.Owner) ||
+            targetSlot.Phase != ActionPhase.COMBAT)
+        {
+            return false;
+        }
+
+        // 도사림은 적 TargetSlot으로 드롭하는 스킬이 아니다.
+        // 카드 클릭 시 자기 부위의 FORESIGHT 계획 슬롯으로 직접 등록된다.
+        if (skill.ActionType == ActionType.Preparation)
+            return false;
+
+        if (actionIndex < 0 || actionIndex >= selectedMaxActionSlots)
+            return false;
+
+        selectedActionIndex = actionIndex;
+        selection.SetActionIndex(selectedActionIndex, selectedMaxActionSlots);
+
+        if (!IsSkillSelectable(selectedOwnerPart, skill))
+            return false;
+
+        selection.SelectSkill(skill);
+
+        if (!TrySelectTargetSlot(targetSlot.Owner, targetSlot.Part))
+            return false;
+
+        if (!CreateSlot(skill))
+            return false;
+
+        ActionSlot created = battleManager.ActionManager.FindSlot(
+            selectedOwner,
+            selectedOwnerPart,
+            selectedActionIndex);
+
+        if (created == null)
+            return false;
+
+        created.TargetSlot = targetSlot;
+
+        BattleDebugLog.UIInput(
+            $"[World Slot Target Assigned] {created.Owner?.Data?.CharacterName} " +
+            $"{created.Skill?.SkillName} -> {targetSlot.Owner?.Data?.CharacterName} " +
+            $"TargetSlot={targetSlot.ActionId} / Clash=ResolveLater");
+
+        ClearSelection();
+        RefreshAllBodyPartButtons();
+        return true;
+    }
+
+    /// <summary>
+    /// 이미 배치된 아군 머리 위 슬롯을 적 머리 위 슬롯으로 드래그했을 때
+    /// 스킬은 유지하고 플레이어의 타깃 의도만 정확한 ActionSlot로 재지정한다.
+    /// 실제 합/일방공격 판정은 재지정 이후 ClashBuilder가 계산한다.
+    /// </summary>
+    public bool TryRetargetPlannedActionSlot(
+        ActionSlot sourceSlot,
+        ActionSlot targetSlot)
+    {
+        if (!IsManagerReady() ||
+            sourceSlot == null ||
+            targetSlot == null ||
+            sourceSlot.Owner == null ||
+            targetSlot.Owner == null ||
+            sourceSlot.Skill == null ||
+            sourceSlot.Phase != ActionPhase.COMBAT ||
+            targetSlot.Phase != ActionPhase.COMBAT ||
+            !IsPlayer(sourceSlot.Owner) ||
+            IsPlayer(targetSlot.Owner))
+        {
+            return false;
+        }
+
+        ActionSlot liveSource = battleManager.ActionManager.FindSlot(
+            sourceSlot.Owner,
+            sourceSlot.Part,
+            sourceSlot.ActionIndex);
+
+        if (liveSource == null || liveSource.ActionId != sourceSlot.ActionId)
+            return false;
+
+        liveSource.TargetCharacter = targetSlot.Owner;
+        liveSource.TargetPart = targetSlot.Part;
+        liveSource.TargetSlot = targetSlot;
+        liveSource.SecondaryTargetPart = null;
+
+        BattleDebugLog.UIInput(
+            $"[World Slot Retarget] {liveSource.Owner?.Data?.CharacterName} " +
+            $"{liveSource.Skill?.SkillName} -> {targetSlot.Owner?.Data?.CharacterName} " +
+            $"Slot={targetSlot.ActionId}");
+
+        RefreshAllBodyPartButtons();
+        return true;
+    }
+
+    private bool TryGetPendingYujinHwanhyeongEdit(
+        Skill skill,
+        out YujinMechanic mechanic,
+        out YujinWeaponType weapon)
+    {
+        mechanic = null;
+        weapon = default;
+
+        if (skill == null ||
+            selectedOwner is not Yujin yujin)
+        {
+            return false;
+        }
+
+        mechanic = yujin.YujinMechanic;
+
+        if (mechanic == null ||
+            !mechanic.HasPendingWeapon ||
+            !YujinMechanic.TryGetHwanhyeongWeapon(
+                skill.Definition?.SkillId,
+                out weapon))
+        {
+            return false;
+        }
+
+        return mechanic.CanSelectHwanhyeongWeapon(
+            weapon);
+    }
+
+    private string GetYujinHwanhyeongSelectionReason(
+        Skill skill)
+    {
+        if (skill == null ||
+            selectedOwner is not Yujin yujin)
+        {
+            return string.Empty;
+        }
+
+        YujinMechanic mechanic =
+            yujin.YujinMechanic;
+
+        if (mechanic == null ||
+            !YujinMechanic.TryGetHwanhyeongWeapon(
+                skill.Definition?.SkillId,
+                out YujinWeaponType weapon))
+        {
+            return string.Empty;
+        }
+
+        // 환형은 이제 START 전까지 FORESIGHT ActionSlot으로 보관된다.
+        // YujinMechanic에는 아직 pending이 생기지 않으므로 이번 턴 ActionManager에
+        // 이미 다른 환형 계획이 있는지도 함께 검사한다.
+        ActionSlot existingHwanhyeong =
+            FindPlannedYujinHwanhyeongSlot(
+                yujin);
+
+        if (existingHwanhyeong != null &&
+            (existingHwanhyeong.Part != selectedOwnerPart ||
+             existingHwanhyeong.ActionIndex != selectedActionIndex))
+        {
+            return "이번 턴 환형 이미 지정됨";
+        }
+
+        return mechanic.GetHwanhyeongSelectionReason(
+            weapon);
+    }
+
+    private ActionSlot FindPlannedYujinHwanhyeongSlot(
+        Yujin yujin)
+    {
+        if (yujin == null ||
+            battleManager?.ActionManager?.Slots == null)
+        {
+            return null;
+        }
+
+        foreach (ActionSlot slot
+                 in battleManager.ActionManager.Slots)
+        {
+            if (slot?.Owner != yujin ||
+                slot.Skill == null ||
+                slot.Phase != ActionPhase.FORESIGHT)
+            {
+                continue;
+            }
+
+            if (YujinMechanic.TryGetHwanhyeongWeapon(
+                    slot.Skill.Definition?.SkillId,
+                    out _))
+            {
+                return slot;
+            }
+        }
+
+        return null;
     }
 
     private void PlaySkillSelectionRejectedFeedback(
@@ -1458,6 +1795,27 @@ public class BattleUIManager : MonoBehaviour
         if (!ContainsSkill(selectedOwner.GetSelectableSkills(part, selectedActionIndex), skill))
             return false;
 
+        string queuedHwanhyeongReason =
+            GetYujinHwanhyeongSelectionReason(
+                skill);
+
+        if (!string.IsNullOrWhiteSpace(
+                queuedHwanhyeongReason))
+        {
+            return false;
+        }
+
+        // 구형 즉시 환형 경로 호환.
+        // 같은 계획 단계에서 예약 무기를 바꾸거나 취소하는 작업은
+        // 추가 자원 없이 편집으로 처리한다.
+        if (TryGetPendingYujinHwanhyeongEdit(
+                skill,
+                out _,
+                out _))
+        {
+            return true;
+        }
+
         if (!selectedOwner.CanUseSkill(part, skill))
             return false;
 
@@ -1516,6 +1874,37 @@ public class BattleUIManager : MonoBehaviour
         return
             character.RuntimeStatus.currentPrestige >=
             character.CurrentStatus.maxPrestige;
+    }
+
+    private static bool ResolveCharacterRerollChoice(
+        Character owner,
+        Skill skill)
+    {
+        YujinMechanic mechanic =
+            owner?.GetMechanic<YujinMechanic>();
+
+        return mechanic != null &&
+               YujinMechanic.IsSenseEligibleSkill(
+                   skill?.Definition?.SkillId) &&
+               mechanic.AutoUseSense;
+    }
+
+    private static void RestoreCharacterRerollChoice(
+        Character owner,
+        ActionSlot slot)
+    {
+        YujinMechanic mechanic =
+            owner?.GetMechanic<YujinMechanic>();
+
+        if (mechanic == null ||
+            !YujinMechanic.IsSenseEligibleSkill(
+                slot?.Skill?.Definition?.SkillId))
+        {
+            return;
+        }
+
+        mechanic.AutoUseSense =
+            slot.UseCharacterRerollResource;
     }
 
     //---------------------------------------
@@ -1637,7 +2026,11 @@ public class BattleUIManager : MonoBehaviour
                     selectedOwnerPart),
                 ActionIndex = selectedActionIndex,
                 Phase = skill.DefaultPhase,
-                TargetSlot = null
+                TargetSlot = null,
+                UseCharacterRerollResource =
+                    ResolveCharacterRerollChoice(
+                        selectedOwner,
+                        skill)
             };
 
         bool registered =
@@ -1864,10 +2257,47 @@ public class BattleUIManager : MonoBehaviour
         if (part.IsBroken || !part.IsUsable)
             return "부위 사용 불가";
 
-        if (selectedOwner.GetSelectableSkills(part, selectedActionIndex) == null ||
-            !ContainsSkill(selectedOwner.GetSelectableSkills(part, selectedActionIndex), skill))
+        CharacterCombatRulesRuntime rules =
+            selectedOwner.CombatRulesRuntime;
+
+        CharacterSkillLoadoutRuntime loadout =
+            rules?.Loadout;
+
+        if (rules?.CurrentBossPhase == null &&
+            loadout?.HasSource == true &&
+            skill.Definition != null &&
+            !loadout.IsEquipped(skill.Definition))
         {
-            return "부위에 없는 스킬";
+            return "미장착 스킬";
+        }
+
+        IReadOnlyList<Skill> selectable =
+            selectedOwner.GetSelectableSkills(
+                part,
+                selectedActionIndex);
+
+        if (selectable == null ||
+            !ContainsSkill(selectable, skill))
+        {
+            return "현재 부위·행동 슬롯에서 사용 불가";
+        }
+
+        if (TryGetPendingYujinHwanhyeongEdit(
+                skill,
+                out _,
+                out _))
+        {
+            return string.Empty;
+        }
+
+        string hwanhyeongReason =
+            GetYujinHwanhyeongSelectionReason(
+                skill);
+
+        if (!string.IsNullOrWhiteSpace(
+                hwanhyeongReason))
+        {
+            return hwanhyeongReason;
         }
 
         if (skill.ActionType == ActionType.Prestige &&
@@ -1978,7 +2408,13 @@ public class BattleUIManager : MonoBehaviour
         }
 
         if (existing?.Skill != null)
+        {
+            RestoreCharacterRerollChoice(
+                owner,
+                existing);
+
             selection.SelectSkill(existing.Skill);
+        }
 
         inputMode = BattleInputMode.SelectSkill;
         SyncSelectionViewModel();
@@ -2059,6 +2495,11 @@ public class BattleUIManager : MonoBehaviour
 
         inputMode = BattleInputMode.SelectSkill;
         SyncSelectionViewModel();
+
+        RestoreCharacterRerollChoice(
+            slot.Owner,
+            slot);
+
         selection.SelectSkill(slot.Skill);
 
         ShowSkillPanel();

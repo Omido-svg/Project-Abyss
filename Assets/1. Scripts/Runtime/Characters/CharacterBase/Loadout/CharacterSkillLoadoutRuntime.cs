@@ -3,10 +3,11 @@ using System.Collections.Generic;
 
 /// <summary>
 /// ScriptableObject 원본을 변경하지 않고 런타임 장착 상태를 보관한다.
-/// 일반 3 / 결투 2 / 도사림 3 / 위세 1 제한과 원자적 교체를 한 곳에서 보장한다.
+/// 기본 일반 3 / 결투 3 / 도사림 3 / 위세 1 제한과 아이템 기반 상한 확장을 한 곳에서 보장한다.
 /// </summary>
 public sealed class CharacterSkillLoadoutRuntime
 {
+    private readonly Character owner;
     private readonly CharacterCombatLoadout source;
 
     private readonly Dictionary<ActionType, List<SkillDefinition>>
@@ -15,8 +16,10 @@ public sealed class CharacterSkillLoadoutRuntime
     public event Action LoadoutChanged;
 
     public CharacterSkillLoadoutRuntime(
+        Character owner,
         CharacterCombatLoadout source)
     {
+        this.owner = owner;
         this.source = source;
 
         Initialize(ActionType.NormalAttack);
@@ -62,7 +65,7 @@ public sealed class CharacterSkillLoadoutRuntime
         if (values.Contains(definition))
             return true;
 
-        int limit = CharacterCombatLoadout.GetEquipLimit(
+        int limit = GetEquipLimit(
             definition.ActionType);
 
         if (values.Count >= limit)
@@ -230,7 +233,7 @@ public sealed class CharacterSkillLoadoutRuntime
         reason = string.Empty;
 
         int count = ids?.Count ?? 0;
-        int limit = CharacterCombatLoadout.GetEquipLimit(actionType);
+        int limit = GetEquipLimit(actionType);
         if (count > limit)
         {
             reason =
@@ -301,7 +304,7 @@ public sealed class CharacterSkillLoadoutRuntime
             return false;
         }
 
-        int limit = CharacterCombatLoadout.GetEquipLimit(
+        int limit = GetEquipLimit(
             definition.ActionType);
         if (limit <= 0)
         {
@@ -347,7 +350,7 @@ public sealed class CharacterSkillLoadoutRuntime
 
         IReadOnlyList<SkillDefinition> values =
             source.GetEquipped(actionType);
-        int limit = CharacterCombatLoadout.GetEquipLimit(actionType);
+        int limit = GetEquipLimit(actionType);
 
         for (int i = 0; i < values.Count; i++)
         {
@@ -364,6 +367,24 @@ public sealed class CharacterSkillLoadoutRuntime
 
             destination.Add(definition);
         }
+    }
+
+    public int GetEquipLimit(ActionType actionType)
+    {
+        int limit = CharacterCombatLoadout.GetEquipLimit(actionType);
+
+        if (owner?.EquippedItems != null)
+        {
+            foreach (CharacterItem item in owner.EquippedItems)
+            {
+                if (item == null)
+                    continue;
+
+                limit = item.ModifySkillEquipLimit(owner, actionType, limit);
+            }
+        }
+
+        return System.Math.Max(0, limit);
     }
 
     private List<SkillDefinition> GetMutableList(ActionType actionType)

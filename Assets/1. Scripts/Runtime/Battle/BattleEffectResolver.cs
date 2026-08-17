@@ -8,7 +8,9 @@ public class BattleEffectResolver
     public BattleEffectResolver(BattleContext context)
     {
         this.context = context;
-        ResolveStatusVisualDirector();
+
+        if (!IsPresentationSuppressed)
+            ResolveStatusVisualDirector();
     }
 
     public bool ApplyDamage(EffectRequest request)
@@ -148,15 +150,13 @@ public class BattleEffectResolver
                 false,
                 false,
                 false,
-                false,
-                false,
                 null,
                 request.SourceStatusEffect);
 
         ConfigureDotRequest(ref damageRequest);
 
         DamageContext result =
-            context?.battleManager?.DamageManager?
+            context?.ResolveDamageManager()?
                 .ApplyDamageContext(damageRequest);
 
         if (result != null)
@@ -203,15 +203,13 @@ public class BattleEffectResolver
                 false,
                 false,
                 false,
-                false,
-                false,
                 null,
                 request.SourceStatusEffect);
 
         ConfigureDotRequest(ref damageRequest);
 
         DamageContext result =
-            context?.battleManager?.DamageManager?
+            context?.ResolveDamageManager()?
                 .ApplyDamageContext(damageRequest);
 
         if (result != null)
@@ -241,14 +239,10 @@ public class BattleEffectResolver
     private static void ConfigureDotRequest(
         ref DamageRequest request)
     {
-        request.ApplyFlatDamageBonus = false;
-        request.ApplyOwnerMultiplier = false;
         request.ApplyMomentum = false;
         request.ApplyAttackerModifiers = false;
-        request.ApplyDefense = false;
         request.ApplyGuard = false;
         request.ApplyTargetModifiers = false;
-        request.ApplyProtection = false;
         request.WasCritical = false;
     }
 
@@ -258,6 +252,9 @@ public class BattleEffectResolver
         BodyPart targetPart,
         int damage)
     {
+        if (IsPresentationSuppressed)
+            return;
+
         if (effect == null ||
             target == null ||
             damage <= 0)
@@ -280,6 +277,9 @@ public class BattleEffectResolver
     public void ShowStatusApplyVisual(
         StatusEffectApplyResult result)
     {
+        if (IsPresentationSuppressed)
+            return;
+
         if (result?.Effect == null ||
             result.TargetCharacter == null ||
             result.Kind == StatusEffectApplyKind.Ignored ||
@@ -320,6 +320,9 @@ public class BattleEffectResolver
         StatusEffect effect,
         StatusEffectRemoveReason reason)
     {
+        if (IsPresentationSuppressed)
+            return;
+
         if (target == null ||
             effect == null ||
             reason == StatusEffectRemoveReason.Transferred)
@@ -498,8 +501,17 @@ public class BattleEffectResolver
         return true;
     }
 
+    private bool IsPresentationSuppressed =>
+        context?.SuppressPresentation == true;
+
     private void ResolveStatusVisualDirector()
     {
+        if (IsPresentationSuppressed)
+        {
+            statusVisualDirector = null;
+            return;
+        }
+
         if (statusVisualDirector == null)
         {
             statusVisualDirector =

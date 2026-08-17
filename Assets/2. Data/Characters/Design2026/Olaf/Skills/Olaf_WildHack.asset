@@ -15,7 +15,8 @@ MonoBehaviour:
   skillId: olaf.normal.wild_hack
   SkillName: "\uB9C8\uAD6C\uC7A1\uC774"
   ActionType: 0
-  BasePower: 0
+  BasePower: 16
+  PhysicalType: 0
   CanBreakPart: 0
   GainPrestige: 1
   AttackWeight:
@@ -29,8 +30,9 @@ MonoBehaviour:
   Rolls:
   - Index: 0
     Type: 0
-    MinPower: 17
-    MaxPower: 22
+    DiceMode: 1
+    MinPower: 1
+    MaxPower: 8
     RngSource: 1
     CoinFrontChance: 0.5
     CoinBackPower: 4
@@ -51,8 +53,9 @@ MonoBehaviour:
     OnLoseEffects: []
   - Index: 1
     Type: 0
-    MinPower: 17
-    MaxPower: 22
+    DiceMode: 1
+    MinPower: 1
+    MaxPower: 8
     RngSource: 1
     CoinFrontChance: 0.5
     CoinBackPower: 4
@@ -73,8 +76,9 @@ MonoBehaviour:
     OnLoseEffects: []
   - Index: 2
     Type: 0
-    MinPower: 17
-    MaxPower: 22
+    DiceMode: 1
+    MinPower: 1
+    MaxPower: 8
     RngSource: 1
     CoinFrontChance: 0.5
     CoinBackPower: 4
@@ -108,7 +112,7 @@ MonoBehaviour:
   PreparationTier: 0
   ResolverType: 0
   DiceMin: 1
-  DiceMax: 6
+  DiceMax: 8
   CoinCount: 1
   CoinFrontChance: 0.5
   CoinFrontValue: 1
