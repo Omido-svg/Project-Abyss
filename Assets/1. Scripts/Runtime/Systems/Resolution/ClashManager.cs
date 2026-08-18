@@ -920,13 +920,6 @@ public class ClashManager
 
         result.Exchanges.Add(exchange);
 
-        BattleAction perspective =
-            exchange.WinnerAction ??
-            exchange.FirstAction;
-
-        result.ClashSteps.Add(
-            exchange.CreateVisualStep(perspective));
-
         result.MomentumShift +=
             exchange.MomentumShift;
 
@@ -1240,7 +1233,7 @@ public class ClashManager
             context?.BrokePart == true;
 
         BattleLogger logger =
-            battleContext?.battleManager?.BattleLogger;
+            battleContext?.Services?.BattleLogger;
 
         if (logger == null)
             return;

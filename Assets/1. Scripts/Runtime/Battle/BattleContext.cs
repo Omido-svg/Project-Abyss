@@ -18,24 +18,21 @@ public class BattleContext
 
     public BattleEffectResolver EffectResolver { get; set; }
 
-    public BattleManager battleManager;
-
-    // Character Validator의 격리 Fixture는 실제 BattleManager 없이도
-    // 동일한 피해·기세 파이프라인을 사용해야 한다.
-    public DamageManager VerificationDamageManager { get; set; }
-    public MomentumManager VerificationMomentumManager { get; set; }
+    /// <summary>
+    /// 전투 Composition Root가 주입하는 런타임 서비스 모음.
+    /// BattleContext는 BattleManager/Scene object를 직접 참조하지 않는다.
+    /// </summary>
+    public BattleRuntimeServices Services { get; set; }
 
     // 격리 Character Validator는 실제 전투 계산만 실행하고,
     // Scene의 UI/VFX/Timeline 큐에는 요청을 보내지 않는다.
     public bool SuppressPresentation { get; set; }
 
     public DamageManager ResolveDamageManager() =>
-        battleManager?.DamageManager ??
-        VerificationDamageManager;
+        Services?.DamageManager;
 
     public MomentumManager ResolveMomentumManager() =>
-        battleManager?.MomentumManager ??
-        VerificationMomentumManager;
+        Services?.MomentumManager;
     public readonly List<IBattleRule> BattleRules = new();
 
     public BattleRuleSettings Rules { get; set; } =

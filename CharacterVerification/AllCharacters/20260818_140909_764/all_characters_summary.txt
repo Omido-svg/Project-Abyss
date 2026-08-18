@@ -1,0 +1,32 @@
+PROJECT ABYSS ALL CHARACTER COVERAGE
+Scope=PLAYABLE + ENEMY + FUTURE CONCRETE CHARACTER BUNDLES
+Run=All Character Full Coverage
+Generated=2026-08-18T14:09:09.7646531+09:00
+Profiles=6
+================================================================================================
+[PLAYABLE/CHARACTER][Olaf] 올라프
+Result=PASSED / TOTAL=46, PASS=46, FAIL=0, SKIP=0, ERROR=0
+Report=F:\GitCorp\Project-Abyss\CharacterVerification\20260818_140556_151_올라프
+------------------------------------------------------------------------------------------------
+[PLAYABLE/CHARACTER][Yujin] 유진
+Result=PASSED / TOTAL=45, PASS=45, FAIL=0, SKIP=0, ERROR=0
+Report=F:\GitCorp\Project-Abyss\CharacterVerification\20260818_140556_359_유진
+------------------------------------------------------------------------------------------------
+[PLAYABLE/CHARACTER][Hifumi] 히후미
+Result=PASSED / TOTAL=43, PASS=43, FAIL=0, SKIP=0, ERROR=0
+Report=F:\GitCorp\Project-Abyss\CharacterVerification\20260818_140556_501_히후미
+------------------------------------------------------------------------------------------------
+[ENEMY][EliteEnemy] Elite Enemy
+Result=PASSED / TOTAL=26, PASS=26, FAIL=0, SKIP=0, ERROR=0
+Report=F:\GitCorp\Project-Abyss\CharacterVerification\20260818_140556_613_Elite_Enemy
+------------------------------------------------------------------------------------------------
+[ENEMY][EliteEnemy] 훈련용 보스
+Result=PASSED / TOTAL=20, PASS=20, FAIL=0, SKIP=0, ERROR=0
+Report=F:\GitCorp\Project-Abyss\CharacterVerification\20260818_140556_722_훈련용_보스
+------------------------------------------------------------------------------------------------
+[ENEMY][NormalEnemy] 훈련용 일반 적
+Result=PASSED / TOTAL=24, PASS=24, FAIL=0, SKIP=0, ERROR=0
+Report=F:\GitCorp\Project-Abyss\CharacterVerification\20260818_140556_817_훈련용_일반_적
+------------------------------------------------------------------------------------------------
+OVERALL=PASSED
+TOTAL=204, PASS=204, FAIL=0, SKIP=0, ERROR=0

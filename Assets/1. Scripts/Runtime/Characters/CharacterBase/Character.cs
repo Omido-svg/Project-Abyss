@@ -841,7 +841,7 @@ public abstract class Character : MonoBehaviour
 
         combatRulesRuntime?.EvaluateBossPhase(
             battleContext,
-            battleContext?.battleManager?.TurnManager?.CurrentTurn ?? 1);
+            battleContext?.Services?.TurnManager?.CurrentTurn ?? 1);
 
         int turnEnergy =
             battleContext?.Rules?.Energy?.TurnStartGain ?? 1;

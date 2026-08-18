@@ -1650,7 +1650,7 @@ public class TargetArrowUI : MonoBehaviour
                 name = "Project Abyss UI Arrow Head",
                 filterMode = FilterMode.Bilinear,
                 wrapMode = TextureWrapMode.Clamp,
-                hideFlags = HideFlags.HideAndDontSave
+                hideFlags = HideFlags.DontSaveInBuild
             };
 
         Color32 clear = new Color32(255, 255, 255, 0);
@@ -1685,7 +1685,7 @@ public class TargetArrowUI : MonoBehaviour
                 32f);
 
         arrowHeadSprite.name = "Project Abyss UI Arrow Head Sprite";
-        arrowHeadSprite.hideFlags = HideFlags.HideAndDontSave;
+        arrowHeadSprite.hideFlags = HideFlags.DontSaveInBuild;
         return arrowHeadSprite;
     }
 

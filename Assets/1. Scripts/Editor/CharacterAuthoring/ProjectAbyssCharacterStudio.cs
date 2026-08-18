@@ -601,8 +601,8 @@ public sealed class ProjectAbyssCharacterStudio : EditorWindow
         }
 
         if (GUILayout.Button(
-                skill.VisualDefinition == null ||
-                !skill.VisualDefinition.HasCompleteTimelineSet
+                SkillPresentationAccess.Get(skill) == null ||
+                !SkillPresentationAccess.Get(skill).HasCompleteTimelineSet
                     ? "Timeline 생성"
                     : "Timeline 보수",
                 GUILayout.Width(92f)))
@@ -644,7 +644,7 @@ public sealed class ProjectAbyssCharacterStudio : EditorWindow
                 DrawNested($"Legacy Effect #{i + 1}", skill.Effects[i], false);
         }
 
-        DrawNested("Skill Visual", skill.VisualDefinition, false);
+        DrawNested("Skill Visual", SkillPresentationAccess.Get(skill), false);
         EditorGUILayout.EndVertical();
     }
 
@@ -996,7 +996,7 @@ public sealed class ProjectAbyssCharacterStudio : EditorWindow
         if (skill == null)
             return;
 
-        if (skill.VisualDefinition == null)
+        if (SkillPresentationAccess.Get(skill) == null)
         {
             string baseName = SafeName(
                 string.IsNullOrWhiteSpace(skill.SkillName)
@@ -1011,7 +1011,9 @@ public sealed class ProjectAbyssCharacterStudio : EditorWindow
             ConfigureTimelineVisualDefaults(
                 visual,
                 skill.ActionType);
-            skill.VisualDefinition = visual;
+            SkillPresentationAccess.Set(
+                skill,
+                visual);
             EditorUtility.SetDirty(skill);
             AssetDatabase.SaveAssets();
         }
@@ -1292,7 +1294,7 @@ public sealed class ProjectAbyssCharacterStudio : EditorWindow
 
     private void SyncVisualProfile()
     {
-        // Timeline-only 정책에서는 SkillDefinition.VisualDefinition이 유일한 런타임 원본이다.
+        // Timeline-only 정책에서는 SkillDefinition의 opaque PresentationAsset이 연결점이다.
         // 기존 SkillVisualProfile은 이전 데이터 확인용으로만 보존하며 새 스킬을 연결하지 않는다.
     }
 
@@ -1301,26 +1303,29 @@ public sealed class ProjectAbyssCharacterStudio : EditorWindow
         SkillDefinition skill,
         bool overwrite)
     {
-        if (profile == null || skill?.VisualDefinition == null)
+        SkillVisualDefinition visual =
+            SkillPresentationAccess.Get(skill);
+
+        if (profile == null || visual == null)
             return;
 
         switch (skill.ActionType)
         {
             case ActionType.NormalAttack:
                 if (overwrite || profile.NormalAttackVisual == null)
-                    profile.NormalAttackVisual = skill.VisualDefinition;
+                    profile.NormalAttackVisual = visual;
                 break;
             case ActionType.Duel:
                 if (overwrite || profile.DuelVisual == null)
-                    profile.DuelVisual = skill.VisualDefinition;
+                    profile.DuelVisual = visual;
                 break;
             case ActionType.Preparation:
                 if (overwrite || profile.PreparationVisual == null)
-                    profile.PreparationVisual = skill.VisualDefinition;
+                    profile.PreparationVisual = visual;
                 break;
             case ActionType.Prestige:
                 if (overwrite || profile.PrestigeVisual == null)
-                    profile.PrestigeVisual = skill.VisualDefinition;
+                    profile.PrestigeVisual = visual;
                 break;
         }
 
@@ -1902,16 +1907,17 @@ public sealed class ProjectAbyssCharacterStudio : EditorWindow
                 if (skill == null)
                     continue;
 
-                if (skill.VisualDefinition == null)
+                SkillVisualDefinition presentation =
+                    SkillPresentationAccess.Get(skill);
+
+                if (presentation == null)
                 {
                     result.Add(Error($"{skill.name}: SkillVisualDefinition이 없습니다."));
                     continue;
                 }
 
-                if (!skill.VisualDefinition.HasTimelineCutscene)
+                if (!presentation.HasTimelineCutscene)
                 {
-                    SkillVisualDefinition presentation =
-                        skill.VisualDefinition;
 
                     string missing = string.Join(
                         ", ",

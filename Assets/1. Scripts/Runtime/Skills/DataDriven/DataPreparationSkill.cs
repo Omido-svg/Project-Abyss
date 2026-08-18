@@ -1,14 +1,9 @@
-using UnityEngine;
-
-public class DataPreparationSkill : PreparationSkill, IVisualSkill
+public class DataPreparationSkill : PreparationSkill
 {
     private readonly SkillDefinition definition;
 
     protected override SkillDefinition RuntimeDefinition =>
         definition;
-
-    public SkillVisualDefinition VisualDefinition =>
-        definition?.VisualDefinition;
 
     public override bool CanBreakPart =>
         definition != null && definition.CanBreakPart;

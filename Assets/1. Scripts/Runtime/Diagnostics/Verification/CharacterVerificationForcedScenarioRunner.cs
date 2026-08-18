@@ -113,6 +113,12 @@ public static class CharacterVerificationForcedScenarioRunner
             definition,
             skill);
 
+        bool requireObservableExecuteMutation =
+            PrepareCustomExecuteScenario(
+                owner,
+                definition,
+                observations);
+
         string beforeExecute =
             CharacterVerificationScenarioTools.CaptureFingerprint(
                 owner,
@@ -132,6 +138,7 @@ public static class CharacterVerificationForcedScenarioRunner
             definition.ActionType == ActionType.Prestige;
 
         if (requiresCustomExecuteChange &&
+            requireObservableExecuteMutation &&
             !definition.EnumerateEffectEntries().Any() &&
             string.Equals(
                 beforeExecute,
@@ -139,7 +146,7 @@ public static class CharacterVerificationForcedScenarioRunner
                 StringComparison.Ordinal))
         {
             failures.Add(
-                "도사림/위세 Execute가 어떤 관찰 가능 상태도 변경하지 않았습니다.");
+                "도사림/위세 Execute가 준비된 유효 시나리오에서도 어떤 관찰 가능 상태도 변경하지 않았습니다.");
         }
 
         int effectCount = 0;
@@ -170,6 +177,105 @@ public static class CharacterVerificationForcedScenarioRunner
             string.Join("\n", failures) +
             "\n\nObservations\n" +
             string.Join("\n", observations));
+    }
+
+    /// <summary>
+    /// Character-specific Preparation/Prestige는 정상 사용 조건이 충족되지 않으면
+    /// 합법적으로 no-op일 수 있다. generic coverage가 "무조건 상태가 바뀌어야 한다"는
+    /// 잘못된 전제로 false positive를 만들지 않도록 실제 사용 가능한 선행 상태를 만든다.
+    ///
+    /// 반환값이 false인 경우는 Execute 자체가 확률적으로 정상 no-op일 수 있고,
+    /// 별도의 결정론적 전용 Case가 그 동작을 검증하는 경우다.
+    /// </summary>
+    private static bool PrepareCustomExecuteScenario(
+        Character owner,
+        SkillDefinition definition,
+        ICollection<string> observations)
+    {
+        if (owner == null ||
+            definition == null)
+        {
+            return true;
+        }
+
+        string skillId =
+            definition.SkillId;
+
+        if (owner is Yujin yujin &&
+            YujinMechanic.TryGetHwanhyeongWeapon(
+                skillId,
+                out YujinWeaponType targetWeapon))
+        {
+            YujinMechanic mechanic =
+                yujin.GetMechanic<YujinMechanic>();
+
+            if (mechanic != null)
+            {
+                // 환형 · 백우는 유진의 기본 무기가 백우라서,
+                // 아무 준비 없이 Execute하면 "현재 무기와 동일" 조건으로 정상 거절된다.
+                // 대상 무기와 다른 무기로 Fixture를 세팅해 실제 예약 경로를 검사한다.
+                YujinWeaponType sourceWeapon =
+                    targetWeapon == YujinWeaponType.Baeku
+                        ? YujinWeaponType.Jeokseol
+                        : YujinWeaponType.Baeku;
+
+                mechanic.SetWeaponForVerification(
+                    sourceWeapon);
+
+                observations?.Add(
+                    $"Precondition: 환형 {sourceWeapon}->{targetWeapon} 실행 상태 구성");
+            }
+
+            return true;
+        }
+
+        if (owner is Hifumi hifumi)
+        {
+            HifumiMechanic mechanic =
+                hifumi.HifumiMechanic;
+
+            if (mechanic == null)
+                return true;
+
+            if (skillId == HifumiSkillIds.FoldHand)
+            {
+                // 이 판 접지는 뼈 100 이상일 때만 소비/회복한다.
+                mechanic.SetBoneForVerification(
+                    150);
+
+                observations?.Add(
+                    "Precondition: 이 판 접지 Bone=150");
+                return true;
+            }
+
+            if (skillId == HifumiSkillIds.GamblerMove)
+            {
+                // 도박수는 현재 뼈를 전소하므로 Bone=0에서는 정상 no-op이다.
+                mechanic.SetBoneForVerification(
+                    250);
+
+                observations?.Add(
+                    "Precondition: 도박수 Bone=250");
+                return true;
+            }
+
+            if (skillId == HifumiSkillIds.AllIn)
+            {
+                // 올인은 3회 친치로 결과가 전부 Blank면 상태 변화가 없는 것이 정상이다.
+                // 무작위 결과 한 번의 fingerprint로 실패 판정하지 않는다.
+                // 최고 결과/대실패 전소는 Hifumi 전용
+                // `hifumi.prestige.contracts`가 결정론적으로 검증한다.
+                mechanic.SetBoneForVerification(
+                    100);
+
+                observations?.Add(
+                    "AllIn: random Blank 정상 no-op 허용 / " +
+                    "결정론적 계약은 hifumi.prestige.contracts에서 별도 검증");
+                return false;
+            }
+        }
+
+        return true;
     }
 
     private static void VerifyResourceContract(

@@ -16,6 +16,43 @@ MonoBehaviour:
   bundle: {fileID: 11400000, guid: 8c4b86585fa0a1047aa26db534ce7f2a, type: 2}
   strictPresentationValidation: 1
   cases:
+  - CaseId: coverage.manifest.closed_world
+    DisplayName: "\uC644\uC804 \uCEE4\uBC84\uB9AC\uC9C0 \uBA85\uC138 \uD3D0\uC1C4\uC131"
+    Category: 0
+    ExecutionMode: 0
+    Enabled: 1
+    Seed: 1207
+    Description: "\uBAA8\uB4E0 SkillDefinition\xB7Effect\xB7\uD544\uC218 Mechanic\uC774
+      \uAC80\uC99D \uCE74\uD0C8\uB85C\uADF8\uC5D0 \uB4F1\uB85D\uB410\uB294\uC9C0
+      \uAC80\uC0AC\uD569\uB2C8\uB2E4. \uC0C8 \uAE30\uB2A5\uC740 \uAC80\uC99D\uAE30
+      \uCD94\uAC00 \uC804\uAE4C\uC9C0 FAIL\uD569\uB2C8\uB2E4."
+  - CaseId: coverage.mechanics.forced_scenarios
+    DisplayName: "\uD328\uC2DC\uBE0C\xB7\uBA54\uCEE4\uB2C9 \uAC15\uC81C \uC2DC\uB098\uB9AC\uC624"
+    Category: 1
+    ExecutionMode: 1
+    Enabled: 1
+    Seed: 1207
+    Description: "\uD544\uC218 \uD328\uC2DC\uBE0C\uC640 \uBA54\uCEE4\uB2C9\uC758
+      \uC774\uBCA4\uD2B8 \uC870\uAC74\uC744 \uC9C1\uC811 \uBC1C\uC0DD\uC2DC\uCF1C
+      \uC815\uD655\uD55C \uC0C1\uD0DC \uBCC0\uD654\uB97C \uAC80\uC0AC\uD569\uB2C8\uB2E4."
+  - CaseId: coverage.skill.test_normal_swipe
+    DisplayName: "\uC2A4\uD0AC \uC644\uC804 \uC2DC\uB098\uB9AC\uC624: \uD560\uD034\uAE30"
+    Category: 2
+    ExecutionMode: 1
+    Enabled: 1
+    Seed: 1207
+    Description: "\uC790\uC6D0 \uAC70\uBD80/\uC18C\uBE44, \uBAA8\uB4E0 \uAD74\uB9BC,
+      \uD53C\uD574 \uB300\uC0C1, \uBAA8\uB4E0 Effect Entry \uC870\uAC74\uC744 \uACB0\uC815\uB860\uC801\uC73C\uB85C
+      \uAC15\uC81C \uC2E4\uD589\uD569\uB2C8\uB2E4."
+  - CaseId: coverage.skill.test_normal_lunge
+    DisplayName: "\uC2A4\uD0AC \uC644\uC804 \uC2DC\uB098\uB9AC\uC624: \uB2EC\uB824\uB4E4\uAE30"
+    Category: 3
+    ExecutionMode: 1
+    Enabled: 1
+    Seed: 1207
+    Description: "\uC790\uC6D0 \uAC70\uBD80/\uC18C\uBE44, \uBAA8\uB4E0 \uAD74\uB9BC,
+      \uD53C\uD574 \uB300\uC0C1, \uBAA8\uB4E0 Effect Entry \uC870\uAC74\uC744 \uACB0\uC815\uB860\uC801\uC73C\uB85C
+      \uAC15\uC81C \uC2E4\uD589\uD569\uB2C8\uB2E4."
   - CaseId: generic.data.core_references
     DisplayName: "Core \uB370\uC774\uD130 \uCC38\uC870"
     Category: 0
@@ -99,3 +136,21 @@ MonoBehaviour:
     Description: "\uD604\uC7AC BattleManager\uC758 \uD50C\uB808\uC774\uC5B4, HUD,
       \uC2A4\uD0AC \uD328\uB110\uC774 \uC120\uD0DD Bundle\uACFC \uC5F0\uACB0\uB418\uC5B4
       \uC788\uB294\uC9C0 \uAC80\uC0AC\uD569\uB2C8\uB2E4."
+  - CaseId: enemy.normal.single_hp.contract
+    DisplayName: "\uC77C\uBC18 \uC801 Single HP \uC804\uD22C \uBAA8\uB378"
+    Category: 9
+    ExecutionMode: 1
+    Enabled: 1
+    Seed: 1207
+    Description: "NormalEnemy\uB294 BodyPart \uC5C6\uC774 Single HP\uB97C \uC0AC\uC6A9\uD558\uACE0,
+      \uC804\uD22C \uD589\uB3D9 \uC2AC\uB86F 1\uAC1C\uC640 Last Stand \uBE44\uC9C0\uC6D0
+      \uACC4\uC57D\uC744 \uAC80\uC0AC\uD569\uB2C8\uB2E4."
+  - CaseId: enemy.normal.runtime_skill.contract
+    DisplayName: "\uC77C\uBC18 \uC801 3\uD68C \uB3C5\uB9BD \uAD74\uB9BC RuntimeSkill"
+    Category: 9
+    ExecutionMode: 1
+    Enabled: 1
+    Seed: 1207
+    Description: "NormalEnemy RuntimeSkill\uC774 3\uD68C \uAD50\uD658 \uAD74\uB9BC\uACFC
+      RollEachExchange \uC815\uCC45\uC744 \uC0AC\uC6A9\uD558\uBA70 \uC2E4\uC81C \uCE90\uB9AD\uD130
+      \uC2A4\uD0AC \uBAA9\uB85D\uC5D0 \uB4F1\uB85D\uB418\uB294\uC9C0 \uAC80\uC0AC\uD569\uB2C8\uB2E4."

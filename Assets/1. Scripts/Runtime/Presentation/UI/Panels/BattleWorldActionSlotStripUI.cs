@@ -57,11 +57,11 @@ public sealed class BattleWorldActionSlotStripUI : MonoBehaviour
         root.anchorMin = new Vector2(0.5f, 1f);
         root.anchorMax = new Vector2(0.5f, 1f);
         root.pivot = new Vector2(0.5f, 0f);
-        root.anchoredPosition = new Vector2(0f, 14f);
-        root.sizeDelta = new Vector2(520f, 92f);
+        root.anchoredPosition = new Vector2(0f, 12f);
+        root.sizeDelta = new Vector2(500f, 84f);
 
         HorizontalLayoutGroup layout = go.GetComponent<HorizontalLayoutGroup>();
-        layout.spacing = 7f;
+        layout.spacing = 6f;
         layout.childAlignment = TextAnchor.MiddleCenter;
         layout.childControlWidth = false;
         layout.childControlHeight = false;
@@ -204,11 +204,12 @@ public sealed class BattleWorldActionSlotStripUI : MonoBehaviour
             typeof(RectTransform),
             typeof(Image),
             typeof(Outline),
+            typeof(CanvasGroup),
             typeof(BattleWorldActionSlotCellUI));
         cell.transform.SetParent(root, false);
 
         RectTransform rect = cell.GetComponent<RectTransform>();
-        rect.sizeDelta = new Vector2(78f, 84f);
+        rect.sizeDelta = new Vector2(74f, 78f);
 
         Image image = cell.GetComponent<Image>();
         image.color = targetSlot == null

@@ -4,6 +4,31 @@ using System.Text;
 using UnityEngine;
 
 [Serializable]
+public sealed class CharacterVerificationObservedSkillUsage
+{
+    public string OwnerName;
+    public string OwnerDataName;
+    public string OwnerObjectName;
+    public string SkillId;
+    public string SkillName;
+
+    public string BuildLabel()
+    {
+        string owner =
+            string.IsNullOrWhiteSpace(OwnerName)
+                ? OwnerObjectName
+                : OwnerName;
+
+        string skill =
+            string.IsNullOrWhiteSpace(SkillId)
+                ? SkillName
+                : $"{SkillName}<{SkillId}>";
+
+        return $"{owner}:{skill}";
+    }
+}
+
+[Serializable]
 public sealed class CharacterVerificationAutoBattleResult
 {
     public bool CompletedNormally;
@@ -41,6 +66,10 @@ public sealed class CharacterVerificationAutoBattleResult
 
     public readonly List<string> UsedPlayerSkills =
         new List<string>();
+
+    public readonly List<CharacterVerificationObservedSkillUsage>
+        ObservedSkillUsages =
+            new List<CharacterVerificationObservedSkillUsage>();
 
     public readonly List<string> RuntimeProblemSamples =
         new List<string>();
@@ -93,6 +122,18 @@ public sealed class CharacterVerificationAutoBattleResult
             (UsedPlayerSkills.Count == 0
                 ? "NONE"
                 : string.Join(", ", UsedPlayerSkills)));
+
+        builder.AppendLine(
+            "ObservedParticipantSkills=" +
+            (ObservedSkillUsages.Count == 0
+                ? "NONE"
+                : string.Join(
+                    ", ",
+                    ObservedSkillUsages
+                        .ConvertAll(
+                            item =>
+                                item?.BuildLabel() ??
+                                "NULL"))));
 
         builder.AppendLine(
             $"RuntimeErrors={RuntimeErrorCount}");
@@ -1095,11 +1136,18 @@ public sealed class CharacterVerificationAutoBattleDriver :
             $"ActionStart:{action?.ActionId ?? 0}");
 
         if (completed ||
-            action?.Owner != player ||
+            action?.Owner == null ||
             action.Skill == null)
         {
             return;
         }
+
+        RecordObservedSkillUsage(
+            action.Owner,
+            action.Skill);
+
+        if (action.Owner != player)
+            return;
 
         string skillId =
             action.Skill.Definition?.SkillId;
@@ -1114,6 +1162,60 @@ public sealed class CharacterVerificationAutoBattleDriver :
         AddUnique(
             result.UsedPlayerSkills,
             label);
+    }
+
+    private void RecordObservedSkillUsage(
+        Character owner,
+        Skill skill)
+    {
+        if (owner == null ||
+            skill == null ||
+            result == null)
+        {
+            return;
+        }
+
+        string ownerName =
+            DescribeCharacter(owner);
+
+        string dataName =
+            owner.Data?.name;
+
+        string objectName =
+            owner.name;
+
+        string skillId =
+            skill.Definition?.SkillId;
+
+        string skillName =
+            skill.SkillName ??
+            skill.GetType().Name;
+
+        bool exists =
+            result.ObservedSkillUsages.Exists(
+                item =>
+                    item != null &&
+                    string.Equals(
+                        item.OwnerName,
+                        ownerName,
+                        StringComparison.OrdinalIgnoreCase) &&
+                    string.Equals(
+                        item.SkillId ?? item.SkillName,
+                        skillId ?? skillName,
+                        StringComparison.Ordinal));
+
+        if (exists)
+            return;
+
+        result.ObservedSkillUsages.Add(
+            new CharacterVerificationObservedSkillUsage
+            {
+                OwnerName = ownerName,
+                OwnerDataName = dataName,
+                OwnerObjectName = objectName,
+                SkillId = skillId,
+                SkillName = skillName
+            });
     }
 
     private void HandleActionEnd(

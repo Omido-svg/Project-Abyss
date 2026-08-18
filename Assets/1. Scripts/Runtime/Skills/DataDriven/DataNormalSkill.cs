@@ -1,14 +1,9 @@
-using UnityEngine;
-
-public class DataNormalSkill : NormalSkill, IVisualSkill
+public class DataNormalSkill : NormalSkill
 {
     private readonly SkillDefinition definition;
 
     protected override SkillDefinition RuntimeDefinition =>
         definition;
-
-    public SkillVisualDefinition VisualDefinition =>
-        definition?.VisualDefinition;
 
     public override bool CanBreakPart =>
         definition != null && definition.CanBreakPart;

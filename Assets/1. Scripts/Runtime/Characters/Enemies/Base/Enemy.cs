@@ -8,8 +8,7 @@ public abstract class Enemy : Character
     {
         List<ActionSlot> result = new();
 
-        if (context?.battleManager == null ||
-            context.battleManager.SpeedManager == null)
+        if (context?.Services?.SpeedManager == null)
         {
             return result;
         }
@@ -84,8 +83,7 @@ public abstract class Enemy : Character
     {
         selectedPrestige = false;
 
-        if (context?.battleManager == null ||
-            context.battleManager.SpeedManager == null ||
+        if (context?.Services?.SpeedManager == null ||
             target == null)
         {
             return null;
@@ -144,7 +142,7 @@ public abstract class Enemy : Character
                     Skill = skill,
                     TargetCharacter = targetPoint.Character,
                     TargetPart = targetPoint.Part,
-                    Speed = context.battleManager
+                    Speed = context.Services
                         .SpeedManager
                         .GetSpeed(this, part),
                     Phase = CalculateActionPhase(skill),
@@ -304,7 +302,7 @@ public abstract class Enemy : Character
         ActionSlot candidate)
     {
         ActionManager actionManager =
-            context?.battleManager?.ActionManager;
+            context?.Services?.ActionManager;
 
         if (actionManager == null ||
             candidate?.TargetCharacter == null)

@@ -1,8 +1,8 @@
 using System.Collections.Generic;
 
 /// <summary>
-/// 해결 단계 슬롯 정렬기. PRETURN(위세) -> COMBAT 순서를 만든다.
-/// FORESIGHT(도사림/환형)는 구형 데이터 분류값으로만 남고, 실제 실행은 계획 단계 즉시 처리한다.
+/// 해결 단계 슬롯 정렬기. PRETURN(위세) -> FORESIGHT(도사림) -> COMBAT 순서를 만든다.
+/// FORESIGHT는 START 전까지 ActionManager에 계획으로 유지되고 해결 단계에서 COMBAT보다 먼저 실행된다.
 /// </summary>
 public sealed class ActionPhaseSorter
 {
@@ -46,7 +46,7 @@ public sealed class ActionPhaseSorter
         if (phaseCompare != 0)
             return phaseCompare;
 
-        // 위세는 속도 바깥에서 처리한다. FORESIGHT가 들어오더라도 속도 정렬은 하지 않는다.
+        // 위세와 도사림은 속도 바깥에서 처리한다. COMBAT만 속도로 정렬한다.
         if (a.Phase == ActionPhase.COMBAT)
         {
             int speedCompare =

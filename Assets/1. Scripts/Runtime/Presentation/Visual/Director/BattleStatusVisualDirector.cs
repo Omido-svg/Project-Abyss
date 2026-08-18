@@ -4,6 +4,9 @@ using UnityEngine;
 
 public class BattleStatusVisualDirector : MonoBehaviour
 {
+    [Header("Battle Event Source")]
+    [SerializeField] private BattleManager battleManager;
+
     [SerializeField] private StatusEffectVisualDatabase visualDatabase;
     [SerializeField] private BattleVfxManager vfxManager;
     [SerializeField] private DamageNumberManager damageNumberManager;
@@ -17,19 +20,187 @@ public class BattleStatusVisualDirector : MonoBehaviour
 
     private Coroutine queueRoutine;
     private readonly Queue<QueuedStatusVisual> queue = new();
+    private BattleEvent boundBattleEvent;
+
+    private bool IsPresentationSuppressed =>
+        battleManager?.BattleContext?.SuppressPresentation == true;
 
     private void Awake()
     {
         ResolveReferences();
     }
 
+    private void OnEnable()
+    {
+        BindBattleEventSource();
+    }
+
+    private void Start()
+    {
+        // BattleManager가 이 컴포넌트보다 늦게 Initialize되는 씬도 허용한다.
+        BindBattleEventSource();
+    }
+
     private void OnDisable()
     {
+        UnbindBattleEventSource();
+
         if (queueRoutine != null)
             StopCoroutine(queueRoutine);
 
         queueRoutine = null;
         queue.Clear();
+    }
+
+
+    private void BindBattleEventSource()
+    {
+        if (battleManager == null)
+            battleManager = FindFirstObjectByType<BattleManager>();
+
+        if (battleManager == null)
+            return;
+
+        battleManager.BattlePrepared -= HandleBattlePrepared;
+        battleManager.BattlePrepared += HandleBattlePrepared;
+
+        BindBattleEvent(
+            battleManager.BattleContext?._battleEvent);
+    }
+
+    private void UnbindBattleEventSource()
+    {
+        if (battleManager != null)
+            battleManager.BattlePrepared -= HandleBattlePrepared;
+
+        BindBattleEvent(null);
+    }
+
+    private void HandleBattlePrepared(BattleContext context)
+    {
+        BindBattleEvent(context?._battleEvent);
+    }
+
+    private void BindBattleEvent(BattleEvent source)
+    {
+        if (ReferenceEquals(boundBattleEvent, source))
+            return;
+
+        if (boundBattleEvent != null)
+        {
+            boundBattleEvent.OnStatusApplyResolved -=
+                HandleStatusApplied;
+            boundBattleEvent.OnStatusTicked -=
+                HandleStatusTicked;
+            boundBattleEvent.OnStatusRemovedDetailed -=
+                HandleStatusRemoved;
+        }
+
+        boundBattleEvent = source;
+
+        if (boundBattleEvent == null ||
+            boundBattleEvent.IsDisposed)
+        {
+            boundBattleEvent = null;
+            return;
+        }
+
+        boundBattleEvent.OnStatusApplyResolved +=
+            HandleStatusApplied;
+        boundBattleEvent.OnStatusTicked +=
+            HandleStatusTicked;
+        boundBattleEvent.OnStatusRemovedDetailed +=
+            HandleStatusRemoved;
+    }
+
+    private void HandleStatusApplied(
+        StatusEffectApplyResult result)
+    {
+        if (IsPresentationSuppressed ||
+            result?.Effect == null ||
+            result.TargetCharacter == null ||
+            result.Kind == StatusEffectApplyKind.Ignored ||
+            result.Kind == StatusEffectApplyKind.Rejected ||
+            result.WasTransferred)
+        {
+            return;
+        }
+
+        StatusEffectVisualPhase phase =
+            result.Kind switch
+            {
+                StatusEffectApplyKind.Stacked =>
+                    StatusEffectVisualPhase.Stacked,
+                StatusEffectApplyKind.Refreshed =>
+                    StatusEffectVisualPhase.Refreshed,
+                _ =>
+                    StatusEffectVisualPhase.Applied
+            };
+
+        ShowStatusLifecycle(
+            new StatusEffectLifecycleVisualRequest
+            {
+                Source = result.Effect.Source,
+                Target = result.TargetCharacter,
+                TargetPart = result.TargetPart,
+                StatusKey = result.Effect.EffectName,
+                Phase = phase,
+                Stack = result.Effect.Stack,
+                Duration = result.Effect.Duration
+            });
+    }
+
+    private void HandleStatusTicked(
+        StatusEffectTickContext context)
+    {
+        if (IsPresentationSuppressed ||
+            context?.SourceEffect == null ||
+            context.TargetCharacter == null ||
+            context.AppliedDamage <= 0)
+        {
+            return;
+        }
+
+        ShowStatusDamage(
+            new StatusDamageVisualRequest
+            {
+                Source = context.SourceEffect.Source,
+                Target = context.TargetCharacter,
+                TargetPart = context.TargetPart,
+                Damage = context.AppliedDamage,
+                StatusKey = context.SourceEffect.EffectName,
+                DamageContext = context.DamageContext
+            });
+    }
+
+    private void HandleStatusRemoved(
+        Character target,
+        BodyPart part,
+        StatusEffect effect,
+        StatusEffectRemoveReason reason)
+    {
+        if (IsPresentationSuppressed ||
+            target == null ||
+            effect == null ||
+            reason == StatusEffectRemoveReason.Transferred)
+        {
+            return;
+        }
+
+        ShowStatusLifecycle(
+            new StatusEffectLifecycleVisualRequest
+            {
+                Source = effect.Source,
+                Target = target,
+                TargetPart = part,
+                StatusKey = effect.EffectName,
+                Phase = reason == StatusEffectRemoveReason.Expired
+                    ? StatusEffectVisualPhase.Expired
+                    : StatusEffectVisualPhase.Removed,
+                Stack = effect.Stack,
+                Duration = effect.Duration,
+                RemoveReason = reason
+            });
     }
 
     public void ShowStatusDamage(StatusDamageVisualRequest request)

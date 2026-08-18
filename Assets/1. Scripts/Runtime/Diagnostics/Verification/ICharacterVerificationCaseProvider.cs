@@ -22,6 +22,8 @@ public static class CharacterVerificationCaseProviderRegistry
         {
             new CharacterFeatureCoverageCaseProvider(),
             new GenericCharacterVerificationCaseProvider(),
+            new CoreCharacterVerificationCaseProvider(),
+            new EnemyCharacterVerificationCaseProvider(),
             new OlafCharacterVerificationCaseProvider(),
             new YujinCharacterVerificationCaseProvider(),
             new HifumiCharacterVerificationCaseProvider()

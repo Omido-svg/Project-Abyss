@@ -20,11 +20,19 @@ public sealed class BattleWorldActionSlotCellUI : MonoBehaviour,
     IDragHandler,
     IEndDragHandler
 {
+    private enum TargetDecision
+    {
+        None,
+        Clash,
+        OneSided
+    }
+
     private static readonly List<BattleWorldActionSlotCellUI> ActiveCells = new();
     /// <summary>
     /// 현재 마우스가 올라가 있는 적 ActionSlot 셀.
     /// Target 선택 중 간이 합 승률 프리뷰가 이 값을 사용한다.
     /// </summary>
+    public static BattleWorldActionSlotCellUI HoveredCell { get; private set; }
     public static BattleWorldActionSlotCellUI HoveredTargetCell { get; private set; }
 
 
@@ -49,12 +57,20 @@ public sealed class BattleWorldActionSlotCellUI : MonoBehaviour,
     private Color currentColor;
     private Vector3 currentScale = Vector3.one;
     private bool pointerInside;
+    private CanvasGroup canvasGroup;
+    private TMP_Text targetDecisionBadge;
+    private TMP_Text threatBadge;
+    private OutlineController hoveredOwnerOutline;
+    private TargetDecision targetDecision;
 
     private static readonly Color HoverTint = new(1f, 1f, 1f, 1f);
     private static readonly Color SelectedTint = new(1f, 0.77f, 0.20f, 1f);
     private static readonly Color PendingTint = new(1f, 0.88f, 0.24f, 1f);
     private static readonly Color AssignedSkillTint = new(0.16f, 0.58f, 0.88f, 1f);
     private static readonly Color AssignedTargetTint = new(1f, 0.36f, 0.22f, 1f);
+    private static readonly Color ClashCandidateTint = new(1f, 0.82f, 0.12f, 1f);
+    private static readonly Color OneSidedCandidateTint = new(0.18f, 0.52f, 1f, 1f);
+    private static readonly Color ThreatTint = new(1f, 0.62f, 0.18f, 1f);
 
     public Character Owner => owner;
     public BodyPart Part => part;
@@ -69,6 +85,11 @@ public sealed class BattleWorldActionSlotCellUI : MonoBehaviour,
     {
         selfRect = transform as RectTransform;
         outline = GetComponent<Outline>();
+        canvasGroup = GetComponent<CanvasGroup>();
+
+        if (canvasGroup == null)
+            canvasGroup = gameObject.AddComponent<CanvasGroup>();
+
         currentScale = Vector3.one;
     }
 
@@ -82,16 +103,26 @@ public sealed class BattleWorldActionSlotCellUI : MonoBehaviour,
     {
         ActiveCells.Remove(this);
 
+        if (HoveredCell == this)
+            HoveredCell = null;
+
         if (HoveredTargetCell == this)
             HoveredTargetCell = null;
+
+        ReleaseOwnerHoverOutline();
     }
 
     private void OnDestroy()
     {
         ActiveCells.Remove(this);
 
+        if (HoveredCell == this)
+            HoveredCell = null;
+
         if (HoveredTargetCell == this)
             HoveredTargetCell = null;
+
+        ReleaseOwnerHoverOutline();
     }
 
     public void ConfigurePlanning(
@@ -118,6 +149,7 @@ public sealed class BattleWorldActionSlotCellUI : MonoBehaviour,
         selfRect ??= transform as RectTransform;
         normalColor = background != null ? background.color : Color.white;
         currentColor = normalColor;
+        EnsureThreatBadge();
         RefreshLabel();
         ApplyImmediateVisual();
     }
@@ -143,6 +175,7 @@ public sealed class BattleWorldActionSlotCellUI : MonoBehaviour,
         selfRect ??= transform as RectTransform;
         normalColor = background != null ? background.color : Color.white;
         currentColor = normalColor;
+        EnsureTargetDecisionBadge();
         RefreshLabel();
         ApplyImmediateVisual();
     }
@@ -160,6 +193,9 @@ public sealed class BattleWorldActionSlotCellUI : MonoBehaviour,
         bool pending = IsPendingTargetSelection();
         bool assignedSkill = IsSkillAssigned();
         bool assignedTarget = IsAssignedTarget();
+
+        RefreshContextBadges();
+        RefreshFocusAlpha(selected, pending);
 
         float scale = pointerInside
             ? hoverScale
@@ -195,6 +231,28 @@ public sealed class BattleWorldActionSlotCellUI : MonoBehaviour,
 
         if (assignedTarget)
             wantedColor = Color.Lerp(normalColor, AssignedTargetTint, 0.22f);
+
+        if (targetSlot != null &&
+            manager != null &&
+            manager.IsSelectingTarget)
+        {
+            if (targetDecision == TargetDecision.Clash)
+            {
+                wantedColor =
+                    Color.Lerp(
+                        wantedColor,
+                        ClashCandidateTint,
+                        pointerInside ? 0.34f : 0.18f);
+            }
+            else if (targetDecision == TargetDecision.OneSided)
+            {
+                wantedColor =
+                    Color.Lerp(
+                        wantedColor,
+                        OneSidedCandidateTint,
+                        pointerInside ? 0.26f : 0.12f);
+            }
+        }
 
         if (selected)
             wantedColor = Color.Lerp(normalColor, SelectedTint, 0.32f);
@@ -234,7 +292,24 @@ public sealed class BattleWorldActionSlotCellUI : MonoBehaviour,
                             ? 0.62f
                             : 0.46f;
 
-            if (assignedSkill && !pending && !selected)
+            if (targetSlot != null &&
+                manager != null &&
+                manager.IsSelectingTarget &&
+                targetDecision != TargetDecision.None)
+            {
+                Color candidate =
+                    targetDecision == TargetDecision.Clash
+                        ? ClashCandidateTint
+                        : OneSidedCandidateTint;
+
+                candidate.a =
+                    pointerInside
+                        ? 0.98f
+                        : 0.82f;
+
+                outlineColor = candidate;
+            }
+            else if (assignedSkill && !pending && !selected)
             {
                 outlineColor = new Color(0.18f, 0.72f, 1f, alpha);
             }
@@ -339,17 +414,478 @@ public sealed class BattleWorldActionSlotCellUI : MonoBehaviour,
     public void OnPointerEnter(PointerEventData eventData)
     {
         pointerInside = true;
+        HoveredCell = this;
 
         if (targetSlot != null)
+        {
             HoveredTargetCell = this;
+
+            hoveredOwnerOutline =
+                owner != null
+                    ? owner.GetComponent<OutlineController>()
+                    : null;
+
+            hoveredOwnerOutline?.SetHovered(true);
+        }
     }
 
     public void OnPointerExit(PointerEventData eventData)
     {
         pointerInside = false;
 
+        if (HoveredCell == this)
+            HoveredCell = null;
+
         if (HoveredTargetCell == this)
             HoveredTargetCell = null;
+
+        ReleaseOwnerHoverOutline();
+    }
+
+    private void RefreshContextBadges()
+    {
+        RefreshTargetDecisionBadge();
+        RefreshThreatBadge();
+    }
+
+    private void RefreshFocusAlpha(
+        bool selected,
+        bool pending)
+    {
+        if (canvasGroup == null)
+            return;
+
+        BattleWorldActionSlotCellUI hovered =
+            HoveredCell;
+
+        bool hoverFocus =
+            hovered != null;
+
+        bool isHovered =
+            hovered == this;
+
+        bool isIncomingSource =
+            hoverFocus &&
+            !isHovered &&
+            RepresentsIncomingAttackTo(
+                hovered);
+
+        bool targetFocus =
+            manager != null &&
+            manager.IsSelectingTarget &&
+            manager.Selection?.Skill != null;
+
+        float wanted = 1f;
+
+        if (hoverFocus)
+        {
+            // Hover한 슬롯에 "들어오는 공격 관계"만 선명하게 남긴다.
+            // - Hover 대상 슬롯: 100%
+            // - 그 슬롯을 현재 공격하는 Source 슬롯: 100%
+            // - 나머지 슬롯: 흐림
+            if (isHovered ||
+                isIncomingSource)
+            {
+                wanted = 1f;
+            }
+            else if (targetFocus &&
+                     targetSlot != null)
+            {
+                wanted = 0.34f;
+            }
+            else if (targetFocus &&
+                     (selected || pending))
+            {
+                wanted = 0.72f;
+            }
+            else
+            {
+                wanted = 0.20f;
+            }
+        }
+        else if (targetFocus)
+        {
+            if (targetSlot == null)
+            {
+                wanted =
+                    selected || pending
+                        ? 1f
+                        : 0.42f;
+            }
+            else
+            {
+                wanted = 0.90f;
+            }
+        }
+
+        float t =
+            1f -
+            Mathf.Exp(
+                -16f *
+                Time.unscaledDeltaTime);
+
+        canvasGroup.alpha =
+            Mathf.Lerp(
+                canvasGroup.alpha,
+                wanted,
+                t);
+    }
+
+    private bool RepresentsIncomingAttackTo(
+        BattleWorldActionSlotCellUI hovered)
+    {
+        if (hovered == null)
+            return false;
+
+        ActionSlot represented =
+            GetRepresentedActionSlot();
+
+        if (represented == null)
+            return false;
+
+        return ActionTargetsCell(
+            represented,
+            hovered);
+    }
+
+    public ActionSlot GetRepresentedActionSlot()
+    {
+        if (targetSlot != null)
+            return targetSlot;
+
+        if (manager == null ||
+            owner == null ||
+            part == null)
+        {
+            return null;
+        }
+
+        return manager.FindActionSlot(
+            owner,
+            part,
+            actionIndex);
+    }
+
+    public bool IsTargetedBy(
+        ActionSlot source)
+    {
+        return ActionTargetsCell(
+            source,
+            this);
+    }
+
+    private static bool ActionTargetsCell(
+        ActionSlot source,
+        BattleWorldActionSlotCellUI cell)
+    {
+        if (source == null ||
+            cell == null)
+        {
+            return false;
+        }
+
+        // Enemy/target-cell은 exact TargetSlot이 가장 강한 관계다.
+        if (cell.targetSlot != null)
+        {
+            if (source.TargetSlot ==
+                cell.targetSlot)
+            {
+                return true;
+            }
+
+            // UI 관계 표시용 fallback.
+            // 실제 합 판정은 여전히 exact TargetSlot 계약을 사용한다.
+            return
+                source.TargetCharacter ==
+                    cell.targetSlot.Owner &&
+                IsSamePartOrBothNull(
+                    source.TargetPart,
+                    cell.targetSlot.Part);
+        }
+
+        // Player planning cell은 적 행동의 선언 대상(Character/BodyPart)을 본다.
+        return
+            source.TargetCharacter ==
+                cell.owner &&
+            IsSamePartOrBothNull(
+                source.TargetPart,
+                cell.part);
+    }
+
+    private void RefreshTargetDecisionBadge()
+    {
+        targetDecision =
+            TargetDecision.None;
+
+        if (targetDecisionBadge == null ||
+            targetSlot == null ||
+            manager == null ||
+            !manager.IsSelectingTarget ||
+            manager.Selection?.Skill == null ||
+            manager.SelectedOwner == null ||
+            manager.SelectedOwnerPart == null)
+        {
+            SetTextVisible(
+                targetDecisionBadge,
+                false);
+
+            return;
+        }
+
+        Skill skill =
+            manager.Selection.Skill;
+
+        if (skill.DefaultPhase != ActionPhase.COMBAT)
+        {
+            SetTextVisible(
+                targetDecisionBadge,
+                false);
+
+            return;
+        }
+
+        ActionSlot existing =
+            manager.FindActionSlot(
+                manager.SelectedOwner,
+                manager.SelectedOwnerPart,
+                manager.SelectedActionIndex);
+
+        int speed =
+            existing?.Speed ??
+            manager.GetWorldPlanningSlotSpeed(
+                manager.SelectedOwner,
+                manager.SelectedOwnerPart);
+
+        ActionSlot challenger =
+            new ActionSlot
+            {
+                ActionId = -1000001,
+                Owner = manager.SelectedOwner,
+                Part = manager.SelectedOwnerPart,
+                Skill = skill,
+                Speed = speed,
+                ActionIndex =
+                    manager.SelectedActionIndex,
+                Phase =
+                    ActionPhase.COMBAT,
+                TargetCharacter =
+                    targetSlot.Owner,
+                TargetPart =
+                    targetSlot.Part,
+                TargetSlot =
+                    targetSlot
+            };
+
+        ClashMatchPolicy policy =
+            new ClashMatchPolicy(
+                new ActionPhaseSorter());
+
+        bool canClash =
+            policy.CanChallenge(
+                challenger,
+                targetSlot);
+
+        targetDecision =
+            canClash
+                ? TargetDecision.Clash
+                : TargetDecision.OneSided;
+
+        targetDecisionBadge.text =
+            canClash
+                ? "합"
+                : "일방";
+
+        targetDecisionBadge.color =
+            canClash
+                ? ClashCandidateTint
+                : OneSidedCandidateTint;
+
+        SetTextVisible(
+            targetDecisionBadge,
+            true);
+    }
+
+    private void RefreshThreatBadge()
+    {
+        if (threatBadge == null ||
+            targetSlot != null ||
+            actionIndex != 0 ||
+            manager?.BattleManager?.ActionManager?.Slots == null ||
+            owner == null)
+        {
+            SetTextVisible(
+                threatBadge,
+                false);
+
+            return;
+        }
+
+        Character player =
+            manager.BattleManager.BattleContext?.Player;
+
+        if (player == null ||
+            owner != player)
+        {
+            SetTextVisible(
+                threatBadge,
+                false);
+
+            return;
+        }
+
+        int count = 0;
+
+        foreach (ActionSlot slot
+                 in manager.BattleManager.ActionManager.Slots)
+        {
+            if (slot == null ||
+                slot.Owner == null ||
+                slot.Owner == player ||
+                slot.Phase != ActionPhase.COMBAT ||
+                slot.TargetCharacter != player)
+            {
+                continue;
+            }
+
+            if (IsSamePartOrBothNull(
+                    slot.TargetPart,
+                    part))
+            {
+                count++;
+            }
+        }
+
+        if (count <= 0)
+        {
+            SetTextVisible(
+                threatBadge,
+                false);
+
+            return;
+        }
+
+        threatBadge.text =
+            $"! {count}";
+
+        threatBadge.color =
+            ThreatTint;
+
+        SetTextVisible(
+            threatBadge,
+            true);
+    }
+
+    private void EnsureTargetDecisionBadge()
+    {
+        if (targetDecisionBadge != null)
+            return;
+
+        targetDecisionBadge =
+            CreateFloatingBadge(
+                "DecisionBadge",
+                new Vector2(1f, 1f),
+                new Vector2(1f, 0f),
+                new Vector2(2f, 5f),
+                new Vector2(46f, 22f));
+
+        SetTextVisible(
+            targetDecisionBadge,
+            false);
+    }
+
+    private void EnsureThreatBadge()
+    {
+        if (threatBadge != null)
+            return;
+
+        threatBadge =
+            CreateFloatingBadge(
+                "ThreatBadge",
+                new Vector2(0f, 1f),
+                new Vector2(0f, 0f),
+                new Vector2(-2f, 5f),
+                new Vector2(42f, 22f));
+
+        SetTextVisible(
+            threatBadge,
+            false);
+    }
+
+    private TMP_Text CreateFloatingBadge(
+        string objectName,
+        Vector2 anchor,
+        Vector2 pivot,
+        Vector2 anchoredPosition,
+        Vector2 size)
+    {
+        GameObject go =
+            new GameObject(
+                objectName,
+                typeof(RectTransform),
+                typeof(TextMeshProUGUI));
+
+        go.transform.SetParent(
+            transform,
+            false);
+
+        RectTransform rect =
+            go.GetComponent<RectTransform>();
+
+        rect.anchorMin = anchor;
+        rect.anchorMax = anchor;
+        rect.pivot = pivot;
+        rect.anchoredPosition =
+            anchoredPosition;
+        rect.sizeDelta = size;
+
+        TextMeshProUGUI text =
+            go.GetComponent<TextMeshProUGUI>();
+
+        text.alignment =
+            TextAlignmentOptions.Center;
+
+        text.fontStyle =
+            FontStyles.Bold;
+
+        text.fontSize = 15f;
+        text.enableAutoSizing = true;
+        text.fontSizeMin = 10f;
+        text.fontSizeMax = 15f;
+        text.textWrappingMode =
+            TextWrappingModes.NoWrap;
+
+        text.outlineColor =
+            Color.black;
+
+        text.outlineWidth = 0.22f;
+        text.raycastTarget = false;
+
+        return text;
+    }
+
+    private static void SetTextVisible(
+        TMP_Text text,
+        bool visible)
+    {
+        if (text == null)
+            return;
+
+        if (text.gameObject.activeSelf != visible)
+        {
+            text.gameObject.SetActive(
+                visible);
+        }
+    }
+
+    private void ReleaseOwnerHoverOutline()
+    {
+        if (hoveredOwnerOutline == null)
+            return;
+
+        hoveredOwnerOutline.SetHovered(
+            false);
+
+        hoveredOwnerOutline = null;
     }
 
     private bool IsSelected()

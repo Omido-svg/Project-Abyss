@@ -67,7 +67,7 @@ public sealed class SkillVisualDefinitionEditor :
                      AssetDatabase.LoadAllAssetsAtPath(path))
             {
                 if (asset is SkillDefinition skill &&
-                    skill.VisualDefinition == definition)
+                    SkillPresentationAccess.Get(skill) == definition)
                 {
                     return skill;
                 }

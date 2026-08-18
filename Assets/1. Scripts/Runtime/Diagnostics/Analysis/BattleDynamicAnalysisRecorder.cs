@@ -742,7 +742,7 @@ public sealed class BattleDynamicAnalysisRecorder : MonoBehaviour
                 source = source,
                 turn = currentTurn,
                 phase = ResolvePhase(action),
-                momentum = context?.battleManager
+                momentum = context?.Services
                     ?.MomentumManager?.CurrentMomentum ?? 0,
                 message = message,
                 rules = rules,
@@ -905,7 +905,7 @@ public sealed class BattleDynamicAnalysisRecorder : MonoBehaviour
         BattleTraceStateSnapshot snapshot =
             new BattleTraceStateSnapshot
             {
-                momentum = context?.battleManager
+                momentum = context?.Services
                     ?.MomentumManager?.CurrentMomentum ?? 0
             };
 
@@ -922,10 +922,10 @@ public sealed class BattleDynamicAnalysisRecorder : MonoBehaviour
         }
 
         if (includePlannedActions &&
-            context?.battleManager?.ActionManager?.Slots != null)
+            context?.Services?.ActionManager?.Slots != null)
         {
             foreach (ActionSlot slot in
-                     context.battleManager.ActionManager.Slots)
+                     context.Services.ActionManager.Slots)
             {
                 BattleTraceAction action =
                     CreateAction(slot);

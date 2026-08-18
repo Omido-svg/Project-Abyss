@@ -40,8 +40,13 @@ public sealed class CharacterVerificationFixture :
             new GameObject(
                 $"[Character Verification] {profile.name}");
 
+        // IsolatedRuntime Fixture는 Play Mode에서만 생성되고 Dispose에서 즉시 파괴된다.
+        // HideAndDontSave에는 DontSaveInEditor가 포함되어 있어, Editor가 Play Mode 중
+        // 임시 clone 참조를 검사/직렬화할 때 Unity native persistence assertion을
+        // 유발할 수 있다. Hierarchy에는 숨기되 DontSaveInEditor는 사용하지 않는다.
         sandboxRoot.hideFlags =
-            HideFlags.HideAndDontSave;
+            HideFlags.HideInHierarchy |
+            HideFlags.DontSaveInBuild;
 
         sandboxRoot.SetActive(false);
 
@@ -80,14 +85,21 @@ public sealed class CharacterVerificationFixture :
         BattleContext.Enemies.Add(
             TargetCharacter);
 
-        BattleContext.VerificationMomentumManager =
+        MomentumManager verificationMomentum =
             new MomentumManager(
                 BattleContext);
 
-        BattleContext.VerificationDamageManager =
+        DamageManager verificationDamage =
             new DamageManager(
                 BattleContext,
-                BattleContext.VerificationMomentumManager);
+                verificationMomentum);
+
+        BattleContext.Services =
+            new BattleRuntimeServices
+            {
+                MomentumManager = verificationMomentum,
+                DamageManager = verificationDamage
+            };
 
         BattleContext.EffectResolver =
             new BattleEffectResolver(
@@ -118,7 +130,9 @@ public sealed class CharacterVerificationFixture :
                 false);
 
         clone.name = source.name + suffix;
-        clone.hideFlags = HideFlags.HideAndDontSave;
+        clone.hideFlags =
+            HideFlags.HideInHierarchy |
+            HideFlags.DontSaveInBuild;
         return clone;
     }
 
@@ -180,8 +194,7 @@ public sealed class CharacterVerificationFixture :
         {
             BattleContext.Player = null;
             BattleContext.Enemies?.Clear();
-            BattleContext.VerificationDamageManager = null;
-            BattleContext.VerificationMomentumManager = null;
+            BattleContext.Services = null;
             BattleContext.EffectResolver = null;
         }
 

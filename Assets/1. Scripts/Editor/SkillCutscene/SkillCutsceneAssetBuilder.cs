@@ -50,7 +50,7 @@ public static class SkillCutsceneAssetBuilder
             baseFolder);
 
         SkillVisualDefinition visual =
-            skill.VisualDefinition;
+            SkillPresentationAccess.Get(skill);
 
         if (visual == null)
         {
@@ -73,8 +73,9 @@ public static class SkillCutsceneAssetBuilder
                 visual,
                 visualPath);
 
-            skill.VisualDefinition =
-                visual;
+            SkillPresentationAccess.Set(
+                skill,
+                visual);
 
             EditorUtility.SetDirty(
                 skill);
@@ -1387,12 +1388,12 @@ public static class SkillCutsceneAssetBuilder
                      AssetDatabase.LoadAllAssetsAtPath(path))
             {
                 if (asset is not SkillDefinition skill ||
-                    skill.VisualDefinition != definition)
+                    SkillPresentationAccess.Get(skill) != definition)
                 {
                     continue;
                 }
 
-                return skill.VisualDefinition
+                return definition
                     .HasHitFrameDamage;
             }
         }

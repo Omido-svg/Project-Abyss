@@ -10,8 +10,6 @@ public sealed class ActionExecutionQueue
 
     public Queue<ActionSlot> PreparationQueue { get; } = new();
 
-    // 과거 AmbushQueue 호출부 호환용 별칭.
-    public Queue<ActionSlot> AmbushQueue => PreparationQueue;
 
     public Queue<ClashPair> ClashQueue { get; set; } = new();
 

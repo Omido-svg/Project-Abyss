@@ -12,6 +12,7 @@ public static class CharacterBehaviorCoverageCatalog
             typeof(OlafImmortalFuryMechanic),
             typeof(OlafBloodyAxeMechanic),
             typeof(YujinMechanic),
+            typeof(YujinHwanhyeongFlowPassiveMechanic),
             typeof(HifumiMechanic),
             typeof(StaggerGaugeMechanic),
             typeof(EliteEnemyMechanic),
@@ -182,6 +183,14 @@ public static class CharacterBehaviorCoverageCatalog
                 VerifyYujin(context, yujin, failures, observations);
                 break;
 
+            case YujinHwanhyeongFlowPassiveMechanic hwanhyeongFlow:
+                VerifyYujinHwanhyeongFlowPassive(
+                    context,
+                    hwanhyeongFlow,
+                    failures,
+                    observations);
+                break;
+
             case EliteEnemyMechanic elite:
                 VerifyElite(context, elite, failures, observations);
                 break;
@@ -194,6 +203,92 @@ public static class CharacterBehaviorCoverageCatalog
                 VerifyBloodScent(context, bloodScent, failures, observations);
                 break;
         }
+    }
+
+    private static void VerifyYujinHwanhyeongFlowPassive(
+        CharacterVerificationContext context,
+        YujinHwanhyeongFlowPassiveMechanic passive,
+        ICollection<string> failures,
+        ICollection<string> observations)
+    {
+        Yujin owner =
+            context?.Character as Yujin;
+
+        YujinMechanic mechanic =
+            owner?.GetMechanic<YujinMechanic>();
+
+        if (owner == null ||
+            mechanic == null ||
+            passive == null ||
+            passive.Owner != owner ||
+            passive.SenseGain <= 0)
+        {
+            failures.Add(
+                "YujinHwanhyeongFlowPassiveMechanic 등록/Owner/SenseGain 계약 불일치");
+            return;
+        }
+
+        // 실제 WeaponChanged 이벤트 경로까지 강제한다.
+        // 기본 TurnStart의 감 +1과 환형의 흐름 보너스 +SenseGain이 함께 들어와야 한다.
+        YujinWeaponType originalWeapon =
+            mechanic.CurrentWeapon;
+
+        int originalSense =
+            mechanic.Sense;
+
+        YujinWeaponType targetWeapon =
+            originalWeapon == YujinWeaponType.Baeku
+                ? YujinWeaponType.Jeokseol
+                : YujinWeaponType.Baeku;
+
+        mechanic.SetWeaponForVerification(
+            originalWeapon);
+
+        bool queued =
+            mechanic.QueueWeaponSwitchFromPreparation(
+                targetWeapon,
+                paidEnergyCost: 0);
+
+        context.BattleContext?._battleEvent
+            ?.RaiseTurnStart(990001);
+
+        int gained =
+            mechanic.Sense -
+            originalSense;
+
+        bool applied =
+            mechanic.CurrentWeapon ==
+            targetWeapon;
+
+        bool valid =
+            queued &&
+            applied &&
+            gained ==
+                1 + passive.SenseGain;
+
+        if (!valid)
+        {
+            failures.Add(
+                $"환형의 흐름 이벤트 경로 불일치: " +
+                $"Queued={queued}, Applied={applied}, " +
+                $"SenseGain={gained}, " +
+                $"Expected={1 + passive.SenseGain}");
+        }
+        else
+        {
+            observations.Add(
+                $"환형의 흐름 WeaponChanged 이벤트 PASS / " +
+                $"기본+1 + 패시브+{passive.SenseGain}");
+        }
+
+        // 같은 Fixture의 후속 검증에 영향을 주지 않도록 복구한다.
+        mechanic.SetWeaponForVerification(
+            originalWeapon);
+
+        CharacterVerificationScenarioTools.TrySetPrivateField(
+            mechanic,
+            "sense",
+            originalSense);
     }
 
     private static void VerifyOlafMadness(

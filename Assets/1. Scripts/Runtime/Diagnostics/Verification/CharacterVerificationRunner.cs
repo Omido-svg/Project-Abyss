@@ -425,6 +425,46 @@ public static class CharacterVerificationRunner
         return result;
     }
 
+    private static void LogNonPassResults(
+        CharacterVerificationReport report)
+    {
+        if (report?.Results == null)
+            return;
+
+        foreach (CharacterVerificationCaseResult result
+                 in report.Results)
+        {
+            if (result == null ||
+                result.Status ==
+                    CharacterVerificationStatus.Pass)
+            {
+                continue;
+            }
+
+            string message =
+                $"[CharacterVerification][{result.Status}] " +
+                $"{report.CharacterName} / {result.CaseId} / " +
+                $"{result.DisplayName}\n" +
+                $"Expected: {result.Expected}\n" +
+                $"Actual: {result.Actual}" +
+                (string.IsNullOrWhiteSpace(result.Details)
+                    ? string.Empty
+                    : $"\nDetails: {result.Details}");
+
+            if (result.Status ==
+                    CharacterVerificationStatus.Fail ||
+                result.Status ==
+                    CharacterVerificationStatus.Error)
+            {
+                UnityEngine.Debug.LogError(message);
+            }
+            else
+            {
+                UnityEngine.Debug.LogWarning(message);
+            }
+        }
+    }
+
     private static CharacterVerificationCaseResult
         CreateSkip(
             CharacterVerificationCaseDefinition definition,
@@ -464,6 +504,9 @@ public static class CharacterVerificationRunner
             DateTime.Now.ToString("O");
 
         report.RecalculateCounts();
+
+        LogNonPassResults(
+            report);
 
         if (writeReport)
         {

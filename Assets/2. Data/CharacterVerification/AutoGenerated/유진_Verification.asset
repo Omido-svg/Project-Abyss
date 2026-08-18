@@ -16,6 +16,136 @@ MonoBehaviour:
   bundle: {fileID: 11400000, guid: 060a5617ffe7f004f979c24bc775dc19, type: 2}
   strictPresentationValidation: 1
   cases:
+  - CaseId: coverage.manifest.closed_world
+    DisplayName: "\uC644\uC804 \uCEE4\uBC84\uB9AC\uC9C0 \uBA85\uC138 \uD3D0\uC1C4\uC131"
+    Category: 0
+    ExecutionMode: 0
+    Enabled: 1
+    Seed: 1207
+    Description: "\uBAA8\uB4E0 SkillDefinition\xB7Effect\xB7\uD544\uC218 Mechanic\uC774
+      \uAC80\uC99D \uCE74\uD0C8\uB85C\uADF8\uC5D0 \uB4F1\uB85D\uB410\uB294\uC9C0
+      \uAC80\uC0AC\uD569\uB2C8\uB2E4. \uC0C8 \uAE30\uB2A5\uC740 \uAC80\uC99D\uAE30
+      \uCD94\uAC00 \uC804\uAE4C\uC9C0 FAIL\uD569\uB2C8\uB2E4."
+  - CaseId: coverage.mechanics.forced_scenarios
+    DisplayName: "\uD328\uC2DC\uBE0C\xB7\uBA54\uCEE4\uB2C9 \uAC15\uC81C \uC2DC\uB098\uB9AC\uC624"
+    Category: 1
+    ExecutionMode: 1
+    Enabled: 1
+    Seed: 1207
+    Description: "\uD544\uC218 \uD328\uC2DC\uBE0C\uC640 \uBA54\uCEE4\uB2C9\uC758
+      \uC774\uBCA4\uD2B8 \uC870\uAC74\uC744 \uC9C1\uC811 \uBC1C\uC0DD\uC2DC\uCF1C
+      \uC815\uD655\uD55C \uC0C1\uD0DC \uBCC0\uD654\uB97C \uAC80\uC0AC\uD569\uB2C8\uB2E4."
+  - CaseId: coverage.skill.yujin.normal.inspection
+    DisplayName: "\uC2A4\uD0AC \uC644\uC804 \uC2DC\uB098\uB9AC\uC624: \uAC80\uBD84"
+    Category: 2
+    ExecutionMode: 1
+    Enabled: 1
+    Seed: 1207
+    Description: "\uC790\uC6D0 \uAC70\uBD80/\uC18C\uBE44, \uBAA8\uB4E0 \uAD74\uB9BC,
+      \uD53C\uD574 \uB300\uC0C1, \uBAA8\uB4E0 Effect Entry \uC870\uAC74\uC744 \uACB0\uC815\uB860\uC801\uC73C\uB85C
+      \uAC15\uC81C \uC2E4\uD589\uD569\uB2C8\uB2E4."
+  - CaseId: coverage.skill.yujin.normal.breakfast
+    DisplayName: "\uC2A4\uD0AC \uC644\uC804 \uC2DC\uB098\uB9AC\uC624: \uC870\uC2DD"
+    Category: 2
+    ExecutionMode: 1
+    Enabled: 1
+    Seed: 1207
+    Description: "\uC790\uC6D0 \uAC70\uBD80/\uC18C\uBE44, \uBAA8\uB4E0 \uAD74\uB9BC,
+      \uD53C\uD574 \uB300\uC0C1, \uBAA8\uB4E0 Effect Entry \uC870\uAC74\uC744 \uACB0\uC815\uB860\uC801\uC73C\uB85C
+      \uAC15\uC81C \uC2E4\uD589\uD569\uB2C8\uB2E4."
+  - CaseId: coverage.skill.yujin.duel.inscription
+    DisplayName: "\uC2A4\uD0AC \uC644\uC804 \uC2DC\uB098\uB9AC\uC624: \uAC01\uC778"
+    Category: 3
+    ExecutionMode: 1
+    Enabled: 1
+    Seed: 1207
+    Description: "\uC790\uC6D0 \uAC70\uBD80/\uC18C\uBE44, \uBAA8\uB4E0 \uAD74\uB9BC,
+      \uD53C\uD574 \uB300\uC0C1, \uBAA8\uB4E0 Effect Entry \uC870\uAC74\uC744 \uACB0\uC815\uB860\uC801\uC73C\uB85C
+      \uAC15\uC81C \uC2E4\uD589\uD569\uB2C8\uB2E4."
+  - CaseId: coverage.skill.yujin.duel.pursuit
+    DisplayName: "\uC2A4\uD0AC \uC644\uC804 \uC2DC\uB098\uB9AC\uC624: \uCD94\uACA9"
+    Category: 3
+    ExecutionMode: 1
+    Enabled: 1
+    Seed: 1207
+    Description: "\uC790\uC6D0 \uAC70\uBD80/\uC18C\uBE44, \uBAA8\uB4E0 \uAD74\uB9BC,
+      \uD53C\uD574 \uB300\uC0C1, \uBAA8\uB4E0 Effect Entry \uC870\uAC74\uC744 \uACB0\uC815\uB860\uC801\uC73C\uB85C
+      \uAC15\uC81C \uC2E4\uD589\uD569\uB2C8\uB2E4."
+  - CaseId: coverage.skill.yujin.preparation.sentencing
+    DisplayName: "\uC2A4\uD0AC \uC644\uC804 \uC2DC\uB098\uB9AC\uC624: \uC591\uD615"
+    Category: 4
+    ExecutionMode: 1
+    Enabled: 1
+    Seed: 1207
+    Description: "\uC790\uC6D0 \uAC70\uBD80/\uC18C\uBE44, \uBAA8\uB4E0 \uAD74\uB9BC,
+      \uD53C\uD574 \uB300\uC0C1, \uBAA8\uB4E0 Effect Entry \uC870\uAC74\uC744 \uACB0\uC815\uB860\uC801\uC73C\uB85C
+      \uAC15\uC81C \uC2E4\uD589\uD569\uB2C8\uB2E4."
+  - CaseId: coverage.skill.yujin.preparation.capture
+    DisplayName: "\uC2A4\uD0AC \uC644\uC804 \uC2DC\uB098\uB9AC\uC624: \uD3EC\uCC29"
+    Category: 4
+    ExecutionMode: 1
+    Enabled: 1
+    Seed: 1207
+    Description: "\uC790\uC6D0 \uAC70\uBD80/\uC18C\uBE44, \uBAA8\uB4E0 \uAD74\uB9BC,
+      \uD53C\uD574 \uB300\uC0C1, \uBAA8\uB4E0 Effect Entry \uC870\uAC74\uC744 \uACB0\uC815\uB860\uC801\uC73C\uB85C
+      \uAC15\uC81C \uC2E4\uD589\uD569\uB2C8\uB2E4."
+  - CaseId: coverage.skill.yujin.preparation.hwanhyeong.nakil
+    DisplayName: "\uC2A4\uD0AC \uC644\uC804 \uC2DC\uB098\uB9AC\uC624: \uD658\uD615
+      \xB7 \uB099\uC77C"
+    Category: 4
+    ExecutionMode: 1
+    Enabled: 1
+    Seed: 1207
+    Description: "\uC790\uC6D0 \uAC70\uBD80/\uC18C\uBE44, \uBAA8\uB4E0 \uAD74\uB9BC,
+      \uD53C\uD574 \uB300\uC0C1, \uBAA8\uB4E0 Effect Entry \uC870\uAC74\uC744 \uACB0\uC815\uB860\uC801\uC73C\uB85C
+      \uAC15\uC81C \uC2E4\uD589\uD569\uB2C8\uB2E4."
+  - CaseId: coverage.skill.yujin.preparation.hwanhyeong.baeku
+    DisplayName: "\uC2A4\uD0AC \uC644\uC804 \uC2DC\uB098\uB9AC\uC624: \uD658\uD615
+      \xB7 \uBC31\uC6B0"
+    Category: 4
+    ExecutionMode: 1
+    Enabled: 1
+    Seed: 1207
+    Description: "\uC790\uC6D0 \uAC70\uBD80/\uC18C\uBE44, \uBAA8\uB4E0 \uAD74\uB9BC,
+      \uD53C\uD574 \uB300\uC0C1, \uBAA8\uB4E0 Effect Entry \uC870\uAC74\uC744 \uACB0\uC815\uB860\uC801\uC73C\uB85C
+      \uAC15\uC81C \uC2E4\uD589\uD569\uB2C8\uB2E4."
+  - CaseId: coverage.skill.yujin.preparation.hwanhyeong.jeokseol
+    DisplayName: "\uC2A4\uD0AC \uC644\uC804 \uC2DC\uB098\uB9AC\uC624: \uD658\uD615
+      \xB7 \uC801\uC124"
+    Category: 4
+    ExecutionMode: 1
+    Enabled: 1
+    Seed: 1207
+    Description: "\uC790\uC6D0 \uAC70\uBD80/\uC18C\uBE44, \uBAA8\uB4E0 \uAD74\uB9BC,
+      \uD53C\uD574 \uB300\uC0C1, \uBAA8\uB4E0 Effect Entry \uC870\uAC74\uC744 \uACB0\uC815\uB860\uC801\uC73C\uB85C
+      \uAC15\uC81C \uC2E4\uD589\uD569\uB2C8\uB2E4."
+  - CaseId: coverage.skill.yujin.prestige.brand
+    DisplayName: "\uC2A4\uD0AC \uC644\uC804 \uC2DC\uB098\uB9AC\uC624: \uB099\uC778"
+    Category: 5
+    ExecutionMode: 1
+    Enabled: 1
+    Seed: 1207
+    Description: "\uC790\uC6D0 \uAC70\uBD80/\uC18C\uBE44, \uBAA8\uB4E0 \uAD74\uB9BC,
+      \uD53C\uD574 \uB300\uC0C1, \uBAA8\uB4E0 Effect Entry \uC870\uAC74\uC744 \uACB0\uC815\uB860\uC801\uC73C\uB85C
+      \uAC15\uC81C \uC2E4\uD589\uD569\uB2C8\uB2E4."
+  - CaseId: coverage.skill.yujin.prestige.joint_liability
+    DisplayName: "\uC2A4\uD0AC \uC644\uC804 \uC2DC\uB098\uB9AC\uC624: \uC5F0\uC88C"
+    Category: 5
+    ExecutionMode: 1
+    Enabled: 1
+    Seed: 1207
+    Description: "\uC790\uC6D0 \uAC70\uBD80/\uC18C\uBE44, \uBAA8\uB4E0 \uAD74\uB9BC,
+      \uD53C\uD574 \uB300\uC0C1, \uBAA8\uB4E0 Effect Entry \uC870\uAC74\uC744 \uACB0\uC815\uB860\uC801\uC73C\uB85C
+      \uAC15\uC81C \uC2E4\uD589\uD569\uB2C8\uB2E4."
+  - CaseId: coverage.skill.yujin.prestige.retrial
+    DisplayName: "\uC2A4\uD0AC \uC644\uC804 \uC2DC\uB098\uB9AC\uC624: \uC7AC\uC2EC"
+    Category: 5
+    ExecutionMode: 1
+    Enabled: 1
+    Seed: 1207
+    Description: "\uC790\uC6D0 \uAC70\uBD80/\uC18C\uBE44, \uBAA8\uB4E0 \uAD74\uB9BC,
+      \uD53C\uD574 \uB300\uC0C1, \uBAA8\uB4E0 Effect Entry \uC870\uAC74\uC744 \uACB0\uC815\uB860\uC801\uC73C\uB85C
+      \uAC15\uC81C \uC2E4\uD589\uD569\uB2C8\uB2E4."
   - CaseId: generic.data.core_references
     DisplayName: "Core \uB370\uC774\uD130 \uCC38\uC870"
     Category: 0
@@ -99,15 +229,102 @@ MonoBehaviour:
     Description: "\uD604\uC7AC BattleManager\uC758 \uD50C\uB808\uC774\uC5B4, HUD,
       \uC2A4\uD0AC \uD328\uB110\uC774 \uC120\uD0DD Bundle\uACFC \uC5F0\uACB0\uB418\uC5B4
       \uC788\uB294\uC9C0 \uAC80\uC0AC\uD569\uB2C8\uB2E4."
+  - CaseId: core3.data.verification_manifest
+    DisplayName: "Core 3 \uC804\uCCB4 \uAC80\uC99D Case \uD3D0\uC1C4\uC131"
+    Category: 0
+    ExecutionMode: 0
+    Enabled: 1
+    Seed: 1207
+    Description: "Olaf/Yujin/Hifumi\uC758 \uACF5\uD1B5\xB7\uACE0\uC720\xB7\uC2A4\uD0AC\uBCC4
+      \uAC80\uC99D Case\uAC00 \uBAA8\uB450 \uC0DD\uC131\uB410\uB294\uC9C0 \uD655\uC778\uD569\uB2C8\uB2E4.
+      \uB204\uB77D\uB41C Case\uAC00 \uC788\uC73C\uBA74 FAIL\uD569\uB2C8\uB2E4."
+  - CaseId: core3.data.skill_manifest
+    DisplayName: "Core 3 \uC2A4\uD0AC \uC218\xB7ID \uC644\uC804\uC131"
+    Category: 0
+    ExecutionMode: 0
+    Enabled: 1
+    Seed: 1207
+    Description: "\uD604\uC7AC \uB514\uC790\uC778 \uAE30\uC900 \uC2A4\uD0AC \uC218(Olaf
+      11 / Yujin 12 / Hifumi 12), ID \uC911\uBCF5, RuntimeSkill \uC0DD\uC131 \uAC00\uB2A5
+      \uC5EC\uBD80\uB97C \uAC80\uC0AC\uD569\uB2C8\uB2E4."
+  - CaseId: core3.data.phase_contract
+    DisplayName: "\uC2A4\uD0AC \uD0C0\uC785 \u2194 \uC2E4\uD589 \uD398\uC774\uC988
+      \uACC4\uC57D"
+    Category: 9
+    ExecutionMode: 0
+    Enabled: 1
+    Seed: 1207
+    Description: "Prestige=PRETURN, Preparation=FORESIGHT, Normal/Duel=COMBAT \uACC4\uC57D\uC774
+      \uBAA8\uB4E0 \uC2A4\uD0AC\uC5D0 \uC801\uC6A9\uB418\uB294\uC9C0 \uAC80\uC0AC\uD569\uB2C8\uB2E4."
+  - CaseId: core3.runtime.bodypart_skill_access
+    DisplayName: "\uBD80\uC704\uBCC4 \uC2A4\uD0AC \uC811\uADFC \uACC4\uC57D"
+    Category: 9
+    ExecutionMode: 1
+    Enabled: 1
+    Seed: 1207
+    Description: "HEAD=\uC804\uCCB4, \uC591\uD314=\uC77C\uBC18/\uACB0\uD22C, LEGS=\uB3C4\uC0AC\uB9BC
+      \uADDC\uCE59\uACFC \uC2E4\uC81C GetSelectableSkills \uACB0\uACFC\uAC00 \uC77C\uCE58\uD558\uB294\uC9C0
+      \uAC80\uC0AC\uD569\uB2C8\uB2E4."
+  - CaseId: core3.runtime.shared_bodypart_speed
+    DisplayName: "\uB3D9\uC77C \uBD80\uC704 \uB2E4\uC911 \uC2AC\uB86F \uACF5\uC720
+      \uC18D\uB3C4"
+    Category: 9
+    ExecutionMode: 1
+    Enabled: 1
+    Seed: 1207
+    Description: "\uAC19\uC740 BodyPart\uC758 ActionIndex 0/1\uC774 \uD558\uB098\uC758
+      SpeedManager \uAC12\uC744 \uACF5\uC720\uD558\uACE0 ConfigureActionSlot\uC774
+      \uAC1C\uBCC4 \uC18D\uB3C4\uB97C \uC7AC\uAD74\uB9BC\uD558\uC9C0 \uC54A\uB294\uC9C0
+      \uAC80\uC0AC\uD569\uB2C8\uB2E4."
+  - CaseId: core3.runtime.preparation_plan_cancel
+    DisplayName: "\uB3C4\uC0AC\uB9BC \uACC4\uD68D\xB7\uC5D0\uB108\uC9C0 \uC608\uC57D\xB7\uCDE8\uC18C"
+    Category: 4
+    ExecutionMode: 1
+    Enabled: 1
+    Seed: 1207
+    Description: "\uB3C4\uC0AC\uB9BC\uC774 START \uC804 FORESIGHT ActionSlot\uC73C\uB85C\uB9CC
+      \uACC4\uD68D\uB418\uACE0 \uC989\uC2DC \uC5D0\uB108\uC9C0\uB97C \uC18C\uBE44\uD558\uC9C0
+      \uC54A\uC73C\uBA70, \uC81C\uAC70 \uC2DC \uC608\uC57D \uBE44\uC6A9\uAE4C\uC9C0
+      \uC0AC\uB77C\uC9C0\uB294\uC9C0 \uAC80\uC0AC\uD569\uB2C8\uB2E4."
+  - CaseId: core3.runtime.preparation_replace
+    DisplayName: "\uB3C4\uC0AC\uB9BC \uB3D9\uC77C \uC2AC\uB86F \uAD50\uCCB4 \uACC4\uC57D"
+    Category: 4
+    ExecutionMode: 1
+    Enabled: 1
+    Seed: 1207
+    Description: "START \uC804 \uAC19\uC740 \uD589\uB3D9 \uC2AC\uB86F\uC5D0\uC11C
+      \uB3C4\uC0AC\uB9BC A\u2192B\uB85C \uBC14\uAFB8\uBA74 \uC2AC\uB86F 1\uAC1C\uB9CC
+      \uB0A8\uACE0 ActionId\uB97C \uBCF4\uC874\uD558\uBA70 \uC608\uC57D \uBE44\uC6A9\uC774
+      \uCD5C\uC885 \uC2A4\uD0AC \uAE30\uC900\uC73C\uB85C \uAD50\uCCB4\uB418\uB294\uC9C0
+      \uAC80\uC0AC\uD569\uB2C8\uB2E4."
+  - CaseId: core3.runtime.unique_gauge
+    DisplayName: "\uCE90\uB9AD\uD130 \uACE0\uC720 \uAC8C\uC774\uC9C0 \uACC4\uC57D"
+    Category: 7
+    ExecutionMode: 1
+    Enabled: 1
+    Seed: 1207
+    Description: "Olaf=\uAD11\uAE30, Yujin=\uD658\uD615, Hifumi=\uBF08 \uACE0\uC720
+      \uAC8C\uC774\uC9C0 Provider\uC758 \uB77C\uBCA8\xB7\uC815\uADDC\uD654\xB7\uD45C\uC2DC\uAC12\uC744
+      \uAC80\uC0AC\uD569\uB2C8\uB2E4."
   - CaseId: yujin.data.skill_coverage
     DisplayName: "\uC720\uC9C4 \uC2A4\uD0AC ID \uC804\uCCB4 \uB4F1\uB85D"
     Category: 0
     ExecutionMode: 0
     Enabled: 1
     Seed: 1207
-    Description: "\uC77C\uBC18 2, \uACB0\uD22C 2, \uB3C4\uC0AC\uB9BC 2, \uC704\uC138
-      3\uC758 \uACE0\uC720 SkillId\uAC00 \uB370\uC774\uD130 \uADF8\uB798\uD504\uC5D0
-      \uBAA8\uB450 \uC874\uC7AC\uD558\uB294\uC9C0 \uAC80\uC0AC\uD569\uB2C8\uB2E4."
+    Description: "\uAE30\uC874 9\uAC1C \uC2A4\uD0AC\uACFC \uD658\uD615 \uC900\uBE44
+      \uD589\uB3D9 3\uC885\uC744 \uD3EC\uD568\uD55C \uACE0\uC720 SkillId 12\uAC1C\uAC00
+      \uB370\uC774\uD130 \uADF8\uB798\uD504\uC5D0 \uBAA8\uB450 \uC874\uC7AC\uD558\uB294\uC9C0
+      \uAC80\uC0AC\uD569\uB2C8\uB2E4."
+  - CaseId: yujin.preparation.hwanhyeong_loadout_contract
+    DisplayName: "\uD658\uD615 3\uC885 \uAE30\uBCF8 \uB3C4\uC0AC\uB9BC \uC7A5\uCC29"
+    Category: 4
+    ExecutionMode: 0
+    Enabled: 1
+    Seed: 1207
+    Description: "\uBC31\uC6B0\xB7\uC801\uC124\xB7\uB099\uC77C \uD658\uD615 3\uC885\uC774
+      \uAE30\uBCF8 \uC7A5\uCC29 \uB3C4\uC0AC\uB9BC\uC774\uBA70 \uD3EC\uD68D\xB7\uC120\uACE0\uB294
+      \uAD50\uCCB4 \uD6C4\uBCF4\uB85C \uBCF4\uC874\uB418\uB294\uC9C0 \uAC80\uC0AC\uD569\uB2C8\uB2E4."
   - CaseId: yujin.passive.mechanic_registration
     DisplayName: "\uC720\uC9C4 \uD1B5\uD569 \uBA54\uCEE4\uB2C9 \uB4F1\uB85D"
     Category: 1
@@ -116,14 +333,34 @@ MonoBehaviour:
     Seed: 1207
     Description: "\uBB34\uAE30\xB7\uC0B4\uC218\uC758 \uAC10\xB7\uD45C\uC2DD \uBA54\uCEE4\uB2C9
       \uC0DD\uC131\uACFC BattleEvent \uAD6C\uB3C5\uC744 \uAC80\uC0AC\uD569\uB2C8\uB2E4."
-  - CaseId: yujin.passive.unlimited_weapon_switch
-    DisplayName: "\uBB34\uAE30 \uBB34\uC81C\uD55C \uC804\uD658"
+  - CaseId: yujin.passive.hwanhyeong_flow
+    DisplayName: "\uD328\uC2DC\uBE0C \xB7 \uD658\uD615\uC758 \uD750\uB984"
     Category: 1
     ExecutionMode: 1
     Enabled: 1
     Seed: 1207
-    Description: "\uAC19\uC740 \uD134\uC5D0 \uBC31\uC6B0\u2192\uC801\uC124\u2192\uB099\uC77C\u2192\uBC31\uC6B0
-      \uC804\uD658\uACFC WeaponChanged \uC774\uBCA4\uD2B8\uB97C \uAC80\uC0AC\uD569\uB2C8\uB2E4."
+    Description: "\uD658\uD615\uC73C\uB85C \uC608\uC57D\uD55C \uBB34\uAE30 \uBCC0\uACBD\uC774
+      \uB2E4\uC74C \uD134 \uC2E4\uC81C \uC644\uB8CC\uB420 \uB54C \uC0B4\uC218\uC758
+      \uAC10 +1\uC744 \uCD94\uAC00\uB85C \uC5BB\uB294\uC9C0 \uAC80\uC0AC\uD569\uB2C8\uB2E4."
+  - CaseId: yujin.passive.unlimited_weapon_switch
+    DisplayName: "\uD658\uD615 \uBE5B 1\xB7\uD134\uB2F9 1\uD68C"
+    Category: 1
+    ExecutionMode: 1
+    Enabled: 1
+    Seed: 1207
+    Description: "\uD658\uD615\uC774 \uBE5B 1\uC744 \uC18C\uBE44\uD558\uACE0 \uAC19\uC740
+      \uD134 \uB450 \uBC88\uC9F8 \uC804\uD658\uC744 \uAC70\uBD80\uD558\uBA70 \uB2E4\uC74C
+      \uD134 \uB2E4\uC2DC \uC0AC\uC6A9 \uAC00\uB2A5\uD55C\uC9C0 \uAC80\uC0AC\uD569\uB2C8\uB2E4."
+  - CaseId: yujin.passive.weapon_switch_before_action_only
+    DisplayName: "\uD658\uD615 \uACC4\uD68D \uC911 \uC608\uC57D \uD5C8\uC6A9"
+    Category: 1
+    ExecutionMode: 1
+    Enabled: 1
+    Seed: 1207
+    Description: "\uD589\uB3D9 \uC2AC\uB86F\uC774 \uC774\uBBF8 \uBC30\uCE58\uB41C
+      \uACC4\uD68D \uB2E8\uACC4\uC5D0\uC11C\uB3C4 \uD658\uD615\uC744 \uB2E4\uC74C
+      \uD134 \uBB34\uAE30 \uBCC0\uACBD\uC73C\uB85C \uC608\uC57D\uD560 \uC218 \uC788\uB294\uC9C0
+      \uAC80\uC0AC\uD569\uB2C8\uB2E4."
   - CaseId: yujin.passive.weapon_profiles
     DisplayName: "\uBB34\uAE30 \uD504\uB85C\uD544 \uC218\uCE58"
     Category: 0
@@ -139,17 +376,28 @@ MonoBehaviour:
     ExecutionMode: 1
     Enabled: 1
     Seed: 1207
-    Description: "TurnStart \uC774\uBCA4\uD2B8 \uD55C \uBC88\uC5D0 \uC0B4\uC218\uC758
-      \uAC10\uC774 \uC815\uD655\uD788 1 \uC99D\uAC00\uD558\uB294\uC9C0 \uAC80\uC0AC\uD569\uB2C8\uB2E4."
+    Description: "TurnStart +1\uACFC \uC801 \uBD80\uC704 \uD30C\uAD34 +1, \uC790\uC2E0\uC758
+      \uBD80\uC704 \uD30C\uAD34 \uC81C\uC678\uB97C \uAC80\uC0AC\uD569\uB2C8\uB2E4."
   - CaseId: yujin.duel.sense_reroll
     DisplayName: "\uC0B4\uC218\uC758 \uAC10 \uC790\uB3D9 \uC7AC\uAD74\uB9BC"
     Category: 3
     ExecutionMode: 1
     Enabled: 1
     Seed: 1207
-    Description: "\uAC01\uC778\xB7\uCD94\uACA9 \uD328\uBC30, \uBE44\uD06C\uB9AC\uD2F0\uCEEC,
-      \uC790\uB3D9 \uC0AC\uC6A9 ON\uC5D0\uC11C \uAC10 1 \uC18C\uBAA8\uC640 1\uD68C
-      \uC7AC\uAD74\uB9BC\uC744 \uAC80\uC0AC\uD569\uB2C8\uB2E4."
+    Description: "\uAC01\uC778\xB7\uCD94\uACA9\uC758 \uD589\uB3D9 \uC2AC\uB86F\uC5D0\uC11C
+      \uC0AC\uC6A9\uC744 \uC120\uD0DD\uD55C \uACBD\uC6B0\uC5D0\uB9CC \uAC10\uC744
+      \uC18C\uBE44\uD574 \uC7AC\uAD74\uB9BC\uD558\uB294\uC9C0 \uAC80\uC0AC\uD569\uB2C8\uB2E4."
+  - CaseId: yujin.duel.nakil_remove_remaining_rolls
+    DisplayName: "\uB099\uC77C \uC2B9\uB9AC \uC2DC \uC0C1\uB300 \uC794\uC5EC \uAD74\uB9BC
+      \uC81C\uAC70"
+    Category: 3
+    ExecutionMode: 1
+    Enabled: 1
+    Seed: 1207
+    Description: "\uB099\uC77C \uC0C1\uD0DC\uC758 \uC720\uC9C4\uC774 \uAD50\uD658\uC5D0\uC11C
+      \uC2B9\uB9AC\uD558\uBA74 \uCCAB \uBC88\uC9F8\xB7\uB450 \uBC88\uC9F8 \uD589\uB3D9
+      \uC704\uCE58\uC640 \uBB34\uAD00\uD558\uAC8C \uC0C1\uB300\uC758 \uB0A8\uC740
+      \uAD74\uB9BC\uB9CC 0\uC774 \uB418\uB294\uC9C0 \uAC80\uC0AC\uD569\uB2C8\uB2E4."
   - CaseId: yujin.passive.mark_ignition_nakil
     DisplayName: "\uD45C\uC2DD 44\xB7\uB099\uC77C \uBC1C\uD654"
     Category: 1

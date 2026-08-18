@@ -40,10 +40,17 @@ public class BattleCinemachineRig : MonoBehaviour
     [SerializeField] private bool validateOnAwake = true;
 
     [Header("Projection Policy")]
-    [Tooltip("CM_Overview만 Orthographic으로 사용합니다. 나머지 Battle Cinemachine Camera는 Perspective로 강제합니다.")]
+    [Tooltip("기존 Orthographic Planning을 다시 사용할 때만 켭니다. 기본 Planning Overview는 Perspective입니다.")]
+    [SerializeField] private bool allowLegacyOrthographicOverview = false;
+
+    [Tooltip("과거 Scene 직렬화 호환용입니다. allowLegacyOrthographicOverview가 켜진 경우에만 의미가 있습니다.")]
     [SerializeField] private bool forceOrthographic = true;
-    [Tooltip("Overview Orthographic half-height. 기존 5.5보다 가까운 전술 구도를 위해 3.4를 기본값으로 사용합니다.")]
+
+    [Tooltip("Legacy Orthographic Overview half-height.")]
     [SerializeField, Min(0.1f)] private float overviewOrthographicSize = 3.4f;
+
+    [Tooltip("Perspective Planning Overview FOV. 현재 Orthographic 3.4 구도와 비슷한 전체 전장 범위를 유지하도록 50을 기본으로 사용합니다.")]
+    [SerializeField, Range(30f, 70f)] private float overviewPerspectiveFov = 50f;
 
     private CinemachineBlendDefinition baseBlend;
     private bool hasBaseBlend;
@@ -56,6 +63,26 @@ public class BattleCinemachineRig : MonoBehaviour
     public bool HasBrain => Brain != null;
     public bool HasOverview => OverviewCamera != null;
     public bool IsCoreReady => Brain != null && OverviewCamera != null;
+
+    public bool UsesOrthographicOverview =>
+        allowLegacyOrthographicOverview &&
+        forceOrthographic;
+
+    public float OverviewPerspectiveFov
+    {
+        get => overviewPerspectiveFov;
+        set
+        {
+            overviewPerspectiveFov =
+                Mathf.Clamp(
+                    value,
+                    30f,
+                    70f);
+
+            ResolveReferences();
+            ApplyProjectionPolicy();
+        }
+    }
 
     /// <summary>
     /// Play Mode Inspector 또는 디버그 UI에서 값을 바꾸면 즉시 CM_Overview와 Output Camera에 반영된다.
@@ -81,6 +108,14 @@ public class BattleCinemachineRig : MonoBehaviour
 
     private void Awake()
     {
+        overviewPerspectiveFov =
+            Mathf.Clamp(
+                overviewPerspectiveFov <= 0f
+                    ? 50f
+                    : overviewPerspectiveFov,
+                30f,
+                70f);
+
         ResolveReferences();
         NormalizePriorities();
         ApplyProjectionPolicy();
@@ -106,9 +141,21 @@ public class BattleCinemachineRig : MonoBehaviour
     private void OnValidate()
     {
         overviewOrthographicSize = Mathf.Max(0.1f, overviewOrthographicSize);
+        overviewPerspectiveFov =
+            Mathf.Clamp(
+                overviewPerspectiveFov <= 0f
+                    ? 50f
+                    : overviewPerspectiveFov,
+                30f,
+                70f);
 
-        if (Application.isPlaying)
-            ApplyOverviewProjectionIfChanged(force: true);
+        // CinemachineBrain이 Main Camera의 Lens를 소유하므로
+        // Main Camera Camera 컴포넌트를 직접 바꾸는 것은 authoritative하지 않다.
+        //
+        // Edit Mode에서도 CM_Overview + Brain Output Camera를 현재 Projection Policy와
+        // 즉시 동기화해 Inspector/Game Preview가 런타임과 같은 Perspective 상태를 보게 한다.
+        ResolveReferences();
+        ApplyProjectionPolicy();
     }
 
     private void OnDisable()
@@ -280,16 +327,17 @@ public class BattleCinemachineRig : MonoBehaviour
             ? slot
             : ResolveSlot(targetCamera);
 
-        // Overview -> Orthographic, 그 외 -> Perspective를 카메라 전환과 같은 프레임에 적용한다.
+        // Planning Overview는 기본 Perspective이고,
+        // Legacy Orthographic을 명시적으로 허용한 경우에만 Orthographic을 사용한다.
         ApplyLiveProjectionImmediately();
 
         return true;
     }
 
     /// <summary>
-    /// 전투 카메라 투영 계약. CM_Overview만 Orthographic이며,
-    /// Group/Pose/Prestige 및 ModeOverride가 없는 다른 Cinemachine 카메라는
-    /// Brain의 Perspective 기본 모드를 따른다.
+    /// 전투 카메라 투영 계약.
+    /// - CM_Overview: 기본 Perspective, Legacy opt-in일 때만 Orthographic
+    /// - Group/Pose/Prestige: Perspective
     /// </summary>
     public void ApplyProjectionPolicy()
     {
@@ -305,10 +353,11 @@ public class BattleCinemachineRig : MonoBehaviour
 
         ConfigureProjection(
             OverviewCamera,
-            forceOrthographic
+            UsesOrthographicOverview
                 ? LensSettings.OverrideModes.Orthographic
                 : LensSettings.OverrideModes.Perspective,
-            overviewOrthographicSize);
+            overviewOrthographicSize,
+            overviewPerspectiveFov);
 
         ConfigureProjection(
             GroupCamera,
@@ -323,7 +372,7 @@ public class BattleCinemachineRig : MonoBehaviour
             LensSettings.OverrideModes.Perspective);
 
         lastAppliedOverviewOrthographicSize = overviewOrthographicSize;
-        lastAppliedForceOrthographic = forceOrthographic;
+        lastAppliedForceOrthographic = UsesOrthographicOverview;
 
         // 현재 ActiveCamera가 아직 정해지지 않은 Awake 시점에는
         // 시작 카메라 계약(Overview)을 Main Camera에 즉시 반영한다.
@@ -342,20 +391,21 @@ public class BattleCinemachineRig : MonoBehaviour
         bool changed =
             force ||
             !Mathf.Approximately(lastAppliedOverviewOrthographicSize, clamped) ||
-            lastAppliedForceOrthographic != forceOrthographic;
+            lastAppliedForceOrthographic != UsesOrthographicOverview;
 
         if (!changed)
             return;
 
         ConfigureProjection(
             OverviewCamera,
-            forceOrthographic
+            UsesOrthographicOverview
                 ? LensSettings.OverrideModes.Orthographic
                 : LensSettings.OverrideModes.Perspective,
-            clamped);
+            clamped,
+            overviewPerspectiveFov);
 
         lastAppliedOverviewOrthographicSize = clamped;
-        lastAppliedForceOrthographic = forceOrthographic;
+        lastAppliedForceOrthographic = UsesOrthographicOverview;
 
         if (ActiveSlot == BattleCameraRigSlot.Overview ||
             ActiveCamera == null && activateOverviewOnStart)
@@ -367,7 +417,8 @@ public class BattleCinemachineRig : MonoBehaviour
     private static void ConfigureProjection(
         CinemachineCamera camera,
         LensSettings.OverrideModes mode,
-        float orthographicSize = 0f)
+        float orthographicSize = 0f,
+        float perspectiveFov = 0f)
     {
         if (camera == null)
             return;
@@ -379,6 +430,15 @@ public class BattleCinemachineRig : MonoBehaviour
             orthographicSize > 0f)
         {
             lens.OrthographicSize = orthographicSize;
+        }
+        else if (mode == LensSettings.OverrideModes.Perspective &&
+                 perspectiveFov > 0f)
+        {
+            lens.FieldOfView =
+                Mathf.Clamp(
+                    perspectiveFov,
+                    1f,
+                    179f);
         }
 
         camera.Lens = lens;
@@ -400,14 +460,26 @@ public class BattleCinemachineRig : MonoBehaviour
         if (output == null)
             return;
 
-        bool useOrthographic =
-            forceOrthographic &&
+        bool overview =
             slot == BattleCameraRigSlot.Overview;
 
-        output.orthographic = useOrthographic;
+        bool useOrthographic =
+            UsesOrthographicOverview &&
+            overview;
+
+        output.orthographic =
+            useOrthographic;
 
         if (useOrthographic)
-            output.orthographicSize = overviewOrthographicSize;
+        {
+            output.orthographicSize =
+                overviewOrthographicSize;
+        }
+        else if (overview)
+        {
+            output.fieldOfView =
+                overviewPerspectiveFov;
+        }
     }
 
     private void ResolveCamerasByNameWhenMissing()

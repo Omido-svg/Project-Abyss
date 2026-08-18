@@ -504,7 +504,7 @@ public sealed class GenericCharacterVerificationCaseProvider :
                 continue;
 
             SkillVisualDefinition visual =
-                definition.VisualDefinition ??
+                SkillPresentationAccess.Get(definition) ??
                 bundle.VisualProfile?.GetDefault(
                     definition.ActionType);
 

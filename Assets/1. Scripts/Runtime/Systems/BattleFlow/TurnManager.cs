@@ -13,6 +13,8 @@ public class TurnManager
     private readonly MomentumManager momentumManager;
     private readonly ClashBuilder clashBuilder;
     private readonly BattleLifecycleGuard lifecycleGuard;
+    private readonly IBattleCoroutineHost coroutineHost;
+    private readonly BattleLogger battleLogger;
     private readonly Action<Exception> fatalErrorHandler;
 
     private Coroutine resolveCoroutine;
@@ -35,7 +37,35 @@ public class TurnManager
             momentumManager,
             clashBuilder,
             CreateReadyGuard(),
+            battleContext?.Services?.CoroutineHost,
+            battleContext?.Services?.BattleLogger,
             null)
+    {
+    }
+
+    // 기존 lifecycle 생성자 호출부 호환.
+    public TurnManager(
+        BattleContext battleContext,
+        ActionManager actionManager,
+        AIManager aiManager,
+        SpeedManager speedManager,
+        ActionResolver actionResolver,
+        MomentumManager momentumManager,
+        ClashBuilder clashBuilder,
+        BattleLifecycleGuard lifecycleGuard,
+        Action<Exception> fatalErrorHandler = null)
+        : this(
+            battleContext,
+            actionManager,
+            aiManager,
+            speedManager,
+            actionResolver,
+            momentumManager,
+            clashBuilder,
+            lifecycleGuard,
+            battleContext?.Services?.CoroutineHost,
+            battleContext?.Services?.BattleLogger,
+            fatalErrorHandler)
     {
     }
 
@@ -48,6 +78,8 @@ public class TurnManager
         MomentumManager momentumManager,
         ClashBuilder clashBuilder,
         BattleLifecycleGuard lifecycleGuard,
+        IBattleCoroutineHost coroutineHost,
+        BattleLogger battleLogger,
         Action<Exception> fatalErrorHandler = null)
     {
         this.battleContext = battleContext;
@@ -58,6 +90,8 @@ public class TurnManager
         this.momentumManager = momentumManager;
         this.clashBuilder = clashBuilder;
         this.lifecycleGuard = lifecycleGuard;
+        this.coroutineHost = coroutineHost;
+        this.battleLogger = battleLogger;
         this.fatalErrorHandler = fatalErrorHandler;
     }
 
@@ -137,12 +171,7 @@ public class TurnManager
 
         actionManager?.Clear();
 
-        if (battleContext?.battleManager?.BattleLogger != null)
-        {
-            battleContext.battleManager
-                .BattleLogger
-                .Clear();
-        }
+        battleLogger?.Clear();
 
         battleContext?._battleEvent?
             .RaiseTurnStart(CurrentTurn);
@@ -169,11 +198,8 @@ public class TurnManager
             return;
         }
 
-        BattleManager manager =
-            battleContext?.battleManager;
-
-        if (manager == null ||
-            !manager.isActiveAndEnabled)
+        if (coroutineHost == null ||
+            !coroutineHost.IsAvailable)
         {
             lifecycleGuard.CompleteResolution(
                 resolutionToken);
@@ -181,14 +207,14 @@ public class TurnManager
             HandleFatalError(
                 $"Turn {CurrentTurn} Resolve",
                 new InvalidOperationException(
-                    "BattleManager가 없거나 비활성 상태입니다."));
+                    "Battle coroutine host가 없거나 비활성 상태입니다."));
             return;
         }
 
         try
         {
             resolveCoroutine =
-                manager.StartCoroutine(
+                coroutineHost.Start(
                     ResolveTurnRoutine(
                         resolutionToken,
                         onComplete));
@@ -396,8 +422,7 @@ public class TurnManager
         battleContext?._battleEvent?
             .RaiseTurnEnd(CurrentTurn);
 
-        battleContext?.battleManager?
-            .BattleLogger?
+        battleLogger?
             .PrintTurn(CurrentTurn);
 
         Debug.Log(
@@ -422,12 +447,12 @@ public class TurnManager
         resolveCoroutine = null;
 
         if (activeCoroutine != null &&
-            battleContext?.battleManager != null)
+            coroutineHost != null)
         {
             try
             {
-                battleContext.battleManager
-                    .StopCoroutine(activeCoroutine);
+                coroutineHost.Stop(
+                    activeCoroutine);
             }
             catch (Exception exception)
             {

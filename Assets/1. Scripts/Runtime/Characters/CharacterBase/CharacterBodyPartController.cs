@@ -273,7 +273,7 @@ public class CharacterBodyPartController
     private ActionManager GetActionManager()
     {
         return owner?.BattleContext?
-            .battleManager?.ActionManager;
+            .Services?.ActionManager;
     }
 
     private int RemoveActionSlotsOfPart(BodyPart part)

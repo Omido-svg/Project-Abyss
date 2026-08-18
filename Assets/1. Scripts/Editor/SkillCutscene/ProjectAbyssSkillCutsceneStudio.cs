@@ -1412,8 +1412,8 @@ public sealed class ProjectAbyssSkillCutsceneStudio :
     private SkillVisualDefinition
         GetDefinition()
     {
-        return skill?
-            .VisualDefinition;
+        return SkillPresentationAccess.Get(
+            skill);
     }
 
     private static void DrawProperty(

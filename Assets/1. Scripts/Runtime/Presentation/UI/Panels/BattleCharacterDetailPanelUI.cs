@@ -1226,7 +1226,8 @@ public sealed class BattleCharacterDetailPanelUI : MonoBehaviour
                     "__RuntimeCorrectedDetailCameraPoint");
 
             runtimePointObject.hideFlags =
-                HideFlags.HideAndDontSave;
+                HideFlags.HideInHierarchy |
+                HideFlags.DontSaveInBuild;
 
             runtimeCorrectedCameraPoint =
                 runtimePointObject.transform;

@@ -252,9 +252,10 @@ public sealed class OutlineController : MonoBehaviour
                     " (Runtime " +
                     gameObject.name +
                     ")",
+                // Renderer가 이 runtime Material을 직접 참조하므로
+                // DontSaveInEditor는 Editor persistence assertion을 만들 수 있다.
                 hideFlags =
-                    HideFlags.DontSaveInBuild |
-                    HideFlags.DontSaveInEditor
+                    HideFlags.DontSaveInBuild
             };
 
         ApplyMaterialProperties();

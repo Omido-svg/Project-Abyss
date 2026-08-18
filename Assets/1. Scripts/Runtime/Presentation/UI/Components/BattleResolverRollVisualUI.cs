@@ -3204,7 +3204,7 @@ public sealed class BattleResolverRollVisualUI :
                     TextureWrapMode.Clamp,
 
                 hideFlags =
-                    HideFlags.HideAndDontSave
+                    HideFlags.DontSaveInBuild
             };
 
         Color[] pixels =
@@ -3277,7 +3277,7 @@ public sealed class BattleResolverRollVisualUI :
             "ProjectAbyss_RuntimeCircleSprite";
 
         circleSprite.hideFlags =
-            HideFlags.HideAndDontSave;
+            HideFlags.DontSaveInBuild;
 
         return circleSprite;
     }

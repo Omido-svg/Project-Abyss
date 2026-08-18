@@ -74,48 +74,4 @@ public sealed class ClashExchangeResult
             : 1 +
               (SecondaryDamageContexts?.Count ?? 0);
 
-    public ClashRollVisualStep CreateVisualStep(
-        BattleAction perspectiveAction)
-    {
-        bool swap =
-            perspectiveAction != null &&
-            perspectiveAction == SecondAction;
-
-        ClashRollVisualStep step = swap
-            ? new ClashRollVisualStep(
-                ExchangeIndex,
-                SecondClashPower,
-                FirstClashPower,
-                SecondRollResult,
-                FirstRollResult,
-                SecondRollResult?.SpeedModifier ?? 0,
-                FirstRollResult?.SpeedModifier ?? 0,
-                SecondRollResult?.MomentumModifier ?? 0,
-                FirstRollResult?.MomentumModifier ?? 0,
-                SecondRollResult?.IsCritical ?? false,
-                FirstRollResult?.IsCritical ?? false)
-            : new ClashRollVisualStep(
-                ExchangeIndex,
-                FirstClashPower,
-                SecondClashPower,
-                FirstRollResult,
-                SecondRollResult,
-                FirstRollResult?.SpeedModifier ?? 0,
-                SecondRollResult?.SpeedModifier ?? 0,
-                FirstRollResult?.MomentumModifier ?? 0,
-                SecondRollResult?.MomentumModifier ?? 0,
-                FirstRollResult?.IsCritical ?? false,
-                SecondRollResult?.IsCritical ?? false);
-
-        step.IsOneSided = IsOneSided;
-        step.WasCancelled = WasCancelled;
-        step.AttackerDamage = swap
-            ? WinnerAction == SecondAction ? Damage : 0
-            : WinnerAction == FirstAction ? Damage : 0;
-        step.TargetDamage = swap
-            ? WinnerAction == FirstAction ? Damage : 0
-            : WinnerAction == SecondAction ? Damage : 0;
-
-        return step;
-    }
 }

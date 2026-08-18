@@ -18,26 +18,87 @@ public class BattleUIManager : MonoBehaviour
     private readonly TargetSelectionViewModel selection = new();
     private readonly List<BodyPartButton> buttonScratch = new();
 
+    private readonly BattlePlanningSelectionState
+        planningState = new();
+
+    private BattlePlanningQueryService planningQuery;
+    private BattleActionPlanCommandService actionPlanCommands;
+
+    private BattleActionPlanCommandService PlanCommands
+    {
+        get
+        {
+            if (battleManager?.ActionManager == null ||
+                battleManager.SpeedManager == null)
+            {
+                return null;
+            }
+
+            return actionPlanCommands ??=
+                new BattleActionPlanCommandService(
+                    battleManager.ActionManager,
+                    battleManager.SpeedManager);
+        }
+    }
+
     public TargetSelectionViewModel Selection => selection;
-    
-    private BattleInputMode inputMode = BattleInputMode.SelectOwner;
+
+    // 기존 내부 코드의 이름을 유지하되 실제 state storage는 별도 객체가 소유한다.
+    private BattleInputMode inputMode
+    {
+        get => planningState.InputMode;
+        set => planningState.InputMode = value;
+    }
 
     //---------------------------------------
     // 현재 선택 정보
     //---------------------------------------
 
-    private Character selectedOwner;
-    private BodyPart selectedOwnerPart;
+    private Character selectedOwner
+    {
+        get => planningState.SelectedOwner;
+        set => planningState.SelectedOwner = value;
+    }
 
-    private int selectedActionIndex;
-    private int selectedMaxActionSlots = 1;
+    private BodyPart selectedOwnerPart
+    {
+        get => planningState.SelectedOwnerPart;
+        set => planningState.SelectedOwnerPart = value;
+    }
 
-    private readonly Dictionary<BodyPart, int>
-        actionIndexCursorByPart = new();
+    private int selectedActionIndex
+    {
+        get => planningState.SelectedActionIndex;
+        set => planningState.SelectedActionIndex = value;
+    }
 
+    private int selectedMaxActionSlots
+    {
+        get => planningState.SelectedMaxActionSlots;
+        set => planningState.SelectedMaxActionSlots = value;
+    }
 
-    private Character selectedTarget;
-    private BodyPart selectedTargetPart;
+    private Dictionary<BodyPart, int>
+        actionIndexCursorByPart =>
+            planningState.ActionIndexCursorByPart;
+
+    private Character selectedTarget
+    {
+        get => planningState.SelectedTarget;
+        set => planningState.SelectedTarget = value;
+    }
+
+    private BodyPart selectedTargetPart
+    {
+        get => planningState.SelectedTargetPart;
+        set => planningState.SelectedTargetPart = value;
+    }
+
+    private BattlePlanningQueryService PlanningQuery =>
+        planningQuery ??=
+            new BattlePlanningQueryService(
+                planningState,
+                selection);
 
     public int SelectedActionIndex => selectedActionIndex;
     public int SelectedMaxActionSlots => selectedMaxActionSlots;
@@ -56,15 +117,11 @@ public class BattleUIManager : MonoBehaviour
         Character owner,
         BodyPart part)
     {
-        if (owner == null ||
-            battleManager?.SpeedManager == null)
-        {
-            return 0;
-        }
-
-        return battleManager.SpeedManager.GetSpeed(
-            owner,
-            part);
+        return PlanningQuery
+            .GetWorldPlanningSlotSpeed(
+                battleManager,
+                owner,
+                part);
     }
 
     /// <summary>
@@ -76,12 +133,11 @@ public class BattleUIManager : MonoBehaviour
         BodyPart part,
         int actionIndex)
     {
-        return owner != null &&
-               part != null &&
-               selectedOwner == owner &&
-               IsSamePart(selectedOwnerPart, part) &&
-               selectedActionIndex == actionIndex &&
-               inputMode != BattleInputMode.SelectOwner;
+        return PlanningQuery
+            .IsWorldPlanningSlotSelected(
+                owner,
+                part,
+                actionIndex);
     }
 
     /// <summary>
@@ -93,35 +149,23 @@ public class BattleUIManager : MonoBehaviour
         BodyPart part,
         int actionIndex)
     {
-        return IsWorldPlanningSlotSelected(owner, part, actionIndex) &&
-               inputMode == BattleInputMode.SelectTarget &&
-               selection.Skill != null &&
-               selection.Skill.ActionType != ActionType.Preparation;
+        return PlanningQuery
+            .IsWorldPlanningSlotPendingTarget(
+                owner,
+                part,
+                actionIndex);
     }
 
     /// <summary>
     /// 현재 플레이어 계획 중 하나가 해당 적 ActionSlot을 정확히 TargetSlot로 지정했는지 반환한다.
     /// </summary>
-    public bool IsWorldTargetSlotAssigned(ActionSlot targetSlot)
+    public bool IsWorldTargetSlotAssigned(
+        ActionSlot targetSlot)
     {
-        if (targetSlot == null || battleManager?.ActionManager?.Slots == null)
-            return false;
-
-        foreach (ActionSlot slot in battleManager.ActionManager.Slots)
-        {
-            if (slot == null || !IsPlayer(slot.Owner))
-                continue;
-
-            if (slot.TargetSlot == targetSlot ||
-                slot.TargetSlot != null &&
-                slot.TargetSlot.ActionId == targetSlot.ActionId &&
-                slot.TargetSlot.Owner == targetSlot.Owner)
-            {
-                return true;
-            }
-        }
-
-        return false;
+        return PlanningQuery
+            .IsWorldTargetSlotAssigned(
+                battleManager,
+                targetSlot);
     }
 
     /// <summary>
@@ -137,70 +181,22 @@ public class BattleUIManager : MonoBehaviour
         out int pendingCost,
         out bool hasPendingPreview)
     {
-        available = 0;
-        maximum = 0;
-        plannedCost = 0;
-        pendingCost = 0;
-        hasPendingPreview = false;
-
-        if (player == null)
-            return false;
-
-        maximum = Mathf.Max(0, player.MaxEnergy);
-        int current = Mathf.Max(0, player.CurrentEnergy);
-
-        bool planning =
-            battleManager?.TurnManager != null &&
-            !battleManager.TurnManager.IsResolving;
-
-        ActionManager actionManager =
-            battleManager?.ActionManager;
-
-        if (!planning || actionManager == null)
-        {
-            available = current;
-            return true;
-        }
-
-        plannedCost =
-            actionManager.GetPlannedEnergyCost(player);
-
-        Skill pendingSkill = selection.Skill;
-
-        if (selectedOwner == player &&
-            selectedOwnerPart != null &&
-            pendingSkill != null &&
-            inputMode != BattleInputMode.SelectOwner)
-        {
-            int withoutEditedSlot =
-                actionManager.GetPlannedEnergyCost(
-                    player,
-                    selectedOwnerPart,
-                    selectedActionIndex);
-
-            pendingCost =
-                Mathf.Max(0, pendingSkill.EnergyCost);
-            plannedCost =
-                withoutEditedSlot + pendingCost;
-            hasPendingPreview = true;
-        }
-
-        available =
-            Mathf.Max(0, current - plannedCost);
-
-        return true;
+        return PlanningQuery.TryGetPlayerEnergyDisplay(
+            battleManager,
+            player,
+            out available,
+            out maximum,
+            out plannedCost,
+            out pendingCost,
+            out hasPendingPreview);
     }
 
     public IReadOnlyList<Skill> GetSelectableSkillsForCurrentSlot(
         BodyPart part)
     {
-        if (selectedOwner == null)
-            return System.Array.Empty<Skill>();
-
-        return selectedOwner.GetSelectableSkills(
-                   part,
-                   selectedActionIndex) ??
-               System.Array.Empty<Skill>();
+        return PlanningQuery
+            .GetSelectableSkillsForCurrentSlot(
+                part);
     }
 
     /// <summary>
@@ -1118,7 +1114,7 @@ public class BattleUIManager : MonoBehaviour
 
             if (oldSlot != null)
             {
-                battleManager.ActionManager.RemoveSlot(
+                PlanCommands?.Remove(
                     owner,
                     part,
                     actionIndex);
@@ -1540,7 +1536,7 @@ public class BattleUIManager : MonoBehaviour
         if (!TrySelectTargetSlot(targetSlot.Owner, targetSlot.Part))
             return false;
 
-        if (!CreateSlot(skill))
+        if (!CreateSlot(skill, targetSlot))
             return false;
 
         ActionSlot created = battleManager.ActionManager.FindSlot(
@@ -1550,8 +1546,6 @@ public class BattleUIManager : MonoBehaviour
 
         if (created == null)
             return false;
-
-        created.TargetSlot = targetSlot;
 
         BattleDebugLog.UIInput(
             $"[World Slot Target Assigned] {created.Owner?.Data?.CharacterName} " +
@@ -1586,18 +1580,17 @@ public class BattleUIManager : MonoBehaviour
             return false;
         }
 
-        ActionSlot liveSource = battleManager.ActionManager.FindSlot(
-            sourceSlot.Owner,
-            sourceSlot.Part,
-            sourceSlot.ActionIndex);
+        BattleActionPlanCommandService commands =
+            PlanCommands;
 
-        if (liveSource == null || liveSource.ActionId != sourceSlot.ActionId)
+        if (commands == null ||
+            !commands.TryRetarget(
+                sourceSlot,
+                targetSlot,
+                out ActionSlot liveSource))
+        {
             return false;
-
-        liveSource.TargetCharacter = targetSlot.Owner;
-        liveSource.TargetPart = targetSlot.Part;
-        liveSource.TargetSlot = targetSlot;
-        liveSource.SecondaryTargetPart = null;
+        }
 
         BattleDebugLog.UIInput(
             $"[World Slot Retarget] {liveSource.Owner?.Data?.CharacterName} " +
@@ -1608,101 +1601,31 @@ public class BattleUIManager : MonoBehaviour
         return true;
     }
 
-    private bool TryGetPendingYujinHwanhyeongEdit(
-        Skill skill,
-        out YujinMechanic mechanic,
-        out YujinWeaponType weapon)
-    {
-        mechanic = null;
-        weapon = default;
-
-        if (skill == null ||
-            selectedOwner is not Yujin yujin)
-        {
-            return false;
-        }
-
-        mechanic = yujin.YujinMechanic;
-
-        if (mechanic == null ||
-            !mechanic.HasPendingWeapon ||
-            !YujinMechanic.TryGetHwanhyeongWeapon(
-                skill.Definition?.SkillId,
-                out weapon))
-        {
-            return false;
-        }
-
-        return mechanic.CanSelectHwanhyeongWeapon(
-            weapon);
-    }
-
-    private string GetYujinHwanhyeongSelectionReason(
+    private ActionPlanningSkillContext CreatePlanningSkillContext(
         Skill skill)
     {
-        if (skill == null ||
-            selectedOwner is not Yujin yujin)
-        {
-            return string.Empty;
-        }
-
-        YujinMechanic mechanic =
-            yujin.YujinMechanic;
-
-        if (mechanic == null ||
-            !YujinMechanic.TryGetHwanhyeongWeapon(
-                skill.Definition?.SkillId,
-                out YujinWeaponType weapon))
-        {
-            return string.Empty;
-        }
-
-        // 환형은 이제 START 전까지 FORESIGHT ActionSlot으로 보관된다.
-        // YujinMechanic에는 아직 pending이 생기지 않으므로 이번 턴 ActionManager에
-        // 이미 다른 환형 계획이 있는지도 함께 검사한다.
-        ActionSlot existingHwanhyeong =
-            FindPlannedYujinHwanhyeongSlot(
-                yujin);
-
-        if (existingHwanhyeong != null &&
-            (existingHwanhyeong.Part != selectedOwnerPart ||
-             existingHwanhyeong.ActionIndex != selectedActionIndex))
-        {
-            return "이번 턴 환형 이미 지정됨";
-        }
-
-        return mechanic.GetHwanhyeongSelectionReason(
-            weapon);
+        return new ActionPlanningSkillContext(
+            selectedOwner,
+            selectedOwnerPart,
+            skill,
+            selectedActionIndex,
+            battleManager?.ActionManager?.Slots);
     }
 
-    private ActionSlot FindPlannedYujinHwanhyeongSlot(
-        Yujin yujin)
+    private string GetMechanicPlanningSelectionReason(
+        Skill skill)
     {
-        if (yujin == null ||
-            battleManager?.ActionManager?.Slots == null)
-        {
-            return null;
-        }
+        return ActionPlanningMechanicPolicy
+            .GetSkillSelectionBlockReason(
+                CreatePlanningSkillContext(skill));
+    }
 
-        foreach (ActionSlot slot
-                 in battleManager.ActionManager.Slots)
-        {
-            if (slot?.Owner != yujin ||
-                slot.Skill == null ||
-                slot.Phase != ActionPhase.FORESIGHT)
-            {
-                continue;
-            }
-
-            if (YujinMechanic.TryGetHwanhyeongWeapon(
-                    slot.Skill.Definition?.SkillId,
-                    out _))
-            {
-                return slot;
-            }
-        }
-
-        return null;
+    private bool IsMechanicEnergyReservationExempt(
+        Skill skill)
+    {
+        return ActionPlanningMechanicPolicy
+            .IsEnergyReservationExempt(
+                CreatePlanningSkillContext(skill));
     }
 
     private void PlaySkillSelectionRejectedFeedback(
@@ -1795,31 +1718,30 @@ public class BattleUIManager : MonoBehaviour
         if (!ContainsSkill(selectedOwner.GetSelectableSkills(part, selectedActionIndex), skill))
             return false;
 
-        string queuedHwanhyeongReason =
-            GetYujinHwanhyeongSelectionReason(
+        string mechanicReason =
+            GetMechanicPlanningSelectionReason(
                 skill);
 
         if (!string.IsNullOrWhiteSpace(
-                queuedHwanhyeongReason))
+                mechanicReason))
         {
             return false;
         }
 
-        // 구형 즉시 환형 경로 호환.
-        // 같은 계획 단계에서 예약 무기를 바꾸거나 취소하는 작업은
-        // 추가 자원 없이 편집으로 처리한다.
-        if (TryGetPendingYujinHwanhyeongEdit(
-                skill,
-                out _,
-                out _))
+        // 캐릭터 고유 Planning 메커닉이 기존 예약 편집처럼
+        // 추가 에너지 예약이 필요 없는 편집을 선언할 수 있다.
+        bool energyReservationExempt =
+            IsMechanicEnergyReservationExempt(
+                skill);
+
+        if (!energyReservationExempt &&
+            !selectedOwner.CanUseSkill(part, skill))
         {
-            return true;
+            return false;
         }
 
-        if (!selectedOwner.CanUseSkill(part, skill))
-            return false;
-
-        if (!battleManager.ActionManager.CanReserveEnergy(
+        if (!energyReservationExempt &&
+            !battleManager.ActionManager.CanReserveEnergy(
                 selectedOwner,
                 skill,
                 part,
@@ -1876,35 +1798,13 @@ public class BattleUIManager : MonoBehaviour
             character.CurrentStatus.maxPrestige;
     }
 
-    private static bool ResolveCharacterRerollChoice(
-        Character owner,
-        Skill skill)
-    {
-        YujinMechanic mechanic =
-            owner?.GetMechanic<YujinMechanic>();
-
-        return mechanic != null &&
-               YujinMechanic.IsSenseEligibleSkill(
-                   skill?.Definition?.SkillId) &&
-               mechanic.AutoUseSense;
-    }
-
-    private static void RestoreCharacterRerollChoice(
+    private static void RestoreCharacterPlanningState(
         Character owner,
         ActionSlot slot)
     {
-        YujinMechanic mechanic =
-            owner?.GetMechanic<YujinMechanic>();
-
-        if (mechanic == null ||
-            !YujinMechanic.IsSenseEligibleSkill(
-                slot?.Skill?.Definition?.SkillId))
-        {
-            return;
-        }
-
-        mechanic.AutoUseSense =
-            slot.UseCharacterRerollResource;
+        ActionPlanningMechanicPolicy.RestorePlanningState(
+            owner,
+            slot);
     }
 
     //---------------------------------------
@@ -1912,162 +1812,83 @@ public class BattleUIManager : MonoBehaviour
     //---------------------------------------
 
     private bool CreateSlot(
-        Skill skill)
+        Skill skill,
+        ActionSlot targetSlot = null)
     {
         if (!IsManagerReady())
             return false;
 
         if (selectedOwner == null ||
-            selectedOwnerPart == null)
+            selectedOwnerPart == null ||
+            skill == null)
         {
             Debug.LogWarning(
-                "ActionSlot 생성 실패 : 행동 주체 정보가 부족합니다.");
+                "ActionSlot 생성 실패 : 행동 주체/부위/스킬 정보가 부족합니다.");
             return false;
         }
-
-        if (skill == null)
-        {
-            Debug.LogWarning(
-                "ActionSlot 생성 실패 : Skill이 없습니다.");
-            return false;
-        }
-
-        // 도사림은 공격 대상 선택 결과를 사용하지 않는다.
-        // 항상 행동 주체 자신의 해당 부위를 대상으로 정규화한다.
-        bool isPreparation =
-            skill.ActionType == ActionType.Preparation;
 
         selection.ResolveTargetForSkill(
             skill,
             out Character resolvedTarget,
             out BodyPart resolvedTargetPart);
 
-        if (resolvedTarget == null)
+        BattleActionPlanCommandService commands =
+            PlanCommands;
+
+        if (commands == null)
         {
             Debug.LogWarning(
-                "ActionSlot 생성 실패 : 대상 정보가 부족합니다.");
+                "ActionSlot 생성 실패 : Planning command service가 준비되지 않았습니다.");
             return false;
         }
 
-        if (isPreparation)
-        {
-            if (resolvedTargetPart == null ||
-                resolvedTargetPart.Owner != resolvedTarget ||
-                resolvedTargetPart.IsBroken)
-            {
-                Debug.LogWarning(
-                    "ActionSlot 생성 실패 : 도사림 자기 대상이 올바르지 않습니다.");
-                return false;
-            }
-        }
-        else if (!BattleTargetValidator.IsValid(
-                     resolvedTarget,
-                     resolvedTargetPart,
-                     selection.TargetRule))
+        ActionPlanAssignmentResult result =
+            commands.TryAssign(
+                new ActionPlanAssignmentRequest
+                {
+                    Owner = selectedOwner,
+                    OwnerPart = selectedOwnerPart,
+                    Skill = skill,
+                    ActionIndex = selectedActionIndex,
+                    Target = resolvedTarget,
+                    TargetPart = resolvedTargetPart,
+                    TargetRule = selection.TargetRule,
+                    TargetSlot = targetSlot
+                });
+
+        if (result?.Success != true ||
+            result.Slot == null)
         {
             Debug.LogWarning(
-                "ActionSlot 생성 실패 : 대상 계약이 올바르지 않습니다.");
+                "ActionSlot 생성 실패 : " +
+                (result?.FailureReason ?? "알 수 없는 Planning 오류"));
             return false;
         }
 
-        if (selectedOwner.IsDead ||
-            resolvedTarget.IsDead)
-        {
-            Debug.LogWarning(
-                "ActionSlot 생성 실패 : 사망한 캐릭터가 포함되어 있습니다.");
-            return false;
-        }
-
-        if (selectedOwnerPart.IsBroken)
-        {
-            Debug.LogWarning(
-                "ActionSlot 생성 실패 : 행동 부위가 파괴되어 있습니다.");
-            return false;
-        }
-
-        if (skill.ActionType ==
-            ActionType.Prestige)
-        {
-            if (!IsPrestigeReady(
-                    selectedOwner))
-            {
-                Debug.LogWarning(
-                    "ActionSlot 생성 실패 : 위세 게이지가 부족합니다.");
-                return false;
-            }
-
-            if (HasPrestigeSlotSelected(
-                    selectedOwner,
-                    selectedOwnerPart,
-                    selectedActionIndex))
-            {
-                Debug.LogWarning(
-                    "ActionSlot 생성 실패 : 이번 턴에 이미 위세 스킬을 선택했습니다.");
-                return false;
-            }
-        }
-
-        ActionSlot oldSlot =
-            battleManager.ActionManager.FindSlot(
-                selectedOwner,
-                selectedOwnerPart,
-                selectedActionIndex);
-
-        ActionSlot newSlot =
-            new ActionSlot
-            {
-                Owner = selectedOwner,
-                Part = selectedOwnerPart,
-                Skill = skill,
-                TargetCharacter = resolvedTarget,
-                TargetPart = resolvedTargetPart,
-                Speed = battleManager.SpeedManager.GetSpeed(
-                    selectedOwner,
-                    selectedOwnerPart),
-                ActionIndex = selectedActionIndex,
-                Phase = skill.DefaultPhase,
-                TargetSlot = null,
-                UseCharacterRerollResource =
-                    ResolveCharacterRerollChoice(
-                        selectedOwner,
-                        skill)
-            };
-
-        bool registered =
-            battleManager.ActionManager
-                .TryAddOrReplaceSlot(newSlot);
-
-        if (!registered)
-        {
-            Debug.LogWarning(
-                "ActionSlot 생성 실패 : 에너지 예산 또는 슬롯 계약을 만족하지 못했습니다.");
-            return false;
-        }
-
-        if (isPreparation)
+        if (skill.ActionType == ActionType.Preparation)
         {
             Debug.Log(
                 $"[Preparation Target Normalized] " +
                 $"Owner={GetCharacterName(selectedOwner)}, " +
                 $"Part={selectedOwnerPart.Type}, " +
                 $"Target={GetCharacterName(resolvedTarget)}, " +
-                $"TargetPart={resolvedTargetPart.Type}");
+                $"TargetPart={resolvedTargetPart?.Type}");
         }
 
-        if (oldSlot != null)
+        if (result.PreviousSlot != null)
         {
             Debug.Log(
                 "[ActionSlot Changed]\n" +
                 "Before :\n" +
-                FormatSlot(oldSlot) +
+                FormatSlot(result.PreviousSlot) +
                 "\nAfter :\n" +
-                FormatSlot(newSlot));
+                FormatSlot(result.Slot));
         }
         else
         {
             BattleDebugLog.ActionSlot(
                 "[ActionSlot Created]\n" +
-                FormatSlot(newSlot));
+                FormatSlot(result.Slot));
         }
 
         return true;
@@ -2082,7 +1903,8 @@ public class BattleUIManager : MonoBehaviour
         if (!IsManagerReady())
             return;
 
-        battleManager.ResetPlayerActions();
+        PlanCommands?.ResetOwner(
+            battleManager.BattleContext?.Player);
 
         if (skillSelectPanel != null)
             skillSelectPanel.Hide();
@@ -2282,23 +2104,19 @@ public class BattleUIManager : MonoBehaviour
             return "현재 부위·행동 슬롯에서 사용 불가";
         }
 
-        if (TryGetPendingYujinHwanhyeongEdit(
-                skill,
-                out _,
-                out _))
-        {
-            return string.Empty;
-        }
-
-        string hwanhyeongReason =
-            GetYujinHwanhyeongSelectionReason(
+        string mechanicReason =
+            GetMechanicPlanningSelectionReason(
                 skill);
 
         if (!string.IsNullOrWhiteSpace(
-                hwanhyeongReason))
+                mechanicReason))
         {
-            return hwanhyeongReason;
+            return mechanicReason;
         }
+
+        bool energyReservationExempt =
+            IsMechanicEnergyReservationExempt(
+                skill);
 
         if (skill.ActionType == ActionType.Prestige &&
             !IsPrestigeReady(selectedOwner))
@@ -2306,7 +2124,8 @@ public class BattleUIManager : MonoBehaviour
             return "위세 부족";
         }
 
-        if (!selectedOwner.CanUseSkill(part, skill))
+        if (!energyReservationExempt &&
+            !selectedOwner.CanUseSkill(part, skill))
         {
             if (!selectedOwner.CanAffordEnergy(skill.EnergyCost))
             {
@@ -2318,7 +2137,8 @@ public class BattleUIManager : MonoBehaviour
             return "조건 또는 자원 부족";
         }
 
-        if (!battleManager.ActionManager.CanReserveEnergy(
+        if (!energyReservationExempt &&
+            !battleManager.ActionManager.CanReserveEnergy(
                 selectedOwner,
                 skill,
                 part,
@@ -2409,7 +2229,7 @@ public class BattleUIManager : MonoBehaviour
 
         if (existing?.Skill != null)
         {
-            RestoreCharacterRerollChoice(
+            RestoreCharacterPlanningState(
                 owner,
                 existing);
 
@@ -2449,7 +2269,7 @@ public class BattleUIManager : MonoBehaviour
         if (slot == null)
             return false;
 
-        battleManager.ActionManager.RemoveSlot(
+        PlanCommands?.Remove(
             owner,
             part,
             actionIndex);
@@ -2496,7 +2316,7 @@ public class BattleUIManager : MonoBehaviour
         inputMode = BattleInputMode.SelectSkill;
         SyncSelectionViewModel();
 
-        RestoreCharacterRerollChoice(
+        RestoreCharacterPlanningState(
             slot.Owner,
             slot);
 
@@ -2529,7 +2349,7 @@ public class BattleUIManager : MonoBehaviour
         if (slot == null)
             return false;
 
-        battleManager.ActionManager.RemoveSlot(
+        PlanCommands?.Remove(
             owner,
             part,
             actionIndex);
@@ -2612,38 +2432,10 @@ public class BattleUIManager : MonoBehaviour
         BodyPart ignorePart = null,
         int ignoreActionIndex = -1)
     {
-        if (owner == null ||
-            battleManager?.ActionManager == null)
-        {
-            return false;
-        }
-
-        foreach (ActionSlot slot
-                 in battleManager.ActionManager.Slots)
-        {
-            if (slot == null ||
-                slot.Owner != owner ||
-                slot.Skill == null)
-            {
-                continue;
-            }
-
-            bool isIgnoredExactSlot =
-                ignoreActionIndex >= 0 &&
-                IsSamePart(slot.Part, ignorePart) &&
-                slot.ActionIndex == ignoreActionIndex;
-
-            if (isIgnoredExactSlot)
-                continue;
-
-            if (slot.Skill.ActionType ==
-                ActionType.Prestige)
-            {
-                return true;
-            }
-        }
-
-        return false;
+        return PlanCommands?.HasPrestigeSlotSelected(
+                   owner,
+                   ignorePart,
+                   ignoreActionIndex) == true;
     }
 
     private int ResolveActionIndexForSelection(

@@ -1,14 +1,9 @@
-using UnityEngine;
-
-public class DataDuelSkill : DuelSkill, IVisualSkill
+public class DataDuelSkill : DuelSkill
 {
     private readonly SkillDefinition definition;
 
     protected override SkillDefinition RuntimeDefinition =>
         definition;
-
-    public SkillVisualDefinition VisualDefinition =>
-        definition?.VisualDefinition;
 
     public override bool CanBreakPart =>
         definition != null && definition.CanBreakPart;

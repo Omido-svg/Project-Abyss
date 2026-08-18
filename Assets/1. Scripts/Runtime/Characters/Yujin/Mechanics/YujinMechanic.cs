@@ -6,7 +6,7 @@ using UnityEngine;
 /// 유진의 무기, 살수의 감, 표식, 봉인, 처형, 재굴림, 위세를 통합한다.
 /// 표식과 결투 효과는 개별 교환 결과가 공개되는 즉시 처리한다.
 /// </summary>
-public sealed class YujinMechanic : CombatMechanic, ICharacterUniqueGaugeProvider
+public sealed class YujinMechanic : CombatMechanic, ICharacterUniqueGaugeProvider, IActionPlanningRule
 {
     public const int MarkIgnitionThreshold = 44;
     public const int WeaponSwitchEnergyCost = 1;
@@ -48,7 +48,7 @@ public sealed class YujinMechanic : CombatMechanic, ICharacterUniqueGaugeProvide
         weaponSwitchUsedThisTurn;
 
     public bool IsWeaponSwitchLocked =>
-        battleContext?.battleManager?.TurnManager?.IsResolving == true;
+        battleContext?.Services?.TurnManager?.IsResolving == true;
 
     public YujinWeaponType CurrentWeapon => currentWeapon;
     public bool HasPendingWeapon => hasPendingWeapon;
@@ -279,6 +279,113 @@ public sealed class YujinMechanic : CombatMechanic, ICharacterUniqueGaugeProvide
             return "현재 무기와 동일";
 
         return string.Empty;
+    }
+
+    string IActionPlanningRule.GetSkillSelectionBlockReason(
+        ActionPlanningSkillContext context)
+    {
+        if (context.Skill == null ||
+            context.Owner != owner ||
+            !TryGetHwanhyeongWeapon(
+                context.Skill.Definition?.SkillId,
+                out YujinWeaponType weapon))
+        {
+            return string.Empty;
+        }
+
+        ActionSlot existing =
+            FindPlannedHwanhyeongSlot(
+                context.PlannedSlots);
+
+        if (existing != null &&
+            (!IsSamePart(existing.Part, context.Part) ||
+             existing.ActionIndex != context.ActionIndex))
+        {
+            return "이번 턴 환형 이미 지정됨";
+        }
+
+        return GetHwanhyeongSelectionReason(weapon);
+    }
+
+    bool IActionPlanningRule.IsEnergyReservationExempt(
+        ActionPlanningSkillContext context)
+    {
+        if (context.Skill == null ||
+            context.Owner != owner ||
+            !HasPendingWeapon ||
+            !TryGetHwanhyeongWeapon(
+                context.Skill.Definition?.SkillId,
+                out YujinWeaponType weapon))
+        {
+            return false;
+        }
+
+        return CanSelectHwanhyeongWeapon(weapon);
+    }
+
+    void IActionPlanningRule.ConfigurePlannedSlot(
+        ActionPlanningSkillContext context,
+        ActionSlot slot)
+    {
+        if (slot == null || context.Owner != owner)
+            return;
+
+        slot.UseCharacterRerollResource =
+            IsSenseEligibleSkill(
+                context.Skill?.Definition?.SkillId) &&
+            AutoUseSense;
+    }
+
+    void IActionPlanningRule.RestorePlanningState(
+        ActionSlot slot)
+    {
+        if (slot == null ||
+            slot.Owner != owner ||
+            !IsSenseEligibleSkill(
+                slot.Skill?.Definition?.SkillId))
+        {
+            return;
+        }
+
+        AutoUseSense =
+            slot.UseCharacterRerollResource;
+    }
+
+    private ActionSlot FindPlannedHwanhyeongSlot(
+        IReadOnlyList<ActionSlot> plannedSlots)
+    {
+        if (plannedSlots == null)
+            return null;
+
+        foreach (ActionSlot slot in plannedSlots)
+        {
+            if (slot?.Owner != owner ||
+                slot.Skill == null ||
+                slot.Phase != ActionPhase.FORESIGHT)
+            {
+                continue;
+            }
+
+            if (TryGetHwanhyeongWeapon(
+                    slot.Skill.Definition?.SkillId,
+                    out _))
+            {
+                return slot;
+            }
+        }
+
+        return null;
+    }
+
+    private static bool IsSamePart(
+        BodyPart first,
+        BodyPart second)
+    {
+        if (first == null || second == null)
+            return first == null && second == null;
+
+        return first == second ||
+               first.Type == second.Type;
     }
 
     /// <summary>

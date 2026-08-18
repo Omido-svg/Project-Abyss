@@ -1,0 +1,594 @@
+Role,Kind,Character,Profile,CaseId,DisplayName,Category,ExecutionMode,Status,Expected,Actual,Details
+"PLAYABLE/CHARACTER","Olaf","올라프","올라프_Verification","coverage.manifest.closed_world","완전 커버리지 명세 폐쇄성","Data","DataOnly","Pass","모든 기능이 폐쇄형 검증 카탈로그에 등록됨","PASS / Skills=11, Effects=0","Skills=11
+Effects=0
+RequiredMechanics=OlafMadnessMechanic, OlafImmortalFuryMechanic"
+"PLAYABLE/CHARACTER","Olaf","올라프","올라프_Verification","coverage.mechanics.forced_scenarios","패시브·메커닉 강제 시나리오","Passive","IsolatedRuntime","Pass","모든 필수 패시브 메커닉의 강제 이벤트 시나리오 통과","PASS / Mechanics=3","OlafMadness: 0/5/10 판정·피해 보정 PASS
+Olaf Dice: 공용 BasePlusRoll·스킬별 BasePower·공통 d8 PASS
+Olaf olaf.duel.standard: 최신 승패별 혈상·광기 규칙 PASS / Bleeding=2, Madness=1
+Olaf olaf.duel.rend: 최신 승패별 혈상·광기 규칙 PASS / Bleeding=1, Madness=1
+Olaf 부위 파괴 광기 +2 PASS
+Olaf 배수진 피해 제한·파괴/사망 차단·턴 종료 해제 PASS
+올라프 웅크리기 방어도 12 PASS
+올라프 노려보기 이번 턴 합 위력 +1 PASS
+올라프 가오잡기 자가 부위 약화 1개·광기 +2 PASS
+올라프 만개하는 상처 광기 0=혈상3, 광기10=혈상5 PASS
+올라프 터뜨리는 광기 광기+2·(광기×5+혈상) 피해 PASS
+올라프 배수진 Execute 활성화 PASS"
+"PLAYABLE/CHARACTER","Olaf","올라프","올라프_Verification","coverage.skill.olaf.normal.overhead_smash","스킬 완전 시나리오: 내려찍기","NormalAttack","IsolatedRuntime","Pass","자원·굴림·대상·모든 효과 Entry 강제 실행","PASS / Rolls=2, Effects=0","Resource PASS: Energy 3->2, Prestige 100->100
+Roll[0]=🎲 5
+Roll[1]=🎲 5
+DamageTarget PASS: 180->179 / 올라프/HEAD"
+"PLAYABLE/CHARACTER","Olaf","올라프","올라프_Verification","coverage.skill.olaf.normal.wild_hack","스킬 완전 시나리오: 마구잡이","NormalAttack","IsolatedRuntime","Pass","자원·굴림·대상·모든 효과 Entry 강제 실행","PASS / Rolls=3, Effects=0","Resource PASS: Energy 3->3, Prestige 100->100
+Roll[0]=🎲 5
+Roll[1]=🎲 5
+Roll[2]=🎲 1
+DamageTarget PASS: 180->179 / 올라프/HEAD"
+"PLAYABLE/CHARACTER","Olaf","올라프","올라프_Verification","coverage.skill.olaf.normal.enduring_slash","스킬 완전 시나리오: 버티며 베기","NormalAttack","IsolatedRuntime","Pass","자원·굴림·대상·모든 효과 Entry 강제 실행","PASS / Rolls=3, Effects=0","Resource PASS: Energy 3->3, Prestige 100->100
+Roll[0]=🎲 5
+Roll[1]=🎲 5
+Roll[2]=🎲 1
+DamageTarget PASS: 180->179 / 올라프/HEAD"
+"PLAYABLE/CHARACTER","Olaf","올라프","올라프_Verification","coverage.skill.olaf.duel.rend","스킬 완전 시나리오: 난도질","Duel","IsolatedRuntime","Pass","자원·굴림·대상·모든 효과 Entry 강제 실행","PASS / Rolls=3, Effects=0","Resource PASS: Energy 3->1, Prestige 100->100
+Roll[0]=🎲 5
+Roll[1]=🎲 5
+Roll[2]=🎲 1
+DamageTarget PASS: 180->179 / 올라프/HEAD"
+"PLAYABLE/CHARACTER","Olaf","올라프","올라프_Verification","coverage.skill.olaf.duel.standard","스킬 완전 시나리오: 표준","Duel","IsolatedRuntime","Pass","자원·굴림·대상·모든 효과 Entry 강제 실행","PASS / Rolls=2, Effects=0","Resource PASS: Energy 3->2, Prestige 100->100
+Roll[0]=🎲 5
+Roll[1]=🎲 5
+DamageTarget PASS: 180->179 / 올라프/HEAD"
+"PLAYABLE/CHARACTER","Olaf","올라프","올라프_Verification","coverage.skill.olaf.preparation.show_off","스킬 완전 시나리오: 가오잡기","Preparation","IsolatedRuntime","Pass","자원·굴림·대상·모든 효과 Entry 강제 실행","PASS / Rolls=1, Effects=0","Resource PASS: Energy 3->2, Prestige 100->100
+Roll[0]=🎲 0"
+"PLAYABLE/CHARACTER","Olaf","올라프","올라프_Verification","coverage.skill.olaf.preparation.glare","스킬 완전 시나리오: 노려보기","Preparation","IsolatedRuntime","Pass","자원·굴림·대상·모든 효과 Entry 강제 실행","PASS / Rolls=1, Effects=0","Resource PASS: Energy 3->2, Prestige 100->100
+Roll[0]=🎲 0"
+"PLAYABLE/CHARACTER","Olaf","올라프","올라프_Verification","coverage.skill.olaf.preparation.crouch","스킬 완전 시나리오: 웅크리기","Preparation","IsolatedRuntime","Pass","자원·굴림·대상·모든 효과 Entry 강제 실행","PASS / Rolls=1, Effects=0","Resource PASS: Energy 3->3, Prestige 100->100
+Roll[0]=🎲 0"
+"PLAYABLE/CHARACTER","Olaf","올라프","올라프_Verification","coverage.skill.olaf.prestige.blooming_wound","스킬 완전 시나리오: 만개하는 상처","Prestige","IsolatedRuntime","Pass","자원·굴림·대상·모든 효과 Entry 강제 실행","PASS / Rolls=1, Effects=0","Resource PASS: Energy 3->3, Prestige 100->0
+Roll[0]=🎲 0"
+"PLAYABLE/CHARACTER","Olaf","올라프","올라프_Verification","coverage.skill.olaf.prestige.backs_to_wall","스킬 완전 시나리오: 배수진","Prestige","IsolatedRuntime","Pass","자원·굴림·대상·모든 효과 Entry 강제 실행","PASS / Rolls=1, Effects=0","Resource PASS: Energy 3->3, Prestige 100->0
+Roll[0]=🎲 0"
+"PLAYABLE/CHARACTER","Olaf","올라프","올라프_Verification","coverage.skill.olaf.prestige.bursting_madness","스킬 완전 시나리오: 터뜨리는 광기","Prestige","IsolatedRuntime","Pass","자원·굴림·대상·모든 효과 Entry 강제 실행","PASS / Rolls=1, Effects=0","Resource PASS: Energy 3->3, Prestige 100->0
+Roll[0]=🎲 0"
+"PLAYABLE/CHARACTER","Olaf","올라프","올라프_Verification","generic.data.core_references","Core 데이터 참조","Data","DataOnly","Pass","필수 Core 참조가 모두 연결됨","Bundle/Data/Loadout/Prefab 연결 정상",""
+"PLAYABLE/CHARACTER","Olaf","올라프","올라프_Verification","generic.data.prefab_compatibility","Prefab·Bundle 호환성","Data","DataOnly","Pass","Bundle Kind와 표준 Prefab Component가 호환됨","Olaf 호환 정상",""
+"PLAYABLE/CHARACTER","Olaf","올라프","올라프_Verification","generic.data.loadout_integrity","스킬 장착·슬롯 노출","Data","DataOnly","Pass","카테고리 한도·타입·슬롯 노출 정상","일반 3, 결투 2, 도사림 3, 위세 1",""
+"PLAYABLE/CHARACTER","Olaf","올라프","올라프_Verification","generic.data.skill_definitions","SkillDefinition 무결성","Data","DataOnly","Pass","모든 SkillDefinition ID와 Runtime 생성 정상","11개 스킬 정상",""
+"PLAYABLE/CHARACTER","Olaf","올라프","올라프_Verification","generic.presentation.timeline_and_animator","Timeline·Animator 연결","Presentation","DataOnly","Pass","Animator·Presentation·Timeline 연결 정상","Presentation 검증 통과",""
+"PLAYABLE/CHARACTER","Olaf","올라프","올라프_Verification","generic.runtime.initialization","격리 런타임 초기화","Boundary","IsolatedRuntime","Pass","Isolated BattleContext 초기화와 메커닉 구독 성공","올라프 / Initialized=True / HP=720/720 / Block=0 / Prestige=0 / Resources=Energy:3 / Parts=[HEAD 180/180 Normal, LEFT_HAND 180/180 Normal, RIGHT_HAND 180/180 Normal, LEGS 180/180 Normal]",""
+"PLAYABLE/CHARACTER","Olaf","올라프","올라프_Verification","generic.runtime.body_parts","부위 런타임 상태","Status","IsolatedRuntime","Pass","부위 Owner·HP·타입·초기 상태 정상","4개 부위 정상",""
+"PLAYABLE/CHARACTER","Olaf","올라프","올라프_Verification","generic.runtime.skill_binding","런타임 스킬 바인딩","Data","IsolatedRuntime","Pass","모든 장착 스킬 생성 및 RuntimeSkill ID 중복 없음","11개 RuntimeSkill / 11개 고유 SkillId",""
+"PLAYABLE/CHARACTER","Olaf","올라프","올라프_Verification","generic.runtime.deterministic_random","결정론적 굴림 재현","Boundary","IsolatedRuntime","Pass","동일 Seed·Sample은 동일 RollResult","🎲 2 + 6",""
+"PLAYABLE/CHARACTER","Olaf","올라프","올라프_Verification","generic.live.scene_binding","실전 Scene UI·전투 연결","UI","LiveScene","Skip","검증 실행","건너뜀","Live Scene 검증이 비활성화되어 있습니다."
+"PLAYABLE/CHARACTER","Olaf","올라프","올라프_Verification","core3.data.verification_manifest","Core 3 전체 검증 Case 폐쇄성","Data","DataOnly","Pass","Core 3 공통/고유/스킬별 Case가 모두 존재","Expected=41, Actual=41, Skills=11",""
+"PLAYABLE/CHARACTER","Olaf","올라프","올라프_Verification","core3.data.skill_manifest","Core 3 스킬 수·ID 완전성","Data","DataOnly","Pass","스킬 11개·고유 ID·RuntimeSkill 생성","Definitions=11, UniqueIds=11, Expected=11",""
+"PLAYABLE/CHARACTER","Olaf","올라프","올라프_Verification","core3.data.phase_contract","스킬 타입 ↔ 실행 페이즈 계약","Boundary","DataOnly","Pass","Prestige=PRETURN / Preparation=FORESIGHT / Normal·Duel=COMBAT","11개 스킬 일치",""
+"PLAYABLE/CHARACTER","Olaf","올라프","올라프_Verification","core3.runtime.bodypart_skill_access","부위별 스킬 접근 계약","Boundary","IsolatedRuntime","Pass","HEAD 전체 / 양팔 일반·결투 / LEGS 도사림","Policy + GetSelectableSkills 일치",""
+"PLAYABLE/CHARACTER","Olaf","올라프","올라프_Verification","core3.runtime.shared_bodypart_speed","동일 부위 다중 슬롯 공유 속도","Boundary","IsolatedRuntime","Pass","동일 BodyPart의 모든 ActionIndex는 같은 Speed","Part=HEAD, ConfigurePreserved=True, 10=>True, 13=>True, Final=13/13",""
+"PLAYABLE/CHARACTER","Olaf","올라프","올라프_Verification","core3.runtime.preparation_plan_cancel","도사림 계획·에너지 예약·취소","Preparation","IsolatedRuntime","Pass","START 전 계획만 등록·취소 가능·FORESIGHT 큐 실행","Skill=웅크리기, Part=LEGS, Add/Remove/ReAdd=True/True/True, Energy=3->3->3, Reserved=0->0, QueuePreparation=1",""
+"PLAYABLE/CHARACTER","Olaf","올라프","올라프_Verification","core3.runtime.preparation_replace","도사림 동일 슬롯 교체 계약","Preparation","IsolatedRuntime","Pass","도사림 교체는 동일 ActionSlot 수정 / 최종 예약만 유지","웅크리기->노려보기, Slots=1, ActionId=1->1, Reserved=1/1, Energy=3->3",""
+"PLAYABLE/CHARACTER","Olaf","올라프","올라프_Verification","core3.runtime.unique_gauge","캐릭터 고유 게이지 계약","UI","IsolatedRuntime","Pass","고유 게이지 광기 / 0..1 / 표시값","Label=광기, Normalized=0, Value=0/10",""
+"PLAYABLE/CHARACTER","Olaf","올라프","올라프_Verification","olaf.data.skill_coverage","올라프 스킬 ID 전체 등록","Data","DataOnly","Pass","올라프 고유 스킬 ID 11개 존재","11/11 등록",""
+"PLAYABLE/CHARACTER","Olaf","올라프","올라프_Verification","olaf.data.dice_runtime_resolution","공용 BasePlusRoll 실제 굴림","Boundary","IsolatedRuntime","Pass","BasePlusRoll=BasePower+RNG, AbsoluteRange=기존 최종 범위","Base=13, BasePlusLow=Base=13, Raw=1, Final=14, Dice=1~1, BasePlusHigh=Base=13, Raw=8, Final=21, Dice=8~8, Absolute=Base=0, Raw=6, Final=6, Dice=6~6",""
+"PLAYABLE/CHARACTER","Olaf","올라프","올라프_Verification","olaf.presentation.dice_visual_sides","D6·D8 주사위 면수 연출","Presentation","IsolatedRuntime","Pass","1~6=D6 눈 연출, 1~8=D8 숫자 연출과 실제 다각형 메시","D6=6면/Pips=True/Mesh=7v,18i, D8=8면/Pips=False/Mesh=9v,24i",""
+"PLAYABLE/CHARACTER","Olaf","올라프","올라프_Verification","olaf.passive.mechanic_registration","광기·배수진 메커닉 등록","Passive","IsolatedRuntime","Pass","광기·배수진 메커닉 생성 및 등록","Madness=Registered, ImmortalFury=Registered",""
+"PLAYABLE/CHARACTER","Olaf","올라프","올라프_Verification","olaf.passive.madness_boundary","광기 경계값·만개","Boundary","IsolatedRuntime","Pass","광기 0~10 Clamp, 10에서 만개","Madness=10, Bloom=True",""
+"PLAYABLE/CHARACTER","Olaf","올라프","올라프_Verification","olaf.passive.madness_roll_modifier","광기 판정 보정","Passive","IsolatedRuntime","Pass","광기 5당 판정 +1","10→11→12",""
+"PLAYABLE/CHARACTER","Olaf","올라프","올라프_Verification","olaf.duel.standard_explosion_once_per_action","표준 혈상 폭발 행동당 1회","Duel","IsolatedRuntime","Pass","첫 교환 폭발·동일 행동 추가 폭발 차단·ActionEnd 후 재허용","HP=1000→880→880→760, Part=1000→880→880→760, SecondBleed=12",""
+"PLAYABLE/CHARACTER","Olaf","올라프","올라프_Verification","olaf.duel.one_sided_unique_effects_disabled","표준·난도질 일방 고유효과 차단","Duel","IsolatedRuntime","Pass","표준·난도질 일방 공격에서 고유 혈상·광기 0","olaf.duel.standard: Bleeding=0, Madness=0 / olaf.duel.rend: Bleeding=0, Madness=0",""
+"PLAYABLE/CHARACTER","Olaf","올라프","올라프_Verification","olaf.prestige.madness_consume","광기 소모 피해","Prestige","IsolatedRuntime","Pass","광기 7 × 5 = 35, 미소모/소모 정책 정상","Preview=35, Consume=35, Remain=0",""
+"PLAYABLE/CHARACTER","Olaf","올라프","올라프_Verification","olaf.prestige.backs_to_wall_lifecycle","배수진 생존·턴 종료","Prestige","IsolatedRuntime","Pass","배수진 중 생존·파괴 차단, TurnEnd 해제","Active policy PASS / TurnEnd release PASS",""
+"PLAYABLE/CHARACTER","Olaf","올라프","올라프_Verification","generic.live.scene_binding@Olaf_MixedBattle","실전 Scene UI·전투 연결 · Olaf_MixedBattle","UI","LiveScene","Pass","실전 Roster 캐릭터와 전투 연결 정상","PLAYER · 올라프 / 11개 스킬",""
+"PLAYABLE/CHARACTER","Olaf","올라프","올라프_Verification","live.autobattle.full_match@Olaf_MixedBattle","실전 스모크 전투 · Olaf_MixedBattle","Boundary","LiveScene","Pass","실제 Roster에 참가한 Character가 승률 자동계획 전투를 정상 종료하거나 검증용 5턴 구간을 완주","실전 스모크 구간 정상 완료 · 5턴","Outcome=TURN_BUDGET_COMPLETE
+Turns=5
+AnalysisTurnBudgetReached=True
+BlockedDamageAttempts=18
+MaxConsecutiveNoStateProgressTurns=0
+WinRatePlanAttempts=5
+SuccessfulWinRatePlans=5
+FallbackPlanCount=0
+PlannedActionCount=20
+PlayerSkillUsage=4/11
+UsedPlayerSkills=노려보기<olaf.preparation.glare>, 표준<olaf.duel.standard>, 마구잡이<olaf.normal.wild_hack>, 버티며 베기<olaf.normal.enduring_slash>
+ObservedParticipantSkills=정예 몹:전투 태세(도사림)<356e72e97ac84a3a8757d1a188237f43>, 올라프:노려보기<olaf.preparation.glare>, 정예 몹:정예병의 압박(결투)<5fb3b00e68684389a86c92f3e0345061>, 올라프:표준<olaf.duel.standard>, 정예 몹:정예병의 참격(일반공격)<5a239ec7d4944c458ac5329511091871>, 훈련용 일반 적:달려들기<test_normal_lunge>, 올라프:마구잡이<olaf.normal.wild_hack>, 올라프:버티며 베기<olaf.normal.enduring_slash>
+RuntimeErrors=0
+RuntimeWarnings=33
+CriticalInvariants=0
+RequestedTimeScale=30
+ElapsedMilliseconds=42251
+Participants=올라프, 정예 몹, 훈련용 일반 적
+WarningSamples=Warning: [VFX VALIDATION] Prefab 누락 / Definition=Burn_Tick_VFX @ UnityEngine.Debug:LogWarning (object,UnityEngine.Object) || Warning: [VFX VALIDATION] Prefab 누락 / Definition=Olaf_Duel_BloodSplash_VFX @ UnityEngine.Debug:LogWarning (object,UnityEngine.Object)"
+"PLAYABLE/CHARACTER","Olaf","올라프","올라프_Verification","live.autobattle.character_skill_observation@Olaf_MixedBattle","실전 Character 스킬 실행 관찰 · Olaf_MixedBattle","Boundary","LiveScene","Pass","플레이어/적 구분 없이 해당 Character가 실제 ActionStart를 최소 1회 발생","4개 고유 Skill ActionStart 관찰","Observed=올라프:노려보기<olaf.preparation.glare>, 올라프:표준<olaf.duel.standard>, 올라프:마구잡이<olaf.normal.wild_hack>, 올라프:버티며 베기<olaf.normal.enduring_slash>
+모든 후보 스킬의 개별 계약은 Isolated skill coverage가 담당하고, 이 Case는 실제 CameraTest AI/행동 파이프라인에서 캐릭터가 행동했는지를 검증합니다."
+"PLAYABLE/CHARACTER","Olaf","올라프","올라프_Verification","generic.live.scene_binding@Olaf_BossBattle","실전 Scene UI·전투 연결 · Olaf_BossBattle","UI","LiveScene","Pass","실전 Roster 캐릭터와 전투 연결 정상","PLAYER · 올라프 / 11개 스킬",""
+"PLAYABLE/CHARACTER","Olaf","올라프","올라프_Verification","live.autobattle.full_match@Olaf_BossBattle","실전 스모크 전투 · Olaf_BossBattle","Boundary","LiveScene","Pass","실제 Roster에 참가한 Character가 승률 자동계획 전투를 정상 종료하거나 검증용 5턴 구간을 완주","실전 스모크 구간 정상 완료 · 5턴","Outcome=TURN_BUDGET_COMPLETE
+Turns=5
+AnalysisTurnBudgetReached=True
+BlockedDamageAttempts=25
+MaxConsecutiveNoStateProgressTurns=0
+WinRatePlanAttempts=5
+SuccessfulWinRatePlans=5
+FallbackPlanCount=0
+PlannedActionCount=20
+PlayerSkillUsage=5/11
+UsedPlayerSkills=노려보기<olaf.preparation.glare>, 표준<olaf.duel.standard>, 마구잡이<olaf.normal.wild_hack>, 내려찍기<olaf.normal.overhead_smash>, 버티며 베기<olaf.normal.enduring_slash>
+ObservedParticipantSkills=올라프:노려보기<olaf.preparation.glare>, 올라프:표준<olaf.duel.standard>, 훈련용 보스:정예병의 압박(결투)<5fb3b00e68684389a86c92f3e0345061>, 올라프:마구잡이<olaf.normal.wild_hack>, 올라프:내려찍기<olaf.normal.overhead_smash>, 훈련용 보스:정예병의 참격(일반공격)<5a239ec7d4944c458ac5329511091871>, 올라프:버티며 베기<olaf.normal.enduring_slash>
+RuntimeErrors=0
+RuntimeWarnings=0
+CriticalInvariants=0
+RequestedTimeScale=30
+ElapsedMilliseconds=40589
+Participants=올라프, 훈련용 보스"
+"PLAYABLE/CHARACTER","Olaf","올라프","올라프_Verification","live.autobattle.character_skill_observation@Olaf_BossBattle","실전 Character 스킬 실행 관찰 · Olaf_BossBattle","Boundary","LiveScene","Pass","플레이어/적 구분 없이 해당 Character가 실제 ActionStart를 최소 1회 발생","5개 고유 Skill ActionStart 관찰","Observed=올라프:노려보기<olaf.preparation.glare>, 올라프:표준<olaf.duel.standard>, 올라프:마구잡이<olaf.normal.wild_hack>, 올라프:내려찍기<olaf.normal.overhead_smash>, 올라프:버티며 베기<olaf.normal.enduring_slash>
+모든 후보 스킬의 개별 계약은 Isolated skill coverage가 담당하고, 이 Case는 실제 CameraTest AI/행동 파이프라인에서 캐릭터가 행동했는지를 검증합니다."
+"PLAYABLE/CHARACTER","Yujin","유진","유진_Verification","coverage.manifest.closed_world","완전 커버리지 명세 폐쇄성","Data","DataOnly","Pass","모든 기능이 폐쇄형 검증 카탈로그에 등록됨","PASS / Skills=12, Effects=0","Skills=12
+Effects=0
+RequiredMechanics=YujinMechanic"
+"PLAYABLE/CHARACTER","Yujin","유진","유진_Verification","coverage.mechanics.forced_scenarios","패시브·메커닉 강제 시나리오","Passive","IsolatedRuntime","Pass","모든 필수 패시브 메커닉의 강제 이벤트 시나리오 통과","PASS / Mechanics=3","유진 Baeku 표식 44 발화 PASS
+유진 Jeokseol 표식 44 발화 PASS
+유진 Nakil 표식 44 발화 PASS
+유진 추격 Baeku 상한 1Hit PASS / Sense 4->3 / HP 720->697
+유진 추격 Jeokseol 상한 2Hit PASS / Sense 6->4 / HP 720->662
+유진 추격 Nakil 상한 5Hit PASS / Sense 10->5 / HP 720->500
+유진 3무기 앞/뒷면 위력표 및 TurnStart 감 PASS
+환형의 흐름 WeaponChanged 이벤트 PASS / 기본+1 + 패시브+1
+유진 포착 앞면 확률 +10%·TurnEnd 초기화 PASS
+유진 양형 뒷면 위력 +2·TurnEnd 초기화 PASS
+유진 검분 적중 표식 기본량 PASS
+유진 조식 적중 살수의 감 +1 PASS
+유진 각인 결투 승리 표식 2배 PASS
+유진 낙인 즉시 치명 수치 표식·후속 적중 +3 PASS
+유진 연대책임 최초1+파괴/처치 연계 최대4 PASS
+유진 재심 교환당 무료 1회·감 미소모·TurnEnd 해제 PASS"
+"PLAYABLE/CHARACTER","Yujin","유진","유진_Verification","coverage.skill.yujin.normal.inspection","스킬 완전 시나리오: 검분","NormalAttack","IsolatedRuntime","Pass","자원·굴림·대상·모든 효과 Entry 강제 실행","PASS / Rolls=3, Effects=0","Resource PASS: Energy 3->3, Prestige 100->100
+Roll[0]=🪙 앞(22)
+Roll[1]=🪙 뒤(14)
+Roll[2]=🪙 앞(22)
+DamageTarget PASS: 180->179 / 유진/HEAD"
+"PLAYABLE/CHARACTER","Yujin","유진","유진_Verification","coverage.skill.yujin.normal.breakfast","스킬 완전 시나리오: 조식","NormalAttack","IsolatedRuntime","Pass","자원·굴림·대상·모든 효과 Entry 강제 실행","PASS / Rolls=3, Effects=0","Resource PASS: Energy 3->1, Prestige 100->100
+Roll[0]=🪙 앞(22)
+Roll[1]=🪙 뒤(16)
+Roll[2]=🪙 앞(22)
+DamageTarget PASS: 180->179 / 유진/HEAD"
+"PLAYABLE/CHARACTER","Yujin","유진","유진_Verification","coverage.skill.yujin.duel.inscription","스킬 완전 시나리오: 각인","Duel","IsolatedRuntime","Pass","자원·굴림·대상·모든 효과 Entry 강제 실행","PASS / Rolls=3, Effects=0","Resource PASS: Energy 3->2, Prestige 100->100
+Roll[0]=🪙 앞(23)
+Roll[1]=🪙 뒤(15)
+Roll[2]=🪙 앞(23)
+DamageTarget PASS: 180->179 / 유진/HEAD"
+"PLAYABLE/CHARACTER","Yujin","유진","유진_Verification","coverage.skill.yujin.duel.pursuit","스킬 완전 시나리오: 추격","Duel","IsolatedRuntime","Pass","자원·굴림·대상·모든 효과 Entry 강제 실행","PASS / Rolls=3, Effects=0","Resource PASS: Energy 3->2, Prestige 100->100
+Roll[0]=🪙 앞(23)
+Roll[1]=🪙 뒤(15)
+Roll[2]=🪙 앞(23)
+DamageTarget PASS: 180->179 / 유진/HEAD"
+"PLAYABLE/CHARACTER","Yujin","유진","유진_Verification","coverage.skill.yujin.preparation.sentencing","스킬 완전 시나리오: 양형","Preparation","IsolatedRuntime","Pass","자원·굴림·대상·모든 효과 Entry 강제 실행","PASS / Rolls=1, Effects=0","Resource PASS: Energy 3->2, Prestige 100->100
+Roll[0]=🎲 0"
+"PLAYABLE/CHARACTER","Yujin","유진","유진_Verification","coverage.skill.yujin.preparation.capture","스킬 완전 시나리오: 포착","Preparation","IsolatedRuntime","Pass","자원·굴림·대상·모든 효과 Entry 강제 실행","PASS / Rolls=1, Effects=0","Resource PASS: Energy 3->2, Prestige 100->100
+Roll[0]=🎲 0"
+"PLAYABLE/CHARACTER","Yujin","유진","유진_Verification","coverage.skill.yujin.preparation.hwanhyeong.nakil","스킬 완전 시나리오: 환형 · 낙일","Preparation","IsolatedRuntime","Pass","자원·굴림·대상·모든 효과 Entry 강제 실행","PASS / Rolls=1, Effects=0","Resource PASS: Energy 3->2, Prestige 100->100
+Roll[0]=🎲 0
+Precondition: 환형 Baeku->Nakil 실행 상태 구성"
+"PLAYABLE/CHARACTER","Yujin","유진","유진_Verification","coverage.skill.yujin.preparation.hwanhyeong.baeku","스킬 완전 시나리오: 환형 · 백우","Preparation","IsolatedRuntime","Pass","자원·굴림·대상·모든 효과 Entry 강제 실행","PASS / Rolls=1, Effects=0","Resource PASS: Energy 3->2, Prestige 100->100
+Roll[0]=🎲 0
+Precondition: 환형 Jeokseol->Baeku 실행 상태 구성"
+"PLAYABLE/CHARACTER","Yujin","유진","유진_Verification","coverage.skill.yujin.preparation.hwanhyeong.jeokseol","스킬 완전 시나리오: 환형 · 적설","Preparation","IsolatedRuntime","Pass","자원·굴림·대상·모든 효과 Entry 강제 실행","PASS / Rolls=1, Effects=0","Resource PASS: Energy 3->2, Prestige 100->100
+Roll[0]=🎲 0
+Precondition: 환형 Baeku->Jeokseol 실행 상태 구성"
+"PLAYABLE/CHARACTER","Yujin","유진","유진_Verification","coverage.skill.yujin.prestige.brand","스킬 완전 시나리오: 낙인","Prestige","IsolatedRuntime","Pass","자원·굴림·대상·모든 효과 Entry 강제 실행","PASS / Rolls=1, Effects=0","Resource PASS: Energy 3->3, Prestige 100->0
+Roll[0]=🎲 0"
+"PLAYABLE/CHARACTER","Yujin","유진","유진_Verification","coverage.skill.yujin.prestige.joint_liability","스킬 완전 시나리오: 연좌","Prestige","IsolatedRuntime","Pass","자원·굴림·대상·모든 효과 Entry 강제 실행","PASS / Rolls=1, Effects=0","Resource PASS: Energy 3->3, Prestige 100->0
+Roll[0]=🎲 0"
+"PLAYABLE/CHARACTER","Yujin","유진","유진_Verification","coverage.skill.yujin.prestige.retrial","스킬 완전 시나리오: 재심","Prestige","IsolatedRuntime","Pass","자원·굴림·대상·모든 효과 Entry 강제 실행","PASS / Rolls=1, Effects=0","Resource PASS: Energy 3->3, Prestige 100->0
+Roll[0]=🎲 0"
+"PLAYABLE/CHARACTER","Yujin","유진","유진_Verification","generic.data.core_references","Core 데이터 참조","Data","DataOnly","Pass","필수 Core 참조가 모두 연결됨","Bundle/Data/Loadout/Prefab 연결 정상",""
+"PLAYABLE/CHARACTER","Yujin","유진","유진_Verification","generic.data.prefab_compatibility","Prefab·Bundle 호환성","Data","DataOnly","Pass","Bundle Kind와 표준 Prefab Component가 호환됨","Yujin 호환 정상",""
+"PLAYABLE/CHARACTER","Yujin","유진","유진_Verification","generic.data.loadout_integrity","스킬 장착·슬롯 노출","Data","DataOnly","Pass","카테고리 한도·타입·슬롯 노출 정상","일반 2, 결투 2, 도사림 3, 위세 1",""
+"PLAYABLE/CHARACTER","Yujin","유진","유진_Verification","generic.data.skill_definitions","SkillDefinition 무결성","Data","DataOnly","Pass","모든 SkillDefinition ID와 Runtime 생성 정상","12개 스킬 정상",""
+"PLAYABLE/CHARACTER","Yujin","유진","유진_Verification","generic.presentation.timeline_and_animator","Timeline·Animator 연결","Presentation","DataOnly","Pass","Animator·Presentation·Timeline 연결 정상","Presentation 검증 통과",""
+"PLAYABLE/CHARACTER","Yujin","유진","유진_Verification","generic.runtime.initialization","격리 런타임 초기화","Boundary","IsolatedRuntime","Pass","Isolated BattleContext 초기화와 메커닉 구독 성공","유진 / Initialized=True / HP=720/720 / Block=0 / Prestige=0 / Resources=Energy:3 / Parts=[HEAD 180/180 Normal, LEFT_HAND 180/180 Normal, RIGHT_HAND 180/180 Normal, LEGS 180/180 Normal]",""
+"PLAYABLE/CHARACTER","Yujin","유진","유진_Verification","generic.runtime.body_parts","부위 런타임 상태","Status","IsolatedRuntime","Pass","부위 Owner·HP·타입·초기 상태 정상","4개 부위 정상",""
+"PLAYABLE/CHARACTER","Yujin","유진","유진_Verification","generic.runtime.skill_binding","런타임 스킬 바인딩","Data","IsolatedRuntime","Pass","모든 장착 스킬 생성 및 RuntimeSkill ID 중복 없음","12개 RuntimeSkill / 12개 고유 SkillId",""
+"PLAYABLE/CHARACTER","Yujin","유진","유진_Verification","generic.runtime.deterministic_random","결정론적 굴림 재현","Boundary","IsolatedRuntime","Pass","동일 Seed·Sample은 동일 RollResult","🎲 1 + 5",""
+"PLAYABLE/CHARACTER","Yujin","유진","유진_Verification","generic.live.scene_binding","실전 Scene UI·전투 연결","UI","LiveScene","Skip","검증 실행","건너뜀","Live Scene 검증이 비활성화되어 있습니다."
+"PLAYABLE/CHARACTER","Yujin","유진","유진_Verification","core3.data.verification_manifest","Core 3 전체 검증 Case 폐쇄성","Data","DataOnly","Pass","Core 3 공통/고유/스킬별 Case가 모두 존재","Expected=43, Actual=43, Skills=12",""
+"PLAYABLE/CHARACTER","Yujin","유진","유진_Verification","core3.data.skill_manifest","Core 3 스킬 수·ID 완전성","Data","DataOnly","Pass","스킬 12개·고유 ID·RuntimeSkill 생성","Definitions=12, UniqueIds=12, Expected=12",""
+"PLAYABLE/CHARACTER","Yujin","유진","유진_Verification","core3.data.phase_contract","스킬 타입 ↔ 실행 페이즈 계약","Boundary","DataOnly","Pass","Prestige=PRETURN / Preparation=FORESIGHT / Normal·Duel=COMBAT","12개 스킬 일치",""
+"PLAYABLE/CHARACTER","Yujin","유진","유진_Verification","core3.runtime.bodypart_skill_access","부위별 스킬 접근 계약","Boundary","IsolatedRuntime","Pass","HEAD 전체 / 양팔 일반·결투 / LEGS 도사림","Policy + GetSelectableSkills 일치",""
+"PLAYABLE/CHARACTER","Yujin","유진","유진_Verification","core3.runtime.shared_bodypart_speed","동일 부위 다중 슬롯 공유 속도","Boundary","IsolatedRuntime","Pass","동일 BodyPart의 모든 ActionIndex는 같은 Speed","Part=HEAD, ConfigurePreserved=True, 10=>True, 13=>True, Final=13/13",""
+"PLAYABLE/CHARACTER","Yujin","유진","유진_Verification","core3.runtime.preparation_plan_cancel","도사림 계획·에너지 예약·취소","Preparation","IsolatedRuntime","Pass","START 전 계획만 등록·취소 가능·FORESIGHT 큐 실행","Skill=환형 · 백우, Part=LEGS, Add/Remove/ReAdd=True/True/True, Energy=3->3->3, Reserved=1->0, QueuePreparation=1",""
+"PLAYABLE/CHARACTER","Yujin","유진","유진_Verification","core3.runtime.preparation_replace","도사림 동일 슬롯 교체 계약","Preparation","IsolatedRuntime","Pass","도사림 교체는 동일 ActionSlot 수정 / 최종 예약만 유지","환형 · 백우->환형 · 적설, Slots=1, ActionId=1->1, Reserved=1/1, Energy=3->3",""
+"PLAYABLE/CHARACTER","Yujin","유진","유진_Verification","core3.runtime.unique_gauge","캐릭터 고유 게이지 계약","UI","IsolatedRuntime","Pass","고유 게이지 환형 / 0..1 / 표시값","Label=환형, Normalized=0.333, Value=Baeku",""
+"PLAYABLE/CHARACTER","Yujin","유진","유진_Verification","yujin.data.skill_coverage","유진 스킬 ID 전체 등록","Data","DataOnly","Pass","유진 고유 스킬 ID 12개 존재","12/12 등록",""
+"PLAYABLE/CHARACTER","Yujin","유진","유진_Verification","yujin.preparation.hwanhyeong_loadout_contract","환형 3종 기본 도사림 장착","Preparation","DataOnly","Pass","환형 3종 기본 장착 + 기존 도사림 후보 보존","Equipped=[yujin.preparation.hwanhyeong.baeku, yujin.preparation.hwanhyeong.jeokseol, yujin.preparation.hwanhyeong.nakil], CaptureCandidate=True, SentencingCandidate=True, Contracts=True",""
+"PLAYABLE/CHARACTER","Yujin","유진","유진_Verification","yujin.passive.mechanic_registration","유진 통합 메커닉 등록","Passive","IsolatedRuntime","Pass","YujinMechanic 생성·등록·Owner 연결","Registered",""
+"PLAYABLE/CHARACTER","Yujin","유진","유진_Verification","yujin.passive.hwanhyeong_flow","패시브 · 환형의 흐름","Passive","IsolatedRuntime","Pass","환형 완료 턴 기본 +1 + 패시브 +1","Queued=True, Stayed=True, Applied=True, SwitchTurnGain=2, NormalTurnGain=1, PassiveGain=1",""
+"PLAYABLE/CHARACTER","Yujin","유진","유진_Verification","yujin.passive.unlimited_weapon_switch","환형 빛 1·턴당 1회","Passive","IsolatedRuntime","Pass","환형 빛 1 소비·턴당 1회·다음 턴 적용","First=True/True, SameTurnSecond=False, FirstApplied=True, NextTurn=True/True, SecondApplied=True, Energy=3→2/3→2, Events=2","Baeku->Jeokseol, Jeokseol->Nakil"
+"PLAYABLE/CHARACTER","Yujin","유진","유진_Verification","yujin.passive.weapon_switch_before_action_only","환형 계획 중 예약 허용","Passive","IsolatedRuntime","Pass","계획 슬롯 배치 후에도 환형 예약 가능·다음 턴 적용","SelectedSlot=True/True, Energy=3→2, StayedCurrentTurn=True, AppliedNextTurn=True",""
+"PLAYABLE/CHARACTER","Yujin","유진","유진_Verification","yujin.passive.weapon_profiles","무기 프로필 수치","Data","DataOnly","Pass","백우 3/40%/12/4, 적설 2/30%/15/6, 낙일 1/25%/19/8","무기 프로필 일치",""
+"PLAYABLE/CHARACTER","Yujin","유진","유진_Verification","yujin.passive.sense_turn_start","살수의 감 턴 시작 획득","Passive","IsolatedRuntime","Pass","턴 시작 +1·자가 파괴 제외·적 파괴 +1","TurnStart=1, OwnBreak=1, EnemyBreak=2",""
+"PLAYABLE/CHARACTER","Yujin","유진","유진_Verification","yujin.duel.sense_reroll","살수의 감 자동 재굴림","Duel","IsolatedRuntime","Pass","행동별 감 사용 OFF/ON 선택","OffRequest=False, BeforeOn=1, OnRequest=True, Sense=0, Second=False",""
+"PLAYABLE/CHARACTER","Yujin","유진","유진_Verification","yujin.duel.nakil_remove_remaining_rolls","낙일 승리 시 상대 잔여 굴림 제거","Duel","IsolatedRuntime","Pass","낙일 교환 승리 시 상대 잔여 굴림만 0·일방/다른 무기 미적용","YujinFirst=2/0, YujinSecond=0/3, OneSide=2/4, Baeku=2/4",""
+"PLAYABLE/CHARACTER","Yujin","유진","유진_Verification","yujin.passive.mark_ignition_nakil","표식 44·낙일 발화","Passive","IsolatedRuntime","Pass","표식 43→44 발화, 표식 0, 낙일 약화","Mark=43→0, State=Weakened",""
+"PLAYABLE/CHARACTER","Yujin","유진","유진_Verification","generic.live.scene_binding@Yujin_MixedBattle","실전 Scene UI·전투 연결 · Yujin_MixedBattle","UI","LiveScene","Pass","실전 Roster 캐릭터와 전투 연결 정상","PLAYER · 유진 / 12개 스킬",""
+"PLAYABLE/CHARACTER","Yujin","유진","유진_Verification","live.autobattle.full_match@Yujin_MixedBattle","실전 스모크 전투 · Yujin_MixedBattle","Boundary","LiveScene","Pass","실제 Roster에 참가한 Character가 승률 자동계획 전투를 정상 종료하거나 검증용 5턴 구간을 완주","실전 스모크 구간 정상 완료 · 5턴","Outcome=TURN_BUDGET_COMPLETE
+Turns=5
+AnalysisTurnBudgetReached=True
+BlockedDamageAttempts=27
+MaxConsecutiveNoStateProgressTurns=0
+WinRatePlanAttempts=5
+SuccessfulWinRatePlans=5
+FallbackPlanCount=0
+PlannedActionCount=20
+PlayerSkillUsage=3/12
+UsedPlayerSkills=환형 · 적설<yujin.preparation.hwanhyeong.jeokseol>, 각인<yujin.duel.inscription>, 검분<yujin.normal.inspection>
+ObservedParticipantSkills=유진:환형 · 적설<yujin.preparation.hwanhyeong.jeokseol>, 정예 몹:정예병의 압박(결투)<5fb3b00e68684389a86c92f3e0345061>, 유진:각인<yujin.duel.inscription>, 훈련용 일반 적:달려들기<test_normal_lunge>, 유진:검분<yujin.normal.inspection>, 정예 몹:정예병의 참격(일반공격)<5a239ec7d4944c458ac5329511091871>
+RuntimeErrors=0
+RuntimeWarnings=22
+CriticalInvariants=0
+RequestedTimeScale=30
+ElapsedMilliseconds=43616
+Participants=유진, 정예 몹, 훈련용 일반 적
+WarningSamples=Warning: [VFX VALIDATION] Prefab 누락 / Definition=Olaf_Duel_BloodSplash_VFX @ UnityEngine.Debug:LogWarning (object,UnityEngine.Object)"
+"PLAYABLE/CHARACTER","Yujin","유진","유진_Verification","live.autobattle.character_skill_observation@Yujin_MixedBattle","실전 Character 스킬 실행 관찰 · Yujin_MixedBattle","Boundary","LiveScene","Pass","플레이어/적 구분 없이 해당 Character가 실제 ActionStart를 최소 1회 발생","3개 고유 Skill ActionStart 관찰","Observed=유진:환형 · 적설<yujin.preparation.hwanhyeong.jeokseol>, 유진:각인<yujin.duel.inscription>, 유진:검분<yujin.normal.inspection>
+모든 후보 스킬의 개별 계약은 Isolated skill coverage가 담당하고, 이 Case는 실제 CameraTest AI/행동 파이프라인에서 캐릭터가 행동했는지를 검증합니다."
+"PLAYABLE/CHARACTER","Hifumi","히후미","히후미_Verification","coverage.manifest.closed_world","완전 커버리지 명세 폐쇄성","Data","DataOnly","Pass","모든 기능이 폐쇄형 검증 카탈로그에 등록됨","PASS / Skills=12, Effects=0","Skills=12
+Effects=0
+RequiredMechanics=HifumiMechanic"
+"PLAYABLE/CHARACTER","Hifumi","히후미","히후미_Verification","coverage.mechanics.forced_scenarios","패시브·메커닉 강제 시나리오","Passive","IsolatedRuntime","Pass","모든 필수 패시브 메커닉의 강제 이벤트 시나리오 통과","PASS / Mechanics=2",""
+"PLAYABLE/CHARACTER","Hifumi","히후미","히후미_Verification","coverage.skill.hifumi.normal.bold_judgment","스킬 완전 시나리오: 과감한 판단","NormalAttack","IsolatedRuntime","Pass","자원·굴림·대상·모든 효과 Entry 강제 실행","PASS / Rolls=3, Effects=0","Resource PASS: Energy 3->2, Prestige 100->100
+Roll[0]=🎲 3·3·6 / Moku (+3)
+Roll[1]=🎲 1·1·1 / Arashi (+18)
+Roll[2]=🎲 5·1·3 / Blank (+1)
+DamageTarget PASS: 125->124 / 히후미/HEAD"
+"PLAYABLE/CHARACTER","Hifumi","히후미","히후미_Verification","coverage.skill.hifumi.normal.small_change","스킬 완전 시나리오: 푼돈 걸기","NormalAttack","IsolatedRuntime","Pass","자원·굴림·대상·모든 효과 Entry 강제 실행","PASS / Rolls=2, Effects=0","Resource PASS: Energy 3->3, Prestige 100->100
+Roll[0]=🎲 3·3·6 / Moku (+3)
+Roll[1]=🎲 1·1·1 / Arashi (+18)
+DamageTarget PASS: 125->124 / 히후미/HEAD"
+"PLAYABLE/CHARACTER","Hifumi","히후미","히후미_Verification","coverage.skill.hifumi.duel.goldan","스킬 완전 시나리오: 골단(骨斷)","Duel","IsolatedRuntime","Pass","자원·굴림·대상·모든 효과 Entry 강제 실행","PASS / Rolls=2, Effects=0","Resource PASS: Energy 3->2, Prestige 100->100
+Roll[0]=🎲 3·3·6 / Moku (+3)
+Roll[1]=🎲 1·1·1 / Arashi (+18)
+DamageTarget PASS: 125->124 / 히후미/HEAD"
+"PLAYABLE/CHARACTER","Hifumi","히후미","히후미_Verification","coverage.skill.hifumi.duel.reckless_bet","스킬 완전 시나리오: 무모한 베팅","Duel","IsolatedRuntime","Pass","자원·굴림·대상·모든 효과 Entry 강제 실행","PASS / Rolls=5, Effects=0","Resource PASS: Energy 3->1, Prestige 100->100
+Roll[0]=🎲 3·3·6 / Moku (+3)
+Roll[1]=🎲 1·1·1 / Arashi (+18)
+Roll[2]=🎲 5·1·3 / Blank (+1)
+Roll[3]=🎲 6·3·1 / Blank (+1)
+Roll[4]=🎲 4·6·6 / Moku (+6)
+DamageTarget PASS: 125->124 / 히후미/HEAD"
+"PLAYABLE/CHARACTER","Hifumi","히후미","히후미_Verification","coverage.skill.hifumi.duel.yukcham","스킬 완전 시나리오: 육참(肉斬)","Duel","IsolatedRuntime","Pass","자원·굴림·대상·모든 효과 Entry 강제 실행","PASS / Rolls=4, Effects=0","Resource PASS: Energy 3->2, Prestige 100->100
+Roll[0]=🎲 3·3·6 / Moku (+3)
+Roll[1]=🎲 1·1·1 / Arashi (+18)
+Roll[2]=🎲 5·1·3 / Blank (+1)
+Roll[3]=🎲 6·3·1 / Blank (+1)
+DamageTarget PASS: 125->124 / 히후미/HEAD"
+"PLAYABLE/CHARACTER","Hifumi","히후미","히후미_Verification","coverage.skill.hifumi.preparation.engrave_bone","스킬 완전 시나리오: 뼈에 새긴다","Preparation","IsolatedRuntime","Pass","자원·굴림·대상·모든 효과 Entry 강제 실행","PASS / Rolls=1, Effects=0","Resource PASS: Energy 3->2, Prestige 100->100
+Roll[0]=🎲 0"
+"PLAYABLE/CHARACTER","Hifumi","히후미","히후미_Verification","coverage.skill.hifumi.preparation.give_flesh","스킬 완전 시나리오: 살은 내주지","Preparation","IsolatedRuntime","Pass","자원·굴림·대상·모든 효과 Entry 강제 실행","PASS / Rolls=1, Effects=0","Resource PASS: Energy 3->2, Prestige 100->100
+Roll[0]=🎲 0"
+"PLAYABLE/CHARACTER","Hifumi","히후미","히후미_Verification","coverage.skill.hifumi.preparation.fold_hand","스킬 완전 시나리오: 이 판 접지","Preparation","IsolatedRuntime","Pass","자원·굴림·대상·모든 효과 Entry 강제 실행","PASS / Rolls=1, Effects=0","Resource PASS: Energy 3->3, Prestige 100->100
+Roll[0]=🎲 0
+Precondition: 이 판 접지 Bone=150"
+"PLAYABLE/CHARACTER","Hifumi","히후미","히후미_Verification","coverage.skill.hifumi.preparation.poker_face","스킬 완전 시나리오: 포커페이스","Preparation","IsolatedRuntime","Pass","자원·굴림·대상·모든 효과 Entry 강제 실행","PASS / Rolls=1, Effects=0","Resource PASS: Energy 3->2, Prestige 100->100
+Roll[0]=🎲 0"
+"PLAYABLE/CHARACTER","Hifumi","히후미","히후미_Verification","coverage.skill.hifumi.prestige.gambler_move","스킬 완전 시나리오: 도박수","Prestige","IsolatedRuntime","Pass","자원·굴림·대상·모든 효과 Entry 강제 실행","PASS / Rolls=1, Effects=0","Resource PASS: Energy 3->3, Prestige 100->50
+Roll[0]=🎲 0
+Precondition: 도박수 Bone=250"
+"PLAYABLE/CHARACTER","Hifumi","히후미","히후미_Verification","coverage.skill.hifumi.prestige.trick","스킬 완전 시나리오: 속임수","Prestige","IsolatedRuntime","Pass","자원·굴림·대상·모든 효과 Entry 강제 실행","PASS / Rolls=1, Effects=0","Resource PASS: Energy 3->3, Prestige 100->35
+Roll[0]=🎲 0"
+"PLAYABLE/CHARACTER","Hifumi","히후미","히후미_Verification","coverage.skill.hifumi.prestige.all_in","스킬 완전 시나리오: 올인","Prestige","IsolatedRuntime","Pass","자원·굴림·대상·모든 효과 Entry 강제 실행","PASS / Rolls=1, Effects=0","Resource PASS: Energy 3->3, Prestige 100->50
+Roll[0]=🎲 0
+AllIn: random Blank 정상 no-op 허용 / 결정론적 계약은 hifumi.prestige.contracts에서 별도 검증"
+"PLAYABLE/CHARACTER","Hifumi","히후미","히후미_Verification","generic.data.core_references","Core 데이터 참조","Data","DataOnly","Pass","필수 Core 참조가 모두 연결됨","Bundle/Data/Loadout/Prefab 연결 정상",""
+"PLAYABLE/CHARACTER","Hifumi","히후미","히후미_Verification","generic.data.prefab_compatibility","Prefab·Bundle 호환성","Data","DataOnly","Pass","Bundle Kind와 표준 Prefab Component가 호환됨","Hifumi 호환 정상",""
+"PLAYABLE/CHARACTER","Hifumi","히후미","히후미_Verification","generic.data.loadout_integrity","스킬 장착·슬롯 노출","Data","DataOnly","Pass","카테고리 한도·타입·슬롯 노출 정상","일반 2, 결투 3, 도사림 3, 위세 1",""
+"PLAYABLE/CHARACTER","Hifumi","히후미","히후미_Verification","generic.data.skill_definitions","SkillDefinition 무결성","Data","DataOnly","Pass","모든 SkillDefinition ID와 Runtime 생성 정상","12개 스킬 정상",""
+"PLAYABLE/CHARACTER","Hifumi","히후미","히후미_Verification","generic.presentation.timeline_and_animator","Timeline·Animator 연결","Presentation","DataOnly","Pass","Animator·Presentation·Timeline 연결 정상","Presentation 검증 통과",""
+"PLAYABLE/CHARACTER","Hifumi","히후미","히후미_Verification","generic.runtime.initialization","격리 런타임 초기화","Boundary","IsolatedRuntime","Pass","Isolated BattleContext 초기화와 메커닉 구독 성공","히후미 / Initialized=True / HP=500/500 / Block=0 / Prestige=0 / Resources=Energy:3 / Parts=[HEAD 125/125 Normal, LEFT_HAND 125/125 Normal, RIGHT_HAND 125/125 Normal, LEGS 125/125 Normal]",""
+"PLAYABLE/CHARACTER","Hifumi","히후미","히후미_Verification","generic.runtime.body_parts","부위 런타임 상태","Status","IsolatedRuntime","Pass","부위 Owner·HP·타입·초기 상태 정상","4개 부위 정상",""
+"PLAYABLE/CHARACTER","Hifumi","히후미","히후미_Verification","generic.runtime.skill_binding","런타임 스킬 바인딩","Data","IsolatedRuntime","Pass","모든 장착 스킬 생성 및 RuntimeSkill ID 중복 없음","12개 RuntimeSkill / 12개 고유 SkillId",""
+"PLAYABLE/CHARACTER","Hifumi","히후미","히후미_Verification","generic.runtime.deterministic_random","결정론적 굴림 재현","Boundary","IsolatedRuntime","Pass","동일 Seed·Sample은 동일 RollResult","🎲 5 + 6",""
+"PLAYABLE/CHARACTER","Hifumi","히후미","히후미_Verification","generic.live.scene_binding","실전 Scene UI·전투 연결","UI","LiveScene","Skip","검증 실행","건너뜀","Live Scene 검증이 비활성화되어 있습니다."
+"PLAYABLE/CHARACTER","Hifumi","히후미","히후미_Verification","core3.data.verification_manifest","Core 3 전체 검증 Case 폐쇄성","Data","DataOnly","Pass","Core 3 공통/고유/스킬별 Case가 모두 존재","Expected=41, Actual=41, Skills=12",""
+"PLAYABLE/CHARACTER","Hifumi","히후미","히후미_Verification","core3.data.skill_manifest","Core 3 스킬 수·ID 완전성","Data","DataOnly","Pass","스킬 12개·고유 ID·RuntimeSkill 생성","Definitions=12, UniqueIds=12, Expected=12",""
+"PLAYABLE/CHARACTER","Hifumi","히후미","히후미_Verification","core3.data.phase_contract","스킬 타입 ↔ 실행 페이즈 계약","Boundary","DataOnly","Pass","Prestige=PRETURN / Preparation=FORESIGHT / Normal·Duel=COMBAT","12개 스킬 일치",""
+"PLAYABLE/CHARACTER","Hifumi","히후미","히후미_Verification","core3.runtime.bodypart_skill_access","부위별 스킬 접근 계약","Boundary","IsolatedRuntime","Pass","HEAD 전체 / 양팔 일반·결투 / LEGS 도사림","Policy + GetSelectableSkills 일치",""
+"PLAYABLE/CHARACTER","Hifumi","히후미","히후미_Verification","core3.runtime.shared_bodypart_speed","동일 부위 다중 슬롯 공유 속도","Boundary","IsolatedRuntime","Pass","동일 BodyPart의 모든 ActionIndex는 같은 Speed","Part=HEAD, ConfigurePreserved=True, 10=>True, 13=>True, Final=13/13",""
+"PLAYABLE/CHARACTER","Hifumi","히후미","히후미_Verification","core3.runtime.preparation_plan_cancel","도사림 계획·에너지 예약·취소","Preparation","IsolatedRuntime","Pass","START 전 계획만 등록·취소 가능·FORESIGHT 큐 실행","Skill=포커페이스, Part=LEGS, Add/Remove/ReAdd=True/True/True, Energy=3->3->3, Reserved=1->0, QueuePreparation=1",""
+"PLAYABLE/CHARACTER","Hifumi","히후미","히후미_Verification","core3.runtime.preparation_replace","도사림 동일 슬롯 교체 계약","Preparation","IsolatedRuntime","Pass","도사림 교체는 동일 ActionSlot 수정 / 최종 예약만 유지","포커페이스->뼈에 새긴다, Slots=1, ActionId=1->1, Reserved=1/1, Energy=3->3",""
+"PLAYABLE/CHARACTER","Hifumi","히후미","히후미_Verification","core3.runtime.unique_gauge","캐릭터 고유 게이지 계약","UI","IsolatedRuntime","Pass","고유 게이지 뼈 / 0..1 / 표시값","Label=뼈, Normalized=0, Value=0/500",""
+"PLAYABLE/CHARACTER","Hifumi","히후미","히후미_Verification","hifumi.data.skill_coverage","히후미 정의 스킬 12종 등록","Data","DataOnly","Pass","히후미 정의 SkillId 12/12","12/12 등록",""
+"PLAYABLE/CHARACTER","Hifumi","히후미","히후미_Verification","hifumi.data.skill_contracts","히후미 스킬 수치 계약","Data","DataOnly","Pass","공격 5종 수치 + 위세 임계 50/50/65","모든 계약 일치",""
+"PLAYABLE/CHARACTER","Hifumi","히후미","히후미_Verification","hifumi.passive.mechanic_registration","히후미 통합 메커닉 등록","Passive","IsolatedRuntime","Pass","HifumiMechanic 등록 + 4부위 총 HP 500","Registered / HP=500",""
+"PLAYABLE/CHARACTER","Hifumi","히후미","히후미_Verification","hifumi.passive.bone_damage_rules","뼈 획득·짓눌림·포커페이스","Passive","IsolatedRuntime","Pass","21피해→뼈21 / 짓눌림 11피해·뼈22 / 포커 20피해·뼈24","21/21 · 11/22 · 20/24",""
+"PLAYABLE/CHARACTER","Hifumi","히후미","히후미_Verification","hifumi.skill.action_costs","과감한 판단·무모한 베팅 뼈 비용","NormalAttack","IsolatedRuntime","Pass","과감 100→60 / 부족20→40 / 무모80→40 / 부족60→160","60/40/40/160",""
+"PLAYABLE/CHARACTER","Hifumi","히후미","히후미_Verification","hifumi.duel.counter_contracts","육참·골단 반격/만개 계약","Duel","IsolatedRuntime","Pass","반격 게이트·구간·만개 계약 전체","PASS",""
+"PLAYABLE/CHARACTER","Hifumi","히후미","히후미_Verification","hifumi.duel.goldan_power","골단 뼈 구간 위력","Duel","IsolatedRuntime","Pass","골단 350뼈: Base20 + 친치로보정1 + 구간3×4 = 33","33",""
+"PLAYABLE/CHARACTER","Hifumi","히후미","히후미_Verification","hifumi.prestige.contracts","히후미 위세 3형 계약","Prestige","IsolatedRuntime","Pass","도박수/올인/속임수 계약","PASS",""
+"PLAYABLE/CHARACTER","Hifumi","히후미","히후미_Verification","hifumi.ui.bone_gauge","히후미 뼈 World Gauge","UI","IsolatedRuntime","Pass","뼈 250=0.5 / 500=1.0·만개","PASS",""
+"PLAYABLE/CHARACTER","Hifumi","히후미","히후미_Verification","generic.live.scene_binding@Hifumi_MixedBattle","실전 Scene UI·전투 연결 · Hifumi_MixedBattle","UI","LiveScene","Pass","실전 Roster 캐릭터와 전투 연결 정상","PLAYER · 히후미 / 12개 스킬",""
+"PLAYABLE/CHARACTER","Hifumi","히후미","히후미_Verification","live.autobattle.full_match@Hifumi_MixedBattle","실전 스모크 전투 · Hifumi_MixedBattle","Boundary","LiveScene","Pass","실제 Roster에 참가한 Character가 승률 자동계획 전투를 정상 종료하거나 검증용 5턴 구간을 완주","실전 스모크 구간 정상 완료 · 5턴","Outcome=TURN_BUDGET_COMPLETE
+Turns=5
+AnalysisTurnBudgetReached=True
+BlockedDamageAttempts=8
+MaxConsecutiveNoStateProgressTurns=0
+WinRatePlanAttempts=5
+SuccessfulWinRatePlans=5
+FallbackPlanCount=0
+PlannedActionCount=20
+PlayerSkillUsage=4/12
+UsedPlayerSkills=뼈에 새긴다<hifumi.preparation.engrave_bone>, 푼돈 걸기<hifumi.normal.small_change>, 육참(肉斬)<hifumi.duel.yukcham>, 골단(骨斷)<hifumi.duel.goldan>
+ObservedParticipantSkills=정예 몹:전투 태세(도사림)<356e72e97ac84a3a8757d1a188237f43>, 히후미:뼈에 새긴다<hifumi.preparation.engrave_bone>, 정예 몹:정예병의 압박(결투)<5fb3b00e68684389a86c92f3e0345061>, 히후미:푼돈 걸기<hifumi.normal.small_change>, 정예 몹:정예병의 참격(일반공격)<5a239ec7d4944c458ac5329511091871>, 히후미:육참(肉斬)<hifumi.duel.yukcham>, 훈련용 일반 적:달려들기<test_normal_lunge>, 히후미:골단(骨斷)<hifumi.duel.goldan>, 정예 몹:처형자의 일격(위세)<c09f804f95004e70a9864e0d02ae4509>
+RuntimeErrors=0
+RuntimeWarnings=37
+CriticalInvariants=0
+RequestedTimeScale=30
+ElapsedMilliseconds=51754
+Participants=히후미, 정예 몹, 훈련용 일반 적
+WarningSamples=Warning: [VFX VALIDATION] Prefab 누락 / Definition=Burn_Tick_VFX @ UnityEngine.Debug:LogWarning (object,UnityEngine.Object) || Warning: [VFX VALIDATION] Prefab 누락 / Definition=Olaf_Duel_BloodSplash_VFX @ UnityEngine.Debug:LogWarning (object,UnityEngine.Object)"
+"PLAYABLE/CHARACTER","Hifumi","히후미","히후미_Verification","live.autobattle.character_skill_observation@Hifumi_MixedBattle","실전 Character 스킬 실행 관찰 · Hifumi_MixedBattle","Boundary","LiveScene","Pass","플레이어/적 구분 없이 해당 Character가 실제 ActionStart를 최소 1회 발생","4개 고유 Skill ActionStart 관찰","Observed=히후미:뼈에 새긴다<hifumi.preparation.engrave_bone>, 히후미:푼돈 걸기<hifumi.normal.small_change>, 히후미:육참(肉斬)<hifumi.duel.yukcham>, 히후미:골단(骨斷)<hifumi.duel.goldan>
+모든 후보 스킬의 개별 계약은 Isolated skill coverage가 담당하고, 이 Case는 실제 CameraTest AI/행동 파이프라인에서 캐릭터가 행동했는지를 검증합니다."
+"ENEMY","EliteEnemy","Elite Enemy","Elite_Enemy_Verification","coverage.manifest.closed_world","완전 커버리지 명세 폐쇄성","Data","DataOnly","Pass","모든 기능이 폐쇄형 검증 카탈로그에 등록됨","PASS / Skills=4, Effects=7","Skills=4
+Effects=7
+RequiredMechanics=EliteEnemyMechanic, EnemyPostureMechanic"
+"ENEMY","EliteEnemy","Elite Enemy","Elite_Enemy_Verification","coverage.mechanics.forced_scenarios","패시브·메커닉 강제 시나리오","Passive","IsolatedRuntime","Pass","모든 필수 패시브 메커닉의 강제 이벤트 시나리오 통과","PASS / Mechanics=3","Elite 합 승리 +10/혈상1, 자가 약화 +15, 파괴 +25 PASS
+EnemyPosture Normal→Crouching→Offensive→Normal PASS"
+"ENEMY","EliteEnemy","Elite Enemy","Elite_Enemy_Verification","coverage.skill.5a239ec7d4944c458ac5329511091871","스킬 완전 시나리오: 정예병의 참격(일반공격)","NormalAttack","IsolatedRuntime","Pass","자원·굴림·대상·모든 효과 Entry 강제 실행","PASS / Rolls=3, Effects=1","Resource PASS: Energy 3->3, Prestige 100->100
+Roll[0]=🎲 4
+Roll[1]=🎲 4
+Roll[2]=🎲 4
+DamageTarget PASS: 50->49 / 정예 몹/HEAD
+Effect PASS: AddBodyPartStatusEffect / Timing=OnExecute / Target=정예 몹"
+"ENEMY","EliteEnemy","Elite Enemy","Elite_Enemy_Verification","coverage.skill.5fb3b00e68684389a86c92f3e0345061","스킬 완전 시나리오: 정예병의 압박(결투)","Duel","IsolatedRuntime","Pass","자원·굴림·대상·모든 효과 Entry 강제 실행","PASS / Rolls=3, Effects=1","Resource PASS: Energy 3->2, Prestige 100->100
+Roll[0]=🎲 11
+Roll[1]=🎲 10
+Roll[2]=🎲 9
+DamageTarget PASS: 50->49 / 정예 몹/HEAD
+Effect PASS: AddBodyPartStatusEffect / Timing=OnExecute / Target=정예 몹"
+"ENEMY","EliteEnemy","Elite Enemy","Elite_Enemy_Verification","coverage.skill.356e72e97ac84a3a8757d1a188237f43","스킬 완전 시나리오: 전투 태세(도사림)","Preparation","IsolatedRuntime","Pass","자원·굴림·대상·모든 효과 Entry 강제 실행","PASS / Rolls=3, Effects=3","Resource PASS: Energy 3->2, Prestige 100->100
+Roll[0]=🎲 0
+Roll[1]=🎲 0
+Roll[2]=🎲 0
+Effect PASS: AddBodyPartStatusEffect / Timing=OnExecute / Target=정예 몹
+Effect PASS: AddBodyPartStatusEffect / Timing=OnExecute / Target=정예 몹
+Effect PASS: PreparationFlatSetupEffect / Timing=OnExecute / Target=정예 몹"
+"ENEMY","EliteEnemy","Elite Enemy","Elite_Enemy_Verification","coverage.skill.c09f804f95004e70a9864e0d02ae4509","스킬 완전 시나리오: 처형자의 일격(위세)","Prestige","IsolatedRuntime","Pass","자원·굴림·대상·모든 효과 Entry 강제 실행","PASS / Rolls=3, Effects=2","Resource PASS: Energy 3->3, Prestige 100->0
+Roll[0]=🎲 20
+Roll[1]=🎲 19
+Roll[2]=🎲 18
+Effect PASS: ApplyRolledPartDamageEffect / Timing=OnExecute / Target=정예 몹
+Effect PASS: AddBodyPartStatusEffect / Timing=OnExecute / Target=정예 몹"
+"ENEMY","EliteEnemy","Elite Enemy","Elite_Enemy_Verification","generic.data.core_references","Core 데이터 참조","Data","DataOnly","Pass","필수 Core 참조가 모두 연결됨","Bundle/Data/Loadout/Prefab 연결 정상",""
+"ENEMY","EliteEnemy","Elite Enemy","Elite_Enemy_Verification","generic.data.prefab_compatibility","Prefab·Bundle 호환성","Data","DataOnly","Pass","Bundle Kind와 표준 Prefab Component가 호환됨","EliteEnemy 호환 정상",""
+"ENEMY","EliteEnemy","Elite Enemy","Elite_Enemy_Verification","generic.data.loadout_integrity","스킬 장착·슬롯 노출","Data","DataOnly","Pass","카테고리 한도·타입·슬롯 노출 정상","일반 1, 결투 1, 도사림 1, 위세 1",""
+"ENEMY","EliteEnemy","Elite Enemy","Elite_Enemy_Verification","generic.data.skill_definitions","SkillDefinition 무결성","Data","DataOnly","Pass","모든 SkillDefinition ID와 Runtime 생성 정상","4개 스킬 정상",""
+"ENEMY","EliteEnemy","Elite Enemy","Elite_Enemy_Verification","generic.presentation.timeline_and_animator","Timeline·Animator 연결","Presentation","DataOnly","Pass","Animator·Presentation·Timeline 연결 정상","Presentation 검증 통과",""
+"ENEMY","EliteEnemy","Elite Enemy","Elite_Enemy_Verification","generic.runtime.initialization","격리 런타임 초기화","Boundary","IsolatedRuntime","Pass","Isolated BattleContext 초기화와 메커닉 구독 성공","정예 몹 / Initialized=True / HP=200/200 / Block=0 / Prestige=0 / Resources=Energy:3 / Parts=[HEAD 50/50 Normal, LEFT_HAND 50/50 Normal, RIGHT_HAND 50/50 Normal, LEGS 50/50 Normal]",""
+"ENEMY","EliteEnemy","Elite Enemy","Elite_Enemy_Verification","generic.runtime.body_parts","부위 런타임 상태","Status","IsolatedRuntime","Pass","부위 Owner·HP·타입·초기 상태 정상","4개 부위 정상",""
+"ENEMY","EliteEnemy","Elite Enemy","Elite_Enemy_Verification","generic.runtime.skill_binding","런타임 스킬 바인딩","Data","IsolatedRuntime","Pass","모든 장착 스킬 생성 및 RuntimeSkill ID 중복 없음","4개 RuntimeSkill / 4개 고유 SkillId",""
+"ENEMY","EliteEnemy","Elite Enemy","Elite_Enemy_Verification","generic.runtime.deterministic_random","결정론적 굴림 재현","Boundary","IsolatedRuntime","Pass","동일 Seed·Sample은 동일 RollResult","🎲 6 + 3",""
+"ENEMY","EliteEnemy","Elite Enemy","Elite_Enemy_Verification","generic.live.scene_binding","실전 Scene UI·전투 연결","UI","LiveScene","Skip","검증 실행","건너뜀","Live Scene 검증이 비활성화되어 있습니다."
+"ENEMY","EliteEnemy","Elite Enemy","Elite_Enemy_Verification","enemy.elite.bodypart.contract","정예 적 4부위 전투 모델","Boundary","IsolatedRuntime","Pass","HEAD/LEFT_HAND/RIGHT_HAND/LEGS 4부위 + LastStand","PASS",""
+"ENEMY","EliteEnemy","Elite Enemy","Elite_Enemy_Verification","enemy.elite.posture_slot.contract","정예 적 자세·행동 슬롯 계약","Boundary","IsolatedRuntime","Pass","CurrentAttackSlotLimit == EliteEnemy.GetMaxCombatActionSlots","Posture=Normal, MechanicLimit=3, CharacterLimit=3, ExpectedMomentumDrift=0",""
+"ENEMY","EliteEnemy","Elite Enemy","Elite_Enemy_Verification","generic.live.scene_binding@Olaf_MixedBattle","실전 Scene UI·전투 연결 · Olaf_MixedBattle","UI","LiveScene","Pass","실전 Roster 캐릭터와 전투 연결 정상","ENEMY · 정예 몹 / 4개 스킬",""
+"ENEMY","EliteEnemy","Elite Enemy","Elite_Enemy_Verification","live.autobattle.full_match@Olaf_MixedBattle","실전 스모크 전투 · Olaf_MixedBattle","Boundary","LiveScene","Pass","실제 Roster에 참가한 Character가 승률 자동계획 전투를 정상 종료하거나 검증용 5턴 구간을 완주","실전 스모크 구간 정상 완료 · 5턴","Outcome=TURN_BUDGET_COMPLETE
+Turns=5
+AnalysisTurnBudgetReached=True
+BlockedDamageAttempts=18
+MaxConsecutiveNoStateProgressTurns=0
+WinRatePlanAttempts=5
+SuccessfulWinRatePlans=5
+FallbackPlanCount=0
+PlannedActionCount=20
+PlayerSkillUsage=4/11
+UsedPlayerSkills=노려보기<olaf.preparation.glare>, 표준<olaf.duel.standard>, 마구잡이<olaf.normal.wild_hack>, 버티며 베기<olaf.normal.enduring_slash>
+ObservedParticipantSkills=정예 몹:전투 태세(도사림)<356e72e97ac84a3a8757d1a188237f43>, 올라프:노려보기<olaf.preparation.glare>, 정예 몹:정예병의 압박(결투)<5fb3b00e68684389a86c92f3e0345061>, 올라프:표준<olaf.duel.standard>, 정예 몹:정예병의 참격(일반공격)<5a239ec7d4944c458ac5329511091871>, 훈련용 일반 적:달려들기<test_normal_lunge>, 올라프:마구잡이<olaf.normal.wild_hack>, 올라프:버티며 베기<olaf.normal.enduring_slash>
+RuntimeErrors=0
+RuntimeWarnings=33
+CriticalInvariants=0
+RequestedTimeScale=30
+ElapsedMilliseconds=42251
+Participants=올라프, 정예 몹, 훈련용 일반 적
+WarningSamples=Warning: [VFX VALIDATION] Prefab 누락 / Definition=Burn_Tick_VFX @ UnityEngine.Debug:LogWarning (object,UnityEngine.Object) || Warning: [VFX VALIDATION] Prefab 누락 / Definition=Olaf_Duel_BloodSplash_VFX @ UnityEngine.Debug:LogWarning (object,UnityEngine.Object)"
+"ENEMY","EliteEnemy","Elite Enemy","Elite_Enemy_Verification","live.autobattle.character_skill_observation@Olaf_MixedBattle","실전 Character 스킬 실행 관찰 · Olaf_MixedBattle","Boundary","LiveScene","Pass","플레이어/적 구분 없이 해당 Character가 실제 ActionStart를 최소 1회 발생","3개 고유 Skill ActionStart 관찰","Observed=정예 몹:전투 태세(도사림)<356e72e97ac84a3a8757d1a188237f43>, 정예 몹:정예병의 압박(결투)<5fb3b00e68684389a86c92f3e0345061>, 정예 몹:정예병의 참격(일반공격)<5a239ec7d4944c458ac5329511091871>
+모든 후보 스킬의 개별 계약은 Isolated skill coverage가 담당하고, 이 Case는 실제 CameraTest AI/행동 파이프라인에서 캐릭터가 행동했는지를 검증합니다."
+"ENEMY","EliteEnemy","Elite Enemy","Elite_Enemy_Verification","generic.live.scene_binding@Yujin_MixedBattle","실전 Scene UI·전투 연결 · Yujin_MixedBattle","UI","LiveScene","Pass","실전 Roster 캐릭터와 전투 연결 정상","ENEMY · 정예 몹 / 4개 스킬",""
+"ENEMY","EliteEnemy","Elite Enemy","Elite_Enemy_Verification","live.autobattle.full_match@Yujin_MixedBattle","실전 스모크 전투 · Yujin_MixedBattle","Boundary","LiveScene","Pass","실제 Roster에 참가한 Character가 승률 자동계획 전투를 정상 종료하거나 검증용 5턴 구간을 완주","실전 스모크 구간 정상 완료 · 5턴","Outcome=TURN_BUDGET_COMPLETE
+Turns=5
+AnalysisTurnBudgetReached=True
+BlockedDamageAttempts=27
+MaxConsecutiveNoStateProgressTurns=0
+WinRatePlanAttempts=5
+SuccessfulWinRatePlans=5
+FallbackPlanCount=0
+PlannedActionCount=20
+PlayerSkillUsage=3/12
+UsedPlayerSkills=환형 · 적설<yujin.preparation.hwanhyeong.jeokseol>, 각인<yujin.duel.inscription>, 검분<yujin.normal.inspection>
+ObservedParticipantSkills=유진:환형 · 적설<yujin.preparation.hwanhyeong.jeokseol>, 정예 몹:정예병의 압박(결투)<5fb3b00e68684389a86c92f3e0345061>, 유진:각인<yujin.duel.inscription>, 훈련용 일반 적:달려들기<test_normal_lunge>, 유진:검분<yujin.normal.inspection>, 정예 몹:정예병의 참격(일반공격)<5a239ec7d4944c458ac5329511091871>
+RuntimeErrors=0
+RuntimeWarnings=22
+CriticalInvariants=0
+RequestedTimeScale=30
+ElapsedMilliseconds=43616
+Participants=유진, 정예 몹, 훈련용 일반 적
+WarningSamples=Warning: [VFX VALIDATION] Prefab 누락 / Definition=Olaf_Duel_BloodSplash_VFX @ UnityEngine.Debug:LogWarning (object,UnityEngine.Object)"
+"ENEMY","EliteEnemy","Elite Enemy","Elite_Enemy_Verification","live.autobattle.character_skill_observation@Yujin_MixedBattle","실전 Character 스킬 실행 관찰 · Yujin_MixedBattle","Boundary","LiveScene","Pass","플레이어/적 구분 없이 해당 Character가 실제 ActionStart를 최소 1회 발생","2개 고유 Skill ActionStart 관찰","Observed=정예 몹:정예병의 압박(결투)<5fb3b00e68684389a86c92f3e0345061>, 정예 몹:정예병의 참격(일반공격)<5a239ec7d4944c458ac5329511091871>
+모든 후보 스킬의 개별 계약은 Isolated skill coverage가 담당하고, 이 Case는 실제 CameraTest AI/행동 파이프라인에서 캐릭터가 행동했는지를 검증합니다."
+"ENEMY","EliteEnemy","Elite Enemy","Elite_Enemy_Verification","generic.live.scene_binding@Hifumi_MixedBattle","실전 Scene UI·전투 연결 · Hifumi_MixedBattle","UI","LiveScene","Pass","실전 Roster 캐릭터와 전투 연결 정상","ENEMY · 정예 몹 / 4개 스킬",""
+"ENEMY","EliteEnemy","Elite Enemy","Elite_Enemy_Verification","live.autobattle.full_match@Hifumi_MixedBattle","실전 스모크 전투 · Hifumi_MixedBattle","Boundary","LiveScene","Pass","실제 Roster에 참가한 Character가 승률 자동계획 전투를 정상 종료하거나 검증용 5턴 구간을 완주","실전 스모크 구간 정상 완료 · 5턴","Outcome=TURN_BUDGET_COMPLETE
+Turns=5
+AnalysisTurnBudgetReached=True
+BlockedDamageAttempts=8
+MaxConsecutiveNoStateProgressTurns=0
+WinRatePlanAttempts=5
+SuccessfulWinRatePlans=5
+FallbackPlanCount=0
+PlannedActionCount=20
+PlayerSkillUsage=4/12
+UsedPlayerSkills=뼈에 새긴다<hifumi.preparation.engrave_bone>, 푼돈 걸기<hifumi.normal.small_change>, 육참(肉斬)<hifumi.duel.yukcham>, 골단(骨斷)<hifumi.duel.goldan>
+ObservedParticipantSkills=정예 몹:전투 태세(도사림)<356e72e97ac84a3a8757d1a188237f43>, 히후미:뼈에 새긴다<hifumi.preparation.engrave_bone>, 정예 몹:정예병의 압박(결투)<5fb3b00e68684389a86c92f3e0345061>, 히후미:푼돈 걸기<hifumi.normal.small_change>, 정예 몹:정예병의 참격(일반공격)<5a239ec7d4944c458ac5329511091871>, 히후미:육참(肉斬)<hifumi.duel.yukcham>, 훈련용 일반 적:달려들기<test_normal_lunge>, 히후미:골단(骨斷)<hifumi.duel.goldan>, 정예 몹:처형자의 일격(위세)<c09f804f95004e70a9864e0d02ae4509>
+RuntimeErrors=0
+RuntimeWarnings=37
+CriticalInvariants=0
+RequestedTimeScale=30
+ElapsedMilliseconds=51754
+Participants=히후미, 정예 몹, 훈련용 일반 적
+WarningSamples=Warning: [VFX VALIDATION] Prefab 누락 / Definition=Burn_Tick_VFX @ UnityEngine.Debug:LogWarning (object,UnityEngine.Object) || Warning: [VFX VALIDATION] Prefab 누락 / Definition=Olaf_Duel_BloodSplash_VFX @ UnityEngine.Debug:LogWarning (object,UnityEngine.Object)"
+"ENEMY","EliteEnemy","Elite Enemy","Elite_Enemy_Verification","live.autobattle.character_skill_observation@Hifumi_MixedBattle","실전 Character 스킬 실행 관찰 · Hifumi_MixedBattle","Boundary","LiveScene","Pass","플레이어/적 구분 없이 해당 Character가 실제 ActionStart를 최소 1회 발생","4개 고유 Skill ActionStart 관찰","Observed=정예 몹:전투 태세(도사림)<356e72e97ac84a3a8757d1a188237f43>, 정예 몹:정예병의 압박(결투)<5fb3b00e68684389a86c92f3e0345061>, 정예 몹:정예병의 참격(일반공격)<5a239ec7d4944c458ac5329511091871>, 정예 몹:처형자의 일격(위세)<c09f804f95004e70a9864e0d02ae4509>
+모든 후보 스킬의 개별 계약은 Isolated skill coverage가 담당하고, 이 Case는 실제 CameraTest AI/행동 파이프라인에서 캐릭터가 행동했는지를 검증합니다."
+"ENEMY","EliteEnemy","Elite Enemy","Elite_Enemy_Verification","generic.live.scene_binding@Olaf_BossBattle","실전 Scene UI·전투 연결 · Olaf_BossBattle","UI","LiveScene","Skip","검증 실행","건너뜀","현재 Scene Roster에 선택한 Bundle 캐릭터가 없습니다. Roster=[올라프, 훈련용 보스] / LastReason=Data 불일치 · Expected=EliteEnemy Data, Actual=BossEnemy_Test_Data"
+"ENEMY","EliteEnemy","훈련용 보스","훈련용_보스_Verification","coverage.manifest.closed_world","완전 커버리지 명세 폐쇄성","Data","DataOnly","Pass","모든 기능이 폐쇄형 검증 카탈로그에 등록됨","PASS / Skills=4, Effects=7","Skills=4
+Effects=7
+RequiredMechanics=EliteEnemyMechanic, EnemyPostureMechanic"
+"ENEMY","EliteEnemy","훈련용 보스","훈련용_보스_Verification","coverage.mechanics.forced_scenarios","패시브·메커닉 강제 시나리오","Passive","IsolatedRuntime","Pass","모든 필수 패시브 메커닉의 강제 이벤트 시나리오 통과","PASS / Mechanics=3","Elite 합 승리 +10/혈상1, 자가 약화 +15, 파괴 +25 PASS
+EnemyPosture Normal→Crouching→Offensive→Normal PASS"
+"ENEMY","EliteEnemy","훈련용 보스","훈련용_보스_Verification","coverage.skill.5a239ec7d4944c458ac5329511091871","스킬 완전 시나리오: 정예병의 참격(일반공격)","NormalAttack","IsolatedRuntime","Pass","자원·굴림·대상·모든 효과 Entry 강제 실행","PASS / Rolls=3, Effects=1","Resource PASS: Energy 3->3, Prestige 100->100
+Roll[0]=🎲 4
+Roll[1]=🎲 4
+Roll[2]=🎲 4
+DamageTarget PASS: 50->49 / 훈련용 보스/HEAD
+Effect PASS: AddBodyPartStatusEffect / Timing=OnExecute / Target=훈련용 보스"
+"ENEMY","EliteEnemy","훈련용 보스","훈련용_보스_Verification","coverage.skill.5fb3b00e68684389a86c92f3e0345061","스킬 완전 시나리오: 정예병의 압박(결투)","Duel","IsolatedRuntime","Pass","자원·굴림·대상·모든 효과 Entry 강제 실행","PASS / Rolls=3, Effects=1","Resource PASS: Energy 3->2, Prestige 100->100
+Roll[0]=🎲 11
+Roll[1]=🎲 10
+Roll[2]=🎲 9
+DamageTarget PASS: 50->49 / 훈련용 보스/HEAD
+Effect PASS: AddBodyPartStatusEffect / Timing=OnExecute / Target=훈련용 보스"
+"ENEMY","EliteEnemy","훈련용 보스","훈련용_보스_Verification","coverage.skill.356e72e97ac84a3a8757d1a188237f43","스킬 완전 시나리오: 전투 태세(도사림)","Preparation","IsolatedRuntime","Pass","자원·굴림·대상·모든 효과 Entry 강제 실행","PASS / Rolls=3, Effects=3","Resource PASS: Energy 3->2, Prestige 100->100
+Roll[0]=🎲 0
+Roll[1]=🎲 0
+Roll[2]=🎲 0
+Effect PASS: AddBodyPartStatusEffect / Timing=OnExecute / Target=훈련용 보스
+Effect PASS: AddBodyPartStatusEffect / Timing=OnExecute / Target=훈련용 보스
+Effect PASS: PreparationFlatSetupEffect / Timing=OnExecute / Target=훈련용 보스"
+"ENEMY","EliteEnemy","훈련용 보스","훈련용_보스_Verification","coverage.skill.c09f804f95004e70a9864e0d02ae4509","스킬 완전 시나리오: 처형자의 일격(위세)","Prestige","IsolatedRuntime","Pass","자원·굴림·대상·모든 효과 Entry 강제 실행","PASS / Rolls=3, Effects=2","Resource PASS: Energy 3->3, Prestige 100->0
+Roll[0]=🎲 20
+Roll[1]=🎲 19
+Roll[2]=🎲 18
+Effect PASS: ApplyRolledPartDamageEffect / Timing=OnExecute / Target=훈련용 보스
+Effect PASS: AddBodyPartStatusEffect / Timing=OnExecute / Target=훈련용 보스"
+"ENEMY","EliteEnemy","훈련용 보스","훈련용_보스_Verification","generic.data.core_references","Core 데이터 참조","Data","DataOnly","Pass","필수 Core 참조가 모두 연결됨","Bundle/Data/Loadout/Prefab 연결 정상",""
+"ENEMY","EliteEnemy","훈련용 보스","훈련용_보스_Verification","generic.data.prefab_compatibility","Prefab·Bundle 호환성","Data","DataOnly","Pass","Bundle Kind와 표준 Prefab Component가 호환됨","EliteEnemy 호환 정상",""
+"ENEMY","EliteEnemy","훈련용 보스","훈련용_보스_Verification","generic.data.loadout_integrity","스킬 장착·슬롯 노출","Data","DataOnly","Pass","카테고리 한도·타입·슬롯 노출 정상","일반 1, 결투 1, 도사림 1, 위세 1",""
+"ENEMY","EliteEnemy","훈련용 보스","훈련용_보스_Verification","generic.data.skill_definitions","SkillDefinition 무결성","Data","DataOnly","Pass","모든 SkillDefinition ID와 Runtime 생성 정상","4개 스킬 정상",""
+"ENEMY","EliteEnemy","훈련용 보스","훈련용_보스_Verification","generic.presentation.timeline_and_animator","Timeline·Animator 연결","Presentation","DataOnly","Pass","Animator·Presentation·Timeline 연결 정상","Presentation 검증 통과",""
+"ENEMY","EliteEnemy","훈련용 보스","훈련용_보스_Verification","generic.runtime.initialization","격리 런타임 초기화","Boundary","IsolatedRuntime","Pass","Isolated BattleContext 초기화와 메커닉 구독 성공","훈련용 보스 / Initialized=True / HP=200/200 / Block=0 / Prestige=0 / Resources=Energy:3 / Parts=[HEAD 50/50 Normal, LEFT_HAND 50/50 Normal, RIGHT_HAND 50/50 Normal, LEGS 50/50 Normal]",""
+"ENEMY","EliteEnemy","훈련용 보스","훈련용_보스_Verification","generic.runtime.body_parts","부위 런타임 상태","Status","IsolatedRuntime","Pass","부위 Owner·HP·타입·초기 상태 정상","4개 부위 정상",""
+"ENEMY","EliteEnemy","훈련용 보스","훈련용_보스_Verification","generic.runtime.skill_binding","런타임 스킬 바인딩","Data","IsolatedRuntime","Pass","모든 장착 스킬 생성 및 RuntimeSkill ID 중복 없음","4개 RuntimeSkill / 4개 고유 SkillId",""
+"ENEMY","EliteEnemy","훈련용 보스","훈련용_보스_Verification","generic.runtime.deterministic_random","결정론적 굴림 재현","Boundary","IsolatedRuntime","Pass","동일 Seed·Sample은 동일 RollResult","🎲 2 + 1",""
+"ENEMY","EliteEnemy","훈련용 보스","훈련용_보스_Verification","generic.live.scene_binding","실전 Scene UI·전투 연결","UI","LiveScene","Skip","검증 실행","건너뜀","Live Scene 검증이 비활성화되어 있습니다."
+"ENEMY","EliteEnemy","훈련용 보스","훈련용_보스_Verification","enemy.elite.bodypart.contract","정예 적 4부위 전투 모델","Boundary","IsolatedRuntime","Pass","HEAD/LEFT_HAND/RIGHT_HAND/LEGS 4부위 + LastStand","PASS",""
+"ENEMY","EliteEnemy","훈련용 보스","훈련용_보스_Verification","enemy.elite.posture_slot.contract","정예 적 자세·행동 슬롯 계약","Boundary","IsolatedRuntime","Pass","CurrentAttackSlotLimit == EliteEnemy.GetMaxCombatActionSlots","Posture=Normal, MechanicLimit=3, CharacterLimit=3, ExpectedMomentumDrift=0",""
+"ENEMY","EliteEnemy","훈련용 보스","훈련용_보스_Verification","generic.live.scene_binding@Olaf_MixedBattle","실전 Scene UI·전투 연결 · Olaf_MixedBattle","UI","LiveScene","Skip","검증 실행","건너뜀","현재 Scene Roster에 선택한 Bundle 캐릭터가 없습니다. Roster=[올라프, 정예 몹, 훈련용 일반 적, 훈련용 일반 적] / LastReason=Data 불일치 · Expected=BossEnemy_Test_Data, Actual=NormalEnemy_Test_Data"
+"ENEMY","EliteEnemy","훈련용 보스","훈련용_보스_Verification","generic.live.scene_binding@Yujin_MixedBattle","실전 Scene UI·전투 연결 · Yujin_MixedBattle","UI","LiveScene","Skip","검증 실행","건너뜀","현재 Scene Roster에 선택한 Bundle 캐릭터가 없습니다. Roster=[유진, 정예 몹, 훈련용 일반 적, 훈련용 일반 적] / LastReason=Data 불일치 · Expected=BossEnemy_Test_Data, Actual=NormalEnemy_Test_Data"
+"ENEMY","EliteEnemy","훈련용 보스","훈련용_보스_Verification","generic.live.scene_binding@Hifumi_MixedBattle","실전 Scene UI·전투 연결 · Hifumi_MixedBattle","UI","LiveScene","Skip","검증 실행","건너뜀","현재 Scene Roster에 선택한 Bundle 캐릭터가 없습니다. Roster=[히후미, 정예 몹, 훈련용 일반 적, 훈련용 일반 적] / LastReason=Data 불일치 · Expected=BossEnemy_Test_Data, Actual=NormalEnemy_Test_Data"
+"ENEMY","EliteEnemy","훈련용 보스","훈련용_보스_Verification","generic.live.scene_binding@Olaf_BossBattle","실전 Scene UI·전투 연결 · Olaf_BossBattle","UI","LiveScene","Pass","실전 Roster 캐릭터와 전투 연결 정상","ENEMY · 훈련용 보스 / 4개 스킬",""
+"ENEMY","EliteEnemy","훈련용 보스","훈련용_보스_Verification","live.autobattle.full_match@Olaf_BossBattle","실전 스모크 전투 · Olaf_BossBattle","Boundary","LiveScene","Pass","실제 Roster에 참가한 Character가 승률 자동계획 전투를 정상 종료하거나 검증용 5턴 구간을 완주","실전 스모크 구간 정상 완료 · 5턴","Outcome=TURN_BUDGET_COMPLETE
+Turns=5
+AnalysisTurnBudgetReached=True
+BlockedDamageAttempts=25
+MaxConsecutiveNoStateProgressTurns=0
+WinRatePlanAttempts=5
+SuccessfulWinRatePlans=5
+FallbackPlanCount=0
+PlannedActionCount=20
+PlayerSkillUsage=5/11
+UsedPlayerSkills=노려보기<olaf.preparation.glare>, 표준<olaf.duel.standard>, 마구잡이<olaf.normal.wild_hack>, 내려찍기<olaf.normal.overhead_smash>, 버티며 베기<olaf.normal.enduring_slash>
+ObservedParticipantSkills=올라프:노려보기<olaf.preparation.glare>, 올라프:표준<olaf.duel.standard>, 훈련용 보스:정예병의 압박(결투)<5fb3b00e68684389a86c92f3e0345061>, 올라프:마구잡이<olaf.normal.wild_hack>, 올라프:내려찍기<olaf.normal.overhead_smash>, 훈련용 보스:정예병의 참격(일반공격)<5a239ec7d4944c458ac5329511091871>, 올라프:버티며 베기<olaf.normal.enduring_slash>
+RuntimeErrors=0
+RuntimeWarnings=0
+CriticalInvariants=0
+RequestedTimeScale=30
+ElapsedMilliseconds=40589
+Participants=올라프, 훈련용 보스"
+"ENEMY","EliteEnemy","훈련용 보스","훈련용_보스_Verification","live.autobattle.character_skill_observation@Olaf_BossBattle","실전 Character 스킬 실행 관찰 · Olaf_BossBattle","Boundary","LiveScene","Pass","플레이어/적 구분 없이 해당 Character가 실제 ActionStart를 최소 1회 발생","2개 고유 Skill ActionStart 관찰","Observed=훈련용 보스:정예병의 압박(결투)<5fb3b00e68684389a86c92f3e0345061>, 훈련용 보스:정예병의 참격(일반공격)<5a239ec7d4944c458ac5329511091871>
+모든 후보 스킬의 개별 계약은 Isolated skill coverage가 담당하고, 이 Case는 실제 CameraTest AI/행동 파이프라인에서 캐릭터가 행동했는지를 검증합니다."
+"ENEMY","NormalEnemy","훈련용 일반 적","훈련용_일반_적_Verification","coverage.manifest.closed_world","완전 커버리지 명세 폐쇄성","Data","DataOnly","Pass","모든 기능이 폐쇄형 검증 카탈로그에 등록됨","PASS / Skills=2, Effects=0","Skills=2
+Effects=0
+RequiredMechanics=NormalEnemyBloodScentMechanic"
+"ENEMY","NormalEnemy","훈련용 일반 적","훈련용_일반_적_Verification","coverage.mechanics.forced_scenarios","패시브·메커닉 강제 시나리오","Passive","IsolatedRuntime","Pass","모든 필수 패시브 메커닉의 강제 이벤트 시나리오 통과","PASS / Mechanics=2","NormalEnemy 피 냄새 합 승리 혈상 1 PASS"
+"ENEMY","NormalEnemy","훈련용 일반 적","훈련용_일반_적_Verification","coverage.skill.test_normal_swipe","스킬 완전 시나리오: 할퀴기","NormalAttack","IsolatedRuntime","Pass","자원·굴림·대상·모든 효과 Entry 강제 실행","PASS / Rolls=3, Effects=0","Resource PASS: Energy 3->3, Prestige 100->100
+Roll[0]=🎲 15
+Roll[1]=🎲 16
+Roll[2]=🎲 14
+DamageTarget PASS: 60->59 / 훈련용 일반 적/CHARACTER"
+"ENEMY","NormalEnemy","훈련용 일반 적","훈련용_일반_적_Verification","coverage.skill.test_normal_lunge","스킬 완전 시나리오: 달려들기","Duel","IsolatedRuntime","Pass","자원·굴림·대상·모든 효과 Entry 강제 실행","PASS / Rolls=3, Effects=0","Resource PASS: Energy 3->2, Prestige 100->100
+Roll[0]=🎲 17
+Roll[1]=🎲 18
+Roll[2]=🎲 16
+DamageTarget PASS: 60->59 / 훈련용 일반 적/CHARACTER"
+"ENEMY","NormalEnemy","훈련용 일반 적","훈련용_일반_적_Verification","generic.data.core_references","Core 데이터 참조","Data","DataOnly","Pass","필수 Core 참조가 모두 연결됨","Bundle/Data/Loadout/Prefab 연결 정상",""
+"ENEMY","NormalEnemy","훈련용 일반 적","훈련용_일반_적_Verification","generic.data.prefab_compatibility","Prefab·Bundle 호환성","Data","DataOnly","Pass","Bundle Kind와 표준 Prefab Component가 호환됨","NormalEnemy 호환 정상",""
+"ENEMY","NormalEnemy","훈련용 일반 적","훈련용_일반_적_Verification","generic.data.loadout_integrity","스킬 장착·슬롯 노출","Data","DataOnly","Pass","카테고리 한도·타입·슬롯 노출 정상","일반 1, 결투 1, 도사림 0, 위세 0",""
+"ENEMY","NormalEnemy","훈련용 일반 적","훈련용_일반_적_Verification","generic.data.skill_definitions","SkillDefinition 무결성","Data","DataOnly","Pass","모든 SkillDefinition ID와 Runtime 생성 정상","2개 스킬 정상",""
+"ENEMY","NormalEnemy","훈련용 일반 적","훈련용_일반_적_Verification","generic.presentation.timeline_and_animator","Timeline·Animator 연결","Presentation","DataOnly","Pass","Animator·Presentation·Timeline 연결 정상","Presentation 검증 통과",""
+"ENEMY","NormalEnemy","훈련용 일반 적","훈련용_일반_적_Verification","generic.runtime.initialization","격리 런타임 초기화","Boundary","IsolatedRuntime","Pass","Isolated BattleContext 초기화와 메커닉 구독 성공","훈련용 일반 적 / Initialized=True / HP=60/60 / Block=0 / Prestige=0 / Resources=Energy:3",""
+"ENEMY","NormalEnemy","훈련용 일반 적","훈련용_일반_적_Verification","generic.runtime.body_parts","부위 런타임 상태","Status","IsolatedRuntime","Pass","Single HP 캐릭터는 부위 검사를 생략","Single HP 60/60",""
+"ENEMY","NormalEnemy","훈련용 일반 적","훈련용_일반_적_Verification","generic.runtime.skill_binding","런타임 스킬 바인딩","Data","IsolatedRuntime","Pass","모든 장착 스킬 생성 및 RuntimeSkill ID 중복 없음","2개 RuntimeSkill / 2개 고유 SkillId",""
+"ENEMY","NormalEnemy","훈련용 일반 적","훈련용_일반_적_Verification","generic.runtime.deterministic_random","결정론적 굴림 재현","Boundary","IsolatedRuntime","Pass","동일 Seed·Sample은 동일 RollResult","🎲 2 + 2",""
+"ENEMY","NormalEnemy","훈련용 일반 적","훈련용_일반_적_Verification","generic.live.scene_binding","실전 Scene UI·전투 연결","UI","LiveScene","Skip","검증 실행","건너뜀","Live Scene 검증이 비활성화되어 있습니다."
+"ENEMY","NormalEnemy","훈련용 일반 적","훈련용_일반_적_Verification","enemy.normal.single_hp.contract","일반 적 Single HP 전투 모델","Boundary","IsolatedRuntime","Pass","Single HP / BodyPart 0 / CombatSlot 1 / LastStand false","SingleHP=True, UsesBodyParts=False, Parts=0, Slots=1, LastStand=False, MaxHP=60",""
+"ENEMY","NormalEnemy","훈련용 일반 적","훈련용_일반_적_Verification","enemy.normal.runtime_skill.contract","일반 적 3회 독립 굴림 RuntimeSkill","Boundary","IsolatedRuntime","Pass","모든 일반 적 RuntimeSkill = 3회 독립 굴림 / RuntimeSkills 등록","Skills=2",""
+"ENEMY","NormalEnemy","훈련용 일반 적","훈련용_일반_적_Verification","generic.live.scene_binding@Olaf_MixedBattle","실전 Scene UI·전투 연결 · Olaf_MixedBattle","UI","LiveScene","Pass","실전 Roster 캐릭터와 전투 연결 정상","ENEMY · 훈련용 일반 적 / 2개 스킬",""
+"ENEMY","NormalEnemy","훈련용 일반 적","훈련용_일반_적_Verification","live.autobattle.full_match@Olaf_MixedBattle","실전 스모크 전투 · Olaf_MixedBattle","Boundary","LiveScene","Pass","실제 Roster에 참가한 Character가 승률 자동계획 전투를 정상 종료하거나 검증용 5턴 구간을 완주","실전 스모크 구간 정상 완료 · 5턴","Outcome=TURN_BUDGET_COMPLETE
+Turns=5
+AnalysisTurnBudgetReached=True
+BlockedDamageAttempts=18
+MaxConsecutiveNoStateProgressTurns=0
+WinRatePlanAttempts=5
+SuccessfulWinRatePlans=5
+FallbackPlanCount=0
+PlannedActionCount=20
+PlayerSkillUsage=4/11
+UsedPlayerSkills=노려보기<olaf.preparation.glare>, 표준<olaf.duel.standard>, 마구잡이<olaf.normal.wild_hack>, 버티며 베기<olaf.normal.enduring_slash>
+ObservedParticipantSkills=정예 몹:전투 태세(도사림)<356e72e97ac84a3a8757d1a188237f43>, 올라프:노려보기<olaf.preparation.glare>, 정예 몹:정예병의 압박(결투)<5fb3b00e68684389a86c92f3e0345061>, 올라프:표준<olaf.duel.standard>, 정예 몹:정예병의 참격(일반공격)<5a239ec7d4944c458ac5329511091871>, 훈련용 일반 적:달려들기<test_normal_lunge>, 올라프:마구잡이<olaf.normal.wild_hack>, 올라프:버티며 베기<olaf.normal.enduring_slash>
+RuntimeErrors=0
+RuntimeWarnings=33
+CriticalInvariants=0
+RequestedTimeScale=30
+ElapsedMilliseconds=42251
+Participants=올라프, 정예 몹, 훈련용 일반 적
+WarningSamples=Warning: [VFX VALIDATION] Prefab 누락 / Definition=Burn_Tick_VFX @ UnityEngine.Debug:LogWarning (object,UnityEngine.Object) || Warning: [VFX VALIDATION] Prefab 누락 / Definition=Olaf_Duel_BloodSplash_VFX @ UnityEngine.Debug:LogWarning (object,UnityEngine.Object)"
+"ENEMY","NormalEnemy","훈련용 일반 적","훈련용_일반_적_Verification","live.autobattle.character_skill_observation@Olaf_MixedBattle","실전 Character 스킬 실행 관찰 · Olaf_MixedBattle","Boundary","LiveScene","Pass","플레이어/적 구분 없이 해당 Character가 실제 ActionStart를 최소 1회 발생","1개 고유 Skill ActionStart 관찰","Observed=훈련용 일반 적:달려들기<test_normal_lunge>
+모든 후보 스킬의 개별 계약은 Isolated skill coverage가 담당하고, 이 Case는 실제 CameraTest AI/행동 파이프라인에서 캐릭터가 행동했는지를 검증합니다."
+"ENEMY","NormalEnemy","훈련용 일반 적","훈련용_일반_적_Verification","generic.live.scene_binding@Yujin_MixedBattle","실전 Scene UI·전투 연결 · Yujin_MixedBattle","UI","LiveScene","Pass","실전 Roster 캐릭터와 전투 연결 정상","ENEMY · 훈련용 일반 적 / 2개 스킬",""
+"ENEMY","NormalEnemy","훈련용 일반 적","훈련용_일반_적_Verification","live.autobattle.full_match@Yujin_MixedBattle","실전 스모크 전투 · Yujin_MixedBattle","Boundary","LiveScene","Pass","실제 Roster에 참가한 Character가 승률 자동계획 전투를 정상 종료하거나 검증용 5턴 구간을 완주","실전 스모크 구간 정상 완료 · 5턴","Outcome=TURN_BUDGET_COMPLETE
+Turns=5
+AnalysisTurnBudgetReached=True
+BlockedDamageAttempts=27
+MaxConsecutiveNoStateProgressTurns=0
+WinRatePlanAttempts=5
+SuccessfulWinRatePlans=5
+FallbackPlanCount=0
+PlannedActionCount=20
+PlayerSkillUsage=3/12
+UsedPlayerSkills=환형 · 적설<yujin.preparation.hwanhyeong.jeokseol>, 각인<yujin.duel.inscription>, 검분<yujin.normal.inspection>
+ObservedParticipantSkills=유진:환형 · 적설<yujin.preparation.hwanhyeong.jeokseol>, 정예 몹:정예병의 압박(결투)<5fb3b00e68684389a86c92f3e0345061>, 유진:각인<yujin.duel.inscription>, 훈련용 일반 적:달려들기<test_normal_lunge>, 유진:검분<yujin.normal.inspection>, 정예 몹:정예병의 참격(일반공격)<5a239ec7d4944c458ac5329511091871>
+RuntimeErrors=0
+RuntimeWarnings=22
+CriticalInvariants=0
+RequestedTimeScale=30
+ElapsedMilliseconds=43616
+Participants=유진, 정예 몹, 훈련용 일반 적
+WarningSamples=Warning: [VFX VALIDATION] Prefab 누락 / Definition=Olaf_Duel_BloodSplash_VFX @ UnityEngine.Debug:LogWarning (object,UnityEngine.Object)"
+"ENEMY","NormalEnemy","훈련용 일반 적","훈련용_일반_적_Verification","live.autobattle.character_skill_observation@Yujin_MixedBattle","실전 Character 스킬 실행 관찰 · Yujin_MixedBattle","Boundary","LiveScene","Pass","플레이어/적 구분 없이 해당 Character가 실제 ActionStart를 최소 1회 발생","1개 고유 Skill ActionStart 관찰","Observed=훈련용 일반 적:달려들기<test_normal_lunge>
+모든 후보 스킬의 개별 계약은 Isolated skill coverage가 담당하고, 이 Case는 실제 CameraTest AI/행동 파이프라인에서 캐릭터가 행동했는지를 검증합니다."
+"ENEMY","NormalEnemy","훈련용 일반 적","훈련용_일반_적_Verification","generic.live.scene_binding@Hifumi_MixedBattle","실전 Scene UI·전투 연결 · Hifumi_MixedBattle","UI","LiveScene","Pass","실전 Roster 캐릭터와 전투 연결 정상","ENEMY · 훈련용 일반 적 / 2개 스킬",""
+"ENEMY","NormalEnemy","훈련용 일반 적","훈련용_일반_적_Verification","live.autobattle.full_match@Hifumi_MixedBattle","실전 스모크 전투 · Hifumi_MixedBattle","Boundary","LiveScene","Pass","실제 Roster에 참가한 Character가 승률 자동계획 전투를 정상 종료하거나 검증용 5턴 구간을 완주","실전 스모크 구간 정상 완료 · 5턴","Outcome=TURN_BUDGET_COMPLETE
+Turns=5
+AnalysisTurnBudgetReached=True
+BlockedDamageAttempts=8
+MaxConsecutiveNoStateProgressTurns=0
+WinRatePlanAttempts=5
+SuccessfulWinRatePlans=5
+FallbackPlanCount=0
+PlannedActionCount=20
+PlayerSkillUsage=4/12
+UsedPlayerSkills=뼈에 새긴다<hifumi.preparation.engrave_bone>, 푼돈 걸기<hifumi.normal.small_change>, 육참(肉斬)<hifumi.duel.yukcham>, 골단(骨斷)<hifumi.duel.goldan>
+ObservedParticipantSkills=정예 몹:전투 태세(도사림)<356e72e97ac84a3a8757d1a188237f43>, 히후미:뼈에 새긴다<hifumi.preparation.engrave_bone>, 정예 몹:정예병의 압박(결투)<5fb3b00e68684389a86c92f3e0345061>, 히후미:푼돈 걸기<hifumi.normal.small_change>, 정예 몹:정예병의 참격(일반공격)<5a239ec7d4944c458ac5329511091871>, 히후미:육참(肉斬)<hifumi.duel.yukcham>, 훈련용 일반 적:달려들기<test_normal_lunge>, 히후미:골단(骨斷)<hifumi.duel.goldan>, 정예 몹:처형자의 일격(위세)<c09f804f95004e70a9864e0d02ae4509>
+RuntimeErrors=0
+RuntimeWarnings=37
+CriticalInvariants=0
+RequestedTimeScale=30
+ElapsedMilliseconds=51754
+Participants=히후미, 정예 몹, 훈련용 일반 적
+WarningSamples=Warning: [VFX VALIDATION] Prefab 누락 / Definition=Burn_Tick_VFX @ UnityEngine.Debug:LogWarning (object,UnityEngine.Object) || Warning: [VFX VALIDATION] Prefab 누락 / Definition=Olaf_Duel_BloodSplash_VFX @ UnityEngine.Debug:LogWarning (object,UnityEngine.Object)"
+"ENEMY","NormalEnemy","훈련용 일반 적","훈련용_일반_적_Verification","live.autobattle.character_skill_observation@Hifumi_MixedBattle","실전 Character 스킬 실행 관찰 · Hifumi_MixedBattle","Boundary","LiveScene","Pass","플레이어/적 구분 없이 해당 Character가 실제 ActionStart를 최소 1회 발생","1개 고유 Skill ActionStart 관찰","Observed=훈련용 일반 적:달려들기<test_normal_lunge>
+모든 후보 스킬의 개별 계약은 Isolated skill coverage가 담당하고, 이 Case는 실제 CameraTest AI/행동 파이프라인에서 캐릭터가 행동했는지를 검증합니다."

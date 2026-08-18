@@ -3794,6 +3794,7 @@ MonoBehaviour:
   worldOffset: {x: 0, y: 0.48, z: 0}
   canvasScale: 0.0062
   slotArrowOverlay: {fileID: 0}
+  actionOrderRail: {fileID: 0}
 --- !u!1 &412709227
 GameObject:
   m_ObjectHideFlags: 0
@@ -16694,8 +16695,10 @@ MonoBehaviour:
   InactivePriority: 0
   activateOverviewOnStart: 1
   validateOnAwake: 1
+  allowLegacyOrthographicOverview: 0
   forceOrthographic: 1
   overviewOrthographicSize: 3.4
+  overviewPerspectiveFov: 50
 --- !u!1 &1665027744
 GameObject:
   m_ObjectHideFlags: 0
@@ -17375,8 +17378,8 @@ Camera:
     height: 1
   near clip plane: 0.1
   far clip plane: 5000
-  field of view: 40
-  orthographic: 1
+  field of view: 50
+  orthographic: 0
   orthographic size: 3.4
   m_Depth: -1
   m_CullingMask:
@@ -17401,8 +17404,8 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1747701450}
   serializedVersion: 2
-  m_LocalRotation: {x: 0.09730756, y: -0.8734487, z: 0.05282442, w: 0.4741606}
-  m_LocalPosition: {x: 5.051675, y: 4.603159, z: 2.325327}
+  m_LocalRotation: {x: 0.07053492, y: -0.8226586, z: 0.10467479, w: 0.55434734}
+  m_LocalPosition: {x: 7.441675, y: 4.3031588, z: 2.165327}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -21773,13 +21776,13 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2044571730}
   serializedVersion: 2
-  m_LocalRotation: {x: 0.09730758, y: -0.8734487, z: 0.052824426, w: 0.4741606}
-  m_LocalPosition: {x: 6.38, y: 2.15, z: 0.88}
+  m_LocalRotation: {x: 0.07053492, y: -0.8226586, z: 0.10467479, w: 0.55434734}
+  m_LocalPosition: {x: 8.77, y: 1.85, z: 0.72}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 1653399052}
-  m_LocalEulerAnglesHint: {x: 10.635, y: -123.661, z: -7.007}
+  m_LocalEulerAnglesHint: {x: 14.503, y: -112.052, z: 0}
 --- !u!114 &2044571732
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -21804,12 +21807,12 @@ MonoBehaviour:
     LookAtTarget: {fileID: 0}
     CustomLookAtTarget: 0
   Lens:
-    FieldOfView: 40
+    FieldOfView: 50
     OrthographicSize: 3.4
     NearClipPlane: 0.1
     FarClipPlane: 5000
     Dutch: 0
-    ModeOverride: 1
+    ModeOverride: 2
     PhysicalProperties:
       GateFit: 2
       SensorSize: {x: 21.946, y: 16.002}
@@ -22623,6 +22626,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6236cb03cd40474409d98fbbf4f6572c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  battleManager: {fileID: 0}
   visualDatabase: {fileID: 11400000, guid: 3df8e79963eace64f8997302530d5791, type: 2}
   vfxManager: {fileID: 2113237154}
   damageNumberManager: {fileID: 2113237156}

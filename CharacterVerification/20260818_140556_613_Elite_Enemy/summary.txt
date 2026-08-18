@@ -1,0 +1,283 @@
+PROJECT ABYSS CHARACTER VERIFICATION
+Character: Elite Enemy
+Profile: Elite_Enemy_Verification (character.EliteEnemy.4cd864e96bd9715489a28ca2d152a878)
+Bundle: EliteEnemy Character Bundle
+Started: 2026-08-18T14:05:56.6133627+09:00
+Finished: 2026-08-18T14:09:09.7444136+09:00
+PASS 26 / FAIL 0 / SKIP 0 / ERROR 0
+========================================================================
+[Pass] coverage.manifest.closed_world / 완전 커버리지 명세 폐쇄성
+Category: Data / Mode: DataOnly / Time: 0ms
+Expected: 모든 기능이 폐쇄형 검증 카탈로그에 등록됨
+Actual: PASS / Skills=4, Effects=7
+Initial: Character=NULL
+Final: Character=NULL
+Details:
+Skills=4
+Effects=7
+RequiredMechanics=EliteEnemyMechanic, EnemyPostureMechanic
+------------------------------------------------------------------------
+[Pass] coverage.mechanics.forced_scenarios / 패시브·메커닉 강제 시나리오
+Category: Passive / Mode: IsolatedRuntime / Time: 8ms
+Expected: 모든 필수 패시브 메커닉의 강제 이벤트 시나리오 통과
+Actual: PASS / Mechanics=3
+Initial: 정예 몹 / Initialized=True / HP=200/200 / Block=0 / Prestige=0 / Resources=Energy:3 / Parts=[HEAD 50/50 Normal, LEFT_HAND 50/50 Normal, RIGHT_HAND 50/50 Normal, LEGS 50/50 Normal]
+Final: 정예 몹 / Initialized=True / HP=200/200 / Block=0 / Prestige=50 / Resources=Energy:3 / Parts=[HEAD 50/50 Normal, LEFT_HAND 50/50 Normal, RIGHT_HAND 50/50 Normal, LEGS 50/50 Normal]
+Details:
+Elite 합 승리 +10/혈상1, 자가 약화 +15, 파괴 +25 PASS
+EnemyPosture Normal→Crouching→Offensive→Normal PASS
+------------------------------------------------------------------------
+[Pass] coverage.skill.5a239ec7d4944c458ac5329511091871 / 스킬 완전 시나리오: 정예병의 참격(일반공격)
+Category: NormalAttack / Mode: IsolatedRuntime / Time: 9ms
+Expected: 자원·굴림·대상·모든 효과 Entry 강제 실행
+Actual: PASS / Rolls=3, Effects=1
+Initial: 정예 몹 / Initialized=True / HP=200/200 / Block=0 / Prestige=0 / Resources=Energy:3 / Parts=[HEAD 50/50 Normal, LEFT_HAND 50/50 Normal, RIGHT_HAND 50/50 Normal, LEGS 50/50 Normal]
+Final: 정예 몹 / Initialized=True / HP=200/200 / Block=0 / Prestige=100 / Resources=Energy:3 / Parts=[HEAD 50/50 Normal, LEFT_HAND 50/50 Normal, RIGHT_HAND 50/50 Normal, LEGS 50/50 Normal]
+Details:
+Resource PASS: Energy 3->3, Prestige 100->100
+Roll[0]=🎲 4
+Roll[1]=🎲 4
+Roll[2]=🎲 4
+DamageTarget PASS: 50->49 / 정예 몹/HEAD
+Effect PASS: AddBodyPartStatusEffect / Timing=OnExecute / Target=정예 몹
+------------------------------------------------------------------------
+[Pass] coverage.skill.5fb3b00e68684389a86c92f3e0345061 / 스킬 완전 시나리오: 정예병의 압박(결투)
+Category: Duel / Mode: IsolatedRuntime / Time: 5ms
+Expected: 자원·굴림·대상·모든 효과 Entry 강제 실행
+Actual: PASS / Rolls=3, Effects=1
+Initial: 정예 몹 / Initialized=True / HP=200/200 / Block=0 / Prestige=0 / Resources=Energy:3 / Parts=[HEAD 50/50 Normal, LEFT_HAND 50/50 Normal, RIGHT_HAND 50/50 Normal, LEGS 50/50 Normal]
+Final: 정예 몹 / Initialized=True / HP=200/200 / Block=0 / Prestige=100 / Resources=Energy:3 / Parts=[HEAD 50/50 Normal, LEFT_HAND 50/50 Normal, RIGHT_HAND 50/50 Normal, LEGS 50/50 Normal]
+Details:
+Resource PASS: Energy 3->2, Prestige 100->100
+Roll[0]=🎲 11
+Roll[1]=🎲 10
+Roll[2]=🎲 9
+DamageTarget PASS: 50->49 / 정예 몹/HEAD
+Effect PASS: AddBodyPartStatusEffect / Timing=OnExecute / Target=정예 몹
+------------------------------------------------------------------------
+[Pass] coverage.skill.356e72e97ac84a3a8757d1a188237f43 / 스킬 완전 시나리오: 전투 태세(도사림)
+Category: Preparation / Mode: IsolatedRuntime / Time: 11ms
+Expected: 자원·굴림·대상·모든 효과 Entry 강제 실행
+Actual: PASS / Rolls=3, Effects=3
+Initial: 정예 몹 / Initialized=True / HP=200/200 / Block=0 / Prestige=0 / Resources=Energy:3 / Parts=[HEAD 50/50 Normal, LEFT_HAND 50/50 Normal, RIGHT_HAND 50/50 Normal, LEGS 50/50 Normal]
+Final: 정예 몹 / Initialized=True / HP=200/200 / Block=3 / Prestige=100 / Resources=Energy:3 / Parts=[HEAD 50/50 Normal, LEFT_HAND 50/50 Normal, RIGHT_HAND 50/50 Normal, LEGS 50/50 Normal]
+Details:
+Resource PASS: Energy 3->2, Prestige 100->100
+Roll[0]=🎲 0
+Roll[1]=🎲 0
+Roll[2]=🎲 0
+Effect PASS: AddBodyPartStatusEffect / Timing=OnExecute / Target=정예 몹
+Effect PASS: AddBodyPartStatusEffect / Timing=OnExecute / Target=정예 몹
+Effect PASS: PreparationFlatSetupEffect / Timing=OnExecute / Target=정예 몹
+------------------------------------------------------------------------
+[Pass] coverage.skill.c09f804f95004e70a9864e0d02ae4509 / 스킬 완전 시나리오: 처형자의 일격(위세)
+Category: Prestige / Mode: IsolatedRuntime / Time: 6ms
+Expected: 자원·굴림·대상·모든 효과 Entry 강제 실행
+Actual: PASS / Rolls=3, Effects=2
+Initial: 정예 몹 / Initialized=True / HP=200/200 / Block=0 / Prestige=0 / Resources=Energy:3 / Parts=[HEAD 50/50 Normal, LEFT_HAND 50/50 Normal, RIGHT_HAND 50/50 Normal, LEGS 50/50 Normal]
+Final: 정예 몹 / Initialized=True / HP=200/200 / Block=0 / Prestige=100 / Resources=Energy:3 / Parts=[HEAD 50/50 Normal, LEFT_HAND 50/50 Normal, RIGHT_HAND 50/50 Normal, LEGS 50/50 Normal]
+Details:
+Resource PASS: Energy 3->3, Prestige 100->0
+Roll[0]=🎲 20
+Roll[1]=🎲 19
+Roll[2]=🎲 18
+Effect PASS: ApplyRolledPartDamageEffect / Timing=OnExecute / Target=정예 몹
+Effect PASS: AddBodyPartStatusEffect / Timing=OnExecute / Target=정예 몹
+------------------------------------------------------------------------
+[Pass] generic.data.core_references / Core 데이터 참조
+Category: Data / Mode: DataOnly / Time: 0ms
+Expected: 필수 Core 참조가 모두 연결됨
+Actual: Bundle/Data/Loadout/Prefab 연결 정상
+Initial: Character=NULL
+Final: Character=NULL
+------------------------------------------------------------------------
+[Pass] generic.data.prefab_compatibility / Prefab·Bundle 호환성
+Category: Data / Mode: DataOnly / Time: 0ms
+Expected: Bundle Kind와 표준 Prefab Component가 호환됨
+Actual: EliteEnemy 호환 정상
+Initial: Character=NULL
+Final: Character=NULL
+------------------------------------------------------------------------
+[Pass] generic.data.loadout_integrity / 스킬 장착·슬롯 노출
+Category: Data / Mode: DataOnly / Time: 0ms
+Expected: 카테고리 한도·타입·슬롯 노출 정상
+Actual: 일반 1, 결투 1, 도사림 1, 위세 1
+Initial: Character=NULL
+Final: Character=NULL
+------------------------------------------------------------------------
+[Pass] generic.data.skill_definitions / SkillDefinition 무결성
+Category: Data / Mode: DataOnly / Time: 0ms
+Expected: 모든 SkillDefinition ID와 Runtime 생성 정상
+Actual: 4개 스킬 정상
+Initial: Character=NULL
+Final: Character=NULL
+------------------------------------------------------------------------
+[Pass] generic.presentation.timeline_and_animator / Timeline·Animator 연결
+Category: Presentation / Mode: DataOnly / Time: 0ms
+Expected: Animator·Presentation·Timeline 연결 정상
+Actual: Presentation 검증 통과
+Initial: Character=NULL
+Final: Character=NULL
+------------------------------------------------------------------------
+[Pass] generic.runtime.initialization / 격리 런타임 초기화
+Category: Boundary / Mode: IsolatedRuntime / Time: 1ms
+Expected: Isolated BattleContext 초기화와 메커닉 구독 성공
+Actual: 정예 몹 / Initialized=True / HP=200/200 / Block=0 / Prestige=0 / Resources=Energy:3 / Parts=[HEAD 50/50 Normal, LEFT_HAND 50/50 Normal, RIGHT_HAND 50/50 Normal, LEGS 50/50 Normal]
+Initial: 정예 몹 / Initialized=True / HP=200/200 / Block=0 / Prestige=0 / Resources=Energy:3 / Parts=[HEAD 50/50 Normal, LEFT_HAND 50/50 Normal, RIGHT_HAND 50/50 Normal, LEGS 50/50 Normal]
+Final: 정예 몹 / Initialized=True / HP=200/200 / Block=0 / Prestige=0 / Resources=Energy:3 / Parts=[HEAD 50/50 Normal, LEFT_HAND 50/50 Normal, RIGHT_HAND 50/50 Normal, LEGS 50/50 Normal]
+------------------------------------------------------------------------
+[Pass] generic.runtime.body_parts / 부위 런타임 상태
+Category: Status / Mode: IsolatedRuntime / Time: 1ms
+Expected: 부위 Owner·HP·타입·초기 상태 정상
+Actual: 4개 부위 정상
+Initial: 정예 몹 / Initialized=True / HP=200/200 / Block=0 / Prestige=0 / Resources=Energy:3 / Parts=[HEAD 50/50 Normal, LEFT_HAND 50/50 Normal, RIGHT_HAND 50/50 Normal, LEGS 50/50 Normal]
+Final: 정예 몹 / Initialized=True / HP=200/200 / Block=0 / Prestige=0 / Resources=Energy:3 / Parts=[HEAD 50/50 Normal, LEFT_HAND 50/50 Normal, RIGHT_HAND 50/50 Normal, LEGS 50/50 Normal]
+------------------------------------------------------------------------
+[Pass] generic.runtime.skill_binding / 런타임 스킬 바인딩
+Category: Data / Mode: IsolatedRuntime / Time: 1ms
+Expected: 모든 장착 스킬 생성 및 RuntimeSkill ID 중복 없음
+Actual: 4개 RuntimeSkill / 4개 고유 SkillId
+Initial: 정예 몹 / Initialized=True / HP=200/200 / Block=0 / Prestige=0 / Resources=Energy:3 / Parts=[HEAD 50/50 Normal, LEFT_HAND 50/50 Normal, RIGHT_HAND 50/50 Normal, LEGS 50/50 Normal]
+Final: 정예 몹 / Initialized=True / HP=200/200 / Block=0 / Prestige=0 / Resources=Energy:3 / Parts=[HEAD 50/50 Normal, LEFT_HAND 50/50 Normal, RIGHT_HAND 50/50 Normal, LEGS 50/50 Normal]
+------------------------------------------------------------------------
+[Pass] generic.runtime.deterministic_random / 결정론적 굴림 재현
+Category: Boundary / Mode: IsolatedRuntime / Time: 1ms
+Expected: 동일 Seed·Sample은 동일 RollResult
+Actual: 🎲 1 + 3
+Initial: 정예 몹 / Initialized=True / HP=200/200 / Block=0 / Prestige=0 / Resources=Energy:3 / Parts=[HEAD 50/50 Normal, LEFT_HAND 50/50 Normal, RIGHT_HAND 50/50 Normal, LEGS 50/50 Normal]
+Final: 정예 몹 / Initialized=True / HP=200/200 / Block=0 / Prestige=0 / Resources=Energy:3 / Parts=[HEAD 50/50 Normal, LEFT_HAND 50/50 Normal, RIGHT_HAND 50/50 Normal, LEGS 50/50 Normal]
+------------------------------------------------------------------------
+[Pass] enemy.elite.bodypart.contract / 정예 적 4부위 전투 모델
+Category: Boundary / Mode: IsolatedRuntime / Time: 2ms
+Expected: HEAD/LEFT_HAND/RIGHT_HAND/LEGS 4부위 + LastStand
+Actual: PASS
+Initial: 정예 몹 / Initialized=True / HP=200/200 / Block=0 / Prestige=0 / Resources=Energy:3 / Parts=[HEAD 50/50 Normal, LEFT_HAND 50/50 Normal, RIGHT_HAND 50/50 Normal, LEGS 50/50 Normal]
+Final: 정예 몹 / Initialized=True / HP=200/200 / Block=0 / Prestige=0 / Resources=Energy:3 / Parts=[HEAD 50/50 Normal, LEFT_HAND 50/50 Normal, RIGHT_HAND 50/50 Normal, LEGS 50/50 Normal]
+------------------------------------------------------------------------
+[Pass] enemy.elite.posture_slot.contract / 정예 적 자세·행동 슬롯 계약
+Category: Boundary / Mode: IsolatedRuntime / Time: 1ms
+Expected: CurrentAttackSlotLimit == EliteEnemy.GetMaxCombatActionSlots
+Actual: Posture=Normal, MechanicLimit=3, CharacterLimit=3, ExpectedMomentumDrift=0
+Initial: 정예 몹 / Initialized=True / HP=200/200 / Block=0 / Prestige=0 / Resources=Energy:3 / Parts=[HEAD 50/50 Normal, LEFT_HAND 50/50 Normal, RIGHT_HAND 50/50 Normal, LEGS 50/50 Normal]
+Final: 정예 몹 / Initialized=True / HP=200/200 / Block=0 / Prestige=0 / Resources=Energy:3 / Parts=[HEAD 50/50 Normal, LEFT_HAND 50/50 Normal, RIGHT_HAND 50/50 Normal, LEGS 50/50 Normal]
+------------------------------------------------------------------------
+[Pass] generic.live.scene_binding@Olaf_MixedBattle / 실전 Scene UI·전투 연결 · Olaf_MixedBattle
+Category: UI / Mode: LiveScene / Time: 0ms
+Expected: 실전 Roster 캐릭터와 전투 연결 정상
+Actual: ENEMY · 정예 몹 / 4개 스킬
+Initial: 올라프 / Initialized=True / HP=720/720 / Block=0 / Prestige=0 / Resources=Energy:3 / Parts=[HEAD 180/180 Normal, LEFT_HAND 180/180 Normal, RIGHT_HAND 180/180 Normal, LEGS 180/180 Normal]
+Final: 올라프 / Initialized=True / HP=720/720 / Block=0 / Prestige=0 / Resources=Energy:3 / Parts=[HEAD 180/180 Normal, LEFT_HAND 180/180 Normal, RIGHT_HAND 180/180 Normal, LEGS 180/180 Normal]
+------------------------------------------------------------------------
+[Pass] live.autobattle.full_match@Olaf_MixedBattle / 실전 스모크 전투 · Olaf_MixedBattle
+Category: Boundary / Mode: LiveScene / Time: 52615ms
+Expected: 실제 Roster에 참가한 Character가 승률 자동계획 전투를 정상 종료하거나 검증용 5턴 구간을 완주
+Actual: 실전 스모크 구간 정상 완료 · 5턴
+Details:
+Outcome=TURN_BUDGET_COMPLETE
+Turns=5
+AnalysisTurnBudgetReached=True
+BlockedDamageAttempts=21
+MaxConsecutiveNoStateProgressTurns=0
+WinRatePlanAttempts=5
+SuccessfulWinRatePlans=5
+FallbackPlanCount=0
+PlannedActionCount=20
+PlayerSkillUsage=4/11
+UsedPlayerSkills=노려보기<olaf.preparation.glare>, 표준<olaf.duel.standard>, 마구잡이<olaf.normal.wild_hack>, 버티며 베기<olaf.normal.enduring_slash>
+ObservedParticipantSkills=올라프:노려보기<olaf.preparation.glare>, 정예 몹:정예병의 압박(결투)<5fb3b00e68684389a86c92f3e0345061>, 올라프:표준<olaf.duel.standard>, 올라프:마구잡이<olaf.normal.wild_hack>, 훈련용 일반 적:달려들기<test_normal_lunge>, 올라프:버티며 베기<olaf.normal.enduring_slash>, 정예 몹:정예병의 참격(일반공격)<5a239ec7d4944c458ac5329511091871>
+RuntimeErrors=0
+RuntimeWarnings=28
+CriticalInvariants=0
+RequestedTimeScale=30
+ElapsedMilliseconds=52615
+Participants=올라프, 정예 몹, 훈련용 일반 적
+WarningSamples=Warning: [VFX VALIDATION] Prefab 누락 / Definition=Olaf_Duel_BloodSplash_VFX @ UnityEngine.Debug:LogWarning (object,UnityEngine.Object)
+------------------------------------------------------------------------
+[Pass] live.autobattle.character_skill_observation@Olaf_MixedBattle / 실전 Character 스킬 실행 관찰 · Olaf_MixedBattle
+Category: Boundary / Mode: LiveScene / Time: 52615ms
+Expected: 플레이어/적 구분 없이 해당 Character가 실제 ActionStart를 최소 1회 발생
+Actual: 2개 고유 Skill ActionStart 관찰
+Details:
+Observed=정예 몹:정예병의 압박(결투)<5fb3b00e68684389a86c92f3e0345061>, 정예 몹:정예병의 참격(일반공격)<5a239ec7d4944c458ac5329511091871>
+모든 후보 스킬의 개별 계약은 Isolated skill coverage가 담당하고, 이 Case는 실제 CameraTest AI/행동 파이프라인에서 캐릭터가 행동했는지를 검증합니다.
+------------------------------------------------------------------------
+[Pass] generic.live.scene_binding@Yujin_MixedBattle / 실전 Scene UI·전투 연결 · Yujin_MixedBattle
+Category: UI / Mode: LiveScene / Time: 0ms
+Expected: 실전 Roster 캐릭터와 전투 연결 정상
+Actual: ENEMY · 정예 몹 / 4개 스킬
+Initial: 유진 / Initialized=True / HP=720/720 / Block=0 / Prestige=0 / Resources=Energy:3 / Parts=[HEAD 180/180 Normal, LEFT_HAND 180/180 Normal, RIGHT_HAND 180/180 Normal, LEGS 180/180 Normal]
+Final: 유진 / Initialized=True / HP=720/720 / Block=0 / Prestige=0 / Resources=Energy:3 / Parts=[HEAD 180/180 Normal, LEFT_HAND 180/180 Normal, RIGHT_HAND 180/180 Normal, LEGS 180/180 Normal]
+------------------------------------------------------------------------
+[Pass] live.autobattle.full_match@Yujin_MixedBattle / 실전 스모크 전투 · Yujin_MixedBattle
+Category: Boundary / Mode: LiveScene / Time: 46114ms
+Expected: 실제 Roster에 참가한 Character가 승률 자동계획 전투를 정상 종료하거나 검증용 5턴 구간을 완주
+Actual: 실전 스모크 구간 정상 완료 · 5턴
+Details:
+Outcome=TURN_BUDGET_COMPLETE
+Turns=5
+AnalysisTurnBudgetReached=True
+BlockedDamageAttempts=25
+MaxConsecutiveNoStateProgressTurns=0
+WinRatePlanAttempts=5
+SuccessfulWinRatePlans=5
+FallbackPlanCount=0
+PlannedActionCount=20
+PlayerSkillUsage=3/12
+UsedPlayerSkills=환형 · 적설<yujin.preparation.hwanhyeong.jeokseol>, 각인<yujin.duel.inscription>, 검분<yujin.normal.inspection>
+ObservedParticipantSkills=유진:환형 · 적설<yujin.preparation.hwanhyeong.jeokseol>, 정예 몹:정예병의 압박(결투)<5fb3b00e68684389a86c92f3e0345061>, 유진:각인<yujin.duel.inscription>, 훈련용 일반 적:달려들기<test_normal_lunge>, 유진:검분<yujin.normal.inspection>, 정예 몹:정예병의 참격(일반공격)<5a239ec7d4944c458ac5329511091871>
+RuntimeErrors=0
+RuntimeWarnings=22
+CriticalInvariants=0
+RequestedTimeScale=30
+ElapsedMilliseconds=46114
+Participants=유진, 정예 몹, 훈련용 일반 적
+WarningSamples=Warning: [VFX VALIDATION] Prefab 누락 / Definition=Olaf_Duel_BloodSplash_VFX @ UnityEngine.Debug:LogWarning (object,UnityEngine.Object)
+------------------------------------------------------------------------
+[Pass] live.autobattle.character_skill_observation@Yujin_MixedBattle / 실전 Character 스킬 실행 관찰 · Yujin_MixedBattle
+Category: Boundary / Mode: LiveScene / Time: 46114ms
+Expected: 플레이어/적 구분 없이 해당 Character가 실제 ActionStart를 최소 1회 발생
+Actual: 2개 고유 Skill ActionStart 관찰
+Details:
+Observed=정예 몹:정예병의 압박(결투)<5fb3b00e68684389a86c92f3e0345061>, 정예 몹:정예병의 참격(일반공격)<5a239ec7d4944c458ac5329511091871>
+모든 후보 스킬의 개별 계약은 Isolated skill coverage가 담당하고, 이 Case는 실제 CameraTest AI/행동 파이프라인에서 캐릭터가 행동했는지를 검증합니다.
+------------------------------------------------------------------------
+[Pass] generic.live.scene_binding@Hifumi_MixedBattle / 실전 Scene UI·전투 연결 · Hifumi_MixedBattle
+Category: UI / Mode: LiveScene / Time: 0ms
+Expected: 실전 Roster 캐릭터와 전투 연결 정상
+Actual: ENEMY · 정예 몹 / 4개 스킬
+Initial: 히후미 / Initialized=True / HP=500/500 / Block=0 / Prestige=0 / Resources=Energy:3 / Parts=[HEAD 125/125 Normal, LEFT_HAND 125/125 Normal, RIGHT_HAND 125/125 Normal, LEGS 125/125 Normal]
+Final: 히후미 / Initialized=True / HP=500/500 / Block=0 / Prestige=0 / Resources=Energy:3 / Parts=[HEAD 125/125 Normal, LEFT_HAND 125/125 Normal, RIGHT_HAND 125/125 Normal, LEGS 125/125 Normal]
+------------------------------------------------------------------------
+[Pass] live.autobattle.full_match@Hifumi_MixedBattle / 실전 스모크 전투 · Hifumi_MixedBattle
+Category: Boundary / Mode: LiveScene / Time: 46578ms
+Expected: 실제 Roster에 참가한 Character가 승률 자동계획 전투를 정상 종료하거나 검증용 5턴 구간을 완주
+Actual: 실전 스모크 구간 정상 완료 · 5턴
+Details:
+Outcome=TURN_BUDGET_COMPLETE
+Turns=5
+AnalysisTurnBudgetReached=True
+BlockedDamageAttempts=10
+MaxConsecutiveNoStateProgressTurns=0
+WinRatePlanAttempts=5
+SuccessfulWinRatePlans=5
+FallbackPlanCount=0
+PlannedActionCount=20
+PlayerSkillUsage=4/12
+UsedPlayerSkills=뼈에 새긴다<hifumi.preparation.engrave_bone>, 육참(肉斬)<hifumi.duel.yukcham>, 푼돈 걸기<hifumi.normal.small_change>, 골단(骨斷)<hifumi.duel.goldan>
+ObservedParticipantSkills=정예 몹:전투 태세(도사림)<356e72e97ac84a3a8757d1a188237f43>, 히후미:뼈에 새긴다<hifumi.preparation.engrave_bone>, 정예 몹:정예병의 참격(일반공격)<5a239ec7d4944c458ac5329511091871>, 히후미:육참(肉斬)<hifumi.duel.yukcham>, 정예 몹:정예병의 압박(결투)<5fb3b00e68684389a86c92f3e0345061>, 히후미:푼돈 걸기<hifumi.normal.small_change>, 훈련용 일반 적:달려들기<test_normal_lunge>, 히후미:골단(骨斷)<hifumi.duel.goldan>
+RuntimeErrors=0
+RuntimeWarnings=27
+CriticalInvariants=0
+RequestedTimeScale=30
+ElapsedMilliseconds=46578
+Participants=히후미, 정예 몹, 훈련용 일반 적
+WarningSamples=Warning: [VFX VALIDATION] Prefab 누락 / Definition=Burn_Tick_VFX @ UnityEngine.Debug:LogWarning (object,UnityEngine.Object) || Warning: [VFX VALIDATION] Prefab 누락 / Definition=Olaf_Duel_BloodSplash_VFX @ UnityEngine.Debug:LogWarning (object,UnityEngine.Object)
+------------------------------------------------------------------------
+[Pass] live.autobattle.character_skill_observation@Hifumi_MixedBattle / 실전 Character 스킬 실행 관찰 · Hifumi_MixedBattle
+Category: Boundary / Mode: LiveScene / Time: 46578ms
+Expected: 플레이어/적 구분 없이 해당 Character가 실제 ActionStart를 최소 1회 발생
+Actual: 3개 고유 Skill ActionStart 관찰
+Details:
+Observed=정예 몹:전투 태세(도사림)<356e72e97ac84a3a8757d1a188237f43>, 정예 몹:정예병의 참격(일반공격)<5a239ec7d4944c458ac5329511091871>, 정예 몹:정예병의 압박(결투)<5fb3b00e68684389a86c92f3e0345061>
+모든 후보 스킬의 개별 계약은 Isolated skill coverage가 담당하고, 이 Case는 실제 CameraTest AI/행동 파이프라인에서 캐릭터가 행동했는지를 검증합니다.
+------------------------------------------------------------------------

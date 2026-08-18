@@ -121,7 +121,7 @@ public sealed class StaggerGaugeMechanic : ReactiveCombatMechanic,
         owner.WeakenPart(temporaryWeakenedPart, owner, null);
 
         int currentTurn =
-            battleContext?.battleManager?.TurnManager?.CurrentTurn ?? 1;
+            battleContext?.Services?.TurnManager?.CurrentTurn ?? 1;
 
         // 현재 해결 단계에서 발생한 약화가 다음 턴 전체를 유지한 뒤 해제된다.
         recoverAfterTurn = currentTurn + 1;

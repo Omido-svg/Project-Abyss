@@ -1,0 +1,28 @@
+CaseId,DisplayName,Category,Status,ElapsedMilliseconds,Expected,Actual,Details
+"system.data.bodypart_skill_access_matrix","부위별 스킬 접근 Matrix","Data","Pass",0,"HEAD=전체 / 양팔=일반·결투 / LEGS=도사림","16/16 matrix PASS",""
+"system.data.phase_order","전투 실행 페이즈 순서","Phase","Pass",0,"PRETURN -> FORESIGHT -> COMBAT","PRETURN -> FORESIGHT -> COMBAT",""
+"system.speed.combat_descending_order","COMBAT 속도 내림차순 실행","Speed","Pass",0,"COMBAT은 높은 Speed부터 실행하며 동속은 ActionIndex/ActionId로 안정 정렬","S9/I0/A10 -> S9/I0/A11 -> S9/I1/A20 -> S3/I0/A30",""
+"system.live.manager_initialized","BattleManager·Roster 초기화","Lifecycle","Pass",0,"BattleManager Initialized + Player + Enemy 1명 이상","Manager=True, Initialized=True, Player=올라프, Enemies=3, ActionManager=True, SpeedManager=True, ClashBuilder=True",""
+"system.speed.same_bodypart_same_speed","같은 부위 다중 슬롯 공유 속도","Speed","Pass",0,"같은 BodyPart의 ActionIndex 0/1은 항상 같은 Speed","Part=HEAD, Configure=True, 10=True, 14=True, Final=14/14",""
+"system.target.original_part_slower_can_clash","원래 대상 부위의 느린 대응 합","Targeting","Pass",0,"적이 노린 정확한 BodyPart 행동은 더 느려도 대응 합 가능","Player 5 vs Enemy 15 / exact original BodyPart => Clash",""
+"system.target.crosspart_slower_redirect_fails","다른 부위의 느린 가로채기 실패","Targeting","Pass",0,"challengerSpeed < incomingSpeed 이면 일방공격","Challenger=9, Incoming=10, CrossPart=LEFT_HAND->HEAD, CanChallenge=False",""
+"system.target.crosspart_equal_redirect_fails","동속 가로채기 실패","Targeting","Pass",0,"challengerSpeed == incomingSpeed 이면 일방공격","Challenger=10, Incoming=10, CrossPart=LEFT_HAND->HEAD, CanChallenge=False",""
+"system.target.crosspart_faster_redirect_clashes","더 빠른 가로채기 합","Targeting","Pass",0,"challengerSpeed > incomingSpeed 이면 가로채기 합","Challenger=11, Incoming=10, CrossPart=LEFT_HAND->HEAD, CanChallenge=True",""
+"system.target.exact_targetslot_required","Focused Encounter exact TargetSlot 필수","Targeting","Pass",0,"TargetCharacter/TargetPart만 같아서는 합이 성립하지 않음","TargetCharacter/TargetPart only => CanChallenge=false",""
+"system.target.explicit_target_not_stolen","명시 TargetSlot 자동 탈취 금지","Targeting","Pass",0,"지정한 A와 합 실패해도 나를 노리는 B로 자동 재매칭하지 않음","ChosenAValid=False, BWouldOppose=True, Match=NULL",""
+"system.pairing.failed_redirect_two_onesided","실패한 가로채기 = 양쪽 일방공격","Pairing","Pass",0,"느린 제3자 지정은 Clash 0 / OneSided 2","Pairs=2, Clash=0, OneSided=2",""
+"system.pairing.valid_redirect_one_clash","성공한 가로채기 = 실제 합","Pairing","Pass",0,"더 빠른 제3자 지정은 Clash 1","Pairs=1, Clash=1, OneSided=0",""
+"system.pairing.single_target_single_clash","하나의 적 행동은 한 합만 점유","Pairing","Pass",0,"같은 적 ActionSlot을 여러 행동이 노려도 실제 Clash는 1개","Pairs=2, Clash=1, OneSided=1, IncomingUseCount=1",""
+"system.pairing.preview_does_not_mutate_links","합 Preview는 계획 TargetSlot을 오염시키지 않음","Pairing","Pass",0,"BuildClashPreview는 기존 exact TargetSlot을 유지하고 반대쪽 링크를 쓰지 않음","Pairs=1, Clash=True, PlayerTargetPreserved=True, IncomingMutated=False",""
+"system.pairing.execution_links_actual_clash_only","실행 큐는 실제 합만 상호 링크","Pairing","Pass",1,"BuildQueue는 성립한 합만 mutual TargetSlot로 연결하고 실패한 redirect는 일방공격 타깃만 보존","ValidClashLinked=True, FailedRedirectClash=0, FailedRedirectOneSided=2, DeclaredTargetPreserved=True",""
+"system.resource.plan_energy_overspend_rejected","계획 에너지 초과 예약 거부","Resource","Pass",2,"ActionManager는 현재 에너지보다 큰 누적 계획 비용을 등록하지 않음","Skill=난도질, Cost=2, Energy=3, Attempt=2, Added=1, Rejected=True, Planned=2",""
+"system.planning.preparation_plan_cancel","도사림 계획·취소·에너지 예약","Planning","Pass",1,"START 전 효과/에너지 소비 없이 FORESIGHT 슬롯 계획, 취소 시 예약 해제","Skill=웅크리기, Part=LEGS, Add/Remove=True/True, Energy=3->3->3, Reserved=0->0, Phase=FORESIGHT",""
+"system.phase.preparation_before_combat_queue","도사림 큐가 COMBAT보다 선행","Phase","Pass",0,"PreparationQueue와 ClashQueue가 분리되고 Resolve 순서는 PRETURN->FORESIGHT->COMBAT","Prestige=0, Preparation=1, CombatPairs=1, CombatIsClash=False",""
+"system.live.actual_slot_speed_consistency","현재 인게임 슬롯 속도 일관성","LiveState","Pass",2,"모든 ActionSlot.Speed == 현재 Owner/BodyPart Speed, 동일 부위 슬롯은 동일","Slots=6, 모든 슬롯 현재 Speed와 일치",""
+"system.live.player_exact_target_contract","현재 플레이어 계획 exact TargetSlot","LiveState","Skip",0,"플레이어 COMBAT 계획은 적 행동 ActionSlot을 명시적으로 지정","현재 플레이어 COMBAT 계획이 없습니다. 스킬 타깃 지정 후 다시 실행하면 실제 계획까지 검사합니다.",""
+"system.live.preview_pair_policy_consistency","현재 Preview 합과 백엔드 Policy 일치","LiveState","Pass",0,"Preview의 모든 Clash pair가 ClashMatchPolicy.CanChallenge로 정당화됨","PreviewPairs=5, Clash=0, OneSided=5, UsedSlots=5",""
+"system.live.targeting_matrix_snapshot","현재 타깃·속도·합 Matrix Snapshot","LiveState","Pass",2,"현재 COMBAT ActionSlot의 속도, 선언 타깃, exact TargetSlot, Preview 합/일방공격을 진단용으로 기록","CombatSlots=5, PreviewPairs=5","Id=2 / 정예 몹:LEFT_HAND[0] Speed=16 / Skill=정예병의 압박(결투) / Declared=올라프:LEFT_HAND / Exact=NULL / Policy=N/A / Preview=ONE_SIDED
+Id=3 / 정예 몹:RIGHT_HAND[0] Speed=8 / Skill=정예병의 참격(일반공격) / Declared=올라프:RIGHT_HAND / Exact=NULL / Policy=N/A / Preview=ONE_SIDED
+Id=1 / 정예 몹:HEAD[0] Speed=6 / Skill=정예병의 압박(결투) / Declared=올라프:HEAD / Exact=NULL / Policy=N/A / Preview=ONE_SIDED
+Id=5 / 훈련용 일반 적:CHARACTER[0] Speed=6 / Skill=달려들기 / Declared=올라프:LEGS / Exact=NULL / Policy=N/A / Preview=ONE_SIDED
+Id=6 / 훈련용 일반 적:CHARACTER[0] Speed=5 / Skill=달려들기 / Declared=올라프:RIGHT_HAND / Exact=NULL / Policy=N/A / Preview=ONE_SIDED"

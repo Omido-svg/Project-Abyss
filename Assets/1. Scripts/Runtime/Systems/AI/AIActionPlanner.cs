@@ -143,7 +143,7 @@ public sealed class AIActionPlanner
 
         if (enemy == null ||
             enemy.IsDead ||
-            context?.battleManager?.SpeedManager == null)
+            context?.Services?.SpeedManager == null)
         {
             return result;
         }
@@ -214,7 +214,7 @@ public sealed class AIActionPlanner
         int actionIndex,
         AISkillDecision decision)
     {
-        if (context?.battleManager?.SpeedManager == null ||
+        if (context?.Services?.SpeedManager == null ||
             source?.Owner == null ||
             decision?.Skill == null ||
             !decision.TargetPoint.IsValid)
@@ -231,7 +231,7 @@ public sealed class AIActionPlanner
                 decision.TargetPoint.Character,
             TargetPart =
                 decision.TargetPoint.Part,
-            Speed = context.battleManager
+            Speed = context.Services
                 .SpeedManager
                 .GetSpeed(
                     source.Owner,

@@ -1,0 +1,416 @@
+PROJECT ABYSS CHARACTER VERIFICATION
+Character: 유진
+Profile: 유진_Verification (character.Yujin.060a5617ffe7f004f979c24bc775dc19)
+Bundle: Yujin_TODO_Bundle
+Started: 2026-08-18T14:05:56.3591122+09:00
+Finished: 2026-08-18T14:09:09.7261290+09:00
+PASS 45 / FAIL 0 / SKIP 0 / ERROR 0
+========================================================================
+[Pass] coverage.manifest.closed_world / 완전 커버리지 명세 폐쇄성
+Category: Data / Mode: DataOnly / Time: 0ms
+Expected: 모든 기능이 폐쇄형 검증 카탈로그에 등록됨
+Actual: PASS / Skills=12, Effects=0
+Initial: Character=NULL
+Final: Character=NULL
+Details:
+Skills=12
+Effects=0
+RequiredMechanics=YujinMechanic
+------------------------------------------------------------------------
+[Pass] coverage.mechanics.forced_scenarios / 패시브·메커닉 강제 시나리오
+Category: Passive / Mode: IsolatedRuntime / Time: 26ms
+Expected: 모든 필수 패시브 메커닉의 강제 이벤트 시나리오 통과
+Actual: PASS / Mechanics=3
+Initial: 유진 / Initialized=True / HP=720/720 / Block=0 / Prestige=0 / Resources=Energy:3 / Parts=[HEAD 180/180 Normal, LEFT_HAND 180/180 Normal, RIGHT_HAND 180/180 Normal, LEGS 180/180 Normal]
+Final: 유진 / Initialized=True / HP=720/720 / Block=0 / Prestige=0 / Resources=Energy:3 / Parts=[HEAD 180/180 Normal, LEFT_HAND 180/180 Normal, RIGHT_HAND 180/180 Normal, LEGS 180/180 Normal]
+Details:
+유진 Baeku 표식 44 발화 PASS
+유진 Jeokseol 표식 44 발화 PASS
+유진 Nakil 표식 44 발화 PASS
+유진 추격 Baeku 상한 1Hit PASS / Sense 4->3 / HP 720->697
+유진 추격 Jeokseol 상한 2Hit PASS / Sense 6->4 / HP 720->662
+유진 추격 Nakil 상한 5Hit PASS / Sense 10->5 / HP 720->500
+유진 3무기 앞/뒷면 위력표 및 TurnStart 감 PASS
+환형의 흐름 WeaponChanged 이벤트 PASS / 기본+1 + 패시브+1
+유진 포착 앞면 확률 +10%·TurnEnd 초기화 PASS
+유진 양형 뒷면 위력 +2·TurnEnd 초기화 PASS
+유진 검분 적중 표식 기본량 PASS
+유진 조식 적중 살수의 감 +1 PASS
+유진 각인 결투 승리 표식 2배 PASS
+유진 낙인 즉시 치명 수치 표식·후속 적중 +3 PASS
+유진 연대책임 최초1+파괴/처치 연계 최대4 PASS
+유진 재심 교환당 무료 1회·감 미소모·TurnEnd 해제 PASS
+------------------------------------------------------------------------
+[Pass] coverage.skill.yujin.normal.inspection / 스킬 완전 시나리오: 검분
+Category: NormalAttack / Mode: IsolatedRuntime / Time: 4ms
+Expected: 자원·굴림·대상·모든 효과 Entry 강제 실행
+Actual: PASS / Rolls=3, Effects=0
+Initial: 유진 / Initialized=True / HP=720/720 / Block=0 / Prestige=0 / Resources=Energy:3 / Parts=[HEAD 180/180 Normal, LEFT_HAND 180/180 Normal, RIGHT_HAND 180/180 Normal, LEGS 180/180 Normal]
+Final: 유진 / Initialized=True / HP=720/720 / Block=0 / Prestige=100 / Resources=Energy:3 / Parts=[HEAD 180/180 Normal, LEFT_HAND 180/180 Normal, RIGHT_HAND 180/180 Normal, LEGS 180/180 Normal]
+Details:
+Resource PASS: Energy 3->3, Prestige 100->100
+Roll[0]=🪙 앞(22)
+Roll[1]=🪙 뒤(14)
+Roll[2]=🪙 앞(22)
+DamageTarget PASS: 180->179 / 유진/HEAD
+------------------------------------------------------------------------
+[Pass] coverage.skill.yujin.normal.breakfast / 스킬 완전 시나리오: 조식
+Category: NormalAttack / Mode: IsolatedRuntime / Time: 2ms
+Expected: 자원·굴림·대상·모든 효과 Entry 강제 실행
+Actual: PASS / Rolls=3, Effects=0
+Initial: 유진 / Initialized=True / HP=720/720 / Block=0 / Prestige=0 / Resources=Energy:3 / Parts=[HEAD 180/180 Normal, LEFT_HAND 180/180 Normal, RIGHT_HAND 180/180 Normal, LEGS 180/180 Normal]
+Final: 유진 / Initialized=True / HP=720/720 / Block=0 / Prestige=100 / Resources=Energy:3 / Parts=[HEAD 180/180 Normal, LEFT_HAND 180/180 Normal, RIGHT_HAND 180/180 Normal, LEGS 180/180 Normal]
+Details:
+Resource PASS: Energy 3->1, Prestige 100->100
+Roll[0]=🪙 앞(22)
+Roll[1]=🪙 뒤(16)
+Roll[2]=🪙 앞(22)
+DamageTarget PASS: 180->179 / 유진/HEAD
+------------------------------------------------------------------------
+[Pass] coverage.skill.yujin.duel.inscription / 스킬 완전 시나리오: 각인
+Category: Duel / Mode: IsolatedRuntime / Time: 3ms
+Expected: 자원·굴림·대상·모든 효과 Entry 강제 실행
+Actual: PASS / Rolls=3, Effects=0
+Initial: 유진 / Initialized=True / HP=720/720 / Block=0 / Prestige=0 / Resources=Energy:3 / Parts=[HEAD 180/180 Normal, LEFT_HAND 180/180 Normal, RIGHT_HAND 180/180 Normal, LEGS 180/180 Normal]
+Final: 유진 / Initialized=True / HP=720/720 / Block=0 / Prestige=100 / Resources=Energy:3 / Parts=[HEAD 180/180 Normal, LEFT_HAND 180/180 Normal, RIGHT_HAND 180/180 Normal, LEGS 180/180 Normal]
+Details:
+Resource PASS: Energy 3->2, Prestige 100->100
+Roll[0]=🪙 앞(23)
+Roll[1]=🪙 뒤(15)
+Roll[2]=🪙 앞(23)
+DamageTarget PASS: 180->179 / 유진/HEAD
+------------------------------------------------------------------------
+[Pass] coverage.skill.yujin.duel.pursuit / 스킬 완전 시나리오: 추격
+Category: Duel / Mode: IsolatedRuntime / Time: 2ms
+Expected: 자원·굴림·대상·모든 효과 Entry 강제 실행
+Actual: PASS / Rolls=3, Effects=0
+Initial: 유진 / Initialized=True / HP=720/720 / Block=0 / Prestige=0 / Resources=Energy:3 / Parts=[HEAD 180/180 Normal, LEFT_HAND 180/180 Normal, RIGHT_HAND 180/180 Normal, LEGS 180/180 Normal]
+Final: 유진 / Initialized=True / HP=720/720 / Block=0 / Prestige=100 / Resources=Energy:3 / Parts=[HEAD 180/180 Normal, LEFT_HAND 180/180 Normal, RIGHT_HAND 180/180 Normal, LEGS 180/180 Normal]
+Details:
+Resource PASS: Energy 3->2, Prestige 100->100
+Roll[0]=🪙 앞(23)
+Roll[1]=🪙 뒤(15)
+Roll[2]=🪙 앞(23)
+DamageTarget PASS: 180->179 / 유진/HEAD
+------------------------------------------------------------------------
+[Pass] coverage.skill.yujin.preparation.sentencing / 스킬 완전 시나리오: 양형
+Category: Preparation / Mode: IsolatedRuntime / Time: 2ms
+Expected: 자원·굴림·대상·모든 효과 Entry 강제 실행
+Actual: PASS / Rolls=1, Effects=0
+Initial: 유진 / Initialized=True / HP=720/720 / Block=0 / Prestige=0 / Resources=Energy:3 / Parts=[HEAD 180/180 Normal, LEFT_HAND 180/180 Normal, RIGHT_HAND 180/180 Normal, LEGS 180/180 Normal]
+Final: 유진 / Initialized=True / HP=720/720 / Block=0 / Prestige=100 / Resources=Energy:3 / Parts=[HEAD 180/180 Normal, LEFT_HAND 180/180 Normal, RIGHT_HAND 180/180 Normal, LEGS 180/180 Normal]
+Details:
+Resource PASS: Energy 3->2, Prestige 100->100
+Roll[0]=🎲 0
+------------------------------------------------------------------------
+[Pass] coverage.skill.yujin.preparation.capture / 스킬 완전 시나리오: 포착
+Category: Preparation / Mode: IsolatedRuntime / Time: 2ms
+Expected: 자원·굴림·대상·모든 효과 Entry 강제 실행
+Actual: PASS / Rolls=1, Effects=0
+Initial: 유진 / Initialized=True / HP=720/720 / Block=0 / Prestige=0 / Resources=Energy:3 / Parts=[HEAD 180/180 Normal, LEFT_HAND 180/180 Normal, RIGHT_HAND 180/180 Normal, LEGS 180/180 Normal]
+Final: 유진 / Initialized=True / HP=720/720 / Block=0 / Prestige=100 / Resources=Energy:3 / Parts=[HEAD 180/180 Normal, LEFT_HAND 180/180 Normal, RIGHT_HAND 180/180 Normal, LEGS 180/180 Normal]
+Details:
+Resource PASS: Energy 3->2, Prestige 100->100
+Roll[0]=🎲 0
+------------------------------------------------------------------------
+[Pass] coverage.skill.yujin.preparation.hwanhyeong.nakil / 스킬 완전 시나리오: 환형 · 낙일
+Category: Preparation / Mode: IsolatedRuntime / Time: 2ms
+Expected: 자원·굴림·대상·모든 효과 Entry 강제 실행
+Actual: PASS / Rolls=1, Effects=0
+Initial: 유진 / Initialized=True / HP=720/720 / Block=0 / Prestige=0 / Resources=Energy:3 / Parts=[HEAD 180/180 Normal, LEFT_HAND 180/180 Normal, RIGHT_HAND 180/180 Normal, LEGS 180/180 Normal]
+Final: 유진 / Initialized=True / HP=720/720 / Block=0 / Prestige=100 / Resources=Energy:3 / Parts=[HEAD 180/180 Normal, LEFT_HAND 180/180 Normal, RIGHT_HAND 180/180 Normal, LEGS 180/180 Normal]
+Details:
+Resource PASS: Energy 3->2, Prestige 100->100
+Roll[0]=🎲 0
+Precondition: 환형 Baeku->Nakil 실행 상태 구성
+------------------------------------------------------------------------
+[Pass] coverage.skill.yujin.preparation.hwanhyeong.baeku / 스킬 완전 시나리오: 환형 · 백우
+Category: Preparation / Mode: IsolatedRuntime / Time: 2ms
+Expected: 자원·굴림·대상·모든 효과 Entry 강제 실행
+Actual: PASS / Rolls=1, Effects=0
+Initial: 유진 / Initialized=True / HP=720/720 / Block=0 / Prestige=0 / Resources=Energy:3 / Parts=[HEAD 180/180 Normal, LEFT_HAND 180/180 Normal, RIGHT_HAND 180/180 Normal, LEGS 180/180 Normal]
+Final: 유진 / Initialized=True / HP=720/720 / Block=0 / Prestige=100 / Resources=Energy:3 / Parts=[HEAD 180/180 Normal, LEFT_HAND 180/180 Normal, RIGHT_HAND 180/180 Normal, LEGS 180/180 Normal]
+Details:
+Resource PASS: Energy 3->2, Prestige 100->100
+Roll[0]=🎲 0
+Precondition: 환형 Jeokseol->Baeku 실행 상태 구성
+------------------------------------------------------------------------
+[Pass] coverage.skill.yujin.preparation.hwanhyeong.jeokseol / 스킬 완전 시나리오: 환형 · 적설
+Category: Preparation / Mode: IsolatedRuntime / Time: 2ms
+Expected: 자원·굴림·대상·모든 효과 Entry 강제 실행
+Actual: PASS / Rolls=1, Effects=0
+Initial: 유진 / Initialized=True / HP=720/720 / Block=0 / Prestige=0 / Resources=Energy:3 / Parts=[HEAD 180/180 Normal, LEFT_HAND 180/180 Normal, RIGHT_HAND 180/180 Normal, LEGS 180/180 Normal]
+Final: 유진 / Initialized=True / HP=720/720 / Block=0 / Prestige=100 / Resources=Energy:3 / Parts=[HEAD 180/180 Normal, LEFT_HAND 180/180 Normal, RIGHT_HAND 180/180 Normal, LEGS 180/180 Normal]
+Details:
+Resource PASS: Energy 3->2, Prestige 100->100
+Roll[0]=🎲 0
+Precondition: 환형 Baeku->Jeokseol 실행 상태 구성
+------------------------------------------------------------------------
+[Pass] coverage.skill.yujin.prestige.brand / 스킬 완전 시나리오: 낙인
+Category: Prestige / Mode: IsolatedRuntime / Time: 1ms
+Expected: 자원·굴림·대상·모든 효과 Entry 강제 실행
+Actual: PASS / Rolls=1, Effects=0
+Initial: 유진 / Initialized=True / HP=720/720 / Block=0 / Prestige=0 / Resources=Energy:3 / Parts=[HEAD 180/180 Normal, LEFT_HAND 180/180 Normal, RIGHT_HAND 180/180 Normal, LEGS 180/180 Normal]
+Final: 유진 / Initialized=True / HP=720/720 / Block=0 / Prestige=100 / Resources=Energy:3 / Parts=[HEAD 180/180 Normal, LEFT_HAND 180/180 Normal, RIGHT_HAND 180/180 Normal, LEGS 180/180 Normal]
+Details:
+Resource PASS: Energy 3->3, Prestige 100->0
+Roll[0]=🎲 0
+------------------------------------------------------------------------
+[Pass] coverage.skill.yujin.prestige.joint_liability / 스킬 완전 시나리오: 연좌
+Category: Prestige / Mode: IsolatedRuntime / Time: 1ms
+Expected: 자원·굴림·대상·모든 효과 Entry 강제 실행
+Actual: PASS / Rolls=1, Effects=0
+Initial: 유진 / Initialized=True / HP=720/720 / Block=0 / Prestige=0 / Resources=Energy:3 / Parts=[HEAD 180/180 Normal, LEFT_HAND 180/180 Normal, RIGHT_HAND 180/180 Normal, LEGS 180/180 Normal]
+Final: 유진 / Initialized=True / HP=720/720 / Block=0 / Prestige=100 / Resources=Energy:3 / Parts=[HEAD 180/180 Normal, LEFT_HAND 180/180 Normal, RIGHT_HAND 180/180 Normal, LEGS 180/180 Normal]
+Details:
+Resource PASS: Energy 3->3, Prestige 100->0
+Roll[0]=🎲 0
+------------------------------------------------------------------------
+[Pass] coverage.skill.yujin.prestige.retrial / 스킬 완전 시나리오: 재심
+Category: Prestige / Mode: IsolatedRuntime / Time: 1ms
+Expected: 자원·굴림·대상·모든 효과 Entry 강제 실행
+Actual: PASS / Rolls=1, Effects=0
+Initial: 유진 / Initialized=True / HP=720/720 / Block=0 / Prestige=0 / Resources=Energy:3 / Parts=[HEAD 180/180 Normal, LEFT_HAND 180/180 Normal, RIGHT_HAND 180/180 Normal, LEGS 180/180 Normal]
+Final: 유진 / Initialized=True / HP=720/720 / Block=0 / Prestige=100 / Resources=Energy:3 / Parts=[HEAD 180/180 Normal, LEFT_HAND 180/180 Normal, RIGHT_HAND 180/180 Normal, LEGS 180/180 Normal]
+Details:
+Resource PASS: Energy 3->3, Prestige 100->0
+Roll[0]=🎲 0
+------------------------------------------------------------------------
+[Pass] generic.data.core_references / Core 데이터 참조
+Category: Data / Mode: DataOnly / Time: 0ms
+Expected: 필수 Core 참조가 모두 연결됨
+Actual: Bundle/Data/Loadout/Prefab 연결 정상
+Initial: Character=NULL
+Final: Character=NULL
+------------------------------------------------------------------------
+[Pass] generic.data.prefab_compatibility / Prefab·Bundle 호환성
+Category: Data / Mode: DataOnly / Time: 0ms
+Expected: Bundle Kind와 표준 Prefab Component가 호환됨
+Actual: Yujin 호환 정상
+Initial: Character=NULL
+Final: Character=NULL
+------------------------------------------------------------------------
+[Pass] generic.data.loadout_integrity / 스킬 장착·슬롯 노출
+Category: Data / Mode: DataOnly / Time: 0ms
+Expected: 카테고리 한도·타입·슬롯 노출 정상
+Actual: 일반 2, 결투 2, 도사림 3, 위세 1
+Initial: Character=NULL
+Final: Character=NULL
+------------------------------------------------------------------------
+[Pass] generic.data.skill_definitions / SkillDefinition 무결성
+Category: Data / Mode: DataOnly / Time: 0ms
+Expected: 모든 SkillDefinition ID와 Runtime 생성 정상
+Actual: 12개 스킬 정상
+Initial: Character=NULL
+Final: Character=NULL
+------------------------------------------------------------------------
+[Pass] generic.presentation.timeline_and_animator / Timeline·Animator 연결
+Category: Presentation / Mode: DataOnly / Time: 0ms
+Expected: Animator·Presentation·Timeline 연결 정상
+Actual: Presentation 검증 통과
+Initial: Character=NULL
+Final: Character=NULL
+------------------------------------------------------------------------
+[Pass] generic.runtime.initialization / 격리 런타임 초기화
+Category: Boundary / Mode: IsolatedRuntime / Time: 1ms
+Expected: Isolated BattleContext 초기화와 메커닉 구독 성공
+Actual: 유진 / Initialized=True / HP=720/720 / Block=0 / Prestige=0 / Resources=Energy:3 / Parts=[HEAD 180/180 Normal, LEFT_HAND 180/180 Normal, RIGHT_HAND 180/180 Normal, LEGS 180/180 Normal]
+Initial: 유진 / Initialized=True / HP=720/720 / Block=0 / Prestige=0 / Resources=Energy:3 / Parts=[HEAD 180/180 Normal, LEFT_HAND 180/180 Normal, RIGHT_HAND 180/180 Normal, LEGS 180/180 Normal]
+Final: 유진 / Initialized=True / HP=720/720 / Block=0 / Prestige=0 / Resources=Energy:3 / Parts=[HEAD 180/180 Normal, LEFT_HAND 180/180 Normal, RIGHT_HAND 180/180 Normal, LEGS 180/180 Normal]
+------------------------------------------------------------------------
+[Pass] generic.runtime.body_parts / 부위 런타임 상태
+Category: Status / Mode: IsolatedRuntime / Time: 1ms
+Expected: 부위 Owner·HP·타입·초기 상태 정상
+Actual: 4개 부위 정상
+Initial: 유진 / Initialized=True / HP=720/720 / Block=0 / Prestige=0 / Resources=Energy:3 / Parts=[HEAD 180/180 Normal, LEFT_HAND 180/180 Normal, RIGHT_HAND 180/180 Normal, LEGS 180/180 Normal]
+Final: 유진 / Initialized=True / HP=720/720 / Block=0 / Prestige=0 / Resources=Energy:3 / Parts=[HEAD 180/180 Normal, LEFT_HAND 180/180 Normal, RIGHT_HAND 180/180 Normal, LEGS 180/180 Normal]
+------------------------------------------------------------------------
+[Pass] generic.runtime.skill_binding / 런타임 스킬 바인딩
+Category: Data / Mode: IsolatedRuntime / Time: 1ms
+Expected: 모든 장착 스킬 생성 및 RuntimeSkill ID 중복 없음
+Actual: 12개 RuntimeSkill / 12개 고유 SkillId
+Initial: 유진 / Initialized=True / HP=720/720 / Block=0 / Prestige=0 / Resources=Energy:3 / Parts=[HEAD 180/180 Normal, LEFT_HAND 180/180 Normal, RIGHT_HAND 180/180 Normal, LEGS 180/180 Normal]
+Final: 유진 / Initialized=True / HP=720/720 / Block=0 / Prestige=0 / Resources=Energy:3 / Parts=[HEAD 180/180 Normal, LEFT_HAND 180/180 Normal, RIGHT_HAND 180/180 Normal, LEGS 180/180 Normal]
+------------------------------------------------------------------------
+[Pass] generic.runtime.deterministic_random / 결정론적 굴림 재현
+Category: Boundary / Mode: IsolatedRuntime / Time: 1ms
+Expected: 동일 Seed·Sample은 동일 RollResult
+Actual: 🎲 3 + 4
+Initial: 유진 / Initialized=True / HP=720/720 / Block=0 / Prestige=0 / Resources=Energy:3 / Parts=[HEAD 180/180 Normal, LEFT_HAND 180/180 Normal, RIGHT_HAND 180/180 Normal, LEGS 180/180 Normal]
+Final: 유진 / Initialized=True / HP=720/720 / Block=0 / Prestige=0 / Resources=Energy:3 / Parts=[HEAD 180/180 Normal, LEFT_HAND 180/180 Normal, RIGHT_HAND 180/180 Normal, LEGS 180/180 Normal]
+------------------------------------------------------------------------
+[Pass] core3.data.verification_manifest / Core 3 전체 검증 Case 폐쇄성
+Category: Data / Mode: DataOnly / Time: 0ms
+Expected: Core 3 공통/고유/스킬별 Case가 모두 존재
+Actual: Expected=43, Actual=43, Skills=12
+Initial: Character=NULL
+Final: Character=NULL
+------------------------------------------------------------------------
+[Pass] core3.data.skill_manifest / Core 3 스킬 수·ID 완전성
+Category: Data / Mode: DataOnly / Time: 0ms
+Expected: 스킬 12개·고유 ID·RuntimeSkill 생성
+Actual: Definitions=12, UniqueIds=12, Expected=12
+Initial: Character=NULL
+Final: Character=NULL
+------------------------------------------------------------------------
+[Pass] core3.data.phase_contract / 스킬 타입 ↔ 실행 페이즈 계약
+Category: Boundary / Mode: DataOnly / Time: 0ms
+Expected: Prestige=PRETURN / Preparation=FORESIGHT / Normal·Duel=COMBAT
+Actual: 12개 스킬 일치
+Initial: Character=NULL
+Final: Character=NULL
+------------------------------------------------------------------------
+[Pass] core3.runtime.bodypart_skill_access / 부위별 스킬 접근 계약
+Category: Boundary / Mode: IsolatedRuntime / Time: 1ms
+Expected: HEAD 전체 / 양팔 일반·결투 / LEGS 도사림
+Actual: Policy + GetSelectableSkills 일치
+Initial: 유진 / Initialized=True / HP=720/720 / Block=0 / Prestige=0 / Resources=Energy:3 / Parts=[HEAD 180/180 Normal, LEFT_HAND 180/180 Normal, RIGHT_HAND 180/180 Normal, LEGS 180/180 Normal]
+Final: 유진 / Initialized=True / HP=720/720 / Block=0 / Prestige=0 / Resources=Energy:3 / Parts=[HEAD 180/180 Normal, LEFT_HAND 180/180 Normal, RIGHT_HAND 180/180 Normal, LEGS 180/180 Normal]
+------------------------------------------------------------------------
+[Pass] core3.runtime.shared_bodypart_speed / 동일 부위 다중 슬롯 공유 속도
+Category: Boundary / Mode: IsolatedRuntime / Time: 1ms
+Expected: 동일 BodyPart의 모든 ActionIndex는 같은 Speed
+Actual: Part=HEAD, ConfigurePreserved=True, 10=>True, 13=>True, Final=13/13
+Initial: 유진 / Initialized=True / HP=720/720 / Block=0 / Prestige=0 / Resources=Energy:3 / Parts=[HEAD 180/180 Normal, LEFT_HAND 180/180 Normal, RIGHT_HAND 180/180 Normal, LEGS 180/180 Normal]
+Final: 유진 / Initialized=True / HP=720/720 / Block=0 / Prestige=0 / Resources=Energy:3 / Parts=[HEAD 180/180 Normal, LEFT_HAND 180/180 Normal, RIGHT_HAND 180/180 Normal, LEGS 180/180 Normal]
+------------------------------------------------------------------------
+[Pass] core3.runtime.preparation_plan_cancel / 도사림 계획·에너지 예약·취소
+Category: Preparation / Mode: IsolatedRuntime / Time: 1ms
+Expected: START 전 계획만 등록·취소 가능·FORESIGHT 큐 실행
+Actual: Skill=환형 · 백우, Part=LEGS, Add/Remove/ReAdd=True/True/True, Energy=3->3->3, Reserved=1->0, QueuePreparation=1
+Initial: 유진 / Initialized=True / HP=720/720 / Block=0 / Prestige=0 / Resources=Energy:3 / Parts=[HEAD 180/180 Normal, LEFT_HAND 180/180 Normal, RIGHT_HAND 180/180 Normal, LEGS 180/180 Normal]
+Final: 유진 / Initialized=True / HP=720/720 / Block=0 / Prestige=0 / Resources=Energy:3 / Parts=[HEAD 180/180 Normal, LEFT_HAND 180/180 Normal, RIGHT_HAND 180/180 Normal, LEGS 180/180 Normal]
+------------------------------------------------------------------------
+[Pass] core3.runtime.preparation_replace / 도사림 동일 슬롯 교체 계약
+Category: Preparation / Mode: IsolatedRuntime / Time: 1ms
+Expected: 도사림 교체는 동일 ActionSlot 수정 / 최종 예약만 유지
+Actual: 환형 · 백우->환형 · 적설, Slots=1, ActionId=1->1, Reserved=1/1, Energy=3->3
+Initial: 유진 / Initialized=True / HP=720/720 / Block=0 / Prestige=0 / Resources=Energy:3 / Parts=[HEAD 180/180 Normal, LEFT_HAND 180/180 Normal, RIGHT_HAND 180/180 Normal, LEGS 180/180 Normal]
+Final: 유진 / Initialized=True / HP=720/720 / Block=0 / Prestige=0 / Resources=Energy:3 / Parts=[HEAD 180/180 Normal, LEFT_HAND 180/180 Normal, RIGHT_HAND 180/180 Normal, LEGS 180/180 Normal]
+------------------------------------------------------------------------
+[Pass] core3.runtime.unique_gauge / 캐릭터 고유 게이지 계약
+Category: UI / Mode: IsolatedRuntime / Time: 1ms
+Expected: 고유 게이지 환형 / 0..1 / 표시값
+Actual: Label=환형, Normalized=0.333, Value=Baeku
+Initial: 유진 / Initialized=True / HP=720/720 / Block=0 / Prestige=0 / Resources=Energy:3 / Parts=[HEAD 180/180 Normal, LEFT_HAND 180/180 Normal, RIGHT_HAND 180/180 Normal, LEGS 180/180 Normal]
+Final: 유진 / Initialized=True / HP=720/720 / Block=0 / Prestige=0 / Resources=Energy:3 / Parts=[HEAD 180/180 Normal, LEFT_HAND 180/180 Normal, RIGHT_HAND 180/180 Normal, LEGS 180/180 Normal]
+------------------------------------------------------------------------
+[Pass] yujin.data.skill_coverage / 유진 스킬 ID 전체 등록
+Category: Data / Mode: DataOnly / Time: 0ms
+Expected: 유진 고유 스킬 ID 12개 존재
+Actual: 12/12 등록
+Initial: Character=NULL
+Final: Character=NULL
+------------------------------------------------------------------------
+[Pass] yujin.preparation.hwanhyeong_loadout_contract / 환형 3종 기본 도사림 장착
+Category: Preparation / Mode: DataOnly / Time: 2ms
+Expected: 환형 3종 기본 장착 + 기존 도사림 후보 보존
+Actual: Equipped=[yujin.preparation.hwanhyeong.baeku, yujin.preparation.hwanhyeong.jeokseol, yujin.preparation.hwanhyeong.nakil], CaptureCandidate=True, SentencingCandidate=True, Contracts=True
+Initial: Character=NULL
+Final: Character=NULL
+------------------------------------------------------------------------
+[Pass] yujin.passive.mechanic_registration / 유진 통합 메커닉 등록
+Category: Passive / Mode: IsolatedRuntime / Time: 1ms
+Expected: YujinMechanic 생성·등록·Owner 연결
+Actual: Registered
+Initial: 유진 / Initialized=True / HP=720/720 / Block=0 / Prestige=0 / Resources=Energy:3 / Parts=[HEAD 180/180 Normal, LEFT_HAND 180/180 Normal, RIGHT_HAND 180/180 Normal, LEGS 180/180 Normal]
+Final: 유진 / Initialized=True / HP=720/720 / Block=0 / Prestige=0 / Resources=Energy:3 / Parts=[HEAD 180/180 Normal, LEFT_HAND 180/180 Normal, RIGHT_HAND 180/180 Normal, LEGS 180/180 Normal]
+------------------------------------------------------------------------
+[Pass] yujin.passive.hwanhyeong_flow / 패시브 · 환형의 흐름
+Category: Passive / Mode: IsolatedRuntime / Time: 2ms
+Expected: 환형 완료 턴 기본 +1 + 패시브 +1
+Actual: Queued=True, Stayed=True, Applied=True, SwitchTurnGain=2, NormalTurnGain=1, PassiveGain=1
+Initial: 유진 / Initialized=True / HP=720/720 / Block=0 / Prestige=0 / Resources=Energy:3 / Parts=[HEAD 180/180 Normal, LEFT_HAND 180/180 Normal, RIGHT_HAND 180/180 Normal, LEGS 180/180 Normal]
+Final: 유진 / Initialized=True / HP=720/720 / Block=0 / Prestige=0 / Resources=Energy:3 / Parts=[HEAD 180/180 Normal, LEFT_HAND 180/180 Normal, RIGHT_HAND 180/180 Normal, LEGS 180/180 Normal]
+------------------------------------------------------------------------
+[Pass] yujin.passive.unlimited_weapon_switch / 환형 빛 1·턴당 1회
+Category: Passive / Mode: IsolatedRuntime / Time: 2ms
+Expected: 환형 빛 1 소비·턴당 1회·다음 턴 적용
+Actual: First=True/True, SameTurnSecond=False, FirstApplied=True, NextTurn=True/True, SecondApplied=True, Energy=3→2/3→2, Events=2
+Initial: 유진 / Initialized=True / HP=720/720 / Block=0 / Prestige=0 / Resources=Energy:3 / Parts=[HEAD 180/180 Normal, LEFT_HAND 180/180 Normal, RIGHT_HAND 180/180 Normal, LEGS 180/180 Normal]
+Final: 유진 / Initialized=True / HP=720/720 / Block=0 / Prestige=0 / Resources=Energy:2 / Parts=[HEAD 180/180 Normal, LEFT_HAND 180/180 Normal, RIGHT_HAND 180/180 Normal, LEGS 180/180 Normal]
+Details:
+Baeku->Jeokseol, Jeokseol->Nakil
+------------------------------------------------------------------------
+[Pass] yujin.passive.weapon_switch_before_action_only / 환형 계획 중 예약 허용
+Category: Passive / Mode: IsolatedRuntime / Time: 2ms
+Expected: 계획 슬롯 배치 후에도 환형 예약 가능·다음 턴 적용
+Actual: SelectedSlot=True/True, Energy=3→2, StayedCurrentTurn=True, AppliedNextTurn=True
+Initial: 유진 / Initialized=True / HP=720/720 / Block=0 / Prestige=0 / Resources=Energy:3 / Parts=[HEAD 180/180 Normal, LEFT_HAND 180/180 Normal, RIGHT_HAND 180/180 Normal, LEGS 180/180 Normal]
+Final: 유진 / Initialized=True / HP=720/720 / Block=0 / Prestige=0 / Resources=Energy:2 / Parts=[HEAD 180/180 Normal, LEFT_HAND 180/180 Normal, RIGHT_HAND 180/180 Normal, LEGS 180/180 Normal]
+------------------------------------------------------------------------
+[Pass] yujin.passive.weapon_profiles / 무기 프로필 수치
+Category: Data / Mode: DataOnly / Time: 0ms
+Expected: 백우 3/40%/12/4, 적설 2/30%/15/6, 낙일 1/25%/19/8
+Actual: 무기 프로필 일치
+Initial: Character=NULL
+Final: Character=NULL
+------------------------------------------------------------------------
+[Pass] yujin.passive.sense_turn_start / 살수의 감 턴 시작 획득
+Category: Passive / Mode: IsolatedRuntime / Time: 1ms
+Expected: 턴 시작 +1·자가 파괴 제외·적 파괴 +1
+Actual: TurnStart=1, OwnBreak=1, EnemyBreak=2
+Initial: 유진 / Initialized=True / HP=720/720 / Block=0 / Prestige=0 / Resources=Energy:3 / Parts=[HEAD 180/180 Normal, LEFT_HAND 180/180 Normal, RIGHT_HAND 180/180 Normal, LEGS 180/180 Normal]
+Final: 유진 / Initialized=True / HP=720/720 / Block=0 / Prestige=0 / Resources=Energy:3 / Parts=[HEAD 180/180 Normal, LEFT_HAND 180/180 Normal, RIGHT_HAND 180/180 Normal, LEGS 180/180 Normal]
+------------------------------------------------------------------------
+[Pass] yujin.duel.sense_reroll / 살수의 감 자동 재굴림
+Category: Duel / Mode: IsolatedRuntime / Time: 1ms
+Expected: 행동별 감 사용 OFF/ON 선택
+Actual: OffRequest=False, BeforeOn=1, OnRequest=True, Sense=0, Second=False
+Initial: 유진 / Initialized=True / HP=720/720 / Block=0 / Prestige=0 / Resources=Energy:3 / Parts=[HEAD 180/180 Normal, LEFT_HAND 180/180 Normal, RIGHT_HAND 180/180 Normal, LEGS 180/180 Normal]
+Final: 유진 / Initialized=True / HP=720/720 / Block=0 / Prestige=0 / Resources=Energy:3 / Parts=[HEAD 180/180 Normal, LEFT_HAND 180/180 Normal, RIGHT_HAND 180/180 Normal, LEGS 180/180 Normal]
+------------------------------------------------------------------------
+[Pass] yujin.duel.nakil_remove_remaining_rolls / 낙일 승리 시 상대 잔여 굴림 제거
+Category: Duel / Mode: IsolatedRuntime / Time: 2ms
+Expected: 낙일 교환 승리 시 상대 잔여 굴림만 0·일방/다른 무기 미적용
+Actual: YujinFirst=2/0, YujinSecond=0/3, OneSide=2/4, Baeku=2/4
+Initial: 유진 / Initialized=True / HP=720/720 / Block=0 / Prestige=0 / Resources=Energy:3 / Parts=[HEAD 180/180 Normal, LEFT_HAND 180/180 Normal, RIGHT_HAND 180/180 Normal, LEGS 180/180 Normal]
+Final: 유진 / Initialized=True / HP=720/720 / Block=0 / Prestige=0 / Resources=Energy:3 / Parts=[HEAD 180/180 Normal, LEFT_HAND 180/180 Normal, RIGHT_HAND 180/180 Normal, LEGS 180/180 Normal]
+------------------------------------------------------------------------
+[Pass] yujin.passive.mark_ignition_nakil / 표식 44·낙일 발화
+Category: Passive / Mode: IsolatedRuntime / Time: 2ms
+Expected: 표식 43→44 발화, 표식 0, 낙일 약화
+Actual: Mark=43→0, State=Weakened
+Initial: 유진 / Initialized=True / HP=720/720 / Block=0 / Prestige=0 / Resources=Energy:3 / Parts=[HEAD 180/180 Normal, LEFT_HAND 180/180 Normal, RIGHT_HAND 180/180 Normal, LEGS 180/180 Normal]
+Final: 유진 / Initialized=True / HP=720/720 / Block=0 / Prestige=0 / Resources=Energy:3 / Parts=[HEAD 1/180 Weakened, LEFT_HAND 180/180 Normal, RIGHT_HAND 180/180 Normal, LEGS 180/180 Normal]
+------------------------------------------------------------------------
+[Pass] generic.live.scene_binding@Yujin_MixedBattle / 실전 Scene UI·전투 연결 · Yujin_MixedBattle
+Category: UI / Mode: LiveScene / Time: 0ms
+Expected: 실전 Roster 캐릭터와 전투 연결 정상
+Actual: PLAYER · 유진 / 12개 스킬
+Initial: 유진 / Initialized=True / HP=720/720 / Block=0 / Prestige=0 / Resources=Energy:3 / Parts=[HEAD 180/180 Normal, LEFT_HAND 180/180 Normal, RIGHT_HAND 180/180 Normal, LEGS 180/180 Normal]
+Final: 유진 / Initialized=True / HP=720/720 / Block=0 / Prestige=0 / Resources=Energy:3 / Parts=[HEAD 180/180 Normal, LEFT_HAND 180/180 Normal, RIGHT_HAND 180/180 Normal, LEGS 180/180 Normal]
+------------------------------------------------------------------------
+[Pass] live.autobattle.full_match@Yujin_MixedBattle / 실전 스모크 전투 · Yujin_MixedBattle
+Category: Boundary / Mode: LiveScene / Time: 46114ms
+Expected: 실제 Roster에 참가한 Character가 승률 자동계획 전투를 정상 종료하거나 검증용 5턴 구간을 완주
+Actual: 실전 스모크 구간 정상 완료 · 5턴
+Details:
+Outcome=TURN_BUDGET_COMPLETE
+Turns=5
+AnalysisTurnBudgetReached=True
+BlockedDamageAttempts=25
+MaxConsecutiveNoStateProgressTurns=0
+WinRatePlanAttempts=5
+SuccessfulWinRatePlans=5
+FallbackPlanCount=0
+PlannedActionCount=20
+PlayerSkillUsage=3/12
+UsedPlayerSkills=환형 · 적설<yujin.preparation.hwanhyeong.jeokseol>, 각인<yujin.duel.inscription>, 검분<yujin.normal.inspection>
+ObservedParticipantSkills=유진:환형 · 적설<yujin.preparation.hwanhyeong.jeokseol>, 정예 몹:정예병의 압박(결투)<5fb3b00e68684389a86c92f3e0345061>, 유진:각인<yujin.duel.inscription>, 훈련용 일반 적:달려들기<test_normal_lunge>, 유진:검분<yujin.normal.inspection>, 정예 몹:정예병의 참격(일반공격)<5a239ec7d4944c458ac5329511091871>
+RuntimeErrors=0
+RuntimeWarnings=22
+CriticalInvariants=0
+RequestedTimeScale=30
+ElapsedMilliseconds=46114
+Participants=유진, 정예 몹, 훈련용 일반 적
+WarningSamples=Warning: [VFX VALIDATION] Prefab 누락 / Definition=Olaf_Duel_BloodSplash_VFX @ UnityEngine.Debug:LogWarning (object,UnityEngine.Object)
+------------------------------------------------------------------------
+[Pass] live.autobattle.character_skill_observation@Yujin_MixedBattle / 실전 Character 스킬 실행 관찰 · Yujin_MixedBattle
+Category: Boundary / Mode: LiveScene / Time: 46114ms
+Expected: 플레이어/적 구분 없이 해당 Character가 실제 ActionStart를 최소 1회 발생
+Actual: 3개 고유 Skill ActionStart 관찰
+Details:
+Observed=유진:환형 · 적설<yujin.preparation.hwanhyeong.jeokseol>, 유진:각인<yujin.duel.inscription>, 유진:검분<yujin.normal.inspection>
+모든 후보 스킬의 개별 계약은 Isolated skill coverage가 담당하고, 이 Case는 실제 CameraTest AI/행동 파이프라인에서 캐릭터가 행동했는지를 검증합니다.
+------------------------------------------------------------------------

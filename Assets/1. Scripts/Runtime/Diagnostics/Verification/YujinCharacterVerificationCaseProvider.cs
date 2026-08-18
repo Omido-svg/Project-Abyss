@@ -598,11 +598,15 @@ public sealed class YujinCharacterVerificationCaseProvider :
         int energyBefore =
             yujin.CurrentEnergy;
 
-        GameObject managerRoot = null;
-        BattleManager manager = null;
-        ActionManager actionManager = null;
-        BattleManager previousManager =
-            context.BattleContext.battleManager;
+        ActionManager actionManager =
+            new ActionManager();
+
+        BattleRuntimeServices previousServices =
+            context.BattleContext.Services;
+
+        BattleRuntimeServices verificationServices =
+            previousServices?.Clone() ??
+            new BattleRuntimeServices();
 
         bool canWithSelectedSlot = false;
         bool queuedWithSelectedSlot = false;
@@ -612,25 +616,11 @@ public sealed class YujinCharacterVerificationCaseProvider :
 
         try
         {
-            managerRoot =
-                new GameObject(
-                    "[Verification] BattleManager Stub");
+            verificationServices.ActionManager =
+                actionManager;
 
-            managerRoot.hideFlags =
-                HideFlags.HideAndDontSave;
-            managerRoot.SetActive(false);
-
-            manager =
-                managerRoot.AddComponent<BattleManager>();
-
-            actionManager =
-                new ActionManager();
-
-            FieldInfo actionManagerField =
-                typeof(BattleManager).GetField(
-                    "<ActionManager>k__BackingField",
-                    BindingFlags.Instance |
-                    BindingFlags.NonPublic);
+            context.BattleContext.Services =
+                verificationServices;
 
             FieldInfo slotsField =
                 typeof(ActionManager).GetField(
@@ -638,24 +628,9 @@ public sealed class YujinCharacterVerificationCaseProvider :
                     BindingFlags.Instance |
                     BindingFlags.NonPublic);
 
-            if (actionManagerField == null ||
-                slotsField == null)
-            {
-                return context.Fail(
-                    "검증용 BattleManager/ActionManager 연결",
-                    $"ActionManagerField={actionManagerField != null}, " +
-                    $"SlotsField={slotsField != null}");
-            }
-
-            actionManagerField.SetValue(
-                manager,
-                actionManager);
-
-            context.BattleContext.battleManager =
-                manager;
-
             List<ActionSlot> slots =
-                slotsField.GetValue(actionManager)
+                slotsField?.GetValue(
+                    actionManager)
                     as List<ActionSlot>;
 
             if (slots == null)
@@ -704,31 +679,10 @@ public sealed class YujinCharacterVerificationCaseProvider :
         }
         finally
         {
-            context.BattleContext.battleManager =
-                previousManager;
+            context.BattleContext.Services =
+                previousServices;
 
-            actionManager?.Dispose();
-
-            if (manager != null)
-            {
-                CharacterVerificationReflection.TrySetField(
-                    manager,
-                    "destroyed",
-                    true);
-            }
-
-            if (managerRoot != null)
-            {
-#if UNITY_EDITOR
-                UnityEngine.Object.DestroyImmediate(
-                    managerRoot);
-#else
-                if (Application.isPlaying)
-                    UnityEngine.Object.Destroy(managerRoot);
-                else
-                    UnityEngine.Object.DestroyImmediate(managerRoot);
-#endif
-            }
+            actionManager.Dispose();
         }
 
         bool valid =

@@ -404,7 +404,7 @@ public sealed class HifumiMechanic : CombatMechanic, ICharacterUniqueGaugeProvid
 
             selfDamageTriggeredThisTurn = true;
             DamageRequest request = DamageRequest.SelfCost(owner, HifumiSelfDamage);
-            battleContext?.battleManager?.DamageManager?.ApplyDamageContext(request);
+            battleContext?.Services?.DamageManager?.ApplyDamageContext(request);
             break;
         }
     }
@@ -525,7 +525,7 @@ public sealed class HifumiMechanic : CombatMechanic, ICharacterUniqueGaugeProvid
                 applyGuard: true,
                 sourceAction: myAction);
 
-            battleContext?.battleManager?.DamageManager?.ApplyDamageContext(request);
+            battleContext?.Services?.DamageManager?.ApplyDamageContext(request);
             executedCounters++;
         }
 
@@ -566,7 +566,7 @@ public sealed class HifumiMechanic : CombatMechanic, ICharacterUniqueGaugeProvid
                     target.WeakenPart(targetPart, owner, sourceAction);
             }
 
-            battleContext?.battleManager?.MomentumManager?.ApplySkillShift(owner, 25);
+            battleContext?.Services?.MomentumManager?.ApplySkillShift(owner, 25);
             return;
         }
 
@@ -588,7 +588,7 @@ public sealed class HifumiMechanic : CombatMechanic, ICharacterUniqueGaugeProvid
 
     private bool IsLastStand()
     {
-        return battleContext?.battleManager?.MomentumManager?.IsLastStand(owner) == true;
+        return battleContext?.Services?.MomentumManager?.IsLastStand(owner) == true;
     }
 
     private void ResolveAllIn()

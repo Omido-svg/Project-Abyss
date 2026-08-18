@@ -134,7 +134,9 @@ public class BattleVisualRequestBuilder
                     continue;
 
                 ClashRollVisualStep displayStep =
-                    exchange.CreateVisualStep(first);
+                    ClashRollVisualStepMapper.Create(
+                        exchange,
+                        first);
 
                 displayStep.RoundIndex =
                     exchange.ExchangeIndex;
@@ -354,18 +356,18 @@ public class BattleVisualRequestBuilder
         if (action == null)
             return null;
 
-        if (action.Skill is IVisualSkill visualSkill &&
-            visualSkill.VisualDefinition != null)
-        {
-            return visualSkill.VisualDefinition;
-        }
+        SkillVisualDefinition visual =
+            SkillPresentationAccess.Get(
+                action.Skill?.Definition);
+
+        if (visual != null)
+            return visual;
 
         Debug.LogError(
             "[BattleVisualRequestBuilder] Timeline-only 정책 위반: " +
-            "모든 전투 스킬은 전용 통합 SkillVisualDefinition을 " +
-            "가져야 합니다. " +
-            $"Skill={action.Skill?.SkillName ?? "NULL"}. " +
-            "SkillDefinition의 VisualDefinition과 통합 Timeline 연출 참조를 확인하세요.");
+            "모든 전투 스킬은 Presentation extension에 " +
+            "SkillVisualDefinition을 연결해야 합니다. " +
+            $"Skill={action.Skill?.SkillName ?? "NULL"}.");
 
         return null;
     }

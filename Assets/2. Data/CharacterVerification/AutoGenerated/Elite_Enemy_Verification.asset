@@ -16,6 +16,65 @@ MonoBehaviour:
   bundle: {fileID: 11400000, guid: 4cd864e96bd9715489a28ca2d152a878, type: 2}
   strictPresentationValidation: 1
   cases:
+  - CaseId: coverage.manifest.closed_world
+    DisplayName: "\uC644\uC804 \uCEE4\uBC84\uB9AC\uC9C0 \uBA85\uC138 \uD3D0\uC1C4\uC131"
+    Category: 0
+    ExecutionMode: 0
+    Enabled: 1
+    Seed: 1207
+    Description: "\uBAA8\uB4E0 SkillDefinition\xB7Effect\xB7\uD544\uC218 Mechanic\uC774
+      \uAC80\uC99D \uCE74\uD0C8\uB85C\uADF8\uC5D0 \uB4F1\uB85D\uB410\uB294\uC9C0
+      \uAC80\uC0AC\uD569\uB2C8\uB2E4. \uC0C8 \uAE30\uB2A5\uC740 \uAC80\uC99D\uAE30
+      \uCD94\uAC00 \uC804\uAE4C\uC9C0 FAIL\uD569\uB2C8\uB2E4."
+  - CaseId: coverage.mechanics.forced_scenarios
+    DisplayName: "\uD328\uC2DC\uBE0C\xB7\uBA54\uCEE4\uB2C9 \uAC15\uC81C \uC2DC\uB098\uB9AC\uC624"
+    Category: 1
+    ExecutionMode: 1
+    Enabled: 1
+    Seed: 1207
+    Description: "\uD544\uC218 \uD328\uC2DC\uBE0C\uC640 \uBA54\uCEE4\uB2C9\uC758
+      \uC774\uBCA4\uD2B8 \uC870\uAC74\uC744 \uC9C1\uC811 \uBC1C\uC0DD\uC2DC\uCF1C
+      \uC815\uD655\uD55C \uC0C1\uD0DC \uBCC0\uD654\uB97C \uAC80\uC0AC\uD569\uB2C8\uB2E4."
+  - CaseId: coverage.skill.5a239ec7d4944c458ac5329511091871
+    DisplayName: "\uC2A4\uD0AC \uC644\uC804 \uC2DC\uB098\uB9AC\uC624: \uC815\uC608\uBCD1\uC758
+      \uCC38\uACA9(\uC77C\uBC18\uACF5\uACA9)"
+    Category: 2
+    ExecutionMode: 1
+    Enabled: 1
+    Seed: 1207
+    Description: "\uC790\uC6D0 \uAC70\uBD80/\uC18C\uBE44, \uBAA8\uB4E0 \uAD74\uB9BC,
+      \uD53C\uD574 \uB300\uC0C1, \uBAA8\uB4E0 Effect Entry \uC870\uAC74\uC744 \uACB0\uC815\uB860\uC801\uC73C\uB85C
+      \uAC15\uC81C \uC2E4\uD589\uD569\uB2C8\uB2E4."
+  - CaseId: coverage.skill.5fb3b00e68684389a86c92f3e0345061
+    DisplayName: "\uC2A4\uD0AC \uC644\uC804 \uC2DC\uB098\uB9AC\uC624: \uC815\uC608\uBCD1\uC758
+      \uC555\uBC15(\uACB0\uD22C)"
+    Category: 3
+    ExecutionMode: 1
+    Enabled: 1
+    Seed: 1207
+    Description: "\uC790\uC6D0 \uAC70\uBD80/\uC18C\uBE44, \uBAA8\uB4E0 \uAD74\uB9BC,
+      \uD53C\uD574 \uB300\uC0C1, \uBAA8\uB4E0 Effect Entry \uC870\uAC74\uC744 \uACB0\uC815\uB860\uC801\uC73C\uB85C
+      \uAC15\uC81C \uC2E4\uD589\uD569\uB2C8\uB2E4."
+  - CaseId: coverage.skill.356e72e97ac84a3a8757d1a188237f43
+    DisplayName: "\uC2A4\uD0AC \uC644\uC804 \uC2DC\uB098\uB9AC\uC624: \uC804\uD22C
+      \uD0DC\uC138(\uB3C4\uC0AC\uB9BC)"
+    Category: 4
+    ExecutionMode: 1
+    Enabled: 1
+    Seed: 1207
+    Description: "\uC790\uC6D0 \uAC70\uBD80/\uC18C\uBE44, \uBAA8\uB4E0 \uAD74\uB9BC,
+      \uD53C\uD574 \uB300\uC0C1, \uBAA8\uB4E0 Effect Entry \uC870\uAC74\uC744 \uACB0\uC815\uB860\uC801\uC73C\uB85C
+      \uAC15\uC81C \uC2E4\uD589\uD569\uB2C8\uB2E4."
+  - CaseId: coverage.skill.c09f804f95004e70a9864e0d02ae4509
+    DisplayName: "\uC2A4\uD0AC \uC644\uC804 \uC2DC\uB098\uB9AC\uC624: \uCC98\uD615\uC790\uC758
+      \uC77C\uACA9(\uC704\uC138)"
+    Category: 5
+    ExecutionMode: 1
+    Enabled: 1
+    Seed: 1207
+    Description: "\uC790\uC6D0 \uAC70\uBD80/\uC18C\uBE44, \uBAA8\uB4E0 \uAD74\uB9BC,
+      \uD53C\uD574 \uB300\uC0C1, \uBAA8\uB4E0 Effect Entry \uC870\uAC74\uC744 \uACB0\uC815\uB860\uC801\uC73C\uB85C
+      \uAC15\uC81C \uC2E4\uD589\uD569\uB2C8\uB2E4."
   - CaseId: generic.data.core_references
     DisplayName: "Core \uB370\uC774\uD130 \uCC38\uC870"
     Category: 0
@@ -99,3 +158,21 @@ MonoBehaviour:
     Description: "\uD604\uC7AC BattleManager\uC758 \uD50C\uB808\uC774\uC5B4, HUD,
       \uC2A4\uD0AC \uD328\uB110\uC774 \uC120\uD0DD Bundle\uACFC \uC5F0\uACB0\uB418\uC5B4
       \uC788\uB294\uC9C0 \uAC80\uC0AC\uD569\uB2C8\uB2E4."
+  - CaseId: enemy.elite.bodypart.contract
+    DisplayName: "\uC815\uC608 \uC801 4\uBD80\uC704 \uC804\uD22C \uBAA8\uB378"
+    Category: 9
+    ExecutionMode: 1
+    Enabled: 1
+    Seed: 1207
+    Description: "EliteEnemy\uAC00 HEAD/LEFT_HAND/RIGHT_HAND/LEGS 4\uBD80\uC704\uB97C
+      \uC815\uD655\uD788 \uAD6C\uC131\uD558\uACE0 Last Stand\uB97C \uC9C0\uC6D0\uD558\uB294\uC9C0
+      \uAC80\uC0AC\uD569\uB2C8\uB2E4."
+  - CaseId: enemy.elite.posture_slot.contract
+    DisplayName: "\uC815\uC608 \uC801 \uC790\uC138\xB7\uD589\uB3D9 \uC2AC\uB86F \uACC4\uC57D"
+    Category: 9
+    ExecutionMode: 1
+    Enabled: 1
+    Seed: 1207
+    Description: "\uC790\uC138 \uB85C\uD14C\uC774\uC158 \uC0AC\uC6A9 \uC2DC EnemyPostureMechanic\uC774
+      \uB4F1\uB85D\uB418\uACE0 CurrentAttackSlotLimit\uACFC EliteEnemy.GetMaxCombatActionSlots\uAC00
+      \uD56D\uC0C1 \uC77C\uCE58\uD558\uB294\uC9C0 \uAC80\uC0AC\uD569\uB2C8\uB2E4."

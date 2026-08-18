@@ -555,8 +555,6 @@ public class CharacterStatusController
 
         owner.BattleEvent?.RaiseStatusApplyResolved(result);
 
-        owner.BattleContext?.EffectResolver?
-            .ShowStatusApplyVisual(result);
     }
 
     private void RaiseRemoveEvents(
@@ -584,12 +582,6 @@ public class CharacterStatusController
             effect,
             reason);
 
-        owner.BattleContext?.EffectResolver?
-            .ShowStatusRemoveVisual(
-                owner,
-                part,
-                effect,
-                reason);
     }
 
     private StatusEffectApplyResult CreateAppliedResult(

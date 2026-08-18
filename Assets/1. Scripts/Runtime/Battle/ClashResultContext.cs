@@ -24,7 +24,6 @@ public class ClashResultContext
     public int OneSidedHitCount;
 
     public List<ClashExchangeResult> Exchanges = new();
-    public List<ClashRollVisualStep> ClashSteps = new();
     public List<int> HitDamages = new();
     public List<DamageContext> DamageContexts = new();
 

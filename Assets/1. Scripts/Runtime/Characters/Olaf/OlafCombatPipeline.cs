@@ -1,4 +1,3 @@
-using System.Reflection;
 using UnityEngine;
 
 // 올라프 고유 메커닉에서 발생하는 추가 피해와 자해도
@@ -28,38 +27,9 @@ public static class OlafCombatPipeline
     public static DamageManager ResolveDamageManager(
         Character owner)
     {
-        object battleManager =
-            owner?.BattleContext?.battleManager;
-
-        if (battleManager == null)
-            return null;
-
-        const BindingFlags flags =
-            BindingFlags.Instance |
-            BindingFlags.Public |
-            BindingFlags.NonPublic;
-
-        System.Type type =
-            battleManager.GetType();
-
-        PropertyInfo property =
-            type.GetProperty(
-                "DamageManager",
-                flags);
-
-        if (property?.GetValue(battleManager)
-            is DamageManager propertyManager)
-        {
-            return propertyManager;
-        }
-
-        FieldInfo field =
-            type.GetField(
-                "damageManager",
-                flags);
-
-        return field?.GetValue(battleManager)
-            as DamageManager;
+        return owner?
+            .BattleContext?
+            .ResolveDamageManager();
     }
 
     private static void ApplyFallback(

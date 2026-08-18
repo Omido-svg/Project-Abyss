@@ -68,11 +68,6 @@ public class StatusEffectTickContext
             AppliedDamage =
                 DamageContext?.GetDisplayDamage() ?? 0;
 
-            Resolver?.ShowStatusTickVisual(
-                SourceEffect,
-                request.TargetCharacter,
-                request.TargetPart,
-                AppliedDamage);
 
             return DamageContext;
         }

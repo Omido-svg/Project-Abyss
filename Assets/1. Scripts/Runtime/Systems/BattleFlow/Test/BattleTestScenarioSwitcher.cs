@@ -278,6 +278,37 @@ public sealed class BattleTestScenarioSwitcher : MonoBehaviour
         return true;
     }
 
+    /// <summary>
+    /// Character Verification 전용 단일 호출 시나리오 전환.
+    /// rememberSelection 설정과 무관하게 검증 동안 필요한 Player/Encounter를
+    /// PlayerPrefs에 저장해 Scene reload 뒤에도 동일한 Roster가 재구성되게 한다.
+    /// 검증 종료 시 원래 선택값을 같은 API로 복원한다.
+    /// </summary>
+    public bool ApplyVerificationScenario(
+        BattleTestPlayerMode player,
+        BattleTestEncounterMode encounter,
+        bool reloadScene = true)
+    {
+        selectedPlayer = player;
+        selectedEncounter = encounter;
+
+        PlayerPrefs.SetInt(
+            PlayerPreferenceKey,
+            (int)selectedPlayer);
+
+        PlayerPrefs.SetInt(
+            EncounterPreferenceKey,
+            (int)selectedEncounter);
+
+        PlayerPrefs.Save();
+
+        if (!reloadScene)
+            return ApplyScenarioBeforeBattle();
+
+        RequestCleanApply();
+        return true;
+    }
+
     public void SelectOlaf()
     {
         ChangeSelection(

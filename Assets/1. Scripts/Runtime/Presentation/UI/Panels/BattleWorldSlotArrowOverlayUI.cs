@@ -78,6 +78,15 @@ public sealed class BattleWorldSlotArrowOverlayUI : MonoBehaviour
     [SerializeField, Min(0f)] private float clashCenterGap = 18f;
     [SerializeField, Min(0f)] private float actionLaneSpacing = 8f;
 
+    [Header("Planning Readability")]
+    [Tooltip("아무 슬롯도 선택하지 않았을 때는 전체 관계를 읽을 수 있을 정도로만 화살표를 희미하게 유지합니다.")]
+    [SerializeField] private bool deEmphasizeIdleArrows = true;
+    [SerializeField, Range(0.05f, 1f)] private float idlePlayerArrowAlpha = 0.34f;
+    [SerializeField, Range(0.05f, 1f)] private float idleEnemyArrowAlpha = 0.24f;
+    [SerializeField, Range(0.05f, 1f)] private float idleClashArrowAlpha = 0.48f;
+    [Tooltip("타깃 선택/호버 중 현재 관계와 무관한 화살표의 Alpha입니다.")]
+    [SerializeField, Range(0f, 0.5f)] private float unrelatedFocusAlpha = 0.08f;
+
     [Header("Hover Clash Preview")]
     [SerializeField] private Color veryUnfavorableColor = new(1f, 0.30f, 0.24f, 1f);
     [SerializeField] private Color unfavorableColor = new(1f, 0.62f, 0.22f, 1f);
@@ -356,9 +365,22 @@ public sealed class BattleWorldSlotArrowOverlayUI : MonoBehaviour
                 out int pendingSpeed);
 
         BattleWorldActionSlotCellUI hoveredTarget =
-            hasPendingPlan
-                ? BattleWorldActionSlotCellUI.HoveredTargetCell
-                : null;
+            BattleWorldActionSlotCellUI.HoveredTargetCell;
+
+        BattleWorldActionSlotCellUI hoveredCell =
+            BattleWorldActionSlotCellUI.HoveredCell;
+
+        ActionSlot focusedEnemySlot =
+            hoveredTarget?.TargetSlot;
+
+        bool hoverRelationFocus =
+            hoveredCell != null;
+
+        bool focusMode =
+            hasPendingPlan ||
+            focusedEnemySlot != null ||
+            BattleSkillDragContext.HasPayload ||
+            hoverRelationFocus;
 
         ActionSlot pendingHoverEnemy = null;
 
@@ -390,17 +412,26 @@ public sealed class BattleWorldSlotArrowOverlayUI : MonoBehaviour
         used = DrawNormalPlayerIntents(
             slots,
             player,
-            used);
+            used,
+            focusMode,
+            focusedEnemySlot,
+            hoveredCell);
 
         used = DrawNormalEnemyIntents(
             slots,
             player,
-            used);
+            used,
+            focusMode,
+            focusedEnemySlot,
+            hoveredCell);
 
         used = DrawPreviewClashes(
             previewPairs,
             player,
-            used);
+            used,
+            focusMode,
+            focusedEnemySlot,
+            hoveredCell);
 
         // 클릭 전 Hover도 실제 TargetSlot을 놓았을 때와 같은 합/일방공격 규칙으로 보여준다.
         if (hasPendingPlan)
@@ -548,7 +579,10 @@ public sealed class BattleWorldSlotArrowOverlayUI : MonoBehaviour
     private int DrawNormalPlayerIntents(
         IReadOnlyList<ActionSlot> slots,
         Character player,
-        int used)
+        int used,
+        bool focusMode,
+        ActionSlot focusedEnemySlot,
+        BattleWorldActionSlotCellUI hoveredCell)
     {
         if (!showPlayerIntentArrows || slots == null)
             return used;
@@ -603,11 +637,25 @@ public sealed class BattleWorldSlotArrowOverlayUI : MonoBehaviour
                 to,
                 source.ActionIndex);
 
+            bool hoverRelated =
+                hoveredCell != null &&
+                hoveredCell.IsTargetedBy(
+                    source);
+
+            float alphaMultiplier =
+                ResolveArrowAlpha(
+                    focusMode,
+                    hoverRelated ||
+                    source.TargetSlot == focusedEnemySlot,
+                    idlePlayerArrowAlpha);
+
             used = DrawArrow(
                 used,
                 from + lane,
                 to + lane,
-                playerArrowColor,
+                WithAlpha(
+                    playerArrowColor,
+                    alphaMultiplier),
                 normalThickness);
         }
 
@@ -617,7 +665,10 @@ public sealed class BattleWorldSlotArrowOverlayUI : MonoBehaviour
     private int DrawNormalEnemyIntents(
         IReadOnlyList<ActionSlot> slots,
         Character player,
-        int used)
+        int used,
+        bool focusMode,
+        ActionSlot focusedEnemySlot,
+        BattleWorldActionSlotCellUI hoveredCell)
     {
         if (!showEnemyIntentArrows || slots == null)
             return used;
@@ -670,11 +721,25 @@ public sealed class BattleWorldSlotArrowOverlayUI : MonoBehaviour
                 to,
                 source.ActionIndex);
 
+            bool hoverRelated =
+                hoveredCell != null &&
+                hoveredCell.IsTargetedBy(
+                    source);
+
+            float alphaMultiplier =
+                ResolveArrowAlpha(
+                    focusMode,
+                    hoverRelated ||
+                    source == focusedEnemySlot,
+                    idleEnemyArrowAlpha);
+
             used = DrawArrow(
                 used,
                 from + lane,
                 to + lane,
-                enemyArrowColor,
+                WithAlpha(
+                    enemyArrowColor,
+                    alphaMultiplier),
                 normalThickness);
         }
 
@@ -684,7 +749,10 @@ public sealed class BattleWorldSlotArrowOverlayUI : MonoBehaviour
     private int DrawPreviewClashes(
         IReadOnlyList<ClashPair> pairs,
         Character player,
-        int used)
+        int used,
+        bool focusMode,
+        ActionSlot focusedEnemySlot,
+        BattleWorldActionSlotCellUI hoveredCell)
     {
         if (pairs == null || player == null)
             return used;
@@ -755,12 +823,31 @@ public sealed class BattleWorldSlotArrowOverlayUI : MonoBehaviour
                 originalPlayerStart,
                 enemySlot.ActionIndex);
 
+            bool hoverRelated =
+                hoveredCell != null &&
+                (hoveredCell.IsTargetedBy(
+                     playerSlot) ||
+                 hoveredCell.IsTargetedBy(
+                     enemySlot));
+
+            float alphaMultiplier =
+                ResolveArrowAlpha(
+                    focusMode,
+                    hoverRelated ||
+                    enemySlot == focusedEnemySlot,
+                    idleClashArrowAlpha);
+
+            Color clashColor =
+                WithAlpha(
+                    clashArrowColor,
+                    alphaMultiplier);
+
             used = DrawTwoArrowsToCenter(
                 used,
                 playerStart,
                 enemyStart,
-                clashArrowColor,
-                clashArrowColor);
+                clashColor,
+                clashColor);
         }
 
         return used;
@@ -931,8 +1018,28 @@ public sealed class BattleWorldSlotArrowOverlayUI : MonoBehaviour
                 out _);
 
         // TargetSlot 지정은 항상 허용하되, 정확히 이 슬롯과 합이 성립하는지만 표시한다.
-        if (!canClash ||
-            !clashEstimator.TryEstimateClashWinRate(
+        if (!canClash)
+        {
+            string enemyTarget =
+                targetSlot.TargetPart != null
+                    ? GetPartLabel(
+                        targetSlot.TargetPart.Type)
+                    : "대상";
+
+            string speedDetail =
+                speed <= targetSlot.Speed
+                    ? $"속도 {speed} ≤ {targetSlot.Speed} · 적 공격은 {enemyTarget} 유지"
+                    : $"속도 {speed} / {targetSlot.Speed}";
+
+            ShowHoverPreview(
+                "일방공격",
+                speedDetail,
+                OneSidedPreviewColor());
+
+            return;
+        }
+
+        if (!clashEstimator.TryEstimateClashWinRate(
                 battleManager.BattleContext,
                 owner,
                 part,
@@ -942,9 +1049,9 @@ public sealed class BattleWorldSlotArrowOverlayUI : MonoBehaviour
                 out float winRate))
         {
             ShowHoverPreview(
-                "일방공격",
-                string.Empty,
-                balancedColor);
+                "합",
+                $"속도 {speed} / {targetSlot.Speed}",
+                clashArrowColor);
 
             return;
         }
@@ -958,8 +1065,8 @@ public sealed class BattleWorldSlotArrowOverlayUI : MonoBehaviour
                 winRate);
 
         ShowHoverPreview(
-            label,
-            $"합 · 예상 승률 {winRate * 100f:0}%",
+            $"합 · {label}",
+            $"예상 승률 {winRate * 100f:0}% · 속도 {speed} / {targetSlot.Speed}",
             color);
     }
 
@@ -1035,6 +1142,57 @@ public sealed class BattleWorldSlotArrowOverlayUI : MonoBehaviour
             hoverPreviewRoot.gameObject.SetActive(
                 visible);
         }
+    }
+
+    private float ResolveArrowAlpha(
+        bool focusMode,
+        bool focused,
+        float idleAlpha)
+    {
+        if (focusMode)
+        {
+            return focused
+                ? 1f
+                : unrelatedFocusAlpha;
+        }
+
+        if (!deEmphasizeIdleArrows)
+            return 1f;
+
+        return idleAlpha;
+    }
+
+    private static Color WithAlpha(
+        Color color,
+        float multiplier)
+    {
+        color.a *=
+            Mathf.Clamp01(
+                multiplier);
+
+        return color;
+    }
+
+    private Color OneSidedPreviewColor()
+    {
+        Color color =
+            playerArrowColor;
+
+        color.a = 1f;
+        return color;
+    }
+
+    private static string GetPartLabel(
+        PartType type)
+    {
+        return type switch
+        {
+            PartType.HEAD => "머리",
+            PartType.LEFT_HAND => "왼팔",
+            PartType.RIGHT_HAND => "오른팔",
+            PartType.LEGS => "다리",
+            _ => "대상"
+        };
     }
 
     private string GetAdvantageLabel(

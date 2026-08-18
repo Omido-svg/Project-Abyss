@@ -58,7 +58,7 @@ public sealed class BossPhaseData : ScriptableObject
         if (RequireMomentumAtOrBelow)
         {
             MomentumManager manager =
-                context?.battleManager?.MomentumManager;
+                context?.Services?.MomentumManager;
 
             if (manager == null)
                 return false;

@@ -259,7 +259,6 @@ public class BattleManager : MonoBehaviour
         BattleContext =
             new BattleContext
             {
-                battleManager = this,
                 Player = player,
                 Enemies = enemies,
                 Rules = battleRuleSettings
@@ -271,35 +270,25 @@ public class BattleManager : MonoBehaviour
 
     private void CreateManagers()
     {
-        BattleLogger = new BattleLogger();
-        ActionManager = new ActionManager();
-        MomentumManager = new MomentumManager(BattleContext);
-        SpeedManager = new SpeedManager(BattleContext);
-        DamageManager = new DamageManager(BattleContext, MomentumManager);
-        ClashManager = new ClashManager(
-            BattleContext,
-            DamageManager,
-            MomentumManager);
+        BattleRuntimeComposition runtimeComposition =
+            BattleRuntimeFactory.Create(
+                BattleContext,
+                this,
+                battleAnimationDirector,
+                defaultVisualProfile,
+                lifecycleGuard,
+                HandleTurnFatalError);
 
-        ActionResolver = new ActionResolver(
-            BattleContext,
-            ClashManager,
-            battleAnimationDirector,
-            defaultVisualProfile);
-
-        ClashBuilder = new ClashBuilder();
-        AIManager = new AIManager(BattleContext, ActionManager);
-
-        TurnManager = new TurnManager(
-            BattleContext,
-            ActionManager,
-            AIManager,
-            SpeedManager,
-            ActionResolver,
-            MomentumManager,
-            ClashBuilder,
-            lifecycleGuard,
-            HandleTurnFatalError);
+        BattleLogger = runtimeComposition.BattleLogger;
+        ActionManager = runtimeComposition.ActionManager;
+        MomentumManager = runtimeComposition.MomentumManager;
+        SpeedManager = runtimeComposition.SpeedManager;
+        DamageManager = runtimeComposition.DamageManager;
+        ClashManager = runtimeComposition.ClashManager;
+        ActionResolver = runtimeComposition.ActionResolver;
+        ClashBuilder = runtimeComposition.ClashBuilder;
+        AIManager = runtimeComposition.AIManager;
+        TurnManager = runtimeComposition.TurnManager;
     }
 
     private void InitializeCharacters()
@@ -547,6 +536,10 @@ public class BattleManager : MonoBehaviour
             EndBattleInternal("BattleManager destroyed");
 
         ActionManager?.Dispose();
+
+        if (BattleContext != null)
+            BattleContext.Services = null;
+
         lifecycleGuard.Dispose();
         rosterController?.ReleaseSpawnedRoster();
     }
@@ -586,6 +579,10 @@ public class BattleManager : MonoBehaviour
         {
             BattleContext?._battleEvent?.Dispose();
             ActionManager?.Dispose();
+
+            if (BattleContext != null)
+                BattleContext.Services = null;
+
             battleUIManager?.ClearParticipantButtons();
             rosterController?.ReleaseSpawnedRoster();
             enabled = false;

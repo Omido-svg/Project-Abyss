@@ -236,8 +236,13 @@ public sealed class TMPKoreanFontBootstrap :
 
         clone.name =
             source.name + " [Editor PlayMode]";
+        // Scene TMP_Text가 이 runtime clone을 직접 참조한다.
+        // HideAndDontSave에는 DontSaveInEditor가 포함되어 있어
+        // Editor Window repaint/layout persistence 중 native assertion을 유발할 수 있다.
+        // 프로젝트 Asset과 분리된 clone이라는 사실은 그대로 유지하고,
+        // Build 저장만 금지한다. OnDestroy에서 명시적으로 정리한다.
         clone.hideFlags =
-            HideFlags.HideAndDontSave;
+            HideFlags.DontSaveInBuild;
 
         // 먼저 등록해서 fallback graph가 순환 참조여도 재귀가 끝나게 한다.
         editorPlayFontClones.Add(
@@ -270,7 +275,7 @@ public sealed class TMPKoreanFontBootstrap :
                 atlasClone.name =
                     sourceAtlas.name + " [Editor PlayMode]";
                 atlasClone.hideFlags =
-                    HideFlags.HideAndDontSave;
+                    HideFlags.DontSaveInBuild;
 
                 runtimeAtlases[i] =
                     atlasClone;
@@ -291,7 +296,7 @@ public sealed class TMPKoreanFontBootstrap :
             materialClone.name =
                 source.material.name + " [Editor PlayMode]";
             materialClone.hideFlags =
-                HideFlags.HideAndDontSave;
+                HideFlags.DontSaveInBuild;
 
             Texture2D[] cloneAtlases =
                 clone.atlasTextures;
@@ -342,7 +347,7 @@ public sealed class TMPKoreanFontBootstrap :
 
     private void OnDestroy()
     {
-        // HideAndDontSave runtime copies만 파괴한다. Project asset에는 손대지 않는다.
+        // Editor PlayMode runtime copies만 파괴한다. Project asset에는 손대지 않는다.
         for (int i = editorPlayRuntimeObjects.Count - 1;
              i >= 0;
              i--)

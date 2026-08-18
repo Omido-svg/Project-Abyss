@@ -14,6 +14,7 @@ public sealed class BattleWorldCharacterPlateManager : MonoBehaviour
     [SerializeField] private Vector3 worldOffset = new(0f, 0.48f, 0f);
     [SerializeField] private float canvasScale = 0.0062f;
     [SerializeField] private BattleWorldSlotArrowOverlayUI slotArrowOverlay;
+    [SerializeField] private BattleActionOrderRailUI actionOrderRail;
 
     private readonly List<GameObject> generated = new();
     private readonly Dictionary<Character, BattleWorldCharacterPlateUI> plates = new();
@@ -28,7 +29,7 @@ public sealed class BattleWorldCharacterPlateManager : MonoBehaviour
         battleUiManager = uiManager;
         detailPanel = panel;
         targetCamera = camera;
-        EnsureSlotArrowOverlay();
+        EnsurePlanningPresentation();
     }
 
     private void Awake()
@@ -47,7 +48,7 @@ public sealed class BattleWorldCharacterPlateManager : MonoBehaviour
         }
 
         targetCamera ??= Camera.main;
-        EnsureSlotArrowOverlay();
+        EnsurePlanningPresentation();
 
         // 2026-08-17 전술 UI에서는 플레이어 슬롯도 머리 위에서 직접 드래그해야 한다.
         // 과거 Scene에 showPlayerPlate=false가 직렬화되어 있어도 런타임 계약을 우선한다.
@@ -81,6 +82,7 @@ public sealed class BattleWorldCharacterPlateManager : MonoBehaviour
         if (context == null)
             return;
 
+        EnsurePlanningPresentation();
         Clear();
 
         if (showPlayerPlate && context.Player != null)
@@ -95,6 +97,26 @@ public sealed class BattleWorldCharacterPlateManager : MonoBehaviour
             }
         }
 
+    }
+
+    private void EnsurePlanningPresentation()
+    {
+        EnsureSlotArrowOverlay();
+        EnsureActionOrderRail();
+    }
+
+    private void EnsureActionOrderRail()
+    {
+        if (actionOrderRail == null)
+            actionOrderRail = GetComponent<BattleActionOrderRailUI>();
+
+        if (actionOrderRail == null)
+            actionOrderRail = gameObject.AddComponent<BattleActionOrderRailUI>();
+
+        actionOrderRail.Configure(
+            battleManager,
+            battleUiManager,
+            targetCamera);
     }
 
     private void EnsureSlotArrowOverlay()

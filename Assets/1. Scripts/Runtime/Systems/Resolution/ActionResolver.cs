@@ -7,62 +7,36 @@ public class ActionResolver
     private readonly BattleContext battleContext;
     private readonly ClashManager clashManager;
 
-    private readonly BattleAnimationDirector battleAnimationDirector;
-    private readonly BattleVisualRequestBuilder visualRequestBuilder;
+    private readonly IBattleActionReporter actionReporter;
+    private readonly IBattleActionPresentation actionPresentation;
 
+    public ActionResolver(
+        BattleContext battleContext,
+        ClashManager clashManager,
+        IBattleActionReporter actionReporter,
+        IBattleActionPresentation actionPresentation)
+    {
+        this.battleContext = battleContext;
+        this.clashManager = clashManager;
+        this.actionReporter = actionReporter;
+        this.actionPresentation = actionPresentation;
+    }
+
+    // 기존 concrete 생성 경로 호환.
     public ActionResolver(
         BattleContext battleContext,
         ClashManager clashManager,
         BattleAnimationDirector battleAnimationDirector,
         SkillVisualProfile defaultVisualProfile)
+        : this(
+            battleContext,
+            clashManager,
+            new BattleActionLogReporter(
+                battleContext?.Services?.BattleLogger),
+            new BattleActionPresentationService(
+                battleAnimationDirector,
+                defaultVisualProfile))
     {
-        this.battleContext = battleContext;
-        this.clashManager = clashManager;
-        this.battleAnimationDirector =
-            battleAnimationDirector;
-
-        visualRequestBuilder =
-            new BattleVisualRequestBuilder(
-                defaultVisualProfile);
-    }
-
-    /// <summary>
-    /// 구형 호출부/검증 도구 호환용 즉시 도사림 실행 경로.
-    /// 플레이어 UI의 정상 경로는 ActionManager에 FORESIGHT 슬롯을 계획하고
-    /// START 이후 PreparationQueue에서 실행한다.
-    /// </summary>
-    public bool ExecutePlanningPreparation(ActionSlot slot)
-    {
-        if (slot == null ||
-            slot.Skill == null ||
-            slot.Owner == null ||
-            slot.Skill.ActionType != ActionType.Preparation)
-        {
-            return false;
-        }
-
-        BattleAction action = CreateBattleAction(slot);
-        bool started = false;
-
-        try
-        {
-            battleContext._battleEvent.RaiseActionStart(action);
-            started = true;
-
-            if (!ExecuteSkill(action))
-                return false;
-
-            battleContext.battleManager.BattleLogger.LogAction(
-                action,
-                BattleLogType.Preparation);
-
-            return true;
-        }
-        finally
-        {
-            if (started)
-                battleContext._battleEvent.RaiseActionEnd(action);
-        }
     }
 
     public IEnumerator Resolve(
@@ -112,42 +86,14 @@ public class ActionResolver
                 if (!ExecuteSkill(action))
                     continue;
 
-                BattleLogType type =
-                    action.Phase switch
-                    {
-                        ActionPhase.PRETURN =>
-                            BattleLogType.Prestige,
+                actionReporter?
+                    .ReportStandaloneAction(action);
 
-                        ActionPhase.FORESIGHT =>
-                            BattleLogType.Preparation,
-
-                        _ =>
-                            BattleLogType.Normal
-                    };
-
-                if (action.HasDamageLog)
+                if (actionPresentation != null)
                 {
-                    battleContext.battleManager
-                        .BattleLogger
-                        .LogDamage(
-                            action,
-                            type,
-                            action.LoggedDamage,
-                            action.LoggedBeforeHP,
-                            action.LoggedAfterHP);
+                    yield return actionPresentation
+                        .PlayStandalone(action);
                 }
-                else
-                {
-                    battleContext.battleManager
-                        .BattleLogger
-                        .LogAction(
-                            action,
-                            type);
-                }
-
-                yield return PlayActionVisual(
-                    action,
-                    clashSteps: null);
             }
             finally
             {
@@ -180,94 +126,19 @@ public class ActionResolver
                 continue;
 
             // 결과 재생은 확정된 전투 데이터를 소비하기만 합니다.
-            yield return PlayResolvedClashResult(
-                result);
+            if (actionPresentation != null)
+            {
+                yield return actionPresentation
+                    .PlayClash(result);
+            }
         }
     }
 
-    private IEnumerator PlayResolvedClashResult(
-        ClashResultContext result)
-    {
-        if (result == null ||
-            BattleSimulationRuntime.IsBatchSimulation ||
-            battleAnimationDirector == null)
-        {
-            yield break;
-        }
 
-        BattleVisualRequest request =
-            visualRequestBuilder.BuildClashSequence(
-                result);
 
-        if (request == null)
-            yield break;
 
-        yield return battleAnimationDirector
-            .Play(request);
-    }
 
-    private IEnumerator PlayActionVisual(
-        BattleAction action,
-        List<ClashRollVisualStep> clashSteps,
-        List<int> hitDamagesOverride = null,
-        BattleAction opponentAction = null,
-        int? targetPartHpBefore = null,
-        int? targetPartHpAfter = null,
-        DamageContext damageContext = null)
-    {
-        if (BattleSimulationRuntime.IsBatchSimulation ||
-            action == null ||
-            battleAnimationDirector == null)
-        {
-            yield break;
-        }
 
-        List<int> hitDamages =
-            hitDamagesOverride ??
-            CreateHitDamagesFromAction(
-                action);
-
-        BattleVisualRequest request =
-            visualRequestBuilder.Build(
-                action,
-                clashSteps,
-                hitDamages,
-                opponentAction,
-                targetPartHpBefore,
-                targetPartHpAfter,
-                damageContext);
-
-        if (request == null)
-            yield break;
-
-        yield return battleAnimationDirector
-            .Play(request);
-    }
-
-    private List<int> CreateHitDamagesFromAction(
-        BattleAction action)
-    {
-        List<int> result = new();
-
-        int resolvedDamage =
-            action?.PrimaryDamageContext
-                ?.GetDisplayDamage() ?? 0;
-
-        if (resolvedDamage > 0)
-        {
-            result.Add(resolvedDamage);
-            return result;
-        }
-
-        if (action?.HasDamageLog == true &&
-            action.LoggedDamage > 0)
-        {
-            result.Add(
-                action.LoggedDamage);
-        }
-
-        return result;
-    }
 
     private bool ExecuteSkill(
         BattleAction action)

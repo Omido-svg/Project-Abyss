@@ -1,16 +1,10 @@
-using UnityEngine;
-
 public class BattleEffectResolver
 {
     private readonly BattleContext context;
-    private BattleStatusVisualDirector statusVisualDirector;
 
     public BattleEffectResolver(BattleContext context)
     {
         this.context = context;
-
-        if (!IsPresentationSuppressed)
-            ResolveStatusVisualDirector();
     }
 
     public bool ApplyDamage(EffectRequest request)
@@ -160,26 +154,12 @@ public class BattleEffectResolver
                 .ApplyDamageContext(damageRequest);
 
         if (result != null)
-        {
-            ShowStatusTickVisual(
-                request.SourceStatusEffect,
-                request.TargetCharacter,
-                request.TargetPart,
-                result.GetDisplayDamage());
-
             return result.WasApplied;
-        }
 
         request.TargetCharacter.TakeStatusPartDamage(
             request.TargetPart,
             request.Value,
             request.SourceStatusEffect);
-
-        ShowStatusTickVisual(
-            request.SourceStatusEffect,
-            request.TargetCharacter,
-            request.TargetPart,
-            request.Value);
 
         return true;
     }
@@ -213,25 +193,11 @@ public class BattleEffectResolver
                 .ApplyDamageContext(damageRequest);
 
         if (result != null)
-        {
-            ShowStatusTickVisual(
-                request.SourceStatusEffect,
-                request.TargetCharacter,
-                null,
-                result.GetDisplayDamage());
-
             return result.WasApplied;
-        }
 
         request.TargetCharacter.TakeTrueDamage(
             request.Value,
             request.SourceStatusEffect);
-
-        ShowStatusTickVisual(
-            request.SourceStatusEffect,
-            request.TargetCharacter,
-            null,
-            request.Value);
 
         return true;
     }
@@ -244,107 +210,6 @@ public class BattleEffectResolver
         request.ApplyGuard = false;
         request.ApplyTargetModifiers = false;
         request.WasCritical = false;
-    }
-
-    public void ShowStatusTickVisual(
-        StatusEffect effect,
-        Character target,
-        BodyPart targetPart,
-        int damage)
-    {
-        if (IsPresentationSuppressed)
-            return;
-
-        if (effect == null ||
-            target == null ||
-            damage <= 0)
-        {
-            return;
-        }
-
-        ResolveStatusVisualDirector();
-
-        statusVisualDirector?.ShowStatusDamage(
-            new StatusDamageVisualRequest
-            {
-                Target = target,
-                TargetPart = targetPart,
-                Damage = damage,
-                StatusKey = effect.EffectName
-            });
-    }
-
-    public void ShowStatusApplyVisual(
-        StatusEffectApplyResult result)
-    {
-        if (IsPresentationSuppressed)
-            return;
-
-        if (result?.Effect == null ||
-            result.TargetCharacter == null ||
-            result.Kind == StatusEffectApplyKind.Ignored ||
-            result.Kind == StatusEffectApplyKind.Rejected ||
-            result.WasTransferred)
-        {
-            return;
-        }
-
-        ResolveStatusVisualDirector();
-
-        StatusEffectVisualPhase phase =
-            result.Kind switch
-            {
-                StatusEffectApplyKind.Stacked =>
-                    StatusEffectVisualPhase.Stacked,
-                StatusEffectApplyKind.Refreshed =>
-                    StatusEffectVisualPhase.Refreshed,
-                _ =>
-                    StatusEffectVisualPhase.Applied
-            };
-
-        statusVisualDirector?.ShowStatusLifecycle(
-            new StatusEffectLifecycleVisualRequest
-            {
-                Target = result.TargetCharacter,
-                TargetPart = result.TargetPart,
-                StatusKey = result.Effect.EffectName,
-                Phase = phase,
-                Stack = result.Effect.Stack,
-                Duration = result.Effect.Duration
-            });
-    }
-
-    public void ShowStatusRemoveVisual(
-        Character target,
-        BodyPart part,
-        StatusEffect effect,
-        StatusEffectRemoveReason reason)
-    {
-        if (IsPresentationSuppressed)
-            return;
-
-        if (target == null ||
-            effect == null ||
-            reason == StatusEffectRemoveReason.Transferred)
-        {
-            return;
-        }
-
-        ResolveStatusVisualDirector();
-
-        statusVisualDirector?.ShowStatusLifecycle(
-            new StatusEffectLifecycleVisualRequest
-            {
-                Target = target,
-                TargetPart = part,
-                StatusKey = effect.EffectName,
-                Phase = reason == StatusEffectRemoveReason.Expired
-                    ? StatusEffectVisualPhase.Expired
-                    : StatusEffectVisualPhase.Removed,
-                Stack = effect.Stack,
-                Duration = effect.Duration,
-                RemoveReason = reason
-            });
     }
 
     public bool ApplyCharacterStatus(EffectRequest request)
@@ -499,25 +364,6 @@ public class BattleEffectResolver
         request.TargetCharacter.RuntimeStatus.currentPrestige =
             request.TargetCharacter.CurrentStatus.maxPrestige;
         return true;
-    }
-
-    private bool IsPresentationSuppressed =>
-        context?.SuppressPresentation == true;
-
-    private void ResolveStatusVisualDirector()
-    {
-        if (IsPresentationSuppressed)
-        {
-            statusVisualDirector = null;
-            return;
-        }
-
-        if (statusVisualDirector == null)
-        {
-            statusVisualDirector =
-                Object.FindFirstObjectByType<
-                    BattleStatusVisualDirector>();
-        }
     }
 
     private bool IsValidCommonRequest(EffectRequest request)

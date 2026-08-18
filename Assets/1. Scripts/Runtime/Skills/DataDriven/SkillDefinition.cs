@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 [CreateAssetMenu(menuName = "Battle/Skill/Skill Definition", fileName = "NewSkillDefinition")]
 public class SkillDefinition : ScriptableObject
@@ -91,8 +92,20 @@ public class SkillDefinition : ScriptableObject
     public bool OverridePrestigeUsePolicy;
     public PrestigeUsePolicy PrestigeUsePolicy = PrestigeUsePolicy.OncePerTurn;
 
-    [Header("Visual")]
-    public SkillVisualDefinition VisualDefinition;
+    [Header("Presentation Extension")]
+    [SerializeField]
+    [FormerlySerializedAs("VisualDefinition")]
+    [Tooltip(
+        "Presentation 계층이 해석하는 불투명 연출 에셋입니다. " +
+        "Gameplay Core는 구체 SkillVisualDefinition 타입을 알지 않습니다.")]
+    private Object presentationAsset;
+
+    public Object PresentationAsset => presentationAsset;
+
+    public void SetPresentationAsset(Object value)
+    {
+        presentationAsset = value;
+    }
 
 
     public bool HasEffectEntries =>
