@@ -104,3 +104,10 @@ InitTestScene*.unity*
 
 # Auto-generated cache in Assets folder
 /[Aa]ssets/[Ss]ceneDependencyCache*
+
+# 작업 맥락 — abyss-workspace(private)가 원본. public 레포에 커밋 금지
+CLAUDE.md
+.claude/
+
+# macOS 생성 파일
+.DS_Store
