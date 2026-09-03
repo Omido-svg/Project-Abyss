@@ -110,3 +110,6 @@ InitTestScene*.unity*
 /AllDataTXT/
 /BattleAnalysis/
 /BattleSimulation/
+# Local UPM packages are intentionally version-controlled with Project Abyss.
+!/LocalPackages/
+!/LocalPackages/**

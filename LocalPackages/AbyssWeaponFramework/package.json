@@ -1,0 +1,32 @@
+{
+  "name": "com.projectabyss.weapon-system",
+  "version": "2.0.0",
+  "displayName": "Abyss Weapon Framework",
+  "description": "Game-agnostic Unity weapon framework: socket/grip mounting, dual-wield and two-handed weapons, holsters, reusable hand poses, Humanoid and mapped-skeleton IK, melee/hitscan/projectile attacks, generic hit contracts, projectile simulation, chain-weapon physics helpers, FX/audio modules, setup/pose/anchor editors, validation, and samples. No dependency on Project Abyss combat code.",
+  "unity": "2022.3",
+  "author": {
+    "name": "Project Abyss"
+  },
+  "samples": [
+    {
+      "displayName": "Dual Pistol",
+      "description": "Equip the same pistol definition twice using independent left/right hand bindings.",
+      "path": "Samples~/DualPistol"
+    },
+    {
+      "displayName": "Two Handed Sword",
+      "description": "Primary + support grip mounting with second-hand IK.",
+      "path": "Samples~/TwoHandedSword"
+    },
+    {
+      "displayName": "Rifle / Ranged Attack",
+      "description": "Hitscan/projectile attack invocation and a game-side IWeaponDamageReceiver adapter example.",
+      "path": "Samples~/Rifle"
+    },
+    {
+      "displayName": "Chain Weapon",
+      "description": "Chain rigidbody/joint setup and physical collision hit relay example.",
+      "path": "Samples~/ChainWeapon"
+    }
+  ]
+}

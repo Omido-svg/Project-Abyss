@@ -1,0 +1,10 @@
+{
+  "name": "com.projectabyss.secondary-rig",
+  "version": "1.2.0",
+  "displayName": "Project Abyss Secondary Rig",
+  "description": "Reusable Target/Spring secondary bone physics for Unity with production collider tools, weighted auto-fit, L/R mirror/duplicate, distance LOD, live performance stats, prefab validation, preset library maintenance, stress-test diagnostics, body and secondary collisions, and wide-cloth constraints.",
+  "unity": "2022.3",
+  "author": {
+    "name": "Project Abyss"
+  }
+}

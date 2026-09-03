@@ -6,13 +6,39 @@ using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
+using System.Text.RegularExpressions;
 using UnityEditor;
 using UnityEngine;
 
+/// <summary>
+/// Project Abyss의 프로젝트 스크립트와 프로젝트가 직접 소유하는 UPM 패키지 소스를
+/// AI 분석용 단일 텍스트로 내보냅니다.
+///
+/// 포함 범위:
+/// - Assets/1. Scripts 아래의 소스 파일
+/// - Packages/manifest.json
+/// - Packages/packages-lock.json
+/// - manifest.json의 file: 로 연결된 Local UPM Package
+/// - Packages/ 아래에 직접 배치된 Embedded UPM Package
+///
+/// 의도적으로 제외:
+/// - Library/PackageCache
+/// - Unity Registry / Git / Built-in 패키지의 캐시 소스
+/// - 바이너리 에셋
+/// </summary>
 public static class ProjectAbyssScriptExporter
 {
     private const string SourceFolder =
         "Assets/1. Scripts";
+
+    private const string PackagesFolder =
+        "Packages";
+
+    private const string ManifestRelativePath =
+        "Packages/manifest.json";
+
+    private const string LockRelativePath =
+        "Packages/packages-lock.json";
 
     private const string OutputFolderName =
         "AllDataTXT/Scripts";
@@ -25,6 +51,36 @@ public static class ProjectAbyssScriptExporter
 
     private const string Separator =
         "================================================================================";
+
+    private static readonly HashSet<string> SupportedExtensions =
+        new HashSet<string>(
+            StringComparer.OrdinalIgnoreCase)
+        {
+            ".cs",
+            ".json",
+            ".asmdef",
+            ".asmref",
+            ".uxml",
+            ".uss",
+            ".shader",
+            ".hlsl",
+            ".compute",
+            ".cginc",
+            ".md",
+            ".txt"
+        };
+
+    private static readonly string[] ExcludedPackageDirectoryNames =
+    {
+        ".git",
+        ".svn",
+        ".hg",
+        "Library",
+        "Temp",
+        "Obj",
+        "Logs",
+        "node_modules"
+    };
 
     [MenuItem(MenuPath, priority = 2000)]
     public static void ExportAllScriptsForAI()
@@ -98,16 +154,26 @@ public static class ProjectAbyssScriptExporter
         string outputPath,
         string temporaryPath)
     {
-        List<ScriptFileInfo> scripts =
-            FindScripts(
-                projectRoot,
-                absoluteSourceFolder);
+        List<string> discoveryWarnings =
+            new List<string>();
 
-        if (scripts.Count == 0)
+        List<PackageExportInfo> packages =
+            DiscoverProjectOwnedPackages(
+                projectRoot,
+                discoveryWarnings);
+
+        List<SourceFileInfo> files =
+            CollectExportFiles(
+                projectRoot,
+                absoluteSourceFolder,
+                packages,
+                discoveryWarnings);
+
+        if (files.Count == 0)
         {
             EditorUtility.DisplayDialog(
                 "Script Export",
-                $"{SourceFolder} 아래에서 C# 또는 JSON 파일을 찾지 못했습니다.",
+                "내보낼 프로젝트/패키지 소스 파일을 찾지 못했습니다.",
                 "확인");
 
             return;
@@ -118,33 +184,39 @@ public static class ProjectAbyssScriptExporter
 
         StringBuilder output =
             new StringBuilder(
-                CalculateInitialCapacity(scripts));
+                CalculateInitialCapacity(files));
 
         AppendDocumentHeader(
             output,
             projectRoot,
-            scripts);
+            files,
+            packages,
+            discoveryWarnings);
+
+        AppendPackageCatalog(
+            output,
+            packages);
 
         AppendTableOfContents(
             output,
-            scripts);
+            files);
 
         for (int i = 0;
-             i < scripts.Count;
+             i < files.Count;
              i++)
         {
-            ScriptFileInfo script =
-                scripts[i];
+            SourceFileInfo file =
+                files[i];
 
             float progress =
-                scripts.Count == 0
+                files.Count == 0
                     ? 1f
-                    : (float)i / scripts.Count;
+                    : (float)i / files.Count;
 
             bool cancelled =
                 EditorUtility.DisplayCancelableProgressBar(
-                    "AI 분석용 스크립트 내보내기",
-                    $"[{i + 1}/{scripts.Count}] {script.AssetPath}",
+                    "AI 분석용 프로젝트/패키지 소스 내보내기",
+                    $"[{i + 1}/{files.Count}] {file.AssetPath}",
                     progress);
 
             if (cancelled)
@@ -157,18 +229,20 @@ public static class ProjectAbyssScriptExporter
                 return;
             }
 
-            AppendScriptSection(
+            AppendFileSection(
                 output,
-                script,
+                file,
                 i + 1,
-                scripts.Count,
+                files.Count,
                 readErrors);
         }
 
         AppendDocumentFooter(
             output,
-            scripts.Count,
-            readErrors);
+            files,
+            packages,
+            readErrors,
+            discoveryWarnings);
 
         string outputDirectory =
             Path.GetDirectoryName(outputPath);
@@ -195,20 +269,50 @@ public static class ProjectAbyssScriptExporter
             temporaryPath,
             outputPath);
 
+        int localPackageCount =
+            packages.Count(
+                item => item.Kind == PackageKind.Local);
+
+        int embeddedPackageCount =
+            packages.Count(
+                item => item.Kind == PackageKind.Embedded);
+
+        int packageFileCount =
+            files.Count(
+                item => item.Origin == SourceOrigin.LocalPackage ||
+                        item.Origin == SourceOrigin.EmbeddedPackage);
+
         string normalizedOutputPath =
             NormalizePath(outputPath);
 
         Debug.Log(
             $"[ProjectAbyssScriptExporter] Export complete\n" +
-            $"Files   : {scripts.Count}\n" +
-            $"Errors  : {readErrors.Count}\n" +
-            $"Output  : {normalizedOutputPath}");
+            $"Files             : {files.Count}\n" +
+            $"Package Files     : {packageFileCount}\n" +
+            $"Local Packages    : {localPackageCount}\n" +
+            $"Embedded Packages : {embeddedPackageCount}\n" +
+            $"Discovery Warnings: {discoveryWarnings.Count}\n" +
+            $"Read Errors       : {readErrors.Count}\n" +
+            $"Output            : {normalizedOutputPath}");
 
         string resultMessage =
-            readErrors.Count == 0
-                ? $"총 {scripts.Count}개의 C# / JSON 파일을 내보냈습니다."
-                : $"총 {scripts.Count}개 중 {readErrors.Count}개 파일을 읽지 못했습니다.\n" +
-                  "출력 파일 마지막의 READ_ERRORS 항목을 확인하세요.";
+            $"총 {files.Count}개의 프로젝트/패키지 소스 파일을 내보냈습니다.\n" +
+            $"Local Packages: {localPackageCount}\n" +
+            $"Embedded Packages: {embeddedPackageCount}\n" +
+            $"Package Source Files: {packageFileCount}";
+
+        if (discoveryWarnings.Count > 0)
+        {
+            resultMessage +=
+                $"\nDiscovery Warnings: {discoveryWarnings.Count}";
+        }
+
+        if (readErrors.Count > 0)
+        {
+            resultMessage +=
+                $"\nRead Errors: {readErrors.Count}\n" +
+                "출력 파일 마지막의 EXPORT_SUMMARY를 확인하세요.";
+        }
 
         if (!ProjectAbyssExportSession.IsBatch)
         {
@@ -222,74 +326,756 @@ public static class ProjectAbyssScriptExporter
         }
     }
 
-    private static List<ScriptFileInfo> FindScripts(
+    private static List<SourceFileInfo> CollectExportFiles(
         string projectRoot,
-        string absoluteSourceFolder)
+        string absoluteSourceFolder,
+        IReadOnlyList<PackageExportInfo> packages,
+        List<string> warnings)
     {
-        string[] files =
-            Directory.GetFiles(
-                    absoluteSourceFolder,
-                    "*.*",
-                    SearchOption.AllDirectories)
-                .Where(
-                    path =>
-                    {
-                        string extension =
-                            Path.GetExtension(path);
+        List<SourceFileInfo> result =
+            new List<SourceFileInfo>();
 
-                        return string.Equals(
-                                   extension,
-                                   ".cs",
-                                   StringComparison.OrdinalIgnoreCase) ||
-                               string.Equals(
-                                   extension,
-                                   ".json",
-                                   StringComparison.OrdinalIgnoreCase);
-                    })
-                .ToArray();
+        AddDirectoryFiles(
+            result,
+            absoluteSourceFolder,
+            absoluteSourceFolder,
+            SourceOrigin.ProjectSource,
+            package: null,
+            virtualRoot: SourceFolder,
+            warnings);
 
-        List<ScriptFileInfo> result =
-            new List<ScriptFileInfo>(
-                files.Length);
+        AddProjectMetadataFile(
+            result,
+            projectRoot,
+            ManifestRelativePath);
 
-        foreach (string absolutePath in files)
+        AddProjectMetadataFile(
+            result,
+            projectRoot,
+            LockRelativePath);
+
+        foreach (PackageExportInfo package in packages)
         {
-            string normalizedAbsolutePath =
-                NormalizePath(
-                    Path.GetFullPath(
-                        absolutePath));
+            if (!package.IsResolved)
+                continue;
 
-            string assetPath =
-                MakeRelativePath(
-                    projectRoot,
-                    normalizedAbsolutePath);
+            SourceOrigin origin =
+                package.Kind == PackageKind.Embedded
+                    ? SourceOrigin.EmbeddedPackage
+                    : SourceOrigin.LocalPackage;
 
-            result.Add(
-                new ScriptFileInfo(
-                    normalizedAbsolutePath,
-                    assetPath));
+            string virtualRoot =
+                $"Packages/{package.Name}";
+
+            AddDirectoryFiles(
+                result,
+                package.ResolvedPath,
+                package.ResolvedPath,
+                origin,
+                package,
+                virtualRoot,
+                warnings);
         }
 
         return result
+            .GroupBy(
+                item => item.AssetPath,
+                StringComparer.OrdinalIgnoreCase)
+            .Select(
+                group => group.First())
             .OrderBy(
-                script => script.AssetPath,
+                item => item.AssetPath,
                 StringComparer.Ordinal)
             .ToList();
+    }
+
+    private static void AddDirectoryFiles(
+        List<SourceFileInfo> result,
+        string searchRoot,
+        string relativeRoot,
+        SourceOrigin origin,
+        PackageExportInfo package,
+        string virtualRoot,
+        List<string> warnings)
+    {
+        if (string.IsNullOrWhiteSpace(searchRoot) ||
+            !Directory.Exists(searchRoot))
+        {
+            return;
+        }
+
+        try
+        {
+            IEnumerable<string> files =
+                Directory
+                    .EnumerateFiles(
+                        searchRoot,
+                        "*",
+                        SearchOption.AllDirectories)
+                    .Where(IsSupportedSourceFile)
+                    .Where(
+                        path =>
+                            !IsExcludedPackagePath(
+                                relativeRoot,
+                                path));
+
+            foreach (string absolutePath in files)
+            {
+                string normalizedAbsolutePath =
+                    NormalizePath(
+                        Path.GetFullPath(
+                            absolutePath));
+
+                string relativePath =
+                    MakeRelativePath(
+                        relativeRoot,
+                        normalizedAbsolutePath);
+
+                string assetPath =
+                    NormalizePath(
+                        virtualRoot.TrimEnd('/', '\\') +
+                        "/" +
+                        relativePath.TrimStart('/', '\\'));
+
+                result.Add(
+                    new SourceFileInfo(
+                        normalizedAbsolutePath,
+                        assetPath,
+                        origin,
+                        package));
+            }
+        }
+        catch (Exception exception)
+        {
+            warnings.Add(
+                $"SOURCE_ENUMERATION_FAILED | {NormalizePath(searchRoot)} | " +
+                $"{exception.GetType().Name}: {SanitizeSingleLine(exception.Message)}");
+        }
+    }
+
+    private static void AddProjectMetadataFile(
+        List<SourceFileInfo> result,
+        string projectRoot,
+        string relativePath)
+    {
+        string absolutePath =
+            Path.GetFullPath(
+                Path.Combine(
+                    projectRoot,
+                    relativePath));
+
+        if (!File.Exists(absolutePath))
+            return;
+
+        result.Add(
+            new SourceFileInfo(
+                NormalizePath(absolutePath),
+                NormalizePath(relativePath),
+                SourceOrigin.ProjectMetadata,
+                package: null));
+    }
+
+    private static bool IsSupportedSourceFile(
+        string path)
+    {
+        if (string.IsNullOrWhiteSpace(path))
+            return false;
+
+        return SupportedExtensions.Contains(
+            Path.GetExtension(path));
+    }
+
+    private static bool IsExcludedPackagePath(
+        string root,
+        string path)
+    {
+        string relative;
+
+        try
+        {
+            relative =
+                MakeRelativePath(
+                    root,
+                    path);
+        }
+        catch
+        {
+            return false;
+        }
+
+        string[] segments =
+            NormalizePath(relative)
+                .Split(
+                    new[] { '/' },
+                    StringSplitOptions.RemoveEmptyEntries);
+
+        foreach (string segment in segments)
+        {
+            for (int i = 0;
+                 i < ExcludedPackageDirectoryNames.Length;
+                 i++)
+            {
+                if (string.Equals(
+                        segment,
+                        ExcludedPackageDirectoryNames[i],
+                        StringComparison.OrdinalIgnoreCase))
+                {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    private static List<PackageExportInfo> DiscoverProjectOwnedPackages(
+        string projectRoot,
+        List<string> warnings)
+    {
+        List<PackageExportInfo> result =
+            new List<PackageExportInfo>();
+
+        string manifestPath =
+            Path.Combine(
+                projectRoot,
+                ManifestRelativePath);
+
+        if (File.Exists(manifestPath))
+        {
+            string manifestText =
+                ReadTextFile(manifestPath);
+
+            foreach (PackageReference packageReference
+                     in ParseFilePackageReferences(manifestText))
+            {
+                string resolvedPath =
+                    ResolveLocalPackagePath(
+                        projectRoot,
+                        Path.GetDirectoryName(manifestPath),
+                        packageReference.Reference);
+
+                PackageExportInfo package =
+                    CreatePackageInfo(
+                        packageReference.Name,
+                        PackageKind.Local,
+                        packageReference.Reference,
+                        resolvedPath);
+
+                result.Add(package);
+
+                if (!package.IsResolved)
+                {
+                    warnings.Add(
+                        $"LOCAL_PACKAGE_NOT_FOUND | " +
+                        $"name={packageReference.Name} | " +
+                        $"reference={packageReference.Reference}");
+                }
+            }
+        }
+        else
+        {
+            warnings.Add(
+                $"MANIFEST_NOT_FOUND | {NormalizePath(manifestPath)}");
+        }
+
+        string embeddedRoot =
+            Path.Combine(
+                projectRoot,
+                PackagesFolder);
+
+        if (Directory.Exists(embeddedRoot))
+        {
+            foreach (string directory
+                     in Directory.EnumerateDirectories(
+                         embeddedRoot,
+                         "*",
+                         SearchOption.TopDirectoryOnly))
+            {
+                string packageJson =
+                    Path.Combine(
+                        directory,
+                        "package.json");
+
+                if (!File.Exists(packageJson))
+                    continue;
+
+                PackageExportInfo package =
+                    CreatePackageInfo(
+                        fallbackName: Path.GetFileName(directory),
+                        kind: PackageKind.Embedded,
+                        reference: "embedded",
+                        resolvedPath: directory);
+
+                result.Add(package);
+            }
+        }
+
+        // Local/Embedded 패키지 자체가 또 다른 file: 패키지에 의존하는 경우도 추적한다.
+        DiscoverTransitiveLocalPackages(
+            projectRoot,
+            result,
+            warnings);
+
+        return result
+            .GroupBy(
+                item =>
+                    $"{item.Name}|{NormalizePath(item.ResolvedPath)}",
+                StringComparer.OrdinalIgnoreCase)
+            .Select(
+                group => group.First())
+            .OrderBy(
+                item => item.Name,
+                StringComparer.Ordinal)
+            .ThenBy(
+                item => item.Kind)
+            .ToList();
+    }
+
+    private static void DiscoverTransitiveLocalPackages(
+        string projectRoot,
+        List<PackageExportInfo> packages,
+        List<string> warnings)
+    {
+        Queue<PackageExportInfo> queue =
+            new Queue<PackageExportInfo>(
+                packages.Where(item => item.IsResolved));
+
+        HashSet<string> visitedRoots =
+            new HashSet<string>(
+                packages
+                    .Where(item => item.IsResolved)
+                    .Select(item => NormalizePath(item.ResolvedPath)),
+                StringComparer.OrdinalIgnoreCase);
+
+        while (queue.Count > 0)
+        {
+            PackageExportInfo parent =
+                queue.Dequeue();
+
+            string packageJsonPath =
+                Path.Combine(
+                    parent.ResolvedPath,
+                    "package.json");
+
+            if (!File.Exists(packageJsonPath))
+                continue;
+
+            string json;
+
+            try
+            {
+                json =
+                    ReadTextFile(packageJsonPath);
+            }
+            catch (Exception exception)
+            {
+                warnings.Add(
+                    $"PACKAGE_JSON_READ_FAILED | {NormalizePath(packageJsonPath)} | " +
+                    $"{exception.GetType().Name}: {SanitizeSingleLine(exception.Message)}");
+
+                continue;
+            }
+
+            foreach (PackageReference dependency
+                     in ParseFilePackageReferences(json))
+            {
+                string resolvedPath =
+                    ResolveLocalPackagePath(
+                        projectRoot,
+                        parent.ResolvedPath,
+                        dependency.Reference);
+
+                PackageExportInfo package =
+                    CreatePackageInfo(
+                        dependency.Name,
+                        PackageKind.Local,
+                        dependency.Reference,
+                        resolvedPath);
+
+                if (!package.IsResolved)
+                {
+                    warnings.Add(
+                        $"TRANSITIVE_LOCAL_PACKAGE_NOT_FOUND | " +
+                        $"parent={parent.Name} | " +
+                        $"name={dependency.Name} | " +
+                        $"reference={dependency.Reference}");
+
+                    continue;
+                }
+
+                string normalizedRoot =
+                    NormalizePath(package.ResolvedPath);
+
+                if (!visitedRoots.Add(normalizedRoot))
+                    continue;
+
+                packages.Add(package);
+                queue.Enqueue(package);
+            }
+        }
+    }
+
+    private static IReadOnlyList<PackageReference> ParseFilePackageReferences(
+        string json)
+    {
+        if (string.IsNullOrWhiteSpace(json))
+            return Array.Empty<PackageReference>();
+
+        MatchCollection matches =
+            Regex.Matches(
+                json,
+                "\"(?<name>[^\"]+)\"\\s*:\\s*\"(?<reference>file:[^\"]+)\"",
+                RegexOptions.IgnoreCase |
+                RegexOptions.CultureInvariant);
+
+        List<PackageReference> result =
+            new List<PackageReference>(
+                matches.Count);
+
+        foreach (Match match in matches)
+        {
+            if (!match.Success)
+                continue;
+
+            string name =
+                UnescapeJsonString(
+                    match.Groups["name"].Value);
+
+            string reference =
+                UnescapeJsonString(
+                    match.Groups["reference"].Value);
+
+            if (string.IsNullOrWhiteSpace(name) ||
+                string.IsNullOrWhiteSpace(reference))
+            {
+                continue;
+            }
+
+            result.Add(
+                new PackageReference(
+                    name,
+                    reference));
+        }
+
+        return result;
+    }
+
+    private static string ResolveLocalPackagePath(
+        string projectRoot,
+        string declaringDirectory,
+        string packageReference)
+    {
+        if (string.IsNullOrWhiteSpace(packageReference) ||
+            !packageReference.StartsWith(
+                "file:",
+                StringComparison.OrdinalIgnoreCase))
+        {
+            return string.Empty;
+        }
+
+        string referencePath =
+            packageReference.Substring(
+                "file:".Length);
+
+        try
+        {
+            referencePath =
+                Uri.UnescapeDataString(
+                    referencePath);
+        }
+        catch
+        {
+            // 잘못된 URI escape가 있어도 원문 경로로 계속 시도한다.
+        }
+
+        if (Uri.TryCreate(
+                packageReference,
+                UriKind.Absolute,
+                out Uri fileUri) &&
+            fileUri.IsFile)
+        {
+            string uriLocalPath =
+                fileUri.LocalPath;
+
+            if (Directory.Exists(uriLocalPath))
+            {
+                return NormalizePath(
+                    Path.GetFullPath(
+                        uriLocalPath));
+            }
+        }
+
+        if (Path.IsPathRooted(referencePath))
+        {
+            if (Directory.Exists(referencePath))
+            {
+                return NormalizePath(
+                    Path.GetFullPath(
+                        referencePath));
+            }
+
+            return string.Empty;
+        }
+
+        List<string> candidates =
+            new List<string>();
+
+        // Unity Local Package의 일반적인 기준은 프로젝트 Root다.
+        AddCandidate(
+            candidates,
+            projectRoot,
+            referencePath);
+
+        // package.json에서 발견한 transitive file: 의 경우 선언 패키지 Root 기준도 지원한다.
+        AddCandidate(
+            candidates,
+            declaringDirectory,
+            referencePath);
+
+        // 일부 수동 manifest 구성의 호환성을 위해 Packages 폴더 기준도 마지막에 시도한다.
+        AddCandidate(
+            candidates,
+            Path.Combine(projectRoot, PackagesFolder),
+            referencePath);
+
+        foreach (string candidate in candidates)
+        {
+            if (Directory.Exists(candidate))
+            {
+                return NormalizePath(
+                    Path.GetFullPath(
+                        candidate));
+            }
+        }
+
+        return string.Empty;
+    }
+
+    private static void AddCandidate(
+        List<string> candidates,
+        string basePath,
+        string relativePath)
+    {
+        if (string.IsNullOrWhiteSpace(basePath) ||
+            string.IsNullOrWhiteSpace(relativePath))
+        {
+            return;
+        }
+
+        try
+        {
+            string candidate =
+                Path.GetFullPath(
+                    Path.Combine(
+                        basePath,
+                        relativePath));
+
+            if (!candidates.Contains(
+                    candidate,
+                    StringComparer.OrdinalIgnoreCase))
+            {
+                candidates.Add(candidate);
+            }
+        }
+        catch
+        {
+            // 다른 기준 경로를 계속 시도한다.
+        }
+    }
+
+    private static PackageExportInfo CreatePackageInfo(
+        string fallbackName,
+        PackageKind kind,
+        string reference,
+        string resolvedPath)
+    {
+        string name =
+            fallbackName ?? string.Empty;
+
+        string version =
+            string.Empty;
+
+        if (!string.IsNullOrWhiteSpace(resolvedPath) &&
+            Directory.Exists(resolvedPath))
+        {
+            string packageJsonPath =
+                Path.Combine(
+                    resolvedPath,
+                    "package.json");
+
+            if (File.Exists(packageJsonPath))
+            {
+                try
+                {
+                    string json =
+                        ReadTextFile(
+                            packageJsonPath);
+
+                    string jsonName =
+                        ReadJsonStringProperty(
+                            json,
+                            "name");
+
+                    string jsonVersion =
+                        ReadJsonStringProperty(
+                            json,
+                            "version");
+
+                    if (!string.IsNullOrWhiteSpace(jsonName))
+                        name = jsonName;
+
+                    if (!string.IsNullOrWhiteSpace(jsonVersion))
+                        version = jsonVersion;
+                }
+                catch
+                {
+                    // package.json 메타데이터 실패는 소스 export 자체를 막지 않는다.
+                }
+            }
+        }
+
+        return new PackageExportInfo(
+            kind,
+            name,
+            version,
+            reference,
+            resolvedPath);
+    }
+
+    private static string ReadJsonStringProperty(
+        string json,
+        string propertyName)
+    {
+        if (string.IsNullOrWhiteSpace(json) ||
+            string.IsNullOrWhiteSpace(propertyName))
+        {
+            return string.Empty;
+        }
+
+        Match match =
+            Regex.Match(
+                json,
+                "\"" + Regex.Escape(propertyName) +
+                "\"\\s*:\\s*\"(?<value>[^\"]*)\"",
+                RegexOptions.IgnoreCase |
+                RegexOptions.CultureInvariant);
+
+        return match.Success
+            ? UnescapeJsonString(
+                match.Groups["value"].Value)
+            : string.Empty;
+    }
+
+    private static string UnescapeJsonString(
+        string value)
+    {
+        if (string.IsNullOrEmpty(value))
+            return string.Empty;
+
+        StringBuilder builder =
+            new StringBuilder(
+                value.Length);
+
+        for (int i = 0;
+             i < value.Length;
+             i++)
+        {
+            char current =
+                value[i];
+
+            if (current != '\\' ||
+                i + 1 >= value.Length)
+            {
+                builder.Append(current);
+                continue;
+            }
+
+            char escaped =
+                value[++i];
+
+            switch (escaped)
+            {
+                case '"':
+                    builder.Append('"');
+                    break;
+
+                case '\\':
+                    builder.Append('\\');
+                    break;
+
+                case '/':
+                    builder.Append('/');
+                    break;
+
+                case 'b':
+                    builder.Append('\b');
+                    break;
+
+                case 'f':
+                    builder.Append('\f');
+                    break;
+
+                case 'n':
+                    builder.Append('\n');
+                    break;
+
+                case 'r':
+                    builder.Append('\r');
+                    break;
+
+                case 't':
+                    builder.Append('\t');
+                    break;
+
+                case 'u':
+                    if (i + 4 < value.Length)
+                    {
+                        string hex =
+                            value.Substring(
+                                i + 1,
+                                4);
+
+                        if (ushort.TryParse(
+                                hex,
+                                System.Globalization.NumberStyles.HexNumber,
+                                System.Globalization.CultureInfo.InvariantCulture,
+                                out ushort unicode))
+                        {
+                            builder.Append(
+                                (char)unicode);
+
+                            i += 4;
+                            break;
+                        }
+                    }
+
+                    builder.Append("\\u");
+                    break;
+
+                default:
+                    builder.Append(escaped);
+                    break;
+            }
+        }
+
+        return builder.ToString();
     }
 
     private static void AppendDocumentHeader(
         StringBuilder output,
         string projectRoot,
-        IReadOnlyList<ScriptFileInfo> scripts)
+        IReadOnlyList<SourceFileInfo> files,
+        IReadOnlyList<PackageExportInfo> packages,
+        IReadOnlyList<string> discoveryWarnings)
     {
         output.AppendLine(
             "PROJECT_ABYSS_SCRIPT_EXPORT");
 
         output.AppendLine(
-            "FORMAT_VERSION: 1");
+            "FORMAT_VERSION: 2");
 
         output.AppendLine(
-            "PURPOSE: AI_CODE_ANALYSIS");
+            "PURPOSE: AI_CODE_ANALYSIS_WITH_PROJECT_OWNED_UPM_PACKAGES");
 
         output.AppendLine(
             $"GENERATED_AT_UTC: {DateTime.UtcNow:O}");
@@ -307,13 +1093,40 @@ public static class ProjectAbyssScriptExporter
             $"SOURCE_ROOT: {SourceFolder}");
 
         output.AppendLine(
-            $"SOURCE_FILE_COUNT: {scripts.Count}");
+            $"SOURCE_FILE_COUNT: {files.Count}");
 
         output.AppendLine(
-            $"CSHARP_FILE_COUNT: {scripts.Count(item => item.Language == "CSharp")}");
+            $"PROJECT_SOURCE_FILE_COUNT: {files.Count(item => item.Origin == SourceOrigin.ProjectSource)}");
 
         output.AppendLine(
-            $"JSON_FILE_COUNT: {scripts.Count(item => item.Language == "JSON")}");
+            $"PROJECT_METADATA_FILE_COUNT: {files.Count(item => item.Origin == SourceOrigin.ProjectMetadata)}");
+
+        output.AppendLine(
+            $"LOCAL_PACKAGE_COUNT: {packages.Count(item => item.Kind == PackageKind.Local)}");
+
+        output.AppendLine(
+            $"EMBEDDED_PACKAGE_COUNT: {packages.Count(item => item.Kind == PackageKind.Embedded)}");
+
+        output.AppendLine(
+            $"LOCAL_PACKAGE_FILE_COUNT: {files.Count(item => item.Origin == SourceOrigin.LocalPackage)}");
+
+        output.AppendLine(
+            $"EMBEDDED_PACKAGE_FILE_COUNT: {files.Count(item => item.Origin == SourceOrigin.EmbeddedPackage)}");
+
+        output.AppendLine(
+            $"CSHARP_FILE_COUNT: {files.Count(item => item.Language == "CSharp")}");
+
+        output.AppendLine(
+            $"JSON_FILE_COUNT: {files.Count(item => item.Language == "JSON")}");
+
+        output.AppendLine(
+            $"DISCOVERY_WARNING_COUNT: {discoveryWarnings.Count}");
+
+        output.AppendLine(
+            $"PROJECT_MANIFEST_INCLUDED: {files.Any(item => string.Equals(item.AssetPath, ManifestRelativePath, StringComparison.OrdinalIgnoreCase))}");
+
+        output.AppendLine(
+            $"PROJECT_LOCK_INCLUDED: {files.Any(item => string.Equals(item.AssetPath, LockRelativePath, StringComparison.OrdinalIgnoreCase))}");
 
         output.AppendLine(
             "ENCODING: UTF-8_NO_BOM");
@@ -322,10 +1135,13 @@ public static class ProjectAbyssScriptExporter
             "NEWLINE: LF");
 
         output.AppendLine(
-            "SORT_ORDER: ASSET_PATH_ORDINAL_ASCENDING");
+            "SORT_ORDER: FILE_PATH_ORDINAL_ASCENDING");
 
         output.AppendLine(
-            "CONTENT_POLICY: ORIGINAL_SOURCE_WITH_NORMALIZED_NEWLINES");
+            "CONTENT_POLICY: ORIGINAL_TEXT_WITH_NORMALIZED_NEWLINES");
+
+        output.AppendLine(
+            "PACKAGE_POLICY: EXPORT_FILE_AND_EMBEDDED_PROJECT_PACKAGES_ONLY; PACKAGECACHE_EXCLUDED");
 
         output.AppendLine();
 
@@ -336,16 +1152,25 @@ public static class ProjectAbyssScriptExporter
             "- 각 파일은 FILE_BEGIN / FILE_END 마커로 완전히 분리되어 있다.");
 
         output.AppendLine(
-            "- FILE_PATH가 Unity 프로젝트 내부의 실제 상대 경로다.");
+            "- FILE_PATH는 Unity에서 보이는 논리 경로다.");
 
         output.AppendLine(
-            "- FILE_GUID는 Unity Asset GUID이며 빈 값일 수 있다.");
+            "- 외부 Local UPM 패키지도 FILE_PATH를 Packages/<package-name>/... 형태로 기록한다.");
 
         output.AppendLine(
-            "- CONTENT_BEGIN과 CONTENT_END 사이만 실제 C# 또는 JSON 원본 내용이다.");
+            "- 실제 Local Package의 물리 경로와 버전은 PACKAGE_CATALOG에서 확인한다.");
 
         output.AppendLine(
-            "- 파일 간 동일 클래스명이나 참조 관계를 분석할 때 FILE_PATH를 기준으로 구분한다.");
+            "- FILE_ORIGIN으로 PROJECT_SOURCE / PROJECT_METADATA / LOCAL_PACKAGE / EMBEDDED_PACKAGE를 구분한다.");
+
+        output.AppendLine(
+            "- FILE_GUID는 Unity Asset GUID이며 manifest/lock 등 AssetDatabase 대상이 아니면 빈 값일 수 있다.");
+
+        output.AppendLine(
+            "- CONTENT_BEGIN과 CONTENT_END 사이만 실제 원본 텍스트 내용이다.");
+
+        output.AppendLine(
+            "- Library/PackageCache의 Unity/Third-party registry package 소스는 의도적으로 포함하지 않는다.");
 
         output.AppendLine(
             "- 코드 내용의 줄바꿈만 LF로 정규화하며 그 외 내용은 변경하지 않는다.");
@@ -356,26 +1181,87 @@ public static class ProjectAbyssScriptExporter
             Separator);
     }
 
+    private static void AppendPackageCatalog(
+        StringBuilder output,
+        IReadOnlyList<PackageExportInfo> packages)
+    {
+        output.AppendLine(
+            "PACKAGE_CATALOG_BEGIN");
+
+        if (packages.Count == 0)
+        {
+            output.AppendLine(
+                "(none)");
+        }
+        else
+        {
+            for (int i = 0;
+                 i < packages.Count;
+                 i++)
+            {
+                PackageExportInfo package =
+                    packages[i];
+
+                output.Append(
+                    (i + 1).ToString("D4"));
+
+                output.Append(" | ");
+
+                output.Append(
+                    $"KIND={package.Kind.ToString().ToUpperInvariant()} | ");
+
+                output.Append(
+                    $"NAME={SanitizeSingleLine(package.Name)} | ");
+
+                output.Append(
+                    $"VERSION={SanitizeSingleLine(package.Version)} | ");
+
+                output.Append(
+                    $"STATUS={(package.IsResolved ? "RESOLVED" : "UNRESOLVED")} | ");
+
+                output.Append(
+                    $"REFERENCE={SanitizeSingleLine(package.Reference)} | ");
+
+                output.AppendLine(
+                    $"RESOLVED_PATH={NormalizePath(package.ResolvedPath)}");
+            }
+        }
+
+        output.AppendLine(
+            "PACKAGE_CATALOG_END");
+
+        output.AppendLine(
+            Separator);
+
+        output.AppendLine();
+    }
+
     private static void AppendTableOfContents(
         StringBuilder output,
-        IReadOnlyList<ScriptFileInfo> scripts)
+        IReadOnlyList<SourceFileInfo> files)
     {
         output.AppendLine(
             "TABLE_OF_CONTENTS_BEGIN");
 
         for (int i = 0;
-             i < scripts.Count;
+             i < files.Count;
              i++)
         {
-            ScriptFileInfo script =
-                scripts[i];
+            SourceFileInfo file =
+                files[i];
 
             output.Append(
                 (i + 1).ToString("D4"));
 
             output.Append(" | ");
+
+            output.Append(
+                GetOriginLabel(file.Origin));
+
+            output.Append(" | ");
+
             output.AppendLine(
-                script.AssetPath);
+                file.AssetPath);
         }
 
         output.AppendLine(
@@ -387,9 +1273,9 @@ public static class ProjectAbyssScriptExporter
         output.AppendLine();
     }
 
-    private static void AppendScriptSection(
+    private static void AppendFileSection(
         StringBuilder output,
-        ScriptFileInfo script,
+        SourceFileInfo file,
         int index,
         int totalCount,
         List<string> readErrors)
@@ -401,22 +1287,40 @@ public static class ProjectAbyssScriptExporter
             $"FILE_INDEX: {index}/{totalCount}");
 
         output.AppendLine(
-            $"FILE_PATH: {script.AssetPath}");
+            $"FILE_PATH: {file.AssetPath}");
 
         output.AppendLine(
-            $"FILE_NAME: {Path.GetFileName(script.AssetPath)}");
+            $"FILE_NAME: {Path.GetFileName(file.AssetPath)}");
 
         output.AppendLine(
-            $"FILE_GUID: {GetAssetGuid(script.AssetPath)}");
+            $"FILE_ORIGIN: {GetOriginLabel(file.Origin)}");
+
+        if (file.Package != null)
+        {
+            output.AppendLine(
+                $"PACKAGE_NAME: {file.Package.Name}");
+
+            output.AppendLine(
+                $"PACKAGE_VERSION: {file.Package.Version}");
+
+            output.AppendLine(
+                $"PACKAGE_KIND: {file.Package.Kind.ToString().ToUpperInvariant()}");
+
+            output.AppendLine(
+                $"PACKAGE_REFERENCE: {file.Package.Reference}");
+        }
 
         output.AppendLine(
-            $"LANGUAGE: {script.Language}");
+            $"FILE_GUID: {GetAssetGuid(file.AssetPath)}");
+
+        output.AppendLine(
+            $"LANGUAGE: {file.Language}");
 
         try
         {
             string content =
                 ReadTextFile(
-                    script.AbsolutePath);
+                    file.AbsolutePath);
 
             string normalizedContent =
                 NormalizeNewlines(content);
@@ -464,7 +1368,7 @@ public static class ProjectAbyssScriptExporter
         catch (Exception exception)
         {
             string errorMessage =
-                $"{script.AssetPath} | " +
+                $"{file.AssetPath} | " +
                 $"{exception.GetType().Name}: " +
                 $"{exception.Message}";
 
@@ -507,17 +1411,56 @@ public static class ProjectAbyssScriptExporter
 
     private static void AppendDocumentFooter(
         StringBuilder output,
-        int scriptCount,
-        IReadOnlyList<string> readErrors)
+        IReadOnlyList<SourceFileInfo> files,
+        IReadOnlyList<PackageExportInfo> packages,
+        IReadOnlyList<string> readErrors,
+        IReadOnlyList<string> discoveryWarnings)
     {
         output.AppendLine(
             "EXPORT_SUMMARY_BEGIN");
 
         output.AppendLine(
-            $"SOURCE_FILE_COUNT: {scriptCount}");
+            $"SOURCE_FILE_COUNT: {files.Count}");
+
+        output.AppendLine(
+            $"PROJECT_SOURCE_FILE_COUNT: {files.Count(item => item.Origin == SourceOrigin.ProjectSource)}");
+
+        output.AppendLine(
+            $"PACKAGE_SOURCE_FILE_COUNT: {files.Count(item => item.Origin == SourceOrigin.LocalPackage || item.Origin == SourceOrigin.EmbeddedPackage)}");
+
+        output.AppendLine(
+            $"LOCAL_PACKAGE_COUNT: {packages.Count(item => item.Kind == PackageKind.Local)}");
+
+        output.AppendLine(
+            $"EMBEDDED_PACKAGE_COUNT: {packages.Count(item => item.Kind == PackageKind.Embedded)}");
+
+        output.AppendLine(
+            $"DISCOVERY_WARNING_COUNT: {discoveryWarnings.Count}");
 
         output.AppendLine(
             $"READ_ERROR_COUNT: {readErrors.Count}");
+
+        if (discoveryWarnings.Count > 0)
+        {
+            output.AppendLine(
+                "DISCOVERY_WARNINGS_BEGIN");
+
+            for (int i = 0;
+                 i < discoveryWarnings.Count;
+                 i++)
+            {
+                output.Append(
+                    (i + 1).ToString("D4"));
+
+                output.Append(" | ");
+
+                output.AppendLine(
+                    discoveryWarnings[i]);
+            }
+
+            output.AppendLine(
+                "DISCOVERY_WARNINGS_END");
+        }
 
         if (readErrors.Count > 0)
         {
@@ -546,6 +1489,67 @@ public static class ProjectAbyssScriptExporter
 
         output.AppendLine(
             "PROJECT_ABYSS_SCRIPT_EXPORT_END");
+    }
+
+    private static string GetOriginLabel(
+        SourceOrigin origin)
+    {
+        switch (origin)
+        {
+            case SourceOrigin.ProjectSource:
+                return "PROJECT_SOURCE";
+
+            case SourceOrigin.ProjectMetadata:
+                return "PROJECT_METADATA";
+
+            case SourceOrigin.LocalPackage:
+                return "LOCAL_PACKAGE";
+
+            case SourceOrigin.EmbeddedPackage:
+                return "EMBEDDED_PACKAGE";
+
+            default:
+                return origin.ToString().ToUpperInvariant();
+        }
+    }
+
+    private static string GetLanguage(
+        string path)
+    {
+        string extension =
+            Path.GetExtension(path);
+
+        if (string.Equals(extension, ".cs", StringComparison.OrdinalIgnoreCase))
+            return "CSharp";
+
+        if (string.Equals(extension, ".json", StringComparison.OrdinalIgnoreCase))
+            return "JSON";
+
+        if (string.Equals(extension, ".asmdef", StringComparison.OrdinalIgnoreCase))
+            return "AssemblyDefinition";
+
+        if (string.Equals(extension, ".asmref", StringComparison.OrdinalIgnoreCase))
+            return "AssemblyReference";
+
+        if (string.Equals(extension, ".uxml", StringComparison.OrdinalIgnoreCase))
+            return "UXML";
+
+        if (string.Equals(extension, ".uss", StringComparison.OrdinalIgnoreCase))
+            return "USS";
+
+        if (string.Equals(extension, ".shader", StringComparison.OrdinalIgnoreCase))
+            return "Shader";
+
+        if (string.Equals(extension, ".hlsl", StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(extension, ".cginc", StringComparison.OrdinalIgnoreCase))
+        {
+            return "HLSL";
+        }
+
+        if (string.Equals(extension, ".compute", StringComparison.OrdinalIgnoreCase))
+            return "ComputeShader";
+
+        return "Text";
     }
 
     private static string ReadTextFile(
@@ -743,17 +1747,17 @@ public static class ProjectAbyssScriptExporter
     }
 
     private static int CalculateInitialCapacity(
-        IReadOnlyList<ScriptFileInfo> scripts)
+        IReadOnlyList<SourceFileInfo> files)
     {
         long totalLength = 0;
 
-        foreach (ScriptFileInfo script in scripts)
+        foreach (SourceFileInfo file in files)
         {
             try
             {
                 totalLength +=
                     new FileInfo(
-                        script.AbsolutePath)
+                        file.AbsolutePath)
                         .Length;
             }
             catch
@@ -764,8 +1768,8 @@ public static class ProjectAbyssScriptExporter
 
         long estimated =
             totalLength +
-            scripts.Count * 512L +
-            8192L;
+            files.Count * 768L +
+            16 * 1024L;
 
         return (int)Math.Min(
             int.MaxValue,
@@ -803,15 +1807,88 @@ public static class ProjectAbyssScriptExporter
             File.Delete(path);
     }
 
-    private sealed class ScriptFileInfo
+    private enum SourceOrigin
+    {
+        ProjectSource = 0,
+        ProjectMetadata = 1,
+        LocalPackage = 2,
+        EmbeddedPackage = 3
+    }
+
+    private enum PackageKind
+    {
+        Local = 0,
+        Embedded = 1
+    }
+
+    private sealed class PackageReference
+    {
+        public string Name { get; }
+        public string Reference { get; }
+
+        public PackageReference(
+            string name,
+            string reference)
+        {
+            Name =
+                name;
+
+            Reference =
+                reference;
+        }
+    }
+
+    private sealed class PackageExportInfo
+    {
+        public PackageKind Kind { get; }
+        public string Name { get; }
+        public string Version { get; }
+        public string Reference { get; }
+        public string ResolvedPath { get; }
+
+        public bool IsResolved =>
+            !string.IsNullOrWhiteSpace(ResolvedPath) &&
+            Directory.Exists(ResolvedPath);
+
+        public PackageExportInfo(
+            PackageKind kind,
+            string name,
+            string version,
+            string reference,
+            string resolvedPath)
+        {
+            Kind =
+                kind;
+
+            Name =
+                string.IsNullOrWhiteSpace(name)
+                    ? "unknown-package"
+                    : name;
+
+            Version =
+                version ?? string.Empty;
+
+            Reference =
+                reference ?? string.Empty;
+
+            ResolvedPath =
+                resolvedPath ?? string.Empty;
+        }
+    }
+
+    private sealed class SourceFileInfo
     {
         public string AbsolutePath { get; }
         public string AssetPath { get; }
         public string Language { get; }
+        public SourceOrigin Origin { get; }
+        public PackageExportInfo Package { get; }
 
-        public ScriptFileInfo(
+        public SourceFileInfo(
             string absolutePath,
-            string assetPath)
+            string assetPath,
+            SourceOrigin origin,
+            PackageExportInfo package)
         {
             AbsolutePath =
                 absolutePath;
@@ -819,13 +1896,15 @@ public static class ProjectAbyssScriptExporter
             AssetPath =
                 assetPath;
 
+            Origin =
+                origin;
+
+            Package =
+                package;
+
             Language =
-                string.Equals(
-                    Path.GetExtension(assetPath),
-                    ".json",
-                    StringComparison.OrdinalIgnoreCase)
-                    ? "JSON"
-                    : "CSharp";
+                GetLanguage(
+                    assetPath);
         }
     }
 }

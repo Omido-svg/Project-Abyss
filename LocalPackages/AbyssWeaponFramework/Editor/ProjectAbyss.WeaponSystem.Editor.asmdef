@@ -1,0 +1,18 @@
+{
+  "name": "ProjectAbyss.WeaponSystem.Editor",
+  "rootNamespace": "ProjectAbyss.WeaponSystem.Editor",
+  "references": [
+    "ProjectAbyss.WeaponSystem"
+  ],
+  "includePlatforms": [
+    "Editor"
+  ],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": true,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false
+}

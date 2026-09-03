@@ -1,4 +1,0 @@
-﻿ProjectRoot=F:\GitCorp\Project-Abyss
-AppliedAt=2026-08-03T16:56:54.1092019+09:00
-PatchVersion=1.1.0
-BackupRoot=F:\GitCorp\Project-Abyss\ProjectAbyss_CombatRuleFix_Backup_20260803_165653

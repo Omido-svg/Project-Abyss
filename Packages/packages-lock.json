@@ -1,7 +1,13 @@
 {
   "dependencies": {
     "com.projectabyss.secondary-rig": {
-      "version": "file:C:/Users/lee/Desktop/Develop/Project/Union Tool/유니티 패키지/ProjectAbyssSecondaryRig",
+      "version": "file:../LocalPackages/AbyssSecondaryRig",
+      "depth": 0,
+      "source": "local",
+      "dependencies": {}
+    },
+    "com.projectabyss.weapon-system": {
+      "version": "file:../LocalPackages/AbyssWeaponFramework",
       "depth": 0,
       "source": "local",
       "dependencies": {}

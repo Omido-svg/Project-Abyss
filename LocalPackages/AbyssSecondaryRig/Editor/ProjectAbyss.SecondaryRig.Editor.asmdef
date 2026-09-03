@@ -1,0 +1,18 @@
+{
+  "name": "ProjectAbyss.SecondaryRig.Editor",
+  "rootNamespace": "ProjectAbyss.SecondaryRig.Editor",
+  "references": [
+    "ProjectAbyss.SecondaryRig"
+  ],
+  "includePlatforms": [
+    "Editor"
+  ],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": true,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false
+}
