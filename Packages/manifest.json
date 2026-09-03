@@ -1,5 +1,6 @@
 {
   "dependencies": {
+    "com.projectabyss.secondary-rig": "file:C:/Users/lee/Desktop/Develop/Project/Union Tool/유니티 패키지/ProjectAbyssSecondaryRig",
     "com.unity.ai.navigation": "2.0.8",
     "com.unity.cinemachine": "3.1.7",
     "com.unity.collab-proxy": "2.12.4",

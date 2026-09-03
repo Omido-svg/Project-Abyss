@@ -1,5 +1,11 @@
 {
   "dependencies": {
+    "com.projectabyss.secondary-rig": {
+      "version": "file:C:/Users/lee/Desktop/Develop/Project/Union Tool/유니티 패키지/ProjectAbyssSecondaryRig",
+      "depth": 0,
+      "source": "local",
+      "dependencies": {}
+    },
     "com.unity.ai.navigation": {
       "version": "2.0.8",
       "depth": 0,

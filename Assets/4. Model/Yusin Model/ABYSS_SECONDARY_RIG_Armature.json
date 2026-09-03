@@ -1,0 +1,548 @@
+{
+  "schema": "project-abyss.secondary-bone-rig.v2",
+  "armature": "Armature",
+  "parts": [
+    {
+      "object": "Hair_Rigging",
+      "partType": "DYNAMIC",
+      "parentBone": "CC_Base_NeckTwist02",
+      "preset": "HAIR",
+      "targetRoots": [
+        "HAIR_TGT_C01_01",
+        "HAIR_TGT_C01_01",
+        "HAIR_TGT_C01_01.001",
+        "HAIR_TGT_C01_01.002",
+        "HAIR_TGT_C01_01.003",
+        "HAIR_TGT_C02_01"
+      ],
+      "springRoots": [
+        "HAIR_SPR_C01_01",
+        "HAIR_SPR_C01_01",
+        "HAIR_SPR_C01_01.001",
+        "HAIR_SPR_C01_01.002",
+        "HAIR_SPR_C01_01.003",
+        "HAIR_SPR_C02_01"
+      ],
+      "chains": [
+        {
+          "chainIndex": 1,
+          "targetRoot": "HAIR_TGT_C01_01",
+          "springRoot": "HAIR_SPR_C01_01",
+          "targetBones": [
+            "HAIR_TGT_C01_01",
+            "HAIR_TGT_C01_02",
+            "HAIR_TGT_C01_03"
+          ],
+          "springBones": [
+            "HAIR_SPR_C01_01",
+            "HAIR_SPR_C01_02",
+            "HAIR_SPR_C01_03"
+          ]
+        },
+        {
+          "chainIndex": 1,
+          "targetRoot": "HAIR_TGT_C01_01",
+          "springRoot": "HAIR_SPR_C01_01",
+          "targetBones": [
+            "HAIR_TGT_C01_01",
+            "HAIR_TGT_C01_02",
+            "HAIR_TGT_C01_03",
+            "HAIR_TGT_C01_04"
+          ],
+          "springBones": [
+            "HAIR_SPR_C01_01",
+            "HAIR_SPR_C01_02",
+            "HAIR_SPR_C01_03",
+            "HAIR_SPR_C01_04"
+          ]
+        },
+        {
+          "chainIndex": 1,
+          "targetRoot": "HAIR_TGT_C01_01.001",
+          "springRoot": "HAIR_SPR_C01_01.001",
+          "targetBones": [
+            "HAIR_TGT_C01_01.001",
+            "HAIR_TGT_C01_02.001",
+            "HAIR_TGT_C01_03.001",
+            "HAIR_TGT_C01_04.001"
+          ],
+          "springBones": [
+            "HAIR_SPR_C01_01.001",
+            "HAIR_SPR_C01_02.001",
+            "HAIR_SPR_C01_03.001",
+            "HAIR_SPR_C01_04.001"
+          ]
+        },
+        {
+          "chainIndex": 1,
+          "targetRoot": "HAIR_TGT_C01_01.002",
+          "springRoot": "HAIR_SPR_C01_01.002",
+          "targetBones": [
+            "HAIR_TGT_C01_01.002",
+            "HAIR_TGT_C01_02.002",
+            "HAIR_TGT_C01_03.002",
+            "HAIR_TGT_C01_04.002"
+          ],
+          "springBones": [
+            "HAIR_SPR_C01_01.002",
+            "HAIR_SPR_C01_02.002",
+            "HAIR_SPR_C01_03.002",
+            "HAIR_SPR_C01_04.002"
+          ]
+        },
+        {
+          "chainIndex": 1,
+          "targetRoot": "HAIR_TGT_C01_01.003",
+          "springRoot": "HAIR_SPR_C01_01.003",
+          "targetBones": [
+            "HAIR_TGT_C01_01.003",
+            "HAIR_TGT_C01_02.003",
+            "HAIR_TGT_C01_03.003"
+          ],
+          "springBones": [
+            "HAIR_SPR_C01_01.003",
+            "HAIR_SPR_C01_02.003",
+            "HAIR_SPR_C01_03.003"
+          ]
+        },
+        {
+          "chainIndex": 2,
+          "targetRoot": "HAIR_TGT_C02_01",
+          "springRoot": "HAIR_SPR_C02_01",
+          "targetBones": [
+            "HAIR_TGT_C02_01",
+            "HAIR_TGT_C02_02",
+            "HAIR_TGT_C02_03"
+          ],
+          "springBones": [
+            "HAIR_SPR_C02_01",
+            "HAIR_SPR_C02_02",
+            "HAIR_SPR_C02_03"
+          ]
+        }
+      ],
+      "springDefaults": {
+        "stiffness": 0.32,
+        "damping": 0.76,
+        "gravity": 0.16,
+        "maxAngle": 48.0
+      },
+      "regions": [
+        {
+          "group": "ABYSS_DYNAMIC_REGION",
+          "parentBone": "CC_Base_NeckTwist02",
+          "preset": "HAIR",
+          "targetRoots": [
+            "HAIR_TGT_C01_01"
+          ],
+          "springRoots": [
+            "HAIR_SPR_C01_01"
+          ],
+          "chains": [
+            {
+              "chainIndex": 1,
+              "targetRoot": "HAIR_TGT_C01_01",
+              "springRoot": "HAIR_SPR_C01_01",
+              "targetBones": [
+                "HAIR_TGT_C01_01",
+                "HAIR_TGT_C01_02",
+                "HAIR_TGT_C01_03"
+              ],
+              "springBones": [
+                "HAIR_SPR_C01_01",
+                "HAIR_SPR_C01_02",
+                "HAIR_SPR_C01_03"
+              ]
+            }
+          ],
+          "springDefaults": {
+            "stiffness": 0.32,
+            "damping": 0.76,
+            "gravity": 0.16,
+            "maxAngle": 48.0
+          }
+        },
+        {
+          "group": "ABYSS_RIG_REGION_Hair_01_02",
+          "parentBone": "CC_Base_NeckTwist02",
+          "preset": "HAIR",
+          "targetRoots": [
+            "HAIR_TGT_C01_01"
+          ],
+          "springRoots": [
+            "HAIR_SPR_C01_01"
+          ],
+          "chains": [
+            {
+              "chainIndex": 1,
+              "targetRoot": "HAIR_TGT_C01_01",
+              "springRoot": "HAIR_SPR_C01_01",
+              "targetBones": [
+                "HAIR_TGT_C01_01",
+                "HAIR_TGT_C01_02",
+                "HAIR_TGT_C01_03",
+                "HAIR_TGT_C01_04"
+              ],
+              "springBones": [
+                "HAIR_SPR_C01_01",
+                "HAIR_SPR_C01_02",
+                "HAIR_SPR_C01_03",
+                "HAIR_SPR_C01_04"
+              ]
+            }
+          ],
+          "springDefaults": {
+            "stiffness": 0.32,
+            "damping": 0.76,
+            "gravity": 0.16,
+            "maxAngle": 48.0
+          }
+        },
+        {
+          "group": "ABYSS_RIG_REGION_Hair_01",
+          "parentBone": "CC_Base_NeckTwist02",
+          "preset": "HAIR",
+          "targetRoots": [
+            "HAIR_TGT_C01_01.001"
+          ],
+          "springRoots": [
+            "HAIR_SPR_C01_01.001"
+          ],
+          "chains": [
+            {
+              "chainIndex": 1,
+              "targetRoot": "HAIR_TGT_C01_01.001",
+              "springRoot": "HAIR_SPR_C01_01.001",
+              "targetBones": [
+                "HAIR_TGT_C01_01.001",
+                "HAIR_TGT_C01_02.001",
+                "HAIR_TGT_C01_03.001",
+                "HAIR_TGT_C01_04.001"
+              ],
+              "springBones": [
+                "HAIR_SPR_C01_01.001",
+                "HAIR_SPR_C01_02.001",
+                "HAIR_SPR_C01_03.001",
+                "HAIR_SPR_C01_04.001"
+              ]
+            }
+          ],
+          "springDefaults": {
+            "stiffness": 0.32,
+            "damping": 0.76,
+            "gravity": 0.16,
+            "maxAngle": 48.0
+          }
+        },
+        {
+          "group": "ABYSS_RIG_REGION_Hair_01_03",
+          "parentBone": "CC_Base_NeckTwist02",
+          "preset": "HAIR",
+          "targetRoots": [
+            "HAIR_TGT_C01_01.002"
+          ],
+          "springRoots": [
+            "HAIR_SPR_C01_01.002"
+          ],
+          "chains": [
+            {
+              "chainIndex": 1,
+              "targetRoot": "HAIR_TGT_C01_01.002",
+              "springRoot": "HAIR_SPR_C01_01.002",
+              "targetBones": [
+                "HAIR_TGT_C01_01.002",
+                "HAIR_TGT_C01_02.002",
+                "HAIR_TGT_C01_03.002",
+                "HAIR_TGT_C01_04.002"
+              ],
+              "springBones": [
+                "HAIR_SPR_C01_01.002",
+                "HAIR_SPR_C01_02.002",
+                "HAIR_SPR_C01_03.002",
+                "HAIR_SPR_C01_04.002"
+              ]
+            }
+          ],
+          "springDefaults": {
+            "stiffness": 0.32,
+            "damping": 0.76,
+            "gravity": 0.16,
+            "maxAngle": 48.0
+          }
+        },
+        {
+          "group": "ABYSS_RIG_REGION_Hair_01_04",
+          "parentBone": "CC_Base_NeckTwist02",
+          "preset": "HAIR",
+          "targetRoots": [
+            "HAIR_TGT_C01_01.003",
+            "HAIR_TGT_C02_01"
+          ],
+          "springRoots": [
+            "HAIR_SPR_C01_01.003",
+            "HAIR_SPR_C02_01"
+          ],
+          "chains": [
+            {
+              "chainIndex": 1,
+              "targetRoot": "HAIR_TGT_C01_01.003",
+              "springRoot": "HAIR_SPR_C01_01.003",
+              "targetBones": [
+                "HAIR_TGT_C01_01.003",
+                "HAIR_TGT_C01_02.003",
+                "HAIR_TGT_C01_03.003"
+              ],
+              "springBones": [
+                "HAIR_SPR_C01_01.003",
+                "HAIR_SPR_C01_02.003",
+                "HAIR_SPR_C01_03.003"
+              ]
+            },
+            {
+              "chainIndex": 2,
+              "targetRoot": "HAIR_TGT_C02_01",
+              "springRoot": "HAIR_SPR_C02_01",
+              "targetBones": [
+                "HAIR_TGT_C02_01",
+                "HAIR_TGT_C02_02",
+                "HAIR_TGT_C02_03"
+              ],
+              "springBones": [
+                "HAIR_SPR_C02_01",
+                "HAIR_SPR_C02_02",
+                "HAIR_SPR_C02_03"
+              ]
+            }
+          ],
+          "springDefaults": {
+            "stiffness": 0.32,
+            "damping": 0.76,
+            "gravity": 0.16,
+            "maxAngle": 48.0
+          }
+        }
+      ]
+    },
+    {
+      "object": "Jacket_Rigging",
+      "partType": "DYNAMIC",
+      "parentBone": "CC_Base_Pelvis",
+      "preset": "LONG_COAT",
+      "targetRoots": [
+        "COAT_TGT_C01_01",
+        "COAT_TGT_C02_01",
+        "COAT_TGT_C03_01",
+        "COAT_TGT_C04_01",
+        "COAT_TGT_C05_01",
+        "COAT_TGT_C06_01",
+        "COAT_TGT_C07_01",
+        "COAT_TGT_C08_01",
+        "COAT_TGT_C09_01",
+        "COAT_TGT_C10_01"
+      ],
+      "springRoots": [
+        "COAT_SPR_C01_01",
+        "COAT_SPR_C02_01",
+        "COAT_SPR_C03_01",
+        "COAT_SPR_C04_01",
+        "COAT_SPR_C05_01",
+        "COAT_SPR_C06_01",
+        "COAT_SPR_C07_01",
+        "COAT_SPR_C08_01",
+        "COAT_SPR_C09_01",
+        "COAT_SPR_C10_01"
+      ],
+      "chains": [
+        {
+          "chainIndex": 1,
+          "targetRoot": "COAT_TGT_C01_01",
+          "springRoot": "COAT_SPR_C01_01",
+          "targetBones": [
+            "COAT_TGT_C01_01",
+            "COAT_TGT_C01_02",
+            "COAT_TGT_C01_03"
+          ],
+          "springBones": [
+            "COAT_SPR_C01_01",
+            "COAT_SPR_C01_02",
+            "COAT_SPR_C01_03"
+          ]
+        },
+        {
+          "chainIndex": 2,
+          "targetRoot": "COAT_TGT_C02_01",
+          "springRoot": "COAT_SPR_C02_01",
+          "targetBones": [
+            "COAT_TGT_C02_01",
+            "COAT_TGT_C02_02",
+            "COAT_TGT_C02_03"
+          ],
+          "springBones": [
+            "COAT_SPR_C02_01",
+            "COAT_SPR_C02_02",
+            "COAT_SPR_C02_03"
+          ]
+        },
+        {
+          "chainIndex": 3,
+          "targetRoot": "COAT_TGT_C03_01",
+          "springRoot": "COAT_SPR_C03_01",
+          "targetBones": [
+            "COAT_TGT_C03_01",
+            "COAT_TGT_C03_02",
+            "COAT_TGT_C03_03"
+          ],
+          "springBones": [
+            "COAT_SPR_C03_01",
+            "COAT_SPR_C03_02",
+            "COAT_SPR_C03_03"
+          ]
+        },
+        {
+          "chainIndex": 4,
+          "targetRoot": "COAT_TGT_C04_01",
+          "springRoot": "COAT_SPR_C04_01",
+          "targetBones": [
+            "COAT_TGT_C04_01",
+            "COAT_TGT_C04_02",
+            "COAT_TGT_C04_03"
+          ],
+          "springBones": [
+            "COAT_SPR_C04_01",
+            "COAT_SPR_C04_02",
+            "COAT_SPR_C04_03"
+          ]
+        },
+        {
+          "chainIndex": 5,
+          "targetRoot": "COAT_TGT_C05_01",
+          "springRoot": "COAT_SPR_C05_01",
+          "targetBones": [
+            "COAT_TGT_C05_01",
+            "COAT_TGT_C05_02",
+            "COAT_TGT_C05_03"
+          ],
+          "springBones": [
+            "COAT_SPR_C05_01",
+            "COAT_SPR_C05_02",
+            "COAT_SPR_C05_03"
+          ]
+        },
+        {
+          "chainIndex": 6,
+          "targetRoot": "COAT_TGT_C06_01",
+          "springRoot": "COAT_SPR_C06_01",
+          "targetBones": [
+            "COAT_TGT_C06_01",
+            "COAT_TGT_C06_02",
+            "COAT_TGT_C06_03"
+          ],
+          "springBones": [
+            "COAT_SPR_C06_01",
+            "COAT_SPR_C06_02",
+            "COAT_SPR_C06_03"
+          ]
+        },
+        {
+          "chainIndex": 7,
+          "targetRoot": "COAT_TGT_C07_01",
+          "springRoot": "COAT_SPR_C07_01",
+          "targetBones": [
+            "COAT_TGT_C07_01",
+            "COAT_TGT_C07_02",
+            "COAT_TGT_C07_03"
+          ],
+          "springBones": [
+            "COAT_SPR_C07_01",
+            "COAT_SPR_C07_02",
+            "COAT_SPR_C07_03"
+          ]
+        },
+        {
+          "chainIndex": 8,
+          "targetRoot": "COAT_TGT_C08_01",
+          "springRoot": "COAT_SPR_C08_01",
+          "targetBones": [
+            "COAT_TGT_C08_01",
+            "COAT_TGT_C08_02",
+            "COAT_TGT_C08_03"
+          ],
+          "springBones": [
+            "COAT_SPR_C08_01",
+            "COAT_SPR_C08_02",
+            "COAT_SPR_C08_03"
+          ]
+        },
+        {
+          "chainIndex": 9,
+          "targetRoot": "COAT_TGT_C09_01",
+          "springRoot": "COAT_SPR_C09_01",
+          "targetBones": [
+            "COAT_TGT_C09_01",
+            "COAT_TGT_C09_02",
+            "COAT_TGT_C09_03"
+          ],
+          "springBones": [
+            "COAT_SPR_C09_01",
+            "COAT_SPR_C09_02",
+            "COAT_SPR_C09_03"
+          ]
+        },
+        {
+          "chainIndex": 10,
+          "targetRoot": "COAT_TGT_C10_01",
+          "springRoot": "COAT_SPR_C10_01",
+          "targetBones": [
+            "COAT_TGT_C10_01",
+            "COAT_TGT_C10_02",
+            "COAT_TGT_C10_03"
+          ],
+          "springBones": [
+            "COAT_SPR_C10_01",
+            "COAT_SPR_C10_02",
+            "COAT_SPR_C10_03"
+          ]
+        }
+      ],
+      "springDefaults": {
+        "stiffness": 0.34,
+        "damping": 0.74,
+        "gravity": 0.26,
+        "maxAngle": 50.0
+      },
+      "regions": []
+    },
+    {
+      "object": "NeckTie_Rigging",
+      "partType": "FITTED",
+      "parentBone": "CC_Base_Pelvis",
+      "preset": "LONG_COAT",
+      "targetRoots": [],
+      "springRoots": [],
+      "chains": [],
+      "springDefaults": {
+        "stiffness": 0.34,
+        "damping": 0.74,
+        "gravity": 0.26,
+        "maxAngle": 50.0
+      },
+      "regions": []
+    },
+    {
+      "object": "가면_Rigging",
+      "partType": "RIGID",
+      "parentBone": "CC_Base_Head",
+      "preset": "LONG_COAT",
+      "targetRoots": [],
+      "springRoots": [],
+      "chains": [],
+      "springDefaults": {
+        "stiffness": 0.34,
+        "damping": 0.74,
+        "gravity": 0.26,
+        "maxAngle": 50.0
+      },
+      "regions": []
+    }
+  ]
+}
