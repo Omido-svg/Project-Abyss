@@ -4,6 +4,5 @@
 /// </summary>
 public interface ICharacterAuthoringTarget
 {
-    bool ApplyCharacterAuthoring(
-        CharacterAuthoringBundle bundle);
+    bool ApplyCharacterAuthoring(CharacterAuthoringBundle bundle);
 }

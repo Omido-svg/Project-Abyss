@@ -60,6 +60,10 @@ public sealed class YujinMechanic : CombatMechanic, ICharacterUniqueGaugeProvide
         hasPendingWeapon
             ? $"{currentWeapon} → {pendingWeapon}"
             : currentWeapon.ToString();
+    public int GaugeStateVersion =>
+        ((int)currentWeapon & 0xFF) |
+        (((int)pendingWeapon & 0xFF) << 8) |
+        (hasPendingWeapon ? 1 << 16 : 0);
 
     public YujinWeaponProfile CurrentWeaponProfile =>
         YujinWeapons.Get(currentWeapon);

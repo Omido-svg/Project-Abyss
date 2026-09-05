@@ -1,6 +1,6 @@
 {
   "name": "com.projectabyss.weapon-system",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "displayName": "Abyss Weapon Framework",
   "description": "Game-agnostic Unity weapon framework: socket/grip mounting, dual-wield and two-handed weapons, holsters, reusable hand poses, Humanoid and mapped-skeleton IK, melee/hitscan/projectile attacks, generic hit contracts, projectile simulation, chain-weapon physics helpers, FX/audio modules, setup/pose/anchor editors, validation, and samples. No dependency on Project Abyss combat code.",
   "unity": "2022.3",

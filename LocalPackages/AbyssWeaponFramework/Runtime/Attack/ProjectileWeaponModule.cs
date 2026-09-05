@@ -31,6 +31,10 @@ namespace ProjectAbyss.WeaponSystem
                 if (body != null) inheritedVelocity = body.linearVelocity;
             }
 
+            // WeaponProjectile owns damage delivery. Forward the same hit to the common
+            // WeaponAttackModule event path so effects/listeners observe projectile hits too.
+            projectile.Hit += OnProjectileHit;
+
             projectile.Initialize(new WeaponProjectileSpawnData(
                 weapon,
                 owner,
@@ -44,6 +48,12 @@ namespace ProjectAbyss.WeaponSystem
                 profile.HitMask,
                 profile.TriggerInteraction));
             return true;
+        }
+
+        private void OnProjectileHit(WeaponHitInfo hit)
+        {
+            // Damage is already delivered by WeaponProjectile.FixedUpdate().
+            PublishHit(in hit, deliverToReceiver: false);
         }
 
         private Transform ResolveOrigin(WeaponInstance weapon)

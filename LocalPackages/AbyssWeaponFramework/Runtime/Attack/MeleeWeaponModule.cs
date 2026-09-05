@@ -16,6 +16,10 @@ namespace ProjectAbyss.WeaponSystem
         private Vector3 previousEnd;
         private WeaponAttackRequest activeRequest;
         private Collider[] overlapBuffer = new Collider[32];
+        private RaycastHit[] sweepBuffer = new RaycastHit[32];
+        private readonly List<MonoBehaviour> ownerBehaviours = new();
+        private WeaponInstance activeWeapon;
+        private GameObject activeOwner;
 
         public override WeaponAttackKind Kind => WeaponAttackKind.Melee;
         public bool IsAttackWindowOpen => windowOpen;
@@ -68,6 +72,9 @@ namespace ProjectAbyss.WeaponSystem
         {
             windowOpen = false;
             hitThisWindow.Clear();
+            ownerBehaviours.Clear();
+            activeWeapon = null;
+            activeOwner = null;
             base.OnWeaponUnequipped(context);
         }
 
@@ -76,6 +83,9 @@ namespace ProjectAbyss.WeaponSystem
             ResolveBladePoints();
             if (bladeStart == null || bladeEnd == null) return false;
             activeRequest = request;
+            activeWeapon = GetComponentInParent<WeaponInstance>();
+            activeOwner = ResolveOwner(in activeRequest);
+            WeaponHitQueryUtility.RefreshOwnerBehaviours(activeOwner, ownerBehaviours);
             hitThisWindow.Clear();
             previousStart = bladeStart.transform.position;
             previousEnd = bladeEnd.transform.position;
@@ -112,16 +122,28 @@ namespace ProjectAbyss.WeaponSystem
             Vector3 delta = to - from;
             float distance = delta.magnitude;
             if (distance <= 0.00001f) return;
-            RaycastHit[] hits = Physics.SphereCastAll(from, profile.Radius, delta / distance, distance, profile.HitMask, profile.TriggerInteraction);
-            for (int i = 0; i < hits.Length; i++) ProcessCollider(hits[i].collider, from, to, profile, hits[i].distance);
+            int hitCount = WeaponPhysicsQueryUtility.CastSorted(
+                from,
+                profile.Radius,
+                delta / distance,
+                distance,
+                profile.HitMask,
+                profile.TriggerInteraction,
+                ref sweepBuffer);
+            for (int i = 0; i < hitCount; i++)
+                ProcessCollider(sweepBuffer[i].collider, from, to, profile, sweepBuffer[i].distance);
         }
 
         private void ProcessCollider(Collider collider, Vector3 a, Vector3 b, MeleeAttackProfile profile, float distance)
         {
-            WeaponInstance weapon = GetComponentInParent<WeaponInstance>();
-            GameObject owner = ResolveOwner(in activeRequest);
+            WeaponInstance weapon = activeWeapon != null
+                ? activeWeapon
+                : GetComponentInParent<WeaponInstance>();
+            GameObject owner = activeOwner != null
+                ? activeOwner
+                : ResolveOwner(in activeRequest);
             if (WeaponHitQueryUtility.IsSelf(collider, weapon, owner)) return;
-            if (!WeaponHitQueryUtility.PassesOwnerFilters(collider, weapon, owner)) return;
+            if (!WeaponHitQueryUtility.PassesOwnerFilters(collider, weapon, ownerBehaviours)) return;
             int targetId = WeaponHitQueryUtility.ResolveTargetId(collider);
             if (!profile.AllowRepeatedHitPerWindow && hitThisWindow.Contains(targetId)) return;
             if (!profile.AllowMultipleTargets && hitThisWindow.Count > 0 && !hitThisWindow.Contains(targetId)) return;

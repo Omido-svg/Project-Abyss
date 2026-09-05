@@ -14,6 +14,9 @@ public sealed class BattleWorldUniqueGaugeUI : MonoBehaviour
     private RectTransform root;
     private GaugeRow uniqueRow;
     private GaugeRow staggerRow;
+    private ICharacterUniqueGaugeProvider uniqueProvider;
+    private ICharacterUniqueGaugeProvider staggerProvider;
+    private int cachedMechanicCount = -1;
 
     private sealed class GaugeRow
     {
@@ -22,11 +25,14 @@ public sealed class BattleWorldUniqueGaugeUI : MonoBehaviour
         public TMP_Text Value;
         public Image Fill;
         public RectTransform FillRect;
+        public int LastStateVersion = int.MinValue;
+        public bool LastActive;
     }
 
     public void Configure(Character target)
     {
         character = target;
+        cachedMechanicCount = -1;
         EnsureView();
         Refresh();
     }
@@ -133,38 +139,60 @@ public sealed class BattleWorldUniqueGaugeUI : MonoBehaviour
         if (character == null || uniqueRow == null || staggerRow == null)
             return;
 
-        ICharacterUniqueGaugeProvider unique = null;
-        ICharacterUniqueGaugeProvider stagger = null;
-
-        IReadOnlyList<CombatMechanic> mechanics = character.Mechanics;
-        if (mechanics != null)
-        {
-            foreach (CombatMechanic mechanic in mechanics)
-            {
-                if (mechanic is not ICharacterUniqueGaugeProvider provider)
-                    continue;
-
-                if (mechanic is StaggerGaugeMechanic)
-                    stagger = provider;
-                else if (unique == null)
-                    unique = provider;
-            }
-        }
-
-        Apply(uniqueRow, unique, new Color(0.80f, 0.42f, 0.08f, 0.9f));
-        Apply(staggerRow, stagger, new Color(0.28f, 0.65f, 0.86f, 0.9f));
+        ResolveProvidersIfNeeded();
+        ApplyIfChanged(uniqueRow, uniqueProvider, new Color(0.80f, 0.42f, 0.08f, 0.9f));
+        ApplyIfChanged(staggerRow, staggerProvider, new Color(0.28f, 0.65f, 0.86f, 0.9f));
     }
 
-    private static void Apply(GaugeRow row, ICharacterUniqueGaugeProvider provider, Color color)
+    private void ResolveProvidersIfNeeded()
+    {
+        IReadOnlyList<CombatMechanic> mechanics = character.Mechanics;
+        int mechanicCount = mechanics?.Count ?? 0;
+        if (mechanicCount == cachedMechanicCount)
+            return;
+
+        cachedMechanicCount = mechanicCount;
+        uniqueProvider = null;
+        staggerProvider = null;
+
+        for (int i = 0; i < mechanicCount; i++)
+        {
+            CombatMechanic mechanic = mechanics[i];
+            if (mechanic is not ICharacterUniqueGaugeProvider provider)
+                continue;
+
+            if (mechanic is StaggerGaugeMechanic)
+                staggerProvider = provider;
+            else if (uniqueProvider == null)
+                uniqueProvider = provider;
+        }
+
+        // Provider identity changed: force one full visual refresh.
+        uniqueRow.LastStateVersion = int.MinValue;
+        staggerRow.LastStateVersion = int.MinValue;
+    }
+
+    private static void ApplyIfChanged(GaugeRow row, ICharacterUniqueGaugeProvider provider, Color color)
     {
         if (row?.Root == null)
             return;
 
         bool active = provider != null;
-        row.Root.SetActive(active);
+        if (row.LastActive != active)
+        {
+            row.Root.SetActive(active);
+            row.LastActive = active;
+            row.LastStateVersion = int.MinValue;
+        }
+
         if (!active)
             return;
 
+        int version = provider.GaugeStateVersion;
+        if (row.LastStateVersion == version)
+            return;
+
+        row.LastStateVersion = version;
         row.Label.text = provider.GaugeLabel ?? string.Empty;
         row.Value.text = provider.GaugeValueText ?? string.Empty;
         row.Fill.color = color;

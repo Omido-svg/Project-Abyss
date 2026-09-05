@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace ProjectAbyss.WeaponSystem
@@ -35,6 +36,8 @@ namespace ProjectAbyss.WeaponSystem
         private float remainingLife;
         private Vector3 previousPosition;
         private int sequence;
+        private RaycastHit[] hitBuffer = new RaycastHit[32];
+        private readonly List<MonoBehaviour> ownerBehaviours = new();
 
         public virtual void Initialize(WeaponProjectileSpawnData spawnData)
         {
@@ -42,6 +45,7 @@ namespace ProjectAbyss.WeaponSystem
             Velocity = spawnData.Velocity;
             remainingLife = spawnData.Lifetime;
             previousPosition = transform.position;
+            WeaponHitQueryUtility.RefreshOwnerBehaviours(spawnData.Owner, ownerBehaviours);
             IsInitialized = true;
         }
 
@@ -56,15 +60,20 @@ namespace ProjectAbyss.WeaponSystem
 
             if (distance > 0.000001f)
             {
-                RaycastHit[] hits = data.Radius > 0f
-                    ? Physics.SphereCastAll(previousPosition, data.Radius, delta / distance, distance, data.HitMask, data.TriggerInteraction)
-                    : Physics.RaycastAll(previousPosition, delta / distance, distance, data.HitMask, data.TriggerInteraction);
-                Array.Sort(hits, static (a, b) => a.distance.CompareTo(b.distance));
-                for (int i = 0; i < hits.Length; i++)
+                int hitCount = WeaponPhysicsQueryUtility.CastSorted(
+                    previousPosition,
+                    data.Radius,
+                    delta / distance,
+                    distance,
+                    data.HitMask,
+                    data.TriggerInteraction,
+                    ref hitBuffer);
+
+                for (int i = 0; i < hitCount; i++)
                 {
-                    RaycastHit raw = hits[i];
+                    RaycastHit raw = hitBuffer[i];
                     if (WeaponHitQueryUtility.IsSelf(raw.collider, data.SourceWeapon, data.Owner)) continue;
-                    if (!WeaponHitQueryUtility.PassesOwnerFilters(raw.collider, data.SourceWeapon, data.Owner)) continue;
+                    if (!WeaponHitQueryUtility.PassesOwnerFilters(raw.collider, data.SourceWeapon, ownerBehaviours)) continue;
                     transform.position = raw.point;
                     WeaponHitInfo hit = new(WeaponAttackKind.Projectile, data.AttackId, data.DamageChannel, data.Power, data.SourceWeapon, data.Owner, raw.collider, raw.point, raw.normal, Velocity.normalized, raw.distance, sequence++);
                     Hit?.Invoke(hit);

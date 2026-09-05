@@ -37,7 +37,7 @@ public readonly struct HifumiCounterPreview
 /// 히후미 코어: 뼈 0~500 / 짓눌림 생존 / 친치로 / 반격.
 /// 기획 미확정값은 PATCH_NOTES의 Provisional Decisions에 기록한다.
 /// </summary>
-public sealed class HifumiMechanic : CombatMechanic, ICharacterUniqueGaugeProvider
+public sealed class HifumiMechanic : CombatMechanic, ICharacterUniqueGaugeProvider, IChinchiroOutcomeOverride
 {
     public const int MaxBone = 500;
     public const int BloomThreshold = 500;
@@ -60,6 +60,7 @@ public sealed class HifumiMechanic : CombatMechanic, ICharacterUniqueGaugeProvid
     public string GaugeLabel => "뼈";
     public float GaugeNormalized => (float)bone / MaxBone;
     public string GaugeValueText => $"{bone}/{MaxBone}" + (IsBloom ? " · 만개" : string.Empty);
+    public int GaugeStateVersion => bone;
 
     public override string MechanicName => "Hifumi Bone / Chinchiro / Counter";
 

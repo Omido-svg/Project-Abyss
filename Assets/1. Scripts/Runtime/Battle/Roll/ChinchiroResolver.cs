@@ -56,11 +56,13 @@ public sealed class ChinchiroResolver : SkillResolver
         int b;
         int c;
 
-        HifumiMechanic hifumi =
-            skill?.Owner?.GetMechanic<HifumiMechanic>();
+        bool hasOverride =
+            ChinchiroOutcomeOverrideResolver.TryResolve(
+                skill?.Owner,
+                out IChinchiroOutcomeOverride outcomeOverride);
 
-        if (hifumi != null &&
-            hifumi.TryGetForcedChinchiro(out ChinchiroCombination forced))
+        if (hasOverride &&
+            outcomeOverride.TryGetForcedChinchiro(out ChinchiroCombination forced))
         {
             if (forced == ChinchiroCombination.Hifumi)
             {

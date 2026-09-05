@@ -23,7 +23,13 @@ namespace ProjectAbyss.WeaponSystem
 
         public bool TryAttack(in WeaponAttackRequest request)
         {
-            if (!enabledForAttack || profile == null || Time.time < nextAllowedTime || !CanAttack(in request)) return false;
+            // A disabled component or inactive GameObject must never be executable through
+            // a cached WeaponAttackController reference.
+            if (!isActiveAndEnabled || !enabledForAttack || profile == null ||
+                Time.time < nextAllowedTime || !CanAttack(in request))
+            {
+                return false;
+            }
             AttackStarted?.Invoke(this);
             bool result = ExecuteAttack(in request);
             if (result) nextAllowedTime = Time.time + profile.Cooldown;

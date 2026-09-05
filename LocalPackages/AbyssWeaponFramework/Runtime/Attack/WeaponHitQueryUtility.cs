@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace ProjectAbyss.WeaponSystem
@@ -17,7 +18,32 @@ namespace ProjectAbyss.WeaponSystem
             return false;
         }
 
+        public static void RefreshOwnerBehaviours(GameObject owner, List<MonoBehaviour> buffer)
+        {
+            if (buffer == null) return;
+            buffer.Clear();
+            if (owner != null)
+                owner.GetComponentsInChildren(true, buffer);
+        }
 
+        public static bool PassesOwnerFilters(
+            Collider collider,
+            WeaponInstance weapon,
+            IReadOnlyList<MonoBehaviour> ownerBehaviours)
+        {
+            if (ownerBehaviours == null) return true;
+            for (int i = 0; i < ownerBehaviours.Count; i++)
+            {
+                if (ownerBehaviours[i] is IWeaponHitFilter filter &&
+                    !filter.CanWeaponHit(weapon, collider))
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        // Compatibility path for external/internal callers that do not maintain a cache.
         public static bool PassesOwnerFilters(Collider collider, WeaponInstance weapon, GameObject owner)
         {
             if (owner == null) return true;

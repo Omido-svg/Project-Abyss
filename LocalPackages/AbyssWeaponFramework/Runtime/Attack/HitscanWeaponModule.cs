@@ -1,4 +1,4 @@
-using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace ProjectAbyss.WeaponSystem
@@ -8,6 +8,9 @@ namespace ProjectAbyss.WeaponSystem
     {
         [SerializeField] private WeaponPoint originPoint;
         [SerializeField] private bool useMuzzlePointWhenOriginMissing = true;
+
+        private RaycastHit[] hitBuffer = new RaycastHit[32];
+        private readonly List<MonoBehaviour> ownerBehaviours = new();
 
         public override WeaponAttackKind Kind => WeaponAttackKind.Hitscan;
 
@@ -23,21 +26,26 @@ namespace ProjectAbyss.WeaponSystem
             GameObject owner = ResolveOwner(in request);
             int sequence = 0;
             bool any = false;
+            WeaponHitQueryUtility.RefreshOwnerBehaviours(owner, ownerBehaviours);
 
             for (int pellet = 0; pellet < profile.Pellets; pellet++)
             {
                 Vector3 direction = ApplySpread(baseRay.direction, profile.SpreadDegrees);
-                RaycastHit[] hits = profile.SphereRadius > 0f
-                    ? Physics.SphereCastAll(baseRay.origin, profile.SphereRadius, direction, profile.Range, profile.HitMask, profile.TriggerInteraction)
-                    : Physics.RaycastAll(baseRay.origin, direction, profile.Range, profile.HitMask, profile.TriggerInteraction);
+                int hitCount = WeaponPhysicsQueryUtility.CastSorted(
+                    baseRay.origin,
+                    profile.SphereRadius,
+                    direction,
+                    profile.Range,
+                    profile.HitMask,
+                    profile.TriggerInteraction,
+                    ref hitBuffer);
 
-                Array.Sort(hits, static (a, b) => a.distance.CompareTo(b.distance));
                 int penetrations = 0;
-                for (int i = 0; i < hits.Length && penetrations < profile.MaxPenetrations; i++)
+                for (int i = 0; i < hitCount && penetrations < profile.MaxPenetrations; i++)
                 {
-                    RaycastHit raw = hits[i];
+                    RaycastHit raw = hitBuffer[i];
                     if (WeaponHitQueryUtility.IsSelf(raw.collider, weapon, owner)) continue;
-                    if (!WeaponHitQueryUtility.PassesOwnerFilters(raw.collider, weapon, owner)) continue;
+                    if (!WeaponHitQueryUtility.PassesOwnerFilters(raw.collider, weapon, ownerBehaviours)) continue;
 
                     WeaponHitInfo hit = new(
                         WeaponAttackKind.Hitscan,

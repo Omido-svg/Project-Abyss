@@ -1,5 +1,12 @@
 # Changelog
 
+## 2.0.1 - 2026-09-06
+
+- Fixed projectile hits not reaching the common `WeaponAttackModule.HitProduced` event path.
+- Blocked attacks from disabled components and inactive GameObjects.
+- Replaced repeated projectile/hitscan/melee sweep `*CastAll` allocations with reusable NonAlloc buffers that grow and retry on saturation.
+- Cached owner hit-filter component discovery per attack/projectile lifetime.
+
 ## 2.0.0
 
 - Rebranded display name to **Abyss Weapon Framework** while keeping the v1 package id/namespace for upgrade compatibility.

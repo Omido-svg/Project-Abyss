@@ -1,0 +1,22 @@
+{
+  "name": "ProjectAbyss.Runtime",
+  "rootNamespace": "",
+  "references": [
+    "Unity.TextMeshPro",
+    "Unity.ugui",
+    "Unity.Timeline",
+    "Unity.Cinemachine",
+    "Unity.VisualEffectGraph.Runtime",
+    "Unity.InputSystem",
+    "ProjectAbyss.DOTween.Modules"
+  ],
+  "includePlatforms": [],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": true,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false
+}

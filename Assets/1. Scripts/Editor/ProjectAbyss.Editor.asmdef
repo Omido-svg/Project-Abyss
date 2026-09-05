@@ -1,0 +1,22 @@
+{
+  "name": "ProjectAbyss.Editor",
+  "rootNamespace": "",
+  "references": [
+    "ProjectAbyss.Runtime",
+    "ProjectAbyss.Runtime.EditorPreview",
+    "Unity.Cinemachine",
+    "Unity.Timeline",
+    "Unity.VisualEffectGraph.Runtime"
+  ],
+  "includePlatforms": [
+    "Editor"
+  ],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": false,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false
+}

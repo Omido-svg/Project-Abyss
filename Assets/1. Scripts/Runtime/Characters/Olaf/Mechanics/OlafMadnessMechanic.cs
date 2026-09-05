@@ -22,6 +22,7 @@ public sealed class OlafMadnessMechanic : CombatMechanic, ICharacterUniqueGaugeP
     public string GaugeLabel => "광기";
     public float GaugeNormalized => (float)CurrentMadness / MaxMadnessValue;
     public string GaugeValueText => $"{CurrentMadness}/{MaxMadnessValue}";
+    public int GaugeStateVersion => madness;
 
     public override string MechanicName =>
         "Olaf Blood Wound / Madness";

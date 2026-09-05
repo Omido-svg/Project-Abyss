@@ -1,0 +1,155 @@
+using System.Collections.Generic;
+using UnityEngine;
+
+namespace ProjectAbyss.WeaponSystem
+{
+    [DisallowMultipleComponent]
+    public sealed class MeleeWeaponModule : WeaponAttackModule
+    {
+        [SerializeField] private WeaponPoint bladeStart;
+        [SerializeField] private WeaponPoint bladeEnd;
+        [SerializeField] private bool sampleInFixedUpdate = true;
+
+        private readonly HashSet<int> hitThisWindow = new();
+        private bool windowOpen;
+        private Vector3 previousStart;
+        private Vector3 previousEnd;
+        private WeaponAttackRequest activeRequest;
+        private Collider[] overlapBuffer = new Collider[32];
+
+        public override WeaponAttackKind Kind => WeaponAttackKind.Melee;
+        public bool IsAttackWindowOpen => windowOpen;
+        protected override bool CompletesImmediately => false;
+
+        private void FixedUpdate()
+        {
+            if (windowOpen && sampleInFixedUpdate) SampleSweep();
+        }
+
+        private void LateUpdate()
+        {
+            if (windowOpen && !sampleInFixedUpdate) SampleSweep();
+        }
+
+        protected override bool CanAttack(in WeaponAttackRequest request)
+        {
+            if (!base.CanAttack(in request) || Profile is not MeleeAttackProfile) return false;
+            ResolveBladePoints();
+            return bladeStart != null && bladeEnd != null;
+        }
+
+        protected override bool ExecuteAttack(in WeaponAttackRequest request)
+        {
+            return BeginWindowInternal(in request);
+        }
+
+        public void BeginAttackWindow()
+        {
+            WeaponAttackRequest request = default;
+            TryAttack(in request);
+        }
+
+        public void BeginAttackWindow(string runtimeAttackId)
+        {
+            WeaponAttackRequest request = new(runtimeAttackId: runtimeAttackId);
+            TryAttack(in request);
+        }
+
+        public void EndAttackWindow()
+        {
+            if (!windowOpen) return;
+            SampleSweep();
+            windowOpen = false;
+            hitThisWindow.Clear();
+            CompleteDeferredAttack();
+        }
+
+        public override void OnWeaponUnequipped(WeaponEquipContext context)
+        {
+            windowOpen = false;
+            hitThisWindow.Clear();
+            base.OnWeaponUnequipped(context);
+        }
+
+        private bool BeginWindowInternal(in WeaponAttackRequest request)
+        {
+            ResolveBladePoints();
+            if (bladeStart == null || bladeEnd == null) return false;
+            activeRequest = request;
+            hitThisWindow.Clear();
+            previousStart = bladeStart.transform.position;
+            previousEnd = bladeEnd.transform.position;
+            windowOpen = true;
+            SampleCurrentCapsule();
+            return true;
+        }
+
+        private void SampleSweep()
+        {
+            if (Profile is not MeleeAttackProfile profile) return;
+            ResolveBladePoints();
+            if (bladeStart == null || bladeEnd == null) return;
+
+            Vector3 currentStart = bladeStart.transform.position;
+            Vector3 currentEnd = bladeEnd.transform.position;
+            SampleCurrentCapsule();
+            SampleEndpointSweep(previousStart, currentStart, profile);
+            SampleEndpointSweep(previousEnd, currentEnd, profile);
+            previousStart = currentStart;
+            previousEnd = currentEnd;
+        }
+
+        private void SampleCurrentCapsule()
+        {
+            if (Profile is not MeleeAttackProfile profile || bladeStart == null || bladeEnd == null) return;
+            EnsureBuffer(profile.MaxTargetsPerStep);
+            int count = Physics.OverlapCapsuleNonAlloc(bladeStart.transform.position, bladeEnd.transform.position, profile.Radius, overlapBuffer, profile.HitMask, profile.TriggerInteraction);
+            for (int i = 0; i < count; i++) ProcessCollider(overlapBuffer[i], bladeStart.transform.position, bladeEnd.transform.position, profile, 0f);
+        }
+
+        private void SampleEndpointSweep(Vector3 from, Vector3 to, MeleeAttackProfile profile)
+        {
+            Vector3 delta = to - from;
+            float distance = delta.magnitude;
+            if (distance <= 0.00001f) return;
+            RaycastHit[] hits = Physics.SphereCastAll(from, profile.Radius, delta / distance, distance, profile.HitMask, profile.TriggerInteraction);
+            for (int i = 0; i < hits.Length; i++) ProcessCollider(hits[i].collider, from, to, profile, hits[i].distance);
+        }
+
+        private void ProcessCollider(Collider collider, Vector3 a, Vector3 b, MeleeAttackProfile profile, float distance)
+        {
+            WeaponInstance weapon = GetComponentInParent<WeaponInstance>();
+            GameObject owner = ResolveOwner(in activeRequest);
+            if (WeaponHitQueryUtility.IsSelf(collider, weapon, owner)) return;
+            if (!WeaponHitQueryUtility.PassesOwnerFilters(collider, weapon, owner)) return;
+            int targetId = WeaponHitQueryUtility.ResolveTargetId(collider);
+            if (!profile.AllowRepeatedHitPerWindow && hitThisWindow.Contains(targetId)) return;
+            if (!profile.AllowMultipleTargets && hitThisWindow.Count > 0 && !hitThisWindow.Contains(targetId)) return;
+
+            Vector3 center = (a + b) * 0.5f;
+            Vector3 point = collider.ClosestPoint(center);
+            Vector3 normal = point - collider.bounds.center;
+            if (normal.sqrMagnitude < 0.000001f) normal = -transform.forward;
+            Vector3 direction = (b - a).sqrMagnitude > 0.000001f ? (b - a).normalized : transform.forward;
+
+            hitThisWindow.Add(targetId);
+            WeaponHitInfo hit = new(WeaponAttackKind.Melee,
+                string.IsNullOrWhiteSpace(activeRequest.RuntimeAttackId) ? profile.AttackId : activeRequest.RuntimeAttackId,
+                profile.DamageChannel, profile.Power, weapon, owner, collider, point, normal.normalized, direction, distance, hitThisWindow.Count - 1);
+            PublishHit(in hit);
+        }
+
+        private void ResolveBladePoints()
+        {
+            WeaponInstance weapon = GetComponentInParent<WeaponInstance>();
+            if (weapon == null) return;
+            bladeStart ??= weapon.FindPoint(WeaponPointType.BladeStart);
+            bladeEnd ??= weapon.FindPoint(WeaponPointType.BladeEnd);
+        }
+
+        private void EnsureBuffer(int size)
+        {
+            if (overlapBuffer == null || overlapBuffer.Length < size) overlapBuffer = new Collider[Mathf.NextPowerOfTwo(size)];
+        }
+    }
+}

@@ -23,6 +23,7 @@ public sealed class StaggerGaugeMechanic : ReactiveCombatMechanic,
     public string GaugeLabel => "무력화";
     public float GaugeNormalized => maxGauge <= 0 ? 0f : (float)currentGauge / maxGauge;
     public string GaugeValueText => $"{currentGauge}/{maxGauge}";
+    public int GaugeStateVersion => currentGauge;
 
     protected override ReactiveCombatEventMask EventMask =>
         ReactiveCombatEventMask.DamageResolved |

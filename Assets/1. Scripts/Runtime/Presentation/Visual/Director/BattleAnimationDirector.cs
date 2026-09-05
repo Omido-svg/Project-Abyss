@@ -3,7 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class BattleAnimationDirector : MonoBehaviour
+public partial class BattleAnimationDirector : MonoBehaviour
 {
     [Header("References")]
     [SerializeField] private BattleCameraDirector cameraDirector;
@@ -1632,36 +1632,7 @@ public class BattleAnimationDirector : MonoBehaviour
                 Mathf.Max(0, exchangeIndex)));
     }
 
-    private static void CleanupActionView(
-        CharacterView view,
-        bool abort)
-    {
-        if (view == null)
-            return;
 
-        if (abort)
-            view.AbortActionPlayback();
-        else
-            view.CancelActionPlayback();
-    }
-
-    private static void CleanupActionViewUnlessPreserved(
-        CharacterView view,
-        CharacterView preservedReactionView,
-        bool abort)
-    {
-        if (!abort &&
-            ReferenceEquals(
-                view,
-                preservedReactionView))
-        {
-            return;
-        }
-
-        CleanupActionView(
-            view,
-            abort);
-    }
 
     private void PlaySkillVfx(
         BattleVisualPlaybackState playback,
@@ -1875,362 +1846,15 @@ public class BattleAnimationDirector : MonoBehaviour
 
     }
     
-    private void EndVisualRequest(
-        BattleVisualPlaybackState playback)
-    {
-        if (playback == null ||
-            playback.IsCleanedUp)
-        {
-            return;
-        }
 
-        playback.IsCleanedUp = true;
 
-        for (BattleVisualCleanupPhase phase = BattleVisualCleanupPhase.CameraRoutine;
-             phase <= BattleVisualCleanupPhase.Momentum;
-             phase++)
-        {
-            RunCleanupPhase(
-                playback,
-                phase);
-        }
-    }
-
-    private void RunCleanupPhase(
-        BattleVisualPlaybackState playback,
-        BattleVisualCleanupPhase phase)
-    {
-        try
-        {
-            switch (phase)
-            {
-                case BattleVisualCleanupPhase.CameraRoutine:
-                    cameraDirector?.CancelImpactPulse(
-                        restoreLens: true);
-                    break;
-
-                case BattleVisualCleanupPhase.AttackerAnimation:
-                {
-                    CharacterView preservedReactionView =
-                        playback.IsCancellationRequested
-                            ? null
-                            : playback.ActiveReactionView;
-
-                    CleanupActionViewUnlessPreserved(
-                        playback.ActiveActionView,
-                        preservedReactionView,
-                        playback.IsCancellationRequested);
-
-                    if (!ReferenceEquals(
-                            playback.AttackerView,
-                            playback.ActiveActionView))
-                    {
-                        CleanupActionViewUnlessPreserved(
-                            playback.AttackerView,
-                            preservedReactionView,
-                            playback.IsCancellationRequested);
-                    }
-
-                    if (!ReferenceEquals(
-                            playback.TargetView,
-                            playback.ActiveActionView) &&
-                        !ReferenceEquals(
-                            playback.TargetView,
-                            playback.AttackerView))
-                    {
-                        CleanupActionViewUnlessPreserved(
-                            playback.TargetView,
-                            preservedReactionView,
-                            playback.IsCancellationRequested);
-                    }
-                    break;
-                }
-
-                case BattleVisualCleanupPhase.TargetVisualState:
-                    if (playback.TargetView != null)
-                        playback.TargetView.RefreshVisualState();
-                    break;
-
-                case BattleVisualCleanupPhase.Vfx:
-                    CleanupTrackedVfx(playback);
-                    break;
-
-                case BattleVisualCleanupPhase.Position:
-                {
-                    bool shouldRestore =
-                        playback.ShouldRestoreAttackerPosition;
-
-                    playback.ShouldRestoreAttackerPosition = false;
-
-                    if (shouldRestore &&
-                        playback.AttackerMover != null)
-                    {
-                        playback.AttackerMover
-                            .ReturnToDefaultPositionInstant();
-                    }
-
-                    foreach (CharacterActionMover mover
-                             in playback
-                                 .StagedMoverSettings
-                                 .Keys)
-                    {
-                        if (mover != null)
-                        {
-                            mover
-                                .ReturnToDefaultPositionInstant();
-                        }
-                    }
-
-                    playback.ClearStagedMovers();
-                    break;
-                }
-
-                case BattleVisualCleanupPhase.Facing:
-                {
-                    bool shouldRestore =
-                        playback.ShouldRestoreFacing;
-
-                    playback.ShouldRestoreFacing = false;
-
-                    if (!shouldRestore)
-                        break;
-
-                    if (playback.AttackerFacing != null)
-                        playback.AttackerFacing.ReturnToDefaultInstant();
-
-                    if (playback.TargetFacing != null)
-                        playback.TargetFacing.ReturnToDefaultInstant();
-                    break;
-                }
-
-                case BattleVisualCleanupPhase.Camera:
-                {
-                    bool hadCameraActivity =
-                        playback.HasCameraActivity;
-
-                    playback.HasCameraActivity = false;
-
-                    if (hadCameraActivity && cameraDirector != null)
-                        cameraDirector.Return();
-                    break;
-                }
-
-                case BattleVisualCleanupPhase.Announcement:
-                {
-                    bool wasVisible =
-                        playback.IsAnnouncementVisible;
-
-                    playback.IsAnnouncementVisible = false;
-
-                    if (wasVisible && actionAnnounceUI != null)
-                        actionAnnounceUI.HideImmediate();
-
-                    // UnityEngine.Object에 ?.를 사용하면 파괴된 객체도 CLR null이 아니어서
-                    // MissingReferenceException이 발생할 수 있다. Unity의 오버로드된 null 검사를 사용한다.
-                    if (clashRollPresentationUI != null)
-                    {
-                        clashRollPresentationUI.HideImmediate();
-                    }
-                    else
-                    {
-                        clashRollPresentationUI = null;
-                    }
-
-                    break;
-                }
-
-                case BattleVisualCleanupPhase.FloatingText:
-                {
-                    bool hadFloatingText =
-                        playback.HasFloatingTextActivity;
-
-                    playback.HasFloatingTextActivity = false;
-
-                    if (hadFloatingText && floatingTextManager != null)
-                        floatingTextManager.CancelAllActiveTexts();
-                    break;
-                }
-
-                case BattleVisualCleanupPhase.DamagePresentation:
-                    if (playback.HasBegun)
-                        damagePresenter?.Clear(playback);
-                    break;
-
-                case BattleVisualCleanupPhase.TargetArrow:
-                {
-                    bool wasBound =
-                        playback.IsTargetArrowBound;
-
-                    playback.IsTargetArrowBound = false;
-
-                    if (wasBound && targetArrowUI != null)
-                    {
-                        targetArrowUI.ClearCurrentVisualRequest(
-                            playback.RootRequest);
-                    }
-                    break;
-                }
-
-                case BattleVisualCleanupPhase.Momentum:
-                {
-                    bool wasLocked =
-                        playback.IsMomentumDisplayLocked;
-
-                    playback.IsMomentumDisplayLocked = false;
-
-                    if (wasLocked && momentumScrollbarUI != null)
-                        momentumScrollbarUI.ForceRefresh();
-                    break;
-                }
-            }
-        }
-        catch (Exception exception)
-        {
-            Debug.LogError(
-                $"[BattleAnimationDirector] Cleanup 실패 / Phase={phase}",
-                this);
-
-            Debug.LogException(
-                exception,
-                this);
-        }
-    }
-
-    private static void CleanupTrackedVfx(
-        BattleVisualPlaybackState playback)
-    {
-        if (playback == null)
-            return;
-
-        try
-        {
-            if (!playback.IsCancellationRequested)
-                return;
-
-            foreach (BattleVfxInstance instance
-                     in playback.SpawnedVfxInstances)
-            {
-                instance?.Release();
-            }
-        }
-        finally
-        {
-            playback.SpawnedVfxInstances.Clear();
-            playback.PlayedVfxCueKeys.Clear();
-        }
-    }
 
     // Camera 위치·전환은 Skill Camera Timeline Track만 담당한다.
     // BattleCameraDirector는 Timeline Event가 명시적으로 요청한 Impact Pulse/Shake에만 사용한다.
 
-    private void TriggerCameraImpactPulse(
-        BattleVisualPlaybackState playback,
-        BattleVisualRequest request,
-        SkillVisualDefinition visual,
-        SkillCameraImpactTiming timing,
-        int hitIndex = -1,
-        int exchangeIndex = -1,
-        int damage = 0,
-        bool isCritical = false,
-        bool brokePart = false,
-        bool wasKilled = false,
-        bool isClash = false,
-        bool isOneSided = false)
-    {
-        if (request == null ||
-            visual == null ||
-            cameraDirector == null)
-        {
-            return;
-        }
 
-        SkillCameraImpactPulse pulse =
-            visual.FindImpactPulse(
-                timing,
-                hitIndex,
-                exchangeIndex,
-                damage,
-                isCritical,
-                brokePart,
-                wasKilled,
-                isClash,
-                isOneSided);
 
-        if (pulse == null)
-            return;
 
-        Coroutine routine =
-            cameraDirector.StartImpactPulse(
-                pulse);
-
-        if (routine != null &&
-            playback != null)
-        {
-            playback.HasCameraActivity = true;
-        }
-    }
-
-    private void PlayHitCameraShake(
-        SkillVisualDefinition visual)
-    {
-        if (visual == null)
-            return;
-
-        if (!visual.UseHitCameraShake)
-            return;
-
-        if (cameraDirector == null)
-            return;
-
-        cameraDirector.PlayShake(
-            visual.HitShake);
-    }
-
-    private IEnumerator ShowActionAnnouncement(
-        BattleVisualPlaybackState playback,
-        SkillVisualDefinition visual)
-    {
-        BattleVisualRequest request =
-            playback != null
-                ? playback.Request
-                : null;
-
-        if (request == null)
-            yield break;
-
-        if (visual == null)
-            yield break;
-
-        if (!visual.ShowsActionAnnouncement)
-            yield break;
-
-        if (actionAnnounceUI == null)
-            yield break;
-
-        playback.IsAnnouncementVisible = true;
-
-        yield return actionAnnounceUI.ShowPersistent(
-            request);
-    }
-
-    private IEnumerator HideActionAnnouncement(
-        BattleVisualPlaybackState playback,
-        SkillVisualDefinition visual)
-    {
-        if (visual == null)
-            yield break;
-
-        if (!visual.ShowsActionAnnouncement)
-            yield break;
-
-        if (actionAnnounceUI == null)
-            yield break;
-
-        yield return actionAnnounceUI.Hide();
-
-        if (playback != null)
-            playback.IsAnnouncementVisible = false;
-    }
 
     private void ApplyHitFrame(
         BattleVisualPlaybackState playback,
@@ -2433,30 +2057,6 @@ public class BattleAnimationDirector : MonoBehaviour
             playback.HasFloatingTextActivity = false;
     }
 
-    private void ShowDamageNumber(
-        CharacterView targetView,
-        BodyPart targetPart,
-        int damage)
-    {
-        if (damageNumberManager == null)
-        {
-            if (logMissingReferences)
-                Debug.LogWarning("[BattleAnimationDirector] DamageNumberManager 없음");
-
-            return;
-        }
-
-        if (targetView == null)
-            return;
-
-        Vector3 position =
-            targetView.GetDamageNumberPosition(
-                targetPart);
-
-        damageNumberManager.ShowDamage(
-            position,
-            damage);
-    }
 
     private IEnumerator FaceEachOther(
         CharacterViewSet views,
@@ -2523,24 +2123,6 @@ public class BattleAnimationDirector : MonoBehaviour
             yield return targetRoutine;
     }
 
-    private static string GetCharacterDisplayName(
-        Character character,
-        string fallback)
-    {
-        if (character == null)
-            return fallback;
-
-        string dataName =
-            character.Data?.CharacterName;
-
-        if (!string.IsNullOrWhiteSpace(dataName))
-            return dataName;
-
-        if (!string.IsNullOrWhiteSpace(character.name))
-            return character.name;
-
-        return fallback;
-    }
 
     private Transform GetClashTextAnchor(
         Character character,
@@ -2604,21 +2186,6 @@ public class BattleAnimationDirector : MonoBehaviour
         return result;
     }
     
-    private enum BattleVisualCleanupPhase
-    {
-        CameraRoutine,
-        AttackerAnimation,
-        TargetVisualState,
-        Vfx,
-        Position,
-        Facing,
-        Camera,
-        Announcement,
-        FloatingText,
-        DamagePresentation,
-        TargetArrow,
-        Momentum
-    }
 
     private struct CharacterViewSet
     {
