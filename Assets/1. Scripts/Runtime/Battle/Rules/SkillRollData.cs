@@ -8,6 +8,11 @@ public sealed class SkillRollData
     [Min(0)] public int Index;
     public CombatRollType Type = CombatRollType.Attack;
 
+    [Header("Physical type — per roll")]
+    [Tooltip("켜면 이 굴림만의 절단/관통/타격 타입을 사용합니다. 끄면 SkillDefinition의 Legacy 타입을 사용합니다. 유진은 무기 타입이 항상 최우선입니다.")]
+    public bool OverridePhysicalType;
+    public PhysicalDamageType PhysicalType = PhysicalDamageType.Cut;
+
     [Header("Dice power")]
     [Tooltip("AbsoluteRange: Min~Max가 최종 위력입니다. BasePlusRoll: 스킬 BasePower + Min~Max입니다.")]
     public DicePowerMode DiceMode = DicePowerMode.AbsoluteRange;

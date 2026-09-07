@@ -79,6 +79,9 @@ public class SkillDefinition : ScriptableObject
     public bool OverrideEnergyCost;
     [Min(0)] public int EnergyCost;
 
+    [Header("Run Skill Upgrade — document values are max-level targets; deltas stay data-driven")]
+    public SkillUpgradeProfile UpgradeProfile;
+
     [Header("Other Resource Rules")]
     public bool OverrideResourceRules;
     public bool RequireFullPrestige;

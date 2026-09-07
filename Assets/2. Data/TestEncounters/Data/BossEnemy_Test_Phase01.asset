@@ -18,15 +18,50 @@ MonoBehaviour:
   MinimumTurn: 1
   RequireMomentumAtOrBelow: 0
   MomentumAtOrBelow: 0
-  SlotConfigs: []
+  SlotConfigs:
+  - SlotId: BOSS_A_01
+    DisplayName: A 1
+    Enabled: 1
+    HasLinkedPart: 0
+    LinkedPartType: 0
+    OverrideSpeedRange: 0
+    MinSpeed: 3
+    MaxSpeed: 8
+    FixedSkill: {fileID: 11400000, guid: 3c50dff3eae2d2d449dbd6ca881c5a31, type: 2}
+    InsufficientEnergyFallbackSkill: {fileID: 0}
+    TargetingPolicy: 1
+    AllowedActionTypes: 0000000001000000
+  - SlotId: BOSS_A_02
+    DisplayName: A 2
+    Enabled: 1
+    HasLinkedPart: 0
+    LinkedPartType: 0
+    OverrideSpeedRange: 0
+    MinSpeed: 3
+    MaxSpeed: 8
+    FixedSkill: {fileID: 11400000, guid: 3c50dff3eae2d2d449dbd6ca881c5a31, type: 2}
+    InsufficientEnergyFallbackSkill: {fileID: 0}
+    TargetingPolicy: 1
+    AllowedActionTypes: 0000000001000000
+  - SlotId: BOSS_B_03
+    DisplayName: B
+    Enabled: 1
+    HasLinkedPart: 0
+    LinkedPartType: 0
+    OverrideSpeedRange: 0
+    MinSpeed: 3
+    MaxSpeed: 8
+    FixedSkill: {fileID: 11400000, guid: e7e0a1b7e5343e943bc2caf8673a8d17, type: 2}
+    InsufficientEnergyFallbackSkill: {fileID: 11400000, guid: 29c8047ee4bf7cb47b22b9143f50eecb, type: 2}
+    TargetingPolicy: 1
+    AllowedActionTypes: 0000000001000000
   NormalSkillPool:
-  - {fileID: 11400000, guid: 6a7df3e678fffd4439fd494c51209239, type: 2}
+  - {fileID: 11400000, guid: 29c8047ee4bf7cb47b22b9143f50eecb, type: 2}
   DuelSkillPool:
-  - {fileID: 11400000, guid: 4b80d9ad43d0de14bb655a20d16b1cb4, type: 2}
-  PreparationSkillPool:
-  - {fileID: 11400000, guid: f9c5728c648630849a9ba0afe641d02a, type: 2}
-  PrestigeSkillPool:
-  - {fileID: 11400000, guid: 5ac5af8c409583342b1bd34c2572f671, type: 2}
+  - {fileID: 11400000, guid: 3c50dff3eae2d2d449dbd6ca881c5a31, type: 2}
+  - {fileID: 11400000, guid: e7e0a1b7e5343e943bc2caf8673a8d17, type: 2}
+  PreparationSkillPool: []
+  PrestigeSkillPool: []
   NormalWeight: 1
   DuelWeight: 1
   PreparationWeight: 0.35

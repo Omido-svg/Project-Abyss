@@ -18,7 +18,7 @@ public static class BattleSkillUiText
 
         // 공/수는 실제 합 교환에서만 의미가 있다.
         // 비합 도사림과 비합 위세가 내부 Roll 데이터를 보유하더라도
-        // 전투 UI에서는 공격/수비 굴림으로 표현하지 않는다.
+        // 전투 UI에서는 공격/흐트러짐 굴림으로 표현하지 않는다.
         if (!ShouldShowClashRollPattern(skill))
             return "합 없음";
 
@@ -50,7 +50,7 @@ public static class BattleSkillUiText
                 builder.Append("  |  ");
 
             builder.Append(
-                roll.Type == CombatRollType.Defense
+                roll.Type == CombatRollType.Stagger
                     ? "수비 "
                     : "공격 ");
 
@@ -275,7 +275,7 @@ public static class BattleSkillUiText
                          in definition.Rolls)
                 {
                     if (roll?.Type !=
-                        CombatRollType.Defense)
+                        CombatRollType.Stagger)
                     {
                         continue;
                     }

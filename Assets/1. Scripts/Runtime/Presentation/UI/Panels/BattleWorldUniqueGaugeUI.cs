@@ -4,7 +4,7 @@ using UnityEngine;
 using UnityEngine.UI;
 
 /// <summary>
-/// 캐릭터 체력바 바로 위에 전용 게이지와 공용 무력화 게이지를 표시한다.
+/// 캐릭터 체력바 바로 위에 전용 게이지와 공용 흐트러짐 게이지를 표시한다.
 /// 기존 캐릭터별 전용 패널을 대체하는 월드 HUD 계층이다.
 /// </summary>
 [DisallowMultipleComponent]

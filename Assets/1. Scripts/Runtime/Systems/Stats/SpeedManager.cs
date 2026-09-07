@@ -43,14 +43,16 @@ public class SpeedManager
             return;
         }
 
-        if (character.IsSingleHpTarget)
+        bool hasCharacterLevelSlots =
+            (character.CombatRulesRuntime?.GetSlotCountForPart(null) ?? 0) > 0;
+
+        if (character.IsSingleHpTarget || hasCharacterLevelSlots)
         {
             speedByCharacter[character] =
-                RollSpeed(
-                    character,
-                    part: null);
+                RollSpeed(character, part: null);
 
-            return;
+            if (character.IsSingleHpTarget)
+                return;
         }
 
         if (character.BodyParts == null)

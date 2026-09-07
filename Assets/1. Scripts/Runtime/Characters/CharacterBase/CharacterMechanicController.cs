@@ -46,6 +46,18 @@ public sealed class CharacterMechanicController : IDisposable
         mechanics.Add(mechanic);
     }
 
+    public bool RegisterMechanic(
+        CombatMechanic mechanic,
+        BattleContext context)
+    {
+        if (isDisposed || mechanic == null || context == null)
+            return false;
+
+        AddMechanic(mechanic);
+        mechanic.Initialize(owner, context);
+        return mechanic.TryRegister();
+    }
+
     public void InitializeAndRegisterAll(
         BattleContext context)
     {

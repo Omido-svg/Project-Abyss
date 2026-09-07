@@ -27,7 +27,7 @@ public class CurrentStatus
 
         maxEnergy =
             Mathf.Max(
-                3,
+                1,
                 data.maxEnergy);
 
         minSpeed =
@@ -48,7 +48,7 @@ public class CurrentStatus
 
         maxEnergy =
             Mathf.Max(
-                3,
+                1,
                 maxEnergy);
 
         maxSpeed =

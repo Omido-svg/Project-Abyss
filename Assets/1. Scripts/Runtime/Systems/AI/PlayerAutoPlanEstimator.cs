@@ -287,7 +287,7 @@ public sealed class PlayerAutoPlanEstimator
                     {
                         int damage =
                             enemy.RollType ==
-                            CombatRollType.Defense
+                            CombatRollType.Stagger
                                 ? Mathf.Max(
                                     1,
                                     player.ClashPower -
@@ -924,7 +924,7 @@ public sealed class PlayerAutoPlanEstimator
     {
         if (skill == null ||
             skill.GetRollType(rollIndex) ==
-            CombatRollType.Defense)
+            CombatRollType.Stagger)
         {
             return 0f;
         }

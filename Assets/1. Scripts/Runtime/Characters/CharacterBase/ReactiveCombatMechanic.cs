@@ -17,7 +17,8 @@ public enum ReactiveCombatEventMask
     DamageResolved = 1 << 6,
     StatusApplied = 1 << 7,
     BodyPartBroken = 1 << 8,
-    KillResolved = 1 << 9
+    KillResolved = 1 << 9,
+    ExchangeResolved = 1 << 10
 }
 
 /// <summary>
@@ -118,6 +119,14 @@ public abstract class ReactiveCombatMechanic : CombatMechanic
                 "OnKillResolved");
         }
 
+        if (Has(mask, ReactiveCombatEventMask.ExchangeResolved))
+        {
+            SubscribeToBattleEvent(
+                () => battleEvent.OnExchangeResolved += DispatchExchangeResolved,
+                () => battleEvent.OnExchangeResolved -= DispatchExchangeResolved,
+                "OnExchangeResolved");
+        }
+
         OnReactiveRegistered();
     }
 
@@ -179,6 +188,11 @@ public abstract class ReactiveCombatMechanic : CombatMechanic
 
     protected virtual void OnKillResolved(
         KillEventContext context)
+    {
+    }
+
+    protected virtual void OnExchangeResolved(
+        ClashExchangeResult exchange)
     {
     }
 
@@ -273,5 +287,11 @@ public abstract class ReactiveCombatMechanic : CombatMechanic
         KillEventContext context)
     {
         OnKillResolved(context);
+    }
+
+    private void DispatchExchangeResolved(
+        ClashExchangeResult exchange)
+    {
+        OnExchangeResolved(exchange);
     }
 }

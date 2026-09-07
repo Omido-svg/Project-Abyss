@@ -10,6 +10,8 @@ public sealed class BattleRuntimeServices
     public BattleLogger BattleLogger { get; set; }
     public ActionManager ActionManager { get; set; }
     public MomentumManager MomentumManager { get; set; }
+    public FervorManager FervorManager { get; set; }
+    public EmotionAugmentManager EmotionAugmentManager { get; set; }
     public SpeedManager SpeedManager { get; set; }
     public DamageManager DamageManager { get; set; }
     public ClashManager ClashManager { get; set; }
@@ -26,6 +28,8 @@ public sealed class BattleRuntimeServices
             BattleLogger = BattleLogger,
             ActionManager = ActionManager,
             MomentumManager = MomentumManager,
+            FervorManager = FervorManager,
+            EmotionAugmentManager = EmotionAugmentManager,
             SpeedManager = SpeedManager,
             DamageManager = DamageManager,
             ClashManager = ClashManager,

@@ -69,6 +69,27 @@ public sealed class CharacterResourceController
             null);
     }
 
+    public void IncreaseEnergyMaximum(int amount, bool fillToMaximum)
+    {
+        if (amount <= 0)
+            return;
+
+        Resources ??= new CombatResourceBank();
+        int before = CurrentEnergy;
+        int newMaximum = Mathf.Max(1, MaxEnergy + amount);
+        int after = fillToMaximum ? newMaximum : Mathf.Clamp(before, 0, newMaximum);
+        Resources.Configure(CombatResourceKeys.Energy, after, newMaximum);
+
+        PublishResourceChange(
+            CombatResourceKeys.Energy,
+            before,
+            after,
+            newMaximum,
+            CombatResourceChangeReason.External,
+            null,
+            null);
+    }
+
     public bool CanAffordEnergy(int amount)
     {
         return amount <= 0 || CurrentEnergy >= amount;

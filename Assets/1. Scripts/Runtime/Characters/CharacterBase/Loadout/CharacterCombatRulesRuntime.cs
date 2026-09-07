@@ -370,6 +370,14 @@ public sealed class CharacterCombatRulesRuntime
             return result;
         }
 
+        CharacterSlotConfig config = slot.SlotConfig;
+        if (config?.FixedSkill != null)
+        {
+            AddRuntimeDefinitionMatch(result, runtimeSkills, config.FixedSkill);
+            AddRuntimeDefinitionMatch(result, runtimeSkills, config.InsufficientEnergyFallbackSkill);
+            return result;
+        }
+
         foreach (Skill skill in runtimeSkills)
         {
             if (skill == null ||
@@ -650,6 +658,25 @@ public sealed class CharacterCombatRulesRuntime
         return null;
     }
 
+
+    private static void AddRuntimeDefinitionMatch(
+        List<Skill> destination,
+        IReadOnlyList<Skill> runtimeSkills,
+        SkillDefinition definition)
+    {
+        if (destination == null || runtimeSkills == null || definition == null)
+            return;
+
+        for (int i = 0; i < runtimeSkills.Count; i++)
+        {
+            Skill skill = runtimeSkills[i];
+            if (skill?.Definition == definition)
+            {
+                AddUnique(destination, skill);
+                return;
+            }
+        }
+    }
     private static void AddUnique(
         List<Skill> destination,
         Skill skill)

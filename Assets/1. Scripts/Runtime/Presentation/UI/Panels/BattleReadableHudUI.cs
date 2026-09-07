@@ -162,9 +162,6 @@ public sealed class BattleReadableHudUI : MonoBehaviour
         MomentumState state =
             manager.GetState(player);
 
-        float multiplier =
-            manager.GetDamageMultiplier(player);
-
         string stateName =
             state switch
             {
@@ -177,9 +174,16 @@ public sealed class BattleReadableHudUI : MonoBehaviour
             };
 
         momentumText.richText = true;
+        FervorManager fervor =
+            battleManager?.BattleContext?.Services?.FervorManager;
+
+        string fervorText = fervor == null
+            ? string.Empty
+            : $" · 고조 {fervor.Exaltation} / 열광 Lv.{fervor.FervorLevel}";
+
         momentumText.text =
             $"<b>기세 {value:+#;-#;0}</b>\n" +
-            $"{stateName} · 피해 ×{multiplier:0.##}";
+            $"{stateName}{fervorText}";
     }
 
     private void RefreshBossPhase(

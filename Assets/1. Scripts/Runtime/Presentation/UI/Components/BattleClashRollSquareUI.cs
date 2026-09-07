@@ -63,7 +63,7 @@ public sealed class BattleClashRollSquareUI : MonoBehaviour
 
         RollType = type;
         baseColor =
-            type == CombatRollType.Defense
+            type == CombatRollType.Stagger
                 ? defenseColor
                 : attackColor;
 

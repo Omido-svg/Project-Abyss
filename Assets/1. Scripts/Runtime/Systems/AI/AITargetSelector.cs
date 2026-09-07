@@ -38,7 +38,8 @@ public sealed class AITargetSelector
     public AITargetSelection SelectTarget(
         AIPlanningState state,
         AIActionSource source,
-        Skill skill)
+        Skill skill,
+        int actionIndex = 0)
     {
         if (state == null ||
             source == null ||
@@ -65,6 +66,10 @@ public sealed class AITargetSelector
 
         IReadOnlyList<TargetPoint> targetPoints =
             target.GetTargetPoints(includeBrokenParts);
+
+        CharacterSlotConfig slotConfig = source.GetSlotConfig(actionIndex);
+        if (slotConfig?.TargetingPolicy == AITargetingPolicy.RandomValid)
+            return SelectRandomValidTarget(targetPoints, includeBrokenParts);
 
         TargetPoint bestPoint = default;
         float bestScore = float.NegativeInfinity;
@@ -110,6 +115,27 @@ public sealed class AITargetSelector
         // 이미 파괴된 부위를 기본 후보에서 제외한다.
         return skill.ActionType == ActionType.NormalAttack ||
                skill.ActionType == ActionType.Duel;
+    }
+
+    private AITargetSelection SelectRandomValidTarget(
+        IReadOnlyList<TargetPoint> points,
+        bool allowBrokenPart)
+    {
+        if (points == null || points.Count == 0)
+            return AITargetSelection.Invalid;
+
+        List<TargetPoint> valid = new();
+        for (int i = 0; i < points.Count; i++)
+        {
+            if (IsValidPoint(points[i], allowBrokenPart))
+                valid.Add(points[i]);
+        }
+
+        if (valid.Count == 0)
+            return AITargetSelection.Invalid;
+
+        TargetPoint chosen = valid[UnityEngine.Random.Range(0, valid.Count)];
+        return new AITargetSelection(chosen, 100f);
     }
 
     private AITargetSelection SelectSelfTarget(

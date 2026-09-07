@@ -122,6 +122,8 @@ public class TurnManager
 
             actionManager?.ResetForBattle();
             momentumManager?.Reset();
+            battleContext?.Services?.FervorManager?.ResetForBattle();
+            battleContext?.Services?.EmotionAugmentManager?.ResetForBattle();
 
             battleContext?._battleEvent?
                 .RaiseBattleStarted();
@@ -165,6 +167,9 @@ public class TurnManager
         {
             return;
         }
+
+        // Gameplay v5: 모든 턴은 기세 0에서 시작한다. 직전 턴 발악 예약은 여기서 활성화된다.
+        momentumManager?.BeginTurn();
 
         Debug.Log(
             $"===== TURN {CurrentTurn} START =====");
@@ -421,6 +426,11 @@ public class TurnManager
 
         battleContext?._battleEvent?
             .RaiseTurnEnd(CurrentTurn);
+
+        // 턴 최종 기세를 먼저 고조로 환산한 뒤, 다음 턴 발악 상태를 예약한다.
+        battleContext?.Services?.FervorManager?
+            .ResolveTurnEnd(CurrentTurn);
+        momentumManager?.FinalizeTurn();
 
         battleLogger?
             .PrintTurn(CurrentTurn);

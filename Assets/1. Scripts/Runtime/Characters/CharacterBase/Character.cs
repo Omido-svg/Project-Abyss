@@ -439,8 +439,7 @@ public abstract class Character : MonoBehaviour
             {
                 AddMechanic(
                     new StaggerGaugeMechanic(
-                        Data.MaxStaggerGauge,
-                        Data.StaggerDamageRatio));
+                        Data.GetEffectiveMaxStaggerGauge(battleContext?.Rules)));
             }
 
             foreach (CombatMechanic mechanic
@@ -629,6 +628,15 @@ public abstract class Character : MonoBehaviour
         mechanicController.AddMechanic(mechanic);
     }
 
+    public void AddRuntimeMechanic(CombatMechanic mechanic)
+    {
+        if (mechanicController == null || mechanic == null)
+            return;
+        mechanicController.AddMechanic(mechanic);
+        if (IsInitialized)
+            mechanicController.RegisterMechanic(mechanic, battleContext);
+    }
+
     //------------------------------------------------
 
     public virtual int GetMaxActionSlots()
@@ -650,11 +658,19 @@ public abstract class Character : MonoBehaviour
     public virtual int GetMaxActionSlotsForPart(BodyPart part)
     {
         if (part == null)
-            return IsSingleHpTarget ? Mathf.Max(1, combatRulesRuntime?.GetSlotCountForPart(null) ?? 1) : 0;
+        {
+            int globalConfigured = combatRulesRuntime?.GetSlotCountForPart(null) ?? 0;
+            if (globalConfigured > 0)
+                return globalConfigured;
+            return IsSingleHpTarget ? 1 : 0;
+        }
         if (part.IsBroken)
             return 0;
 
         int configured = combatRulesRuntime?.GetSlotCountForPart(part) ?? 0;
+        if (combatRulesRuntime?.HasStructuredRules == true)
+            return Mathf.Max(0, configured);
+
         if (configured > 0)
             return configured;
 
@@ -843,12 +859,30 @@ public abstract class Character : MonoBehaviour
             battleContext,
             battleContext?.Services?.TurnManager?.CurrentTurn ?? 1);
 
-        int turnEnergy =
-            battleContext?.Rules?.Energy?.TurnStartGain ?? 1;
+        TurnStartEnergyPolicy energyPolicy =
+            Data?.TurnStartEnergyPolicy ?? TurnStartEnergyPolicy.GlobalGain;
 
-        resourceController?.AddEnergy(
-            turnEnergy,
-            CombatResourceChangeReason.TurnRefill);
+        switch (energyPolicy)
+        {
+            case TurnStartEnergyPolicy.RefillToMaximum:
+                resourceController?.RestoreEnergyToFull();
+                break;
+
+            case TurnStartEnergyPolicy.GainFlat:
+                resourceController?.AddEnergy(
+                    Data?.TurnStartEnergyAmount ?? 0,
+                    CombatResourceChangeReason.TurnRefill);
+                break;
+
+            case TurnStartEnergyPolicy.None:
+                break;
+
+            default:
+                resourceController?.AddEnergy(
+                    battleContext?.Rules?.Energy?.TurnStartGain ?? 1,
+                    CombatResourceChangeReason.TurnRefill);
+                break;
+        }
 
         statusController?.OnTurnStart();
     }
@@ -1457,6 +1491,11 @@ public abstract class Character : MonoBehaviour
             sourceSkill);
     }
 
+    public void IncreaseEnergyMaximum(int amount, bool fillToMaximum = true)
+    {
+        resourceController?.IncreaseEnergyMaximum(amount, fillToMaximum);
+    }
+
     public CharacterRuntimeSnapshot CaptureRuntimeSnapshot()
     {
         return CharacterRuntimeSnapshot.Capture(this);
@@ -1626,7 +1665,9 @@ public abstract class Character : MonoBehaviour
 
         if (part == null)
         {
-            if (!IsSingleHpTarget)
+            bool hasGlobalStructuredSlots =
+                combatRulesRuntime?.GetSlotCountForPart(null) > 0;
+            if (!IsSingleHpTarget && !hasGlobalStructuredSlots)
                 return false;
         }
         else if ((part.Owner != null && part.Owner != this) ||

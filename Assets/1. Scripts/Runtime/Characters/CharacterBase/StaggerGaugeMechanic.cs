@@ -1,130 +1,118 @@
-using System;
-using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>
-/// 공용 무력화/흐트러짐 게이지.
-/// 공격으로 실제 적용된 피해를 기본 1:1로 게이지에 누적 감산하고,
-/// 0이 되면 머리를 제외한 정상 부위 하나를 무작위로 다음 한 턴 동안 약화한다.
-/// 발동 직후 게이지는 최대치로 복구된다.
+/// Gameplay v5 흐트러짐 게이지.
+/// HP와 별개이며 성공한 Attack/Stagger 굴림의 최종 굴림값에 별도 흐트러짐 내성을 적용한다.
+/// 0이 되면 HP 내성을 전 타입 x2로 덮어쓰는 취약 창을 열고, 다음 턴 종료에 100% 복구한다.
 /// </summary>
 public sealed class StaggerGaugeMechanic : ReactiveCombatMechanic,
     ICharacterUniqueGaugeProvider
 {
     private readonly int maxGauge;
-    private readonly float damageRatio;
     private int currentGauge;
-    private BodyPart temporaryWeakenedPart;
-    private float hpBeforeTemporaryWeaken;
+    private bool vulnerabilityWindowOpen;
     private int recoverAfterTurn = -1;
 
     public int CurrentGauge => currentGauge;
     public int MaxGauge => maxGauge;
-    public string GaugeLabel => "무력화";
+    public bool IsVulnerabilityWindowOpen => vulnerabilityWindowOpen;
+    public string GaugeLabel => "흐트러짐";
     public float GaugeNormalized => maxGauge <= 0 ? 0f : (float)currentGauge / maxGauge;
-    public string GaugeValueText => $"{currentGauge}/{maxGauge}";
-    public int GaugeStateVersion => currentGauge;
+    public string GaugeValueText => vulnerabilityWindowOpen
+        ? $"{currentGauge}/{maxGauge} · 취약"
+        : $"{currentGauge}/{maxGauge}";
+    public int GaugeStateVersion => (currentGauge * 2) + (vulnerabilityWindowOpen ? 1 : 0);
 
     protected override ReactiveCombatEventMask EventMask =>
-        ReactiveCombatEventMask.DamageResolved |
+        ReactiveCombatEventMask.ExchangeResolved |
         ReactiveCombatEventMask.TurnEnd;
 
-    public override string MechanicName => "Stagger Gauge";
+    public override string MechanicName => "Stagger Gauge v5";
 
-    public StaggerGaugeMechanic(int maxGauge, float damageRatio)
+    public StaggerGaugeMechanic(int maxGauge)
     {
         this.maxGauge = Mathf.Max(1, maxGauge);
-        this.damageRatio = Mathf.Max(0f, damageRatio);
         currentGauge = this.maxGauge;
     }
 
     protected override void OnReactiveRegistered()
     {
         currentGauge = maxGauge;
-        temporaryWeakenedPart = null;
-        hpBeforeTemporaryWeaken = 0f;
+        vulnerabilityWindowOpen = false;
         recoverAfterTurn = -1;
     }
 
-    protected override void OnDamageResolved(DamageEventResult result)
+    protected override void OnExchangeResolved(ClashExchangeResult exchange)
     {
-        DamageContext context = result?.Context;
-        if (context == null || context.Target != owner)
+        if (exchange == null || exchange.WasCancelled || exchange.WinnerAction == null)
             return;
 
-        if (context.Action == null ||
-            context.DamageType == DamageType.StatusPart ||
-            context.DamageType == DamageType.True ||
-            context.DamageType == DamageType.SelfCost)
+        BattleAction winner = exchange.WinnerAction;
+        if (winner.CurrentRollType != CombatRollType.Attack &&
+            winner.CurrentRollType != CombatRollType.Stagger)
         {
             return;
         }
 
-        int applied = context.GetDisplayDamage();
-        if (applied <= 0)
+        Character target = winner.Target ?? exchange.LoserAction?.Owner;
+        if (target == null || target.IsDead)
             return;
 
-        int staggerDamage = Mathf.Max(
-            1,
-            Mathf.FloorToInt(applied * damageRatio));
-
-        currentGauge = Mathf.Max(0, currentGauge - staggerDamage);
-        if (currentGauge > 0)
+        int staggerDamage = CalculateStaggerDamage(winner, target);
+        if (staggerDamage <= 0)
             return;
 
-        TriggerStagger();
-        currentGauge = maxGauge;
+        if (target == owner && !vulnerabilityWindowOpen)
+        {
+            currentGauge = Mathf.Max(0, currentGauge - staggerDamage);
+            if (currentGauge <= 0)
+                OpenVulnerabilityWindow();
+        }
+
+        // 흐트러짐 공격 굴림은 HP를 주지 않는 대신 자신 흐트러짐을 회복한다.
+        if (winner.Owner == owner &&
+            winner.CurrentRollType == CombatRollType.Stagger)
+        {
+            float ratio = battleContext?.Rules?.Stagger?.StaggerRollSelfRecoveryRatio ?? 1f;
+            Recover(Mathf.FloorToInt(staggerDamage * Mathf.Max(0f, ratio)));
+        }
     }
 
     protected override void OnTurnEnded(int turn)
     {
-        if (temporaryWeakenedPart == null || turn < recoverAfterTurn)
+        if (!vulnerabilityWindowOpen || turn < recoverAfterTurn)
             return;
 
-        if (temporaryWeakenedPart.IsWeakened)
-        {
-            owner.RestoreTemporaryWeakenedPart(
-                temporaryWeakenedPart,
-                hpBeforeTemporaryWeaken);
-        }
-
-        temporaryWeakenedPart = null;
-        hpBeforeTemporaryWeaken = 0f;
+        vulnerabilityWindowOpen = false;
+        currentGauge = maxGauge;
         recoverAfterTurn = -1;
     }
 
-    private void TriggerStagger()
+    public void Recover(int amount)
     {
-        if (owner?.BodyParts == null)
+        if (amount <= 0 || vulnerabilityWindowOpen)
             return;
+        currentGauge = Mathf.Clamp(currentGauge + amount, 0, maxGauge);
+    }
 
-        List<BodyPart> candidates = new();
-        foreach (BodyPart part in owner.BodyParts)
-        {
-            if (part == null ||
-                part.Type == PartType.HEAD ||
-                part.IsBroken ||
-                part.IsWeakened)
-            {
-                continue;
-            }
+    private int CalculateStaggerDamage(BattleAction action, Character target)
+    {
+        int raw = Mathf.Max(0, action.GetDamagePower());
+        if (raw <= 0)
+            return 0;
 
-            candidates.Add(part);
-        }
+        PhysicalDamageType type = PhysicalDamageResolver.Resolve(action);
+        float multiplier = target.Data?.StaggerResistances?.GetMultiplier(type) ?? 1f;
+        return Mathf.Max(0, Mathf.FloorToInt(raw * multiplier));
+    }
 
-        if (candidates.Count == 0)
-            return;
-
-        temporaryWeakenedPart =
-            candidates[UnityEngine.Random.Range(0, candidates.Count)];
-        hpBeforeTemporaryWeaken = temporaryWeakenedPart.PartHP;
-
-        owner.WeakenPart(temporaryWeakenedPart, owner, null);
-
-        int currentTurn =
-            battleContext?.Services?.TurnManager?.CurrentTurn ?? 1;
-
-        // 현재 해결 단계에서 발생한 약화가 다음 턴 전체를 유지한 뒤 해제된다.
+    private void OpenVulnerabilityWindow()
+    {
+        vulnerabilityWindowOpen = true;
+        currentGauge = 0;
+        int currentTurn = battleContext?.Services?.TurnManager?.CurrentTurn ?? 1;
+        // 발동한 턴의 잔여 구간 + 다음 한 턴을 보장하고 다음 턴 종료에 복구한다.
         recoverAfterTurn = currentTurn + 1;
+        Debug.Log($"[Stagger] {owner?.Data?.CharacterName ?? owner?.name} 취약 창 OPEN / RecoverAfterTurn={recoverAfterTurn}");
     }
 }

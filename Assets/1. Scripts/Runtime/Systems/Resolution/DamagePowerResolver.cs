@@ -4,150 +4,59 @@ public readonly struct DamagePowerResolution
 {
     public bool HasDamage { get; }
     public bool WasDefenseResolution { get; }
-
     public int PrimaryPower { get; }
     public bool ApplyPrimaryMomentum { get; }
-
     public int SecondaryPower { get; }
     public bool ApplySecondaryMomentum { get; }
 
-    public DamagePowerResolution(
-        bool hasDamage,
-        bool wasDefenseResolution,
-        int primaryPower,
-        bool applyPrimaryMomentum,
-        int secondaryPower,
-        bool applySecondaryMomentum)
+    public DamagePowerResolution(bool hasDamage, bool wasDefenseResolution, int primaryPower, bool applyPrimaryMomentum, int secondaryPower, bool applySecondaryMomentum)
     {
         HasDamage = hasDamage;
         WasDefenseResolution = wasDefenseResolution;
-
-        PrimaryPower =
-            Mathf.Max(
-                0,
-                primaryPower);
-
-        ApplyPrimaryMomentum =
-            applyPrimaryMomentum;
-
-        SecondaryPower =
-            Mathf.Max(
-                0,
-                secondaryPower);
-
-        ApplySecondaryMomentum =
-            applySecondaryMomentum;
+        PrimaryPower = Mathf.Max(0, primaryPower);
+        ApplyPrimaryMomentum = applyPrimaryMomentum;
+        SecondaryPower = Mathf.Max(0, secondaryPower);
+        ApplySecondaryMomentum = applySecondaryMomentum;
     }
 
-    public static DamagePowerResolution None(
-        bool wasDefenseResolution = false)
-    {
-        return new DamagePowerResolution(
-            false,
-            wasDefenseResolution,
-            0,
-            false,
-            0,
-            false);
-    }
+    public static DamagePowerResolution None(bool wasDefenseResolution = false) =>
+        new DamagePowerResolution(false, wasDefenseResolution, 0, false, 0, false);
 }
 
 /// <summary>
-/// 합 승패 결과를 실제 피해 기준 위력으로 변환합니다.
-///
-/// 공격 대 공격:
-///     승자의 순수 굴림 위력
-///
-/// 공격 대 수비:
-///     max(1, 공격 합 수치 - 수비 합 수치)
-///
-/// 수비 승리:
-///     피해 없음
+/// Gameplay v5: CombatRollType.Stagger(legacy Defense=1)는 HP 피해를 주지 않는다.
+/// Attack이 교환에서 이기면 상대 굴림 종류와 무관하게 자신의 순수 피해 굴림값으로 HP 피해를 준다.
+/// 흐트러짐 피해는 StaggerGaugeMechanic이 교환 이벤트에서 별도로 처리한다.
 /// </summary>
 public static class DamagePowerResolver
 {
-    public static DamagePowerResolution ResolvePaired(
-        BattleAction winner,
-        BattleAction loser)
+    public static DamagePowerResolution ResolvePaired(BattleAction winner, BattleAction loser)
     {
-        if (winner == null ||
-            loser == null)
-        {
+        if (winner == null || loser == null)
             return DamagePowerResolution.None();
-        }
 
-        bool winnerDefense =
-            winner.CurrentRollType ==
-            CombatRollType.Defense;
+        if (winner.CurrentRollType == CombatRollType.Stagger)
+            return DamagePowerResolution.None(wasDefenseResolution: true);
 
-        bool loserDefense =
-            loser.CurrentRollType ==
-            CombatRollType.Defense;
-
-        bool defenseResolution =
-            winnerDefense ||
-            loserDefense;
-
-        if (winnerDefense)
-        {
-            return DamagePowerResolution.None(
-                wasDefenseResolution: true);
-        }
-
-        if (loserDefense)
-        {
-            return new DamagePowerResolution(
-                hasDamage: true,
-                wasDefenseResolution: true,
-                primaryPower:
-                    Mathf.Max(
-                        1,
-                        winner.ClashPower -
-                        loser.ClashPower),
-                applyPrimaryMomentum: false,
-
-                // 기존 계산 결과를 유지합니다.
-                // Attack Weight의 추가 대상은 수비 합 격차가 아니라
-                // 공격자의 순수 굴림 위력을 사용합니다.
-                secondaryPower:
-                    winner.GetDamagePower(),
-                applySecondaryMomentum: true);
-        }
-
-        int purePower =
-            winner.GetDamagePower();
-
+        int purePower = winner.GetDamagePower();
         return new DamagePowerResolution(
             hasDamage: true,
-            wasDefenseResolution: defenseResolution,
+            wasDefenseResolution: loser.CurrentRollType == CombatRollType.Stagger,
             primaryPower: purePower,
             applyPrimaryMomentum: true,
             secondaryPower: purePower,
             applySecondaryMomentum: true);
     }
 
-    public static DamagePowerResolution ResolveOneSided(
-        BattleAction action)
+    public static DamagePowerResolution ResolveOneSided(BattleAction action)
     {
         if (action == null)
             return DamagePowerResolution.None();
 
-        if (action.CurrentRollType ==
-            CombatRollType.Defense)
-        {
-            return DamagePowerResolution.None(
-                wasDefenseResolution: true);
-        }
+        if (action.CurrentRollType == CombatRollType.Stagger)
+            return DamagePowerResolution.None(wasDefenseResolution: true);
 
-        int purePower =
-            action.GetDamagePower();
-
-        return new DamagePowerResolution(
-            hasDamage: true,
-            wasDefenseResolution: false,
-            primaryPower: purePower,
-            applyPrimaryMomentum: true,
-            secondaryPower: purePower,
-            applySecondaryMomentum: true);
+        int purePower = action.GetDamagePower();
+        return new DamagePowerResolution(true, false, purePower, true, purePower, true);
     }
 }

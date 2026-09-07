@@ -23,14 +23,9 @@ public readonly struct MomentumShiftResult
     public readonly int After;
     public readonly int SignedShift;
     public readonly MomentumShiftReason Reason;
-
     public bool Changed => Before != After;
 
-    public MomentumShiftResult(
-        int before,
-        int after,
-        int signedShift,
-        MomentumShiftReason reason)
+    public MomentumShiftResult(int before, int after, int signedShift, MomentumShiftReason reason)
     {
         Before = before;
         After = after;
@@ -39,220 +34,153 @@ public readonly struct MomentumShiftResult
     }
 }
 
+/// <summary>
+/// Gameplay v5 기세: 매 턴 0에서 시작하는 -100~100 줄다리기 바.
+/// 피해 배율을 만들지 않고 턴 종료 위치는 FervorManager가 고조로 환산한다.
+/// 발악은 직전 턴을 짓눌린 상태로 끝냈는지를 다음 턴 전체에 고정한다.
+/// </summary>
 public class MomentumManager
 {
     private readonly BattleContext battleContext;
     private readonly MomentumRuleSettings settings;
 
+    private bool playerLastStandThisTurn;
+    private bool enemyLastStandThisTurn;
+    private bool playerLastStandNextTurn;
+    private bool enemyLastStandNextTurn;
+
     public const int MaxMomentum = 100;
     public const int MinMomentum = -100;
 
     public int CurrentMomentum { get; private set; }
-
     public MomentumRuleSettings Settings => settings;
 
-    public MomentumManager(
-        BattleContext battleContext)
+    public MomentumManager(BattleContext battleContext)
     {
         this.battleContext = battleContext;
-        settings = battleContext?.Rules?.Momentum ??
-                   new MomentumRuleSettings();
+        settings = battleContext?.Rules?.Momentum ?? new MomentumRuleSettings();
         settings.Normalize();
     }
 
     public void Reset()
     {
         CurrentMomentum = 0;
+        playerLastStandThisTurn = false;
+        enemyLastStandThisTurn = false;
+        playerLastStandNextTurn = false;
+        enemyLastStandNextTurn = false;
     }
 
-    public MomentumState GetState(
-        Character owner)
+    public void BeginTurn()
     {
+        playerLastStandThisTurn = playerLastStandNextTurn;
+        enemyLastStandThisTurn = enemyLastStandNextTurn;
+        playerLastStandNextTurn = false;
+        enemyLastStandNextTurn = false;
+        CurrentMomentum = 0;
+    }
+
+    public void FinalizeTurn()
+    {
+        playerLastStandNextTurn = CurrentMomentum <= settings.LastStandThreshold;
+        enemyLastStandNextTurn = -CurrentMomentum <= settings.LastStandThreshold;
+    }
+
+    public MomentumState GetState(Character owner)
+    {
+        if (owner?.SupportsLastStand == true && IsLastStandActive(owner))
+            return MomentumState.LastStand;
+
         int value = GetPerspectiveValue(owner);
-
-        if (value <= settings.LastStandThreshold)
-        {
-            return owner?.SupportsLastStand == false
-                ? MomentumState.Disadvantage
-                : MomentumState.LastStand;
-        }
-
         if (value < settings.DisadvantageThreshold)
             return MomentumState.Disadvantage;
-
         if (value <= settings.AdvantageThreshold)
             return MomentumState.Balance;
-
         if (value < settings.OverwhelmThreshold)
             return MomentumState.Advantage;
-
         return MomentumState.Overwhelm;
     }
 
-    public int GetPerspectiveValue(
-        Character owner)
+    public MomentumState GetFinalTurnState(Character owner)
     {
-        if (owner == null)
-            return 0;
+        int value = GetPerspectiveValue(owner);
+        if (value <= settings.LastStandThreshold)
+            return MomentumState.LastStand;
+        if (value < settings.DisadvantageThreshold)
+            return MomentumState.Disadvantage;
+        if (value <= settings.AdvantageThreshold)
+            return MomentumState.Balance;
+        if (value < settings.OverwhelmThreshold)
+            return MomentumState.Advantage;
+        return MomentumState.Overwhelm;
+    }
 
-        return IsPlayerSide(owner)
-            ? CurrentMomentum
-            : -CurrentMomentum;
+    public int GetPerspectiveValue(Character owner)
+    {
+        if (owner == null) return 0;
+        return IsPlayerSide(owner) ? CurrentMomentum : -CurrentMomentum;
     }
 
     public bool IsLastStand(Character character) =>
-        GetState(character) == MomentumState.LastStand;
+        character?.SupportsLastStand == true && IsLastStandActive(character);
 
     public bool IsOverwhelm(Character character) =>
-        GetState(character) == MomentumState.Overwhelm;
+        GetFinalTurnState(character) == MomentumState.Overwhelm;
 
-    public bool CanStandardBreakPart(
-        Character attacker) =>
-        IsOverwhelm(attacker);
+    public bool CanStandardBreakPart(Character attacker) => IsOverwhelm(attacker);
 
-    /// <summary>
-    /// 새 설계에서 전투 피해에 허용되는 유일한 곱연산.
-    /// 공격자 관점 기세 구간만 읽으며 대상 쪽 배율을 다시 곱하지 않는다.
-    /// </summary>
-    public float GetDamageMultiplier(
-        Character attacker)
-    {
-        int perspective =
-            GetPerspectiveValue(attacker);
+    // Gameplay v5: 기세 구간은 피해량을 절대 곱하지 않는다.
+    public float GetDamageMultiplier(Character attacker) => 1f;
 
-        switch (GetState(attacker))
-        {
-            case MomentumState.LastStand:
-                return settings.LastStandMultiplier;
-
-            case MomentumState.Disadvantage:
-                return settings.DisadvantageMultiplier;
-
-            case MomentumState.Balance:
-                return settings.BalanceMultiplier;
-
-            case MomentumState.Advantage:
-                return settings.AdvantageMultiplier;
-
-            case MomentumState.Overwhelm:
-                return settings.OverwhelmMultiplier;
-
-            default:
-                return 1f;
-        }
-    }
-
-    /// <summary>
-    /// 성공한 교환 또는 일방 공격 한 번의 히트 이동.
-    /// 발악 구간에서는 히트 이동량만 배수 적용한다.
-    /// </summary>
-    public MomentumShiftResult ApplyHit(
-        Character attacker)
+    public MomentumShiftResult ApplyHit(Character attacker)
     {
         int amount = settings.HitShift;
-
-        if (attacker?.SupportsLastStand == true &&
-            IsLastStand(attacker))
-        {
-            amount *=
-                settings.LastStandHitShiftMultiplier;
-        }
-
-        return ApplyShift(
-            attacker,
-            amount,
-            MomentumShiftReason.Hit);
+        if (attacker?.SupportsLastStand == true && IsLastStand(attacker))
+            amount *= settings.LastStandHitShiftMultiplier;
+        return ApplyShift(attacker, amount, MomentumShiftReason.Hit);
     }
 
     /// <summary>
-    /// 결투 대 결투의 개별 교환 승자가 받는 추가 이동.
-    /// 최신 규칙은 최종 다수결 푸시를 사용하지 않는다.
+    /// Duel vs Duel의 개별 교환 승리가 만드는 총 이동량이다.
+    /// HitShift에 추가하는 값이 아니므로 ClashManager는 Duel 교환에서 ApplyHit과 중복 호출하지 않는다.
     /// </summary>
-    public MomentumShiftResult ApplyDuelExchangeVictory(
-        Character winner,
-        int skillBonus = 0)
+    public MomentumShiftResult ApplyDuelExchangeVictory(Character winner, int skillBonus = 0)
     {
-        int amount =
-            settings.DuelExchangeShift +
-            Mathf.Max(0, skillBonus);
-
-        return ApplyShift(
-            winner,
-            amount,
-            MomentumShiftReason.DuelVictory);
+        int amount = settings.DuelExchangeTotalShift + Mathf.Max(0, skillBonus);
+        if (winner?.SupportsLastStand == true && IsLastStand(winner))
+            amount = Mathf.Max(amount, settings.HitShift * settings.LastStandHitShiftMultiplier);
+        return ApplyShift(winner, amount, MomentumShiftReason.DuelVictory);
     }
 
-    public MomentumShiftResult ApplySkillShift(
-        Character pusher,
-        int amount)
-    {
-        return ApplyShift(
-            pusher,
-            amount,
-            MomentumShiftReason.Skill);
-    }
+    public MomentumShiftResult ApplySkillShift(Character pusher, int amount) =>
+        ApplyShift(pusher, amount, MomentumShiftReason.Skill);
 
-    public MomentumShiftResult ApplyShift(
-        Character pusher,
-        int amount,
-        MomentumShiftReason reason)
+    public MomentumShiftResult ApplyShift(Character pusher, int amount, MomentumShiftReason reason)
     {
         int before = CurrentMomentum;
-
         if (pusher == null || amount <= 0)
-        {
-            return new MomentumShiftResult(
-                before,
-                before,
-                0,
-                reason);
-        }
+            return new MomentumShiftResult(before, before, 0, reason);
 
-        int signed = IsPlayerSide(pusher)
-            ? amount
-            : -amount;
-
-        CurrentMomentum = Mathf.Clamp(
-            CurrentMomentum + signed,
-            settings.Minimum,
-            settings.Maximum);
-
+        int signed = IsPlayerSide(pusher) ? amount : -amount;
+        CurrentMomentum = Mathf.Clamp(CurrentMomentum + signed, settings.Minimum, settings.Maximum);
         int applied = CurrentMomentum - before;
 
         if (applied != 0)
         {
-            Debug.Log(
-                $"[Momentum] " +
-                $"Reason={reason}, " +
-                $"Pusher={pusher.Data?.CharacterName}, " +
-                $"Before={before}, Shift={applied}, " +
-                $"After={CurrentMomentum}");
+            Debug.Log($"[Momentum] Reason={reason}, Pusher={pusher.Data?.CharacterName}, Before={before}, Shift={applied}, After={CurrentMomentum}");
         }
-
-        return new MomentumShiftResult(
-            before,
-            CurrentMomentum,
-            applied,
-            reason);
+        return new MomentumShiftResult(before, CurrentMomentum, applied, reason);
     }
 
-    private bool IsPlayerSide(
-        Character character)
-    {
-        return character != null &&
-               character == battleContext?.Player;
-    }
+    private bool IsLastStandActive(Character character) =>
+        IsPlayerSide(character) ? playerLastStandThisTurn : enemyLastStandThisTurn;
 
-    public void SetMomentumForDebug(
-        float value)
-    {
-        CurrentMomentum = Mathf.Clamp(
-            Mathf.RoundToInt(value),
-            settings.Minimum,
-            settings.Maximum);
+    private bool IsPlayerSide(Character character) =>
+        character != null && character == battleContext?.Player;
 
-        Debug.Log(
-            $"[DEBUG TUNER] Momentum set : " +
-            $"{CurrentMomentum}");
+    public void SetMomentumForDebug(float value)
+    {
+        CurrentMomentum = Mathf.Clamp(Mathf.RoundToInt(value), settings.Minimum, settings.Maximum);
+        Debug.Log($"[DEBUG TUNER] Momentum set : {CurrentMomentum}");
     }
 }

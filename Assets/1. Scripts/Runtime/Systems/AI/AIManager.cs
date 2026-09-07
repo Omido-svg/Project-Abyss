@@ -95,7 +95,8 @@ public class AIManager
             if (slot.Part.IsBroken)
                 return false;
         }
-        else if (!enemy.IsSingleHpTarget)
+        else if (!enemy.IsSingleHpTarget &&
+                 (enemy.CombatRulesRuntime?.GetSlotCountForPart(null) ?? 0) <= 0)
         {
             return false;
         }

@@ -4,7 +4,7 @@ using UnityEngine;
 public enum PhysicalDamageType
 {
     Cut = 0,      // 절단
-    Blunt = 1,    // 둔격
+    Blunt = 1,    // 타격
     Pierce = 2    // 관통
 }
 
@@ -41,7 +41,22 @@ public static class PhysicalDamageResolver
         if (action?.Owner is Yujin yujin)
             return yujin.ResolveWeaponPhysicalType();
 
+        SkillRollData roll =
+            action?.Skill?.GetRollData(
+                action.CurrentRollIndex);
+
+        if (roll?.OverridePhysicalType == true)
+            return roll.PhysicalType;
+
         return action?.Skill?.Definition?.PhysicalType ??
                PhysicalDamageType.Cut;
     }
+
+    public static string GetSymbol(PhysicalDamageType type) => type switch
+    {
+        PhysicalDamageType.Cut => "□",
+        PhysicalDamageType.Pierce => "△",
+        PhysicalDamageType.Blunt => "○",
+        _ => "?"
+    };
 }

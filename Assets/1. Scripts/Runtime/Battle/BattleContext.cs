@@ -24,6 +24,11 @@ public class BattleContext
     /// </summary>
     public BattleRuntimeServices Services { get; set; }
 
+    // Run/scene composition root가 선택적으로 주입한다. 미주입 시 전투 코어는 정상 동작하고
+    // 감정 증강 제안만 생성하지 않는다.
+    public EmotionType? SelectedEmotion { get; set; }
+    public EmotionAugmentCatalog EmotionAugmentCatalog { get; set; }
+
     // 격리 Character Validator는 실제 전투 계산만 실행하고,
     // Scene의 UI/VFX/Timeline 큐에는 요청을 보내지 않는다.
     public bool SuppressPresentation { get; set; }

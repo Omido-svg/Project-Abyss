@@ -1,7 +1,11 @@
 public enum CombatRollType
 {
     Attack = 0,
-    Defense = 1
+
+    // Gameplay v5: 기존 직렬화 값 1을 흐트러짐 공격 굴림으로 재해석한다.
+    // Defense는 구 에셋/외부 호출부의 컴파일 호환을 위한 alias다.
+    Stagger = 1,
+    Defense = Stagger
 }
 
 public enum RollRngSource

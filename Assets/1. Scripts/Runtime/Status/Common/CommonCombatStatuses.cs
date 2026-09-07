@@ -56,14 +56,14 @@ public sealed class SturdyStatus : OneTurnCommonStatus, ICommonRollShiftStatus
 {
     public SturdyStatus(int stack = 1) : base("견고", stack, 3) { }
     public int GetRollShift(BattleAction action) =>
-        action?.CurrentRollType == CombatRollType.Defense ? Stack : 0;
+        action?.CurrentRollType == CombatRollType.Stagger ? Stack : 0;
 }
 
 public sealed class DisarmStatus : OneTurnCommonStatus, ICommonRollShiftStatus
 {
     public DisarmStatus(int stack = 1) : base("무장해제", stack, 4) { }
     public int GetRollShift(BattleAction action) =>
-        action?.CurrentRollType == CombatRollType.Defense ? -Stack : 0;
+        action?.CurrentRollType == CombatRollType.Stagger ? -Stack : 0;
 }
 
 public sealed class FractureStatus : OneTurnCommonStatus, ICommonRollMaxReductionStatus

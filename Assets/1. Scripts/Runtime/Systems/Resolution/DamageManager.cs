@@ -594,14 +594,14 @@ public class DamageManager
             return false;
         }
 
-        // 적은 파괴 스킬 권한을 갖지 않는다. 다만 짓누름(+70 이상)에서는
-        // 약화 부위를 기세만으로 파괴할 수 있다.
+        // Stage 1 보스 확정 규칙: Boss는 기세와 무관하게 부위 파괴 권한을 항상 가진다.
+        if (action?.Owner?.Data?.CombatantTier == CombatantTier.Boss)
+            return true;
+
+        // 그 외 적은 기존 규칙대로 짓누름에서만 표준 파괴 권한을 얻는다.
         if (action?.Owner is Enemy)
         {
-            return
-                momentumManager?
-                    .CanStandardBreakPart(
-                        action.Owner) == true;
+            return momentumManager?.CanStandardBreakPart(action.Owner) == true;
         }
 
         return action?.Skill?.CanBreakPart == true;

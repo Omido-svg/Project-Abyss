@@ -8,6 +8,8 @@ public sealed class BattleRuntimeComposition
     public BattleLogger BattleLogger => Services?.BattleLogger;
     public ActionManager ActionManager => Services?.ActionManager;
     public MomentumManager MomentumManager => Services?.MomentumManager;
+    public FervorManager FervorManager => Services?.FervorManager;
+    public EmotionAugmentManager EmotionAugmentManager => Services?.EmotionAugmentManager;
     public SpeedManager SpeedManager => Services?.SpeedManager;
     public DamageManager DamageManager => Services?.DamageManager;
     public ClashManager ClashManager => Services?.ClashManager;
@@ -48,6 +50,10 @@ public static class BattleRuntimeFactory
             new ActionManager();
         services.MomentumManager =
             new MomentumManager(context);
+        services.FervorManager =
+            new FervorManager(context, services.MomentumManager);
+        services.EmotionAugmentManager =
+            new EmotionAugmentManager(context, services.FervorManager);
         services.SpeedManager =
             new SpeedManager(context);
         services.DamageManager =

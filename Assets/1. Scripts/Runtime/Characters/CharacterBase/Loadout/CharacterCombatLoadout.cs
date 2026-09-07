@@ -7,7 +7,7 @@ using UnityEngine;
 public sealed class CharacterCombatLoadout : ScriptableObject
 {
     public const int NormalLimit = 3;
-    public const int DuelLimit = 3;
+    public const int DuelLimit = 2;
     public const int PreparationLimit = 3;
     public const int PrestigeLimit = 1;
 

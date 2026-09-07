@@ -25,6 +25,9 @@ public sealed class AIActionSource
     // 구버전 호출부 호환. 슬롯별 허용 스킬은 GetSkills(actionIndex)를 사용한다.
     public IReadOnlyList<Skill> Skills => GetSkills(0);
 
+    public CharacterSlotConfig GetSlotConfig(int actionIndex) =>
+        Owner?.CombatRulesRuntime?.GetSlotConfig(Part, Mathf.Max(0, actionIndex));
+
     public IReadOnlyList<Skill> GetSkills(
         int actionIndex)
     {
@@ -54,7 +57,8 @@ public sealed class AIActionSource
                 Owner.IsDead ||
                 MaxSlots <= 0 ||
                 (Part == null
-                    ? !Owner.IsSingleHpTarget
+                    ? (!Owner.IsSingleHpTarget &&
+                       (Owner.CombatRulesRuntime?.GetSlotCountForPart(null) ?? 0) <= 0)
                     : Part.IsBroken))
             {
                 return false;
@@ -86,6 +90,7 @@ public sealed class AISlotPlanner
         if (enemy.UsesBodyParts)
         {
             AddBodyPartSources(enemy, result);
+            AddGlobalStructuredSource(enemy, result);
             return result;
         }
 
@@ -120,6 +125,20 @@ public sealed class AISlotPlanner
             if (source.IsValid)
                 result.Add(source);
         }
+    }
+
+    private void AddGlobalStructuredSource(
+        Enemy enemy,
+        List<AIActionSource> result)
+    {
+        int maxSlots = Mathf.Max(0, enemy.GetMaxActionSlotsForPart(null));
+        if (maxSlots <= 0)
+            return;
+
+        AIActionSource source = new AIActionSource(
+            enemy, null, enemy.RuntimeSkills, maxSlots);
+        if (source.IsValid)
+            result.Add(source);
     }
 
     private void AddSingleHpSource(

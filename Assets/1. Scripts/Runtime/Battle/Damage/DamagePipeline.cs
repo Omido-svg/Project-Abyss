@@ -43,12 +43,8 @@ public sealed class DamagePipeline
             DamageStage.DamagePower,
             context.RawPower);
 
-        context.MomentumMultiplier =
-            context.Request.ApplyMomentum &&
-            momentumManager != null
-                ? momentumManager.GetDamageMultiplier(
-                    context.Attacker)
-                : 1f;
+        // Gameplay v5: 기세는 고조 충전량만 결정하며 피해량에는 곱하지 않는다.
+        context.MomentumMultiplier = 1f;
 
         float scaledDamage =
             context.RawPower *
@@ -178,9 +174,14 @@ public sealed class DamagePipeline
         if (context.Request.ApplyPhysicalResistance &&
             context.Target?.Data?.PhysicalResistances != null)
         {
+            StaggerGaugeMechanic stagger =
+                context.Target.GetMechanic<StaggerGaugeMechanic>();
+
             context.PhysicalResistanceMultiplier =
-                context.Target.Data.PhysicalResistances.GetMultiplier(
-                    context.PhysicalType);
+                stagger?.IsVulnerabilityWindowOpen == true
+                    ? (context.Target.BattleContext?.Rules?.Stagger?.VulnerabilityHpResistanceOverride ?? 2f)
+                    : context.Target.Data.PhysicalResistances.GetMultiplier(
+                        context.PhysicalType);
 
             damage = Mathf.Max(
                 0,

@@ -562,13 +562,19 @@ public class ClashManager
                 first.Owner,
                 second);
 
-        MomentumShiftResult hitMomentum =
-            momentumManager.ApplyHit(
-                winner.Owner);
-
         bool duelVsDuel =
             first.ActionType == ActionType.Duel &&
             second.ActionType == ActionType.Duel;
+
+        // Gameplay v5: Duel 40은 Hit 20에 추가되는 값이 아니라 교환 총 이동량이다.
+        MomentumShiftResult hitMomentum =
+            duelVsDuel
+                ? new MomentumShiftResult(
+                    momentumManager.CurrentMomentum,
+                    momentumManager.CurrentMomentum,
+                    0,
+                    MomentumShiftReason.Hit)
+                : momentumManager.ApplyHit(winner.Owner);
 
         MomentumShiftResult duelMomentum =
             duelVsDuel
@@ -711,27 +717,48 @@ public class ClashManager
             DamagePowerResolver.ResolveOneSided(
                 action);
 
-        // 막을 대상이 없으므로 일방 단계의 수비 굴림은 소멸합니다.
+        // Gameplay v5: 일방 Stagger 굴림도 실제 흐트러짐 공격으로 성립한다.
+        // HP DamageContext/잔효과/기세 이동만 만들지 않고 교환 이벤트는 반드시 발행한다.
+        if (!damagePower.HasDamage &&
+            action.CurrentRollType == CombatRollType.Stagger)
+        {
+            action.Skill?.NotifyRollResolved(
+                action, exhaustedOpponent, exchangeIndex, true, null);
+
+            ClashExchangeResult staggerExchange = new ClashExchangeResult
+            {
+                ExchangeIndex = exchangeIndex,
+                FirstAction = action,
+                SecondAction = exhaustedOpponent,
+                IsOneSided = true,
+                WasDefenseResolution = true,
+                FirstClashPower = action.RolledPower,
+                FirstRollResult = action.LastRollResult?.Clone(),
+                FirstRollType = action.CurrentRollType,
+                WinnerAction = action,
+                LoserAction = exhaustedOpponent,
+                MomentumBefore = momentumBefore,
+                MomentumAfter = momentumBefore
+            };
+
+            LogExchange(staggerExchange, isClash: cameFromClash);
+            battleContext._battleEvent.RaiseExchangeResolved(staggerExchange);
+            return staggerExchange;
+        }
+
         if (!damagePower.HasDamage)
         {
             action.Skill?.NotifyRollResolved(
-                action,
-                exhaustedOpponent,
-                exchangeIndex,
-                false,
-                null);
-
+                action, exhaustedOpponent, exchangeIndex, false, null);
             return new ClashExchangeResult
             {
                 ExchangeIndex = exchangeIndex,
                 FirstAction = action,
                 SecondAction = exhaustedOpponent,
                 IsOneSided = true,
-                WasDefenseResolution =
-                    damagePower.WasDefenseResolution,
+                WasDefenseResolution = damagePower.WasDefenseResolution,
                 FirstClashPower = action.RolledPower,
-                FirstRollResult =
-                    action.LastRollResult?.Clone(),
+                FirstRollResult = action.LastRollResult?.Clone(),
                 FirstRollType = action.CurrentRollType,
                 MomentumBefore = momentumBefore,
                 MomentumAfter = momentumBefore

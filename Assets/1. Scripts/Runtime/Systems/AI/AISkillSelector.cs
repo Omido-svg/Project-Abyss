@@ -54,7 +54,8 @@ public sealed class AISkillSelector
                 targetSelector.SelectTarget(
                     state,
                     source,
-                    skill);
+                    skill,
+                    actionIndex);
 
             if (!targetSelection.IsValid)
                 continue;

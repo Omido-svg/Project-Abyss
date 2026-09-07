@@ -640,7 +640,7 @@ public sealed class BattlePortraitButtonView : MonoBehaviour
             false;
 
         image.color =
-            type == CombatRollType.Defense
+            type == CombatRollType.Stagger
                 ? defenseRollColor
                 : attackRollColor;
 
@@ -895,7 +895,7 @@ public sealed class BattlePortraitButtonView : MonoBehaviour
                     : CombatRollType.Attack;
 
             Color color =
-                type == CombatRollType.Defense
+                type == CombatRollType.Stagger
                     ? defenseRollColor
                     : attackRollColor;
 

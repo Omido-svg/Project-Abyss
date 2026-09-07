@@ -1025,8 +1025,19 @@ public sealed class SkillCutsceneRuntimeContext :
             new GameObject(
                 childName);
 
+        // Editor PlayMode에서 HideFlags.DontSave는 DontSaveInEditor까지 포함한다.
+        // persistent Scene object 아래의 runtime child에 이 플래그가 붙으면
+        // Editor GUI/persistence 검사 중 native assertion이 발생할 수 있다.
+        // PlayMode 객체는 Scene 저장 대상이 아니므로 Build 저장만 막아 assertion을 피하고,
+        // EditMode preview에서는 기존 DontSave 의미를 유지한다.
         child.hideFlags =
+#if UNITY_EDITOR
+            Application.isPlaying
+                ? HideFlags.DontSaveInBuild
+                : HideFlags.DontSave;
+#else
             HideFlags.DontSave;
+#endif
 
         child.transform.SetParent(
             transform,

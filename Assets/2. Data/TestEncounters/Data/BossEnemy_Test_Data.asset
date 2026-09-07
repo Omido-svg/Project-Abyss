@@ -22,7 +22,9 @@ MonoBehaviour:
   TargetMode: 1
   SingleHpMax: 1
   maxPrestige: 100
-  maxEnergy: 3
+  maxEnergy: 2
+  TurnStartEnergyPolicy: 2
+  TurnStartEnergyAmount: 1
   ActionSlots:
   - SlotId: HEAD_01
     DisplayName: "\uBA38\uB9AC \uD589\uB3D9"
@@ -32,6 +34,9 @@ MonoBehaviour:
     OverrideSpeedRange: 0
     MinSpeed: 3
     MaxSpeed: 8
+    FixedSkill: {fileID: 0}
+    InsufficientEnergyFallbackSkill: {fileID: 0}
+    TargetingPolicy: 0
     AllowedActionTypes: 00000000010000000200000003000000
   - SlotId: LEFT_HAND_01
     DisplayName: "\uC67C\uC190 \uD589\uB3D9"
@@ -41,6 +46,9 @@ MonoBehaviour:
     OverrideSpeedRange: 0
     MinSpeed: 3
     MaxSpeed: 8
+    FixedSkill: {fileID: 0}
+    InsufficientEnergyFallbackSkill: {fileID: 0}
+    TargetingPolicy: 0
     AllowedActionTypes: 000000000100000003000000
   - SlotId: RIGHT_HAND_01
     DisplayName: "\uC624\uB978\uC190 \uD589\uB3D9"
@@ -50,6 +58,9 @@ MonoBehaviour:
     OverrideSpeedRange: 0
     MinSpeed: 3
     MaxSpeed: 8
+    FixedSkill: {fileID: 0}
+    InsufficientEnergyFallbackSkill: {fileID: 0}
+    TargetingPolicy: 0
     AllowedActionTypes: 000000000100000003000000
   - SlotId: LEGS_01
     DisplayName: "\uB2E4\uB9AC \uD589\uB3D9"
@@ -59,6 +70,9 @@ MonoBehaviour:
     OverrideSpeedRange: 0
     MinSpeed: 3
     MaxSpeed: 8
+    FixedSkill: {fileID: 0}
+    InsufficientEnergyFallbackSkill: {fileID: 0}
+    TargetingPolicy: 0
     AllowedActionTypes: 0200000003000000
   CombatLoadout: {fileID: 11400000, guid: 2dbf693936d873742afef74044506075, type: 2}
   BossPhases:
@@ -68,7 +82,12 @@ MonoBehaviour:
     CutMultiplier: 1
     BluntMultiplier: 1
     PierceMultiplier: 1
+  StaggerResistances:
+    CutMultiplier: 1
+    BluntMultiplier: 1
+    PierceMultiplier: 1
   EnableStaggerGauge: 1
+  OverrideMaxStaggerGauge: 0
   MaxStaggerGauge: 100
   StaggerDamageRatio: 1
   minSpeed: 2
