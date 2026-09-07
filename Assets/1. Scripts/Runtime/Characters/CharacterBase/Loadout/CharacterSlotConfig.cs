@@ -29,7 +29,9 @@ public sealed class CharacterSlotConfig
     [Tooltip("설정하면 이 슬롯은 해당 SkillDefinition을 우선 사용합니다.")]
     public SkillDefinition FixedSkill;
 
-    [Tooltip("FixedSkill의 에너지가 부족할 때 AI가 사용할 동일 구성의 fallback. Stage 1 Boss B처럼 Duel 플래그만 해제하는 용도입니다.")]
+    [Tooltip(
+        "FixedSkill의 비용이 현재 AI 계획의 남은 Energy를 초과할 때만 사용하는 fallback입니다. " +
+        "다른 사용 불가 사유에는 대체하지 않습니다. Stage 1 Boss B처럼 Duel 비용만 제거한 동일 구성 스킬에 사용합니다.")]
     public SkillDefinition InsufficientEnergyFallbackSkill;
 
     [Header("AI targeting")]

@@ -40,8 +40,24 @@ public sealed class AISkillSelector
         IReadOnlyList<Skill> slotSkills =
             source.GetSkills(actionIndex);
 
+        SkillDefinition requiredFixedDefinition =
+            ResolveFixedSlotDefinition(
+                state,
+                source,
+                actionIndex,
+                slotSkills);
+
         foreach (Skill skill in slotSkills)
         {
+            // FixedSkill 슬롯은 평상시에는 FixedSkill만 평가한다.
+            // InsufficientEnergyFallbackSkill은 FixedSkill이 "현재 AI 계획의 남은 Energy"에
+            // 들어오지 않을 때에만 후보가 된다. 다른 사용 불가 사유를 fallback으로 숨기지 않는다.
+            if (requiredFixedDefinition != null &&
+                skill?.Definition != requiredFixedDefinition)
+            {
+                continue;
+            }
+
             if (!CanSelectSkill(
                     state,
                     source,
@@ -82,6 +98,57 @@ public sealed class AISkillSelector
         }
 
         return bestDecision;
+    }
+
+    private static SkillDefinition ResolveFixedSlotDefinition(
+        AIPlanningState state,
+        AIActionSource source,
+        int actionIndex,
+        IReadOnlyList<Skill> slotSkills)
+    {
+        CharacterSlotConfig config =
+            source?.GetSlotConfig(actionIndex);
+
+        if (config?.FixedSkill == null)
+            return null;
+
+        // FixedSkill이 런타임 목록에 없으면 fallback으로 조용히 대체하지 않는다.
+        // 데이터 연결 오류를 숨기지 않고 기존 FixedSkill 계약을 유지한다.
+        Skill fixedRuntimeSkill =
+            FindRuntimeSkill(
+                slotSkills,
+                config.FixedSkill);
+
+        if (fixedRuntimeSkill == null)
+            return config.FixedSkill;
+
+        // fallback은 오직 "계획된 앞 슬롯들 때문에 남은 Energy가 부족한 경우"에만 사용한다.
+        // 실제 ScriptableObject를 변경하지 않고 별도의 runtime fallback definition을 선택한다.
+        if (config.InsufficientEnergyFallbackSkill != null &&
+            state != null &&
+            !state.CanPlanEnergy(fixedRuntimeSkill))
+        {
+            return config.InsufficientEnergyFallbackSkill;
+        }
+
+        return config.FixedSkill;
+    }
+
+    private static Skill FindRuntimeSkill(
+        IReadOnlyList<Skill> skills,
+        SkillDefinition definition)
+    {
+        if (skills == null || definition == null)
+            return null;
+
+        for (int i = 0; i < skills.Count; i++)
+        {
+            Skill skill = skills[i];
+            if (skill?.Definition == definition)
+                return skill;
+        }
+
+        return null;
     }
 
     private bool CanSelectSkill(

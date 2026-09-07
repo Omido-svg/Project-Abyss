@@ -174,7 +174,9 @@ public static class Stage1BossV5Migration
         definition.EnergyCost = Mathf.Max(0, energyCost);
         definition.CanBreakPart = true;
         definition.OverrideCanClash = true;
-        definition.CanClashValue = actionType == ActionType.Duel;
+        definition.CanClashValue =
+            actionType == ActionType.Duel ||
+            actionType == ActionType.NormalAttack;
         definition.Rolls = new List<SkillRollData>();
 
         for (int i = 0; i < rollTypes.Length; i++)

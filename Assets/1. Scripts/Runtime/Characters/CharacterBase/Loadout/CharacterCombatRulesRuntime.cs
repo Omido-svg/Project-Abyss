@@ -106,6 +106,12 @@ public sealed class CharacterCombatRulesRuntime
             }
         }
 
+        // FixedSkill / Energy fallback은 슬롯 설정 자체가 런타임 공급원이 된다.
+        // 별도의 SkillPool 등록을 빼먹어도 configured slot이 조용히 비는 일을 막는다.
+        AddConfiguredSlotSkills(
+            result,
+            owner?.Data?.ActionSlots);
+
         if (owner?.Data?.BossPhases == null)
             return result;
 
@@ -113,6 +119,10 @@ public sealed class CharacterCombatRulesRuntime
         {
             if (phase == null)
                 continue;
+
+            AddConfiguredSlotSkills(
+                result,
+                phase.SlotConfigs);
 
             foreach (SkillDefinition definition
                      in phase.EnumerateSkillPool())
@@ -124,6 +134,32 @@ public sealed class CharacterCombatRulesRuntime
         }
 
         return result;
+    }
+
+    private void AddConfiguredSlotSkills(
+        List<Skill> destination,
+        IReadOnlyList<CharacterSlotConfig> configs)
+    {
+        if (destination == null ||
+            configs == null)
+        {
+            return;
+        }
+
+        for (int i = 0; i < configs.Count; i++)
+        {
+            CharacterSlotConfig config = configs[i];
+            if (config == null || !config.Enabled)
+                continue;
+
+            AddRuntimeSkill(
+                destination,
+                config.FixedSkill);
+
+            AddRuntimeSkill(
+                destination,
+                config.InsufficientEnergyFallbackSkill);
+        }
     }
 
     private void AddRuntimeSkill(

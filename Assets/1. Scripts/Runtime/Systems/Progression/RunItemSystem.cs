@@ -166,22 +166,124 @@ public sealed class RunItemOfferService
         Mathf.Max(0f, baseCost) *
         Mathf.Pow(economy.RerollCostMultiplier, Mathf.Max(0, rerollCount));
 
+    // Tier weight는 "아이템 하나"의 가중치가 아니라 "티어 버킷"의 확률이다.
+    // 따라서 같은 티어의 아이템 수가 많아져도 그 티어 자체의 등장 확률은 커지지 않는다.
+    private static readonly RunItemTier[] WeightedTierOrder =
+    {
+        RunItemTier.Tier1,
+        RunItemTier.Tier2,
+        RunItemTier.Tier3,
+        RunItemTier.Tier4,
+        RunItemTier.Tier5,
+        RunItemTier.Class
+    };
+
     private int PickWeighted(List<RunItemDefinition> pool)
     {
-        float total = 0f;
-        for (int i = 0; i < pool.Count; i++)
-            total += GetTierWeight(pool[i].Tier);
+        if (pool == null || pool.Count == 0)
+            return -1;
 
-        if (total <= 0f)
+        // 1) 현재 pool에 실제 아이템이 남아 있는 티어만 확률 계산에 포함한다.
+        //    비어 있는 티어의 확률 질량은 남은 티어끼리 자동으로 재정규화된다.
+        float totalTierWeight = 0f;
+        RunItemTier lastAvailableTier = default;
+        bool hasWeightedTier = false;
+
+        for (int i = 0; i < WeightedTierOrder.Length; i++)
+        {
+            RunItemTier tier = WeightedTierOrder[i];
+            if (!ContainsTier(pool, tier))
+                continue;
+
+            float weight = Mathf.Max(0f, GetTierWeight(tier));
+            if (weight <= 0f)
+                continue;
+
+            totalTierWeight += weight;
+            lastAvailableTier = tier;
+            hasWeightedTier = true;
+        }
+
+        // 모든 사용 가능한 티어의 weight가 0이면 기존 안전 fallback처럼 전체 pool 균등 선택.
+        if (!hasWeightedTier || totalTierWeight <= 0f)
             return UnityEngine.Random.Range(0, pool.Count);
 
-        float roll = UnityEngine.Random.Range(0f, total);
+        // 2) 아이템 개수와 무관하게 티어를 먼저 추첨한다.
+        float roll = UnityEngine.Random.Range(0f, totalTierWeight);
+        RunItemTier selectedTier = lastAvailableTier;
+
+        for (int i = 0; i < WeightedTierOrder.Length; i++)
+        {
+            RunItemTier tier = WeightedTierOrder[i];
+            if (!ContainsTier(pool, tier))
+                continue;
+
+            float weight = Mathf.Max(0f, GetTierWeight(tier));
+            if (weight <= 0f)
+                continue;
+
+            roll -= weight;
+            if (roll <= 0f)
+            {
+                selectedTier = tier;
+                break;
+            }
+        }
+
+        // 3) 선택된 티어 내부에서는 eligible item 중 하나를 균등 선택한다.
+        int tierItemCount = 0;
         for (int i = 0; i < pool.Count; i++)
         {
-            roll -= GetTierWeight(pool[i].Tier);
-            if (roll <= 0f) return i;
+            if (pool[i] != null &&
+                pool[i].Tier == selectedTier)
+            {
+                tierItemCount++;
+            }
         }
+
+        if (tierItemCount <= 0)
+            return UnityEngine.Random.Range(0, pool.Count);
+
+        int tierItemIndex =
+            UnityEngine.Random.Range(0, tierItemCount);
+
+        for (int i = 0; i < pool.Count; i++)
+        {
+            RunItemDefinition item = pool[i];
+            if (item == null ||
+                item.Tier != selectedTier)
+            {
+                continue;
+            }
+
+            if (tierItemIndex == 0)
+                return i;
+
+            tierItemIndex--;
+        }
+
+        // 위의 count와 탐색이 같은 pool을 사용하므로 정상적으로는 도달하지 않는다.
         return pool.Count - 1;
+    }
+
+    private static bool ContainsTier(
+        IReadOnlyList<RunItemDefinition> pool,
+        RunItemTier tier)
+    {
+        if (pool == null)
+            return false;
+
+        for (int i = 0; i < pool.Count; i++)
+        {
+            RunItemDefinition item = pool[i];
+            if (item != null &&
+                item.Tier == tier)
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private float GetTierWeight(RunItemTier tier) => tier switch

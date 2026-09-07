@@ -88,7 +88,7 @@ MonoBehaviour:
     Effects: []
   ResolvePrestigeInCombat: 0
   OverrideCanClash: 1
-  CanClashValue: 0
+  CanClashValue: 1
   PreparationTier: 0
   ResolverType: 0
   DiceMin: 0
@@ -116,4 +116,4 @@ MonoBehaviour:
   ConsumeAllCustomResource: 0
   OverridePrestigeUsePolicy: 0
   PrestigeUsePolicy: 1
-  presentationAsset: {fileID: 0}
+  presentationAsset: {fileID: 11400000, guid: c111b34dea6a24d41b28f2de6af1d4c6, type: 2}
