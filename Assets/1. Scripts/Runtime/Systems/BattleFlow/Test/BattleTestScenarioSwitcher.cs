@@ -31,6 +31,9 @@ public sealed class BattleTestScenarioSwitcher : MonoBehaviour
     private const string PlayerPreferenceKey =
         "ProjectAbyss.TestEncounter.Player";
 
+    private const string EmotionPreferenceKey =
+        "ProjectAbyss.TestEncounter.Emotion";
+
     private const string PanelCollapsedPreferenceKey =
         "ProjectAbyss.TestEncounter.PanelCollapsed";
 
@@ -76,6 +79,11 @@ public sealed class BattleTestScenarioSwitcher : MonoBehaviour
 
     [SerializeField] private bool rememberSelection = true;
 
+    [Header("Gameplay v5 Emotion Test")]
+    [SerializeField] private bool configureEmotionForTest = true;
+    [SerializeField] private EmotionType defaultEmotion = EmotionType.Awe;
+    [SerializeField] private EmotionAugmentCatalog emotionAugmentCatalog;
+
     [Header("Runtime Debug Panel")]
     [SerializeField] private bool showRuntimePanel = true;
     [SerializeField] private Rect runtimePanelRect =
@@ -92,11 +100,13 @@ public sealed class BattleTestScenarioSwitcher : MonoBehaviour
 
     private BattleTestPlayerMode selectedPlayer;
     private BattleTestEncounterMode selectedEncounter;
+    private EmotionType selectedEmotion;
     private string lastApplyMessage = "아직 적용되지 않음";
     private bool runtimePanelCollapsed;
 
     public BattleTestPlayerMode SelectedPlayer => selectedPlayer;
     public BattleTestEncounterMode SelectedEncounter => selectedEncounter;
+    public EmotionType SelectedEmotion => selectedEmotion;
 
     public Character OlafPrefab => olafPrefab;
     public Character YujinPrefab => yujinPrefab;
@@ -256,6 +266,12 @@ public sealed class BattleTestScenarioSwitcher : MonoBehaviour
 
         EnsureEnemySpawnCapacity(enemies.Count);
 
+        battleManager.ConfigureEmotionProgression(
+            configureEmotionForTest
+                ? selectedEmotion
+                : (EmotionType?)null,
+            emotionAugmentCatalog);
+
         rosterController.ConfigurePrefabRoster(
             playerPrefab,
             enemies,
@@ -268,7 +284,9 @@ public sealed class BattleTestScenarioSwitcher : MonoBehaviour
 
         lastApplyMessage =
             $"{GetPlayerLabel(selectedPlayer)} / " +
-            $"{GetEncounterLabel(selectedEncounter)} / 적 {enemies.Count}";
+            $"{GetEncounterLabel(selectedEncounter)} / " +
+            $"감정 {GameplayV5UiPresentation.GetEmotionTheme(selectedEmotion).DisplayName} / " +
+            $"적 {enemies.Count}";
 
         Debug.Log(
             "[BattleTestScenarioSwitcher] Roster 적용 / " +
@@ -299,6 +317,10 @@ public sealed class BattleTestScenarioSwitcher : MonoBehaviour
         PlayerPrefs.SetInt(
             EncounterPreferenceKey,
             (int)selectedEncounter);
+
+        PlayerPrefs.SetInt(
+            EmotionPreferenceKey,
+            (int)selectedEmotion);
 
         PlayerPrefs.Save();
 
@@ -351,13 +373,22 @@ public sealed class BattleTestScenarioSwitcher : MonoBehaviour
             BattleTestEncounterMode.BossBattle);
     }
 
+    public void SelectEmotion(EmotionType emotion)
+    {
+        selectedEmotion = emotion;
+        SaveSelection();
+        RequestCleanApply();
+    }
+
     public void ResetSavedSelection()
     {
         selectedPlayer = defaultPlayer;
         selectedEncounter = defaultEncounter;
+        selectedEmotion = defaultEmotion;
 
         PlayerPrefs.DeleteKey(PlayerPreferenceKey);
         PlayerPrefs.DeleteKey(EncounterPreferenceKey);
+        PlayerPrefs.DeleteKey(EmotionPreferenceKey);
         PlayerPrefs.Save();
 
         RequestCleanApply();
@@ -449,6 +480,7 @@ public sealed class BattleTestScenarioSwitcher : MonoBehaviour
     {
         selectedPlayer = defaultPlayer;
         selectedEncounter = defaultEncounter;
+        selectedEmotion = defaultEmotion;
 
         if (!rememberSelection)
             return;
@@ -474,6 +506,17 @@ public sealed class BattleTestScenarioSwitcher : MonoBehaviour
                     (int)BattleTestEncounterMode.NormalBattle,
                     (int)BattleTestEncounterMode.BossBattle);
         }
+
+        if (PlayerPrefs.HasKey(EmotionPreferenceKey))
+        {
+            selectedEmotion =
+                (EmotionType)Mathf.Clamp(
+                    PlayerPrefs.GetInt(
+                        EmotionPreferenceKey,
+                        (int)defaultEmotion),
+                    (int)EmotionType.Awe,
+                    (int)EmotionType.Detachment);
+        }
     }
 
     private void SaveSelection()
@@ -488,6 +531,10 @@ public sealed class BattleTestScenarioSwitcher : MonoBehaviour
         PlayerPrefs.SetInt(
             EncounterPreferenceKey,
             (int)selectedEncounter);
+
+        PlayerPrefs.SetInt(
+            EmotionPreferenceKey,
+            (int)selectedEmotion);
 
         PlayerPrefs.Save();
     }
@@ -580,7 +627,7 @@ public sealed class BattleTestScenarioSwitcher : MonoBehaviour
                     44f,
                     collapsedPanelHeight)
                 : Mathf.Max(
-                    180f,
+                    360f,
                     expandedPanelHeight);
 
         // Update가 OnGUI보다 먼저 실행되는 Frame에서도 클릭을 막을 수 있도록
@@ -603,7 +650,8 @@ public sealed class BattleTestScenarioSwitcher : MonoBehaviour
 
         GUILayout.Label(
             $"{GetPlayerLabel(selectedPlayer)} / " +
-            $"{GetEncounterLabel(selectedEncounter)}",
+            $"{GetEncounterLabel(selectedEncounter)} / " +
+            $"{GameplayV5UiPresentation.GetEmotionTheme(selectedEmotion).DisplayName}",
             GUILayout.ExpandWidth(true));
 
         if (GUILayout.Button(
@@ -658,6 +706,27 @@ public sealed class BattleTestScenarioSwitcher : MonoBehaviour
 
         if (GUILayout.Button("보스전투 · 보스 1"))
             SelectBossBattle();
+
+        GUILayout.Space(6f);
+        GUILayout.Label(
+            "감정: " +
+            GameplayV5UiPresentation.GetEmotionTheme(selectedEmotion).DisplayName);
+
+        GUILayout.BeginHorizontal();
+        if (GUILayout.Button("경외")) SelectEmotion(EmotionType.Awe);
+        if (GUILayout.Button("신의")) SelectEmotion(EmotionType.Faith);
+        if (GUILayout.Button("동경")) SelectEmotion(EmotionType.Admiration);
+        if (GUILayout.Button("감복")) SelectEmotion(EmotionType.Impression);
+        GUILayout.EndHorizontal();
+
+        GUILayout.BeginHorizontal();
+        if (GUILayout.Button("연민")) SelectEmotion(EmotionType.Compassion);
+        if (GUILayout.Button("그리움")) SelectEmotion(EmotionType.Longing);
+        if (GUILayout.Button("초연")) SelectEmotion(EmotionType.Detachment);
+        GUILayout.EndHorizontal();
+
+        if (emotionAugmentCatalog == null)
+            GUILayout.Label("증강 Catalog: 미연결 (고조/열광 HUD는 정상 표시)");
 
         GUILayout.Space(6f);
         GUILayout.Label("현재 적용: " + lastApplyMessage);

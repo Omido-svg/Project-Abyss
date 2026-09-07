@@ -40,6 +40,7 @@ public sealed class BattleStartButtonStateUI : MonoBehaviour
 
     private Color baseBackgroundColor = Color.white;
     private Color baseLabelColor = Color.white;
+    private string baseLabelText = "START";
     private Vector3 baseScale = Vector3.one;
     private bool baseCaptured;
     private bool? lastReadyState;
@@ -92,6 +93,7 @@ public sealed class BattleStartButtonStateUI : MonoBehaviour
 
     private void Update()
     {
+        UpdatePendingAugmentLabel();
         bool ready = EvaluateReady();
 
         if (startButton != null &&
@@ -114,6 +116,7 @@ public sealed class BattleStartButtonStateUI : MonoBehaviour
 
     public void RefreshImmediate()
     {
+        UpdatePendingAugmentLabel();
         bool ready = EvaluateReady();
         lastReadyState = ready;
 
@@ -134,6 +137,7 @@ public sealed class BattleStartButtonStateUI : MonoBehaviour
             battleManager.TurnManager == null ||
             !battleManager.TurnManager.IsBattleRunning ||
             battleManager.TurnManager.IsResolving ||
+            battleManager.IsWaitingForEmotionAugmentChoice ||
             battleManager.ActionManager == null ||
             battleManager.ActionManager.IsDisposed ||
             battleManager.BattleContext?.Player == null ||
@@ -266,10 +270,30 @@ public sealed class BattleStartButtonStateUI : MonoBehaviour
             baseBackgroundColor = backgroundImage.color;
 
         if (labelText != null)
+        {
             baseLabelColor = labelText.color;
+            baseLabelText = labelText.text;
+        }
 
         baseScale = transform.localScale;
         baseCaptured = true;
+    }
+
+
+    private void UpdatePendingAugmentLabel()
+    {
+        if (labelText == null)
+            return;
+
+        if (battleManager != null &&
+            battleManager.IsWaitingForEmotionAugmentChoice)
+        {
+            labelText.text = "증강 선택 대기";
+            return;
+        }
+
+        if (baseCaptured)
+            labelText.text = baseLabelText;
     }
 
     private void ConfigureButtonColors()

@@ -11683,6 +11683,8 @@ MonoBehaviour:
   clashPresentationLayer: {fileID: 164071971}
   characterDetailPanel: {fileID: 953186388}
   clashRollPresentation: {fileID: 164071973}
+  actionOrderRail: {fileID: 0}
+  worldPlateManager: {fileID: 0}
   detectResolutionState: 1
   retireLegacyClashOverview: 1
 --- !u!4 &1228394948 stripped
@@ -12698,6 +12700,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   battleManager: {fileID: 1453355684}
+  screenModeController: {fileID: 0}
   canvas: {fileID: 253689328}
   arrowRoot: {fileID: 204330471}
   bodyPartButtonRegistry: {fileID: 605390730}
@@ -14357,6 +14360,9 @@ MonoBehaviour:
       PreparationLoadoutLimit: 3
       PrestigeLoadoutLimit: 1
   battleUIManager: {fileID: 605390726}
+  hasConfiguredEmotion: 0
+  configuredEmotion: 0
+  emotionAugmentCatalog: {fileID: 11400000, guid: a808475bc5d32b9489f9beb1df63d8a7, type: 2}
   battleAnimationDirector: {fileID: 2113237152}
   defaultVisualProfile: {fileID: 11400000, guid: 6ad6ee546df81ab4ebe3dcb118388219, type: 2}
 --- !u!4 &1453355685
@@ -14460,6 +14466,9 @@ MonoBehaviour:
   defaultPlayer: 1
   defaultEncounter: 0
   rememberSelection: 1
+  configureEmotionForTest: 1
+  defaultEmotion: 0
+  emotionAugmentCatalog: {fileID: 11400000, guid: a808475bc5d32b9489f9beb1df63d8a7, type: 2}
   showRuntimePanel: 1
   runtimePanelRect:
     serializedVersion: 2
@@ -18468,7 +18477,15 @@ MonoBehaviour:
   maxMomentum: 100
   animateDuration: 0.35
   exchangeAnimateDuration: 0.18
+  cursorMovePulseScale: 1.22
+  cursorArrivalPulseScale: 1.34
+  cursorArrivalPulseDuration: 0.1
   useUnscaledTime: 1
+  showGameplayV5Zones: 1
+  disadvantageColor: {r: 0.92, g: 0.28, b: 0.3, a: 0.88}
+  balanceColor: {r: 0.72, g: 0.76, b: 0.84, a: 0.78}
+  advantageColor: {r: 0.3, g: 0.72, b: 1, a: 0.9}
+  overwhelmColor: {r: 1, g: 0.76, b: 0.22, a: 0.95}
   logMomentumAnimation: 1
 --- !u!114 &1805580446
 MonoBehaviour:

@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 
 public enum BattleUiScreenMode
@@ -17,6 +18,8 @@ public sealed class BattleScreenModeController : MonoBehaviour
 
     public BattleUiScreenMode CurrentMode { get; private set; } =
         BattleUiScreenMode.DefaultBattle;
+
+    public event Action<BattleUiScreenMode> ModeChanged;
 
     public void Configure(
         GameObject defaultLayer,
@@ -53,6 +56,9 @@ public sealed class BattleScreenModeController : MonoBehaviour
 
     private void ApplyMode(BattleUiScreenMode mode)
     {
+        bool changed =
+            CurrentMode != mode;
+
         CurrentMode = mode;
 
         SetActive(
@@ -67,14 +73,17 @@ public sealed class BattleScreenModeController : MonoBehaviour
             characterDetailLayer,
             mode == BattleUiScreenMode.CharacterDetails);
 
-        if (keepVisibleInAllModes == null)
-            return;
-
-        foreach (GameObject target in keepVisibleInAllModes)
+        if (keepVisibleInAllModes != null)
         {
-            if (target != null && !target.activeSelf)
-                target.SetActive(true);
+            foreach (GameObject target in keepVisibleInAllModes)
+            {
+                if (target != null && !target.activeSelf)
+                    target.SetActive(true);
+            }
         }
+
+        if (changed)
+            ModeChanged?.Invoke(CurrentMode);
     }
 
     private static void SetActive(GameObject target, bool active)

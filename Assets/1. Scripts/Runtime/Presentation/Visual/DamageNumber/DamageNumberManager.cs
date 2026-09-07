@@ -56,19 +56,48 @@ public class DamageNumberManager : MonoBehaviour
         ShowDamage(
             worldPosition,
             damage,
-            Color.white);
+            BattleDamageNumberStyle.NormalHp);
     }
 
     public void ShowDamage(
         Vector3 worldPosition,
         int damage,
+        BattleDamageNumberStyle style)
+    {
+        ShowDamageInternal(
+            worldPosition,
+            damage,
+            style,
+            null);
+    }
+
+    // 기존 Status/VFX 숫자 호출부 호환.
+    public void ShowDamage(
+        Vector3 worldPosition,
+        int damage,
         Color color)
+    {
+        ShowDamageInternal(
+            worldPosition,
+            damage,
+            BattleDamageNumberStyle.Custom,
+            color);
+    }
+
+    private void ShowDamageInternal(
+        Vector3 worldPosition,
+        int damage,
+        BattleDamageNumberStyle style,
+        Color? customColor)
     {
         if (!isActiveAndEnabled || isShuttingDown)
             return;
 
-        if (damageNumberPrefab == null)
+        if (damageNumberPrefab == null ||
+            damage <= 0)
+        {
             return;
+        }
 
         ResolveReferences();
 
@@ -107,9 +136,18 @@ public class DamageNumberManager : MonoBehaviour
         if (numberRect != null)
             numberRect.anchoredPosition = localPoint;
 
-        number.Play(
-            damage,
-            color);
+        if (customColor.HasValue)
+        {
+            number.Play(
+                damage,
+                customColor.Value);
+        }
+        else
+        {
+            number.Play(
+                damage,
+                style);
+        }
     }
 
     private void ResolveReferences()

@@ -19,6 +19,11 @@ public sealed class BattleWorldCharacterPlateManager : MonoBehaviour
     private readonly List<GameObject> generated = new();
     private readonly Dictionary<Character, BattleWorldCharacterPlateUI> plates = new();
 
+    private Transform resolutionOriginalParent;
+    private int resolutionOriginalSiblingIndex = -1;
+    private bool resolutionReparented;
+    private bool resolutionPresentationActive;
+
     public void Configure(
         BattleManager manager,
         BattleUIManager uiManager,
@@ -75,6 +80,75 @@ public sealed class BattleWorldCharacterPlateManager : MonoBehaviour
     private void OnBattlePrepared(BattleContext context)
     {
         Build(context);
+    }
+
+
+    /// <summary>
+    /// Resolution 중에는 캐릭터 월드 HUD(HP/흐트러짐/고유 게이지)는 유지하되
+    /// 머리 위 행동 슬롯/계획 보조 UI는 숨긴다.
+    /// UI Root 아래에 배치된 Scene도 부모 비활성화의 영향을 받지 않도록
+    /// 필요할 때 Manager 자체를 Scene Root로 임시 분리한다.
+    /// </summary>
+    public void PreserveForResolution(
+        Transform battleUiRoot)
+    {
+        resolutionPresentationActive = true;
+        SetActionSlotStripsHidden(true);
+        slotArrowOverlay?.SetResolutionHidden(true);
+
+        if (resolutionReparented ||
+            battleUiRoot == null ||
+            !transform.IsChildOf(battleUiRoot))
+        {
+            return;
+        }
+
+        resolutionOriginalParent =
+            transform.parent;
+
+        resolutionOriginalSiblingIndex =
+            transform.GetSiblingIndex();
+
+        transform.SetParent(
+            null,
+            true);
+
+        resolutionReparented = true;
+    }
+
+    public void RestoreAfterResolution()
+    {
+        resolutionPresentationActive = false;
+        SetActionSlotStripsHidden(false);
+        slotArrowOverlay?.SetResolutionHidden(false);
+
+        if (!resolutionReparented)
+            return;
+
+        Transform originalParent =
+            resolutionOriginalParent;
+
+        if (originalParent != null)
+        {
+            transform.SetParent(
+                originalParent,
+                true);
+
+            int lastIndex =
+                Mathf.Max(
+                    0,
+                    originalParent.childCount - 1);
+
+            transform.SetSiblingIndex(
+                Mathf.Clamp(
+                    resolutionOriginalSiblingIndex,
+                    0,
+                    lastIndex));
+        }
+
+        resolutionOriginalParent = null;
+        resolutionOriginalSiblingIndex = -1;
+        resolutionReparented = false;
     }
 
     public void Build(BattleContext context)
@@ -268,6 +342,12 @@ public sealed class BattleWorldCharacterPlateManager : MonoBehaviour
             followTarget,
             followLocalPosition);
 
+        BattleWorldActionSlotStripUI strip =
+            root.GetComponent<BattleWorldActionSlotStripUI>();
+
+        strip?.SetResolutionHidden(
+            resolutionPresentationActive);
+
         plates[character] = plate;
         generated.Add(root);
     }
@@ -315,6 +395,74 @@ public sealed class BattleWorldCharacterPlateManager : MonoBehaviour
         }
     }
 
+    public void SetVisualStaggerOverride(
+        Character character,
+        int currentGauge,
+        bool vulnerable)
+    {
+        if (character == null)
+            return;
+
+        if (!plates.TryGetValue(
+                character,
+                out BattleWorldCharacterPlateUI plate) ||
+            plate == null)
+        {
+            return;
+        }
+
+        BattleWorldUniqueGaugeUI gauges =
+            plate.GetComponent<BattleWorldUniqueGaugeUI>();
+
+        gauges?.SetStaggerVisualOverride(
+            currentGauge,
+            vulnerable);
+    }
+
+    public void SetVisualStaggerOverrideAtHit(
+        Character character,
+        int currentGauge,
+        bool vulnerable)
+    {
+        if (character == null)
+            return;
+
+        if (!plates.TryGetValue(
+                character,
+                out BattleWorldCharacterPlateUI plate) ||
+            plate == null)
+        {
+            return;
+        }
+
+        BattleWorldUniqueGaugeUI gauges =
+            plate.GetComponent<BattleWorldUniqueGaugeUI>();
+
+        gauges?.SetStaggerVisualOverrideAtHit(
+            currentGauge,
+            vulnerable);
+    }
+
+    public void ClearVisualStaggerOverride(
+        Character character)
+    {
+        if (character == null)
+            return;
+
+        if (!plates.TryGetValue(
+                character,
+                out BattleWorldCharacterPlateUI plate) ||
+            plate == null)
+        {
+            return;
+        }
+
+        BattleWorldUniqueGaugeUI gauges =
+            plate.GetComponent<BattleWorldUniqueGaugeUI>();
+
+        gauges?.ClearStaggerVisualOverride();
+    }
+
     public void RefreshCharacter(Character character)
     {
         if (character == null)
@@ -324,6 +472,11 @@ public sealed class BattleWorldCharacterPlateManager : MonoBehaviour
             plate != null)
         {
             plate.RefreshNow();
+
+            BattleWorldUniqueGaugeUI gauges =
+                plate.GetComponent<BattleWorldUniqueGaugeUI>();
+
+            gauges?.RefreshNow();
         }
     }
 
@@ -369,6 +522,21 @@ public sealed class BattleWorldCharacterPlateManager : MonoBehaviour
             bounds.center.x,
             bounds.max.y,
             bounds.center.z);
+    }
+
+    private void SetActionSlotStripsHidden(
+        bool hidden)
+    {
+        foreach (GameObject target in generated)
+        {
+            if (target == null)
+                continue;
+
+            BattleWorldActionSlotStripUI strip =
+                target.GetComponent<BattleWorldActionSlotStripUI>();
+
+            strip?.SetResolutionHidden(hidden);
+        }
     }
 
     private void Clear()

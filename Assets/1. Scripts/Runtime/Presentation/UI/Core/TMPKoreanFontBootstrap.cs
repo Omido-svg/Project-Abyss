@@ -80,7 +80,9 @@ public sealed class TMPKoreanFontBootstrap :
     [SerializeField, TextArea(2, 5)]
     private string requiredCharacters =
         "한글 테스트 위세 방어 공격 결투 도사림 체력 상태 부위 속도 에너지 " +
-        "승률 피해량 합 굴림 턴 기세 빛 적 아군 스킬 패시브 상세 정보";
+        "승률 피해량 합 굴림 턴 기세 빛 적 아군 스킬 패시브 상세 정보 " +
+        "감정 경외 신의 동경 감복 연민 그리움 초연 고조 열광 증강 흐트러짐 취약 " +
+        "절단 둔격 관통 짓눌림 짓누름 우세 열세 균형 선택 대기";
 
     private void Awake()
     {

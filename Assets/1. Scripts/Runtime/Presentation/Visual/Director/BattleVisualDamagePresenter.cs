@@ -22,6 +22,7 @@ internal sealed class BattleVisualDamagePresenter
         ResetCurrentDamageState(playback);
         PrepareHitDamages(playback, visual);
         BeginHpOverride(playback);
+        BeginStaggerOverride(playback);
     }
 
     public void PrepareSequence(
@@ -42,58 +43,78 @@ internal sealed class BattleVisualDamagePresenter
         HashSet<Character> initializedWorldCharacters =
             new HashSet<Character>();
 
+        HashSet<Character> initializedStaggerCharacters =
+            new HashSet<Character>();
+
         foreach (BattleClashVisualExchange exchange
                  in root.ClashExchanges)
         {
             BattleVisualRequest request =
                 exchange?.AttackRequest;
 
+            if (request?.Target == null)
+                continue;
+
             int totalDamage =
                 DamageDistributionUtility.Sum(
-                    request?.HitDamages);
+                    request.HitDamages);
 
-            if (request?.Target == null ||
-                totalDamage <= 0)
+            if (totalDamage > 0)
             {
-                continue;
-            }
+                ResolveHpRange(
+                    request,
+                    totalDamage,
+                    out int visualStartHp,
+                    out _);
 
-            ResolveHpRange(
-                request,
-                totalDamage,
-                out int visualStartHp,
-                out _);
+                if (!ContainsOverrideTarget(
+                        initializedTargets,
+                        request.Target,
+                        request.TargetPart))
+                {
+                    BattleVisualHpOverrideTarget target =
+                        new BattleVisualHpOverrideTarget(
+                            request.Target,
+                            request.TargetPart);
 
-            if (!ContainsOverrideTarget(
-                    initializedTargets,
-                    request.Target,
-                    request.TargetPart))
-            {
-                BattleVisualHpOverrideTarget target =
-                    new BattleVisualHpOverrideTarget(
+                    initializedTargets.Add(target);
+                    playback.TrackHpOverride(
                         request.Target,
                         request.TargetPart);
 
-                initializedTargets.Add(target);
-                playback.TrackHpOverride(
-                    request.Target,
-                    request.TargetPart);
+                    battleUIManager?.SetTargetHpOverride(
+                        request.Target,
+                        request.TargetPart,
+                        visualStartHp);
+                }
 
-                battleUIManager?.SetTargetHpOverride(
-                    request.Target,
-                    request.TargetPart,
-                    visualStartHp);
+                if (initializedWorldCharacters.Add(
+                        request.Target))
+                {
+                    worldPlateManager?.SetVisualHpOverride(
+                        request.Target,
+                        ResolveWorldVisualStartHp(
+                            request,
+                            totalDamage),
+                        forceImmediate: true);
+                }
             }
 
-            if (initializedWorldCharacters.Add(
+            // 흐트러짐 로직도 HP와 마찬가지로 이미 최종값까지 계산된 뒤
+            // Timeline이 재생된다. 첫 Hit Event 전에는 첫 교환의 before 값을
+            // 화면에 고정하여 실제 타격보다 게이지가 먼저 줄어들지 않게 한다.
+            if (request.StaggerDamage > 0 &&
+                initializedStaggerCharacters.Add(
                     request.Target))
             {
-                worldPlateManager?.SetVisualHpOverride(
+                playback.TrackStaggerOverride(
+                    request.Target);
+
+                worldPlateManager?.SetVisualStaggerOverride(
                     request.Target,
-                    ResolveWorldVisualStartHp(
-                        request,
-                        totalDamage),
-                    forceImmediate: true);
+                    request.StaggerGaugeBefore,
+                    vulnerable:
+                        request.StaggerGaugeBefore <= 0);
             }
         }
 
@@ -129,8 +150,17 @@ internal sealed class BattleVisualDamagePresenter
         int hitIndex,
         int damage)
     {
+        // Hit Event가 화면 상태 변경의 유일한 presentation commit point다.
+        // HP / 흐트러짐 / 각종 HUD refresh를 이 한 호출에서 함께 처리한다.
         ApplyHpDamage(playback, damage);
-        RefreshBattleUi(playback?.Request, hitIndex, damage);
+
+        if (hitIndex == 0)
+            ApplyStaggerDamage(playback);
+
+        RefreshBattleUi(
+            playback?.Request,
+            hitIndex,
+            damage);
     }
 
     public void Clear(BattleVisualPlaybackState playback)
@@ -174,6 +204,23 @@ internal sealed class BattleVisualDamagePresenter
         }
 
         playback.HpOverrideTargets.Clear();
+
+        ResolveWorldPlateManager();
+
+        foreach (Character character
+                 in playback.StaggerOverrideTargets)
+        {
+            if (character == null)
+                continue;
+
+            worldPlateManager?.ClearVisualStaggerOverride(
+                character);
+
+            worldPlateManager?.RefreshCharacter(
+                character);
+        }
+
+        playback.StaggerOverrideTargets.Clear();
         ResetCurrentDamageState(playback);
 
         Canvas.ForceUpdateCanvases();
@@ -263,6 +310,30 @@ internal sealed class BattleVisualDamagePresenter
             forceImmediate: true);
 
         RefreshBattleUi(request, -1, 0);
+    }
+
+    private void BeginStaggerOverride(
+        BattleVisualPlaybackState playback)
+    {
+        BattleVisualRequest request =
+            playback?.Request;
+
+        if (request?.Target == null ||
+            request.StaggerDamage <= 0)
+        {
+            return;
+        }
+
+        ResolveWorldPlateManager();
+
+        playback.TrackStaggerOverride(
+            request.Target);
+
+        worldPlateManager?.SetVisualStaggerOverride(
+            request.Target,
+            request.StaggerGaugeBefore,
+            vulnerable:
+                request.StaggerGaugeBefore <= 0);
     }
 
     private static void ResolveHpRange(
@@ -370,6 +441,30 @@ internal sealed class BattleVisualDamagePresenter
             worldDisplayHp);
     }
 
+    private void ApplyStaggerDamage(
+        BattleVisualPlaybackState playback)
+    {
+        BattleVisualRequest request =
+            playback?.Request;
+
+        if (request?.Target == null ||
+            request.StaggerDamage <= 0)
+        {
+            return;
+        }
+
+        ResolveWorldPlateManager();
+
+        playback.TrackStaggerOverride(
+            request.Target);
+
+        worldPlateManager?.SetVisualStaggerOverrideAtHit(
+            request.Target,
+            request.StaggerGaugeAfter,
+            vulnerable:
+                request.StaggerGaugeAfter <= 0);
+    }
+
     private static int ResolveWorldVisualStartHp(
         BattleVisualRequest request,
         int totalDamage)
@@ -433,18 +528,21 @@ internal sealed class BattleVisualDamagePresenter
         int hitIndex,
         int damage)
     {
-        ResolveBattleUiManager();
-
-        if (battleUIManager == null || request?.Target == null)
+        if (request?.Target == null)
             return;
 
-        battleUIManager.RefreshTargetUI(
+        ResolveBattleUiManager();
+
+        battleUIManager?.RefreshTargetUI(
             request.Target,
             request.TargetPart);
 
         ResolveWorldPlateManager();
-        worldPlateManager?.RefreshCharacter(request.Target);
+        worldPlateManager?.RefreshCharacter(
+            request.Target);
 
+        // 같은 Hit Event 안에서 HP 숫자/HP bar/흐트러짐 bar의
+        // RectTransform과 TMP 상태를 즉시 확정한다.
         Canvas.ForceUpdateCanvases();
 
         if (!logDebug || hitIndex < 0)

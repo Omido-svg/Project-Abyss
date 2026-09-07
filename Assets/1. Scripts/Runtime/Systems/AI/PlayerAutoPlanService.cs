@@ -344,15 +344,28 @@ public sealed class PlayerAutoPlanService
                     state,
                     sources,
                     enemySlots,
+                    assignedThreats,
                     speedManager,
                     mode);
 
             if (best == null)
                 break;
 
+            ActionSlot planned =
+                CreatePlannedSlot(best);
+
             state.Register(
                 best.Source,
-                CreatePlannedSlot(best));
+                planned);
+
+            // 남은 공격도 가능하면 정확한 적 ActionSlot을 의도로 보존한다.
+            // 실제 합이 불가능한 속도/스킬 조합이면 ClashBuilder가 일방 공격으로 해석한다.
+            if (planned != null &&
+                best.Threat != null)
+            {
+                assignedThreats.Add(
+                    best.Threat);
+            }
         }
 
         if (state.Slots.Count == 0)
@@ -841,13 +854,17 @@ public sealed class PlayerAutoPlanService
                         continue;
                     }
 
-                    if (!CanTarget(
+                    // Focused Encounter의 TargetSlot은 "상대 행동"이고,
+                    // 실제 피해 TargetPart는 별도의 개념이다.
+                    // Stage 1 Boss의 A/A/B처럼 행동 슬롯 자체가 Part=null이어도
+                    // 보스의 유효한 BodyPart를 공격 대상으로 선택할 수 있어야 한다.
+                    List<TargetPoint> targetPoints =
+                        GetValidTargetPoints(
                             threat.Owner,
-                            threat.Part,
-                            skill))
-                    {
+                            skill);
+
+                    if (targetPoints.Count == 0)
                         continue;
-                    }
 
                     ActionSlot challengeProbe =
                         new ActionSlot
@@ -856,7 +873,7 @@ public sealed class PlayerAutoPlanService
                             Part = source.Part,
                             Skill = skill,
                             TargetCharacter = threat.Owner,
-                            TargetPart = threat.Part,
+                            TargetPart = targetPoints[0].Part,
                             TargetSlot = threat,
                             Speed = source.Speed,
                             ActionIndex = source.ActionIndex,
@@ -874,28 +891,33 @@ public sealed class PlayerAutoPlanService
                         continue;
                     }
 
-                    Candidate candidate =
-                        BuildThreatCandidate(
-                            context,
-                            source,
-                            skill,
-                            threat,
-                            speedManager,
-                            mode);
-
-                    if (candidate == null)
-                        continue;
-
-                    candidate.Score -=
-                        state.CountSkill(skill) *
-                        (mode == PlayerAutoPlanMode.WinRate
-                            ? 220f
-                            : 120f);
-
-                    if (best == null ||
-                        candidate.Score > best.Score)
+                    foreach (TargetPoint point
+                             in targetPoints)
                     {
-                        best = candidate;
+                        Candidate candidate =
+                            BuildThreatCandidate(
+                                context,
+                                source,
+                                skill,
+                                threat,
+                                point.Part,
+                                speedManager,
+                                mode);
+
+                        if (candidate == null)
+                            continue;
+
+                        candidate.Score -=
+                            state.CountSkill(skill) *
+                            (mode == PlayerAutoPlanMode.WinRate
+                                ? 220f
+                                : 120f);
+
+                        if (best == null ||
+                            candidate.Score > best.Score)
+                        {
+                            best = candidate;
+                        }
                     }
                 }
             }
@@ -909,6 +931,7 @@ public sealed class PlayerAutoPlanService
         PlanningState state,
         IReadOnlyList<SourceSlot> sources,
         IReadOnlyList<ActionSlot> enemySlots,
+        HashSet<ActionSlot> assignedTargetSlots,
         SpeedManager speedManager,
         PlayerAutoPlanMode mode)
     {
@@ -978,11 +1001,15 @@ public sealed class PlayerAutoPlanService
                             continue;
                         }
 
+                        // Enemy ActionSlot의 Part는 "행동 원천 부위"다.
+                        // 공격할 실제 BodyPart와 같을 필요가 없다.
+                        // 따라서 같은 적 캐릭터의 아직 미지정 COMBAT 슬롯을
+                        // exact TargetSlot 의도로 연결한다.
                         ActionSlot matchingThreat =
-                            FindUnclaimedThreatForPoint(
+                            FindAvailableTargetSlotForCharacter(
                                 enemySlots,
                                 point.Character,
-                                point.Part);
+                                assignedTargetSlots);
 
                         Candidate candidate =
                             BuildFillCandidate(
@@ -1072,6 +1099,7 @@ public sealed class PlayerAutoPlanService
         SourceSlot source,
         Skill skill,
         ActionSlot threat,
+        BodyPart attackTargetPart,
         SpeedManager speedManager,
         PlayerAutoPlanMode mode)
     {
@@ -1092,7 +1120,9 @@ public sealed class PlayerAutoPlanService
                 threat.Owner,
                 threat.Part,
                 threat.Speed,
-                threat.Skill);
+                threat.Skill,
+                attackTargetPart,
+                threat.TargetPart);
 
         float threatDamage =
             estimator.EstimateOneSidedDamage(
@@ -1107,7 +1137,7 @@ public sealed class PlayerAutoPlanService
         float vulnerability =
             estimator.ScoreTargetVulnerability(
                 threat.Owner,
-                threat.Part,
+                attackTargetPart,
                 skill);
 
         float score;
@@ -1140,7 +1170,7 @@ public sealed class PlayerAutoPlanService
                 source.Part,
                 skill,
                 threat.Owner,
-                threat.Part,
+                attackTargetPart,
                 threat,
                 estimate.WinRate,
                 estimate.ExpectedDamage));
@@ -1153,7 +1183,7 @@ public sealed class PlayerAutoPlanService
             Source = source,
             Skill = skill,
             Target = threat.Owner,
-            TargetPart = threat.Part,
+            TargetPart = attackTargetPart,
             Threat = threat,
             Score = score,
             WinRate = estimate.WinRate,
@@ -1183,9 +1213,15 @@ public sealed class PlayerAutoPlanService
         float winRate = 0f;
         float expectedDamage;
 
-        if (possibleThreat?.Skill != null &&
-            possibleThreat.Skill.CanClash &&
-            skill.CanClash)
+        bool willClash =
+            CanChallengeTargetSlot(
+                source,
+                skill,
+                target,
+                targetPart,
+                possibleThreat);
+
+        if (willClash)
         {
             PlayerAutoPlanEstimator.ClashEstimate clash =
                 estimator.EstimateClash(
@@ -1197,7 +1233,9 @@ public sealed class PlayerAutoPlanService
                     possibleThreat.Owner,
                     possibleThreat.Part,
                     possibleThreat.Speed,
-                    possibleThreat.Skill);
+                    possibleThreat.Skill,
+                    targetPart,
+                    possibleThreat.TargetPart);
 
             winRate =
                 clash.WinRate;
@@ -1353,10 +1391,55 @@ public sealed class PlayerAutoPlanService
             allowBroken);
     }
 
-    private static ActionSlot FindUnclaimedThreatForPoint(
-        IReadOnlyList<ActionSlot> slots,
+    private static List<TargetPoint> GetValidTargetPoints(
         Character target,
-        BodyPart targetPart)
+        Skill skill)
+    {
+        List<TargetPoint> result =
+            new List<TargetPoint>();
+
+        if (target == null ||
+            target.IsDead ||
+            skill == null)
+        {
+            return result;
+        }
+
+        bool includeBroken =
+            AITargetSelector
+                .ShouldIncludeBrokenTargets(
+                    skill);
+
+        IReadOnlyList<TargetPoint> points =
+            target.GetTargetPoints(
+                includeBroken);
+
+        if (points == null)
+            return result;
+
+        foreach (TargetPoint point in points)
+        {
+            if (!point.IsValid ||
+                point.Character != target ||
+                !CanTarget(
+                    point.Character,
+                    point.Part,
+                    skill))
+            {
+                continue;
+            }
+
+            result.Add(point);
+        }
+
+        return result;
+    }
+
+    private static ActionSlot
+        FindAvailableTargetSlotForCharacter(
+            IReadOnlyList<ActionSlot> slots,
+            Character target,
+            HashSet<ActionSlot> assignedTargetSlots)
     {
         if (slots == null ||
             target == null)
@@ -1368,9 +1451,10 @@ public sealed class PlayerAutoPlanService
         {
             if (slot == null ||
                 slot.Owner != target ||
-                slot.Part != targetPart ||
                 slot.Phase != ActionPhase.COMBAT ||
-                slot.Skill?.CanClash != true)
+                slot.Skill == null ||
+                (assignedTargetSlots != null &&
+                 assignedTargetSlots.Contains(slot)))
             {
                 continue;
             }
@@ -1379,6 +1463,46 @@ public sealed class PlayerAutoPlanService
         }
 
         return null;
+    }
+
+    private static bool CanChallengeTargetSlot(
+        SourceSlot source,
+        Skill skill,
+        Character target,
+        BodyPart targetPart,
+        ActionSlot targetSlot)
+    {
+        if (source == null ||
+            source.Owner == null ||
+            skill == null ||
+            target == null ||
+            targetSlot == null)
+        {
+            return false;
+        }
+
+        ActionSlot probe =
+            new ActionSlot
+            {
+                ActionId = -1,
+                Owner = source.Owner,
+                Part = source.Part,
+                Skill = skill,
+                TargetCharacter = target,
+                TargetPart = targetPart,
+                TargetSlot = targetSlot,
+                Speed = source.Speed,
+                ActionIndex = source.ActionIndex,
+                Phase = ActionPhase.COMBAT
+            };
+
+        ClashMatchPolicy policy =
+            new ClashMatchPolicy(
+                new ActionPhaseSorter());
+
+        return policy.CanChallenge(
+            probe,
+            targetSlot);
     }
 
     /// <summary>
@@ -1505,14 +1629,21 @@ public sealed class PlayerAutoPlanService
                 continue;
 
             ActionSlot threat =
-                FindUnclaimedThreatForPoint(
-                    enemySlots,
-                    playerSlot.TargetCharacter,
-                    playerSlot.TargetPart);
+                playerSlot.TargetSlot;
 
-            if (threat?.Skill != null &&
+            ClashMatchPolicy policy =
+                new ClashMatchPolicy(
+                    new ActionPhaseSorter());
+
+            bool willClash =
+                threat?.Skill != null &&
                 playerSlot.Skill.CanClash &&
-                threat.Skill.CanClash)
+                threat.Skill.CanClash &&
+                policy.CanChallenge(
+                    playerSlot,
+                    threat);
+
+            if (willClash)
             {
                 PlayerAutoPlanEstimator.ClashEstimate estimate =
                     estimator.EstimateClash(
@@ -1524,7 +1655,9 @@ public sealed class PlayerAutoPlanService
                         threat.Owner,
                         threat.Part,
                         threat.Speed,
-                        threat.Skill);
+                        threat.Skill,
+                        playerSlot.TargetPart,
+                        threat.TargetPart);
 
                 averageWinRate +=
                     estimate.WinRate;

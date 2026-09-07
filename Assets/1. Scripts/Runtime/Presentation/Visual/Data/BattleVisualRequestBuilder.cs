@@ -19,7 +19,8 @@ public class BattleVisualRequestBuilder
         BattleAction opponentAction = null,
         int? targetPartHpBefore = null,
         int? targetPartHpAfter = null,
-        DamageContext damageContext = null)
+        DamageContext damageContext = null,
+        bool useActionDamageContextFallback = true)
     {
         if (action == null)
             return null;
@@ -53,12 +54,15 @@ public class BattleVisualRequestBuilder
 
         DamageContext sourceContext =
             damageContext ??
-            action.PrimaryDamageContext;
+            (useActionDamageContextFallback
+                ? action.PrimaryDamageContext
+                : null);
 
         request.ApplyDamageContext(sourceContext);
         ApplyHitDamages(request, hitDamages, sourceContext);
 
-        if (sourceContext == null)
+        if (sourceContext == null &&
+            useActionDamageContextFallback)
         {
             ApplyLegacySnapshots(
                 request,
@@ -145,39 +149,69 @@ public class BattleVisualRequestBuilder
 
                 BattleVisualRequest attackRequest = null;
 
+                bool hasHpDamage =
+                    exchange.DamageContext != null;
+
+                bool hasStaggerDamage =
+                    exchange.StaggerDamage > 0;
+
                 if (!exchange.WasCancelled &&
                     exchange.WinnerAction != null &&
-                    exchange.DamageContext != null)
+                    (hasHpDamage || hasStaggerDamage))
                 {
                     DamageContext context =
                         exchange.DamageContext;
 
+                    List<int> hitDamages =
+                        hasHpDamage
+                            ? new List<int>
+                            {
+                                exchange.Damage
+                            }
+                            : new List<int>();
+
                     attackRequest = Build(
                         exchange.WinnerAction,
                         clashSteps: null,
-                        hitDamages: new List<int>
-                        {
-                            exchange.Damage
-                        },
+                        hitDamages: hitDamages,
                         opponentAction:
                             exchange.LoserAction,
                         targetPartHpBefore:
-                            context.HasTargetPartSnapshot
+                            context?.HasTargetPartSnapshot == true
                                 ? context.TargetPartHpBefore
                                 : null,
                         targetPartHpAfter:
-                            context.HasTargetPartSnapshot
+                            context?.HasTargetPartSnapshot == true
                                 ? context.TargetPartHpAfter
                                 : null,
-                        damageContext: context);
+                        damageContext: context,
+                        useActionDamageContextFallback:
+                            hasHpDamage);
 
-                    if (attackRequest != null &&
-                        exchange.SecondaryDamageContexts != null)
+                    if (attackRequest != null)
                     {
-                        attackRequest.SecondaryDamageContexts
-                            .AddRange(
-                                exchange
-                                    .SecondaryDamageContexts);
+                        attackRequest.StaggerDamage =
+                            Mathf.Max(
+                                0,
+                                exchange.StaggerDamage);
+
+                        attackRequest.StaggerGaugeBefore =
+                            Mathf.Max(
+                                0,
+                                exchange.StaggerGaugeBefore);
+
+                        attackRequest.StaggerGaugeAfter =
+                            Mathf.Max(
+                                0,
+                                exchange.StaggerGaugeAfter);
+
+                        if (exchange.SecondaryDamageContexts != null)
+                        {
+                            attackRequest.SecondaryDamageContexts
+                                .AddRange(
+                                    exchange
+                                        .SecondaryDamageContexts);
+                        }
                     }
                 }
 

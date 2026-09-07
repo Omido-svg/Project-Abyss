@@ -1,0 +1,24 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 0}
+  m_Name: EmotionAugmentCatalog
+  m_EditorClassIdentifier: ProjectAbyss.Runtime::EmotionAugmentCatalog
+  Entries:
+  - {fileID: 11400000, guid: 4fba521951c52f5498828f7327617554, type: 2}
+  - {fileID: 11400000, guid: aa80f415226cad3449004249203469ae, type: 2}
+  - {fileID: 11400000, guid: 9bdab379ac6be314785f13e465c03c73, type: 2}
+  - {fileID: 11400000, guid: 9145bd5b72a25364c9b225ed81b3ab80, type: 2}
+  - {fileID: 11400000, guid: b44d3087f9d6f1549a5531fcda21168c, type: 2}
+  - {fileID: 11400000, guid: ca1dcfec71352594cb8e5e589e67a451, type: 2}
+  - {fileID: 11400000, guid: dc457acf5cf899e49b6d332fb84ea439, type: 2}
+  - {fileID: 11400000, guid: fee63b1da77a4f943922e35b0e6d9d2e, type: 2}
+  - {fileID: 11400000, guid: 36f6ccc26fd348d4dab0f1077c473c50, type: 2}

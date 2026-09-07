@@ -1,0 +1,43 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 0}
+  m_Name: Awe_T2_03_WaveOfMajesty
+  m_EditorClassIdentifier: ProjectAbyss.Runtime::EmotionAugmentDefinition
+  AugmentId: AWE_PROTO_T2_03
+  DisplayName: "\uC704\uC5C4\uC758 \uD30C\uB3D9"
+  Emotion: 0
+  Tier: 2
+  OfferWeight: 1
+  Description: "[\uD504\uB85C\uD1A0\uD0C0\uC785] \uC790\uC2E0\uC5D0\uAC8C \uC720\uB9AC\uD55C
+    \uAE30\uC138 \uC774\uB3D9\uB7C9\uC774 \uCD94\uAC00\uB85C +5 \uC99D\uAC00\uD55C\uB2E4."
+  Effects:
+  - {fileID: 414356250810879440}
+--- !u!114 &414356250810879440
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 01a49b8a0f875eb42acf9d5b4d991fab, type: 3}
+  m_Name: PrototypeEffect
+  m_EditorClassIdentifier: 
+  GainEnergy: 0
+  GainPrestige: 0
+  RecoverStaggerRatio: 0
+  RollBonus: 0
+  DamageDealtMultiplier: 1
+  DamageTakenMultiplier: 1
+  PositiveMomentumBonus: 5
+  PrestigeGainMultiplier: 1

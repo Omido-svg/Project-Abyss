@@ -95,7 +95,9 @@ public sealed class PlayerAutoPlanEstimator
                 enemySlot.Owner,
                 enemySlot.Part,
                 enemySlot.Speed,
-                enemySlot.Skill);
+                enemySlot.Skill,
+                playerTargetPart: null,
+                enemyTargetPart: enemySlot.TargetPart);
 
         winRate =
             Mathf.Clamp01(
@@ -113,7 +115,9 @@ public sealed class PlayerAutoPlanEstimator
         Character enemyOwner,
         BodyPart enemyPart,
         int enemySpeed,
-        Skill enemySkill)
+        Skill enemySkill,
+        BodyPart playerTargetPart = null,
+        BodyPart enemyTargetPart = null)
     {
         if (playerSkill == null ||
             enemySkill == null)
@@ -123,15 +127,45 @@ public sealed class PlayerAutoPlanEstimator
                 0f);
         }
 
+        BattleAction playerPreview =
+            CreatePreviewAction(
+                playerOwner,
+                playerPart,
+                playerSpeed,
+                playerSkill,
+                enemyOwner,
+                playerTargetPart,
+                CombatRollType.Attack,
+                0);
+
+        BattleAction enemyPreview =
+            CreatePreviewAction(
+                enemyOwner,
+                enemyPart,
+                enemySpeed,
+                enemySkill,
+                playerOwner,
+                enemyTargetPart,
+                CombatRollType.Attack,
+                0);
+
+        int playerRollCount =
+            playerPreview?.GetEffectiveExchangeRollCount() ??
+            Mathf.Max(1, playerSkill.ExchangeRollCount);
+
+        int enemyRollCount =
+            enemyPreview?.GetEffectiveExchangeRollCount() ??
+            Mathf.Max(1, enemySkill.ExchangeRollCount);
+
         int paired =
             Mathf.Min(
-                Mathf.Max(1, playerSkill.ExchangeRollCount),
-                Mathf.Max(1, enemySkill.ExchangeRollCount));
+                playerRollCount,
+                enemyRollCount);
 
         int playerExtra =
             Mathf.Max(
                 0,
-                playerSkill.ExchangeRollCount - paired);
+                playerRollCount - paired);
 
         ClashRuleSettings rules =
             context?.Rules?.Clash ??
@@ -156,6 +190,7 @@ public sealed class PlayerAutoPlanEstimator
         {
             ExchangeEstimate exchange =
                 EstimateExchange(
+                    context,
                     playerOwner,
                     playerPart,
                     playerSpeed,
@@ -164,6 +199,8 @@ public sealed class PlayerAutoPlanEstimator
                     enemyPart,
                     enemySpeed,
                     enemySkill,
+                    playerTargetPart,
+                    enemyTargetPart,
                     rollIndex,
                     maxTieRerolls,
                     rules.SpeedWeight);
@@ -215,9 +252,13 @@ public sealed class PlayerAutoPlanEstimator
         {
             damage +=
                 EstimateOneSidedRollDamage(
+                    context,
                     playerSkill,
                     playerOwner,
+                    playerPart,
                     playerSpeed,
+                    enemyOwner,
+                    playerTargetPart,
                     index);
         }
 
@@ -226,12 +267,19 @@ public sealed class PlayerAutoPlanEstimator
                 finalWin +
                 finalDraw * 0.5f);
 
+        damage =
+            ApplyAggregateDamageLimits(
+                damage,
+                enemyOwner,
+                playerTargetPart);
+
         return new ClashEstimate(
             practicalWinRate,
             Mathf.Max(0f, damage));
     }
 
     private ExchangeEstimate EstimateExchange(
+        BattleContext context,
         Character playerOwner,
         BodyPart playerPart,
         int playerSpeed,
@@ -240,6 +288,8 @@ public sealed class PlayerAutoPlanEstimator
         BodyPart enemyPart,
         int enemySpeed,
         Skill enemySkill,
+        BodyPart playerTargetPart,
+        BodyPart enemyTargetPart,
         int rollIndex,
         int maxTieRerolls,
         int speedWeight)
@@ -247,7 +297,10 @@ public sealed class PlayerAutoPlanEstimator
         List<PowerOutcome> playerOutcomes =
             BuildPowerOutcomes(
                 playerOwner,
+                playerPart,
                 playerSpeed,
+                enemyOwner,
+                playerTargetPart,
                 enemySpeed,
                 playerSkill,
                 rollIndex,
@@ -256,7 +309,10 @@ public sealed class PlayerAutoPlanEstimator
         List<PowerOutcome> enemyOutcomes =
             BuildPowerOutcomes(
                 enemyOwner,
+                enemyPart,
                 enemySpeed,
+                playerOwner,
+                enemyTargetPart,
                 playerSpeed,
                 enemySkill,
                 rollIndex,
@@ -285,16 +341,18 @@ public sealed class PlayerAutoPlanEstimator
                     if (player.RollType ==
                         CombatRollType.Attack)
                     {
-                        int damage =
-                            enemy.RollType ==
-                            CombatRollType.Stagger
-                                ? Mathf.Max(
-                                    1,
-                                    player.ClashPower -
-                                    enemy.ClashPower)
-                                : Mathf.Max(
-                                    1,
-                                    player.RawPower);
+                        float damage =
+                            EstimateResolvedDamage(
+                                context,
+                                playerOwner,
+                                playerPart,
+                                playerSpeed,
+                                playerSkill,
+                                enemyOwner,
+                                playerTargetPart,
+                                player.RawPower,
+                                rollIndex,
+                                isClashDamage: true);
 
                         winningDamageMass +=
                             probability * damage;
@@ -357,7 +415,10 @@ public sealed class PlayerAutoPlanEstimator
 
     private static List<PowerOutcome> BuildPowerOutcomes(
         Character owner,
+        BodyPart ownerPart,
         int selfSpeed,
+        Character target,
+        BodyPart targetPart,
         int opponentSpeed,
         Skill skill,
         int rollIndex,
@@ -390,11 +451,34 @@ public sealed class PlayerAutoPlanEstimator
         int preparationModifier =
             owner?.TurnClashPowerBonus ?? 0;
 
+        BattleAction preview =
+            CreatePreviewAction(
+                owner,
+                ownerPart,
+                selfSpeed,
+                skill,
+                target,
+                targetPart,
+                rollType,
+                rollIndex);
+
         foreach (RawOutcome outcome in raw)
         {
+            int judgedPower =
+                owner != null
+                    ? owner.ModifyRoll(
+                        preview,
+                        outcome.Power)
+                    : outcome.Power;
+
+            int runtimeJudgmentModifier =
+                judgedPower -
+                outcome.Power;
+
             int clash =
                 outcome.Power +
                 judgment +
+                runtimeJudgmentModifier +
                 speedModifier +
                 preparationModifier;
 
@@ -892,7 +976,19 @@ public sealed class PlayerAutoPlanEstimator
 
         float total = 0f;
 
+        BattleAction preview =
+            CreatePreviewAction(
+                owner,
+                ownerPart,
+                speed,
+                skill,
+                target,
+                targetPart,
+                CombatRollType.Attack,
+                0);
+
         int count =
+            preview?.GetEffectiveExchangeRollCount() ??
             Mathf.Max(
                 1,
                 skill.ExchangeRollCount);
@@ -903,26 +999,34 @@ public sealed class PlayerAutoPlanEstimator
         {
             total +=
                 EstimateOneSidedRollDamage(
+                    context,
                     skill,
                     owner,
+                    ownerPart,
                     speed,
+                    target,
+                    targetPart,
                     index);
         }
 
-        return total *
-               GetDamageVulnerabilityMultiplier(
-                   target,
-                   targetPart,
-                   skill);
+        return ApplyAggregateDamageLimits(
+            total,
+            target,
+            targetPart);
     }
 
     private static float EstimateOneSidedRollDamage(
+        BattleContext context,
         Skill skill,
         Character owner,
+        BodyPart ownerPart,
         int speed,
+        Character target,
+        BodyPart targetPart,
         int rollIndex)
     {
         if (skill == null ||
+            target == null ||
             skill.GetRollType(rollIndex) ==
             CombatRollType.Stagger)
         {
@@ -939,61 +1043,253 @@ public sealed class PlayerAutoPlanEstimator
         foreach (RawOutcome outcome
                  in outcomes)
         {
+            float damage =
+                EstimateResolvedDamage(
+                    context,
+                    owner,
+                    ownerPart,
+                    speed,
+                    skill,
+                    target,
+                    targetPart,
+                    outcome.Power,
+                    rollIndex,
+                    isClashDamage: false);
+
             result +=
-                Mathf.Max(
-                    1,
-                    outcome.Power) *
+                damage *
                 outcome.Probability;
         }
 
-        return result;
+        return Mathf.Max(
+            0f,
+            result);
     }
 
-    private static float GetDamageVulnerabilityMultiplier(
+    private static BattleAction CreatePreviewAction(
+        Character owner,
+        BodyPart ownerPart,
+        int speed,
+        Skill skill,
         Character target,
-        BodyPart part,
-        Skill skill)
+        BodyPart targetPart,
+        CombatRollType rollType,
+        int rollIndex)
     {
-        float multiplier = 1f;
-
-        if (part != null)
+        if (owner == null ||
+            skill == null)
         {
-            if (part.IsBroken)
+            return null;
+        }
+
+        ActionSlot slot =
+            new ActionSlot
             {
-                multiplier += 0.30f;
-            }
-            else if (part.IsWeakened)
-            {
-                // 약화 부위 타격은 이번 공격에서 HP 피해를 만들지 않는다.
-                return 0f;
-            }
-        }
+                Owner = owner,
+                Part = ownerPart,
+                Skill = skill,
+                Speed = speed,
+                ActionIndex = 0,
+                Phase = ActionPhase.COMBAT,
+                TargetCharacter = target,
+                TargetPart = targetPart
+            };
 
-        float hpRate;
-
-        if (part != null &&
-            part.MaxPartHP > 0f)
+        return new BattleAction
         {
-            hpRate =
-                Mathf.Clamp01(
-                    part.PartHP /
-                    part.MaxPartHP);
-        }
-        else
+            Slot = slot,
+            CurrentRollType = rollType,
+            CurrentRollIndex = Mathf.Max(0, rollIndex)
+        };
+    }
+
+    /// <summary>
+    /// 실제 DamagePipeline의 계산 단계만 재사용한다.
+    /// HP/부위/가드 값을 읽기만 하고 Apply 단계는 호출하지 않으므로
+    /// 자동계획 중 전투 상태를 변경하지 않는다.
+    /// </summary>
+    private static float EstimateResolvedDamage(
+        BattleContext context,
+        Character owner,
+        BodyPart ownerPart,
+        int speed,
+        Skill skill,
+        Character target,
+        BodyPart targetPart,
+        int rawPower,
+        int rollIndex,
+        bool isClashDamage)
+    {
+        if (owner == null ||
+            skill == null ||
+            target == null ||
+            rawPower <= 0 ||
+            skill.GetRollType(rollIndex) ==
+            CombatRollType.Stagger)
         {
-            hpRate =
-                target.MaxCombatHP > 0
-                    ? Mathf.Clamp01(
-                        (float)target.CurrentHP /
-                        target.MaxCombatHP)
-                    : 1f;
+            return 0f;
         }
 
-        multiplier +=
-            (1f - hpRate) *
-            0.15f;
+        BattleAction action =
+            CreatePreviewAction(
+                owner,
+                ownerPart,
+                speed,
+                skill,
+                target,
+                targetPart,
+                CombatRollType.Attack,
+                rollIndex);
 
-        return multiplier;
+        if (action == null)
+            return 0f;
+
+        action.RolledPower =
+            Mathf.Max(
+                1,
+                rawPower);
+
+        action.finalPower =
+            action.RolledPower;
+
+        DamageType damageType =
+            skill.ActionType == ActionType.Prestige
+                ? DamageType.Prestige
+                : targetPart == null
+                    ? DamageType.Direct
+                    : DamageType.SkillPart;
+
+        bool canBreakPart =
+            targetPart?.IsWeakened == true &&
+            (owner.Data?.CombatantTier == CombatantTier.Boss ||
+             (owner is Enemy
+                 ? context?.Services?.MomentumManager?
+                       .CanStandardBreakPart(owner) == true
+                 : skill.CanBreakPart));
+
+        DamageRequest request =
+            DamageRequest.FromAction(
+                action,
+                damageType,
+                canBreakPart,
+                isClashDamage,
+                targetLostClash: isClashDamage);
+
+        request.Damage =
+            action.RolledPower;
+
+        request.RawPower =
+            action.RolledPower;
+
+        // 가드는 행동 전체에 걸쳐 소모되는 상태다.
+        // 굴림별 기대값마다 현재 Guard를 반복 차감하지 않고
+        // 행동 단위 기대 피해를 합친 뒤 한 번만 적용한다.
+        request.ApplyGuard = false;
+
+        DamageContext damageContext =
+            new DamageContext(
+                request);
+
+        DamagePipeline pipeline =
+            new DamagePipeline(
+                context?.Services?.MomentumManager);
+
+        pipeline.Calculate(
+            damageContext);
+
+        int calculated =
+            Mathf.Max(
+                0,
+                damageContext.FinalDamage);
+
+        if (calculated <= 0)
+            return 0f;
+
+        // CharacterDamageController의 실제 적용 계약을 값 변경 없이 미리 계산한다.
+        if (targetPart == null ||
+            targetPart.IsBroken)
+        {
+            return Mathf.Min(
+                calculated,
+                Mathf.Max(0, target.CurrentHP));
+        }
+
+        if (targetPart.IsWeakened)
+        {
+            // 약화 타격은 이 타격에서 HP/부위 HP를 감소시키지 않고,
+            // 파괴 권한이 있으면 상태만 Broken으로 전환한다.
+            return 0f;
+        }
+
+        int partBefore =
+            Mathf.Max(
+                0,
+                Mathf.CeilToInt(
+                    targetPart.PartHP));
+
+        int maximumPartDamage =
+            Mathf.Max(
+                0,
+                partBefore - 1);
+
+        return Mathf.Min(
+            calculated,
+            maximumPartDamage);
+    }
+
+    private static float ApplyAggregateDamageLimits(
+        float expectedDamage,
+        Character target,
+        BodyPart targetPart)
+    {
+        if (target == null ||
+            expectedDamage <= 0f)
+        {
+            return 0f;
+        }
+
+        float damage =
+            Mathf.Max(
+                0f,
+                expectedDamage);
+
+        int guard =
+            target.RuntimeStatus != null
+                ? Mathf.Max(
+                    0,
+                    target.RuntimeStatus.currentBlock)
+                : 0;
+
+        damage =
+            Mathf.Max(
+                0f,
+                damage - guard);
+
+        if (targetPart == null ||
+            targetPart.IsBroken)
+        {
+            return Mathf.Min(
+                damage,
+                Mathf.Max(0, target.CurrentHP));
+        }
+
+        if (targetPart.IsWeakened)
+            return 0f;
+
+        int partBefore =
+            Mathf.Max(
+                0,
+                Mathf.CeilToInt(
+                    targetPart.PartHP));
+
+        int maximumPartDamage =
+            Mathf.Max(
+                0,
+                partBefore - 1);
+
+        return Mathf.Min(
+            damage,
+            maximumPartDamage);
     }
 
     public float ScoreTargetVulnerability(

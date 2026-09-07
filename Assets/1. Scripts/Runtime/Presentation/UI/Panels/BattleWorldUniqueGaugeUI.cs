@@ -18,6 +18,13 @@ public sealed class BattleWorldUniqueGaugeUI : MonoBehaviour
     private ICharacterUniqueGaugeProvider staggerProvider;
     private int cachedMechanicCount = -1;
 
+    // 전투 로직은 Resolution 전에 최종 흐트러짐 값을 계산한다.
+    // 화면은 Hit Event가 발생할 때까지 교환 시작 값을 유지해야 하므로
+    // 실제 Provider와 별개의 presentation-only override를 둔다.
+    private bool hasStaggerVisualOverride;
+    private int staggerVisualCurrent;
+    private bool staggerVisualVulnerable;
+
     private sealed class GaugeRow
     {
         public GameObject Root;
@@ -43,6 +50,45 @@ public sealed class BattleWorldUniqueGaugeUI : MonoBehaviour
     }
 
     private void LateUpdate()
+    {
+        Refresh();
+    }
+
+    public void SetStaggerVisualOverride(
+        int currentGauge,
+        bool vulnerable)
+    {
+        hasStaggerVisualOverride = true;
+        staggerVisualCurrent = Mathf.Max(0, currentGauge);
+        staggerVisualVulnerable = vulnerable;
+        ForceStaggerRefresh();
+        Refresh();
+    }
+
+    public void SetStaggerVisualOverrideAtHit(
+        int currentGauge,
+        bool vulnerable)
+    {
+        // Hit Event 프레임에서 즉시 표시값을 갱신한다.
+        SetStaggerVisualOverride(
+            currentGauge,
+            vulnerable);
+
+        Canvas.ForceUpdateCanvases();
+    }
+
+    public void ClearStaggerVisualOverride()
+    {
+        if (!hasStaggerVisualOverride)
+            return;
+
+        hasStaggerVisualOverride = false;
+        staggerVisualVulnerable = false;
+        ForceStaggerRefresh();
+        Refresh();
+    }
+
+    public void RefreshNow()
     {
         Refresh();
     }
@@ -140,8 +186,28 @@ public sealed class BattleWorldUniqueGaugeUI : MonoBehaviour
             return;
 
         ResolveProvidersIfNeeded();
-        ApplyIfChanged(uniqueRow, uniqueProvider, new Color(0.80f, 0.42f, 0.08f, 0.9f));
-        ApplyIfChanged(staggerRow, staggerProvider, new Color(0.28f, 0.65f, 0.86f, 0.9f));
+        ApplyIfChanged(
+            uniqueRow,
+            uniqueProvider,
+            new Color(0.80f, 0.42f, 0.08f, 0.9f));
+
+        if (hasStaggerVisualOverride)
+        {
+            ApplyStaggerVisualOverride();
+        }
+        else
+        {
+            bool vulnerable =
+                staggerProvider is StaggerGaugeMechanic stagger &&
+                stagger.IsVulnerabilityWindowOpen;
+
+            ApplyIfChanged(
+                staggerRow,
+                staggerProvider,
+                vulnerable
+                    ? new Color(0.96f, 0.24f, 0.24f, 0.96f)
+                    : new Color(0.28f, 0.65f, 0.86f, 0.9f));
+        }
     }
 
     private void ResolveProvidersIfNeeded()
@@ -172,6 +238,75 @@ public sealed class BattleWorldUniqueGaugeUI : MonoBehaviour
         staggerRow.LastStateVersion = int.MinValue;
     }
 
+    private void ApplyStaggerVisualOverride()
+    {
+        if (staggerRow?.Root == null)
+            return;
+
+        ResolveProvidersIfNeeded();
+
+        StaggerGaugeMechanic stagger =
+            staggerProvider as StaggerGaugeMechanic;
+
+        int maximum =
+            Mathf.Max(
+                1,
+                stagger?.MaxGauge ?? 1);
+
+        int current =
+            Mathf.Clamp(
+                staggerVisualCurrent,
+                0,
+                maximum);
+
+        bool vulnerable =
+            staggerVisualVulnerable ||
+            current <= 0;
+
+        if (!staggerRow.Root.activeSelf)
+            staggerRow.Root.SetActive(true);
+
+        staggerRow.LastActive = true;
+        staggerRow.LastStateVersion = int.MinValue;
+
+        staggerRow.Label.text =
+            vulnerable
+                ? "흐트러짐 취약"
+                : staggerProvider?.GaugeLabel ?? "흐트러짐";
+
+        staggerRow.Value.text =
+            vulnerable
+                ? stagger?.GaugeValueText ?? "취약"
+                : $"{current}/{maximum}";
+
+        staggerRow.Fill.color =
+            vulnerable
+                ? new Color(0.96f, 0.24f, 0.24f, 0.96f)
+                : new Color(0.28f, 0.65f, 0.86f, 0.9f);
+
+        Vector2 max =
+            staggerRow.FillRect.anchorMax;
+
+        max.x =
+            vulnerable
+                ? 1f
+                : Mathf.Clamp01(
+                    (float)current /
+                    maximum);
+
+        staggerRow.FillRect.anchorMax = max;
+        staggerRow.FillRect.offsetMin =
+            new Vector2(2f, 2f);
+        staggerRow.FillRect.offsetMax =
+            new Vector2(-2f, -2f);
+    }
+
+    private void ForceStaggerRefresh()
+    {
+        if (staggerRow != null)
+            staggerRow.LastStateVersion = int.MinValue;
+    }
+
     private static void ApplyIfChanged(GaugeRow row, ICharacterUniqueGaugeProvider provider, Color color)
     {
         if (row?.Root == null)
@@ -193,11 +328,22 @@ public sealed class BattleWorldUniqueGaugeUI : MonoBehaviour
             return;
 
         row.LastStateVersion = version;
-        row.Label.text = provider.GaugeLabel ?? string.Empty;
+
+        bool vulnerable =
+            provider is StaggerGaugeMechanic stagger &&
+            stagger.IsVulnerabilityWindowOpen;
+
+        row.Label.text = vulnerable
+            ? "흐트러짐 취약"
+            : provider.GaugeLabel ?? string.Empty;
+
         row.Value.text = provider.GaugeValueText ?? string.Empty;
         row.Fill.color = color;
 
-        float ratio = Mathf.Clamp01(provider.GaugeNormalized);
+        // 취약 창은 게이지가 0이라 Fill이 사라지지 않도록 전체 경고 바를 사용한다.
+        float ratio = vulnerable
+            ? 1f
+            : Mathf.Clamp01(provider.GaugeNormalized);
         Vector2 max = row.FillRect.anchorMax;
         max.x = ratio;
         row.FillRect.anchorMax = max;

@@ -17,7 +17,14 @@ public enum SkillEffectConditionType
     TargetPartIsBroken = 11,
     TargetHpRatioAtMost = 12,
     OwnerHpRatioAtMost = 13,
-    KilledTarget = 14
+    KilledTarget = 14,
+
+    // Gameplay v5 roll-aware conditions.
+    RollSucceeded = 15,
+    RollFailed = 16,
+    RollNumberEquals = 17,
+    RollTypeAttack = 18,
+    RollTypeStagger = 19
 }
 
 [Serializable]
@@ -113,6 +120,26 @@ public class SkillEffectCondition
             case SkillEffectConditionType.KilledTarget:
                 return context.KillContext?.Victim != null ||
                        context.DamageContext?.WasKilled == true;
+
+            case SkillEffectConditionType.RollSucceeded:
+                return context.RollNumber > 0 &&
+                       context.RollSucceeded;
+
+            case SkillEffectConditionType.RollFailed:
+                return context.RollNumber > 0 &&
+                       !context.RollSucceeded;
+
+            case SkillEffectConditionType.RollNumberEquals:
+                return context.RollNumber > 0 &&
+                       context.RollNumber == Mathf.Max(1, Threshold);
+
+            case SkillEffectConditionType.RollTypeAttack:
+                return context.RollNumber > 0 &&
+                       context.RollType == CombatRollType.Attack;
+
+            case SkillEffectConditionType.RollTypeStagger:
+                return context.RollNumber > 0 &&
+                       context.RollType == CombatRollType.Stagger;
 
             default:
                 return false;

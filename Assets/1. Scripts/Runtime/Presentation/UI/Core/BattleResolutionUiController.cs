@@ -21,6 +21,8 @@ public sealed class BattleResolutionUiController : MonoBehaviour
     [SerializeField] private GameObject clashPresentationLayer;
     [SerializeField] private BattleCharacterDetailPanelUI characterDetailPanel;
     [SerializeField] private BattleClashRollPresentationUI clashRollPresentation;
+    [SerializeField] private BattleActionOrderRailUI actionOrderRail;
+    [SerializeField] private BattleWorldCharacterPlateManager worldPlateManager;
 
     [Header("Behavior")]
     [SerializeField] private bool detectResolutionState = true;
@@ -158,18 +160,30 @@ public sealed class BattleResolutionUiController : MonoBehaviour
         characterDetailPanel?.HideForResolution();
         BattlePresentationInteractionLock.SetLocked(true);
 
-        HideAllRootLayersExceptResolution();
-        HideDefaultLayerChildrenExceptOverview();
-        DisableOverviewInteraction();
+        // Resolution에서는 정적인 전투 UI를 모두 숨기고,
+        // 캐릭터 월드 HUD(HP/흐트러짐/고유 게이지)와 행동 순서 레일만 유지한다.
+        // 월드 플레이트가 Battle UI Root 안에 배치된 Scene이라도 부모 비활성화에
+        // 휘말리지 않도록 먼저 독립 보존 상태로 전환한다.
+        worldPlateManager?.PreserveForResolution(
+            abyssBattleUiRoot != null
+                ? abyssBattleUiRoot.transform
+                : null);
 
+        // 행동 순서 레일은 독립 Root Overlay Canvas이므로 별도 UI Layer가 필요 없다.
+        actionOrderRail?.PreserveForResolution(null);
+
+        HideStaticBattleUiForResolution();
+
+        // RNG/합 굴림 연출은 Resolution의 핵심 피드백이므로 살아 있어야 한다.
+        // 실제 표시/숨김 타이밍은 BattleAnimationDirector와
+        // BattleClashRollPresentationUI가 교환 단위로 관리한다.
         if (clashPresentationLayer != null)
             clashPresentationLayer.SetActive(true);
 
         Debug.Log(
             "[BattleResolutionUI][BEGIN] " +
-            (retireLegacyClashOverview
-                ? "TopStatusBar만 유지하고 구형 전체 결투 현황을 숨긴 채 전투 연출 입력을 잠급니다."
-                : "TopStatusBar와 ClashOverviewPanel을 유지하고 전투 연출 입력을 잠급니다."),
+            "캐릭터 HP/흐트러짐/고유 게이지, 행동 순서, 합 RNG 연출을 유지하고 " +
+            "나머지 전투 UI를 숨긴 채 Resolution을 시작합니다.",
             this);
     }
 
@@ -183,6 +197,10 @@ public sealed class BattleResolutionUiController : MonoBehaviour
         RestoreOverviewInteraction();
         RestoreStates(defaultLayerStates);
         RestoreStates(rootStates);
+
+        // UI Root가 원래 상태로 돌아온 뒤 World HUD와 레일을 Planning 상태로 복귀한다.
+        worldPlateManager?.RestoreAfterResolution();
+        actionOrderRail?.RestoreAfterResolution();
 
         defaultLayerStates.Clear();
         rootStates.Clear();
@@ -247,6 +265,20 @@ public sealed class BattleResolutionUiController : MonoBehaviour
                 clashPresentationLayer.GetComponent<
                     BattleClashRollPresentationUI>();
         }
+
+        if (actionOrderRail == null)
+        {
+            actionOrderRail =
+                FindFirstObjectByType<BattleActionOrderRailUI>(
+                    FindObjectsInactive.Include);
+        }
+
+        if (worldPlateManager == null)
+        {
+            worldPlateManager =
+                FindFirstObjectByType<BattleWorldCharacterPlateManager>(
+                    FindObjectsInactive.Include);
+        }
     }
 
     private void ApplyLegacyOverviewRetirement()
@@ -303,55 +335,20 @@ public sealed class BattleResolutionUiController : MonoBehaviour
         }
     }
 
-    private void HideAllRootLayersExceptResolution()
+    private void HideStaticBattleUiForResolution()
     {
-        if (abyssBattleUiRoot == null)
-            return;
+        // 캐릭터 머리 위 World HUD와 Damage/VFX 계층은 이 전용 Screen UI Layer들과
+        // 분리되어 있으므로 건드리지 않는다.
+        persistentTopLayer?.SetActive(false);
+        defaultBattleLayer?.SetActive(false);
+        skillSelectionLayer?.SetActive(false);
+        characterDetailLayer?.SetActive(false);
 
-        Transform root = abyssBattleUiRoot.transform;
+        // ClashRollPresentationLayer는 숨기지 않는다.
+        // 합 교환의 RNG 결과 UI가 Resolution 중 이 Layer에서 재생된다.
 
-        for (int index = 0;
-             index < root.childCount;
-             index++)
-        {
-            GameObject child =
-                root.GetChild(index).gameObject;
-
-            bool keep =
-                child == persistentTopLayer ||
-                child == defaultBattleLayer ||
-                child == clashPresentationLayer;
-
-            child.SetActive(keep);
-        }
-
-        // 턴/기세/빛/웨이브를 표시하는 TopStatusBar는
-        // PersistentTopLayer 아래에 있으므로 합 연출 중에도 유지한다.
-        persistentTopLayer?.SetActive(true);
-        defaultBattleLayer?.SetActive(true);
-    }
-
-    private void HideDefaultLayerChildrenExceptOverview()
-    {
-        if (defaultBattleLayer == null)
-            return;
-
-        Transform root = defaultBattleLayer.transform;
-
-        for (int index = 0;
-             index < root.childCount;
-             index++)
-        {
-            GameObject child =
-                root.GetChild(index).gameObject;
-
-            child.SetActive(
-                !retireLegacyClashOverview &&
-                child == clashOverviewPanel);
-        }
-
-        if (!retireLegacyClashOverview)
-            clashOverviewPanel?.SetActive(true);
+        if (clashOverviewPanel != null)
+            clashOverviewPanel.SetActive(false);
     }
 
     private void DisableOverviewInteraction()

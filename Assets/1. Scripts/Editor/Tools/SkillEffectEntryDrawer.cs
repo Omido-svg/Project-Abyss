@@ -23,8 +23,11 @@ public sealed class SkillEffectEntryDrawer : PropertyDrawer
         SerializedProperty definition =
             property.FindPropertyRelative("Definition");
 
+        const int schedulingRows = 2;
+
         return line +
                Gap +
+               schedulingRows * (line + Gap) +
                GetRows(definition?.objectReferenceValue).Count *
                (line + Gap);
     }
@@ -47,6 +50,14 @@ public sealed class SkillEffectEntryDrawer : PropertyDrawer
             property.FindPropertyRelative("Definition");
         SerializedProperty overrides =
             property.FindPropertyRelative("Overrides");
+        SerializedProperty overrideTiming =
+            property.FindPropertyRelative("OverrideTiming");
+        SerializedProperty timing =
+            property.FindPropertyRelative("Timing");
+        SerializedProperty restrictToRoll =
+            property.FindPropertyRelative("RestrictToRoll");
+        SerializedProperty rollNumber =
+            property.FindPropertyRelative("RollNumber");
 
         Rect foldout = new(
             header.x,
@@ -79,6 +90,20 @@ public sealed class SkillEffectEntryDrawer : PropertyDrawer
         EditorGUI.indentLevel++;
         float y = header.yMax + Gap;
 
+        DrawSchedulingRow(
+            new Rect(position.x, y, position.width, line),
+            overrideTiming,
+            timing,
+            "Detailed Timing");
+        y += line + Gap;
+
+        DrawSchedulingRow(
+            new Rect(position.x, y, position.width, line),
+            restrictToRoll,
+            rollNumber,
+            "Roll Number");
+        y += line + Gap;
+
         foreach (OverrideRow row in GetRows(
                      definition?.objectReferenceValue))
         {
@@ -91,6 +116,41 @@ public sealed class SkillEffectEntryDrawer : PropertyDrawer
 
         EditorGUI.indentLevel--;
         EditorGUI.EndProperty();
+    }
+
+
+    private static void DrawSchedulingRow(
+        Rect rect,
+        SerializedProperty toggle,
+        SerializedProperty value,
+        string label)
+    {
+        if (toggle == null || value == null)
+            return;
+
+        Rect toggleRect = new(
+            rect.x,
+            rect.y,
+            18f,
+            rect.height);
+
+        toggle.boolValue = EditorGUI.Toggle(
+            toggleRect,
+            toggle.boolValue);
+
+        using (new EditorGUI.DisabledScope(!toggle.boolValue))
+        {
+            Rect valueRect = new(
+                rect.x + 20f,
+                rect.y,
+                rect.width - 20f,
+                rect.height);
+
+            EditorGUI.PropertyField(
+                valueRect,
+                value,
+                new GUIContent(label));
+        }
     }
 
     private static void DrawOverrideRow(

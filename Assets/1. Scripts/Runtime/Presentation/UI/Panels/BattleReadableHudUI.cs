@@ -152,7 +152,7 @@ public sealed class BattleReadableHudUI : MonoBehaviour
 
         if (manager == null)
         {
-            momentumText.text = "<b>기세 0</b>\n균형 ×1";
+            momentumText.text = "<b>기세 0</b>\n균형 · 고조 0 / 열광 Lv.0";
             return;
         }
 
@@ -163,27 +163,30 @@ public sealed class BattleReadableHudUI : MonoBehaviour
             manager.GetState(player);
 
         string stateName =
-            state switch
-            {
-                MomentumState.LastStand => "발악 / 열세",
-                MomentumState.Disadvantage => "열세",
-                MomentumState.Balance => "균형",
-                MomentumState.Advantage => "우세",
-                MomentumState.Overwhelm => "짓누름",
-                _ => state.ToString()
-            };
+            GameplayV5UiPresentation.GetMomentumStateName(state);
 
         momentumText.richText = true;
+
+        BattleContext context =
+            battleManager?.BattleContext;
+
         FervorManager fervor =
-            battleManager?.BattleContext?.Services?.FervorManager;
+            context?.Services?.FervorManager;
 
         string fervorText = fervor == null
             ? string.Empty
             : $" · 고조 {fervor.Exaltation} / 열광 Lv.{fervor.FervorLevel}";
 
+        string emotionText =
+            context?.SelectedEmotion.HasValue == true
+                ? " · " + GameplayV5UiPresentation
+                    .GetEmotionTheme(context.SelectedEmotion.Value)
+                    .DisplayName
+                : string.Empty;
+
         momentumText.text =
             $"<b>기세 {value:+#;-#;0}</b>\n" +
-            $"{stateName}{fervorText}";
+            $"{stateName}{fervorText}{emotionText}";
     }
 
     private void RefreshBossPhase(

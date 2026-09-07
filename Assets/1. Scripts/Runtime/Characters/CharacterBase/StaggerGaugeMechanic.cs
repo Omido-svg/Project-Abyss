@@ -19,7 +19,7 @@ public sealed class StaggerGaugeMechanic : ReactiveCombatMechanic,
     public string GaugeLabel => "흐트러짐";
     public float GaugeNormalized => maxGauge <= 0 ? 0f : (float)currentGauge / maxGauge;
     public string GaugeValueText => vulnerabilityWindowOpen
-        ? $"{currentGauge}/{maxGauge} · 취약"
+        ? $"취약 · HP 내성 ×{GetVulnerabilityMultiplier():0.##}"
         : $"{currentGauge}/{maxGauge}";
     public int GaugeStateVersion => (currentGauge * 2) + (vulnerabilityWindowOpen ? 1 : 0);
 
@@ -64,7 +64,26 @@ public sealed class StaggerGaugeMechanic : ReactiveCombatMechanic,
 
         if (target == owner && !vulnerabilityWindowOpen)
         {
-            currentGauge = Mathf.Max(0, currentGauge - staggerDamage);
+            int before =
+                currentGauge;
+
+            currentGauge =
+                Mathf.Max(
+                    0,
+                    currentGauge - staggerDamage);
+
+            int applied =
+                Mathf.Max(
+                    0,
+                    before - currentGauge);
+
+            if (applied > 0)
+            {
+                exchange.StaggerDamage = applied;
+                exchange.StaggerGaugeBefore = before;
+                exchange.StaggerGaugeAfter = currentGauge;
+            }
+
             if (currentGauge <= 0)
                 OpenVulnerabilityWindow();
         }
@@ -93,6 +112,12 @@ public sealed class StaggerGaugeMechanic : ReactiveCombatMechanic,
         if (amount <= 0 || vulnerabilityWindowOpen)
             return;
         currentGauge = Mathf.Clamp(currentGauge + amount, 0, maxGauge);
+    }
+
+    private float GetVulnerabilityMultiplier()
+    {
+        return battleContext?.Rules?.Stagger?
+                   .VulnerabilityHpResistanceOverride ?? 2f;
     }
 
     private int CalculateStaggerDamage(BattleAction action, Character target)

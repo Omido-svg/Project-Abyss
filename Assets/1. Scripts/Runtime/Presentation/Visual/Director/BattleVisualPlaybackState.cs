@@ -15,6 +15,7 @@ internal sealed class BattleVisualPlaybackState
     public HashSet<BattleVfxInstance> SpawnedVfxInstances { get; } = new();
     public HashSet<string> PlayedVfxCueKeys { get; } = new();
     public List<BattleVisualHpOverrideTarget> HpOverrideTargets { get; } = new();
+    public HashSet<Character> StaggerOverrideTargets { get; } = new();
 
     public Dictionary<CharacterActionMover, CharacterActionMoveSettings>
         StagedMoverSettings { get; } = new();
@@ -107,6 +108,12 @@ internal sealed class BattleVisualPlaybackState
 
         HpOverrideTargets.Add(
             new BattleVisualHpOverrideTarget(character, part));
+    }
+
+    public void TrackStaggerOverride(Character character)
+    {
+        if (character != null)
+            StaggerOverrideTargets.Add(character);
     }
 
     public void TrackVfx(BattleVfxInstance instance)

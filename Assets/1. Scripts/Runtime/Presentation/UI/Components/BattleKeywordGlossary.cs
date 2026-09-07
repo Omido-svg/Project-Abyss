@@ -1,4 +1,14 @@
+using System;
 using System.Collections.Generic;
+using System.Text;
+
+public enum BattleKeywordTone
+{
+    Neutral = 0,
+    Beneficial = 1,
+    Harmful = 2,
+    Unique = 3
+}
 
 public static class BattleKeywordGlossary
 {
@@ -59,6 +69,14 @@ public static class BattleKeywordGlossary
                 "최신 TODO2 규칙에 따라 1턴 상태입니다. 턴 종료에 스택만큼 회복합니다.",
             ["고통"] =
                 "최신 TODO2 규칙에 따라 1턴 상태입니다. 활성 중 회복량을 절반으로 만듭니다.",
+            ["화상"] =
+                "지속 피해 상태입니다. 스택에 비례한 피해를 주며 설정된 지속시간 동안 유지됩니다.",
+            ["Burn"] =
+                "화상과 같은 상태입니다. 지속 피해를 주고 스택/지속시간이 갱신됩니다.",
+            ["기절"] =
+                "행동을 제한하는 해로운 상태입니다.",
+            ["Stun"] =
+                "기절과 같은 상태입니다. 행동을 제한합니다.",
             ["기세"] =
                 "매 턴 0에서 시작하는 -100~100 줄다리기 바입니다. 일반 성공 교환은 20, 결투 대 결투의 개별 교환 승리는 총 40을 밀며 턴 종료 구간이 고조 충전량을 정합니다.",
             ["고조"] =
@@ -71,6 +89,62 @@ public static class BattleKeywordGlossary
                 "가드와 같은 의미입니다. 피해를 대신 받아 감소하는 소모형 방어막입니다."
         };
 
+    private static readonly HashSet<string> beneficialKeywords =
+        new(StringComparer.Ordinal)
+        {
+            "힘",
+            "견고",
+            "보호",
+            "열기",
+            "재생"
+        };
+
+    private static readonly HashSet<string> harmfulKeywords =
+        new(StringComparer.Ordinal)
+        {
+            "쇠약",
+            "무장해제",
+            "골절",
+            "균열",
+            "고통",
+            "화상",
+            "Burn",
+            "기절",
+            "Stun"
+        };
+
+    private static readonly HashSet<string> uniqueKeywords =
+        new(StringComparer.Ordinal)
+        {
+            "혈상",
+            "뼈",
+            "환형"
+        };
+
+    private static readonly HashSet<string> neutralSystemKeywords =
+        new(StringComparer.Ordinal)
+        {
+            "일반공격",
+            "결투",
+            "도사림",
+            "위세",
+            "빛",
+            "합",
+            "수비",
+            "흐트러짐",
+            "부위 파괴",
+            "공격 가중치",
+            "절단",
+            "둔격",
+            "관통",
+            "무력화",
+            "기세",
+            "고조",
+            "열광",
+            "가드",
+            "Block"
+        };
+
     public static string GetDescription(string keyword)
     {
         if (string.IsNullOrWhiteSpace(keyword))
@@ -79,5 +153,181 @@ public static class BattleKeywordGlossary
         return descriptions.TryGetValue(keyword, out string description)
             ? description
             : "이 키워드는 캐릭터 또는 스킬 데이터에서 정의되는 고유 효과입니다.";
+    }
+
+    public static BattleKeywordTone GetTone(
+        string keyword,
+        bool unknownIsUnique = true)
+    {
+        if (string.IsNullOrWhiteSpace(keyword))
+            return BattleKeywordTone.Neutral;
+
+        if (beneficialKeywords.Contains(keyword))
+            return BattleKeywordTone.Beneficial;
+
+        if (harmfulKeywords.Contains(keyword))
+            return BattleKeywordTone.Harmful;
+
+        if (uniqueKeywords.Contains(keyword))
+            return BattleKeywordTone.Unique;
+
+        if (neutralSystemKeywords.Contains(keyword))
+            return BattleKeywordTone.Neutral;
+
+        return unknownIsUnique
+            ? BattleKeywordTone.Unique
+            : BattleKeywordTone.Neutral;
+    }
+
+    public static string GetColorHex(
+        BattleKeywordTone tone)
+    {
+        return tone switch
+        {
+            // TODO 문서 기준: 이로운 공용 키워드는 노랑, 해로운 공용 키워드는 빨강.
+            BattleKeywordTone.Beneficial => "#FFD84A",
+            BattleKeywordTone.Harmful => "#FF5B61",
+            BattleKeywordTone.Unique => "#D99CFF",
+            _ => "#8FD3FF"
+        };
+    }
+
+    public static string ColorizeKeyword(
+        string keyword,
+        bool bold = true,
+        bool unknownIsUnique = true)
+    {
+        if (string.IsNullOrWhiteSpace(keyword))
+            return string.Empty;
+
+        string value =
+            bold
+                ? $"<b>{keyword}</b>"
+                : keyword;
+
+        return
+            $"<color={GetColorHex(GetTone(keyword, unknownIsUnique))}>{value}</color>";
+    }
+
+    /// <summary>
+    /// TMP RichText 태그 내부는 건드리지 않고,
+    /// 공용 키워드와 SkillDefinition에 선언된 고유 키워드를 한 번만 색칠한다.
+    /// </summary>
+    public static string ColorizeText(
+        string text,
+        IEnumerable<string> extraKeywords = null)
+    {
+        if (string.IsNullOrWhiteSpace(text))
+            return text ?? string.Empty;
+
+        List<string> keywords =
+            new List<string>(
+                descriptions.Keys);
+
+        if (extraKeywords != null)
+        {
+            foreach (string keyword in extraKeywords)
+            {
+                if (string.IsNullOrWhiteSpace(keyword) ||
+                    keywords.Contains(keyword))
+                {
+                    continue;
+                }
+
+                keywords.Add(keyword);
+            }
+        }
+
+        keywords.Sort(
+            (left, right) =>
+                right.Length.CompareTo(left.Length));
+
+        StringBuilder builder =
+            new StringBuilder(
+                text.Length + 64);
+
+        int index = 0;
+
+        while (index < text.Length)
+        {
+            if (text[index] == '<')
+            {
+                int close =
+                    text.IndexOf(
+                        '>',
+                        index);
+
+                if (close >= index)
+                {
+                    builder.Append(
+                        text,
+                        index,
+                        close - index + 1);
+
+                    index = close + 1;
+                    continue;
+                }
+            }
+
+            string matched = null;
+
+            foreach (string keyword in keywords)
+            {
+                if (index + keyword.Length > text.Length)
+                    continue;
+
+                if (string.Compare(
+                        text,
+                        index,
+                        keyword,
+                        0,
+                        keyword.Length,
+                        StringComparison.Ordinal) == 0)
+                {
+                    matched = keyword;
+                    break;
+                }
+            }
+
+            if (matched != null)
+            {
+                builder.Append(
+                    ColorizeKeyword(
+                        matched,
+                        bold: true,
+                        unknownIsUnique: true));
+
+                index += matched.Length;
+                continue;
+            }
+
+            builder.Append(text[index]);
+            index++;
+        }
+
+        return builder.ToString();
+    }
+
+    public static string GetStatusEffectDisplayName(
+        StatusEffectId id)
+    {
+        return id switch
+        {
+            StatusEffectId.Bleeding => "혈상",
+            StatusEffectId.OlafBloodWound => "혈상",
+            StatusEffectId.Burn => "화상",
+            StatusEffectId.Stun => "기절",
+            StatusEffectId.Strength => "힘",
+            StatusEffectId.Weakness => "쇠약",
+            StatusEffectId.Sturdy => "견고",
+            StatusEffectId.Disarm => "무장해제",
+            StatusEffectId.Fracture => "골절",
+            StatusEffectId.Protection => "보호",
+            StatusEffectId.Rupture => "균열",
+            StatusEffectId.Heat => "열기",
+            StatusEffectId.Regeneration => "재생",
+            StatusEffectId.Pain => "고통",
+            _ => id.ToString()
+        };
     }
 }

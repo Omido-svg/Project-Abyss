@@ -526,7 +526,38 @@ public sealed class HifumiMechanic : CombatMechanic, ICharacterUniqueGaugeProvid
                 applyGuard: true,
                 sourceAction: myAction);
 
-            battleContext?.Services?.DamageManager?.ApplyDamageContext(request);
+            // 반격은 계획 ActionSlot을 추가하는 것이 아니라 전투 결과에서 파생된 Runtime Roll이다.
+            // 공용 이벤트로 노출해 행동순서 UI가 즉시 보라색 추가 굴림을 삽입할 수 있게 한다.
+            BattleReactiveRollEvent reactiveRoll =
+                new BattleReactiveRollEvent
+                {
+                    SourceKind = BattleReactiveRollSourceKind.Counter,
+                    DisplayName = "뼈 반격",
+                    SourceAction = myAction,
+                    Owner = owner,
+                    OwnerPart = myAction.OwnerPart,
+                    Target = target,
+                    TargetPart = targetPart,
+                    RollType = CombatRollType.Attack,
+                    PhysicalType = request.PhysicalType,
+                    SequenceIndex = i,
+                    SequenceCount = lost,
+                    Power = counterPower
+                };
+
+            battleEvent?.RaiseReactiveRollStarted(
+                reactiveRoll);
+
+            DamageContext counterDamage =
+                battleContext?.Services?.DamageManager
+                    ?.ApplyDamageContext(request);
+
+            reactiveRoll.Complete(
+                counterDamage);
+
+            battleEvent?.RaiseReactiveRollResolved(
+                reactiveRoll);
+
             executedCounters++;
         }
 

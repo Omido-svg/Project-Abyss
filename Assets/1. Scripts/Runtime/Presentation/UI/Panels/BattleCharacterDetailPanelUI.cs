@@ -589,15 +589,55 @@ public sealed class BattleCharacterDetailPanelUI : MonoBehaviour
             $"속도  {character.CurrentStatus?.minSpeed ?? 0}" +
             $"~{character.CurrentStatus?.maxSpeed ?? 0}");
 
-        PhysicalResistanceProfile resistance = data?.PhysicalResistances;
-        if (resistance != null)
+        StaggerGaugeMechanic stagger =
+            character.GetMechanic<StaggerGaugeMechanic>();
+
+        PhysicalResistanceProfile hpResistance =
+            data?.PhysicalResistances;
+
+        if (hpResistance != null)
         {
             builder.AppendLine();
-            builder.AppendLine("<b>물리 내성</b>");
+            builder.AppendLine("<b>HP 물리 내성</b>");
+
+            if (stagger?.IsVulnerabilityWindowOpen == true)
+            {
+                float vulnerable =
+                    character.BattleContext?.Rules?.Stagger?
+                        .VulnerabilityHpResistanceOverride ?? 2f;
+
+                builder.AppendLine(
+                    $"<color=#FF7A7A>흐트러짐 취약 · 절단/둔격/관통 전부 ×{vulnerable:0.##}</color>");
+            }
+            else
+            {
+                builder.AppendLine(
+                    $"절단 ×{hpResistance.GetMultiplier(PhysicalDamageType.Cut):0.##}   " +
+                    $"둔격 ×{hpResistance.GetMultiplier(PhysicalDamageType.Blunt):0.##}   " +
+                    $"관통 ×{hpResistance.GetMultiplier(PhysicalDamageType.Pierce):0.##}");
+            }
+        }
+
+        PhysicalResistanceProfile staggerResistance =
+            data?.StaggerResistances;
+
+        if (staggerResistance != null)
+        {
+            builder.AppendLine();
+            builder.AppendLine("<b>흐트러짐 내성</b>");
             builder.AppendLine(
-                $"절단 ×{resistance.GetMultiplier(PhysicalDamageType.Cut):0.##}   " +
-                $"둔격 ×{resistance.GetMultiplier(PhysicalDamageType.Blunt):0.##}   " +
-                $"관통 ×{resistance.GetMultiplier(PhysicalDamageType.Pierce):0.##}");
+                $"절단 ×{staggerResistance.GetMultiplier(PhysicalDamageType.Cut):0.##}   " +
+                $"둔격 ×{staggerResistance.GetMultiplier(PhysicalDamageType.Blunt):0.##}   " +
+                $"관통 ×{staggerResistance.GetMultiplier(PhysicalDamageType.Pierce):0.##}");
+        }
+
+        if (stagger != null)
+        {
+            builder.AppendLine();
+            builder.AppendLine(
+                stagger.IsVulnerabilityWindowOpen
+                    ? "<b>흐트러짐</b>  <color=#FF7A7A>취약 창 OPEN</color>"
+                    : $"<b>흐트러짐</b>  {stagger.CurrentGauge}/{stagger.MaxGauge}");
         }
 
         summaryText.text = builder.ToString();
@@ -822,15 +862,11 @@ public sealed class BattleCharacterDetailPanelUI : MonoBehaviour
             if (effect == null)
                 continue;
 
-            string scope =
-                effect.OwnerPart != null
-                    ? GetPartName(effect.OwnerPart.Type)
-                    : "전신";
-
             Button item =
                 CreateListButton(
-                    $"{effect.Name ?? effect.EffectName}  " +
-                    $"스택 {effect.Stack}  지속 {FormatDuration(effect)}  [{scope}]");
+                    BattleStatusUiText.BuildListLabel(
+                        effect,
+                        character));
 
             if (item == null)
                 continue;
@@ -838,8 +874,10 @@ public sealed class BattleCharacterDetailPanelUI : MonoBehaviour
             StatusEffect captured = effect;
             item.onClick.AddListener(
                 () => SetDetailText(
-                    captured.Name ?? captured.EffectName,
-                    BuildStatusDescription(captured)));
+                    BattleStatusUiText.GetDisplayName(captured),
+                    BuildStatusDescription(
+                        captured,
+                        character)));
         }
 
         StatusEffect first = effects[0];
@@ -847,8 +885,10 @@ public sealed class BattleCharacterDetailPanelUI : MonoBehaviour
         if (first != null)
         {
             SetDetailText(
-                first.Name ?? first.EffectName,
-                BuildStatusDescription(first));
+                BattleStatusUiText.GetDisplayName(first),
+                BuildStatusDescription(
+                    first,
+                    character));
         }
     }
 
@@ -880,6 +920,28 @@ public sealed class BattleCharacterDetailPanelUI : MonoBehaviour
             text.fontSize = 18f;
             text.overflowMode = TextOverflowModes.Overflow;
             text.text = label;
+        }
+
+        // 상태/스킬처럼 2줄 요약을 사용하는 항목은 기존 1줄 템플릿 높이에서
+        // 잘리지 않도록 런타임 LayoutElement만 확장한다.
+        if (!string.IsNullOrEmpty(label) &&
+            label.Contains("\n"))
+        {
+            LayoutElement layout =
+                item.GetComponent<LayoutElement>();
+
+            if (layout == null)
+                layout = item.gameObject.AddComponent<LayoutElement>();
+
+            layout.minHeight =
+                Mathf.Max(
+                    layout.minHeight,
+                    54f);
+
+            layout.preferredHeight =
+                Mathf.Max(
+                    layout.preferredHeight,
+                    58f);
         }
 
         generatedListItems.Add(item.gameObject);
@@ -935,7 +997,12 @@ public sealed class BattleCharacterDetailPanelUI : MonoBehaviour
                         true);
 
             if (text != null)
-                text.text = keyword.Name;
+            {
+                text.richText = true;
+                text.text =
+                    BattleKeywordGlossary.ColorizeKeyword(
+                        keyword.Name);
+            }
 
             SkillKeywordEntry captured =
                 keyword;
@@ -969,14 +1036,24 @@ public sealed class BattleCharacterDetailPanelUI : MonoBehaviour
             keywordPopup.SetActive(true);
 
         if (keywordPopupTitle != null)
-            keywordPopupTitle.text = keyword.Name;
+        {
+            keywordPopupTitle.richText = true;
+            keywordPopupTitle.text =
+                BattleKeywordGlossary.ColorizeKeyword(
+                    keyword.Name);
+        }
 
         if (keywordPopupBody != null)
         {
-            keywordPopupBody.text =
+            string description =
                 string.IsNullOrWhiteSpace(keyword.Description)
                     ? BattleKeywordGlossary.GetDescription(keyword.Name)
                     : keyword.Description;
+
+            keywordPopupBody.text =
+                BattleKeywordGlossary.ColorizeText(
+                    description,
+                    new[] { keyword.Name });
         }
     }
 
@@ -1803,32 +1880,12 @@ public sealed class BattleCharacterDetailPanelUI : MonoBehaviour
     }
 
     private static string BuildStatusDescription(
-        StatusEffect effect)
+        StatusEffect effect,
+        Character viewedCharacter)
     {
-        if (effect == null)
-            return "설명이 없습니다.";
-
-        string scope =
-            effect.OwnerPart != null
-                ? GetPartName(effect.OwnerPart.Type)
-                : "전신";
-
-        return
-            $"범위: {scope}\n" +
-            $"스택: {effect.Stack}\n" +
-            $"지속시간: {FormatDuration(effect)}\n" +
-            $"중첩 정책: {effect.StackPolicy}\n" +
-            $"지속 정책: {effect.DurationPolicy}";
-    }
-
-    private static string FormatDuration(StatusEffect effect)
-    {
-        if (effect == null)
-            return "-";
-
-        return effect.IsPermanent
-            ? "영구"
-            : effect.Duration.ToString();
+        return BattleStatusUiText.BuildDescription(
+            effect,
+            viewedCharacter);
     }
 
     private void ClearGeneratedListItems()

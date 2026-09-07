@@ -69,6 +69,13 @@ public sealed class BattlePerformanceDiagnostics : MonoBehaviour
     private GUIStyle overlayStyle;
     private GUIStyle toggleButtonStyle;
     private string cachedOverlay = string.Empty;
+
+    private bool toggleButtonPositionInitialized;
+    private Vector2 toggleButtonPosition;
+    private bool draggingToggleButton;
+    private Vector2 toggleButtonDragOffset;
+    private Vector2 toggleButtonDragStartMouse;
+    private bool toggleButtonWasDragged;
     private float nextSampleTime;
     private float smoothedFrameMs;
     private float lowFpsDuration;
@@ -287,15 +294,108 @@ public sealed class BattlePerformanceDiagnostics : MonoBehaviour
 
         float width = Mathf.Max(120f, toggleButtonSize.x);
         float height = Mathf.Max(28f, toggleButtonSize.y);
-        float x = Mathf.Max(0f, Screen.width - width - Mathf.Max(0f, toggleButtonMargin.x));
-        float y = Mathf.Max(0f, toggleButtonMargin.y);
+
+        if (!toggleButtonPositionInitialized)
+        {
+            toggleButtonPosition = new Vector2(
+                Mathf.Max(
+                    0f,
+                    Screen.width -
+                    width -
+                    Mathf.Max(0f, toggleButtonMargin.x)),
+                Mathf.Max(0f, toggleButtonMargin.y));
+            toggleButtonPositionInitialized = true;
+        }
+
+        toggleButtonPosition = ClampGuiPosition(
+            toggleButtonPosition,
+            width,
+            height);
+
+        Rect buttonRect = new Rect(
+            toggleButtonPosition.x,
+            toggleButtonPosition.y,
+            width,
+            height);
+
+        Event guiEvent = Event.current;
+
+        if (guiEvent != null &&
+            guiEvent.button == 0)
+        {
+            if (guiEvent.type == EventType.MouseDown &&
+                buttonRect.Contains(guiEvent.mousePosition))
+            {
+                draggingToggleButton = true;
+                toggleButtonWasDragged = false;
+                toggleButtonDragStartMouse =
+                    guiEvent.mousePosition;
+                toggleButtonDragOffset =
+                    guiEvent.mousePosition -
+                    toggleButtonPosition;
+                guiEvent.Use();
+            }
+            else if (guiEvent.type == EventType.MouseDrag &&
+                     draggingToggleButton)
+            {
+                toggleButtonPosition =
+                    ClampGuiPosition(
+                        guiEvent.mousePosition -
+                        toggleButtonDragOffset,
+                        width,
+                        height);
+
+                if (!toggleButtonWasDragged &&
+                    Vector2.Distance(
+                        toggleButtonDragStartMouse,
+                        guiEvent.mousePosition) >= 4f)
+                {
+                    toggleButtonWasDragged = true;
+                }
+
+                guiEvent.Use();
+            }
+            else if (guiEvent.type == EventType.MouseUp &&
+                     draggingToggleButton)
+            {
+                bool shouldToggle =
+                    !toggleButtonWasDragged;
+
+                draggingToggleButton = false;
+                toggleButtonWasDragged = false;
+
+                if (shouldToggle)
+                    ToggleOverlayVisibility();
+
+                guiEvent.Use();
+            }
+        }
 
         string label = showOverlay
             ? $"Hide Performance [{toggleOverlayKey}]"
             : $"Show Performance [{toggleOverlayKey}]";
 
-        if (GUI.Button(new Rect(x, y, width, height), label, toggleButtonStyle))
-            ToggleOverlayVisibility();
+        // 클릭/드래그 입력은 위에서 직접 처리한다.
+        GUI.Box(
+            buttonRect,
+            label,
+            toggleButtonStyle);
+    }
+
+    private static Vector2 ClampGuiPosition(
+        Vector2 position,
+        float width,
+        float height)
+    {
+        return new Vector2(
+            Mathf.Clamp(
+                position.x,
+                0f,
+                Mathf.Max(0f, Screen.width - width)),
+            Mathf.Clamp(
+                position.y,
+                0f,
+                Mathf.Max(0f, Screen.height - height)));
     }
 
     public bool IsOverlayVisible => showOverlay;

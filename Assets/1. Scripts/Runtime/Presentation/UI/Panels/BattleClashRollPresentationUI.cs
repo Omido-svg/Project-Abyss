@@ -763,10 +763,17 @@ public sealed class BattleClashRollPresentationUI : MonoBehaviour
         if (action?.Skill == null)
             return;
 
-        int rollCount =
+        int authoredRollCount =
             Mathf.Max(
                 1,
                 action.Skill.ExchangeRollCount);
+
+        // 상태/메커닉이 추가한 실제 굴림 개수를 Presentation도 그대로 사용한다.
+        // authoredRollCount를 넘는 굴림은 보라색 + 배지로 "런타임 추가 굴림"임을 표시한다.
+        int rollCount =
+            Mathf.Max(
+                1,
+                action.GetEffectiveExchangeRollCount());
 
         for (int index = 0;
              index < rollCount;
@@ -793,8 +800,18 @@ public sealed class BattleClashRollPresentationUI : MonoBehaviour
             BattleClashRollSquareUI square =
                 squareObject.GetComponent<BattleClashRollSquareUI>();
 
+            PhysicalDamageType physicalType =
+                PhysicalDamageResolver.Resolve(
+                    action,
+                    index);
+
+            bool generatedRoll =
+                index >= authoredRollCount;
+
             square.Configure(
                 type,
+                physicalType,
+                generatedRoll,
                 attackColor,
                 defenseColor,
                 fontAsset,

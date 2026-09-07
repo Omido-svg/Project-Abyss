@@ -34,7 +34,20 @@ public abstract class SkillEffectDefinition : ScriptableObject
         SkillEffectTiming currentTiming,
         SkillEffectOverrides overrides)
     {
-        if (currentTiming != timing)
+        return TryApply(
+            context,
+            currentTiming,
+            overrides,
+            timing);
+    }
+
+    public SkillEffectResult TryApply(
+        SkillEffectContext context,
+        SkillEffectTiming currentTiming,
+        SkillEffectOverrides overrides,
+        SkillEffectTiming scheduledTiming)
+    {
+        if (currentTiming != scheduledTiming)
         {
             return SkillEffectResult.NotScheduled(
                 this,

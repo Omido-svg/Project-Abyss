@@ -38,7 +38,9 @@ public class BattleAction
     /// <summary>
     /// 현재 해석에서 실제 효과와 피해를 받을 대상입니다.
     /// 일반·일방 행동에서는 계획 대상이고,
-    /// 합에서는 상대 BattleAction의 Owner/OwnerPart로 고정됩니다.
+    /// 합에서는 대상 Character를 상대 BattleAction의 Owner로 고정합니다.
+    /// 단, 처음부터 그 상대를 공격하도록 계획한 행동의 TargetPart는 그대로 보존합니다.
+    /// TargetSlot은 합 상대를, TargetPart는 실제 피해 부위를 나타내는 독립 계약입니다.
     /// </summary>
     public Character Target =>
         hasResolutionTargetOverride
@@ -216,9 +218,40 @@ public class BattleAction
         if (opponent == null)
             return;
 
+        BodyPart targetPart =
+            ResolveClashTargetPart(opponent);
+
         BindResolutionTarget(
             opponent.Owner,
-            opponent.OwnerPart);
+            targetPart);
+    }
+
+    private BodyPart ResolveClashTargetPart(
+        BattleAction opponent)
+    {
+        if (opponent?.Owner == null)
+            return null;
+
+        // 정확한 적 ActionSlot(TargetSlot)을 지정해 합을 만들었더라도
+        // 실제 피해 부위(TargetPart)는 별도 선택값이다.
+        // Stage 1 Boss처럼 상대 ActionSlot.Part가 null인 글로벌 슬롯에서
+        // HEAD 같은 선언 피해 부위를 null로 덮어쓰지 않는다.
+        if (DeclaredTarget == opponent.Owner)
+        {
+            BodyPart declaredPart =
+                DeclaredTargetPart;
+
+            if (declaredPart == null ||
+                declaredPart.Owner == null ||
+                declaredPart.Owner == opponent.Owner)
+            {
+                return declaredPart;
+            }
+        }
+
+        // 원래 다른 대상을 보던 행동이 합에 끌려온 경우에는
+        // 기존 규칙대로 상대 행동의 원천 부위를 사용한다.
+        return opponent.OwnerPart;
     }
 
     public void ClearResolutionTarget()

@@ -527,6 +527,37 @@ public class BattleEvent : IDisposable
     }
 
     //-----------------------------------
+    // Runtime generated / reactive rolls
+    //-----------------------------------
+
+    public event Action<BattleReactiveRollEvent> OnReactiveRollStarted;
+    public event Action<BattleReactiveRollEvent> OnReactiveRollResolved;
+
+    public void RaiseReactiveRollStarted(
+        BattleReactiveRollEvent context)
+    {
+        if (IsDisposed || context == null)
+            return;
+
+        InvokeSafely(
+            OnReactiveRollStarted,
+            context,
+            nameof(OnReactiveRollStarted));
+    }
+
+    public void RaiseReactiveRollResolved(
+        BattleReactiveRollEvent context)
+    {
+        if (IsDisposed || context == null)
+            return;
+
+        InvokeSafely(
+            OnReactiveRollResolved,
+            context,
+            nameof(OnReactiveRollResolved));
+    }
+
+    //-----------------------------------
     // Clash result
     //-----------------------------------
 
@@ -580,6 +611,8 @@ public class BattleEvent : IDisposable
         OnClashStart = null;
         OnClashWin = null;
         OnClashLose = null;
+        OnReactiveRollStarted = null;
+        OnReactiveRollResolved = null;
         OnExchangeResolved = null;
         OnClashResolved = null;
 

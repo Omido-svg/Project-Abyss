@@ -468,46 +468,141 @@ public abstract class Skill
             fallbackType);
     }
 
+    public void NotifyBeforeUse(
+        BattleAction action,
+        BattleAction opponentAction = null,
+        bool isClash = false,
+        bool isOneSided = false)
+    {
+        ExecuteDefinitionEffects(
+            action,
+            SkillEffectTiming.BeforeUse,
+            opponentAction,
+            isClash: isClash,
+            isOneSided: isOneSided);
+    }
+
+    public void NotifyClashStart(
+        BattleAction action,
+        BattleAction opponentAction)
+    {
+        ExecuteDefinitionEffects(
+            action,
+            SkillEffectTiming.OnClashStart,
+            opponentAction,
+            isClash: true);
+    }
+
+    public void NotifyOneSidedStart(
+        BattleAction action)
+    {
+        ExecuteDefinitionEffects(
+            action,
+            SkillEffectTiming.OnOneSidedStart,
+            isOneSided: true);
+    }
+
+    public void NotifyBeforeAttack(
+        BattleAction action,
+        BattleAction opponentAction,
+        bool isClash,
+        bool isOneSided)
+    {
+        ExecuteDefinitionEffects(
+            action,
+            SkillEffectTiming.BeforeAttack,
+            opponentAction,
+            isClash: isClash,
+            isOneSided: isOneSided);
+    }
+
+    public void NotifyRollStart(
+        BattleAction action,
+        BattleAction opponentAction,
+        int rollIndex,
+        bool isClash,
+        bool isOneSided)
+    {
+        // OnRollStart는 실제 RNG를 뽑기 전에 발생한다.
+        // 이전 교환의 LastRollResult를 잘못 노출하지 않도록 결과는 null로 둔다.
+        RollResult rollResult = null;
+
+        ExecuteDefinitionEffects(
+            action,
+            SkillEffectTiming.OnRollStart,
+            opponentAction,
+            exchangeResult: null,
+            rollIndex: rollIndex,
+            rollResult: rollResult,
+            isClash: isClash,
+            isOneSided: isOneSided,
+            rollSucceeded: false);
+
+        ExecuteRollDetailedEffects(
+            action,
+            opponentAction,
+            rollIndex,
+            SkillEffectTiming.OnRollStart,
+            null,
+            null,
+            isClash,
+            isOneSided,
+            false);
+    }
+
     public void NotifyRollResolved(
         BattleAction action,
         BattleAction opponentAction,
         int rollIndex,
         bool won,
-        DamageContext damageContext)
+        DamageContext damageContext,
+        bool isClash = false,
+        bool isOneSided = false)
     {
-        // 결투를 평타로 받거나 아예 받지 않은 경우에는
-        // 결투 전용 굴림 효과가 발생하지 않는다.
-        if (ActionType == ActionType.Duel &&
-            opponentAction?.ActionType != ActionType.Duel)
-        {
-            return;
-        }
-
         SkillRollData data = GetRollData(rollIndex);
-        IReadOnlyList<SkillEffectEntry> effectEntries = won
-            ? data?.OnWinEffectEntries
-            : data?.OnLoseEffectEntries;
-        IReadOnlyList<SkillEffectDefinition> legacyEffects = won
-            ? data?.OnWinEffects
-            : data?.OnLoseEffects;
 
-        if (HasValidEffectEntries(effectEntries))
+        // 기존 OnWin/OnLose 전용 리스트는 Duel-vs-Duel 규칙을 그대로 보존한다.
+        bool legacyDuelEffectsAllowed =
+            ActionType != ActionType.Duel ||
+            opponentAction?.ActionType == ActionType.Duel;
+
+        if (legacyDuelEffectsAllowed)
         {
-            ExecuteExplicitEffects(
-                effectEntries,
-                action,
-                won ? SkillEffectTiming.OnRollWin : SkillEffectTiming.OnRollLose,
-                opponentAction,
-                damageContext);
-        }
-        else
-        {
-            ExecuteExplicitEffects(
-                legacyEffects,
-                action,
-                won ? SkillEffectTiming.OnRollWin : SkillEffectTiming.OnRollLose,
-                opponentAction,
-                damageContext);
+            IReadOnlyList<SkillEffectEntry> effectEntries = won
+                ? data?.OnWinEffectEntries
+                : data?.OnLoseEffectEntries;
+            IReadOnlyList<SkillEffectDefinition> legacyEffects = won
+                ? data?.OnWinEffects
+                : data?.OnLoseEffects;
+
+            if (HasValidEffectEntries(effectEntries))
+            {
+                ExecuteExplicitEffects(
+                    effectEntries,
+                    action,
+                    won ? SkillEffectTiming.OnRollWin : SkillEffectTiming.OnRollLose,
+                    opponentAction,
+                    damageContext,
+                    rollIndex: rollIndex,
+                    rollResult: action?.LastRollResult,
+                    isClash: isClash,
+                    isOneSided: isOneSided,
+                    rollSucceeded: won);
+            }
+            else
+            {
+                ExecuteExplicitEffects(
+                    legacyEffects,
+                    action,
+                    won ? SkillEffectTiming.OnRollWin : SkillEffectTiming.OnRollLose,
+                    opponentAction,
+                    damageContext,
+                    rollIndex: rollIndex,
+                    rollResult: action?.LastRollResult,
+                    isClash: isClash,
+                    isOneSided: isOneSided,
+                    rollSucceeded: won);
+            }
         }
 
         MultiRollPenaltyData penalty = RuntimeDefinition?.MultiRollPenalty;
@@ -522,7 +617,12 @@ public abstract class Skill
                     action,
                     SkillEffectTiming.OnMultiRollPenaltyAfterRoll,
                     opponentAction,
-                    damageContext);
+                    damageContext,
+                    rollIndex: rollIndex,
+                    rollResult: action?.LastRollResult,
+                    isClash: isClash,
+                    isOneSided: isOneSided,
+                    rollSucceeded: won);
             }
             else
             {
@@ -531,9 +631,183 @@ public abstract class Skill
                     action,
                     SkillEffectTiming.OnMultiRollPenaltyAfterRoll,
                     opponentAction,
-                    damageContext);
+                    damageContext,
+                    rollIndex: rollIndex,
+                    rollResult: action?.LastRollResult,
+                    isClash: isClash,
+                    isOneSided: isOneSided,
+                    rollSucceeded: won);
             }
         }
+    }
+
+    /// <summary>
+    /// 굴림의 성공/실패가 확정된 직후, 실제 HP/흐트러짐 피해를 적용하기 전에 호출한다.
+    /// 따라서 OnRollSuccess/Failure 효과가 이후 피해 계산에 영향을 줄 수 있다.
+    /// </summary>
+    public void NotifyRollOutcome(
+        BattleAction action,
+        BattleAction opponentAction,
+        int rollIndex,
+        bool succeeded,
+        bool isClash,
+        bool isOneSided)
+    {
+        SkillEffectTiming timing =
+            succeeded
+                ? SkillEffectTiming.OnRollSuccess
+                : SkillEffectTiming.OnRollFailure;
+
+        ExecuteDefinitionEffects(
+            action,
+            timing,
+            opponentAction,
+            rollIndex: rollIndex,
+            rollResult: action?.LastRollResult,
+            isClash: isClash,
+            isOneSided: isOneSided,
+            rollSucceeded: succeeded);
+
+        ExecuteRollDetailedEffects(
+            action,
+            opponentAction,
+            rollIndex,
+            timing,
+            null,
+            null,
+            isClash,
+            isOneSided,
+            succeeded);
+    }
+
+    public void NotifyHit(
+        BattleAction action,
+        BattleAction opponentAction,
+        int rollIndex,
+        ClashExchangeResult exchangeResult,
+        bool isClash,
+        bool isOneSided)
+    {
+        if (action == null || exchangeResult == null)
+            return;
+
+        // 적중은 "최종 HP 숫자가 1 이상인가"가 아니라
+        // 공격/흐트러짐 굴림이 실제 교환에서 승리해 타깃에 도달했는가로 정의한다.
+        // 따라서 Guard가 HP 피해를 전부 흡수해도 OnHit은 정상 발동한다.
+        bool hitEstablished =
+            exchangeResult.WinnerAction == action &&
+            !exchangeResult.WasCancelled &&
+            (action.CurrentRollType == CombatRollType.Attack ||
+             action.CurrentRollType == CombatRollType.Stagger);
+
+        if (!hitEstablished)
+            return;
+
+        DamageContext damageContext =
+            exchangeResult.DamageContext;
+
+        ExecuteDefinitionEffects(
+            action,
+            SkillEffectTiming.OnHit,
+            opponentAction,
+            damageContext,
+            exchangeResult: exchangeResult,
+            rollIndex: rollIndex,
+            rollResult: action.LastRollResult,
+            isClash: isClash,
+            isOneSided: isOneSided,
+            rollSucceeded: true);
+
+        ExecuteRollDetailedEffects(
+            action,
+            opponentAction,
+            rollIndex,
+            SkillEffectTiming.OnHit,
+            damageContext,
+            exchangeResult,
+            isClash,
+            isOneSided,
+            true);
+    }
+
+    public void NotifyRollEnd(
+        BattleAction action,
+        BattleAction opponentAction,
+        int rollIndex,
+        bool succeeded,
+        ClashExchangeResult exchangeResult,
+        bool isClash,
+        bool isOneSided)
+    {
+        DamageContext damageContext =
+            exchangeResult?.DamageContext;
+
+        ExecuteDefinitionEffects(
+            action,
+            SkillEffectTiming.OnRollEnd,
+            opponentAction,
+            damageContext,
+            exchangeResult: exchangeResult,
+            rollIndex: rollIndex,
+            rollResult: action?.LastRollResult,
+            isClash: isClash,
+            isOneSided: isOneSided,
+            rollSucceeded: succeeded);
+
+        ExecuteRollDetailedEffects(
+            action,
+            opponentAction,
+            rollIndex,
+            SkillEffectTiming.OnRollEnd,
+            damageContext,
+            exchangeResult,
+            isClash,
+            isOneSided,
+            succeeded);
+    }
+
+    public void NotifyAttackEnd(
+        BattleAction action,
+        BattleAction opponentAction,
+        bool isClash,
+        bool isOneSided)
+    {
+        ExecuteDefinitionEffects(
+            action,
+            SkillEffectTiming.OnAttackEnd,
+            opponentAction,
+            isClash: isClash,
+            isOneSided: isOneSided);
+    }
+
+    private void ExecuteRollDetailedEffects(
+        BattleAction action,
+        BattleAction opponentAction,
+        int rollIndex,
+        SkillEffectTiming timing,
+        DamageContext damageContext,
+        ClashExchangeResult exchangeResult,
+        bool isClash,
+        bool isOneSided,
+        bool rollSucceeded)
+    {
+        SkillRollData data = GetRollData(rollIndex);
+
+        if (!HasValidEffectEntries(data?.EffectEntries))
+            return;
+
+        ExecuteExplicitEffects(
+            data.EffectEntries,
+            action,
+            timing,
+            opponentAction,
+            damageContext,
+            exchangeResult,
+            rollIndex,
+            action?.LastRollResult,
+            isClash,
+            isOneSided,
+            rollSucceeded);
     }
 
     private void ExecuteMultiRollPenalty(
@@ -577,7 +851,13 @@ public abstract class Skill
         BattleAction action,
         SkillEffectTiming timing,
         BattleAction opponentAction = null,
-        DamageContext damageContext = null)
+        DamageContext damageContext = null,
+        ClashExchangeResult exchangeResult = null,
+        int rollIndex = -1,
+        RollResult rollResult = null,
+        bool isClash = false,
+        bool isOneSided = false,
+        bool rollSucceeded = false)
     {
         if (effects == null || action == null || RuntimeDefinition == null)
             return;
@@ -589,7 +869,13 @@ public abstract class Skill
             opponentAction,
             damageContext,
             null,
-            UseCountThisTurn);
+            exchangeResult,
+            UseCountThisTurn,
+            rollIndex,
+            rollResult,
+            isClash,
+            isOneSided,
+            rollSucceeded);
 
         foreach (SkillEffectEntry entry in effects)
             entry?.TryApply(context, timing);
@@ -600,7 +886,13 @@ public abstract class Skill
         BattleAction action,
         SkillEffectTiming timing,
         BattleAction opponentAction = null,
-        DamageContext damageContext = null)
+        DamageContext damageContext = null,
+        ClashExchangeResult exchangeResult = null,
+        int rollIndex = -1,
+        RollResult rollResult = null,
+        bool isClash = false,
+        bool isOneSided = false,
+        bool rollSucceeded = false)
     {
         if (effects == null || action == null || RuntimeDefinition == null)
             return;
@@ -612,7 +904,13 @@ public abstract class Skill
             opponentAction,
             damageContext,
             null,
-            UseCountThisTurn);
+            exchangeResult,
+            UseCountThisTurn,
+            rollIndex,
+            rollResult,
+            isClash,
+            isOneSided,
+            rollSucceeded);
 
         foreach (SkillEffectDefinition effect in effects)
             effect?.TryApply(context, timing);
@@ -624,7 +922,13 @@ public abstract class Skill
             SkillEffectTiming timing,
             BattleAction opponentAction = null,
             DamageContext damageContext = null,
-            KillEventContext killContext = null)
+            KillEventContext killContext = null,
+            ClashExchangeResult exchangeResult = null,
+            int rollIndex = -1,
+            RollResult rollResult = null,
+            bool isClash = false,
+            bool isOneSided = false,
+            bool rollSucceeded = false)
     {
         SkillDefinition definition = RuntimeDefinition;
 
@@ -654,32 +958,93 @@ public abstract class Skill
                     opponentAction,
                     damageContext,
                     killContext,
-                    UseCountThisTurn);
+                    exchangeResult,
+                    UseCountThisTurn,
+                    rollIndex,
+                    rollResult,
+                    isClash,
+                    isOneSided,
+                    rollSucceeded);
 
-            List<SkillEffectResult> results = new();
-
-            foreach (SkillEffectEntry entry
-                     in definition.EnumerateEffectEntries())
-            {
-                if (entry?.Definition == null)
-                    continue;
-
-                SkillEffectResult result =
-                    entry.TryApply(
-                        context,
-                        timing);
-
-                if (result != null)
-                    results.Add(result);
-            }
-
-            return results;
+            return ExecuteDefinitionEntries(
+                definition,
+                context,
+                timing);
         }
         finally
         {
             activeEffectDispatches.Remove(
                 dispatchKey);
         }
+    }
+
+    private IReadOnlyList<SkillEffectResult>
+        ExecuteOwnerDefinitionEffects(
+            SkillEffectTiming timing)
+    {
+        SkillDefinition definition = RuntimeDefinition;
+
+        if (definition == null ||
+            owner == null ||
+            (!definition.HasEffectEntries &&
+             (definition.Effects == null || definition.Effects.Count == 0)))
+        {
+            return Array.Empty<SkillEffectResult>();
+        }
+
+        SkillEffectDispatchKey dispatchKey =
+            new SkillEffectDispatchKey(
+                0,
+                timing);
+
+        if (!activeEffectDispatches.Add(dispatchKey))
+            return Array.Empty<SkillEffectResult>();
+
+        try
+        {
+            SkillEffectContext context =
+                new SkillEffectContext(
+                    owner,
+                    definition,
+                    timing,
+                    UseCountThisTurn);
+
+            return ExecuteDefinitionEntries(
+                definition,
+                context,
+                timing);
+        }
+        finally
+        {
+            activeEffectDispatches.Remove(
+                dispatchKey);
+        }
+    }
+
+    private static IReadOnlyList<SkillEffectResult>
+        ExecuteDefinitionEntries(
+            SkillDefinition definition,
+            SkillEffectContext context,
+            SkillEffectTiming timing)
+    {
+        List<SkillEffectResult> results = new();
+
+        foreach (SkillEffectEntry entry
+                 in definition.EnumerateEffectEntries())
+        {
+            if (entry?.Definition == null)
+                continue;
+
+            SkillEffectResult result =
+                entry.TryApply(
+                    context,
+                    timing);
+
+            if (result != null)
+                results.Add(result);
+        }
+
+        return results;
     }
 
     public void NotifyExchangeWin(
@@ -714,7 +1079,8 @@ public abstract class Skill
             action,
             SkillEffectTiming.OnOneSideHit,
             null,
-            damageContext);
+            damageContext,
+            isOneSided: true);
     }
 
     public void NotifyClashDraw(
@@ -724,7 +1090,8 @@ public abstract class Skill
         ExecuteDefinitionEffects(
             action,
             SkillEffectTiming.OnClashDraw,
-            opponentAction);
+            opponentAction,
+            isClash: true);
     }
 
     private object GetUsageIdentity()
@@ -739,8 +1106,14 @@ public abstract class Skill
 
         registeredBattleEvent = battleEvent;
 
+        registeredBattleEvent.OnBattleStarted +=
+            OnBattleStarted;
+        registeredBattleEvent.OnBattleEnded +=
+            OnBattleEnded;
         registeredBattleEvent.OnTurnStart +=
             OnTurnStart;
+        registeredBattleEvent.OnTurnEnd +=
+            OnTurnEnd;
         registeredBattleEvent.OnActionStart +=
             OnActionStart;
         registeredBattleEvent.OnActionEnd +=
@@ -760,8 +1133,14 @@ public abstract class Skill
         if (registeredBattleEvent == null)
             return;
 
+        registeredBattleEvent.OnBattleStarted -=
+            OnBattleStarted;
+        registeredBattleEvent.OnBattleEnded -=
+            OnBattleEnded;
         registeredBattleEvent.OnTurnStart -=
             OnTurnStart;
+        registeredBattleEvent.OnTurnEnd -=
+            OnTurnEnd;
         registeredBattleEvent.OnActionStart -=
             OnActionStart;
         registeredBattleEvent.OnActionEnd -=
@@ -778,9 +1157,29 @@ public abstract class Skill
         registeredBattleEvent = null;
     }
 
+    private void OnBattleStarted()
+    {
+        ExecuteOwnerDefinitionEffects(
+            SkillEffectTiming.OnBattleStart);
+    }
+
+    private void OnBattleEnded()
+    {
+        ExecuteOwnerDefinitionEffects(
+            SkillEffectTiming.OnBattleEnd);
+    }
+
     private void OnTurnStart(int turn)
     {
         SkillUsageTracker.ResetOwner(owner);
+        ExecuteOwnerDefinitionEffects(
+            SkillEffectTiming.OnTurnStart);
+    }
+
+    private void OnTurnEnd(int turn)
+    {
+        ExecuteOwnerDefinitionEffects(
+            SkillEffectTiming.OnTurnEnd);
     }
 
     private void OnActionStart(BattleAction action)
@@ -806,9 +1205,16 @@ public abstract class Skill
             action,
             MultiRollPenaltyTiming.OnActionEnd);
 
+        // 구형 OnActionEnd는 기존 에셋 호환을 위해 그대로 발행한다.
         ExecuteDefinitionEffects(
             action,
             SkillEffectTiming.OnActionEnd);
+
+        // Gameplay v5의 "스킬 종료시"는 해당 행동의 모든 굴림/공격 처리가
+        // 끝나고 ActionEnd가 발행되는 지점으로 정의한다.
+        ExecuteDefinitionEffects(
+            action,
+            SkillEffectTiming.OnSkillEnd);
     }
 
     private void OnClashWin(
@@ -855,40 +1261,63 @@ public abstract class Skill
         DamageContext context =
             eventResult?.Context;
 
-        if (context?.Action?.Skill != this)
+        BattleAction action =
+            context?.Action;
+
+        if (action?.Skill != this)
             return;
+
+        int rollIndex =
+            Mathf.Max(
+                0,
+                action.CurrentRollIndex);
+
+        RollResult rollResult =
+            action.LastRollResult?.Clone();
 
         if (context.GetDisplayDamage() > 0)
         {
             ExecuteDefinitionEffects(
-                context.Action,
+                action,
                 SkillEffectTiming.AfterDamage,
                 null,
-                context);
+                context,
+                rollIndex: rollIndex,
+                rollResult: rollResult,
+                rollSucceeded: true);
         }
 
         if (context.WasCritical)
         {
             ExecuteDefinitionEffects(
-                context.Action,
+                action,
                 SkillEffectTiming.OnCritical,
                 null,
-                context);
+                context,
+                rollIndex: rollIndex,
+                rollResult: rollResult,
+                rollSucceeded: true);
         }
     }
 
     private void OnKillResolved(
         KillEventContext context)
     {
-        if (context?.SourceAction?.Skill != this)
+        BattleAction action =
+            context?.SourceAction;
+
+        if (action?.Skill != this)
             return;
 
         ExecuteDefinitionEffects(
-            context.SourceAction,
+            action,
             SkillEffectTiming.OnKill,
             null,
             context.DamageContext,
-            context);
+            context,
+            rollIndex: Mathf.Max(0, action.CurrentRollIndex),
+            rollResult: action.LastRollResult?.Clone(),
+            rollSucceeded: true);
     }
 
     private readonly struct SkillEffectDispatchKey :

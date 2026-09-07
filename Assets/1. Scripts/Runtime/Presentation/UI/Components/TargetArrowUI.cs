@@ -58,6 +58,7 @@ public class TargetArrowUI : MonoBehaviour
 
     [Header("References")]
     [SerializeField] private BattleManager battleManager;
+    [SerializeField] private BattleScreenModeController screenModeController;
     [SerializeField] private Canvas canvas;
     [SerializeField] private RectTransform arrowRoot;
     [SerializeField] private BodyPartButtonRegistry bodyPartButtonRegistry;
@@ -101,6 +102,7 @@ public class TargetArrowUI : MonoBehaviour
     private readonly HashSet<BodyPartButton> highlightButtons = new();
 
     private BattleVisualRequest currentVisualRequest;
+    private BattleScreenModeController subscribedModeController;
 
     private static Sprite whiteSprite;
     private static Sprite arrowHeadSprite;
@@ -109,6 +111,8 @@ public class TargetArrowUI : MonoBehaviour
     {
         if (battleManager == null)
             battleManager = FindFirstObjectByType<BattleManager>();
+
+        ResolveScreenModeController();
 
         if (canvas == null)
             canvas = GetComponentInParent<Canvas>();
@@ -120,8 +124,80 @@ public class TargetArrowUI : MonoBehaviour
         EnsureArrowRoot();
     }
 
+    private void OnEnable()
+    {
+        ResolveScreenModeController();
+        SubscribeScreenModeController();
+        Refresh();
+    }
+
+    private void OnDisable()
+    {
+        UnsubscribeScreenModeController();
+        HideAll();
+    }
+
     private void LateUpdate()
     {
+        Refresh();
+    }
+
+    private void ResolveScreenModeController()
+    {
+        if (screenModeController == null)
+        {
+            screenModeController =
+                GetComponentInParent<BattleScreenModeController>();
+        }
+
+        if (screenModeController == null)
+        {
+            screenModeController =
+                FindFirstObjectByType<BattleScreenModeController>(
+                    FindObjectsInactive.Include);
+        }
+
+        SubscribeScreenModeController();
+    }
+
+    private void SubscribeScreenModeController()
+    {
+        if (subscribedModeController ==
+            screenModeController)
+        {
+            return;
+        }
+
+        UnsubscribeScreenModeController();
+
+        if (screenModeController == null)
+            return;
+
+        subscribedModeController =
+            screenModeController;
+        subscribedModeController.ModeChanged +=
+            HandleScreenModeChanged;
+    }
+
+    private void UnsubscribeScreenModeController()
+    {
+        if (subscribedModeController == null)
+            return;
+
+        subscribedModeController.ModeChanged -=
+            HandleScreenModeChanged;
+        subscribedModeController = null;
+    }
+
+    private void HandleScreenModeChanged(
+        BattleUiScreenMode mode)
+    {
+        if (mode == BattleUiScreenMode.CharacterDetails)
+        {
+            HideAll();
+            return;
+        }
+
         Refresh();
     }
 
@@ -144,6 +220,24 @@ public class TargetArrowUI : MonoBehaviour
     public void Refresh()
     {
         EnsureButtonRegistries();
+        ResolveScreenModeController();
+
+        // 감정 증강 3택 Overlay가 실제 화면을 덮는 동안에는
+        // 배경의 계획/합/현재 행동 화살표가 선택 카드 위로 관통해 보이면 안 된다.
+        if (EmotionAugmentChoiceUI.IsAnyChoiceOverlayBlockingBattleArrows)
+        {
+            HideAll();
+            return;
+        }
+
+        // 캐릭터 상세 화면은 전투 계획을 읽는 화면이 아니므로
+        // 계획/합/현재 행동 화살표와 버튼 강조를 모두 숨긴다.
+        if (screenModeController?.CurrentMode ==
+            BattleUiScreenMode.CharacterDetails)
+        {
+            HideAll();
+            return;
+        }
 
         if (battleManager == null ||
             battleManager.ActionManager == null ||

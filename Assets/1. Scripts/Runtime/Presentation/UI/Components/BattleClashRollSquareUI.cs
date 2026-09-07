@@ -18,6 +18,9 @@ public sealed class BattleClashRollSquareUI : MonoBehaviour
     [SerializeField] private TMP_Text resolverText;
     [SerializeField] private TMP_Text powerText;
     [SerializeField] private TMP_Text detailText;
+    [SerializeField] private TMP_Text physicalTypeText;
+    [SerializeField] private TMP_Text generatedRollText;
+    [SerializeField] private Outline generatedRollOutline;
     [SerializeField] private TMP_FontAsset fontAsset;
     [SerializeField] private BattleResolverRollVisualUI resolverVisual;
 
@@ -35,10 +38,14 @@ public sealed class BattleClashRollSquareUI : MonoBehaviour
     private Color oneSidedPulseColor;
 
     public CombatRollType RollType { get; private set; }
+    public PhysicalDamageType PhysicalType { get; private set; }
+    public bool IsGeneratedRoll { get; private set; }
     public bool IsBroken => isBroken;
 
     public void Configure(
         CombatRollType type,
+        PhysicalDamageType physicalType,
+        bool isGeneratedRoll,
         Color attackColor,
         Color defenseColor,
         TMP_FontAsset font = null,
@@ -62,6 +69,26 @@ public sealed class BattleClashRollSquareUI : MonoBehaviour
         }
 
         RollType = type;
+        PhysicalType = physicalType;
+        IsGeneratedRoll = isGeneratedRoll;
+
+        if (physicalTypeText != null)
+        {
+            physicalTypeText.text =
+                PhysicalDamageResolver.GetSymbol(physicalType);
+            physicalTypeText.color =
+                new Color(1f, 0.95f, 0.78f, 1f);
+        }
+
+        if (generatedRollText != null)
+        {
+            generatedRollText.gameObject.SetActive(isGeneratedRoll);
+            generatedRollText.text = "+";
+        }
+
+        if (generatedRollOutline != null)
+            generatedRollOutline.enabled = isGeneratedRoll;
+
         baseColor =
             type == CombatRollType.Stagger
                 ? defenseColor
@@ -883,6 +910,19 @@ public sealed class BattleClashRollSquareUI : MonoBehaviour
 
         fillImage.raycastTarget = false;
 
+        generatedRollOutline ??=
+            visualRect.GetComponent<Outline>();
+
+        if (generatedRollOutline == null)
+            generatedRollOutline = visualRect.gameObject.AddComponent<Outline>();
+
+        generatedRollOutline.effectColor =
+            new Color(0.82f, 0.36f, 1f, 0.95f);
+        generatedRollOutline.effectDistance =
+            new Vector2(2.5f, -2.5f) * GetVisualScale();
+        generatedRollOutline.useGraphicAlpha = false;
+        generatedRollOutline.enabled = IsGeneratedRoll;
+
         if (glowImage == null)
         {
             Transform existingGlow =
@@ -926,6 +966,38 @@ public sealed class BattleClashRollSquareUI : MonoBehaviour
             Vector2.one *
             8f *
             visualScale;
+
+        physicalTypeText =
+            EnsureText(
+                physicalTypeText,
+                "PhysicalTypeBadge",
+                new Vector2(-0.12f, 0.70f),
+                new Vector2(0.22f, 1.08f),
+                15f * visualScale,
+                FontStyles.Bold);
+
+        physicalTypeText.text =
+            PhysicalDamageResolver.GetSymbol(PhysicalType);
+        physicalTypeText.color =
+            new Color(1f, 0.95f, 0.78f, 1f);
+        physicalTypeText.overflowMode =
+            TextOverflowModes.Overflow;
+
+        generatedRollText =
+            EnsureText(
+                generatedRollText,
+                "GeneratedRollBadge",
+                new Vector2(0.74f, 0.72f),
+                new Vector2(1.12f, 1.10f),
+                16f * visualScale,
+                FontStyles.Bold);
+
+        generatedRollText.text = "+";
+        generatedRollText.color =
+            new Color(0.88f, 0.62f, 1f, 1f);
+        generatedRollText.overflowMode =
+            TextOverflowModes.Overflow;
+        generatedRollText.gameObject.SetActive(IsGeneratedRoll);
 
         resolverText =
             EnsureText(

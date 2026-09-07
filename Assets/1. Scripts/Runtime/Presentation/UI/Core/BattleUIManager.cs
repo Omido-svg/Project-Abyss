@@ -910,8 +910,24 @@ public partial class BattleUIManager : MonoBehaviour
 
         selection.SelectSkill(skill);
 
-        if (!TrySelectTargetSlot(targetSlot.Owner, targetSlot.Part))
+        // Enemy ActionSlot.Part는 행동의 원천 부위이며 실제 피해 대상 부위와 다르다.
+        // Stage 1 Boss A/A/B처럼 Part=null인 행동도 정확한 TargetSlot으로 지정하면서
+        // 보스의 유효한 BodyPart를 별도로 공격 대상으로 선택한다.
+        if (!TryResolveActionSlotAttackTargetPart(
+                targetSlot,
+                skill,
+                preferredPart: targetSlot.Part,
+                out BodyPart resolvedTargetPart))
+        {
             return false;
+        }
+
+        if (!TrySelectTargetSlot(
+                targetSlot.Owner,
+                resolvedTargetPart))
+        {
+            return false;
+        }
 
         if (!CreateSlot(skill, targetSlot))
             return false;
@@ -957,6 +973,15 @@ public partial class BattleUIManager : MonoBehaviour
             return false;
         }
 
+        if (!TryResolveActionSlotAttackTargetPart(
+                targetSlot,
+                sourceSlot.Skill,
+                preferredPart: sourceSlot.TargetPart,
+                out BodyPart resolvedTargetPart))
+        {
+            return false;
+        }
+
         BattleActionPlanCommandService commands =
             PlanCommands;
 
@@ -964,6 +989,7 @@ public partial class BattleUIManager : MonoBehaviour
             !commands.TryRetarget(
                 sourceSlot,
                 targetSlot,
+                resolvedTargetPart,
                 out ActionSlot liveSource))
         {
             return false;
@@ -976,6 +1002,71 @@ public partial class BattleUIManager : MonoBehaviour
 
         RefreshAllBodyPartButtons();
         return true;
+    }
+
+    /// <summary>
+    /// 정확한 적 ActionSlot(TargetSlot)과 실제 피해 대상 BodyPart를 분리해 해석한다.
+    /// 행동 원천 Part가 없거나 공격 대상으로 부적합하면 기존 공격 부위를 우선 보존하고,
+    /// 그마저 불가능할 때 해당 적의 첫 유효 TargetPoint를 사용한다.
+    /// </summary>
+    private bool TryResolveActionSlotAttackTargetPart(
+        ActionSlot targetSlot,
+        Skill skill,
+        BodyPart preferredPart,
+        out BodyPart targetPart)
+    {
+        targetPart = null;
+
+        if (targetSlot?.Owner == null ||
+            skill == null)
+        {
+            return false;
+        }
+
+        TargetSelectionRule rule =
+            TargetSelectionRule.StandardAttack;
+
+        // 재지정 시 기존 실제 공격 부위를 가능하면 유지한다.
+        if (BattleTargetValidator.IsValid(
+                targetSlot.Owner,
+                preferredPart,
+                rule))
+        {
+            targetPart = preferredPart;
+            return true;
+        }
+
+        // 행동 슬롯이 실제 BodyPart에 연결된 일반 적은 기존 의미를 그대로 사용한다.
+        if (BattleTargetValidator.IsValid(
+                targetSlot.Owner,
+                targetSlot.Part,
+                rule))
+        {
+            targetPart = targetSlot.Part;
+            return true;
+        }
+
+        IReadOnlyList<TargetPoint> points =
+            BattleTargetValidator.GetTargetPoints(
+                targetSlot.Owner,
+                rule);
+
+        if (points == null)
+            return false;
+
+        foreach (TargetPoint point in points)
+        {
+            if (!point.IsValid ||
+                point.Character != targetSlot.Owner)
+            {
+                continue;
+            }
+
+            targetPart = point.Part;
+            return true;
+        }
+
+        return false;
     }
 
     private ActionPlanningSkillContext CreatePlanningSkillContext(

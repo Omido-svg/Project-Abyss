@@ -44,7 +44,13 @@ public sealed class SkillRollData
     [Tooltip("같은 굴림 인덱스의 값을 행동 전체에서 재사용합니다.")]
     public bool ReuseValueAcrossAction;
 
-    [Header("Per-roll effects — reusable template + parameters")]
+    [Header("Per-roll detailed phase effects — Gameplay v5")]
+    [Tooltip(
+        "이 굴림 전용 세부 페이즈 효과입니다. " +
+        "Entry의 Timing을 OnRollStart/OnRollSuccess/OnHit/OnRollEnd 등으로 지정합니다.")]
+    public List<SkillEffectEntry> EffectEntries = new();
+
+    [Header("Legacy per-roll win/lose effects")]
     public List<SkillEffectEntry> OnWinEffectEntries = new();
     public List<SkillEffectEntry> OnLoseEffectEntries = new();
 
@@ -77,6 +83,7 @@ public sealed class SkillRollData
         CoinFrontPower = Mathf.Max(0, CoinFrontPower);
         SlotMinimum = Mathf.Clamp(SlotMinimum, 1, 9);
         SlotMaximum = Mathf.Clamp(SlotMaximum, SlotMinimum, 9);
+        EffectEntries ??= new List<SkillEffectEntry>();
         OnWinEffectEntries ??= new List<SkillEffectEntry>();
         OnLoseEffectEntries ??= new List<SkillEffectEntry>();
         OnWinEffects ??= new List<SkillEffectDefinition>();

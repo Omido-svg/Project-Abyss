@@ -61,6 +61,11 @@ public class BattleVisualRequest
     public int PartHpDamage;
     public int DirectHpDamage;
 
+    // HP 피해와 동시에 존재할 수 있는 별도 흐트러짐 게이지 피해.
+    public int StaggerDamage;
+    public int StaggerGaugeBefore;
+    public int StaggerGaugeAfter;
+
     public bool WasCritical;
     public bool WasKilled;
     public bool BrokePart;

@@ -42,6 +42,7 @@ public sealed class BattleWorldSlotArrowOverlayUI : MonoBehaviour
 
     [SerializeField] private BattleManager battleManager;
     [SerializeField] private BattleUIManager uiManager;
+    [SerializeField] private BattleScreenModeController screenModeController;
     [SerializeField] private Camera targetCamera;
     [SerializeField] private SkillSelectPanelUI skillSelectPanel;
 
@@ -104,6 +105,7 @@ public sealed class BattleWorldSlotArrowOverlayUI : MonoBehaviour
     private readonly List<ArrowVisual> arrows = new();
     private readonly HashSet<ActionSlot> resolvedPlayerClashSlots = new();
     private readonly HashSet<ActionSlot> resolvedEnemyClashSlots = new();
+    private bool hiddenForResolution;
 
     // 클릭 전 Hover에서만 사용하는 임시 합 시각화 상태.
     // 실제 ActionSlot.TargetSlot / ClashBuilder 결과는 변경하지 않는다.
@@ -133,13 +135,33 @@ public sealed class BattleWorldSlotArrowOverlayUI : MonoBehaviour
     {
         ResolveReferences();
         EnsureOverlay();
+
+        if (hiddenForResolution)
+        {
+            SetPlanningOverlayVisible(false);
+            return;
+        }
+
         RefreshArrows();
+    }
+
+    public void SetResolutionHidden(
+        bool hidden)
+    {
+        hiddenForResolution = hidden;
+        EnsureOverlay();
+
+        if (hidden)
+            SetPlanningOverlayVisible(false);
     }
 
     private void ResolveReferences()
     {
         battleManager ??= FindFirstObjectByType<BattleManager>();
         uiManager ??= FindFirstObjectByType<BattleUIManager>(FindObjectsInactive.Include);
+        screenModeController ??=
+            FindFirstObjectByType<BattleScreenModeController>(
+                FindObjectsInactive.Include);
         targetCamera ??= Camera.main;
 
         if (skillSelectPanel == null)
@@ -147,6 +169,28 @@ public sealed class BattleWorldSlotArrowOverlayUI : MonoBehaviour
             skillSelectPanel =
                 FindFirstObjectByType<SkillSelectPanelUI>(
                     FindObjectsInactive.Include);
+        }
+    }
+
+    private void SetPlanningOverlayVisible(bool visible)
+    {
+        if (!visible)
+        {
+            HideUnused(0);
+            SetHoverPreviewVisible(false);
+        }
+
+        if (arrowRoot != null &&
+            arrowRoot.gameObject.activeSelf != visible)
+        {
+            arrowRoot.gameObject.SetActive(visible);
+        }
+
+        if (!visible &&
+            hoverPreviewRoot != null &&
+            hoverPreviewRoot.gameObject.activeSelf)
+        {
+            hoverPreviewRoot.gameObject.SetActive(false);
         }
     }
 
@@ -324,6 +368,25 @@ public sealed class BattleWorldSlotArrowOverlayUI : MonoBehaviour
 
     private void RefreshArrows()
     {
+        // 감정 증강 3택 Overlay가 화면을 덮는 동안에는 별도 Screen Space
+        // 월드 슬롯 화살표 계층도 함께 꺼서 카드 위로 화살표가 관통하지 않게 한다.
+        if (EmotionAugmentChoiceUI.IsAnyChoiceOverlayBlockingBattleArrows)
+        {
+            SetPlanningOverlayVisible(false);
+            return;
+        }
+
+        // 이 클래스는 TargetArrowUI와 별개의 월드 슬롯 화살표 계층이다.
+        // 캐릭터 상세 화면에서는 계획/합 화살표를 전부 강제로 숨긴다.
+        if (screenModeController?.CurrentMode ==
+            BattleUiScreenMode.CharacterDetails)
+        {
+            SetPlanningOverlayVisible(false);
+            return;
+        }
+
+        SetPlanningOverlayVisible(true);
+
         if (arrowRoot == null ||
             uiManager == null ||
             battleManager?.ActionManager == null ||

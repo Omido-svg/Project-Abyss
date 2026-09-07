@@ -88,6 +88,14 @@ public partial class BattleAnimationDirector : MonoBehaviour
     [SerializeField] private BattleClashRollPresentationUI clashRollPresentationUI;
 
     private bool isPlaying;
+
+    /// <summary>
+    /// 하나의 BattleVisualRequest가 실제 화면 재생까지 끝난 뒤 발행됩니다.
+    /// 전투 로직 완료(OnActionEnd)와 프레젠테이션 완료 시점을 분리해서
+    /// 행동 순서 UI처럼 시각적 완료 타이밍이 필요한 시스템이 사용합니다.
+    /// </summary>
+    public event Action<BattleVisualRequest> VisualRequestCompleted;
+
     private BattleVisualRequestBuilder requestBuilder;
     private BattleVisualDamagePresenter damagePresenter;
     private BattleVisualPlaybackState activePlayback;
@@ -169,8 +177,39 @@ public partial class BattleAnimationDirector : MonoBehaviour
         if (targetArrowUI == null)
             targetArrowUI = FindFirstObjectByType<TargetArrowUI>();
             
-        if (momentumScrollbarUI == null)
-            momentumScrollbarUI = FindFirstObjectByType<MomentumScrollbarUI>();
+        if (momentumScrollbarUI == null ||
+            !momentumScrollbarUI.isActiveAndEnabled ||
+            !momentumScrollbarUI.gameObject.activeInHierarchy)
+        {
+            MomentumScrollbarUI[] momentumBars =
+                FindObjectsByType<MomentumScrollbarUI>(
+                    FindObjectsInactive.Include,
+                    FindObjectsSortMode.None);
+
+            MomentumScrollbarUI fallbackBar = null;
+
+            for (int i = 0;
+                 i < momentumBars.Length;
+                 i++)
+            {
+                MomentumScrollbarUI candidate =
+                    momentumBars[i];
+
+                if (candidate == null)
+                    continue;
+
+                fallbackBar ??= candidate;
+
+                if (candidate.isActiveAndEnabled &&
+                    candidate.gameObject.activeInHierarchy)
+                {
+                    fallbackBar = candidate;
+                    break;
+                }
+            }
+
+            momentumScrollbarUI = fallbackBar;
+        }
             
         if (vfxManager == null)
             vfxManager = FindFirstObjectByType<BattleVfxManager>();
@@ -298,6 +337,28 @@ public partial class BattleAnimationDirector : MonoBehaviour
             {
                 activePlayback = null;
                 isPlaying = false;
+            }
+
+            if (!playback.IsCancellationRequested)
+            {
+                BattleVisualRequest completedRequest =
+                    playback.RootRequest ??
+                    playback.Request;
+
+                if (completedRequest != null)
+                {
+                    try
+                    {
+                        VisualRequestCompleted?.Invoke(
+                            completedRequest);
+                    }
+                    catch (Exception exception)
+                    {
+                        Debug.LogException(
+                            exception,
+                            this);
+                    }
+                }
             }
         }
     }
@@ -876,6 +937,16 @@ public partial class BattleAnimationDirector : MonoBehaviour
                     .BeginOneSidedExchange(exchange);
             }
 
+            // 양측 굴림이 있는 합은 굴림 결과가 화면에 확정되는 즉시 기세를 이동시킨다.
+            // 이전에는 실제 타격 연출까지 끝난 뒤에 움직여 사용자가 "굴림 -> 기세" 연결을
+            // 바로 읽기 어려웠다.
+            if (!exchange.IsOneSided)
+            {
+                yield return PlayMomentumExchangeStep(
+                    playback,
+                    exchange);
+            }
+
             if (clashSession != null &&
                 !exchange.IsOneSided)
             {
@@ -922,9 +993,13 @@ public partial class BattleAnimationDirector : MonoBehaviour
                     .EndOneSidedExchange();
             }
 
-            yield return PlayMomentumExchangeStep(
-                playback,
-                exchange);
+            // 일방 공격은 상대 굴림이 없으므로 실제 적중 연출 직후 기세를 이동시킨다.
+            if (exchange.IsOneSided)
+            {
+                yield return PlayMomentumExchangeStep(
+                    playback,
+                    exchange);
+            }
 
             bool killedTarget =
                 exchange.AttackRequest?.WasKilled == true;
@@ -1954,18 +2029,36 @@ public partial class BattleAnimationDirector : MonoBehaviour
                 visual,
                 hitIndex));
 
+        // Hit Event 한 지점에서 먼저 HP/흐트러짐 HUD를 commit한 뒤
+        // 같은 프레임에 대미지 숫자를 생성한다.
+        // 전투 로직은 이미 계산되어 있으므로 presentation state만 여기서 진행한다.
+        damagePresenter.ApplyHit(
+            playback,
+            hitIndex,
+            damage);
+
         if (damage > 0)
         {
             ShowDamageNumber(
                 targetView,
                 request.TargetPart,
-                damage);
+                damage,
+                request.WasCritical
+                    ? BattleDamageNumberStyle.CriticalHp
+                    : BattleDamageNumberStyle.NormalHp);
         }
 
-        damagePresenter.ApplyHit(
-            playback,
-            hitIndex,
-            damage);
+        // Attack 굴림은 HP 피해와 흐트러짐 피해가 동시에 존재할 수 있다.
+        // 흐트러짐은 실제 게이지 감소량을 교환당 한 번만 별도 숫자로 표시한다.
+        if (hitIndex == 0 &&
+            request.StaggerDamage > 0)
+        {
+            ShowDamageNumber(
+                targetView,
+                request.TargetPart,
+                request.StaggerDamage,
+                BattleDamageNumberStyle.Stagger);
+        }
 
     }
 

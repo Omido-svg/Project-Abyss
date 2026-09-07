@@ -27,6 +27,7 @@ public sealed class BattleTopStatusBarUI : MonoBehaviour
     private Vector3 normalLightScale = Vector3.one;
     private bool lightVisualCaptured;
     private bool insufficientFeedbackActive;
+    private GameplayV5ProgressionHudUI gameplayV5Hud;
 
     public void Configure(
         BattleManager manager,
@@ -45,6 +46,7 @@ public sealed class BattleTopStatusBarUI : MonoBehaviour
         ResolveUiManager();
         ApplyReadableTextSettings();
         CaptureLightVisual();
+        EnsureGameplayV5Hud();
         Refresh();
     }
 
@@ -56,11 +58,13 @@ public sealed class BattleTopStatusBarUI : MonoBehaviour
         ResolveUiManager();
         ApplyReadableTextSettings();
         CaptureLightVisual();
+        EnsureGameplayV5Hud();
     }
 
     private void LateUpdate()
     {
         ResolveUiManager();
+        EnsureGameplayV5Hud();
         Refresh();
     }
 
@@ -72,6 +76,22 @@ public sealed class BattleTopStatusBarUI : MonoBehaviour
                 FindFirstObjectByType<BattleUIManager>(
                     FindObjectsInactive.Include);
         }
+    }
+
+    private void EnsureGameplayV5Hud()
+    {
+        if (gameplayV5Hud == null)
+        {
+            gameplayV5Hud =
+                GetComponent<GameplayV5ProgressionHudUI>();
+
+            if (gameplayV5Hud == null)
+                gameplayV5Hud = gameObject.AddComponent<GameplayV5ProgressionHudUI>();
+        }
+
+        gameplayV5Hud.Configure(
+            battleManager,
+            momentumText != null ? momentumText : turnText);
     }
 
     public void Refresh()
@@ -86,31 +106,55 @@ public sealed class BattleTopStatusBarUI : MonoBehaviour
         if (turnText != null)
             turnText.text = $"턴 {turn:00}";
 
-        int momentum = battleManager.MomentumManager != null
-            ? battleManager.MomentumManager.CurrentMomentum
-            : 0;
+        MomentumScrollbarUI v5Bar =
+            momentumSlider != null
+                ? momentumSlider.GetComponent<MomentumScrollbarUI>()
+                : null;
+
+        int momentum =
+            v5Bar != null
+                ? v5Bar.DisplayedMomentumRounded
+                : battleManager.MomentumManager != null
+                    ? battleManager.MomentumManager.CurrentMomentum
+                    : 0;
+
+        Character player = battleManager.BattleContext?.Player;
 
         if (momentumText != null)
         {
-            string state = momentum > 0
-                ? "우세"
-                : momentum < 0
-                    ? "열세"
-                    : "균형";
+            string stateName = "균형";
+
+            if (v5Bar != null)
+            {
+                // 전투 계산은 연출보다 먼저 끝날 수 있으므로 실제 Manager 최종값이 아니라
+                // 화면에서 현재 재생 중인 기세 위치와 같은 상태명을 표시한다.
+                stateName = v5Bar.DisplayedStateLabel;
+            }
+            else if (battleManager.MomentumManager != null &&
+                     player != null)
+            {
+                stateName =
+                    GameplayV5UiPresentation.GetMomentumStateName(
+                        battleManager.MomentumManager.GetState(player));
+            }
 
             momentumText.text =
-                $"기세 {momentum:+#;-#;0}  ·  {state}";
+                $"기세 {momentum:+#;-#;0}  ·  {stateName}";
         }
 
+        // MomentumScrollbarUI가 Slider를 0~1 정규화 값으로 소유한다.
+        // 여기서 -100~100을 다시 직접 넣으면 Gameplay v5 중앙 기준 바와 충돌한다.
         if (momentumSlider != null)
         {
-            momentumSlider.minValue = MomentumManager.MinMomentum;
-            momentumSlider.maxValue = MomentumManager.MaxMomentum;
-            momentumSlider.value = momentum;
+            if (v5Bar == null)
+            {
+                momentumSlider.minValue = MomentumManager.MinMomentum;
+                momentumSlider.maxValue = MomentumManager.MaxMomentum;
+                momentumSlider.SetValueWithoutNotify(momentum);
+            }
+
             momentumSlider.interactable = false;
         }
-
-        Character player = battleManager.BattleContext?.Player;
 
         if (lightText != null)
         {
@@ -161,6 +205,8 @@ public sealed class BattleTopStatusBarUI : MonoBehaviour
 
             enemyText.text = $"적 {alive}/{total}";
         }
+
+        gameplayV5Hud?.Refresh();
     }
 
     public void PlayInsufficientEnergyFeedback(string _ = null)

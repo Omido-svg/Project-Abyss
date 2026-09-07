@@ -38,12 +38,21 @@ public static class PhysicalDamageResolver
 {
     public static PhysicalDamageType Resolve(BattleAction action)
     {
+        return Resolve(
+            action,
+            action?.CurrentRollIndex ?? 0);
+    }
+
+    public static PhysicalDamageType Resolve(
+        BattleAction action,
+        int rollIndex)
+    {
         if (action?.Owner is Yujin yujin)
             return yujin.ResolveWeaponPhysicalType();
 
         SkillRollData roll =
             action?.Skill?.GetRollData(
-                action.CurrentRollIndex);
+                Mathf.Max(0, rollIndex));
 
         if (roll?.OverridePhysicalType == true)
             return roll.PhysicalType;

@@ -233,6 +233,8 @@ public class ClashManager
         int exchangeIndex = 0;
         bool firstSkillExecuted = false;
         bool secondSkillExecuted = false;
+        bool firstOneSidedStarted = false;
+        bool secondOneSidedStarted = false;
 
         while (firstRemaining > 0 ||
                secondRemaining > 0)
@@ -288,6 +290,25 @@ public class ClashManager
                     ? ref firstSkillExecuted
                     : ref secondSkillExecuted);
 
+            if (oneSideAction == first &&
+                !firstOneSidedStarted)
+            {
+                firstOneSidedStarted = true;
+
+                // 이미 합 굴림을 수행한 행동이 상대 굴림 소진으로
+                // 일방 공격 구간에 진입하는 전환점이다.
+                if (firstSkillExecuted)
+                    first.Skill?.NotifyOneSidedStart(first);
+            }
+            else if (oneSideAction == second &&
+                     !secondOneSidedStarted)
+            {
+                secondOneSidedStarted = true;
+
+                if (secondSkillExecuted)
+                    second.Skill?.NotifyOneSidedStart(second);
+            }
+
             ClashExchangeResult oneSideExchange =
                 ResolveOneSideExchange(
                     oneSideAction,
@@ -322,6 +343,17 @@ public class ClashManager
 
         result.MomentumAfterResolution =
             momentumManager.CurrentMomentum;
+
+        first.Skill?.NotifyAttackEnd(
+            first,
+            second,
+            isClash: true,
+            isOneSided: false);
+        second.Skill?.NotifyAttackEnd(
+            second,
+            first,
+            isClash: true,
+            isOneSided: false);
 
         battleContext._battleEvent
             .RaiseClashResolved(result);
@@ -396,21 +428,59 @@ public class ClashManager
         bool firstExecuted = true;
         bool secondExecuted = true;
 
+        // 사용 전/사용시 효과는 첫 굴림보다 먼저 실행되어야
+        // 해당 행동의 굴림 보정에도 정상적으로 영향을 줄 수 있다.
+        firstExecuted =
+            ExecuteSkillOnce(
+                first,
+                second,
+                ref firstSkillExecuted,
+                isClash: true,
+                isOneSided: false);
+        secondExecuted =
+            ExecuteSkillOnce(
+                second,
+                first,
+                ref secondSkillExecuted,
+                isClash: true,
+                isOneSided: false);
+
+        if (!firstExecuted || !secondExecuted ||
+            !CanContinueRoll(first) || !CanContinueRoll(second))
+        {
+            return new ClashExchangeResult
+            {
+                ExchangeIndex = exchangeIndex,
+                FirstAction = first,
+                SecondAction = second,
+                WasCancelled = true,
+                FirstClashPower = first?.ClashPower ?? 0,
+                SecondClashPower = second?.ClashPower ?? 0,
+                FirstRollResult = first?.LastRollResult?.Clone(),
+                SecondRollResult = second?.LastRollResult?.Clone(),
+                FirstRollType = first?.CurrentRollType ?? CombatRollType.Attack,
+                SecondRollType = second?.CurrentRollType ?? CombatRollType.Attack,
+                TieRerollCount = rerolls,
+                MomentumBefore = momentumBefore,
+                MomentumAfter = momentumBefore
+            };
+        }
+
+        first.Skill?.NotifyRollStart(
+            first, second, exchangeIndex,
+            isClash: true, isOneSided: false);
+        second.Skill?.NotifyRollStart(
+            second, first, exchangeIndex,
+            isClash: true, isOneSided: false);
+
         while (true)
         {
             clashPowerPipeline.RollForClash(first, second, exchangeIndex);
             clashPowerPipeline.RollForClash(second, first, exchangeIndex);
 
-            if (rerolls == 0)
+            if (!CanContinueRoll(first) || !CanContinueRoll(second))
             {
-                firstExecuted = ExecuteSkillOnce(first, ref firstSkillExecuted);
-                secondExecuted = ExecuteSkillOnce(second, ref secondSkillExecuted);
-            }
-
-            if (!firstExecuted || !secondExecuted ||
-                !CanContinueRoll(first) || !CanContinueRoll(second))
-            {
-                return new ClashExchangeResult
+                ClashExchangeResult cancelled = new ClashExchangeResult
                 {
                     ExchangeIndex = exchangeIndex,
                     FirstAction = first,
@@ -426,6 +496,15 @@ public class ClashManager
                     MomentumBefore = momentumBefore,
                     MomentumAfter = momentumBefore
                 };
+
+                first.Skill?.NotifyRollEnd(
+                    first, second, exchangeIndex, false, cancelled,
+                    isClash: true, isOneSided: false);
+                second.Skill?.NotifyRollEnd(
+                    second, first, exchangeIndex, false, cancelled,
+                    isClash: true, isOneSided: false);
+
+                return cancelled;
             }
 
             ApplyCharacterRerolls(
@@ -452,7 +531,8 @@ public class ClashManager
             {
                 first.Skill?.NotifyClashDraw(first, second);
                 second.Skill?.NotifyClashDraw(second, first);
-                return new ClashExchangeResult
+
+                ClashExchangeResult tie = new ClashExchangeResult
                 {
                     ExchangeIndex = exchangeIndex,
                     FirstAction = first,
@@ -468,6 +548,15 @@ public class ClashManager
                     MomentumBefore = momentumBefore,
                     MomentumAfter = momentumBefore
                 };
+
+                first.Skill?.NotifyRollEnd(
+                    first, second, exchangeIndex, false, tie,
+                    isClash: true, isOneSided: false);
+                second.Skill?.NotifyRollEnd(
+                    second, first, exchangeIndex, false, tie,
+                    isClash: true, isOneSided: false);
+
+                return tie;
             }
         }
 
@@ -487,6 +576,15 @@ public class ClashManager
 
         BattleAction loser =
             finalJudgment.Loser;
+
+        // 개별 교환 승패는 실제 피해 적용보다 먼저 확정된다.
+        // 굴림 성공/실패 효과가 이후 피해 계산에 영향을 줄 수 있도록 이 지점에서 발행한다.
+        winner.Skill?.NotifyRollOutcome(
+            winner, loser, exchangeIndex, true,
+            isClash: true, isOneSided: false);
+        loser.Skill?.NotifyRollOutcome(
+            loser, winner, exchangeIndex, false,
+            isClash: true, isOneSided: false);
 
         DamagePowerResolution damagePower =
             DamagePowerResolver.ResolvePaired(
@@ -587,11 +685,6 @@ public class ClashManager
                     0,
                     MomentumShiftReason.DuelVictory);
 
-        winner.Skill?.NotifyRollResolved(
-            winner, loser, exchangeIndex, true, damageContext);
-        loser.Skill?.NotifyRollResolved(
-            loser, winner, exchangeIndex, false, damageContext);
-
         ClashExchangeResult exchange = new ClashExchangeResult
         {
             ExchangeIndex = exchangeIndex,
@@ -624,9 +717,32 @@ public class ClashManager
         exchange.SecondaryDamageContexts.AddRange(
             secondaryDamageContexts);
 
+        // 기존 RollWin/RollLose 및 신규 RollSuccess/RollFailure는
+        // ExchangeResolved보다 먼저 발행해 기존 효과 순서를 보존한다.
+        winner.Skill?.NotifyRollResolved(
+            winner, loser, exchangeIndex, true, damageContext,
+            isClash: true, isOneSided: false);
+        loser.Skill?.NotifyRollResolved(
+            loser, winner, exchangeIndex, false, damageContext,
+            isClash: true, isOneSided: false);
+
         LogExchange(exchange, isClash: true);
         battleContext._battleEvent
             .RaiseExchangeResolved(exchange);
+
+        // StaggerGaugeMechanic이 ExchangeResolved에서 실제 감소량을
+        // exchange에 기록한 뒤 적중/굴림 종료 효과가 그 결과를 읽는다.
+        winner.Skill?.NotifyHit(
+            winner, loser, exchangeIndex, exchange,
+            isClash: true, isOneSided: false);
+
+        winner.Skill?.NotifyRollEnd(
+            winner, loser, exchangeIndex, true, exchange,
+            isClash: true, isOneSided: false);
+        loser.Skill?.NotifyRollEnd(
+            loser, winner, exchangeIndex, false, exchange,
+            isClash: true, isOneSided: false);
+
         return exchange;
     }
 
@@ -680,6 +796,12 @@ public class ClashManager
         result.MomentumAfterResolution =
             momentumManager.CurrentMomentum;
 
+        action.Skill?.NotifyAttackEnd(
+            action,
+            null,
+            isClash: false,
+            isOneSided: true);
+
         return result;
     }
 
@@ -691,11 +813,14 @@ public class ClashManager
         bool cameFromClash)
     {
         int momentumBefore = momentumManager.CurrentMomentum;
-        clashPowerPipeline.RollOneSided(
-            action,
-            exchangeIndex);
 
-        bool executed = ExecuteSkillOnce(action, ref skillExecuted);
+        bool executed = ExecuteSkillOnce(
+            action,
+            exhaustedOpponent,
+            ref skillExecuted,
+            isClash: cameFromClash,
+            isOneSided: true);
+
         if (!executed || !CanContinueRoll(action))
         {
             return new ClashExchangeResult
@@ -713,18 +838,38 @@ public class ClashManager
             };
         }
 
+        action.Skill?.NotifyRollStart(
+            action,
+            exhaustedOpponent,
+            exchangeIndex,
+            isClash: cameFromClash,
+            isOneSided: true);
+
+        clashPowerPipeline.RollOneSided(
+            action,
+            exchangeIndex);
+
         DamagePowerResolution damagePower =
             DamagePowerResolver.ResolveOneSided(
                 action);
+
+        bool oneSidedSucceeded =
+            damagePower.HasDamage ||
+            action.CurrentRollType == CombatRollType.Stagger;
+
+        action.Skill?.NotifyRollOutcome(
+            action,
+            exhaustedOpponent,
+            exchangeIndex,
+            oneSidedSucceeded,
+            isClash: cameFromClash,
+            isOneSided: true);
 
         // Gameplay v5: 일방 Stagger 굴림도 실제 흐트러짐 공격으로 성립한다.
         // HP DamageContext/잔효과/기세 이동만 만들지 않고 교환 이벤트는 반드시 발행한다.
         if (!damagePower.HasDamage &&
             action.CurrentRollType == CombatRollType.Stagger)
         {
-            action.Skill?.NotifyRollResolved(
-                action, exhaustedOpponent, exchangeIndex, true, null);
-
             ClashExchangeResult staggerExchange = new ClashExchangeResult
             {
                 ExchangeIndex = exchangeIndex,
@@ -741,16 +886,26 @@ public class ClashManager
                 MomentumAfter = momentumBefore
             };
 
+            action.Skill?.NotifyRollResolved(
+                action, exhaustedOpponent, exchangeIndex, true, null,
+                isClash: cameFromClash, isOneSided: true);
+
             LogExchange(staggerExchange, isClash: cameFromClash);
             battleContext._battleEvent.RaiseExchangeResolved(staggerExchange);
+
+            action.Skill?.NotifyHit(
+                action, exhaustedOpponent, exchangeIndex, staggerExchange,
+                isClash: cameFromClash, isOneSided: true);
+            action.Skill?.NotifyRollEnd(
+                action, exhaustedOpponent, exchangeIndex, true, staggerExchange,
+                isClash: cameFromClash, isOneSided: true);
+
             return staggerExchange;
         }
 
         if (!damagePower.HasDamage)
         {
-            action.Skill?.NotifyRollResolved(
-                action, exhaustedOpponent, exchangeIndex, false, null);
-            return new ClashExchangeResult
+            ClashExchangeResult failedExchange = new ClashExchangeResult
             {
                 ExchangeIndex = exchangeIndex,
                 FirstAction = action,
@@ -763,6 +918,15 @@ public class ClashManager
                 MomentumBefore = momentumBefore,
                 MomentumAfter = momentumBefore
             };
+
+            action.Skill?.NotifyRollResolved(
+                action, exhaustedOpponent, exchangeIndex, false, null,
+                isClash: cameFromClash, isOneSided: true);
+            action.Skill?.NotifyRollEnd(
+                action, exhaustedOpponent, exchangeIndex, false, failedExchange,
+                isClash: cameFromClash, isOneSided: true);
+
+            return failedExchange;
         }
 
         attackWeightTargetResolver
@@ -802,20 +966,16 @@ public class ClashManager
                 action.Owner,
                 action);
 
-        // 최신 규칙: 일방타격은 피해와 위세 충전은 발생하지만
-        // 기세 바의 Hit +5는 발생하지 않는다.
+        // Gameplay v5: 성공한 Attack 굴림은 합/일방 여부와 관계없이
+        // 일반 HitShift를 기세에 반영한다.
+        // Duel vs Duel만 paired exchange에서 총 40 이동을 사용하고,
+        // 일방 Duel은 상대 Duel 교환이 아니므로 일반 적중으로 처리한다.
         MomentumShiftResult momentum =
-            new MomentumShiftResult(
-                momentumBefore,
-                momentumBefore,
-                0,
-                MomentumShiftReason.Hit);
+            momentumManager.ApplyHit(
+                action.Owner);
 
         if (action.ActionType != ActionType.Duel)
             action.Skill?.NotifyOneSideHit(action, damageContext);
-
-        action.Skill?.NotifyRollResolved(
-            action, exhaustedOpponent, exchangeIndex, true, damageContext);
 
         ClashExchangeResult exchange = new ClashExchangeResult
         {
@@ -831,8 +991,8 @@ public class ClashManager
             DamageContext = damageContext,
             MomentumBefore = momentum.Before,
             MomentumAfter = momentum.After,
-            MomentumShift = 0,
-            HitMomentumShift = 0,
+            MomentumShift = momentum.SignedShift,
+            HitMomentumShift = momentum.SignedShift,
             DuelMomentumShift = 0,
             FirstPrestigeGain = dealtGain,
             SecondPrestigeGain = takenGain
@@ -841,9 +1001,21 @@ public class ClashManager
         exchange.SecondaryDamageContexts.AddRange(
             secondaryDamageContexts);
 
+        action.Skill?.NotifyRollResolved(
+            action, exhaustedOpponent, exchangeIndex, true, damageContext,
+            isClash: cameFromClash, isOneSided: true);
+
         LogExchange(exchange, isClash: cameFromClash);
         battleContext._battleEvent
             .RaiseExchangeResolved(exchange);
+
+        action.Skill?.NotifyHit(
+            action, exhaustedOpponent, exchangeIndex, exchange,
+            isClash: cameFromClash, isOneSided: true);
+        action.Skill?.NotifyRollEnd(
+            action, exhaustedOpponent, exchangeIndex, true, exchange,
+            isClash: cameFromClash, isOneSided: true);
+
         return exchange;
     }
 
@@ -1120,7 +1292,10 @@ public class ClashManager
 
     private bool ExecuteSkillOnce(
         BattleAction action,
-        ref bool executed)
+        BattleAction opponentAction,
+        ref bool executed,
+        bool isClash,
+        bool isOneSided)
     {
         if (executed)
             return true;
@@ -1134,8 +1309,38 @@ public class ClashManager
             return false;
         }
 
+        // Detailed phase order:
+        // 사용 전 -> 사용시(Execute) -> 합/일방 시작 -> 공격 시작 전 -> 굴림 시작.
+        action.Skill.NotifyBeforeUse(
+            action,
+            opponentAction,
+            isClash,
+            isOneSided);
+
         action.Skill.Execute(action);
         executed = true;
+
+        if (!CanContinueRoll(action))
+            return true;
+
+        if (isOneSided)
+        {
+            action.Skill.NotifyOneSidedStart(
+                action);
+        }
+        else if (isClash)
+        {
+            action.Skill.NotifyClashStart(
+                action,
+                opponentAction);
+        }
+
+        action.Skill.NotifyBeforeAttack(
+            action,
+            opponentAction,
+            isClash,
+            isOneSided);
+
         return true;
     }
 
@@ -1144,13 +1349,23 @@ public class ClashManager
         BattleAction opponent)
     {
         if (action == null ||
-            opponent == null)
+            opponent?.Owner == null)
         {
             return false;
         }
 
-        return action.Target == opponent.Owner &&
-               action.TargetPart == opponent.OwnerPart;
+        if (action.Target != opponent.Owner)
+            return false;
+
+        BodyPart targetPart =
+            action.TargetPart;
+
+        // TargetSlot은 어떤 행동과 합하는지를 결정하고, TargetPart는
+        // 그 캐릭터의 어느 부위가 피해를 받는지를 결정한다.
+        // 따라서 targetPart가 상대 행동의 OwnerPart와 같을 필요는 없다.
+        return targetPart == null ||
+               targetPart.Owner == null ||
+               targetPart.Owner == opponent.Owner;
     }
 
     private static string GetActionLabel(

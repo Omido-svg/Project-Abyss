@@ -17,6 +17,11 @@ public class BattleManager : MonoBehaviour
     [Header("Battle UI")]
     [SerializeField] private BattleUIManager battleUIManager;
 
+    [Header("Gameplay v5 Run Context (optional)")]
+    [SerializeField] private bool hasConfiguredEmotion;
+    [SerializeField] private EmotionType configuredEmotion = EmotionType.Awe;
+    [SerializeField] private EmotionAugmentCatalog emotionAugmentCatalog;
+
     [Header("Animation")]
     [SerializeField] private BattleAnimationDirector battleAnimationDirector;
     [SerializeField] private SkillVisualProfile defaultVisualProfile;
@@ -38,6 +43,9 @@ public class BattleManager : MonoBehaviour
     public BattleRosterController RosterController => rosterController;
     public BattleUIManager BattleUIManager => battleUIManager;
     public BattleRuleSettings BattleRules => battleRuleSettings;
+    public EmotionType? ConfiguredEmotion =>
+        hasConfiguredEmotion ? configuredEmotion : null;
+    public EmotionAugmentCatalog EmotionAugmentCatalog => emotionAugmentCatalog;
 
     public bool IsInitialized => initializedSuccessfully;
     public bool IsEndingOrEnded => endingOrEnded;
@@ -261,7 +269,12 @@ public class BattleManager : MonoBehaviour
             {
                 Player = player,
                 Enemies = enemies,
-                Rules = battleRuleSettings
+                Rules = battleRuleSettings,
+                SelectedEmotion =
+                    hasConfiguredEmotion
+                        ? configuredEmotion
+                        : null,
+                EmotionAugmentCatalog = emotionAugmentCatalog
             };
 
         BattleContext.EffectResolver =
@@ -314,6 +327,31 @@ public class BattleManager : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// Run/테스트 Composition Root가 전투 초기화 전에 감정과 증강 Catalog를 주입한다.
+    /// 이미 전투가 초기화된 뒤 감정을 바꾸면 기존 증강 상태와 충돌할 수 있으므로 거부한다.
+    /// </summary>
+    public bool ConfigureEmotionProgression(
+        EmotionType? emotion,
+        EmotionAugmentCatalog catalog)
+    {
+        if (initializationStarted || initializedSuccessfully)
+        {
+            Debug.LogWarning(
+                "[BattleManager] 전투 초기화 후에는 감정 Progression 설정을 변경할 수 없습니다.",
+                this);
+            return false;
+        }
+
+        hasConfiguredEmotion = emotion.HasValue;
+
+        if (emotion.HasValue)
+            configuredEmotion = emotion.Value;
+
+        emotionAugmentCatalog = catalog;
+        return true;
+    }
+
     public void StartBattle()
     {
         if (!initializedSuccessfully &&
@@ -356,6 +394,9 @@ public class BattleManager : MonoBehaviour
             battleUIManager?.RefreshAllBodyPartButtons();
     }
 
+    public bool IsWaitingForEmotionAugmentChoice =>
+        HasPendingEmotionAugmentOffer();
+
     public void NextTurn()
     {
         if (!initializedSuccessfully ||
@@ -364,6 +405,17 @@ public class BattleManager : MonoBehaviour
             TurnManager == null ||
             TurnManager.IsResolving)
         {
+            return;
+        }
+
+        // 증강 선택 패널을 잠시 내려둔 상태라도 PendingOffer 자체는 유지된다.
+        // 선택을 완료하기 전에는 START/다음 턴 해석을 절대 허용하지 않는다.
+        if (HasPendingEmotionAugmentOffer())
+        {
+            Debug.Log(
+                "[BattleManager] 감정 증강을 먼저 선택해야 다음 턴을 시작할 수 있습니다.");
+
+            RequestEmotionAugmentPresentation();
             return;
         }
 
@@ -417,7 +469,65 @@ public class BattleManager : MonoBehaviour
             return;
         }
 
-        TurnManager.NextTurn();
+        // 열광 레벨업에서 감정 증강 제안이 만들어졌다면 다음 턴을 시작하지 않는다.
+        // 패널은 잠시 최소화할 수 있지만 PendingOffer를 고르기 전까지 전투 진행은 잠긴다.
+        if (HasPendingEmotionAugmentOffer())
+        {
+            Debug.Log(
+                "[BattleManager] 감정 증강 선택 대기 / 다음 턴 시작 보류.");
+
+            RequestEmotionAugmentPresentation();
+            return;
+        }
+
+        AdvanceToNextTurnAfterResolution();
+    }
+
+    public bool ContinueAfterEmotionAugmentChoice()
+    {
+        if (endingOrEnded ||
+            destroyed ||
+            !initializedSuccessfully ||
+            TurnManager == null ||
+            TurnManager.IsResolving)
+        {
+            return false;
+        }
+
+        // 한 번의 턴 종료에서 여러 열광 레벨업이 발생했다면 다음 제안을 먼저 고른다.
+        if (HasPendingEmotionAugmentOffer())
+        {
+            RequestEmotionAugmentPresentation();
+            return false;
+        }
+
+        if (CheckBattleEnd())
+        {
+            EndBattle();
+            return false;
+        }
+
+        AdvanceToNextTurnAfterResolution();
+        return true;
+    }
+
+    private bool HasPendingEmotionAugmentOffer()
+    {
+        return BattleContext?.Services?
+                   .EmotionAugmentManager?
+                   .PendingOffer != null;
+    }
+
+    private void RequestEmotionAugmentPresentation()
+    {
+        BattleContext?.Services?
+            .EmotionAugmentManager?
+            .RequestPendingOfferPresentation();
+    }
+
+    private void AdvanceToNextTurnAfterResolution()
+    {
+        TurnManager?.NextTurn();
         battleUIManager?.RefreshAllBodyPartButtons();
 
         if (CheckBattleEnd())

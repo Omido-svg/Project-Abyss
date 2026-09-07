@@ -147,6 +147,19 @@ public class TurnManager
             return;
         }
 
+        // Core invariant: 감정 증강 선택이 남아 있으면 어떤 호출 경로에서도
+        // 다음 턴을 시작할 수 없다. BattleManager UI 경로뿐 아니라 직접 NextTurn 호출도 차단한다.
+        EmotionAugmentManager augmentManager =
+            battleContext?.Services?.EmotionAugmentManager;
+
+        if (augmentManager?.PendingOffer != null)
+        {
+            Debug.Log(
+                "[TurnManager] 감정 증강 선택 대기 중이라 턴 시작을 차단합니다.");
+            augmentManager.RequestPendingOfferPresentation();
+            return;
+        }
+
         try
         {
             StartTurnInternal();

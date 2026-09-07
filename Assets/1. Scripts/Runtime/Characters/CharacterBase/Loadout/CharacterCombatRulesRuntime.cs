@@ -706,11 +706,23 @@ public sealed class CharacterCombatRulesRuntime
         for (int i = 0; i < runtimeSkills.Count; i++)
         {
             Skill skill = runtimeSkills[i];
-            if (skill?.Definition == definition)
+            if (skill?.Definition != definition)
+                continue;
+
+            // FixedSkill과 InsufficientEnergyFallbackSkill은 표시 이름이 같아도
+            // 서로 다른 SkillDefinition일 수 있다. (예: Stage 1 Boss B Duel / B fallback)
+            // 이 경로에서는 UI용 SkillName이 아니라 Definition identity로만 중복 제거한다.
+            foreach (Skill existing in destination)
             {
-                AddUnique(destination, skill);
-                return;
+                if (ReferenceEquals(existing, skill) ||
+                    existing?.Definition == definition)
+                {
+                    return;
+                }
             }
+
+            destination.Add(skill);
+            return;
         }
     }
     private static void AddUnique(

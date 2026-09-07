@@ -54,6 +54,18 @@ public static class BattleSkillUiText
                     ? "수비 "
                     : "공격 ");
 
+            PhysicalDamageType rollPhysical =
+                ResolveRollPhysicalType(
+                    skill,
+                    definition,
+                    roll);
+
+            builder.Append('[');
+            builder.Append(GetPhysicalTypeSymbol(rollPhysical));
+            builder.Append(' ');
+            builder.Append(GetPhysicalTypeName(rollPhysical));
+            builder.Append("] ");
+
             switch (roll.RngSource)
             {
                 case RollRngSource.Coin:
@@ -108,8 +120,26 @@ public static class BattleSkillUiText
             !string.IsNullOrWhiteSpace(
                 definition.Description))
         {
+            List<string> declaredKeywords =
+                new List<string>();
+
+            if (definition.Keywords != null)
+            {
+                foreach (SkillKeywordEntry keyword
+                         in definition.Keywords)
+                {
+                    if (keyword != null &&
+                        !string.IsNullOrWhiteSpace(keyword.Name))
+                    {
+                        declaredKeywords.Add(keyword.Name);
+                    }
+                }
+            }
+
             builder.AppendLine(
-                definition.Description.Trim());
+                BattleKeywordGlossary.ColorizeText(
+                    definition.Description.Trim(),
+                    declaredKeywords));
 
             builder.AppendLine();
         }
@@ -130,7 +160,47 @@ public static class BattleSkillUiText
                     ? yujin.ResolveWeaponPhysicalType()
                     : definition?.PhysicalType ?? PhysicalDamageType.Cut;
 
-            builder.AppendLine($"물리 속성: {GetPhysicalTypeName(physical)}");
+            builder.AppendLine(
+                $"기본 물리 속성: " +
+                $"{GetPhysicalTypeSymbol(physical)} {GetPhysicalTypeName(physical)}");
+
+            if (definition?.Rolls != null &&
+                definition.Rolls.Count > 0 &&
+                skill.CanClash)
+            {
+                builder.Append("굴림별 물리: ");
+
+                bool appendedPhysical = false;
+
+                for (int i = 0; i < definition.Rolls.Count; i++)
+                {
+                    SkillRollData roll = definition.Rolls[i];
+                    if (roll == null)
+                        continue;
+
+                    if (appendedPhysical)
+                        builder.Append(" / ");
+
+                    builder.Append(i + 1);
+                    builder.Append(' ');
+                    PhysicalDamageType rollPhysical =
+                        ResolveRollPhysicalType(
+                            skill,
+                            definition,
+                            roll);
+
+                    builder.Append(GetPhysicalTypeSymbol(rollPhysical));
+                    builder.Append(' ');
+                    builder.Append(GetPhysicalTypeName(rollPhysical));
+
+                    appendedPhysical = true;
+                }
+
+                if (!appendedPhysical)
+                    builder.Append(GetPhysicalTypeName(physical));
+
+                builder.AppendLine();
+            }
         }
 
         builder.AppendLine(
@@ -188,7 +258,12 @@ public static class BattleSkillUiText
                     if (appended)
                         builder.Append(", ");
 
-                    builder.Append(BuildEffectDisplayName(entry));
+                    builder.Append(
+                        BuildEffectTimingPrefix(entry));
+                    builder.Append(' ');
+                    builder.Append(
+                        BattleKeywordGlossary.ColorizeText(
+                            BuildEffectDisplayName(entry)));
                     appended = true;
                 }
 
@@ -196,6 +271,50 @@ public static class BattleSkillUiText
                     builder.Append("없음");
 
                 builder.AppendLine();
+            }
+        }
+
+        if (definition?.Rolls != null)
+        {
+            bool wroteHeader = false;
+
+            for (int rollIndex = 0;
+                 rollIndex < definition.Rolls.Count;
+                 rollIndex++)
+            {
+                SkillRollData roll = definition.Rolls[rollIndex];
+                if (roll?.EffectEntries == null)
+                    continue;
+
+                foreach (SkillEffectEntry entry in roll.EffectEntries)
+                {
+                    if (entry?.Definition == null)
+                        continue;
+
+                    if (!wroteHeader)
+                    {
+                        builder.AppendLine("굴림 효과:");
+                        wroteHeader = true;
+                    }
+
+                    PhysicalDamageType rollPhysical =
+                        ResolveRollPhysicalType(
+                            skill,
+                            definition,
+                            roll);
+
+                    builder.Append("  ");
+                    builder.Append(rollIndex + 1);
+                    builder.Append("굴림 ");
+                    builder.Append(GetPhysicalTypeSymbol(rollPhysical));
+                    builder.Append(' ');
+                    builder.Append(BuildEffectTimingPrefix(entry));
+                    builder.Append(' ');
+                    builder.Append(
+                        BattleKeywordGlossary.ColorizeText(
+                            BuildEffectDisplayName(entry)));
+                    builder.AppendLine();
+                }
             }
         }
 
@@ -312,36 +431,104 @@ public static class BattleSkillUiText
             foreach (SkillEffectEntry entry
                      in definition.EnumerateEffectEntries())
             {
-                SkillEffectDefinition effect = entry?.Definition;
-                if (effect == null)
-                    continue;
+                AddEffectKeywords(
+                    result,
+                    entry?.Definition);
+            }
 
-                string typeName =
-                    effect.GetType().Name;
-
-                if (typeName.Contains("Bleed") ||
-                    effect is AddBodyPartStatusEffect statusEffect &&
-                    statusEffect.StatusEffectId == StatusEffectId.Bleeding)
+            if (definition.Rolls != null)
+            {
+                foreach (SkillRollData roll in definition.Rolls)
                 {
-                    AddUnique(
-                        result,
-                        "혈상",
-                        BattleKeywordGlossary.GetDescription(
-                            "혈상"));
-                }
+                    if (roll?.EffectEntries == null)
+                        continue;
 
-                if (typeName.Contains("Momentum"))
-                {
-                    AddUnique(
-                        result,
-                        "기세",
-                        BattleKeywordGlossary.GetDescription(
-                            "기세"));
+                    foreach (SkillEffectEntry entry in roll.EffectEntries)
+                    {
+                        AddEffectKeywords(
+                            result,
+                            entry?.Definition);
+                    }
                 }
             }
         }
 
         return result;
+    }
+
+    private static string BuildEffectTimingPrefix(
+        SkillEffectEntry entry)
+    {
+        if (entry?.Definition == null)
+            return string.Empty;
+
+        string rollPrefix =
+            entry.RestrictToRoll
+                ? $"{System.Math.Max(1, entry.RollNumber)}굴림 · "
+                : string.Empty;
+
+        string timing =
+            SkillEffectTimingCatalog.GetDisplayName(
+                entry.EffectiveTiming);
+
+        return
+            $"<color={SkillEffectTimingCatalog.GetColorHex(entry.EffectiveTiming)}>" +
+            $"<b>[{rollPrefix}{timing}]</b></color>";
+    }
+
+    private static void AddEffectKeywords(
+        List<SkillKeywordEntry> result,
+        SkillEffectDefinition effect)
+    {
+        if (result == null || effect == null)
+            return;
+
+        string typeName =
+            effect.GetType().Name;
+
+        if (effect is AddBodyPartStatusEffect statusEffect)
+        {
+            string statusKeyword =
+                BattleKeywordGlossary
+                    .GetStatusEffectDisplayName(
+                        statusEffect.StatusEffectId);
+
+            AddUnique(
+                result,
+                statusKeyword,
+                BattleKeywordGlossary.GetDescription(
+                    statusKeyword));
+        }
+        else if (effect is ApplyStatusIfConditionEffect conditionalStatus)
+        {
+            string statusKeyword =
+                BattleKeywordGlossary
+                    .GetStatusEffectDisplayName(
+                        conditionalStatus.StatusEffectId);
+
+            AddUnique(
+                result,
+                statusKeyword,
+                BattleKeywordGlossary.GetDescription(
+                    statusKeyword));
+        }
+        else if (typeName.Contains("Bleed"))
+        {
+            AddUnique(
+                result,
+                "혈상",
+                BattleKeywordGlossary.GetDescription(
+                    "혈상"));
+        }
+
+        if (typeName.Contains("Momentum"))
+        {
+            AddUnique(
+                result,
+                "기세",
+                BattleKeywordGlossary.GetDescription(
+                    "기세"));
+        }
     }
 
     private static string BuildEffectDisplayName(
@@ -365,8 +552,13 @@ public static class BattleSkillUiText
                 overrides?.ResolveDuration(status.Duration) ??
                 status.Duration;
 
+            string statusName =
+                BattleKeywordGlossary
+                    .GetStatusEffectDisplayName(
+                        status.StatusEffectId);
+
             return
-                $"{status.StatusEffectId} " +
+                $"{statusName} " +
                 $"{stack}스택 / {duration}턴";
         }
 
@@ -379,8 +571,13 @@ public static class BattleSkillUiText
                 overrides?.ResolveDuration(conditionalStatus.Duration) ??
                 conditionalStatus.Duration;
 
+            string statusName =
+                BattleKeywordGlossary
+                    .GetStatusEffectDisplayName(
+                        conditionalStatus.StatusEffectId);
+
             return
-                $"{conditionalStatus.StatusEffectId} " +
+                $"{statusName} " +
                 $"{stack}스택 / {duration}턴";
         }
 
@@ -420,6 +617,23 @@ public static class BattleSkillUiText
 
         return effect.GetType().Name;
     }
+
+    private static PhysicalDamageType ResolveRollPhysicalType(
+        Skill skill,
+        SkillDefinition definition,
+        SkillRollData roll)
+    {
+        if (skill?.Owner is Yujin yujin)
+            return yujin.ResolveWeaponPhysicalType();
+
+        if (roll?.OverridePhysicalType == true)
+            return roll.PhysicalType;
+
+        return definition?.PhysicalType ?? PhysicalDamageType.Cut;
+    }
+
+    public static string GetPhysicalTypeSymbol(PhysicalDamageType type) =>
+        PhysicalDamageResolver.GetSymbol(type);
 
     public static string GetPhysicalTypeName(PhysicalDamageType type) => type switch
     {

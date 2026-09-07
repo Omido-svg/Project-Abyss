@@ -159,6 +159,8 @@ public class ActionResolver
             return false;
         }
 
+        // 비용 검증/소비가 성공한 실제 사용만 "사용 전" 페이즈를 발행한다.
+        action.Skill.NotifyBeforeUse(action);
         action.Skill.Execute(action);
         return true;
     }

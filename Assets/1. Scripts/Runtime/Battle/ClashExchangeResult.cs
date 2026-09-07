@@ -26,6 +26,12 @@ public sealed class ClashExchangeResult
 
     public DamageContext DamageContext;
 
+    // HP와 별개인 실제 흐트러짐 게이지 피해.
+    // StaggerGaugeMechanic이 ExchangeResolved에서 실제 적용된 감소량을 기록한다.
+    public int StaggerDamage;
+    public int StaggerGaugeBefore;
+    public int StaggerGaugeAfter;
+
     public List<DamageContext>
         SecondaryDamageContexts =
             new List<DamageContext>();

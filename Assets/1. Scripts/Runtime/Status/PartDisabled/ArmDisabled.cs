@@ -14,7 +14,9 @@ public sealed class ArmDisabled : PartDisabledStatus
         BattleAction action,
         int rollCount)
     {
-        if (!IsOwnerAction(action))
+        // 팔 약화는 해당 팔에서 발생한 공격/결투에만 적용한다.
+        // 다른 부위 및 part == null인 글로벌 보스 슬롯까지 감소시키면 안 된다.
+        if (!AffectsAction(action))
             return rollCount;
 
         if (action.ActionType != ActionType.NormalAttack &&

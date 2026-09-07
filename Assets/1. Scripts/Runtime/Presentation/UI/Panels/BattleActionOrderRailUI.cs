@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using DG.Tweening;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -21,9 +22,9 @@ public sealed class BattleActionOrderRailUI : MonoBehaviour
     [SerializeField] private SkillSelectPanelUI skillSelectPanel;
 
     [Header("Layout")]
-    [SerializeField, Min(140f)] private float width = 220f;
-    [SerializeField, Min(240f)] private float height = 520f;
-    [SerializeField] private Vector2 topLeftOffset = new(14f, -104f);
+    [SerializeField, Min(320f)] private float width = 420f;
+    [SerializeField, Min(420f)] private float height = 680f;
+    [SerializeField] private Vector2 topLeftOffset = new(18f, -88f);
     [SerializeField, Range(4, 20)] private int maximumRows = 10;
 
     [Header("Visual")]
@@ -45,15 +46,43 @@ public sealed class BattleActionOrderRailUI : MonoBehaviour
     [SerializeField] private Color hoveredTargetBackground =
         new(0.44f, 0.28f, 0.06f, 0.86f);
 
+    [SerializeField] private Color hoveredPlayerBackground =
+        new(0.78f, 0.58f, 0.04f, 0.96f);
+
+    [SerializeField] private Color reactiveRollAccent =
+        new(0.78f, 0.34f, 1f, 1f);
+
+    [SerializeField] private Color reactiveRollBackground =
+        new(0.22f, 0.08f, 0.34f, 0.94f);
+
+    [Header("Resolution")]
+    [SerializeField, Min(0.08f)] private float completedRowFadeDuration = 0.22f;
+    [SerializeField, Min(0f)] private float completedRowSlideDistance = 34f;
+    [SerializeField, Min(0f)] private float completedRowStaggerDelay = 0.06f;
+    [SerializeField, Min(0.02f)] private float missingVisualFallbackDelay = 0.08f;
+    [SerializeField, Min(0.05f)] private float reactiveRowAppearDuration = 0.18f;
+    [SerializeField, Min(0.15f)] private float reactiveRowMinimumVisibleDuration = 0.90f;
+
     private Canvas overlayCanvas;
     private CanvasGroup canvasGroup;
     private RectTransform panelRoot;
     private RectTransform contentRoot;
     private TMP_Text headerText;
     private readonly List<GameObject> generatedRows = new();
+    private readonly Dictionary<long, GameObject> rowsByActionId = new();
+    private readonly Dictionary<long, GameObject> reactiveRowsByEventId = new();
+    private readonly Dictionary<long, float> reactiveRowStartedAt = new();
+    private readonly HashSet<long> completedResolutionActions = new();
+    private readonly HashSet<long> domainCompletedResolutionActions = new();
     private readonly ActionPhaseSorter sorter = new();
     private readonly HashSet<ActionSlot> clashSlots = new();
 
+    private BattleEvent boundBattleEvent;
+    private BattleAnimationDirector animationDirector;
+    private BattleAnimationDirector boundAnimationDirector;
+
+    private bool wasResolving;
+    private int resolutionRemainingCombatCount;
     private int lastSignature = int.MinValue;
 
     public void Configure(
@@ -65,6 +94,8 @@ public sealed class BattleActionOrderRailUI : MonoBehaviour
         uiManager = managerUi;
         ResolveReferences();
         EnsureView();
+        EnsureBattleEventBinding();
+        EnsureAnimationDirectorBinding();
         Rebuild(force: true);
     }
 
@@ -72,6 +103,53 @@ public sealed class BattleActionOrderRailUI : MonoBehaviour
     {
         ResolveReferences();
         EnsureView();
+        EnsureBattleEventBinding();
+        EnsureAnimationDirectorBinding();
+    }
+
+    private void OnDestroy()
+    {
+        DOTween.Kill(
+            this,
+            complete: false);
+
+        UnbindBattleEvent();
+        UnbindAnimationDirector();
+        ClearRows();
+        DestroyOverlayView();
+    }
+
+    /// <summary>
+    /// 행동 순서 레일은 항상 독립 Root Screen-space Overlay Canvas로 유지한다.
+    /// 따라서 Resolution에서 전투 UI Root 전체가 꺼져도 레일은 영향을 받지 않는다.
+    /// </summary>
+    public void PreserveForResolution(
+        Transform _)
+    {
+        ResolveReferences();
+        EnsureView();
+        EnsureBattleEventBinding();
+        EnsureAnimationDirectorBinding();
+        EnterResolutionIfNeeded();
+
+        if (canvasGroup != null)
+            canvasGroup.alpha = 1f;
+
+        EnsureOverlayIsRootCanvas();
+
+        if (overlayCanvas != null)
+            overlayCanvas.sortingOrder = 80;
+    }
+
+    /// <summary>
+    /// Resolution 종료 후 일반 Planning 정렬 순서로 되돌린다.
+    /// </summary>
+    public void RestoreAfterResolution()
+    {
+        EnsureOverlayIsRootCanvas();
+
+        if (overlayCanvas != null)
+            overlayCanvas.sortingOrder = 18;
     }
 
     private void LateUpdate()
@@ -85,13 +163,19 @@ public sealed class BattleActionOrderRailUI : MonoBehaviour
             return;
         }
 
+        EnsureBattleEventBinding();
+        EnsureAnimationDirectorBinding();
+
+        bool resolving =
+            battleManager?.TurnManager?.IsResolving == true;
+
         bool hidden =
             battleManager == null ||
             battleManager.ActionManager == null ||
             battleManager.BattleContext == null ||
-            battleManager.TurnManager?.IsResolving == true ||
-            skillSelectPanel != null &&
-            skillSelectPanel.BlocksWorldPlanningOverlay;
+            (!resolving &&
+             skillSelectPanel != null &&
+             skillSelectPanel.BlocksWorldPlanningOverlay);
 
         canvasGroup.alpha =
             hidden
@@ -100,6 +184,32 @@ public sealed class BattleActionOrderRailUI : MonoBehaviour
 
         if (hidden)
             return;
+
+        if (resolving)
+        {
+            EnterResolutionIfNeeded();
+
+            // Domain OnActionEnd는 합의 경우 연출 전에 발생한다.
+            // 실제 Timeline이 재생 중이면 VisualRequestCompleted를 기다리고,
+            // Visual이 없는 행동만 fallback으로 즉시 완료 처리한다.
+            if (animationDirector?.IsPlaying != true &&
+                domainCompletedResolutionActions.Count > 0)
+            {
+                FlushDomainCompletedFallback();
+            }
+
+            return;
+        }
+
+        if (wasResolving)
+        {
+            wasResolving = false;
+            completedResolutionActions.Clear();
+            domainCompletedResolutionActions.Clear();
+            resolutionRemainingCombatCount = 0;
+            Rebuild(force: true);
+            return;
+        }
 
         Rebuild(force: false);
     }
@@ -119,6 +229,476 @@ public sealed class BattleActionOrderRailUI : MonoBehaviour
                 FindFirstObjectByType<SkillSelectPanelUI>(
                     FindObjectsInactive.Include);
         }
+
+        if (animationDirector == null)
+        {
+            animationDirector =
+                FindFirstObjectByType<BattleAnimationDirector>(
+                    FindObjectsInactive.Include);
+        }
+    }
+
+    private void EnsureBattleEventBinding()
+    {
+        BattleEvent current =
+            battleManager?.BattleContext?._battleEvent;
+
+        if (ReferenceEquals(
+                current,
+                boundBattleEvent))
+        {
+            return;
+        }
+
+        UnbindBattleEvent();
+        boundBattleEvent = current;
+
+        if (boundBattleEvent != null)
+        {
+            boundBattleEvent.OnActionEnd += HandleActionEnd;
+            boundBattleEvent.OnReactiveRollStarted += HandleReactiveRollStarted;
+            boundBattleEvent.OnReactiveRollResolved += HandleReactiveRollResolved;
+        }
+    }
+
+    private void UnbindBattleEvent()
+    {
+        if (boundBattleEvent != null)
+        {
+            boundBattleEvent.OnActionEnd -= HandleActionEnd;
+            boundBattleEvent.OnReactiveRollStarted -= HandleReactiveRollStarted;
+            boundBattleEvent.OnReactiveRollResolved -= HandleReactiveRollResolved;
+        }
+
+        boundBattleEvent = null;
+    }
+
+    private void EnsureAnimationDirectorBinding()
+    {
+        BattleAnimationDirector current =
+            animationDirector;
+
+        if (ReferenceEquals(
+                current,
+                boundAnimationDirector))
+        {
+            return;
+        }
+
+        UnbindAnimationDirector();
+        boundAnimationDirector = current;
+
+        if (boundAnimationDirector != null)
+        {
+            boundAnimationDirector.VisualRequestCompleted +=
+                HandleVisualRequestCompleted;
+        }
+    }
+
+    private void UnbindAnimationDirector()
+    {
+        if (boundAnimationDirector != null)
+        {
+            boundAnimationDirector.VisualRequestCompleted -=
+                HandleVisualRequestCompleted;
+        }
+
+        boundAnimationDirector = null;
+    }
+
+    private void EnterResolutionIfNeeded()
+    {
+        if (wasResolving)
+            return;
+
+        wasResolving = true;
+        completedResolutionActions.Clear();
+        domainCompletedResolutionActions.Clear();
+
+        // BattleManager는 TurnManager.IsResolving=true가 되기 직전에
+        // Resolution UI를 먼저 연다. 그 프레임에도 정확한 남은 행동 수를 보존한다.
+        resolutionRemainingCombatCount =
+            CountCurrentCombatSlots();
+
+        Rebuild(force: true);
+        UpdateHeaderCount(
+            resolutionRemainingCombatCount);
+    }
+
+    private int CountCurrentCombatSlots()
+    {
+        IReadOnlyList<ActionSlot> slots =
+            battleManager?.ActionManager?.Slots;
+
+        if (slots == null)
+            return 0;
+
+        int count = 0;
+
+        foreach (ActionSlot slot in slots)
+        {
+            if (slot?.Phase == ActionPhase.COMBAT)
+                count++;
+        }
+
+        return count;
+    }
+
+    private void HandleReactiveRollStarted(
+        BattleReactiveRollEvent reactiveRoll)
+    {
+        if (reactiveRoll == null ||
+            reactiveRoll.EventId <= 0 ||
+            battleManager?.TurnManager?.IsResolving != true)
+        {
+            return;
+        }
+
+        EnterResolutionIfNeeded();
+
+        if (reactiveRowsByEventId.ContainsKey(
+                reactiveRoll.EventId))
+        {
+            return;
+        }
+
+        CreateReactiveRollRow(
+            reactiveRoll);
+
+        reactiveRowStartedAt[reactiveRoll.EventId] =
+            Time.unscaledTime;
+
+        resolutionRemainingCombatCount++;
+        UpdateHeaderCount(
+            resolutionRemainingCombatCount);
+    }
+
+    private void HandleReactiveRollResolved(
+        BattleReactiveRollEvent reactiveRoll)
+    {
+        if (reactiveRoll == null ||
+            reactiveRoll.EventId <= 0 ||
+            !reactiveRowsByEventId.ContainsKey(reactiveRoll.EventId))
+        {
+            return;
+        }
+
+        float startedAt =
+            reactiveRowStartedAt.TryGetValue(
+                reactiveRoll.EventId,
+                out float value)
+                ? value
+                : Time.unscaledTime;
+
+        float elapsed =
+            Mathf.Max(
+                0f,
+                Time.unscaledTime - startedAt);
+
+        float delay =
+            Mathf.Max(
+                0f,
+                reactiveRowMinimumVisibleDuration - elapsed);
+
+        DOVirtual.DelayedCall(
+                delay,
+                () => CompleteReactiveRollRow(
+                    reactiveRoll.EventId),
+                ignoreTimeScale: true)
+            .SetTarget(this);
+    }
+
+    private void HandleActionEnd(
+        BattleAction action)
+    {
+        if (action == null ||
+            action.ActionId <= 0 ||
+            battleManager?.TurnManager?.IsResolving != true)
+        {
+            return;
+        }
+
+        EnterResolutionIfNeeded();
+
+        // 합의 Domain ActionEnd는 전투 결과 확정 직후, Timeline 재생 전에 발생한다.
+        // 여기서는 완료 후보만 기록하고 실제 UI 제거는 Presentation 완료 이벤트에 맡긴다.
+        domainCompletedResolutionActions.Add(
+            action.ActionId);
+
+        ScheduleDomainCompletionFallback(
+            action.ActionId);
+    }
+
+    private void ScheduleDomainCompletionFallback(
+        long actionId)
+    {
+        if (actionId <= 0)
+            return;
+
+        DOVirtual.DelayedCall(
+                Mathf.Max(
+                    0.02f,
+                    missingVisualFallbackDelay),
+                () =>
+                {
+                    if (!domainCompletedResolutionActions.Contains(actionId) ||
+                        battleManager?.TurnManager?.IsResolving != true)
+                    {
+                        return;
+                    }
+
+                    // 정상 Timeline이 시작되었다면 Presentation 완료 이벤트가
+                    // 정확한 제거 시점을 알려주므로 여기서는 기다린다.
+                    if (animationDirector?.IsPlaying == true)
+                        return;
+
+                    // VisualDefinition 누락/재생 불가 같은 경우에도
+                    // 행동 자체는 끝났으므로 레일이 영원히 남지 않게 한다.
+                    CompleteResolutionAction(
+                        actionId,
+                        0f);
+                },
+                ignoreTimeScale: true)
+            .SetTarget(this);
+    }
+
+    private void HandleVisualRequestCompleted(
+        BattleVisualRequest request)
+    {
+        if (request == null ||
+            battleManager?.TurnManager?.IsResolving != true)
+        {
+            return;
+        }
+
+        EnterResolutionIfNeeded();
+
+        List<long> completed =
+            new List<long>(2);
+
+        AddVisualCompletedAction(
+            completed,
+            request.SourceAction);
+
+        AddVisualCompletedAction(
+            completed,
+            request.OpponentAction);
+
+        // 합처럼 두 행동이 같은 VisualRequest에서 함께 끝나는 경우에도
+        // 현재 레일의 위쪽 행부터 짧은 간격으로 하나씩 사라지게 한다.
+        completed.Sort(
+            (left, right) =>
+                GetRowSiblingIndex(left)
+                    .CompareTo(
+                        GetRowSiblingIndex(right)));
+
+        for (int index = 0;
+             index < completed.Count;
+             index++)
+        {
+            CompleteResolutionAction(
+                completed[index],
+                index * completedRowStaggerDelay);
+        }
+    }
+
+    private void AddVisualCompletedAction(
+        List<long> destination,
+        BattleAction action)
+    {
+        if (destination == null ||
+            action == null ||
+            action.ActionId <= 0 ||
+            !rowsByActionId.ContainsKey(action.ActionId) ||
+            destination.Contains(action.ActionId))
+        {
+            return;
+        }
+
+        destination.Add(
+            action.ActionId);
+    }
+
+    private int GetRowSiblingIndex(
+        long actionId)
+    {
+        if (rowsByActionId.TryGetValue(
+                actionId,
+                out GameObject row) &&
+            row != null)
+        {
+            return row.transform.GetSiblingIndex();
+        }
+
+        return int.MaxValue;
+    }
+
+    private void FlushDomainCompletedFallback()
+    {
+        if (domainCompletedResolutionActions.Count == 0)
+            return;
+
+        List<long> pending =
+            new List<long>(
+                domainCompletedResolutionActions);
+
+        foreach (long actionId in pending)
+            CompleteResolutionAction(actionId, 0f);
+    }
+
+    private void CompleteResolutionAction(
+        BattleAction action)
+    {
+        if (action == null)
+            return;
+
+        CompleteResolutionAction(
+            action.ActionId,
+            0f);
+    }
+
+    private void CompleteResolutionAction(
+        long actionId,
+        float delay)
+    {
+        if (actionId <= 0)
+            return;
+
+        domainCompletedResolutionActions.Remove(
+            actionId);
+
+        // 행동순서 레일은 COMBAT 행만 표시한다.
+        if (!rowsByActionId.ContainsKey(actionId) ||
+            !completedResolutionActions.Add(actionId))
+        {
+            return;
+        }
+
+        resolutionRemainingCombatCount =
+            Mathf.Max(
+                0,
+                resolutionRemainingCombatCount - 1);
+
+        UpdateHeaderCount(
+            resolutionRemainingCombatCount);
+
+        AnimateCompletedRow(
+            actionId,
+            delay);
+    }
+
+    private void AnimateCompletedRow(
+        long actionId,
+        float delay)
+    {
+        if (!rowsByActionId.TryGetValue(
+                actionId,
+                out GameObject row) ||
+            row == null)
+        {
+            return;
+        }
+
+        rowsByActionId.Remove(
+            actionId);
+
+        CanvasGroup group =
+            row.GetComponent<CanvasGroup>();
+
+        RectTransform rect =
+            row.transform as RectTransform;
+
+        LayoutElement element =
+            row.GetComponent<LayoutElement>();
+
+        if (group == null ||
+            rect == null ||
+            element == null)
+        {
+            RemoveGeneratedRow(row);
+            return;
+        }
+
+        DOTween.Kill(
+            row,
+            complete: false);
+
+        element.minHeight = 0f;
+
+        float startHeight =
+            Mathf.Max(
+                0f,
+                element.preferredHeight);
+
+        Sequence sequence =
+            DOTween.Sequence()
+                .SetUpdate(true)
+                .SetTarget(row)
+                .SetDelay(
+                    Mathf.Max(0f, delay));
+
+        sequence.Join(
+            group.DOFade(
+                0f,
+                completedRowFadeDuration));
+
+        sequence.Join(
+            rect.DOAnchorPosX(
+                    rect.anchoredPosition.x -
+                    completedRowSlideDistance,
+                    completedRowFadeDuration)
+                .SetEase(Ease.InCubic));
+
+        sequence.Join(
+            rect.DOScale(
+                    0.90f,
+                    completedRowFadeDuration)
+                .SetEase(Ease.InBack));
+
+        sequence.Join(
+            DOTween.To(
+                    () => element.preferredHeight,
+                    value => element.preferredHeight = value,
+                    0f,
+                    completedRowFadeDuration)
+                .From(startHeight)
+                .SetEase(Ease.InCubic));
+
+        sequence.OnComplete(
+            () => RemoveGeneratedRow(row));
+    }
+
+    private void RemoveGeneratedRow(
+        GameObject row)
+    {
+        if (row == null)
+            return;
+
+        DOTween.Kill(
+            row,
+            complete: false);
+
+        generatedRows.Remove(
+            row);
+
+        row.SetActive(false);
+
+        if (Application.isPlaying)
+            Destroy(row);
+        else
+            DestroyImmediate(row);
+    }
+
+    private void UpdateHeaderCount(
+        int count)
+    {
+        if (headerText == null)
+            return;
+
+        headerText.text =
+            count > 0
+                ? $"행동 순서  <size=75%>{count}</size>"
+                : "행동 순서";
     }
 
     private void EnsureView()
@@ -154,6 +734,16 @@ public sealed class BattleActionOrderRailUI : MonoBehaviour
 
             canvasGo.transform.SetParent(
                 transform,
+                false);
+        }
+
+        // 중첩 Canvas 상태에서는 부모 Scale/상위 Canvas 스케일을 상속해서
+        // 화면에서 행동순서가 과도하게 작아질 수 있다.
+        // 항상 독립 Root ScreenSpaceOverlay Canvas로 승격한다.
+        if (canvasGo.transform.parent != null)
+        {
+            canvasGo.transform.SetParent(
+                null,
                 false);
         }
 
@@ -240,8 +830,8 @@ public sealed class BattleActionOrderRailUI : MonoBehaviour
 
         panelRoot.sizeDelta =
             new Vector2(
-                width,
-                height);
+                Mathf.Max(400f, width),
+                Mathf.Max(600f, height));
 
         Image panelImage =
             panelGo.GetComponent<Image>();
@@ -270,7 +860,7 @@ public sealed class BattleActionOrderRailUI : MonoBehaviour
             CreateText(
                 "Header",
                 panelRoot,
-                20f,
+                28f,
                 TextAlignmentOptions.Left);
 
         RectTransform headerRect =
@@ -286,10 +876,10 @@ public sealed class BattleActionOrderRailUI : MonoBehaviour
             new Vector2(0.5f, 1f);
 
         headerRect.anchoredPosition =
-            new Vector2(0f, -8f);
+            new Vector2(0f, -10f);
 
         headerRect.sizeDelta =
-            new Vector2(-18f, 34f);
+            new Vector2(-24f, 46f);
 
         headerText.fontStyle =
             FontStyles.Bold;
@@ -330,15 +920,15 @@ public sealed class BattleActionOrderRailUI : MonoBehaviour
             new Vector2(1f, 1f);
 
         contentRoot.offsetMin =
-            new Vector2(8f, 10f);
+            new Vector2(12f, 12f);
 
         contentRoot.offsetMax =
-            new Vector2(-8f, -46f);
+            new Vector2(-12f, -62f);
 
         VerticalLayoutGroup layout =
             contentGo.GetComponent<VerticalLayoutGroup>();
 
-        layout.spacing = 4f;
+        layout.spacing = 7f;
         layout.childAlignment =
             TextAnchor.UpperCenter;
         layout.childControlWidth = true;
@@ -395,6 +985,12 @@ public sealed class BattleActionOrderRailUI : MonoBehaviour
 
         ClearRows();
 
+        if (battleManager?.TurnManager?.IsResolving == true)
+        {
+            resolutionRemainingCombatCount =
+                combat.Count;
+        }
+
         int shown =
             Mathf.Min(
                 maximumRows,
@@ -417,13 +1013,10 @@ public sealed class BattleActionOrderRailUI : MonoBehaviour
                 hidden);
         }
 
-        if (headerText != null)
-        {
-            headerText.text =
-                combat.Count > 0
-                    ? $"행동 순서  <size=75%>{combat.Count}</size>"
-                    : "행동 순서";
-        }
+        UpdateHeaderCount(
+            battleManager?.TurnManager?.IsResolving == true
+                ? resolutionRemainingCombatCount
+                : combat.Count);
     }
 
     private int BuildSignature(
@@ -504,6 +1097,14 @@ public sealed class BattleActionOrderRailUI : MonoBehaviour
                 ?.ActionId
                 .GetHashCode() ?? 0);
 
+        hash =
+            hash * 31 +
+            (BattleWorldActionSlotCellUI
+                .HoveredCell
+                ?.GetRepresentedActionSlot()
+                ?.ActionId
+                .GetHashCode() ?? 0);
+
         return hash;
     }
 
@@ -566,12 +1167,25 @@ public sealed class BattleActionOrderRailUI : MonoBehaviour
                 .HoveredTargetCell
                 ?.TargetSlot == slot;
 
+        long hoveredActionId =
+            BattleWorldActionSlotCellUI
+                .HoveredCell
+                ?.GetRepresentedActionSlot()
+                ?.ActionId ?? 0;
+
+        bool hoveredPlayer =
+            slot != null &&
+            playerSide &&
+            slot.ActionId > 0 &&
+            hoveredActionId == slot.ActionId;
+
         GameObject row =
             new GameObject(
                 $"Order_{slot?.ActionId ?? 0}",
                 typeof(RectTransform),
                 typeof(CanvasRenderer),
                 typeof(Image),
+                typeof(CanvasGroup),
                 typeof(LayoutElement));
 
         row.transform.SetParent(
@@ -581,27 +1195,36 @@ public sealed class BattleActionOrderRailUI : MonoBehaviour
         generatedRows.Add(
             row);
 
+        if (slot != null &&
+            slot.ActionId > 0)
+        {
+            rowsByActionId[slot.ActionId] =
+                row;
+        }
+
         Image background =
             row.GetComponent<Image>();
 
         background.color =
-            hoveredTarget
-                ? hoveredTargetBackground
-                : selected
-                    ? selectedBackground
-                    : new Color(
-                        0.04f,
-                        0.055f,
-                        0.08f,
-                        0.76f);
+            hoveredPlayer
+                ? hoveredPlayerBackground
+                : hoveredTarget
+                    ? hoveredTargetBackground
+                    : selected
+                        ? selectedBackground
+                        : new Color(
+                            0.04f,
+                            0.055f,
+                            0.08f,
+                            0.76f);
 
         background.raycastTarget = false;
 
         LayoutElement element =
             row.GetComponent<LayoutElement>();
 
-        element.preferredHeight = 38f;
-        element.minHeight = 34f;
+        element.preferredHeight = 62f;
+        element.minHeight = 56f;
 
         Image accent =
             CreateImage(
@@ -635,7 +1258,7 @@ public sealed class BattleActionOrderRailUI : MonoBehaviour
             CreateText(
                 "Label",
                 row.transform,
-                16f,
+                22f,
                 TextAlignmentOptions.Left);
 
         RectTransform labelRect =
@@ -648,10 +1271,10 @@ public sealed class BattleActionOrderRailUI : MonoBehaviour
             Vector2.one;
 
         labelRect.offsetMin =
-            new Vector2(10f, 2f);
+            new Vector2(14f, 4f);
 
         labelRect.offsetMax =
-            new Vector2(-6f, -2f);
+            new Vector2(-10f, -4f);
 
         string side =
             playerSide
@@ -682,7 +1305,16 @@ public sealed class BattleActionOrderRailUI : MonoBehaviour
             $"<size=78%>{side} · {owner} · {part}</size>\n" +
             $"<size=78%>{skill}  {relation}</size>";
 
-        if (hoveredTarget)
+        if (hoveredPlayer)
+        {
+            label.color =
+                new Color(
+                    1f,
+                    0.91f,
+                    0.28f,
+                    1f);
+        }
+        else if (hoveredTarget)
         {
             label.color =
                 new Color(
@@ -693,6 +1325,214 @@ public sealed class BattleActionOrderRailUI : MonoBehaviour
         }
     }
 
+    private void CreateReactiveRollRow(
+        BattleReactiveRollEvent reactiveRoll)
+    {
+        if (reactiveRoll == null ||
+            contentRoot == null)
+        {
+            return;
+        }
+
+        GameObject row =
+            new GameObject(
+                $"ReactiveRoll_{reactiveRoll.EventId}",
+                typeof(RectTransform),
+                typeof(CanvasRenderer),
+                typeof(Image),
+                typeof(CanvasGroup),
+                typeof(LayoutElement));
+
+        row.transform.SetParent(
+            contentRoot,
+            false);
+
+        generatedRows.Add(row);
+        reactiveRowsByEventId[reactiveRoll.EventId] = row;
+
+        int insertIndex = 0;
+        long sourceActionId =
+            reactiveRoll.SourceAction?.ActionId ?? 0;
+
+        if (sourceActionId > 0 &&
+            rowsByActionId.TryGetValue(
+                sourceActionId,
+                out GameObject sourceRow) &&
+            sourceRow != null)
+        {
+            insertIndex =
+                Mathf.Clamp(
+                    sourceRow.transform.GetSiblingIndex() + 1,
+                    0,
+                    contentRoot.childCount - 1);
+        }
+
+        row.transform.SetSiblingIndex(insertIndex);
+
+        Image background = row.GetComponent<Image>();
+        background.color = reactiveRollBackground;
+        background.raycastTarget = false;
+
+        LayoutElement element = row.GetComponent<LayoutElement>();
+        element.minHeight = 0f;
+        element.preferredHeight = 0f;
+
+        Image accent =
+            CreateImage(
+                "ReactiveAccent",
+                row.transform,
+                reactiveRollAccent);
+
+        RectTransform accentRect = accent.rectTransform;
+        accentRect.anchorMin = new Vector2(0f, 0f);
+        accentRect.anchorMax = new Vector2(0f, 1f);
+        accentRect.pivot = new Vector2(0f, 0.5f);
+        accentRect.anchoredPosition = Vector2.zero;
+        accentRect.sizeDelta = new Vector2(7f, 0f);
+
+        TMP_Text label =
+            CreateText(
+                "Label",
+                row.transform,
+                21f,
+                TextAlignmentOptions.Left);
+
+        RectTransform labelRect = label.rectTransform;
+        labelRect.anchorMin = Vector2.zero;
+        labelRect.anchorMax = Vector2.one;
+        labelRect.offsetMin = new Vector2(18f, 4f);
+        labelRect.offsetMax = new Vector2(-10f, -4f);
+
+        string owner =
+            GetCharacterName(
+                reactiveRoll.Owner);
+
+        string symbol =
+            PhysicalDamageResolver.GetSymbol(
+                reactiveRoll.PhysicalType);
+
+        string sequence =
+            reactiveRoll.SequenceCount > 1
+                ? $" {reactiveRoll.DisplaySequenceNumber}/{reactiveRoll.SequenceCount}"
+                : string.Empty;
+
+        label.text =
+            $"<color=#D99CFF><b>+ 추가 굴림{sequence}</b></color>  " +
+            $"<color=#F1D8FF><b>{symbol}</b></color>\n" +
+            $"<size=78%>{owner} · {reactiveRoll.DisplayName} · 위력 {reactiveRoll.Power}</size>";
+
+        label.color =
+            new Color(
+                0.95f,
+                0.84f,
+                1f,
+                1f);
+
+        CanvasGroup group = row.GetComponent<CanvasGroup>();
+        RectTransform rect = row.transform as RectTransform;
+
+        group.alpha = 0f;
+        rect.localScale = new Vector3(0.90f, 0.90f, 1f);
+
+        DOTween.Kill(row, complete: false);
+
+        Sequence sequenceTween =
+            DOTween.Sequence()
+                .SetUpdate(true)
+                .SetTarget(row);
+
+        sequenceTween.Join(
+            group.DOFade(
+                1f,
+                reactiveRowAppearDuration));
+
+        sequenceTween.Join(
+            rect.DOScale(
+                    1f,
+                    reactiveRowAppearDuration)
+                .SetEase(Ease.OutBack));
+
+        sequenceTween.Join(
+            DOTween.To(
+                    () => element.preferredHeight,
+                    value => element.preferredHeight = value,
+                    62f,
+                    reactiveRowAppearDuration)
+                .SetEase(Ease.OutCubic));
+    }
+
+    private void CompleteReactiveRollRow(
+        long eventId)
+    {
+        if (!reactiveRowsByEventId.TryGetValue(
+                eventId,
+                out GameObject row) ||
+            row == null)
+        {
+            reactiveRowsByEventId.Remove(eventId);
+            reactiveRowStartedAt.Remove(eventId);
+            return;
+        }
+
+        reactiveRowsByEventId.Remove(eventId);
+        reactiveRowStartedAt.Remove(eventId);
+
+        resolutionRemainingCombatCount =
+            Mathf.Max(
+                0,
+                resolutionRemainingCombatCount - 1);
+
+        UpdateHeaderCount(
+            resolutionRemainingCombatCount);
+
+        CanvasGroup group = row.GetComponent<CanvasGroup>();
+        RectTransform rect = row.transform as RectTransform;
+        LayoutElement element = row.GetComponent<LayoutElement>();
+
+        if (group == null || rect == null || element == null)
+        {
+            RemoveGeneratedRow(row);
+            return;
+        }
+
+        DOTween.Kill(row, complete: false);
+        element.minHeight = 0f;
+
+        Sequence sequence =
+            DOTween.Sequence()
+                .SetUpdate(true)
+                .SetTarget(row);
+
+        sequence.Join(
+            group.DOFade(
+                0f,
+                completedRowFadeDuration));
+
+        sequence.Join(
+            rect.DOAnchorPosX(
+                    rect.anchoredPosition.x -
+                    completedRowSlideDistance,
+                    completedRowFadeDuration)
+                .SetEase(Ease.InCubic));
+
+        sequence.Join(
+            rect.DOScale(
+                    0.88f,
+                    completedRowFadeDuration)
+                .SetEase(Ease.InBack));
+
+        sequence.Join(
+            DOTween.To(
+                    () => element.preferredHeight,
+                    value => element.preferredHeight = value,
+                    0f,
+                    completedRowFadeDuration)
+                .SetEase(Ease.InCubic));
+
+        sequence.OnComplete(
+            () => RemoveGeneratedRow(row));
+    }
+
     private void CreateOverflowRow(
         int hidden)
     {
@@ -700,13 +1540,13 @@ public sealed class BattleActionOrderRailUI : MonoBehaviour
             CreateText(
                 "Overflow",
                 contentRoot,
-                14f,
+                18f,
                 TextAlignmentOptions.Center);
 
         LayoutElement element =
             label.gameObject.AddComponent<LayoutElement>();
 
-        element.preferredHeight = 28f;
+        element.preferredHeight = 34f;
 
         label.text =
             $"+ {hidden}개 행동";
@@ -733,6 +1573,10 @@ public sealed class BattleActionOrderRailUI : MonoBehaviour
             if (row == null)
                 continue;
 
+            DOTween.Kill(
+                row,
+                complete: false);
+
             row.SetActive(false);
 
             if (Application.isPlaying)
@@ -742,7 +1586,54 @@ public sealed class BattleActionOrderRailUI : MonoBehaviour
         }
 
         generatedRows.Clear();
+        rowsByActionId.Clear();
+        reactiveRowsByEventId.Clear();
+        reactiveRowStartedAt.Clear();
     }
+
+    private void EnsureOverlayIsRootCanvas()
+    {
+        if (overlayCanvas == null)
+            return;
+
+        Transform overlay =
+            overlayCanvas.transform;
+
+        if (overlay.parent != null)
+        {
+            overlay.SetParent(
+                null,
+                false);
+        }
+
+        overlayCanvas.renderMode =
+            RenderMode.ScreenSpaceOverlay;
+
+        overlayCanvas.overrideSorting = true;
+    }
+
+    private void DestroyOverlayView()
+    {
+        GameObject overlay =
+            overlayCanvas != null
+                ? overlayCanvas.gameObject
+                : null;
+
+        overlayCanvas = null;
+        canvasGroup = null;
+        panelRoot = null;
+        contentRoot = null;
+        headerText = null;
+
+        if (overlay == null)
+            return;
+
+        if (Application.isPlaying)
+            Destroy(overlay);
+        else
+            DestroyImmediate(overlay);
+    }
+
 
     private static string GetCharacterName(
         Character character)

@@ -15,6 +15,7 @@ public sealed class BattleWorldActionSlotStripUI : MonoBehaviour
     private BattleUIManager uiManager;
     private BattleManager battleManager;
     private RectTransform root;
+    private bool hiddenForResolution;
     private int lastSignature = int.MinValue;
 
     public void Configure(Character target)
@@ -34,7 +35,38 @@ public sealed class BattleWorldActionSlotStripUI : MonoBehaviour
     private void LateUpdate()
     {
         ResolveReferences();
+
+        if (hiddenForResolution)
+        {
+            if (root != null &&
+                root.gameObject.activeSelf)
+            {
+                root.gameObject.SetActive(false);
+            }
+
+            return;
+        }
+
+        if (root != null &&
+            !root.gameObject.activeSelf)
+        {
+            root.gameObject.SetActive(true);
+        }
+
         Rebuild(force: false);
+    }
+
+    public void SetResolutionHidden(
+        bool hidden)
+    {
+        hiddenForResolution = hidden;
+        lastSignature = int.MinValue;
+
+        if (root != null)
+            root.gameObject.SetActive(!hidden);
+
+        if (!hidden)
+            Rebuild(force: true);
     }
 
     private void ResolveReferences()
@@ -59,6 +91,7 @@ public sealed class BattleWorldActionSlotStripUI : MonoBehaviour
         root.pivot = new Vector2(0.5f, 0f);
         root.anchoredPosition = new Vector2(0f, 12f);
         root.sizeDelta = new Vector2(500f, 84f);
+        root.gameObject.SetActive(!hiddenForResolution);
 
         HorizontalLayoutGroup layout = go.GetComponent<HorizontalLayoutGroup>();
         layout.spacing = 6f;

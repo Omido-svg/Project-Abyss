@@ -150,11 +150,41 @@ public sealed class BattleActionPlanCommandService
         ActionSlot targetSlot,
         out ActionSlot liveSource)
     {
+        BodyPart resolvedTargetPart =
+            ResolveFallbackTargetPart(
+                targetSlot,
+                sourceSlot?.TargetPart);
+
+        return TryRetarget(
+            sourceSlot,
+            targetSlot,
+            resolvedTargetPart,
+            out liveSource);
+    }
+
+    /// <summary>
+    /// exact TargetSlot과 실제 피해 TargetPart를 별도로 재지정한다.
+    /// Stage 1 Boss처럼 행동 슬롯 Part가 null인 경우에도 유효한 BodyPart를 지정할 수 있다.
+    /// </summary>
+    public bool TryRetarget(
+        ActionSlot sourceSlot,
+        ActionSlot targetSlot,
+        BodyPart targetPart,
+        out ActionSlot liveSource)
+    {
         liveSource = null;
 
         if (actionManager == null ||
             sourceSlot == null ||
             targetSlot?.Owner == null)
+        {
+            return false;
+        }
+
+        if (!BattleTargetValidator.IsValid(
+                targetSlot.Owner,
+                targetPart,
+                TargetSelectionRule.StandardAttack))
         {
             return false;
         }
@@ -173,10 +203,56 @@ public sealed class BattleActionPlanCommandService
         }
 
         liveSource.TargetCharacter = targetSlot.Owner;
-        liveSource.TargetPart = targetSlot.Part;
+        liveSource.TargetPart = targetPart;
         liveSource.TargetSlot = targetSlot;
         liveSource.SecondaryTargetPart = null;
         return true;
+    }
+
+    private static BodyPart ResolveFallbackTargetPart(
+        ActionSlot targetSlot,
+        BodyPart preferredPart)
+    {
+        if (targetSlot?.Owner == null)
+            return null;
+
+        TargetSelectionRule rule =
+            TargetSelectionRule.StandardAttack;
+
+        if (BattleTargetValidator.IsValid(
+                targetSlot.Owner,
+                preferredPart,
+                rule))
+        {
+            return preferredPart;
+        }
+
+        if (BattleTargetValidator.IsValid(
+                targetSlot.Owner,
+                targetSlot.Part,
+                rule))
+        {
+            return targetSlot.Part;
+        }
+
+        var points =
+            BattleTargetValidator.GetTargetPoints(
+                targetSlot.Owner,
+                rule);
+
+        if (points == null)
+            return null;
+
+        foreach (TargetPoint point in points)
+        {
+            if (point.IsValid &&
+                point.Character == targetSlot.Owner)
+            {
+                return point.Part;
+            }
+        }
+
+        return null;
     }
 
     public bool Remove(
