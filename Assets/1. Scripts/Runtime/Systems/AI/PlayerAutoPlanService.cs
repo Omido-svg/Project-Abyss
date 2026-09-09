@@ -296,7 +296,9 @@ public sealed class PlayerAutoPlanService
         if (utility != null)
         {
             ActionSlot utilitySlot =
-                CreatePlannedSlot(utility);
+                CreatePlannedSlot(
+                    utility,
+                    state.Slots);
 
             if (utilitySlot != null)
             {
@@ -324,7 +326,9 @@ public sealed class PlayerAutoPlanService
                 break;
 
             ActionSlot planned =
-                CreatePlannedSlot(best);
+                CreatePlannedSlot(
+                    best,
+                    state.Slots);
 
             state.Register(
                 best.Source,
@@ -352,7 +356,9 @@ public sealed class PlayerAutoPlanService
                 break;
 
             ActionSlot planned =
-                CreatePlannedSlot(best);
+                CreatePlannedSlot(
+                    best,
+                    state.Slots);
 
             state.Register(
                 best.Source,
@@ -1318,55 +1324,56 @@ public sealed class PlayerAutoPlanService
     }
 
     private static ActionSlot CreatePlannedSlot(
-        Candidate candidate)
+        Candidate candidate,
+        IReadOnlyList<ActionSlot> plannedSlots)
     {
         if (candidate?.Source == null)
             return null;
 
-        return new ActionSlot
-        {
-            Owner =
-                candidate.Source.Owner,
-            Part =
-                candidate.Source.Part,
-            Skill =
-                candidate.Skill,
-            TargetCharacter =
-                candidate.Target,
-            TargetPart =
-                candidate.TargetPart,
-            Speed =
-                candidate.Source.Speed,
-            Phase =
-                candidate.Skill?.DefaultPhase ??
-                ActionPhase.COMBAT,
-            ActionIndex =
-                candidate.Source.ActionIndex,
-
-            // 자동 계획도 수동 Focused Encounter 입력과 동일하게
-            // 선택한 정확한 적 ActionSlot을 TargetSlot로 기록한다.
-            TargetSlot =
-                candidate.Skill?.DefaultPhase == ActionPhase.COMBAT
-                    ? candidate.Threat
-                    : null,
-            UseCharacterRerollResource =
-                ResolveCharacterRerollChoice(
+        ActionSlot slot =
+            new ActionSlot
+            {
+                Owner =
                     candidate.Source.Owner,
-                    candidate.Skill)
-        };
-    }
+                Part =
+                    candidate.Source.Part,
+                Skill =
+                    candidate.Skill,
+                TargetCharacter =
+                    candidate.Target,
+                TargetPart =
+                    candidate.TargetPart,
+                Speed =
+                    candidate.Source.Speed,
+                Phase =
+                    candidate.Skill?.DefaultPhase ??
+                    ActionPhase.COMBAT,
+                ActionIndex =
+                    candidate.Source.ActionIndex,
 
-    private static bool ResolveCharacterRerollChoice(
-        Character owner,
-        Skill skill)
-    {
-        YujinMechanic mechanic =
-            owner?.GetMechanic<YujinMechanic>();
+                // 자동 계획도 수동 Focused Encounter 입력과 동일하게
+                // 선택한 정확한 적 ActionSlot을 TargetSlot로 기록한다.
+                TargetSlot =
+                    candidate.Skill?.DefaultPhase == ActionPhase.COMBAT
+                        ? candidate.Threat
+                        : null
+            };
 
-        return mechanic != null &&
-               mechanic.AutoUseSense &&
-               YujinMechanic.IsSenseEligibleSkill(
-                   skill?.Definition?.SkillId);
+        ActionPlanningSkillContext planningContext =
+            new ActionPlanningSkillContext(
+                slot.Owner,
+                slot.Part,
+                slot.Skill,
+                slot.ActionIndex,
+                plannedSlots);
+
+        // 캐릭터별 계획 옵션은 기존 IActionPlanningRule 경계를 재사용한다.
+        // 유진의 감 재굴림 선택을 포함해 공통 AutoPlan이 concrete mechanic을 알지 않는다.
+        ActionPlanningMechanicPolicy.ConfigurePlannedSlot(
+            planningContext,
+            slot);
+
+        return slot;
     }
 
     private static bool CanTarget(

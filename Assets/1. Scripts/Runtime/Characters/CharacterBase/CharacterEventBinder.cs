@@ -1,12 +1,19 @@
 using System;
 using System.Collections.Generic;
 
-// Character가 소유한 런타임 Skill의 BattleEvent 구독 수명을 관리한다.
-// 재초기화 전에 UnbindAll을 호출하면 P7 조건부 효과 구독이 중복되지 않는다.
+/// <summary>
+/// Character가 소유한 런타임 Skill의 초기화와 BattleEvent 구독 수명을 분리해 관리한다.
+/// 후보 Skill은 owner/battleEvent 참조를 유지할 수 있지만, 실제 전역 이벤트 구독은
+/// 현재 장착/페이즈에서 활성인 Skill만 가진다.
+/// </summary>
 public sealed class CharacterEventBinder
 {
+    private readonly List<Skill> initializedSkills = new();
+    private readonly HashSet<Skill> initializedSet = new();
     private readonly List<Skill> boundSkills = new();
-    private readonly HashSet<Skill> uniqueSkills = new();
+    private readonly HashSet<Skill> boundSet = new();
+
+    private Func<Skill, bool> activationPredicate;
 
     public IReadOnlyList<Skill> BoundSkills =>
         boundSkills;
@@ -15,12 +22,15 @@ public sealed class CharacterEventBinder
         Character owner,
         BattleEvent battleEvent,
         IReadOnlyList<BodyPart> bodyParts,
-        IEnumerable<Skill> characterSkills)
+        IEnumerable<Skill> characterSkills,
+        Func<Skill, bool> shouldActivate = null)
     {
         UnbindAll();
 
         if (owner == null || battleEvent == null)
             return;
+
+        activationPredicate = shouldActivate;
 
         if (bodyParts != null)
         {
@@ -31,7 +41,7 @@ public sealed class CharacterEventBinder
 
                 foreach (Skill skill in part.AvailableSkills)
                 {
-                    BindSkill(
+                    InitializeSkill(
                         skill,
                         owner,
                         battleEvent);
@@ -39,25 +49,38 @@ public sealed class CharacterEventBinder
             }
         }
 
-        if (characterSkills == null)
-            return;
-
-        foreach (Skill skill in characterSkills)
+        if (characterSkills != null)
         {
-            BindSkill(
-                skill,
-                owner,
-                battleEvent);
+            foreach (Skill skill in characterSkills)
+            {
+                InitializeSkill(
+                    skill,
+                    owner,
+                    battleEvent);
+            }
         }
+
+        RefreshActiveBindings(
+            throwOnError: true);
     }
 
-    private void BindSkill(
+    /// <summary>
+    /// 장착 변경/보스 페이즈 전환 뒤 활성 집합의 차이만 구독/해제한다.
+    /// 후보 Skill 객체를 다시 생성하거나 Initialize하지 않는다.
+    /// </summary>
+    public void RefreshActiveBindings()
+    {
+        RefreshActiveBindings(
+            throwOnError: false);
+    }
+
+    private void InitializeSkill(
         Skill skill,
         Character owner,
         BattleEvent battleEvent)
     {
         if (skill == null ||
-            !uniqueSkills.Add(skill))
+            !initializedSet.Add(skill))
         {
             return;
         }
@@ -68,12 +91,11 @@ public sealed class CharacterEventBinder
                 owner,
                 battleEvent);
 
-            skill.Register();
-            boundSkills.Add(skill);
+            initializedSkills.Add(skill);
         }
         catch
         {
-            uniqueSkills.Remove(skill);
+            initializedSet.Remove(skill);
 
             try
             {
@@ -86,6 +108,82 @@ public sealed class CharacterEventBinder
 
             throw;
         }
+    }
+
+    private void RefreshActiveBindings(
+        bool throwOnError)
+    {
+        for (int i = boundSkills.Count - 1;
+             i >= 0;
+             i--)
+        {
+            Skill skill = boundSkills[i];
+
+            if (skill != null &&
+                ShouldActivate(skill))
+            {
+                continue;
+            }
+
+            try
+            {
+                skill?.Unregister();
+            }
+            catch (Exception exception)
+            {
+                if (throwOnError)
+                    throw;
+
+                UnityEngine.Debug.LogException(exception);
+            }
+            finally
+            {
+                boundSkills.RemoveAt(i);
+                if (skill != null)
+                    boundSet.Remove(skill);
+            }
+        }
+
+        foreach (Skill skill in initializedSkills)
+        {
+            if (skill == null ||
+                boundSet.Contains(skill) ||
+                !ShouldActivate(skill))
+            {
+                continue;
+            }
+
+            try
+            {
+                skill.Register();
+                boundSet.Add(skill);
+                boundSkills.Add(skill);
+            }
+            catch (Exception exception)
+            {
+                try
+                {
+                    skill.Unregister();
+                }
+                catch
+                {
+                    // 최초 구독 예외를 보존한다.
+                }
+
+                if (throwOnError)
+                    throw;
+
+                UnityEngine.Debug.LogException(exception);
+            }
+        }
+    }
+
+    private bool ShouldActivate(
+        Skill skill)
+    {
+        return skill != null &&
+               (activationPredicate == null ||
+                activationPredicate(skill));
     }
 
     public void UnbindAll()
@@ -110,6 +208,9 @@ public sealed class CharacterEventBinder
         }
 
         boundSkills.Clear();
-        uniqueSkills.Clear();
+        boundSet.Clear();
+        initializedSkills.Clear();
+        initializedSet.Clear();
+        activationPredicate = null;
     }
 }

@@ -1954,33 +1954,24 @@ public partial class BattleAnimationDirector : MonoBehaviour
             playback.Request;
 
         if (request == null ||
-            visual == null)
+            visual == null ||
+            !visual.HasHitFrameDamage)
         {
             return;
         }
 
-        if (!visual.HasHitFrameDamage)
-            return;
-
-        CharacterView targetView =
+        CharacterView primaryTargetView =
             views.TargetView;
 
-        if (targetView == null &&
+        if (primaryTargetView == null &&
             request.Target != null)
         {
-            targetView =
+            primaryTargetView =
                 BattleCameraTargetResolver.GetView(
                     request.Target);
         }
 
-        if (targetView == null)
-        {
-            Debug.LogWarning(
-                $"[BattleAnimationDirector] TargetView 없음. 피격 연출 불가 / Target={request.Target?.name}");
-            return;
-        }
-
-        int damage =
+        int primaryDamage =
             damageOverride ??
             damagePresenter.GetDamageForHitIndex(
                 playback,
@@ -1991,14 +1982,17 @@ public partial class BattleAnimationDirector : MonoBehaviour
             Debug.Log(
                 $"[BattleAnimationDirector] HitFrame 적용 : " +
                 $"{request.Attacker?.Data.CharacterName} -> {request.Target?.Data.CharacterName} / " +
-                $"HitIndex={hitIndex} / Damage={damage}");
+                $"HitIndex={hitIndex} / PrimaryDamage={primaryDamage} / " +
+                $"Impacts={request.TargetImpacts?.Count ?? 0}");
         }
-            
+
         bool useExplicitVisualFx =
-            visual != null &&
             visual.UseExplicitVisualFxTracks;
 
-        if (!useExplicitVisualFx)
+        // 위치 기반 VFX는 해당 view/target이 있을 때만 재생한다.
+        // 아래 presentation state/HUD commit은 view 존재 여부와 무관하게 반드시 진행한다.
+        if (!useExplicitVisualFx &&
+            primaryTargetView != null)
         {
             PlaySkillVfx(
                 playback,
@@ -2006,7 +2000,7 @@ public partial class BattleAnimationDirector : MonoBehaviour
                 visual,
                 BattleVfxTiming.OnHitFrame,
                 hitIndex,
-                damage);
+                primaryDamage);
 
             if (request.WasCritical && hitIndex == 0)
             {
@@ -2016,50 +2010,145 @@ public partial class BattleAnimationDirector : MonoBehaviour
                     visual,
                     BattleVfxTiming.OnCritical,
                     hitIndex,
-                    damage);
+                    primaryDamage);
             }
         }
 
-        playback.ActiveReactionView =
-            targetView;
-
-        targetView.PlayReaction(
-            ResolveTargetReaction(
-                request,
-                visual,
-                hitIndex));
-
-        // Hit Event 한 지점에서 먼저 HP/흐트러짐 HUD를 commit한 뒤
-        // 같은 프레임에 대미지 숫자를 생성한다.
-        // 전투 로직은 이미 계산되어 있으므로 presentation state만 여기서 진행한다.
+        // F04/F05: 데이터/HUD를 먼저 같은 hit 시점으로 진행한다.
+        // TargetView 하나가 누락되어도 다른 대상과 read model은 정상 진행한다.
         damagePresenter.ApplyHit(
             playback,
             hitIndex,
-            damage);
+            primaryDamage);
 
-        if (damage > 0)
+        bool usedImpactList =
+            request.TargetImpacts != null &&
+            request.TargetImpacts.Count > 0;
+
+        if (usedImpactList)
         {
-            ShowDamageNumber(
-                targetView,
-                request.TargetPart,
-                damage,
-                request.WasCritical
-                    ? BattleDamageNumberStyle.CriticalHp
-                    : BattleDamageNumberStyle.NormalHp);
+            foreach (TargetImpactPresentation impact
+                     in request.TargetImpacts)
+            {
+                if (impact?.Target == null)
+                    continue;
+
+                int impactDamage =
+                    damagePresenter.GetImpactDamageForHitIndex(
+                        impact,
+                        hitIndex);
+
+                CharacterView targetView =
+                    impact.IsPrimary &&
+                    primaryTargetView != null
+                        ? primaryTargetView
+                        : BattleCameraTargetResolver.GetView(
+                            impact.Target);
+
+                if (targetView == null)
+                {
+                    if (logDebug)
+                    {
+                        Debug.LogWarning(
+                            $"[BattleAnimationDirector] Impact TargetView 없음. " +
+                            $"HUD/read model만 진행 / " +
+                            $"Target={impact.Target.name}, " +
+                            $"Part={impact.TargetPart?.Type.ToString() ?? "SINGLE_HP"}");
+                    }
+
+                    continue;
+                }
+
+                playback.ActiveReactionView =
+                    targetView;
+                playback.ReactionViews.Add(
+                    targetView);
+
+                targetView.PlayReaction(
+                    ResolveTargetReaction(
+                        impact,
+                        visual,
+                        hitIndex));
+
+                if (impactDamage > 0)
+                {
+                    ShowDamageNumber(
+                        targetView,
+                        impact.TargetPart,
+                        impactDamage,
+                        impact.WasCritical
+                            ? BattleDamageNumberStyle.CriticalHp
+                            : BattleDamageNumberStyle.NormalHp);
+                }
+            }
+        }
+        else if (primaryTargetView != null)
+        {
+            // DamageContext 없는 구형/진단 request 호환.
+            playback.ActiveReactionView =
+                primaryTargetView;
+            playback.ReactionViews.Add(
+                primaryTargetView);
+
+            primaryTargetView.PlayReaction(
+                ResolveTargetReaction(
+                    request,
+                    visual,
+                    hitIndex));
+
+            if (primaryDamage > 0)
+            {
+                ShowDamageNumber(
+                    primaryTargetView,
+                    request.TargetPart,
+                    primaryDamage,
+                    request.WasCritical
+                        ? BattleDamageNumberStyle.CriticalHp
+                        : BattleDamageNumberStyle.NormalHp);
+            }
         }
 
-        // Attack 굴림은 HP 피해와 흐트러짐 피해가 동시에 존재할 수 있다.
-        // 흐트러짐은 실제 게이지 감소량을 교환당 한 번만 별도 숫자로 표시한다.
+        // 흐트러짐은 현재 primary exchange 대상에만 존재하며 교환당 한 번 표시한다.
         if (hitIndex == 0 &&
-            request.StaggerDamage > 0)
+            request.StaggerDamage > 0 &&
+            primaryTargetView != null)
         {
             ShowDamageNumber(
-                targetView,
+                primaryTargetView,
                 request.TargetPart,
                 request.StaggerDamage,
                 BattleDamageNumberStyle.Stagger);
         }
+    }
 
+    private static HitReactionKey
+        ResolveTargetReaction(
+            TargetImpactPresentation impact,
+            SkillVisualDefinition visual,
+            int hitIndex)
+    {
+        if (impact == null ||
+            visual == null)
+        {
+            return HitReactionKey.HeavyHit;
+        }
+
+        bool isFinalHit =
+            impact.IsFinalHit(hitIndex);
+
+        if (isFinalHit &&
+            impact.WasKilled)
+        {
+            return HitReactionKey.Death;
+        }
+
+        if (isFinalHit &&
+            impact.BrokePart)
+        {
+            return HitReactionKey.PartBreak;
+        }
+
+        return visual.TargetReaction;
     }
 
     private static HitReactionKey
@@ -2068,6 +2157,14 @@ public partial class BattleAnimationDirector : MonoBehaviour
             SkillVisualDefinition visual,
             int hitIndex)
     {
+        if (request?.PrimaryImpact != null)
+        {
+            return ResolveTargetReaction(
+                request.PrimaryImpact,
+                visual,
+                hitIndex);
+        }
+
         if (request == null ||
             visual == null)
         {
@@ -2085,17 +2182,11 @@ public partial class BattleAnimationDirector : MonoBehaviour
         bool isFinalHit =
             hitIndex >= expectedHitCount - 1;
 
-        if (isFinalHit &&
-            request.WasKilled)
-        {
+        if (isFinalHit && request.WasKilled)
             return HitReactionKey.Death;
-        }
 
-        if (isFinalHit &&
-            request.BrokePart)
-        {
+        if (isFinalHit && request.BrokePart)
             return HitReactionKey.PartBreak;
-        }
 
         return visual.TargetReaction;
     }

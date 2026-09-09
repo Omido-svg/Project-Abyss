@@ -1,5 +1,3 @@
-using UnityEngine;
-
 public sealed class ActionPlanAssignmentRequest
 {
     public Character Owner;
@@ -29,6 +27,7 @@ public sealed class BattleActionPlanCommandService
 {
     private readonly ActionManager actionManager;
     private readonly SpeedManager speedManager;
+    private readonly ActionPlanValidator validator;
 
     public BattleActionPlanCommandService(
         ActionManager actionManager,
@@ -36,6 +35,7 @@ public sealed class BattleActionPlanCommandService
     {
         this.actionManager = actionManager;
         this.speedManager = speedManager;
+        validator = new ActionPlanValidator(actionManager);
     }
 
     public ActionPlanAssignmentResult TryAssign(
@@ -46,59 +46,11 @@ public sealed class BattleActionPlanCommandService
         if (actionManager == null || speedManager == null)
             return Fail(result, "Planning service가 준비되지 않았습니다.");
 
-        if (request?.Owner == null ||
-            request.OwnerPart == null ||
-            request.Skill == null ||
-            request.Target == null)
-        {
-            return Fail(result, "행동 주체/스킬/대상 정보가 부족합니다.");
-        }
+        ActionPlanValidationResult validation =
+            validator.ValidateAssignment(request);
 
-        if (request.ActionIndex < 0)
-            return Fail(result, "ActionIndex가 올바르지 않습니다.");
-
-        if (request.Owner.IsDead || request.Target.IsDead)
-            return Fail(result, "사망한 캐릭터가 포함되어 있습니다.");
-
-        if (request.OwnerPart.IsBroken)
-            return Fail(result, "행동 부위가 파괴되어 있습니다.");
-
-        bool isPreparation =
-            request.Skill.ActionType == ActionType.Preparation;
-
-        if (isPreparation)
-        {
-            if (request.TargetPart == null ||
-                request.TargetPart.Owner != request.Target ||
-                request.TargetPart.IsBroken ||
-                request.Target != request.Owner)
-            {
-                return Fail(result, "도사림 자기 대상이 올바르지 않습니다.");
-            }
-        }
-        else if (!BattleTargetValidator.IsValid(
-                     request.Target,
-                     request.TargetPart,
-                     request.TargetRule))
-        {
-            return Fail(result, "대상 계약이 올바르지 않습니다.");
-        }
-
-        if (request.Skill.ActionType == ActionType.Prestige)
-        {
-            if (!IsPrestigeReady(request.Owner))
-                return Fail(result, "위세 게이지가 부족합니다.");
-
-            if (request.Skill.PrestigeUsePolicy ==
-                    PrestigeUsePolicy.OncePerTurn &&
-                HasPrestigeSlotSelected(
-                    request.Owner,
-                    request.OwnerPart,
-                    request.ActionIndex))
-            {
-                return Fail(result, "이번 턴에 이미 위세 스킬을 선택했습니다.");
-            }
-        }
+        if (!validation.Success)
+            return Fail(result, validation.Reason);
 
         result.PreviousSlot =
             actionManager.FindSlot(
@@ -273,56 +225,28 @@ public sealed class BattleActionPlanCommandService
             actionManager?.RemoveSlotsByOwner(owner);
     }
 
+    public ActionPlanValidationResult ValidateSkillSelection(
+        Character owner,
+        BodyPart part,
+        Skill skill,
+        int actionIndex)
+    {
+        return validator.ValidateSkillSelection(
+            owner,
+            part,
+            skill,
+            actionIndex);
+    }
+
     public bool HasPrestigeSlotSelected(
         Character owner,
         BodyPart ignorePart = null,
         int ignoreActionIndex = -1)
     {
-        if (owner == null || actionManager == null)
-            return false;
-
-        foreach (ActionSlot slot in actionManager.Slots)
-        {
-            if (slot == null ||
-                slot.Owner != owner ||
-                slot.Skill == null)
-            {
-                continue;
-            }
-
-            bool ignored =
-                ignoreActionIndex >= 0 &&
-                IsSamePart(slot.Part, ignorePart) &&
-                slot.ActionIndex == ignoreActionIndex;
-
-            if (!ignored &&
-                slot.Skill.ActionType == ActionType.Prestige)
-            {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    private static bool IsPrestigeReady(Character character)
-    {
-        return character?.CurrentStatus != null &&
-               character.RuntimeStatus != null &&
-               character.CurrentStatus.maxPrestige > 0 &&
-               character.RuntimeStatus.currentPrestige >=
-               character.CurrentStatus.maxPrestige;
-    }
-
-    private static bool IsSamePart(
-        BodyPart first,
-        BodyPart second)
-    {
-        if (first == null || second == null)
-            return first == null && second == null;
-
-        return first == second ||
-               first.Type == second.Type;
+        return validator.HasPrestigeSlotSelected(
+            owner,
+            ignorePart,
+            ignoreActionIndex);
     }
 
     private static ActionPlanAssignmentResult Fail(

@@ -6,7 +6,7 @@ using UnityEngine;
 /// 유진의 무기, 살수의 감, 표식, 봉인, 처형, 재굴림, 위세를 통합한다.
 /// 표식과 결투 효과는 개별 교환 결과가 공개되는 즉시 처리한다.
 /// </summary>
-public sealed class YujinMechanic : CombatMechanic, ICharacterUniqueGaugeProvider, IActionPlanningRule
+public sealed class YujinMechanic : CombatMechanic, ICharacterUniqueGaugeProvider, IActionPlanningRule, IExchangeContinuationRule
 {
     public const int MarkIgnitionThreshold = 44;
     public const int WeaponSwitchEnergyCost = 1;
@@ -494,6 +494,17 @@ public sealed class YujinMechanic : CombatMechanic, ICharacterUniqueGaugeProvide
     {
         return action?.Owner == owner &&
                CurrentWeapon == YujinWeaponType.Nakil;
+    }
+
+    int IExchangeContinuationRule.ModifyOpponentRemainingRollCount(
+        BattleAction winnerAction,
+        BattleAction opponentAction,
+        int currentRemainingRollCount)
+    {
+        return RemovesOpponentRemainingRollsOnExchangeWin(
+                winnerAction)
+            ? 0
+            : Mathf.Max(0, currentRemainingRollCount);
     }
 
     public int GetMark(

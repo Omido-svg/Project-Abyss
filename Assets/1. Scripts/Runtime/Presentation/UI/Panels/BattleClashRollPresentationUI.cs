@@ -893,18 +893,12 @@ public sealed class BattleClashRollPresentationUI : MonoBehaviour
         Skill skill,
         int index)
     {
-        SkillDefinition definition =
-            skill?.Definition;
-
-        if (definition?.Rolls != null &&
-            index >= 0 &&
-            index < definition.Rolls.Count &&
-            definition.Rolls[index] != null)
-        {
-            return definition.Rolls[index].Type;
-        }
-
-        return CombatRollType.Attack;
+        // 전투 로직과 같은 Skill.GetRollData/GetRollType 경로를 사용한다.
+        // 런타임 추가 굴림은 마지막 authored RollData를 재사용할 수 있으므로
+        // UI가 Rolls.Count 밖을 무조건 Attack(빨강)으로 폴백하면 안 된다.
+        return skill?.GetRollType(
+                   Mathf.Max(0, index)) ??
+               CombatRollType.Attack;
     }
 
     private void SanitizeRollLayout()

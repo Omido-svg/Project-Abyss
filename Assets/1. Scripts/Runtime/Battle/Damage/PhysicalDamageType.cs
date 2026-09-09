@@ -8,6 +8,14 @@ public enum PhysicalDamageType
     Pierce = 2    // 관통
 }
 
+public interface IPhysicalDamageTypeProvider
+{
+    bool TryResolvePhysicalDamageType(
+        Skill skill,
+        SkillRollData roll,
+        out PhysicalDamageType damageType);
+}
+
 [Serializable]
 public sealed class PhysicalResistanceProfile
 {
@@ -47,12 +55,19 @@ public static class PhysicalDamageResolver
         BattleAction action,
         int rollIndex)
     {
-        if (action?.Owner is Yujin yujin)
-            return yujin.ResolveWeaponPhysicalType();
-
         SkillRollData roll =
             action?.Skill?.GetRollData(
                 Mathf.Max(0, rollIndex));
+
+        // 캐릭터 고유 물리 속성 공급자가 가장 먼저 결정하는 기존 우선순위를 보존한다.
+        if (action?.Owner is IPhysicalDamageTypeProvider provider &&
+            provider.TryResolvePhysicalDamageType(
+                action.Skill,
+                roll,
+                out PhysicalDamageType providedType))
+        {
+            return providedType;
+        }
 
         if (roll?.OverridePhysicalType == true)
             return roll.PhysicalType;

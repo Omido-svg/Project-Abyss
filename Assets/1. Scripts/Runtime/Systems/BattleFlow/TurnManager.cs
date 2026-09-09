@@ -191,6 +191,10 @@ public class TurnManager
 
         battleLogger?.Clear();
 
+        // 페이즈 전환으로 활성 Skill 집합이 바뀌는 경우
+        // OnTurnStart Observer가 실행되기 전에 구독 수명을 먼저 갱신한다.
+        PrepareCharacterTurnStart();
+
         battleContext?._battleEvent?
             .RaiseTurnStart(CurrentTurn);
 
@@ -485,6 +489,25 @@ public class TurnManager
 
         lifecycleGuard?.EndBattle();
         actionManager?.Clear();
+    }
+
+    private void PrepareCharacterTurnStart()
+    {
+        if (battleContext?.AllCharacters == null)
+            return;
+
+        foreach (Character character
+                 in battleContext.AllCharacters)
+        {
+            if (character == null ||
+                character.IsDead)
+            {
+                continue;
+            }
+
+            character.PrepareTurnStart(
+                CurrentTurn);
+        }
     }
 
     private void RunCharacterTurnStart()

@@ -156,9 +156,9 @@ public static class BattleSkillUiText
             (skill.ActionType == ActionType.Prestige && skill.CanClash))
         {
             PhysicalDamageType physical =
-                skill.Owner is Yujin yujin
-                    ? yujin.ResolveWeaponPhysicalType()
-                    : definition?.PhysicalType ?? PhysicalDamageType.Cut;
+                ResolveBasePhysicalType(
+                    skill,
+                    definition);
 
             builder.AppendLine(
                 $"기본 물리 속성: " +
@@ -618,13 +618,36 @@ public static class BattleSkillUiText
         return effect.GetType().Name;
     }
 
+    private static PhysicalDamageType ResolveBasePhysicalType(
+        Skill skill,
+        SkillDefinition definition)
+    {
+        if (skill?.Owner is IPhysicalDamageTypeProvider provider &&
+            provider.TryResolvePhysicalDamageType(
+                skill,
+                null,
+                out PhysicalDamageType providedType))
+        {
+            return providedType;
+        }
+
+        return definition?.PhysicalType ??
+               PhysicalDamageType.Cut;
+    }
+
     private static PhysicalDamageType ResolveRollPhysicalType(
         Skill skill,
         SkillDefinition definition,
         SkillRollData roll)
     {
-        if (skill?.Owner is Yujin yujin)
-            return yujin.ResolveWeaponPhysicalType();
+        if (skill?.Owner is IPhysicalDamageTypeProvider provider &&
+            provider.TryResolvePhysicalDamageType(
+                skill,
+                roll,
+                out PhysicalDamageType providedType))
+        {
+            return providedType;
+        }
 
         if (roll?.OverridePhysicalType == true)
             return roll.PhysicalType;

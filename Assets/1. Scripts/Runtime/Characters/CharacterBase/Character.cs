@@ -399,8 +399,14 @@ public abstract class Character : MonoBehaviour
             combatRulesRuntime =
                 new CharacterCombatRulesRuntime(this);
 
+            // 미래 보스 페이즈 Skill의 전역 이벤트 구독 여부를 결정하기 전에
+            // 현재 페이즈를 먼저 확정한다.
+            combatRulesRuntime.EvaluateBossPhase(
+                battleContext,
+                battleContext?.Services?.TurnManager?.CurrentTurn ?? 1);
+
             //--------------------------------
-            // 5. 모든 런타임 Skill 이벤트 구독
+            // 5. 런타임 Skill 초기화 + 현재 활성 Skill 이벤트 구독
             //--------------------------------
             characterSkills.Clear();
 
@@ -424,14 +430,25 @@ public abstract class Character : MonoBehaviour
                     skill);
             }
 
+            // Structured rules에서는 실제 선택/실행도 characterSkills의 canonical
+            // RuntimeSkill을 사용한다. 같은 SkillDefinition의 legacy BodyPart Skill까지
+            // 함께 구독해 owner 단위 효과가 중복되는 일을 막는다.
+            IReadOnlyList<BodyPart> eventSkillBodyParts =
+                combatRulesRuntime.HasStructuredRules
+                    ? null
+                    : BodyParts;
+
             eventBinder.BindSkills(
                 this,
                 battleEvent,
-                BodyParts,
-                characterSkills);
+                eventSkillBodyParts,
+                characterSkills,
+                ShouldActivateRuntimeSkillEvents);
+
+            BindCombatRuleActivationEvents();
 
             //--------------------------------
-            // 5. 메커닉 생성 및 구독
+            // 6. 메커닉 생성 및 구독
             //--------------------------------
             BuildMechanics();
 
@@ -465,9 +482,50 @@ public abstract class Character : MonoBehaviour
         }
     }
 
+    private bool ShouldActivateRuntimeSkillEvents(
+        Skill skill)
+    {
+        return combatRulesRuntime?.IsSkillActiveForEvents(skill) ?? true;
+    }
+
+    private void BindCombatRuleActivationEvents()
+    {
+        if (combatRulesRuntime == null)
+            return;
+
+        combatRulesRuntime.LoadoutChanged +=
+            HandleRuntimeSkillActivationChanged;
+        combatRulesRuntime.BossPhaseChanged +=
+            HandleRuntimeBossPhaseChanged;
+    }
+
+    private void UnbindCombatRuleActivationEvents()
+    {
+        if (combatRulesRuntime == null)
+            return;
+
+        combatRulesRuntime.LoadoutChanged -=
+            HandleRuntimeSkillActivationChanged;
+        combatRulesRuntime.BossPhaseChanged -=
+            HandleRuntimeBossPhaseChanged;
+    }
+
+    private void HandleRuntimeSkillActivationChanged()
+    {
+        eventBinder.RefreshActiveBindings();
+    }
+
+    private void HandleRuntimeBossPhaseChanged(
+        BossPhaseData _,
+        BossPhaseData __)
+    {
+        eventBinder.RefreshActiveBindings();
+    }
+
     private void ShutdownRuntime(
         bool clearBattleReferences)
     {
+        UnbindCombatRuleActivationEvents();
         eventBinder.UnbindAll();
         mechanicController?.Reset();
 
@@ -847,6 +905,21 @@ public abstract class Character : MonoBehaviour
 
     //------------------------------------------------
 
+    /// <summary>
+    /// BattleEvent.OnTurnStart를 발행하기 전에 현재 보스 페이즈와
+    /// 활성 Skill 이벤트 구독 집합을 먼저 확정한다.
+    /// </summary>
+    public void PrepareTurnStart(
+        int currentTurn)
+    {
+        if (!IsInitialized || IsDead)
+            return;
+
+        combatRulesRuntime?.EvaluateBossPhase(
+            battleContext,
+            Mathf.Max(1, currentTurn));
+    }
+
     public virtual void TurnStart()
     {
         if (!IsInitialized || IsDead)
@@ -855,8 +928,9 @@ public abstract class Character : MonoBehaviour
         // 도사림의 그 턴 한정 합 보정은 다음 턴 시작 전에 초기화한다.
         combatState?.ClearTurnModifiers();
 
-        combatRulesRuntime?.EvaluateBossPhase(
-            battleContext,
+        // TurnManager 경로에서는 OnTurnStart 이벤트 전에 이미 호출된다.
+        // 직접 TurnStart를 호출하는 테스트/도구 경로도 현재 페이즈를 놓치지 않게 유지한다.
+        PrepareTurnStart(
             battleContext?.Services?.TurnManager?.CurrentTurn ?? 1);
 
         TurnStartEnergyPolicy energyPolicy =

@@ -61,6 +61,18 @@ public class BattleVisualRequestBuilder
         request.ApplyDamageContext(sourceContext);
         ApplyHitDamages(request, hitDamages, sourceContext);
 
+        // Standalone 행동은 Action에 이미 적용된 Attack Weight 결과가 남아 있다.
+        // Clash exchange는 명시적인 damageContext를 넘기므로 여기서 전체 Action의
+        // 다른 교환 결과를 섞지 않는다.
+        if (damageContext == null &&
+            useActionDamageContextFallback)
+        {
+            CopyStandaloneSecondaryDamageContexts(
+                request,
+                action,
+                sourceContext);
+        }
+
         if (sourceContext == null &&
             useActionDamageContextFallback)
         {
@@ -72,6 +84,7 @@ public class BattleVisualRequestBuilder
         }
 
         ApplyDamageDistribution(request);
+        NormalizeTargetImpacts(request);
         ResolveWorldPosition(request);
 
         BattleVisualValidator.ValidateRequest(
@@ -212,6 +225,11 @@ public class BattleVisualRequestBuilder
                                     exchange
                                         .SecondaryDamageContexts);
                         }
+
+                        // Build() 시점에는 exchange의 secondary가 아직 붙기 전이므로
+                        // 추가한 뒤 다시 한 번 primary/secondary를 동일 DTO로 정규화한다.
+                        NormalizeTargetImpacts(
+                            attackRequest);
                     }
                 }
 
@@ -251,6 +269,253 @@ public class BattleVisualRequestBuilder
             logWarnings: true);
 
         return request;
+    }
+
+    private static void CopyStandaloneSecondaryDamageContexts(
+        BattleVisualRequest request,
+        BattleAction action,
+        DamageContext primary)
+    {
+        if (request == null ||
+            action?.DamageContexts == null)
+        {
+            return;
+        }
+
+        request.SecondaryDamageContexts.Clear();
+
+        foreach (DamageContext context
+                 in action.DamageContexts)
+        {
+            if (context == null ||
+                ReferenceEquals(context, primary))
+            {
+                continue;
+            }
+
+            request.SecondaryDamageContexts.Add(
+                context);
+        }
+    }
+
+    private static void NormalizeTargetImpacts(
+        BattleVisualRequest request)
+    {
+        if (request == null)
+            return;
+
+        request.TargetImpacts.Clear();
+
+        HashSet<DamageContext> consumed =
+            new HashSet<DamageContext>();
+
+        if (request.DamageContext != null)
+        {
+            TargetImpactPresentation primary =
+                CreateTargetImpact(
+                    request,
+                    request.DamageContext,
+                    isPrimary: true,
+                    request.HitDamages);
+
+            if (primary != null)
+            {
+                request.TargetImpacts.Add(primary);
+                consumed.Add(request.DamageContext);
+            }
+        }
+
+        if (request.SecondaryDamageContexts == null)
+            return;
+
+        foreach (DamageContext context
+                 in request.SecondaryDamageContexts)
+        {
+            if (context == null ||
+                !consumed.Add(context))
+            {
+                continue;
+            }
+
+            List<int> displayHits =
+                DistributeLikeRequest(
+                    request,
+                    context.GetDisplayDamage());
+
+            TargetImpactPresentation impact =
+                CreateTargetImpact(
+                    request,
+                    context,
+                    isPrimary: false,
+                    displayHits);
+
+            if (impact != null)
+                request.TargetImpacts.Add(impact);
+        }
+    }
+
+    private static TargetImpactPresentation CreateTargetImpact(
+        BattleVisualRequest request,
+        DamageContext context,
+        bool isPrimary,
+        IReadOnlyList<int> displayHitDamages)
+    {
+        if (request == null ||
+            context?.Target == null)
+        {
+            return null;
+        }
+
+        List<int> normalizedDisplayHits =
+            CopyOrDistributeDisplayHits(
+                request,
+                context,
+                displayHitDamages);
+
+        int characterHpDelta =
+            Mathf.Max(
+                0,
+                context.TargetHpBefore -
+                context.TargetHpAfter);
+
+        int partHpDelta =
+            context.HasTargetPartSnapshot
+                ? Mathf.Max(
+                    0,
+                    context.TargetPartHpBefore -
+                    context.TargetPartHpAfter)
+                : 0;
+
+        List<int> characterHpHits =
+            DistributeByDisplayShape(
+                characterHpDelta,
+                normalizedDisplayHits);
+
+        List<int> partHpHits =
+            DistributeByDisplayShape(
+                partHpDelta,
+                normalizedDisplayHits);
+
+        return TargetImpactPresentation
+            .FromDamageContext(
+                context,
+                isPrimary,
+                normalizedDisplayHits,
+                characterHpHits,
+                partHpHits);
+    }
+
+    private static List<int> CopyOrDistributeDisplayHits(
+        BattleVisualRequest request,
+        DamageContext context,
+        IReadOnlyList<int> source)
+    {
+        List<int> result = new List<int>();
+
+        if (source != null && source.Count > 0)
+        {
+            for (int i = 0; i < source.Count; i++)
+            {
+                result.Add(
+                    Mathf.Max(
+                        0,
+                        source[i]));
+            }
+        }
+
+        if (result.Count > 0)
+            return result;
+
+        return DistributeLikeRequest(
+            request,
+            context?.GetDisplayDamage() ?? 0);
+    }
+
+    private static List<int> DistributeLikeRequest(
+        BattleVisualRequest request,
+        int total)
+    {
+        int safeTotal =
+            Mathf.Max(
+                0,
+                total);
+
+        if (request?.HitDamages != null &&
+            request.HitDamages.Count > 0)
+        {
+            return DistributeByDisplayShape(
+                safeTotal,
+                request.HitDamages);
+        }
+
+        SkillVisualDefinition visual =
+            request?.VisualDefinition;
+
+        int count =
+            visual != null &&
+            visual.DistributeDamageByHitCount
+                ? Mathf.Max(
+                    1,
+                    visual.ExpectedHitFrameCount)
+                : 1;
+
+        if (count <= 1)
+            return new List<int> { safeTotal };
+
+        return new List<int>(
+            DamageDistributionUtility.DistributeByWeights(
+                safeTotal,
+                visual?.HitDamageWeights,
+                count));
+    }
+
+    private static List<int> DistributeByDisplayShape(
+        int total,
+        IReadOnlyList<int> displayShape)
+    {
+        int safeTotal =
+            Mathf.Max(
+                0,
+                total);
+
+        int count =
+            Mathf.Max(
+                1,
+                displayShape?.Count ?? 0);
+
+        if (count == 1)
+            return new List<int> { safeTotal };
+
+        List<int> weights =
+            new List<int>(count);
+
+        int weightTotal = 0;
+
+        for (int i = 0; i < count; i++)
+        {
+            int weight =
+                Mathf.Max(
+                    0,
+                    displayShape[i]);
+
+            weights.Add(weight);
+            weightTotal += weight;
+        }
+
+        if (weightTotal <= 0)
+        {
+            weights.Clear();
+            weights.Add(1);
+
+            for (int i = 1; i < count; i++)
+                weights.Add(0);
+        }
+
+        return new List<int>(
+            DamageDistributionUtility.DistributeByWeights(
+                safeTotal,
+                weights,
+                count));
     }
 
     private static void ApplyHitDamages(

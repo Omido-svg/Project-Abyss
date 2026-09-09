@@ -62,6 +62,9 @@ public class BattleWorldFloatingTextUI : MonoBehaviour
 
     private string ownerLabel;
 
+    // Presentation 전용 난수. 전투 굴림의 UnityEngine.Random 상태를 소비하지 않는다.
+    private System.Random visualRandom;
+
     private void Awake()
     {
         if (text == null)
@@ -296,7 +299,7 @@ public class BattleWorldFloatingTextUI : MonoBehaviour
                 tickTimer = 0f;
 
                 int randomValue =
-                    Random.Range(randomMin, randomMax + 1);
+                    NextVisualInt(randomMin, randomMax + 1);
 
                 SetText(randomValue.ToString());
             }
@@ -423,7 +426,7 @@ public class BattleWorldFloatingTextUI : MonoBehaviour
                 }
 
                 int value =
-                    Random.Range(
+                    NextVisualInt(
                         min,
                         max + 1);
 
@@ -444,7 +447,7 @@ public class BattleWorldFloatingTextUI : MonoBehaviour
                 for (int i = 0; i < count; i++)
                 {
                     text +=
-                        Random.value >= 0.5f
+                        NextVisualBool()
                             ? "앞"
                             : "뒤";
 
@@ -458,12 +461,12 @@ public class BattleWorldFloatingTextUI : MonoBehaviour
             case SkillResolverType.Slot:
             {
                 int a =
-                    Random.Range(
+                    NextVisualInt(
                         1,
                         10);
 
                 int b =
-                    Random.Range(
+                    NextVisualInt(
                         1,
                         10);
 
@@ -472,17 +475,40 @@ public class BattleWorldFloatingTextUI : MonoBehaviour
 
             case SkillResolverType.Chinchiro:
             {
-                int a = Random.Range(1, 7);
-                int b = Random.Range(1, 7);
-                int c = Random.Range(1, 7);
+                int a = NextVisualInt(1, 7);
+                int b = NextVisualInt(1, 7);
+                int c = NextVisualInt(1, 7);
                 return $"🎲 {a}·{b}·{c}";
             }
         }
 
-        return Random.Range(
+        return NextVisualInt(
                 randomMin,
                 randomMax + 1)
             .ToString();
+    }
+
+    private int NextVisualInt(
+        int minimumInclusive,
+        int maximumExclusive)
+    {
+        if (maximumExclusive <= minimumInclusive)
+            return minimumInclusive;
+
+        visualRandom ??=
+            new System.Random(
+                unchecked(
+                    System.Environment.TickCount ^
+                    GetInstanceID() * 397));
+
+        return visualRandom.Next(
+            minimumInclusive,
+            maximumExclusive);
+    }
+
+    private bool NextVisualBool()
+    {
+        return NextVisualInt(0, 2) == 1;
     }
 
     private string CreateFinalRollText(

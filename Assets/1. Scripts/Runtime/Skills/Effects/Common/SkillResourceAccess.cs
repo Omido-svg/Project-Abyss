@@ -1,14 +1,12 @@
-using System;
-using System.Collections.Generic;
-using System.Reflection;
 using UnityEngine;
 
+/// <summary>
+/// Skill Effect가 Character의 정식 자원 API만 사용하도록 연결한다.
+/// Reflection/fallback 저장소를 두지 않아 Energy 변경 이벤트와
+/// CombatResourceBank의 clamp/max 정책을 우회하지 않는다.
+/// </summary>
 public static class SkillResourceAccess
 {
-    private static readonly Dictionary<
-        Character,
-        Dictionary<string, int>> fallback = new();
-
     public static int Get(
         Character owner,
         string key)
@@ -19,17 +17,7 @@ public static class SkillResourceAccess
             return 0;
         }
 
-        object bank = owner.Resources;
-
-        if (TryInvokeGetter(
-                bank,
-                key,
-                out int bankValue))
-        {
-            return bankValue;
-        }
-
-        return GetFallback(owner, key);
+        return owner.GetCustomResource(key);
     }
 
     public static int Set(
@@ -43,19 +31,11 @@ public static class SkillResourceAccess
             return 0;
         }
 
-        int finalValue = Mathf.Max(0, value);
-        object bank = owner.Resources;
+        owner.SetCustomResource(
+            key,
+            Mathf.Max(0, value));
 
-        if (TryInvokeSetter(
-                bank,
-                key,
-                finalValue))
-        {
-            return Get(owner, key);
-        }
-
-        SetFallback(owner, key, finalValue);
-        return finalValue;
+        return owner.GetCustomResource(key);
     }
 
     public static int Modify(
@@ -71,135 +51,30 @@ public static class SkillResourceAccess
             return 0;
         }
 
-        int current = Get(owner, key);
-        int finalValue = Mathf.Clamp(
-            current + amount,
-            minimum,
-            maximum);
+        int safeMinimum =
+            Mathf.Max(
+                0,
+                Mathf.Min(minimum, maximum));
 
-        return Set(owner, key, finalValue);
-    }
+        int safeMaximum =
+            Mathf.Max(
+                safeMinimum,
+                maximum);
 
-    private static bool TryInvokeGetter(
-        object bank,
-        string key,
-        out int value)
-    {
-        value = 0;
+        long next =
+            (long)Get(owner, key) +
+            amount;
 
-        if (bank == null)
-            return false;
+        int bounded =
+            next > safeMaximum
+                ? safeMaximum
+                : next < safeMinimum
+                    ? safeMinimum
+                    : (int)next;
 
-        string[] names =
-        {
-            "Get",
-            "GetValue",
-            "GetResource",
-            "GetAmount"
-        };
-
-        foreach (string name in names)
-        {
-            MethodInfo method =
-                bank.GetType().GetMethod(
-                    name,
-                    BindingFlags.Instance |
-                    BindingFlags.Public,
-                    null,
-                    new[] { typeof(string) },
-                    null);
-
-            if (method == null)
-                continue;
-
-            object result = method.Invoke(
-                bank,
-                new object[] { key });
-
-            if (result is int intValue)
-            {
-                value = intValue;
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    private static bool TryInvokeSetter(
-        object bank,
-        string key,
-        int value)
-    {
-        if (bank == null)
-            return false;
-
-        string[] names =
-        {
-            "Set",
-            "SetValue",
-            "SetResource",
-            "SetAmount"
-        };
-
-        foreach (string name in names)
-        {
-            MethodInfo method =
-                bank.GetType().GetMethod(
-                    name,
-                    BindingFlags.Instance |
-                    BindingFlags.Public,
-                    null,
-                    new[]
-                    {
-                        typeof(string),
-                        typeof(int)
-                    },
-                    null);
-
-            if (method == null)
-                continue;
-
-            method.Invoke(
-                bank,
-                new object[] { key, value });
-            return true;
-        }
-
-        return false;
-    }
-
-    private static int GetFallback(
-        Character owner,
-        string key)
-    {
-        if (!fallback.TryGetValue(
-                owner,
-                out Dictionary<string, int> resources))
-        {
-            return 0;
-        }
-
-        return resources.TryGetValue(
+        return Set(
+            owner,
             key,
-            out int value)
-            ? value
-            : 0;
-    }
-
-    private static void SetFallback(
-        Character owner,
-        string key,
-        int value)
-    {
-        if (!fallback.TryGetValue(
-                owner,
-                out Dictionary<string, int> resources))
-        {
-            resources = new Dictionary<string, int>();
-            fallback.Add(owner, resources);
-        }
-
-        resources[key] = value;
+            bounded);
     }
 }

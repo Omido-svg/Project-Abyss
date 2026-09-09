@@ -21,8 +21,26 @@ internal sealed class BattleVisualDamagePresenter
     {
         ResetCurrentDamageState(playback);
         PrepareHitDamages(playback, visual);
-        BeginHpOverride(playback);
-        BeginStaggerOverride(playback);
+
+        bool created =
+            EnsurePresentationState(playback);
+
+        if (created)
+        {
+            SyncAllPresentationState(
+                playback,
+                forceImmediate: true);
+            return;
+        }
+
+        // Clash sequence에서는 root 시작 시 전체 대상의 before 상태를 이미 잠갔다.
+        // 개별 exchange 진입에서 같은 값을 다시 쓰면 이전 hit 진행 상태가 되감기므로
+        // 여기서는 현재 request의 hit 분배만 준비한다.
+        if (playback?.Request?.HasTargetImpacts != true)
+        {
+            BeginLegacyHpOverride(playback);
+            BeginLegacyStaggerOverride(playback);
+        }
     }
 
     public void PrepareSequence(
@@ -34,95 +52,13 @@ internal sealed class BattleVisualDamagePresenter
         if (root?.HasClashSequence != true)
             return;
 
-        ResolveBattleUiManager();
-        ResolveWorldPlateManager();
+        EnsurePresentationState(playback);
 
-        List<BattleVisualHpOverrideTarget> initializedTargets =
-            new List<BattleVisualHpOverrideTarget>();
-
-        HashSet<Character> initializedWorldCharacters =
-            new HashSet<Character>();
-
-        HashSet<Character> initializedStaggerCharacters =
-            new HashSet<Character>();
-
-        foreach (BattleClashVisualExchange exchange
-                 in root.ClashExchanges)
-        {
-            BattleVisualRequest request =
-                exchange?.AttackRequest;
-
-            if (request?.Target == null)
-                continue;
-
-            int totalDamage =
-                DamageDistributionUtility.Sum(
-                    request.HitDamages);
-
-            if (totalDamage > 0)
-            {
-                ResolveHpRange(
-                    request,
-                    totalDamage,
-                    out int visualStartHp,
-                    out _);
-
-                if (!ContainsOverrideTarget(
-                        initializedTargets,
-                        request.Target,
-                        request.TargetPart))
-                {
-                    BattleVisualHpOverrideTarget target =
-                        new BattleVisualHpOverrideTarget(
-                            request.Target,
-                            request.TargetPart);
-
-                    initializedTargets.Add(target);
-                    playback.TrackHpOverride(
-                        request.Target,
-                        request.TargetPart);
-
-                    battleUIManager?.SetTargetHpOverride(
-                        request.Target,
-                        request.TargetPart,
-                        visualStartHp);
-                }
-
-                if (initializedWorldCharacters.Add(
-                        request.Target))
-                {
-                    worldPlateManager?.SetVisualHpOverride(
-                        request.Target,
-                        ResolveWorldVisualStartHp(
-                            request,
-                            totalDamage),
-                        forceImmediate: true);
-                }
-            }
-
-            // 흐트러짐 로직도 HP와 마찬가지로 이미 최종값까지 계산된 뒤
-            // Timeline이 재생된다. 첫 Hit Event 전에는 첫 교환의 before 값을
-            // 화면에 고정하여 실제 타격보다 게이지가 먼저 줄어들지 않게 한다.
-            if (request.StaggerDamage > 0 &&
-                initializedStaggerCharacters.Add(
-                    request.Target))
-            {
-                playback.TrackStaggerOverride(
-                    request.Target);
-
-                worldPlateManager?.SetVisualStaggerOverride(
-                    request.Target,
-                    request.StaggerGaugeBefore,
-                    vulnerable:
-                        request.StaggerGaugeBefore <= 0);
-            }
-        }
-
-        // 합 결과는 로직 단계에서 이미 계산되지만,
-        // 화면은 첫 Hit Event 전까지 각 대상의 합 시작 HP를 유지한다.
-        // 이 잠금을 합 안내 UI와 진입 모션보다 먼저 끝내
-        // 실제 HP가 잠깐 노출됐다가 되돌아오는 현상을 막는다.
-        Canvas.ForceUpdateCanvases();
+        // 합 결과는 로직 단계에서 마지막 교환까지 이미 계산되어 있다.
+        // Timeline 진입 전에 모든 영향 대상의 최초 before snapshot을 화면에 고정한다.
+        SyncAllPresentationState(
+            playback,
+            forceImmediate: true);
     }
 
     public int GetDamageForHitIndex(
@@ -131,6 +67,12 @@ internal sealed class BattleVisualDamagePresenter
     {
         if (playback?.Request == null)
             return 0;
+
+        TargetImpactPresentation primary =
+            playback.Request.PrimaryImpact;
+
+        if (primary != null)
+            return primary.GetDamageForHitIndex(hitIndex);
 
         List<int> damages = playback.HitDamages;
 
@@ -145,22 +87,63 @@ internal sealed class BattleVisualDamagePresenter
             : 0;
     }
 
+    public int GetImpactDamageForHitIndex(
+        TargetImpactPresentation impact,
+        int hitIndex)
+    {
+        return impact?.GetDamageForHitIndex(hitIndex) ?? 0;
+    }
+
     public void ApplyHit(
         BattleVisualPlaybackState playback,
         int hitIndex,
-        int damage)
+        int legacyPrimaryDamage)
     {
-        // Hit Event가 화면 상태 변경의 유일한 presentation commit point다.
-        // HP / 흐트러짐 / 각종 HUD refresh를 이 한 호출에서 함께 처리한다.
-        ApplyHpDamage(playback, damage);
+        if (playback?.Request == null)
+            return;
+
+        BattlePresentationState state =
+            playback.PresentationState;
+
+        if (state != null)
+        {
+            state.ApplyHit(
+                playback.Request,
+                hitIndex);
+
+            if (!playback.Request.HasTargetImpacts)
+            {
+                ApplyLegacyHpDamage(
+                    playback,
+                    legacyPrimaryDamage);
+            }
+
+            SyncRequestPresentationState(
+                playback,
+                hitIndex);
+
+            if (!playback.Request.HasTargetImpacts)
+            {
+                RefreshBattleUi(
+                    playback.Request,
+                    hitIndex,
+                    legacyPrimaryDamage);
+            }
+
+            return;
+        }
+
+        ApplyLegacyHpDamage(
+            playback,
+            legacyPrimaryDamage);
 
         if (hitIndex == 0)
-            ApplyStaggerDamage(playback);
+            ApplyLegacyStaggerDamage(playback);
 
         RefreshBattleUi(
-            playback?.Request,
+            playback.Request,
             hitIndex,
-            damage);
+            legacyPrimaryDamage);
     }
 
     public void Clear(BattleVisualPlaybackState playback)
@@ -169,43 +152,37 @@ internal sealed class BattleVisualDamagePresenter
             return;
 
         ResolveBattleUiManager();
-
-        if (battleUIManager != null)
-        {
-            foreach (BattleVisualHpOverrideTarget target
-                     in playback.HpOverrideTargets)
-            {
-                if (target.Character == null)
-                    continue;
-
-                battleUIManager.ClearTargetHpOverride(
-                    target.Character,
-                    target.Part);
-
-                battleUIManager.RefreshTargetUI(
-                    target.Character,
-                    target.Part);
-
-                ResolveWorldPlateManager();
-                worldPlateManager?.ClearVisualHpOverride(target.Character);
-                worldPlateManager?.RefreshCharacter(target.Character);
-            }
-        }
-        else
-        {
-            ResolveWorldPlateManager();
-
-            foreach (BattleVisualHpOverrideTarget target
-                     in playback.HpOverrideTargets)
-            {
-                if (target.Character != null)
-                    worldPlateManager?.ClearVisualHpOverride(target.Character);
-            }
-        }
-
-        playback.HpOverrideTargets.Clear();
-
         ResolveWorldPlateManager();
+
+        BattlePresentationState state =
+            playback.PresentationState;
+
+        // 먼저 read model을 해제해야 이후 Refresh가 실제 최종 Character/BodyPart 상태를 읽는다.
+        BattlePresentationStateRegistry.Clear(state);
+
+        HashSet<Character> worldCharacters =
+            new HashSet<Character>();
+
+        foreach (BattleVisualHpOverrideTarget target
+                 in playback.HpOverrideTargets)
+        {
+            if (target.Character == null)
+                continue;
+
+            battleUIManager?.ClearTargetHpOverride(
+                target.Character,
+                target.Part);
+
+            worldCharacters.Add(
+                target.Character);
+        }
+
+        foreach (Character character
+                 in worldCharacters)
+        {
+            worldPlateManager?.ClearVisualHpOverride(
+                character);
+        }
 
         foreach (Character character
                  in playback.StaggerOverrideTargets)
@@ -215,15 +192,299 @@ internal sealed class BattleVisualDamagePresenter
 
             worldPlateManager?.ClearVisualStaggerOverride(
                 character);
-
-            worldPlateManager?.RefreshCharacter(
-                character);
         }
 
+        if (state != null)
+        {
+            foreach (BodyPartDisplayState partState
+                     in state.Parts)
+            {
+                if (partState?.Character == null)
+                    continue;
+
+                battleUIManager?.RefreshTargetUI(
+                    partState.Character,
+                    partState.Part);
+            }
+
+            foreach (CharacterDisplayState characterState
+                     in state.Characters)
+            {
+                Character character =
+                    characterState?.Character;
+
+                if (character == null)
+                    continue;
+
+                if (characterState.HasCharacterLevelImpact)
+                {
+                    battleUIManager?.RefreshTargetUI(
+                        character,
+                        null);
+                }
+
+                worldPlateManager?.RefreshCharacter(
+                    character);
+
+                CharacterView view =
+                    BattleCameraTargetResolver.GetView(
+                        character);
+
+                view?.RefreshVisualState();
+            }
+        }
+        else
+        {
+            foreach (BattleVisualHpOverrideTarget target
+                     in playback.HpOverrideTargets)
+            {
+                if (target.Character == null)
+                    continue;
+
+                battleUIManager?.RefreshTargetUI(
+                    target.Character,
+                    target.Part);
+
+                worldPlateManager?.RefreshCharacter(
+                    target.Character);
+            }
+        }
+
+        playback.HpOverrideTargets.Clear();
         playback.StaggerOverrideTargets.Clear();
+        playback.PresentationState = null;
         ResetCurrentDamageState(playback);
 
         Canvas.ForceUpdateCanvases();
+    }
+
+    private bool EnsurePresentationState(
+        BattleVisualPlaybackState playback)
+    {
+        if (playback == null)
+            return false;
+
+        if (playback.PresentationState != null)
+        {
+            BattlePresentationStateRegistry.Bind(
+                playback.PresentationState);
+            return false;
+        }
+
+        BattleVisualRequest root =
+            playback.RootRequest ??
+            playback.Request;
+
+        BattlePresentationState state =
+            BattlePresentationState.Create(root);
+
+        playback.PresentationState = state;
+        BattlePresentationStateRegistry.Bind(state);
+        return true;
+    }
+
+    private void SyncAllPresentationState(
+        BattleVisualPlaybackState playback,
+        bool forceImmediate)
+    {
+        BattlePresentationState state =
+            playback?.PresentationState;
+
+        if (state == null)
+            return;
+
+        ResolveBattleUiManager();
+        ResolveWorldPlateManager();
+
+        foreach (BodyPartDisplayState partState
+                 in state.Parts)
+        {
+            if (partState?.Character == null ||
+                partState.Part == null)
+            {
+                continue;
+            }
+
+            playback.TrackHpOverride(
+                partState.Character,
+                partState.Part);
+
+            battleUIManager?.SetTargetHpOverride(
+                partState.Character,
+                partState.Part,
+                partState.CurrentHp);
+
+            battleUIManager?.RefreshTargetUI(
+                partState.Character,
+                partState.Part);
+        }
+
+        foreach (CharacterDisplayState characterState
+                 in state.Characters)
+        {
+            Character character =
+                characterState?.Character;
+
+            if (character == null)
+                continue;
+
+            if (characterState.HasCharacterLevelImpact)
+            {
+                playback.TrackHpOverride(
+                    character,
+                    null);
+
+                battleUIManager?.SetTargetHpOverride(
+                    character,
+                    null,
+                    characterState.CurrentHp);
+
+                battleUIManager?.RefreshTargetUI(
+                    character,
+                    null);
+            }
+
+            worldPlateManager?.SetVisualHpOverride(
+                character,
+                characterState.CurrentHp,
+                forceImmediate);
+        }
+
+        foreach (StaggerDisplayState staggerState
+                 in state.StaggerStates)
+        {
+            Character character =
+                staggerState?.Character;
+
+            if (character == null)
+                continue;
+
+            playback.TrackStaggerOverride(
+                character);
+
+            worldPlateManager?.SetVisualStaggerOverride(
+                character,
+                staggerState.CurrentGauge,
+                staggerState.IsVulnerable);
+        }
+
+        Canvas.ForceUpdateCanvases();
+    }
+
+    private void SyncRequestPresentationState(
+        BattleVisualPlaybackState playback,
+        int hitIndex)
+    {
+        BattleVisualRequest request =
+            playback?.Request;
+
+        BattlePresentationState state =
+            playback?.PresentationState;
+
+        if (request == null || state == null)
+            return;
+
+        ResolveBattleUiManager();
+        ResolveWorldPlateManager();
+
+        HashSet<Character> refreshedCharacters =
+            new HashSet<Character>();
+
+        HashSet<BodyPart> refreshedParts =
+            new HashSet<BodyPart>();
+
+        if (request.TargetImpacts != null)
+        {
+            foreach (TargetImpactPresentation impact
+                     in request.TargetImpacts)
+            {
+                if (impact?.Target == null)
+                    continue;
+
+                if (impact.TargetPart != null &&
+                    refreshedParts.Add(impact.TargetPart) &&
+                    state.TryGetPart(
+                        impact.TargetPart,
+                        out BodyPartDisplayState partState))
+                {
+                    playback.TrackHpOverride(
+                        impact.Target,
+                        impact.TargetPart);
+
+                    battleUIManager?.SetTargetHpOverride(
+                        impact.Target,
+                        impact.TargetPart,
+                        partState.CurrentHp);
+
+                    battleUIManager?.RefreshTargetUI(
+                        impact.Target,
+                        impact.TargetPart);
+                }
+                else if (impact.TargetPart == null &&
+                         state.TryGetCharacter(
+                             impact.Target,
+                             out CharacterDisplayState directState) &&
+                         directState.HasCharacterLevelImpact)
+                {
+                    playback.TrackHpOverride(
+                        impact.Target,
+                        null);
+
+                    battleUIManager?.SetTargetHpOverride(
+                        impact.Target,
+                        null,
+                        directState.CurrentHp);
+
+                    battleUIManager?.RefreshTargetUI(
+                        impact.Target,
+                        null);
+                }
+
+                if (refreshedCharacters.Add(impact.Target) &&
+                    state.TryGetCharacter(
+                        impact.Target,
+                        out CharacterDisplayState characterState))
+                {
+                    worldPlateManager?.SetVisualHpOverrideAtHit(
+                        impact.Target,
+                        characterState.CurrentHp);
+                }
+
+                if (impact.IsFinalHit(hitIndex))
+                {
+                    CharacterView view =
+                        BattleCameraTargetResolver.GetView(
+                            impact.Target);
+
+                    view?.RefreshVisualState();
+                }
+            }
+        }
+
+        if (request.Target != null &&
+            request.StaggerDamage > 0 &&
+            state.TryGetStagger(
+                request.Target,
+                out StaggerDisplayState staggerState))
+        {
+            playback.TrackStaggerOverride(
+                request.Target);
+
+            worldPlateManager?.SetVisualStaggerOverrideAtHit(
+                request.Target,
+                staggerState.CurrentGauge,
+                staggerState.IsVulnerable);
+        }
+
+        Canvas.ForceUpdateCanvases();
+
+        if (logDebug)
+        {
+            Debug.Log(
+                $"[BattleVisualDamagePresenter] HitFrame presentation commit / " +
+                $"Request={request.RequestId}, Hit={hitIndex}, " +
+                $"Impacts={request.TargetImpacts?.Count ?? 0}");
+        }
     }
 
     private static void ResetCurrentDamageState(
@@ -271,7 +532,9 @@ internal sealed class BattleVisualDamagePresenter
                 expectedCount));
     }
 
-    private void BeginHpOverride(BattleVisualPlaybackState playback)
+    // DamageContext가 없는 구형/진단 요청의 HP 표시만 기존 방식으로 보존한다.
+    private void BeginLegacyHpOverride(
+        BattleVisualPlaybackState playback)
     {
         if (playback == null)
             return;
@@ -282,7 +545,7 @@ internal sealed class BattleVisualDamagePresenter
         if (request?.Target == null || totalDamage <= 0)
             return;
 
-        ResolveHpRange(
+        ResolveLegacyHpRange(
             request,
             totalDamage,
             out int visualStartHp,
@@ -297,7 +560,6 @@ internal sealed class BattleVisualDamagePresenter
             request.TargetPart);
 
         ResolveBattleUiManager();
-
         battleUIManager?.SetTargetHpOverride(
             request.Target,
             request.TargetPart,
@@ -306,13 +568,15 @@ internal sealed class BattleVisualDamagePresenter
         ResolveWorldPlateManager();
         worldPlateManager?.SetVisualHpOverride(
             request.Target,
-            ResolveWorldVisualStartHp(request, totalDamage),
+            ResolveLegacyWorldStartHp(
+                request,
+                totalDamage),
             forceImmediate: true);
 
         RefreshBattleUi(request, -1, 0);
     }
 
-    private void BeginStaggerOverride(
+    private void BeginLegacyStaggerOverride(
         BattleVisualPlaybackState playback)
     {
         BattleVisualRequest request =
@@ -325,9 +589,7 @@ internal sealed class BattleVisualDamagePresenter
         }
 
         ResolveWorldPlateManager();
-
-        playback.TrackStaggerOverride(
-            request.Target);
+        playback.TrackStaggerOverride(request.Target);
 
         worldPlateManager?.SetVisualStaggerOverride(
             request.Target,
@@ -336,65 +598,7 @@ internal sealed class BattleVisualDamagePresenter
                 request.StaggerGaugeBefore <= 0);
     }
 
-    private static void ResolveHpRange(
-        BattleVisualRequest request,
-        int totalDamage,
-        out int visualStartHp,
-        out int visualFinalHp)
-    {
-        if (request.TargetPart != null)
-        {
-            int maxHp = Mathf.Max(1, Mathf.RoundToInt(request.TargetPart.MaxPartHP));
-
-            if (request.HasTargetPartHpSnapshot)
-            {
-                visualStartHp = Mathf.Clamp(request.TargetPartHpBefore, 0, maxHp);
-                visualFinalHp = Mathf.Clamp(request.TargetPartHpAfter, 0, maxHp);
-                return;
-            }
-
-            visualFinalHp = Mathf.Clamp(
-                Mathf.RoundToInt(request.TargetPart.PartHP),
-                0,
-                maxHp);
-
-            visualStartHp = Mathf.Clamp(visualFinalHp + totalDamage, 0, maxHp);
-            return;
-        }
-
-        int characterMaxHp = Mathf.Max(
-            1,
-            request.TargetCharacterMaxHp > 0
-                ? request.TargetCharacterMaxHp
-                : request.Target.MaxCombatHP);
-
-        if (request.HasTargetCharacterHpSnapshot)
-        {
-            visualStartHp = Mathf.Clamp(
-                request.TargetCharacterHpBefore,
-                0,
-                characterMaxHp);
-
-            visualFinalHp = Mathf.Clamp(
-                request.TargetCharacterHpAfter,
-                0,
-                characterMaxHp);
-
-            return;
-        }
-
-        visualFinalHp = Mathf.Clamp(
-            request.Target.CurrentHP,
-            0,
-            characterMaxHp);
-
-        visualStartHp = Mathf.Clamp(
-            visualFinalHp + totalDamage,
-            0,
-            characterMaxHp);
-    }
-
-    private void ApplyHpDamage(
+    private void ApplyLegacyHpDamage(
         BattleVisualPlaybackState playback,
         int damage)
     {
@@ -417,7 +621,6 @@ internal sealed class BattleVisualDamagePresenter
             playback.VisualHpStart - playback.VisualDamageAccumulated);
 
         ResolveBattleUiManager();
-
         battleUIManager?.SetTargetHpOverride(
             request.Target,
             request.TargetPart,
@@ -426,11 +629,12 @@ internal sealed class BattleVisualDamagePresenter
         ResolveWorldPlateManager();
 
         int worldStartHp =
-            ResolveWorldVisualStartHp(
+            ResolveLegacyWorldStartHp(
                 request,
                 DamageDistributionUtility.Sum(playback.HitDamages));
 
-        int worldFinalHp = ResolveWorldVisualFinalHp(request);
+        int worldFinalHp =
+            ResolveLegacyWorldFinalHp(request);
 
         int worldDisplayHp = Mathf.Max(
             worldFinalHp,
@@ -441,7 +645,7 @@ internal sealed class BattleVisualDamagePresenter
             worldDisplayHp);
     }
 
-    private void ApplyStaggerDamage(
+    private void ApplyLegacyStaggerDamage(
         BattleVisualPlaybackState playback)
     {
         BattleVisualRequest request =
@@ -454,9 +658,7 @@ internal sealed class BattleVisualDamagePresenter
         }
 
         ResolveWorldPlateManager();
-
-        playback.TrackStaggerOverride(
-            request.Target);
+        playback.TrackStaggerOverride(request.Target);
 
         worldPlateManager?.SetVisualStaggerOverrideAtHit(
             request.Target,
@@ -465,14 +667,85 @@ internal sealed class BattleVisualDamagePresenter
                 request.StaggerGaugeAfter <= 0);
     }
 
-    private static int ResolveWorldVisualStartHp(
+    private static void ResolveLegacyHpRange(
+        BattleVisualRequest request,
+        int totalDamage,
+        out int visualStartHp,
+        out int visualFinalHp)
+    {
+        if (request.TargetPart != null)
+        {
+            int maxHp = Mathf.Max(
+                1,
+                Mathf.RoundToInt(
+                    request.TargetPart.MaxPartHP));
+
+            if (request.HasTargetPartHpSnapshot)
+            {
+                visualStartHp = Mathf.Clamp(
+                    request.TargetPartHpBefore,
+                    0,
+                    maxHp);
+
+                visualFinalHp = Mathf.Clamp(
+                    request.TargetPartHpAfter,
+                    0,
+                    maxHp);
+                return;
+            }
+
+            visualFinalHp = Mathf.Clamp(
+                Mathf.RoundToInt(
+                    request.TargetPart.PartHP),
+                0,
+                maxHp);
+
+            visualStartHp = Mathf.Clamp(
+                visualFinalHp + totalDamage,
+                0,
+                maxHp);
+            return;
+        }
+
+        int characterMaxHp = Mathf.Max(
+            1,
+            request.TargetCharacterMaxHp > 0
+                ? request.TargetCharacterMaxHp
+                : request.Target.MaxCombatHP);
+
+        if (request.HasTargetCharacterHpSnapshot)
+        {
+            visualStartHp = Mathf.Clamp(
+                request.TargetCharacterHpBefore,
+                0,
+                characterMaxHp);
+
+            visualFinalHp = Mathf.Clamp(
+                request.TargetCharacterHpAfter,
+                0,
+                characterMaxHp);
+            return;
+        }
+
+        visualFinalHp = Mathf.Clamp(
+            request.Target.CurrentHP,
+            0,
+            characterMaxHp);
+
+        visualStartHp = Mathf.Clamp(
+            visualFinalHp + totalDamage,
+            0,
+            characterMaxHp);
+    }
+
+    private static int ResolveLegacyWorldStartHp(
         BattleVisualRequest request,
         int totalDamage)
     {
         if (request?.Target == null)
             return 0;
 
-        int maximum = ResolveWorldVisualMaxHp(request);
+        int maximum = ResolveLegacyWorldMaxHp(request);
 
         if (request.HasTargetCharacterHpSnapshot)
         {
@@ -483,18 +756,19 @@ internal sealed class BattleVisualDamagePresenter
         }
 
         return Mathf.Clamp(
-            ResolveWorldVisualFinalHp(request) + Mathf.Max(0, totalDamage),
+            ResolveLegacyWorldFinalHp(request) +
+            Mathf.Max(0, totalDamage),
             0,
             maximum);
     }
 
-    private static int ResolveWorldVisualFinalHp(
+    private static int ResolveLegacyWorldFinalHp(
         BattleVisualRequest request)
     {
         if (request?.Target == null)
             return 0;
 
-        int maximum = ResolveWorldVisualMaxHp(request);
+        int maximum = ResolveLegacyWorldMaxHp(request);
 
         if (request.HasTargetCharacterHpSnapshot)
         {
@@ -510,7 +784,7 @@ internal sealed class BattleVisualDamagePresenter
             maximum);
     }
 
-    private static int ResolveWorldVisualMaxHp(
+    private static int ResolveLegacyWorldMaxHp(
         BattleVisualRequest request)
     {
         if (request?.Target == null)
@@ -532,7 +806,6 @@ internal sealed class BattleVisualDamagePresenter
             return;
 
         ResolveBattleUiManager();
-
         battleUIManager?.RefreshTargetUI(
             request.Target,
             request.TargetPart);
@@ -541,49 +814,17 @@ internal sealed class BattleVisualDamagePresenter
         worldPlateManager?.RefreshCharacter(
             request.Target);
 
-        // 같은 Hit Event 안에서 HP 숫자/HP bar/흐트러짐 bar의
-        // RectTransform과 TMP 상태를 즉시 확정한다.
         Canvas.ForceUpdateCanvases();
 
         if (!logDebug || hitIndex < 0)
             return;
 
         Debug.Log(
-            $"[BattleVisualDamagePresenter] HitFrame UI / " +
+            $"[BattleVisualDamagePresenter] Legacy HitFrame UI / " +
             $"Request={request.RequestId}, " +
             $"Target={request.Target.Data?.CharacterName}, " +
             $"Point={(request.TargetPart == null ? "SINGLE_HP" : request.TargetPart.Type.ToString())}, " +
             $"Hit={hitIndex}, Damage={damage}");
-    }
-    
-    private static bool ContainsOverrideTarget(
-        List<BattleVisualHpOverrideTarget> targets,
-        Character character,
-        BodyPart part)
-    {
-        if (targets == null ||
-            character == null)
-        {
-            return false;
-        }
-
-        for (int i = 0; i < targets.Count; i++)
-        {
-            BattleVisualHpOverrideTarget target =
-                targets[i];
-
-            if (ReferenceEquals(
-                    target.Character,
-                    character) &&
-                ReferenceEquals(
-                    target.Part,
-                    part))
-            {
-                return true;
-            }
-        }
-
-        return false;
     }
 
     private void ResolveWorldPlateManager()
@@ -599,6 +840,7 @@ internal sealed class BattleVisualDamagePresenter
     private void ResolveBattleUiManager()
     {
         if (battleUIManager == null)
-            battleUIManager = Object.FindFirstObjectByType<BattleUIManager>();
+            battleUIManager =
+                Object.FindFirstObjectByType<BattleUIManager>();
     }
 }

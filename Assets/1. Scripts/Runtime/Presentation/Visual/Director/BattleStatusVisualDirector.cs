@@ -6,6 +6,7 @@ public class BattleStatusVisualDirector : MonoBehaviour
 {
     [Header("Battle Event Source")]
     [SerializeField] private BattleManager battleManager;
+    [SerializeField] private BattleAnimationDirector actionDirector;
 
     [SerializeField] private StatusEffectVisualDatabase visualDatabase;
     [SerializeField] private BattleVfxManager vfxManager;
@@ -233,6 +234,12 @@ public class BattleStatusVisualDirector : MonoBehaviour
         {
             while (queue.Count > 0)
             {
+                // 상태 이벤트는 전투 로직에서 Timeline보다 먼저 발생할 수 있다.
+                // 한 프레임 양보한 뒤 Action presentation이 시작됐다면 끝날 때까지 기다려
+                // 미래 상태 VFX가 실제 타격보다 먼저 노출되는 것을 막는다.
+                // SourceAction 단위의 정확한 hit 합류는 별도 status-event correlation 단계에서 확장한다.
+                yield return WaitForActionPresentationWindow();
+
                 QueuedStatusVisual visual = queue.Dequeue();
 
                 if (visual.DamageRequest != null &&
@@ -263,6 +270,22 @@ public class BattleStatusVisualDirector : MonoBehaviour
         finally
         {
             queueRoutine = null;
+        }
+    }
+
+    private IEnumerator WaitForActionPresentationWindow()
+    {
+        // 이벤트 발행과 Director.Play 시작이 같은 프레임에 이어질 수 있으므로
+        // 먼저 한 프레임 양보해 현재 action presentation을 관찰한다.
+        yield return null;
+
+        ResolveReferences();
+
+        while (isActiveAndEnabled &&
+               actionDirector != null &&
+               actionDirector.IsPlaying)
+        {
+            yield return null;
         }
     }
 
@@ -395,6 +418,13 @@ public class BattleStatusVisualDirector : MonoBehaviour
 
     private void ResolveReferences()
     {
+        if (actionDirector == null)
+        {
+            actionDirector =
+                FindFirstObjectByType<BattleAnimationDirector>(
+                    FindObjectsInactive.Include);
+        }
+
         if (vfxManager == null)
             vfxManager = FindFirstObjectByType<BattleVfxManager>();
 

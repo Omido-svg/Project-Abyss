@@ -370,16 +370,17 @@ public abstract class Skill
         Character character,
         BattleEvent battleEvent)
     {
+        // 생성/초기화와 활성 이벤트 수명을 분리한다.
+        // 어떤 런타임 Skill을 Register할지는 CharacterEventBinder의 정책으로 남긴다.
         UnregisterRuntimeEvents();
 
         owner = character;
         this.battleEvent = battleEvent;
-
-        RegisterRuntimeEvents();
     }
 
     public virtual void Register()
     {
+        RegisterRuntimeEvents();
     }
 
     public virtual void Unregister()

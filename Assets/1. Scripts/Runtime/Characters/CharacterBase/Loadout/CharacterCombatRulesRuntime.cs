@@ -602,6 +602,76 @@ public sealed class CharacterCombatRulesRuntime
         }
     }
 
+    /// <summary>
+    /// 후보로 생성된 Runtime Skill 가운데 현재 BattleEvent를 구독해야 하는 Skill인지 판단한다.
+    /// 장착 UI를 위해 후보 인스턴스는 유지하되, 미래 보스 페이즈/미장착 스킬의
+    /// OnTurnStart/OnBattleStart 같은 owner 단위 효과가 미리 실행되지 않게 한다.
+    /// </summary>
+    public bool IsSkillActiveForEvents(
+        Skill skill)
+    {
+        if (skill == null)
+            return false;
+
+        if (!HasStructuredRules)
+            return true;
+
+        SkillDefinition definition =
+            skill.Definition;
+
+        // 캐릭터 고유 코드가 만든 정의 없는 런타임 Skill은 기존 상시 수명을 보존한다.
+        if (definition == null)
+            return true;
+
+        if (IsConfiguredByActiveSlot(definition))
+            return true;
+
+        if (owner?.Data?.BossPhases != null &&
+            owner.Data.BossPhases.Count > 0)
+        {
+            if (CurrentBossPhase == null)
+                return false;
+
+            foreach (SkillDefinition candidate
+                     in CurrentBossPhase.EnumerateSkillPool())
+            {
+                if (candidate == definition)
+                    return true;
+            }
+
+            return false;
+        }
+
+        return IsAllowedByActiveSkillSet(skill);
+    }
+
+    private bool IsConfiguredByActiveSlot(
+        SkillDefinition definition)
+    {
+        if (definition == null)
+            return false;
+
+        IReadOnlyList<CharacterSlotConfig> configs =
+            GetActiveSlotConfigs();
+
+        if (configs == null)
+            return false;
+
+        foreach (CharacterSlotConfig config in configs)
+        {
+            if (config == null || !config.Enabled)
+                continue;
+
+            if (config.FixedSkill == definition ||
+                config.InsufficientEnergyFallbackSkill == definition)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     private bool IsAllowedByActiveSkillSet(
         Skill skill)
     {

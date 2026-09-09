@@ -11,6 +11,8 @@ public class ClashManager
         attackWeightTargetResolver;
     private readonly ClashRuleSettings clashRules;
     private readonly ClashPowerPipeline clashPowerPipeline;
+    private readonly RequiredExchangeReactionPipeline
+        requiredExchangeReactionPipeline;
 
     public ClashManager(
         BattleContext battleContext,
@@ -35,6 +37,10 @@ public class ClashManager
         clashPowerPipeline =
             new ClashPowerPipeline(
                 clashRules);
+
+        requiredExchangeReactionPipeline =
+            new RequiredExchangeReactionPipeline(
+                battleContext);
     }
 
     public List<ClashResultContext> Resolve(
@@ -271,7 +277,7 @@ public class ClashManager
                 else if (exchange.WinnerAction == second)
                     result.SecondExchangeWins++;
 
-                ApplyNakilRemainingRollRemoval(
+                ApplyExchangeContinuationRules(
                     exchange,
                     first,
                     second,
@@ -361,7 +367,7 @@ public class ClashManager
         return result;
     }
 
-    private static void ApplyNakilRemainingRollRemoval(
+    private static void ApplyExchangeContinuationRules(
         ClashExchangeResult exchange,
         BattleAction first,
         BattleAction second,
@@ -380,40 +386,75 @@ public class ClashManager
         BattleAction winner =
             exchange.WinnerAction;
 
-        YujinMechanic mechanic =
-            winner.Owner?
-                .GetMechanic<YujinMechanic>();
-
-        if (mechanic?
-                .RemovesOpponentRemainingRollsOnExchangeWin(
-                    winner) != true)
-        {
-            return;
-        }
-
-        int removed;
+        BattleAction opponent;
+        int before;
+        int after;
 
         if (winner == first)
         {
-            removed = Mathf.Max(0, secondRemaining);
-            secondRemaining = 0;
+            opponent = second;
+            before = Mathf.Max(0, secondRemaining);
+            after = ModifyOpponentRemainingRollCount(
+                winner,
+                opponent,
+                before);
+            secondRemaining = after;
         }
         else if (winner == second)
         {
-            removed = Mathf.Max(0, firstRemaining);
-            firstRemaining = 0;
+            opponent = first;
+            before = Mathf.Max(0, firstRemaining);
+            after = ModifyOpponentRemainingRollCount(
+                winner,
+                opponent,
+                before);
+            firstRemaining = after;
         }
         else
         {
             return;
         }
 
+        int removed =
+            Mathf.Max(0, before - after);
+
         if (removed <= 0)
             return;
 
         Debug.Log(
-            $"[Nakil] {winner.Owner.name} 교환 승리 / " +
+            $"[ClashContinuation] {winner.Owner.name} 교환 승리 / " +
             $"상대 남은 굴림 {removed}개 제거");
+    }
+
+    private static int ModifyOpponentRemainingRollCount(
+        BattleAction winner,
+        BattleAction opponent,
+        int currentRemainingRollCount)
+    {
+        int remaining =
+            Mathf.Max(0, currentRemainingRollCount);
+
+        IReadOnlyList<CombatMechanic> mechanics =
+            winner?.Owner?.Mechanics;
+
+        if (mechanics == null)
+            return remaining;
+
+        foreach (CombatMechanic mechanic in mechanics)
+        {
+            if (mechanic is not IExchangeContinuationRule rule)
+                continue;
+
+            remaining =
+                Mathf.Max(
+                    0,
+                    rule.ModifyOpponentRemainingRollCount(
+                        winner,
+                        opponent,
+                        remaining));
+        }
+
+        return remaining;
     }
 
     private ClashExchangeResult ResolvePairedExchange(
@@ -726,12 +767,15 @@ public class ClashManager
             loser, winner, exchangeIndex, false, damageContext,
             isClash: true, isOneSided: false);
 
+        // 굴림 성공/실패 효과까지 처리된 뒤, 필수 교환 규칙을 먼저 확정한다.
+        // StaggerGaugeMechanic의 감소량/Before/After도 여기서 완성되므로
+        // OnExchangeResolved의 모든 observer는 동일한 최종 결과를 본다.
+        requiredExchangeReactionPipeline.Apply(exchange);
+
         LogExchange(exchange, isClash: true);
         battleContext._battleEvent
             .RaiseExchangeResolved(exchange);
 
-        // StaggerGaugeMechanic이 ExchangeResolved에서 실제 감소량을
-        // exchange에 기록한 뒤 적중/굴림 종료 효과가 그 결과를 읽는다.
         winner.Skill?.NotifyHit(
             winner, loser, exchangeIndex, exchange,
             isClash: true, isOneSided: false);
@@ -890,6 +934,9 @@ public class ClashManager
                 action, exhaustedOpponent, exchangeIndex, true, null,
                 isClash: cameFromClash, isOneSided: true);
 
+            requiredExchangeReactionPipeline.Apply(
+                staggerExchange);
+
             LogExchange(staggerExchange, isClash: cameFromClash);
             battleContext._battleEvent.RaiseExchangeResolved(staggerExchange);
 
@@ -1004,6 +1051,8 @@ public class ClashManager
         action.Skill?.NotifyRollResolved(
             action, exhaustedOpponent, exchangeIndex, true, damageContext,
             isClash: cameFromClash, isOneSided: true);
+
+        requiredExchangeReactionPipeline.Apply(exchange);
 
         LogExchange(exchange, isClash: cameFromClash);
         battleContext._battleEvent

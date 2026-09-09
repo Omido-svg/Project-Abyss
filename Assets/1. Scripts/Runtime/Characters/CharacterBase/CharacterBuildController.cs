@@ -1,21 +1,9 @@
 using System;
 using System.Collections.Generic;
-using System.Reflection;
 using UnityEngine;
 
 public sealed class CharacterBuildController
 {
-    private static readonly Type[] CanApplyItemSignature =
-    {
-        typeof(Character)
-    };
-
-    private static readonly Type[] CreateItemMechanicsSignature =
-    {
-        typeof(CharacterBuildMechanicContext),
-        typeof(List<CombatMechanic>)
-    };
-
     private readonly Character owner;
     private readonly List<CharacterItem> equippedItems;
     private readonly List<CharacterAugment> equippedAugments;
@@ -248,10 +236,6 @@ public sealed class CharacterBuildController
         return result;
     }
 
-    /// <summary>
-    /// P16 CharacterItem 신형 API가 존재하면 사용한다.
-    /// 프로젝트가 구형 CharacterItem을 참조 중이면 기존 CreateMechanic()으로 폴백한다.
-    /// </summary>
     private static void CreateItemMechanicsCompatible(
         CharacterItem item,
         CharacterBuildMechanicContext context,
@@ -263,39 +247,11 @@ public sealed class CharacterBuildController
             return;
         }
 
-        MethodInfo createManyMethod =
-            item.GetType().GetMethod(
-                "CreateMechanics",
-                BindingFlags.Instance |
-                BindingFlags.Public,
-                null,
-                CreateItemMechanicsSignature,
-                null);
-
-        if (createManyMethod != null)
-        {
-            createManyMethod.Invoke(
-                item,
-                new object[]
-                {
-                    context,
-                    output
-                });
-
-            return;
-        }
-
-        CombatMechanic mechanic =
-            item.CreateMechanic();
-
-        if (mechanic != null)
-            output.Add(mechanic);
+        item.CreateMechanics(
+            context,
+            output);
     }
 
-    /// <summary>
-    /// P16 CharacterItem 신형 CanApplyTo API가 존재하면 사용한다.
-    /// 구형 CharacterItem이면 기존 동작과 동일하게 owner가 있을 때 적용한다.
-    /// </summary>
     private bool CanApply(CharacterItem item)
     {
         if (item == null ||
@@ -306,36 +262,7 @@ public sealed class CharacterBuildController
 
         try
         {
-            MethodInfo canApplyMethod =
-                item.GetType().GetMethod(
-                    "CanApplyTo",
-                    BindingFlags.Instance |
-                    BindingFlags.Public,
-                    null,
-                    CanApplyItemSignature,
-                    null);
-
-            if (canApplyMethod == null)
-                return true;
-
-            object result =
-                canApplyMethod.Invoke(
-                    item,
-                    new object[]
-                    {
-                        owner
-                    });
-
-            return result is bool canApply &&
-                   canApply;
-        }
-        catch (TargetInvocationException exception)
-        {
-            LogBuildException(
-                $"Item={GetItemName(item)}, Step=CanApplyTo",
-                exception.InnerException ?? exception);
-
-            return false;
+            return item.CanApplyTo(owner);
         }
         catch (Exception exception)
         {
@@ -427,12 +354,6 @@ public sealed class CharacterBuildController
         try
         {
             action.Invoke();
-        }
-        catch (TargetInvocationException exception)
-        {
-            LogBuildException(
-                label,
-                exception.InnerException ?? exception);
         }
         catch (Exception exception)
         {

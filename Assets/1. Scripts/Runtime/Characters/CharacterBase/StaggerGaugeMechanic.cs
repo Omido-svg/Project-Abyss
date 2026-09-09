@@ -6,7 +6,8 @@ using UnityEngine;
 /// 0이 되면 HP 내성을 전 타입 x2로 덮어쓰는 취약 창을 열고, 다음 턴 종료에 100% 복구한다.
 /// </summary>
 public sealed class StaggerGaugeMechanic : ReactiveCombatMechanic,
-    ICharacterUniqueGaugeProvider
+    ICharacterUniqueGaugeProvider,
+    IRequiredExchangeReaction
 {
     private readonly int maxGauge;
     private int currentGauge;
@@ -24,7 +25,6 @@ public sealed class StaggerGaugeMechanic : ReactiveCombatMechanic,
     public int GaugeStateVersion => (currentGauge * 2) + (vulnerabilityWindowOpen ? 1 : 0);
 
     protected override ReactiveCombatEventMask EventMask =>
-        ReactiveCombatEventMask.ExchangeResolved |
         ReactiveCombatEventMask.TurnEnd;
 
     public override string MechanicName => "Stagger Gauge v5";
@@ -42,7 +42,8 @@ public sealed class StaggerGaugeMechanic : ReactiveCombatMechanic,
         recoverAfterTurn = -1;
     }
 
-    protected override void OnExchangeResolved(ClashExchangeResult exchange)
+    public void ApplyRequiredExchangeReaction(
+        ClashExchangeResult exchange)
     {
         if (exchange == null || exchange.WasCancelled || exchange.WinnerAction == null)
             return;

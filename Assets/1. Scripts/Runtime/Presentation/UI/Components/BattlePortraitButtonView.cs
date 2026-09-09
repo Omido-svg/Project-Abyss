@@ -665,18 +665,9 @@ public sealed class BattlePortraitButtonView : MonoBehaviour
         Skill skill,
         int rollIndex)
     {
-        SkillDefinition definition =
-            skill?.Definition;
-
-        if (definition?.Rolls != null &&
-            rollIndex >= 0 &&
-            rollIndex < definition.Rolls.Count &&
-            definition.Rolls[rollIndex] != null)
-        {
-            return definition.Rolls[rollIndex].Type;
-        }
-
-        return CombatRollType.Attack;
+        return skill?.GetRollType(
+                   Mathf.Max(0, rollIndex)) ??
+               CombatRollType.Attack;
     }
 
     private string BuildRollPatternSignature(
@@ -888,11 +879,9 @@ public sealed class BattlePortraitButtonView : MonoBehaviour
              rollIndex++)
         {
             CombatRollType type =
-                definition?.Rolls != null &&
-                rollIndex < definition.Rolls.Count &&
-                definition.Rolls[rollIndex] != null
-                    ? definition.Rolls[rollIndex].Type
-                    : CombatRollType.Attack;
+                ResolveRollType(
+                    skill,
+                    rollIndex);
 
             Color color =
                 type == CombatRollType.Stagger

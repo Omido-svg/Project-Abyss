@@ -10,6 +10,35 @@ public abstract class CharacterItem : ScriptableObject
     public string ItemName => itemName;
     public string Description => description;
 
+    /// <summary>
+    /// 이 아이템이 현재 Character에 적용 가능한지 판단한다.
+    /// 기존 CharacterItem은 owner가 존재하면 그대로 적용된다.
+    /// </summary>
+    public virtual bool CanApplyTo(
+        Character owner)
+    {
+        return owner != null;
+    }
+
+    /// <summary>
+    /// 여러 CombatMechanic을 생성할 수 있는 정식 확장점.
+    /// 기본 구현은 기존 CreateMechanic()을 어댑트하므로
+    /// 기존 아이템의 게임 규칙을 변경하지 않는다.
+    /// </summary>
+    public virtual void CreateMechanics(
+        CharacterBuildMechanicContext context,
+        List<CombatMechanic> output)
+    {
+        if (output == null)
+            return;
+
+        CombatMechanic mechanic =
+            CreateMechanic();
+
+        if (mechanic != null)
+            output.Add(mechanic);
+    }
+
     //--------------------------------
     // 스킬 목록을 바꾸고 싶을 때 사용
     //--------------------------------

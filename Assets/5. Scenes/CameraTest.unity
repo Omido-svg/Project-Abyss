@@ -22669,6 +22669,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   battleManager: {fileID: 0}
+  actionDirector: {fileID: 0}
   visualDatabase: {fileID: 11400000, guid: 3df8e79963eace64f8997302530d5791, type: 2}
   vfxManager: {fileID: 2113237154}
   damageNumberManager: {fileID: 2113237156}

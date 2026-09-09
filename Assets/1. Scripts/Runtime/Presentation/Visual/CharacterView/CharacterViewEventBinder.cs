@@ -15,6 +15,7 @@ public class CharacterViewEventBinder :
     private BattleEvent battleEvent;
     private Coroutine bindRoutine;
     private Coroutine deferredDeathRoutine;
+    private Coroutine deferredPartVisualStateRoutine;
 
     public bool IsSubscribed =>
         battleEvent != null &&
@@ -35,6 +36,7 @@ public class CharacterViewEventBinder :
     {
         StopBindRoutine();
         StopDeferredDeathRoutine();
+        StopDeferredPartVisualStateRoutine();
         Unsubscribe();
     }
 
@@ -42,6 +44,7 @@ public class CharacterViewEventBinder :
     {
         StopBindRoutine();
         StopDeferredDeathRoutine();
+        StopDeferredPartVisualStateRoutine();
         Unsubscribe();
         subscriptions.Dispose();
     }
@@ -187,6 +190,7 @@ public class CharacterViewEventBinder :
     private void HandleBattleEnded()
     {
         StopDeferredDeathRoutine();
+        StopDeferredPartVisualStateRoutine();
         Unsubscribe();
     }
 
@@ -195,7 +199,10 @@ public class CharacterViewEventBinder :
     {
         OnBodyPartChanged(
             context?.Target,
-            context?.Part);
+            context?.Part,
+            deferActionDamage:
+                context?.IsDamageDriven == true &&
+                context.SourceAction != null);
     }
 
     private void OnBodyPartBroken(
@@ -203,7 +210,10 @@ public class CharacterViewEventBinder :
     {
         OnBodyPartChanged(
             context?.Target,
-            context?.Part);
+            context?.Part,
+            deferActionDamage:
+                context?.IsDamageDriven == true &&
+                context.SourceAction != null);
     }
 
     private void OnBodyPartRecovered(
@@ -217,7 +227,8 @@ public class CharacterViewEventBinder :
 
     private void OnBodyPartChanged(
         Character target,
-        BodyPart part)
+        BodyPart part,
+        bool deferActionDamage = false)
     {
         if (target != character ||
             part == null)
@@ -228,9 +239,60 @@ public class CharacterViewEventBinder :
         Debug.Log(
             $"[ViewEvent] 부위 변화 수신 : " +
             $"{target.name} / {part.Type} / " +
-            $"Broken={part.IsBroken}");
+            $"Broken={part.IsBroken} / " +
+            $"Deferred={deferActionDamage}");
+
+        if (deferActionDamage)
+        {
+            ScheduleDeferredPartVisualStateRefresh();
+            return;
+        }
 
         characterView?.RefreshVisualState();
+    }
+
+    private void ScheduleDeferredPartVisualStateRefresh()
+    {
+        StopDeferredPartVisualStateRoutine();
+
+        if (!isActiveAndEnabled)
+            return;
+
+        deferredPartVisualStateRoutine =
+            StartCoroutine(
+                RefreshPartVisualStateAfterActionPresentation());
+    }
+
+    private IEnumerator RefreshPartVisualStateAfterActionPresentation()
+    {
+        // Damage event는 ActionResolver가 VisualRequest를 시작하기 전에 동기적으로 발생한다.
+        // 한 프레임 양보하면 정상 경로에서는 Director가 presentation read model을 바인딩한다.
+        yield return null;
+
+        BattleAnimationDirector director =
+            FindFirstObjectByType<BattleAnimationDirector>(
+                FindObjectsInactive.Include);
+
+        while (isActiveAndEnabled &&
+               director != null &&
+               director.IsPlaying)
+        {
+            yield return null;
+        }
+
+        if (isActiveAndEnabled)
+            characterView?.RefreshVisualState();
+
+        deferredPartVisualStateRoutine = null;
+    }
+
+    private void StopDeferredPartVisualStateRoutine()
+    {
+        if (deferredPartVisualStateRoutine == null)
+            return;
+
+        StopCoroutine(deferredPartVisualStateRoutine);
+        deferredPartVisualStateRoutine = null;
     }
 
     private void OnCharacterDeath(

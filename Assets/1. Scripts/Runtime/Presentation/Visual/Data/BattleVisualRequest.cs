@@ -27,9 +27,37 @@ public class BattleVisualRequest
         SecondaryDamageContexts =
             new List<DamageContext>();
 
+    // Primary/Secondary DamageContext를 presentation에서 동일하게 소비하기 위한
+    // 정규화된 영향 목록. 전투 로직을 다시 계산하지 않고 factual snapshot만 담는다.
+    public List<TargetImpactPresentation>
+        TargetImpacts =
+            new List<TargetImpactPresentation>();
+
     public bool HasSecondaryDamage =>
         SecondaryDamageContexts != null &&
         SecondaryDamageContexts.Count > 0;
+
+    public bool HasTargetImpacts =>
+        TargetImpacts != null &&
+        TargetImpacts.Count > 0;
+
+    public TargetImpactPresentation PrimaryImpact
+    {
+        get
+        {
+            if (TargetImpacts == null)
+                return null;
+
+            foreach (TargetImpactPresentation impact
+                     in TargetImpacts)
+            {
+                if (impact?.IsPrimary == true)
+                    return impact;
+            }
+
+            return null;
+        }
+    }
 
     [Header("Continuous Clash Sequence")]
     public bool IsClashSequence;

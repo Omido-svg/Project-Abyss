@@ -11,6 +11,16 @@ public class ActionManager : IDisposable
     private bool isDisposed;
     private bool hasLoggedDisposedMutation;
 
+    private sealed class CandidateSlotState
+    {
+        public ActionSlot Slot;
+        public long ActionId;
+        public int ActionIndex;
+        public string SlotId;
+        public CharacterSlotConfig SlotConfig;
+        public ActionSlot TargetSlot;
+    }
+
     public IReadOnlyList<ActionSlot> Slots => slots;
     public bool IsDisposed => isDisposed;
 
@@ -198,6 +208,381 @@ public class ActionManager : IDisposable
             FormatSlot(slot));
 
         return true;
+    }
+
+    /// <summary>
+    /// 한 Character의 계획 전체를 검증한 뒤 한 번에 교체한다.
+    /// 검증/commit 실패 시 기존 slots, ActionId allocator, TargetSlot 링크를
+    /// byte-for-byte 객체 관계 수준으로 복구한다.
+    /// </summary>
+    public int TryReplaceOwnerPlan(
+        Character owner,
+        IReadOnlyList<ActionSlot> plannedSlots)
+    {
+        if (!EnsureWritable(nameof(TryReplaceOwnerPlan)) ||
+            owner == null ||
+            plannedSlots == null)
+        {
+            return 0;
+        }
+
+        List<ActionSlot> candidates =
+            new List<ActionSlot>();
+
+        foreach (ActionSlot slot in plannedSlots)
+        {
+            if (slot == null)
+                continue;
+
+            if (slot.Owner != owner)
+            {
+                Debug.LogWarning(
+                    "[ActionManager] Owner plan 교체 거부: " +
+                    "다른 Owner의 ActionSlot이 포함되어 있습니다.");
+                return 0;
+            }
+
+            candidates.Add(slot);
+        }
+
+        if (candidates.Count == 0)
+            return 0;
+
+        // 실제 slots를 건드리기 전에 동일 ActionManager 규칙으로 전체 후보를 검증한다.
+        // owner별 슬롯 상한/에너지 예약은 다른 owner의 계획과 독립적이다.
+        ActionManager staging =
+            new ActionManager();
+
+        foreach (ActionSlot candidate in candidates)
+        {
+            ActionSlot probe =
+                CloneForPlanValidation(
+                    candidate);
+
+            if (!staging.TryAddOrReplaceSlot(probe))
+                return 0;
+        }
+
+        if (staging.CountSlots(owner) != candidates.Count)
+        {
+            Debug.LogWarning(
+                "[ActionManager] Owner plan 교체 거부: " +
+                "동일한 논리 슬롯 후보가 중복되었습니다.");
+            return 0;
+        }
+
+        List<ActionSlot> originalSlots =
+            new List<ActionSlot>(
+                slots);
+
+        Dictionary<ActionSlot, ActionSlot> originalTargetLinks =
+            CaptureTargetLinks(
+                originalSlots);
+
+        long originalNextActionId =
+            nextActionId;
+
+        List<CandidateSlotState> candidateStates =
+            CaptureCandidateStates(
+                candidates);
+
+        List<ActionSlot> originalOwnerSlots =
+            new List<ActionSlot>();
+
+        foreach (ActionSlot slot in originalSlots)
+        {
+            if (slot?.Owner == owner)
+                originalOwnerSlots.Add(slot);
+        }
+
+        PreserveLogicalActionIds(
+            candidates,
+            originalOwnerSlots);
+
+        try
+        {
+            RemoveSlotsByOwner(owner);
+
+            int applied = 0;
+
+            foreach (ActionSlot candidate in candidates)
+            {
+                if (!TryAddOrReplaceSlot(candidate))
+                {
+                    RestoreExactPlanState(
+                        originalSlots,
+                        originalTargetLinks,
+                        originalNextActionId);
+
+                    RestoreCandidateStates(
+                        candidateStates);
+
+                    return 0;
+                }
+
+                applied++;
+            }
+
+            if (applied != candidates.Count)
+            {
+                RestoreExactPlanState(
+                    originalSlots,
+                    originalTargetLinks,
+                    originalNextActionId);
+
+                RestoreCandidateStates(
+                    candidateStates);
+
+                return 0;
+            }
+
+            RemapOwnerPlanTargetLinks(
+                owner,
+                candidates,
+                originalTargetLinks);
+
+            return applied;
+        }
+        catch (Exception exception)
+        {
+            RestoreExactPlanState(
+                originalSlots,
+                originalTargetLinks,
+                originalNextActionId);
+
+            RestoreCandidateStates(
+                candidateStates);
+
+            Debug.LogException(exception);
+            return 0;
+        }
+    }
+
+    private static ActionSlot CloneForPlanValidation(
+        ActionSlot source)
+    {
+        if (source == null)
+            return null;
+
+        return new ActionSlot
+        {
+            Owner = source.Owner,
+            Part = source.Part,
+            Skill = source.Skill,
+            Speed = source.Speed,
+            ActionIndex = source.ActionIndex,
+            SlotId = source.SlotId,
+            SlotConfig = source.SlotConfig,
+            Phase = source.Phase,
+            TargetCharacter = source.TargetCharacter,
+            TargetPart = source.TargetPart,
+            SecondaryTargetPart = source.SecondaryTargetPart,
+            TargetSlot = source.TargetSlot,
+            UseCharacterRerollResource =
+                source.UseCharacterRerollResource
+        };
+    }
+
+    private static Dictionary<ActionSlot, ActionSlot>
+        CaptureTargetLinks(
+            IReadOnlyList<ActionSlot> source)
+    {
+        Dictionary<ActionSlot, ActionSlot> result =
+            new Dictionary<ActionSlot, ActionSlot>();
+
+        if (source == null)
+            return result;
+
+        foreach (ActionSlot slot in source)
+        {
+            if (slot != null)
+                result[slot] = slot.TargetSlot;
+        }
+
+        return result;
+    }
+
+    private static List<CandidateSlotState>
+        CaptureCandidateStates(
+            IReadOnlyList<ActionSlot> candidates)
+    {
+        List<CandidateSlotState> result =
+            new List<CandidateSlotState>();
+
+        if (candidates == null)
+            return result;
+
+        foreach (ActionSlot slot in candidates)
+        {
+            if (slot == null)
+                continue;
+
+            result.Add(
+                new CandidateSlotState
+                {
+                    Slot = slot,
+                    ActionId = slot.ActionId,
+                    ActionIndex = slot.ActionIndex,
+                    SlotId = slot.SlotId,
+                    SlotConfig = slot.SlotConfig,
+                    TargetSlot = slot.TargetSlot
+                });
+        }
+
+        return result;
+    }
+
+    private static void RestoreCandidateStates(
+        IReadOnlyList<CandidateSlotState> states)
+    {
+        if (states == null)
+            return;
+
+        foreach (CandidateSlotState state in states)
+        {
+            if (state?.Slot == null)
+                continue;
+
+            state.Slot.ActionId = state.ActionId;
+            state.Slot.ActionIndex = state.ActionIndex;
+            state.Slot.SlotId = state.SlotId;
+            state.Slot.SlotConfig = state.SlotConfig;
+            state.Slot.TargetSlot = state.TargetSlot;
+        }
+    }
+
+    private static void PreserveLogicalActionIds(
+        IReadOnlyList<ActionSlot> candidates,
+        IReadOnlyList<ActionSlot> originals)
+    {
+        if (candidates == null)
+            return;
+
+        foreach (ActionSlot candidate in candidates)
+        {
+            if (candidate == null)
+                continue;
+
+            candidate.ActionId = 0;
+
+            if (originals == null)
+                continue;
+
+            foreach (ActionSlot original in originals)
+            {
+                if (original != null &&
+                    candidate.HasSameKey(original))
+                {
+                    candidate.ActionId =
+                        original.ActionId;
+                    break;
+                }
+            }
+        }
+    }
+
+    private void RestoreExactPlanState(
+        IReadOnlyList<ActionSlot> originalSlots,
+        IReadOnlyDictionary<ActionSlot, ActionSlot> originalTargetLinks,
+        long originalNextActionId)
+    {
+        slots.Clear();
+
+        if (originalSlots != null)
+        {
+            foreach (ActionSlot slot in originalSlots)
+            {
+                if (slot != null)
+                    slots.Add(slot);
+            }
+        }
+
+        if (originalTargetLinks != null)
+        {
+            foreach (KeyValuePair<ActionSlot, ActionSlot> pair
+                     in originalTargetLinks)
+            {
+                if (pair.Key != null)
+                    pair.Key.TargetSlot = pair.Value;
+            }
+        }
+
+        nextActionId =
+            originalNextActionId;
+    }
+
+    private static void RemapOwnerPlanTargetLinks(
+        Character owner,
+        IReadOnlyList<ActionSlot> candidates,
+        IReadOnlyDictionary<ActionSlot, ActionSlot> originalTargetLinks)
+    {
+        if (owner == null ||
+            candidates == null)
+        {
+            return;
+        }
+
+        Dictionary<long, ActionSlot> replacementsByActionId =
+            new Dictionary<long, ActionSlot>();
+
+        foreach (ActionSlot candidate in candidates)
+        {
+            if (candidate?.ActionId > 0)
+            {
+                replacementsByActionId[
+                    candidate.ActionId] =
+                    candidate;
+            }
+        }
+
+        // 새 계획 내부가 이전 owner 슬롯을 가리키는 경우 동일 ActionId의 새 슬롯으로 연결한다.
+        foreach (ActionSlot candidate in candidates)
+        {
+            ActionSlot target =
+                candidate?.TargetSlot;
+
+            if (target?.Owner != owner ||
+                target.ActionId <= 0)
+            {
+                continue;
+            }
+
+            candidate.TargetSlot =
+                replacementsByActionId.TryGetValue(
+                    target.ActionId,
+                    out ActionSlot replacement)
+                    ? replacement
+                    : null;
+        }
+
+        if (originalTargetLinks == null)
+            return;
+
+        // 다른 owner의 기존 타깃이 교체된 동일 논리 슬롯을 가리켰다면 링크를 보존한다.
+        foreach (KeyValuePair<ActionSlot, ActionSlot> pair
+                 in originalTargetLinks)
+        {
+            ActionSlot source =
+                pair.Key;
+
+            ActionSlot oldTarget =
+                pair.Value;
+
+            if (source == null ||
+                source.Owner == owner ||
+                oldTarget?.Owner != owner)
+            {
+                continue;
+            }
+
+            source.TargetSlot =
+                oldTarget.ActionId > 0 &&
+                replacementsByActionId.TryGetValue(
+                    oldTarget.ActionId,
+                    out ActionSlot replacement)
+                    ? replacement
+                    : null;
+        }
     }
 
     public bool RemoveSlot(ActionSlot slot)

@@ -1069,33 +1069,6 @@ public partial class BattleUIManager : MonoBehaviour
         return false;
     }
 
-    private ActionPlanningSkillContext CreatePlanningSkillContext(
-        Skill skill)
-    {
-        return new ActionPlanningSkillContext(
-            selectedOwner,
-            selectedOwnerPart,
-            skill,
-            selectedActionIndex,
-            battleManager?.ActionManager?.Slots);
-    }
-
-    private string GetMechanicPlanningSelectionReason(
-        Skill skill)
-    {
-        return ActionPlanningMechanicPolicy
-            .GetSkillSelectionBlockReason(
-                CreatePlanningSkillContext(skill));
-    }
-
-    private bool IsMechanicEnergyReservationExempt(
-        Skill skill)
-    {
-        return ActionPlanningMechanicPolicy
-            .IsEnergyReservationExempt(
-                CreatePlanningSkillContext(skill));
-    }
-
     private void PlaySkillSelectionRejectedFeedback(
         Skill skill,
         string reason)
@@ -1165,105 +1138,24 @@ public partial class BattleUIManager : MonoBehaviour
         BodyPart part,
         Skill skill)
     {
-        if (!IsManagerReady())
-            return false;
-
-        if (selectedOwner == null)
-            return false;
-
-        if (part == null || skill == null)
-            return false;
-
-        if (part.IsBroken)
-            return false;
-
-        if (!part.IsUsable)
-            return false;
-
-        if (selectedOwner.GetSelectableSkills(part, selectedActionIndex) == null)
-            return false;
-
-        if (!ContainsSkill(selectedOwner.GetSelectableSkills(part, selectedActionIndex), skill))
-            return false;
-
-        string mechanicReason =
-            GetMechanicPlanningSelectionReason(
-                skill);
-
-        if (!string.IsNullOrWhiteSpace(
-                mechanicReason))
+        if (!IsManagerReady() ||
+            selectedOwner == null)
         {
             return false;
         }
 
-        // 캐릭터 고유 Planning 메커닉이 기존 예약 편집처럼
-        // 추가 에너지 예약이 필요 없는 편집을 선언할 수 있다.
-        bool energyReservationExempt =
-            IsMechanicEnergyReservationExempt(
-                skill);
+        BattleActionPlanCommandService commands =
+            PlanCommands;
 
-        if (!energyReservationExempt &&
-            !selectedOwner.CanUseSkill(part, skill))
-        {
+        if (commands == null)
             return false;
-        }
 
-        if (!energyReservationExempt &&
-            !battleManager.ActionManager.CanReserveEnergy(
+        return commands.ValidateSkillSelection(
                 selectedOwner,
-                skill,
                 part,
-                selectedActionIndex))
-        {
-            return false;
-        }
-
-        if (skill.ActionType == ActionType.Prestige)
-        {
-            if (!IsPrestigeReady(selectedOwner))
-                return false;
-
-            if (skill.PrestigeUsePolicy ==
-                PrestigeUsePolicy.OncePerTurn)
-            {
-                if (HasPrestigeSlotSelected(
-                        selectedOwner,
-                        selectedOwnerPart,
-                        selectedActionIndex))
-                    return false;
-            }
-        }
-
-        return true;
-    }
-
-    private bool ContainsSkill(
-        IReadOnlyList<Skill> skills,
-        Skill targetSkill)
-    {
-        if (skills == null || targetSkill == null)
-            return false;
-
-        for (int i = 0; i < skills.Count; i++)
-        {
-            if (skills[i] == targetSkill)
-                return true;
-        }
-
-        return false;
-    }
-
-    private bool IsPrestigeReady(Character character)
-    {
-        if (character == null)
-            return false;
-
-        if (character.CurrentStatus.maxPrestige <= 0)
-            return false;
-
-        return
-            character.RuntimeStatus.currentPrestige >=
-            character.CurrentStatus.maxPrestige;
+                skill,
+                selectedActionIndex)
+            .Success;
     }
 
     private static void RestoreCharacterPlanningState(
@@ -1530,100 +1422,22 @@ public partial class BattleUIManager : MonoBehaviour
         if (selectedOwner == null)
             return "행동 부위 미선택";
 
-        if (part == null || skill == null)
-            return "스킬 없음";
+        BattleActionPlanCommandService commands =
+            PlanCommands;
 
-        if (part.IsBroken || !part.IsUsable)
-            return "부위 사용 불가";
+        if (commands == null)
+            return "Planning service가 준비되지 않았습니다.";
 
-        CharacterCombatRulesRuntime rules =
-            selectedOwner.CombatRulesRuntime;
-
-        CharacterSkillLoadoutRuntime loadout =
-            rules?.Loadout;
-
-        if (rules?.CurrentBossPhase == null &&
-            loadout?.HasSource == true &&
-            skill.Definition != null &&
-            !loadout.IsEquipped(skill.Definition))
-        {
-            return "미장착 스킬";
-        }
-
-        IReadOnlyList<Skill> selectable =
-            selectedOwner.GetSelectableSkills(
+        ActionPlanValidationResult validation =
+            commands.ValidateSkillSelection(
+                selectedOwner,
                 part,
+                skill,
                 selectedActionIndex);
 
-        if (selectable == null ||
-            !ContainsSkill(selectable, skill))
-        {
-            return "현재 부위·행동 슬롯에서 사용 불가";
-        }
-
-        string mechanicReason =
-            GetMechanicPlanningSelectionReason(
-                skill);
-
-        if (!string.IsNullOrWhiteSpace(
-                mechanicReason))
-        {
-            return mechanicReason;
-        }
-
-        bool energyReservationExempt =
-            IsMechanicEnergyReservationExempt(
-                skill);
-
-        if (skill.ActionType == ActionType.Prestige &&
-            !IsPrestigeReady(selectedOwner))
-        {
-            return "위세 부족";
-        }
-
-        if (!energyReservationExempt &&
-            !selectedOwner.CanUseSkill(part, skill))
-        {
-            if (!selectedOwner.CanAffordEnergy(skill.EnergyCost))
-            {
-                return
-                    $"에너지 부족 " +
-                    $"({selectedOwner.CurrentEnergy}/{skill.EnergyCost})";
-            }
-
-            return "조건 또는 자원 부족";
-        }
-
-        if (!energyReservationExempt &&
-            !battleManager.ActionManager.CanReserveEnergy(
-                selectedOwner,
-                skill,
-                part,
-                selectedActionIndex))
-        {
-            int remaining =
-                battleManager.ActionManager
-                    .GetRemainingEnergyAfterPlan(
-                        selectedOwner,
-                        part,
-                        selectedActionIndex);
-
-            return
-                $"계획 에너지 부족 " +
-                $"({remaining}/{skill.EnergyCost})";
-        }
-
-        if (skill.ActionType == ActionType.Prestige &&
-            skill.PrestigeUsePolicy == PrestigeUsePolicy.OncePerTurn &&
-            HasPrestigeSlotSelected(
-                selectedOwner,
-                selectedOwnerPart,
-                selectedActionIndex))
-        {
-            return "이번 턴 위세 사용됨";
-        }
-
-        return "";
+        return validation.Success
+            ? string.Empty
+            : validation.Reason;
     }
 
     public ActionSlot FindActionSlot(
@@ -1884,17 +1698,6 @@ public partial class BattleUIManager : MonoBehaviour
         return character.Data.CharacterName;
     }
     
-    private bool HasPrestigeSlotSelected(
-        Character owner,
-        BodyPart ignorePart = null,
-        int ignoreActionIndex = -1)
-    {
-        return PlanCommands?.HasPrestigeSlotSelected(
-                   owner,
-                   ignorePart,
-                   ignoreActionIndex) == true;
-    }
-
     private int ResolveActionIndexForSelection(
         Character owner,
         BodyPart part,

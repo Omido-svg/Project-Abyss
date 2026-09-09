@@ -92,11 +92,13 @@ public partial class BattleUIManager : MonoBehaviour
 
             IsWeakened =
                 part != null &&
-                part.IsWeakened,
+                ResolveDisplayedPartState(part) ==
+                    BodyPartState.Weakened,
 
             IsBroken =
                 part != null &&
-                part.IsBroken,
+                ResolveDisplayedPartState(part) ==
+                    BodyPartState.Broken,
 
             IsCharacterTarget = characterTarget,
             HasHpOverride = button.HasHpOverride,
@@ -422,8 +424,11 @@ public partial class BattleUIManager : MonoBehaviour
                 "<color=#86EFAC><b>SINGLE HP</b></color>";
         }
 
+        BodyPartState displayedState =
+            ResolveDisplayedPartState(part);
+
         string stateColor =
-            part.State switch
+            displayedState switch
             {
                 BodyPartState.Normal => "#86EFAC",
                 BodyPartState.Weakened => "#FACC15",
@@ -434,7 +439,7 @@ public partial class BattleUIManager : MonoBehaviour
         return
             $"<size=72%>{characterName}</size>\n" +
             $"<color={stateColor}><b>" +
-            $"{part.Type} [{part.State}]" +
+            $"{part.Type} [{displayedState}]" +
             "</b></color>";
     }
 
@@ -450,13 +455,25 @@ public partial class BattleUIManager : MonoBehaviour
         BodyPart part =
             button.BodyPart;
 
-        int currentHp =
-            button.HasHpOverride
-                ? button.HpOverrideValue
-                : part != null
-                    ? Mathf.RoundToInt(
-                        part.PartHP)
-                    : owner.CurrentHP;
+        int currentHp;
+
+        if (BattlePresentationStateRegistry.TryGetHp(
+                owner,
+                part,
+                out int presentationHp))
+        {
+            currentHp = presentationHp;
+        }
+        else
+        {
+            currentHp =
+                button.HasHpOverride
+                    ? button.HpOverrideValue
+                    : part != null
+                        ? Mathf.RoundToInt(
+                            part.PartHP)
+                        : owner.CurrentHP;
+        }
 
         int maxHp =
             part != null
@@ -488,10 +505,13 @@ public partial class BattleUIManager : MonoBehaviour
 
         if (part != null)
         {
-            if (part.IsBroken)
+            BodyPartState displayedState =
+                ResolveDisplayedPartState(part);
+
+            if (displayedState == BodyPartState.Broken)
                 return "#F87171";
 
-            if (part.IsWeakened)
+            if (displayedState == BodyPartState.Weakened)
                 return "#FACC15";
         }
 
@@ -506,6 +526,19 @@ public partial class BattleUIManager : MonoBehaviour
             return "#FACC15";
 
         return "#86EFAC";
+    }
+
+    private static BodyPartState ResolveDisplayedPartState(
+        BodyPart part)
+    {
+        if (part == null)
+            return BodyPartState.Normal;
+
+        return BattlePresentationStateRegistry.TryGetPartState(
+                part,
+                out BodyPartState presentationState)
+            ? presentationState
+            : part.State;
     }
 
     public void SetBodyPartHpOverride(

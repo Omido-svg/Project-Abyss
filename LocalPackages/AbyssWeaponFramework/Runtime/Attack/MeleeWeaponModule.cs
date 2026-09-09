@@ -62,20 +62,44 @@ namespace ProjectAbyss.WeaponSystem
         public void EndAttackWindow()
         {
             if (!windowOpen) return;
+
+            // 정상 종료는 마지막 sweep을 한 번 보장하고 deferred attack을 완료한다.
             SampleSweep();
-            windowOpen = false;
-            hitThisWindow.Clear();
-            CompleteDeferredAttack();
+            CancelAttackWindow(
+                notifyCompleted: true);
+        }
+
+        private void OnDisable()
+        {
+            // 비활성화는 정상 타격 종료가 아니라 취소다.
+            // 이전 sweep 위치/request/owner가 다음 활성화에 남지 않게 전부 비운다.
+            CancelAttackWindow(
+                notifyCompleted: false);
         }
 
         public override void OnWeaponUnequipped(WeaponEquipContext context)
         {
+            CancelAttackWindow(
+                notifyCompleted: false);
+            base.OnWeaponUnequipped(context);
+        }
+
+        private void CancelAttackWindow(
+            bool notifyCompleted)
+        {
+            bool wasOpen = windowOpen;
+
             windowOpen = false;
             hitThisWindow.Clear();
             ownerBehaviours.Clear();
+            activeRequest = default;
             activeWeapon = null;
             activeOwner = null;
-            base.OnWeaponUnequipped(context);
+            previousStart = default;
+            previousEnd = default;
+
+            if (wasOpen && notifyCompleted)
+                CompleteDeferredAttack();
         }
 
         private bool BeginWindowInternal(in WeaponAttackRequest request)

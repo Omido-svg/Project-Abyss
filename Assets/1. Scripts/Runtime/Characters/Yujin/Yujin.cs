@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public sealed class Yujin : Character, ICharacterAuthoringTarget
+public sealed class Yujin : Character, ICharacterAuthoringTarget, IPhysicalDamageTypeProvider
 {
     [Header("Body Parts")]
     [SerializeField, Min(1)]
@@ -38,6 +38,18 @@ public sealed class Yujin : Character, ICharacterAuthoringTarget
             YujinWeaponType.Nakil => nakilPhysicalType,
             _ => PhysicalDamageType.Cut
         };
+
+    public bool TryResolvePhysicalDamageType(
+        Skill skill,
+        SkillRollData roll,
+        out PhysicalDamageType damageType)
+    {
+        // 기존 규칙: 유진의 현재 무기 속성이 개별 Roll override보다 우선한다.
+        damageType =
+            ResolveWeaponPhysicalType();
+
+        return true;
+    }
 
     public bool ApplyCharacterAuthoring(
         CharacterAuthoringBundle bundle)

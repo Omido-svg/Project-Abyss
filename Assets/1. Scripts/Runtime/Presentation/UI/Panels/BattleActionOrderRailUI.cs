@@ -82,7 +82,7 @@ public sealed class BattleActionOrderRailUI : MonoBehaviour
     private BattleAnimationDirector boundAnimationDirector;
 
     private bool wasResolving;
-    private int resolutionRemainingCombatCount;
+    private int resolutionRemainingActionCount;
     private int lastSignature = int.MinValue;
 
     public void Configure(
@@ -206,7 +206,7 @@ public sealed class BattleActionOrderRailUI : MonoBehaviour
             wasResolving = false;
             completedResolutionActions.Clear();
             domainCompletedResolutionActions.Clear();
-            resolutionRemainingCombatCount = 0;
+            resolutionRemainingActionCount = 0;
             Rebuild(force: true);
             return;
         }
@@ -317,15 +317,15 @@ public sealed class BattleActionOrderRailUI : MonoBehaviour
 
         // BattleManager는 TurnManager.IsResolving=true가 되기 직전에
         // Resolution UI를 먼저 연다. 그 프레임에도 정확한 남은 행동 수를 보존한다.
-        resolutionRemainingCombatCount =
-            CountCurrentCombatSlots();
+        resolutionRemainingActionCount =
+            CountCurrentActionSlots();
 
         Rebuild(force: true);
         UpdateHeaderCount(
-            resolutionRemainingCombatCount);
+            resolutionRemainingActionCount);
     }
 
-    private int CountCurrentCombatSlots()
+    private int CountCurrentActionSlots()
     {
         IReadOnlyList<ActionSlot> slots =
             battleManager?.ActionManager?.Slots;
@@ -337,11 +337,19 @@ public sealed class BattleActionOrderRailUI : MonoBehaviour
 
         foreach (ActionSlot slot in slots)
         {
-            if (slot?.Phase == ActionPhase.COMBAT)
+            if (IsVisibleActionPhase(slot?.Phase))
                 count++;
         }
 
         return count;
+    }
+
+    private static bool IsVisibleActionPhase(
+        ActionPhase? phase)
+    {
+        return phase == ActionPhase.PRETURN ||
+               phase == ActionPhase.FORESIGHT ||
+               phase == ActionPhase.COMBAT;
     }
 
     private void HandleReactiveRollStarted(
@@ -368,9 +376,9 @@ public sealed class BattleActionOrderRailUI : MonoBehaviour
         reactiveRowStartedAt[reactiveRoll.EventId] =
             Time.unscaledTime;
 
-        resolutionRemainingCombatCount++;
+        resolutionRemainingActionCount++;
         UpdateHeaderCount(
-            resolutionRemainingCombatCount);
+            resolutionRemainingActionCount);
     }
 
     private void HandleReactiveRollResolved(
@@ -567,20 +575,20 @@ public sealed class BattleActionOrderRailUI : MonoBehaviour
         domainCompletedResolutionActions.Remove(
             actionId);
 
-        // 행동순서 레일은 COMBAT 행만 표시한다.
+        // 행동순서 레일은 실제 실행 큐의 PRETURN/FORESIGHT/COMBAT 행을 모두 표시한다.
         if (!rowsByActionId.ContainsKey(actionId) ||
             !completedResolutionActions.Add(actionId))
         {
             return;
         }
 
-        resolutionRemainingCombatCount =
+        resolutionRemainingActionCount =
             Mathf.Max(
                 0,
-                resolutionRemainingCombatCount - 1);
+                resolutionRemainingActionCount - 1);
 
         UpdateHeaderCount(
-            resolutionRemainingCombatCount);
+            resolutionRemainingActionCount);
 
         AnimateCompletedRow(
             actionId,
@@ -961,23 +969,24 @@ public sealed class BattleActionOrderRailUI : MonoBehaviour
 
         lastSignature = signature;
 
-        List<ActionSlot> combat =
+        List<ActionSlot> orderedActions =
             new List<ActionSlot>();
 
         foreach (ActionSlot slot
                  in slots)
         {
             if (slot == null ||
-                slot.Phase !=
-                    ActionPhase.COMBAT)
+                !IsVisibleActionPhase(slot.Phase))
             {
                 continue;
             }
 
-            combat.Add(slot);
+            orderedActions.Add(slot);
         }
 
-        combat.Sort(
+        // 실제 Resolution과 동일한 정렬기를 사용한다.
+        // PRETURN(위세) -> FORESIGHT(도사림) -> COMBAT(속도순).
+        orderedActions.Sort(
             sorter.CompareForExecution);
 
         BuildClashSet(
@@ -987,25 +996,25 @@ public sealed class BattleActionOrderRailUI : MonoBehaviour
 
         if (battleManager?.TurnManager?.IsResolving == true)
         {
-            resolutionRemainingCombatCount =
-                combat.Count;
+            resolutionRemainingActionCount =
+                orderedActions.Count;
         }
 
         int shown =
             Mathf.Min(
                 maximumRows,
-                combat.Count);
+                orderedActions.Count);
 
         for (int index = 0;
              index < shown;
              index++)
         {
             CreateRow(
-                combat[index]);
+                orderedActions[index]);
         }
 
         int hidden =
-            combat.Count - shown;
+            orderedActions.Count - shown;
 
         if (hidden > 0)
         {
@@ -1015,8 +1024,8 @@ public sealed class BattleActionOrderRailUI : MonoBehaviour
 
         UpdateHeaderCount(
             battleManager?.TurnManager?.IsResolving == true
-                ? resolutionRemainingCombatCount
-                : combat.Count);
+                ? resolutionRemainingActionCount
+                : orderedActions.Count);
     }
 
     private int BuildSignature(
@@ -1036,8 +1045,7 @@ public sealed class BattleActionOrderRailUI : MonoBehaviour
                  in slots)
         {
             if (slot == null ||
-                slot.Phase !=
-                    ActionPhase.COMBAT)
+                !IsVisibleActionPhase(slot.Phase))
             {
                 continue;
             }
@@ -1045,6 +1053,10 @@ public sealed class BattleActionOrderRailUI : MonoBehaviour
             hash =
                 hash * 31 +
                 slot.ActionId.GetHashCode();
+
+            hash =
+                hash * 31 +
+                (int)slot.Phase;
 
             hash =
                 hash * 31 +
@@ -1300,8 +1312,11 @@ public sealed class BattleActionOrderRailUI : MonoBehaviour
                     ? "<color=#4FA5FF>→</color>"
                     : "<color=#FF5A5A>→</color>";
 
+        string orderLabel =
+            GetOrderLabel(slot);
+
         label.text =
-            $"<b>{slot?.Speed ?? 0,2}</b>  " +
+            $"<b>{orderLabel}</b>  " +
             $"<size=78%>{side} · {owner} · {part}</size>\n" +
             $"<size=78%>{skill}  {relation}</size>";
 
@@ -1323,6 +1338,20 @@ public sealed class BattleActionOrderRailUI : MonoBehaviour
                     0.66f,
                     1f);
         }
+    }
+
+    private static string GetOrderLabel(
+        ActionSlot slot)
+    {
+        if (slot == null)
+            return "--";
+
+        return slot.Phase switch
+        {
+            ActionPhase.PRETURN => "위세",
+            ActionPhase.FORESIGHT => "도사림",
+            _ => $"속도 {slot.Speed}"
+        };
     }
 
     private void CreateReactiveRollRow(
@@ -1477,13 +1506,13 @@ public sealed class BattleActionOrderRailUI : MonoBehaviour
         reactiveRowsByEventId.Remove(eventId);
         reactiveRowStartedAt.Remove(eventId);
 
-        resolutionRemainingCombatCount =
+        resolutionRemainingActionCount =
             Mathf.Max(
                 0,
-                resolutionRemainingCombatCount - 1);
+                resolutionRemainingActionCount - 1);
 
         UpdateHeaderCount(
-            resolutionRemainingCombatCount);
+            resolutionRemainingActionCount);
 
         CanvasGroup group = row.GetComponent<CanvasGroup>();
         RectTransform rect = row.transform as RectTransform;

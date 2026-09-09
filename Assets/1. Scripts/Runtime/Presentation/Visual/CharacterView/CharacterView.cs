@@ -528,7 +528,15 @@ public class CharacterView : MonoBehaviour, ISerializationCallbackReceiver
 
     public void RefreshVisualState()
     {
-        if (character != null && !character.IsDead)
+        bool displayedDead =
+            character != null &&
+            (BattlePresentationStateRegistry.TryGetDeathState(
+                 character,
+                 out bool presentationDead)
+                ? presentationDead
+                : character.IsDead);
+
+        if (character != null && !displayedDead)
             deathPresentationStarted = false;
 
         if (animator == null)
@@ -723,9 +731,18 @@ public class CharacterView : MonoBehaviour, ISerializationCallbackReceiver
         {
             if (part == null)
                 continue;
-            if (part.IsBroken)
+
+            BodyPartState state =
+                BattlePresentationStateRegistry.TryGetPartState(
+                    part,
+                    out BodyPartState presentationState)
+                    ? presentationState
+                    : part.State;
+
+            if (state == BodyPartState.Broken)
                 return CharacterVisualState.Broken;
-            if (part.IsWeakened)
+
+            if (state == BodyPartState.Weakened)
                 hasWeakenedPart = true;
         }
 

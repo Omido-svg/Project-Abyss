@@ -103,6 +103,21 @@ public partial class BattleAnimationDirector : MonoBehaviour
                             preservedReactionView,
                             playback.IsCancellationRequested);
                     }
+
+                    // Attack Weight로 여러 대상이 동시에 반응할 수 있다.
+                    // 정상 종료에서는 마지막 피격 반응을 자르지 않고 각 View가 스스로 마치게 두며,
+                    // 취소 경로에서만 모든 secondary reaction을 즉시 중단한다.
+                    if (playback.IsCancellationRequested)
+                    {
+                        foreach (CharacterView reactionView
+                                 in playback.ReactionViews)
+                        {
+                            if (reactionView != null)
+                                reactionView.AbortActionPlayback();
+                        }
+                    }
+
+                    playback.ReactionViews.Clear();
                     break;
                 }
 

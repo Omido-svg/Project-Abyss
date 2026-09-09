@@ -12,7 +12,9 @@ internal sealed class BattleVisualPlaybackState
     public BattleVisualRequest Request { get; private set; }
 
     public List<int> HitDamages { get; } = new();
+    public BattlePresentationState PresentationState { get; set; }
     public HashSet<BattleVfxInstance> SpawnedVfxInstances { get; } = new();
+    public HashSet<CharacterView> ReactionViews { get; } = new();
     public HashSet<string> PlayedVfxCueKeys { get; } = new();
     public List<BattleVisualHpOverrideTarget> HpOverrideTargets { get; } = new();
     public HashSet<Character> StaggerOverrideTargets { get; } = new();
