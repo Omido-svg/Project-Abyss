@@ -70,7 +70,7 @@ public sealed partial class BattleResolverRollVisualUI :
         while (elapsed < duration)
         {
             elapsed +=
-                Time.unscaledDeltaTime;
+                BattlePlaybackSpeedController.BattleUnscaledDeltaTime;
 
             float t =
                 Mathf.Clamp01(

@@ -275,9 +275,13 @@ public sealed class BattleResolutionUiController : MonoBehaviour
 
         if (actionOrderRail == null)
         {
+            BattleSceneHudRegistry registry =
+                BattleSceneHudRegistry.Find();
+
             actionOrderRail =
-                FindFirstObjectByType<BattleActionOrderRailUI>(
-                    FindObjectsInactive.Include);
+                registry != null
+                    ? registry.ActionOrderRail
+                    : null;
         }
 
         if (worldPlateManager == null)

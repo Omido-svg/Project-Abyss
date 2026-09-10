@@ -127,6 +127,9 @@ public sealed class ActionSlotButtonUI :
 
     private void SelectThisSlot()
     {
+        if (BattlePlanningCameraController.IsCameraMovementActive)
+            return;
+
         uiManager?.OpenOwnerActionSlot(
             owner,
             ownerPart,
@@ -136,7 +139,11 @@ public sealed class ActionSlotButtonUI :
     public void OnPointerClick(
         PointerEventData eventData)
     {
-        if (eventData.button !=
+        if (BattlePlanningCameraController.IsCameraMovementActive)
+            return;
+
+        if (eventData == null ||
+            eventData.button !=
             PointerEventData.InputButton.Right)
         {
             return;

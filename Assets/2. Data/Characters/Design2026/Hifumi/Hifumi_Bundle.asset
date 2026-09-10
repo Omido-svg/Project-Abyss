@@ -17,9 +17,7 @@ MonoBehaviour:
   authoringNotes: 
   characterData: {fileID: 11400000, guid: b41399cd0a2ef74418efd4d2ba62bd24, type: 2}
   combatLoadout: {fileID: 11400000, guid: 0643553d88f15eb469a1716b5c6ab67c, type: 2}
-  skillSet: {fileID: 0}
   characterPrefab: {fileID: 7880117517003933912, guid: 12e08e754595419458f634cfb606665e, type: 3}
-  visualProfile: {fileID: 0}
   presentationProfile: {fileID: 11400000, guid: 1edc335ea2b100d429b763275f3eaa42, type: 2}
   animatorController: {fileID: 9100000, guid: d980188e9d21d0e45a2367a1982456c7, type: 2}
   avatar: {fileID: 0}

@@ -202,6 +202,9 @@ public sealed class BattleCharacterDetailPanelUI : MonoBehaviour
 
     private void Update()
     {
+        if (BattlePlanningCameraController.IsCameraMovementActive)
+            return;
+
         if (!IsVisible)
             return;
 
@@ -666,7 +669,7 @@ public sealed class BattleCharacterDetailPanelUI : MonoBehaviour
             SetDetailText(
                 "스킬",
                 "표시 가능한 런타임 스킬이 없습니다. " +
-                "Character.RuntimeSkills, 부위 AvailableSkills, " +
+                "Character.RuntimeSkills, CombatLoadout, " +
                 "슬롯별 GetSelectableSkills를 모두 확인했습니다.");
             return;
         }
@@ -737,8 +740,6 @@ public sealed class BattleCharacterDetailPanelUI : MonoBehaviour
             {
                 if (part == null)
                     continue;
-
-                AddRange(part.AvailableSkills);
 
                 int maxSlots = Mathf.Max(
                     1,

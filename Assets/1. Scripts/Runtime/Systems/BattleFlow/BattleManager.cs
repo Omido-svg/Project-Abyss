@@ -24,7 +24,6 @@ public class BattleManager : MonoBehaviour
 
     [Header("Animation")]
     [SerializeField] private BattleAnimationDirector battleAnimationDirector;
-    [SerializeField] private SkillVisualProfile defaultVisualProfile;
 
     public BattleContext BattleContext { get; private set; }
     public Character SelectedCharacter { get; set; }
@@ -62,6 +61,7 @@ public class BattleManager : MonoBehaviour
 
     private void Awake()
     {
+        BattlePlaybackSpeedController.EnsureInstalled(this);
         ResolveSceneReferences();
 
         if (autoInitializeOnAwake)
@@ -288,7 +288,6 @@ public class BattleManager : MonoBehaviour
                 BattleContext,
                 this,
                 battleAnimationDirector,
-                defaultVisualProfile,
                 lifecycleGuard,
                 HandleTurnFatalError);
 
@@ -443,15 +442,23 @@ public class BattleManager : MonoBehaviour
 
         ActionManager.PrintSlots("BEFORE RESOLVE");
 
+        BattlePlaybackSpeedController.Instance?
+            .SetResolutionActive(true);
         BattleResolutionUiController.BeginCurrentResolution();
         TurnManager.ResolveTurn(OnTurnResolved);
 
         if (!TurnManager.IsResolving)
+        {
+            BattlePlaybackSpeedController.Instance?
+                .SetResolutionActive(false);
             BattleResolutionUiController.EndCurrentResolution();
+        }
     }
 
     private void OnTurnResolved()
     {
+        BattlePlaybackSpeedController.Instance?
+            .SetResolutionActive(false);
         BattleResolutionUiController.EndCurrentResolution();
 
         if (endingOrEnded ||
@@ -578,6 +585,8 @@ public class BattleManager : MonoBehaviour
 
     private void EndBattleInternal(string reason)
     {
+        BattlePlaybackSpeedController.Instance?
+            .SetResolutionActive(false);
         BattleResolutionUiController.EndCurrentResolution();
 
         if (endingOrEnded)

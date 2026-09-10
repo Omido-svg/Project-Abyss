@@ -258,6 +258,9 @@ public class BodyPartButton : MonoBehaviour, IPointerClickHandler
 
     private void OnClick()
     {
+        if (BattlePlanningCameraController.IsCameraMovementActive)
+            return;
+
         EnsureReferences();
 
         if (uiManager == null || owner == null)
@@ -276,6 +279,9 @@ public class BodyPartButton : MonoBehaviour, IPointerClickHandler
     public void OnPointerClick(
         PointerEventData eventData)
     {
+        if (BattlePlanningCameraController.IsCameraMovementActive)
+            return;
+
         if (eventData == null ||
             eventData.button !=
             PointerEventData.InputButton.Right)

@@ -326,6 +326,9 @@ public partial class BattleUIManager : MonoBehaviour
 
     private void Update()
     {
+        if (BattlePlanningCameraController.IsCameraMovementActive)
+            return;
+
         if (!Input.GetMouseButtonDown(1))
             return;
 

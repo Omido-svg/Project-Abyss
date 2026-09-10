@@ -85,7 +85,7 @@ public sealed class BattleTestScenarioSwitcher : MonoBehaviour
     [SerializeField] private EmotionAugmentCatalog emotionAugmentCatalog;
 
     [Header("Runtime Debug Panel")]
-    [SerializeField] private bool showRuntimePanel = true;
+    [SerializeField] private bool showRuntimePanel;
     [SerializeField] private Rect runtimePanelRect =
         new Rect(16f, 16f, 300f, 250f);
 

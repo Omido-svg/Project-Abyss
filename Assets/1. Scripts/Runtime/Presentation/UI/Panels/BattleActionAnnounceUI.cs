@@ -108,7 +108,7 @@ public class BattleActionAnnounceUI : MonoBehaviour
 
         while (elapsed < fadeDuration)
         {
-            elapsed += Time.unscaledDeltaTime;
+            elapsed += BattlePlaybackSpeedController.BattleUnscaledDeltaTime;
 
             float t =
                 Mathf.Clamp01(elapsed / fadeDuration);

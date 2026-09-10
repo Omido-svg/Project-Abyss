@@ -68,6 +68,7 @@ public sealed class MomentumScrollbarUI : MonoBehaviour
     private readonly List<RectTransform> zoneRects = new();
     private readonly List<RectTransform> markerRects = new();
     private Image legacyFillImage;
+    private bool missingSceneVisualLogged;
 
     public float DisplayedMomentum => displayedMomentum;
     public int DisplayedMomentumRounded => Mathf.RoundToInt(displayedMomentum);
@@ -293,7 +294,7 @@ public sealed class MomentumScrollbarUI : MonoBehaviour
         while (elapsed < duration)
         {
             elapsed += useUnscaledTime
-                ? Time.unscaledDeltaTime
+                ? BattlePlaybackSpeedController.BattleUnscaledDeltaTime
                 : Time.deltaTime;
 
             float t = Mathf.Clamp01(
@@ -336,7 +337,7 @@ public sealed class MomentumScrollbarUI : MonoBehaviour
         while (elapsed < cursorArrivalPulseDuration)
         {
             elapsed += useUnscaledTime
-                ? Time.unscaledDeltaTime
+                ? BattlePlaybackSpeedController.BattleUnscaledDeltaTime
                 : Time.deltaTime;
 
             float t = Mathf.Clamp01(
@@ -415,11 +416,29 @@ public sealed class MomentumScrollbarUI : MonoBehaviour
         {
             visualRoot = existing as RectTransform;
             CacheGameplayV5Visuals(existing);
-            UpdateStaticVisuals();
-            ApplySlider(displayedMomentum);
+
+            if (HasCompleteSceneVisual())
+            {
+                missingSceneVisualLogged = false;
+                UpdateStaticVisuals();
+                ApplySlider(displayedMomentum);
+                return;
+            }
+
+            if (Application.isPlaying)
+            {
+                LogMissingSceneVisualOnce();
+                return;
+            }
+        }
+
+        if (Application.isPlaying)
+        {
+            LogMissingSceneVisualOnce();
             return;
         }
 
+        // Editor authoring 단계에서만 최초 고정 Visual subtree를 생성한다.
         visualRoot = CreateRect(
             momentumSlider.transform,
             "GameplayV5Visuals",
@@ -429,7 +448,6 @@ public sealed class MomentumScrollbarUI : MonoBehaviour
         visualRoot.offsetMax = Vector2.zero;
         visualRoot.SetAsLastSibling();
 
-        // 5개 상태 구간: 짓눌림 / 열세 / 균형 / 우세 / 짓누름.
         for (int i = 0; i < 5; i++)
         {
             RectTransform zone = CreateImageRect(
@@ -458,8 +476,6 @@ public sealed class MomentumScrollbarUI : MonoBehaviour
         cursorImage =
             cursorRect.GetComponent<Image>();
 
-        // 중앙 0선과 실제 현재 위치가 겹쳐도 확실히 구분되도록
-        // 다이아몬드 마커 + 숫자 배지를 별도 레이어로 만든다.
         cursorMarkerRect = CreateImageRect(
             visualRoot,
             "MomentumCursorMarker");
@@ -487,6 +503,41 @@ public sealed class MomentumScrollbarUI : MonoBehaviour
 
         UpdateStaticVisuals();
     }
+
+    private bool HasCompleteSceneVisual()
+    {
+        return visualRoot != null &&
+               zoneRects.Count == 5 &&
+               markerRects.Count == 5 &&
+               deltaFillRect != null &&
+               deltaFillImage != null &&
+               cursorRect != null &&
+               cursorImage != null &&
+               cursorMarkerRect != null &&
+               cursorMarkerImage != null &&
+               cursorBadgeRect != null &&
+               cursorBadgeImage != null &&
+               cursorValueText != null;
+    }
+
+    private void LogMissingSceneVisualOnce()
+    {
+        if (missingSceneVisualLogged)
+            return;
+
+        missingSceneVisualLogged = true;
+        Debug.LogWarning(
+            "[MomentumScrollbarUI] Scene-authored GameplayV5Visuals가 없습니다. " +
+            "Editor 변환 도구를 실행하세요.",
+            this);
+    }
+
+#if UNITY_EDITOR
+    public void EditorAuthorSceneView()
+    {
+        EnsureGameplayV5Visuals();
+    }
+#endif
 
     private void CacheGameplayV5Visuals(
         Transform existing)
@@ -539,7 +590,7 @@ public sealed class MomentumScrollbarUI : MonoBehaviour
                 ? cursorBadgeRect.Find("Value")?.GetComponent<TMP_Text>()
                 : null;
 
-        if (cursorMarkerRect == null)
+        if (!Application.isPlaying && cursorMarkerRect == null)
         {
             cursorMarkerRect = CreateImageRect(
                 visualRoot,
@@ -552,7 +603,7 @@ public sealed class MomentumScrollbarUI : MonoBehaviour
                 new Vector3(0f, 0f, 45f);
         }
 
-        if (cursorBadgeRect == null)
+        if (!Application.isPlaying && cursorBadgeRect == null)
         {
             cursorBadgeRect = CreateImageRect(
                 visualRoot,
@@ -569,7 +620,8 @@ public sealed class MomentumScrollbarUI : MonoBehaviour
                 new Color(0.015f, 0.020f, 0.030f, 0.96f);
         }
 
-        if (cursorValueText == null &&
+        if (!Application.isPlaying &&
+            cursorValueText == null &&
             cursorBadgeRect != null)
         {
             cursorValueText = CreateText(

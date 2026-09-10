@@ -350,21 +350,16 @@ public sealed class ProjectAbyssCharacterStudio : EditorWindow
             bundle.CombatLoadout,
             typeof(CharacterCombatLoadout),
             false);
-        EditorGUILayout.ObjectField(
-            "Legacy Adapter",
-            bundle.SkillSet,
-            typeof(ScriptableObject),
-            false);
 
         EditorGUILayout.BeginHorizontal();
 
         if (GUILayout.Button("Prefab 참조 다시 읽기"))
             CapturePrefab(bundle.CharacterPrefab, false);
 
-        if (GUILayout.Button("누락 Core 생성/Legacy 이관"))
+        if (GUILayout.Button("누락 Core 생성"))
             EnsureCore();
 
-        if (GUILayout.Button("Loadout ↔ Adapter 동기화"))
+        if (GUILayout.Button("Loadout 동기화"))
             SynchronizeAll(true);
 
         EditorGUILayout.EndHorizontal();
@@ -398,14 +393,6 @@ public sealed class ProjectAbyssCharacterStudio : EditorWindow
         DrawProperty(so, "characterPrefab");
         DrawProperty(so, "characterData");
         DrawProperty(so, "combatLoadout");
-
-        EditorGUILayout.HelpBox(
-            "Legacy Adapter는 각 카테고리의 첫 장착 스킬을 기존 Character 클래스의 " +
-            "부위 생성/고유 RuntimeSkill 코드에 연결합니다.",
-            MessageType.None);
-
-        DrawProperty(so, "skillSet");
-        DrawProperty(so, "visualProfile");
 
         if (so.ApplyModifiedProperties())
         {
@@ -489,12 +476,6 @@ public sealed class ProjectAbyssCharacterStudio : EditorWindow
             SynchronizeAll(true);
         }
 
-        if (GUILayout.Button("첫 장착을 Legacy Adapter에 반영"))
-        {
-            SyncLegacyAdapter(true);
-            AssetDatabase.SaveAssets();
-        }
-
         EditorGUILayout.EndHorizontal();
 
         List<SkillDefinition> definitions =
@@ -545,7 +526,6 @@ public sealed class ProjectAbyssCharacterStudio : EditorWindow
         if (so.ApplyModifiedProperties())
         {
             NormalizeLoadout(loadout);
-            SyncLegacyAdapter(false);
         }
 
         EditorGUILayout.EndVertical();
@@ -575,7 +555,6 @@ public sealed class ProjectAbyssCharacterStudio : EditorWindow
         if (so.ApplyModifiedProperties())
         {
             NormalizeLoadout(loadout);
-            SyncLegacyAdapter(false);
         }
 
         EditorGUILayout.EndVertical();
@@ -764,15 +743,12 @@ public sealed class ProjectAbyssCharacterStudio : EditorWindow
 
         SerializedObject so = new(bundle);
         so.Update();
-        DrawProperty(so, "visualProfile");
         DrawProperty(so, "presentationProfile");
         DrawProperty(so, "animatorController");
         DrawProperty(so, "overrideAnimatorController");
         DrawProperty(so, "avatar");
         DrawProperty(so, "overrideAvatar");
         so.ApplyModifiedProperties();
-
-        DrawNested("SkillVisualProfile", bundle.VisualProfile, false);
         DrawNested(
             "CharacterPresentationProfile",
             bundle.PresentationProfile,
@@ -805,7 +781,7 @@ public sealed class ProjectAbyssCharacterStudio : EditorWindow
         {
             EditorGUILayout.HelpBox(
                 "Prefab, CharacterData, Modern Loadout, 최초 장착, " +
-                "Passive/Item, Legacy Adapter 연결이 유효합니다.",
+                "Passive/Item, Presentation 연결이 유효합니다.",
                 MessageType.Info);
         }
         else
@@ -870,8 +846,6 @@ public sealed class ProjectAbyssCharacterStudio : EditorWindow
 
         CharacterData data = bundle.CharacterData;
         CharacterCombatLoadout loadout = bundle.CombatLoadout;
-        ScriptableObject adapter = bundle.SkillSet;
-        SkillVisualProfile profile = bundle.VisualProfile;
 
         if (data == null)
         {
@@ -894,19 +868,8 @@ public sealed class ProjectAbyssCharacterStudio : EditorWindow
                 false);
         }
 
-        if (adapter == null)
-            adapter = CreateLegacyAdapter(kind, safeName);
-
-        if (profile == null)
-        {
-            profile = CreateSubAsset<SkillVisualProfile>(
-                $"{safeName}_VisualProfile",
-                false);
-        }
-
         data.CombatLoadout = loadout;
         EnsureDefaultSlots(data, prefab);
-        MigrateLegacy(adapter, loadout);
 
         EnsureOneSkill(loadout, ActionType.NormalAttack, safeName);
         EnsureOneSkill(loadout, ActionType.Duel, safeName);
@@ -921,12 +884,8 @@ public sealed class ProjectAbyssCharacterStudio : EditorWindow
             kind,
             bundle.DisplayName,
             data,
-            adapter,
-            loadout,
-            profile);
+            loadout);
 
-        SyncLegacyAdapter(true);
-        SyncVisualProfile();
         SynchronizeAll(true);
         DestroyNestedEditors();
     }
@@ -951,7 +910,6 @@ public sealed class ProjectAbyssCharacterStudio : EditorWindow
 
         CreateVisual(skill);
         NormalizeLoadout(loadout);
-        SyncLegacyAdapter(true);
         AssetDatabase.SaveAssets();
         Selection.activeObject = skill;
     }
@@ -1158,8 +1116,6 @@ public sealed class ProjectAbyssCharacterStudio : EditorWindow
     {
         SyncRuntimeReferences(false);
         NormalizeLoadout(bundle?.CombatLoadout);
-        SyncLegacyAdapter(true);
-        SyncVisualProfile();
 
         if (save)
         {
@@ -1189,148 +1145,6 @@ public sealed class ProjectAbyssCharacterStudio : EditorWindow
             AssetDatabase.SaveAssets();
     }
 
-    private void SyncLegacyAdapter(bool createIfMissing)
-    {
-        CharacterCombatLoadout loadout = bundle?.CombatLoadout;
-
-        if (loadout == null)
-            return;
-
-        ScriptableObject adapter = bundle.SkillSet;
-
-        if (adapter == null && createIfMissing)
-        {
-            adapter = CreateLegacyAdapter(bundle.Kind, SafeName(bundle.DisplayName));
-            bundle.ConfigureLegacySkillSet(adapter);
-        }
-
-        if (adapter == null)
-            return;
-
-        SetLegacy(adapter, "NormalAttack", First(loadout, ActionType.NormalAttack));
-        SetLegacy(adapter, "DuelSkill", First(loadout, ActionType.Duel));
-        SetLegacy(adapter, "PreparationSkill", First(loadout, ActionType.Preparation));
-        SetLegacy(adapter, "PrestigeSkill", First(loadout, ActionType.Prestige));
-        EditorUtility.SetDirty(adapter);
-    }
-
-    private ScriptableObject CreateLegacyAdapter(
-        CharacterAuthoringKind kind,
-        string safeName)
-    {
-        return kind switch
-        {
-            CharacterAuthoringKind.Olaf =>
-                CreateSubAsset<OlafSkillSet>(
-                    $"{safeName}_LegacySkillAdapter",
-                    false),
-            CharacterAuthoringKind.EliteEnemy =>
-                CreateSubAsset<EliteEnemySkillSet>(
-                    $"{safeName}_LegacySkillAdapter",
-                    false),
-            CharacterAuthoringKind.NormalEnemy =>
-                CreateSubAsset<NormalEnemySkillSet>(
-                    $"{safeName}_LegacySkillAdapter",
-                    false),
-            _ => null
-        };
-    }
-
-    private static void SetLegacy(
-        ScriptableObject adapter,
-        string propertyName,
-        SkillDefinition skill)
-    {
-        if (adapter == null)
-            return;
-
-        SerializedObject so = new(adapter);
-        so.Update();
-        SerializedProperty property = so.FindProperty(propertyName);
-
-        if (property != null &&
-            property.propertyType == SerializedPropertyType.ObjectReference)
-        {
-            property.objectReferenceValue = skill;
-            so.ApplyModifiedPropertiesWithoutUndo();
-        }
-    }
-
-    private static void MigrateLegacy(
-        ScriptableObject adapter,
-        CharacterCombatLoadout loadout)
-    {
-        if (adapter == null || loadout == null)
-            return;
-
-        SerializedObject so = new(adapter);
-        SerializedProperty iterator = so.GetIterator();
-        bool enterChildren = true;
-
-        while (iterator.Next(enterChildren))
-        {
-            enterChildren = true;
-
-            if (iterator.propertyType != SerializedPropertyType.ObjectReference ||
-                iterator.objectReferenceValue is not SkillDefinition skill)
-            {
-                continue;
-            }
-
-            AddToPool(loadout, skill);
-            List<SkillDefinition> equipped = EquippedList(loadout, skill.ActionType);
-            int limit = CharacterCombatLoadout.GetEquipLimit(skill.ActionType);
-
-            if (equipped != null &&
-                equipped.Count < limit &&
-                !equipped.Contains(skill))
-            {
-                equipped.Add(skill);
-            }
-        }
-
-        NormalizeLoadout(loadout);
-    }
-
-    private void SyncVisualProfile()
-    {
-        // Timeline-only 정책에서는 SkillDefinition의 opaque PresentationAsset이 연결점이다.
-        // 기존 SkillVisualProfile은 이전 데이터 확인용으로만 보존하며 새 스킬을 연결하지 않는다.
-    }
-
-    private static void AssignProfileVisual(
-        SkillVisualProfile profile,
-        SkillDefinition skill,
-        bool overwrite)
-    {
-        SkillVisualDefinition visual =
-            SkillPresentationAccess.Get(skill);
-
-        if (profile == null || visual == null)
-            return;
-
-        switch (skill.ActionType)
-        {
-            case ActionType.NormalAttack:
-                if (overwrite || profile.NormalAttackVisual == null)
-                    profile.NormalAttackVisual = visual;
-                break;
-            case ActionType.Duel:
-                if (overwrite || profile.DuelVisual == null)
-                    profile.DuelVisual = visual;
-                break;
-            case ActionType.Preparation:
-                if (overwrite || profile.PreparationVisual == null)
-                    profile.PreparationVisual = visual;
-                break;
-            case ActionType.Prestige:
-                if (overwrite || profile.PrestigeVisual == null)
-                    profile.PrestigeVisual = visual;
-                break;
-        }
-
-        EditorUtility.SetDirty(profile);
-    }
 
     private static void NormalizeLoadout(CharacterCombatLoadout loadout)
     {
@@ -1417,13 +1231,6 @@ public sealed class ProjectAbyssCharacterStudio : EditorWindow
             ActionType.Prestige => loadout.PrestigeSkills,
             _ => null
         };
-    }
-
-    private static SkillDefinition First(
-        CharacterCombatLoadout loadout,
-        ActionType type)
-    {
-        return EquippedList(loadout, type)?.FirstOrDefault(skill => skill != null);
     }
 
     private static void AddToPool(
@@ -1784,8 +1591,6 @@ public sealed class ProjectAbyssCharacterStudio : EditorWindow
 
         CharacterData data = prefab.Data;
         CharacterCombatLoadout loadout = data?.CombatLoadout;
-        ScriptableObject adapter =
-            ReadReference<ScriptableObject>(prefab, "skillSet");
         List<CharacterItem> items =
             ReadList<CharacterItem>(prefab, "equippedItems");
         List<CharacterAugment> passives =
@@ -1799,22 +1604,15 @@ public sealed class ProjectAbyssCharacterStudio : EditorWindow
             clone.CapturePrefab(prefab.gameObject);
             if (data != null) clone.CloneRoot(data);
             if (loadout != null) clone.CloneRoot(loadout);
-            if (adapter != null) clone.CloneRoot(adapter);
             foreach (CharacterItem item in items) clone.CloneRoot(item);
             foreach (CharacterAugment passive in passives) clone.CloneRoot(passive);
             clone.FinalizeClones();
 
             data = clone.GetClone(data) ?? data;
             loadout = clone.GetClone(loadout) ?? loadout;
-            adapter = clone.GetClone(adapter) ?? adapter;
             items = items.Select(item => clone.GetClone(item) ?? item).Distinct().ToList();
             passives = passives.Select(value => clone.GetClone(value) ?? value).Distinct().ToList();
         }
-
-        SkillVisualProfile profile = bundle.VisualProfile ??
-            CreateSubAsset<SkillVisualProfile>(
-                $"{SafeName(prefab.name)}_VisualProfile",
-                false);
 
         string displayName =
             !string.IsNullOrWhiteSpace(data?.CharacterName)
@@ -1825,17 +1623,11 @@ public sealed class ProjectAbyssCharacterStudio : EditorWindow
             DetectKind(prefab),
             displayName,
             data,
-            adapter,
-            loadout,
-            profile);
+            loadout);
 
         bundle.ConfigurePrefab(prefab);
         bundle.ConfigureLoadout(items, passives, true);
         ConfigurePresentationFromPrefab(prefab);
-
-        if (loadout != null)
-            MigrateLegacy(adapter, loadout);
-
         SynchronizeAll(true);
         DestroyNestedEditors();
     }
@@ -1847,7 +1639,7 @@ public sealed class ProjectAbyssCharacterStudio : EditorWindow
 
         bool confirmed = EditorUtility.DisplayDialog(
             "Bundle 패킹",
-            "현재 Prefab이 참조하는 CharacterData, CombatLoadout, Legacy Adapter, " +
+            "현재 Prefab이 참조하는 CharacterData, CombatLoadout, " +
             "Skill, Effect, Visual, Passive, Item, VFX SO 그래프를 Bundle 내부 " +
             "Sub-Asset 복사본으로 만듭니다.\n\n원본 SO는 삭제되지 않습니다.",
             "패킹",
@@ -1934,14 +1726,6 @@ public sealed class ProjectAbyssCharacterStudio : EditorWindow
             value.CharacterData.CombatLoadout != loadout)
         {
             result.Add(Error("CharacterData.CombatLoadout과 Bundle Loadout이 다릅니다."));
-        }
-
-        if (value.Kind != CharacterAuthoringKind.Custom &&
-            value.Kind != CharacterAuthoringKind.Yujin &&
-            value.Kind != CharacterAuthoringKind.Hifumi &&
-            value.SkillSet == null)
-        {
-            result.Add(Error("Legacy Runtime Adapter가 없습니다."));
         }
 
         if (value.CharacterPrefab != null)
@@ -2033,8 +1817,6 @@ public sealed class ProjectAbyssCharacterStudio : EditorWindow
         EditorUtility.SetDirty(bundle);
         if (bundle.CharacterData != null) EditorUtility.SetDirty(bundle.CharacterData);
         if (bundle.CombatLoadout != null) EditorUtility.SetDirty(bundle.CombatLoadout);
-        if (bundle.SkillSet != null) EditorUtility.SetDirty(bundle.SkillSet);
-        if (bundle.VisualProfile != null) EditorUtility.SetDirty(bundle.VisualProfile);
         if (bundle.PresentationProfile != null)
             EditorUtility.SetDirty(bundle.PresentationProfile);
 

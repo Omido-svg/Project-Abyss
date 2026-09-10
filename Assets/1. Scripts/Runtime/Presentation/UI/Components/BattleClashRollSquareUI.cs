@@ -158,7 +158,7 @@ public sealed class BattleClashRollSquareUI : MonoBehaviour
 
         while (elapsed < safeDuration)
         {
-            elapsed += Time.unscaledDeltaTime;
+            elapsed += BattlePlaybackSpeedController.BattleUnscaledDeltaTime;
 
             if (elapsed >= nextFrameAt)
             {
@@ -270,7 +270,7 @@ public sealed class BattleClashRollSquareUI : MonoBehaviour
 
         while (elapsed < safeDuration)
         {
-            elapsed += Time.unscaledDeltaTime;
+            elapsed += BattlePlaybackSpeedController.BattleUnscaledDeltaTime;
             float time = elapsed * safeFrequency;
 
             float x =
@@ -304,7 +304,7 @@ public sealed class BattleClashRollSquareUI : MonoBehaviour
 
         while (elapsed < safeDuration)
         {
-            elapsed += Time.unscaledDeltaTime;
+            elapsed += BattlePlaybackSpeedController.BattleUnscaledDeltaTime;
             float t = Mathf.Clamp01(elapsed / safeDuration);
             float wave = Mathf.Sin(t * Mathf.PI * 5f);
             float pulse = Mathf.Max(0f, wave);
@@ -341,7 +341,7 @@ public sealed class BattleClashRollSquareUI : MonoBehaviour
 
         while (elapsed < safeDuration)
         {
-            elapsed += Time.unscaledDeltaTime;
+            elapsed += BattlePlaybackSpeedController.BattleUnscaledDeltaTime;
             float t = Mathf.Clamp01(elapsed / safeDuration);
             float pulse = Mathf.Sin(t * Mathf.PI);
 
@@ -403,7 +403,7 @@ public sealed class BattleClashRollSquareUI : MonoBehaviour
 
         while (elapsed < safeDuration)
         {
-            elapsed += Time.unscaledDeltaTime;
+            elapsed += BattlePlaybackSpeedController.BattleUnscaledDeltaTime;
             float t = Mathf.Clamp01(elapsed / safeDuration);
             float eased = 1f - Mathf.Pow(1f - t, 3f);
 
@@ -496,7 +496,7 @@ public sealed class BattleClashRollSquareUI : MonoBehaviour
 
         while (true)
         {
-            elapsed += Time.unscaledDeltaTime;
+            elapsed += BattlePlaybackSpeedController.BattleUnscaledDeltaTime;
             float pulse =
                 0.5f +
                 Mathf.Sin(elapsed * 12f) * 0.5f;
@@ -535,7 +535,7 @@ public sealed class BattleClashRollSquareUI : MonoBehaviour
 
         while (elapsed < safeDuration)
         {
-            elapsed += Time.unscaledDeltaTime;
+            elapsed += BattlePlaybackSpeedController.BattleUnscaledDeltaTime;
             float t = Mathf.Clamp01(elapsed / safeDuration);
             visualCanvasGroup.alpha = Mathf.Lerp(startAlpha, 0.22f, t);
             yield return null;

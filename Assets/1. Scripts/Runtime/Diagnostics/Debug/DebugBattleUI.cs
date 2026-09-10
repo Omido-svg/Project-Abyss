@@ -756,7 +756,7 @@ public class DebugBattleUI : MonoBehaviour
         BodyPart part)
     {
         IReadOnlyList<Skill> skills =
-            part.AvailableSkills;
+            character?.GetSelectableSkills(part, 0);
 
         if (skills == null || skills.Count == 0)
         {

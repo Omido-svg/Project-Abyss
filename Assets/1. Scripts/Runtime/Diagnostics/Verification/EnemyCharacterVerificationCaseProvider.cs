@@ -151,7 +151,7 @@ public sealed class EnemyCharacterVerificationCaseProvider :
         }
 
         IReadOnlyList<Skill> skills =
-            enemy.CharacterSkills;
+            enemy.RuntimeSkills;
 
         List<string> failures =
             new List<string>();
@@ -160,7 +160,7 @@ public sealed class EnemyCharacterVerificationCaseProvider :
             skills.Count == 0)
         {
             failures.Add(
-                "CharacterSkills가 비어 있습니다.");
+                "RuntimeSkills가 비어 있습니다.");
         }
         else
         {
@@ -185,34 +185,15 @@ public sealed class EnemyCharacterVerificationCaseProvider :
                         $"{skill.SkillName}: RollReusePolicy={skill.RollReusePolicy}, Expected=RollEachExchange");
                 }
 
-                string id =
-                    skill.Definition?.SkillId;
-
-                bool registered =
-                    enemy.RuntimeSkills?
-                        .Any(
-                            candidate =>
-                                ReferenceEquals(candidate, skill) ||
-                                (!string.IsNullOrWhiteSpace(id) &&
-                                 string.Equals(
-                                     candidate?.Definition?.SkillId,
-                                     id,
-                                     StringComparison.Ordinal))) == true;
-
-                if (!registered)
-                {
-                    failures.Add(
-                        $"{skill.SkillName}: CharacterSkills -> RuntimeSkills 등록 누락");
-                }
             }
         }
 
         return failures.Count == 0
             ? context.Pass(
-                "모든 일반 적 RuntimeSkill = 3회 독립 굴림 / RuntimeSkills 등록",
+                "모든 일반 적 RuntimeSkill = 3회 독립 굴림",
                 $"Skills={skills?.Count ?? 0}")
             : context.Fail(
-                "모든 일반 적 RuntimeSkill = 3회 독립 굴림 / RuntimeSkills 등록",
+                "모든 일반 적 RuntimeSkill = 3회 독립 굴림",
                 $"FAIL {failures.Count}",
                 string.Join("\n", failures));
     }

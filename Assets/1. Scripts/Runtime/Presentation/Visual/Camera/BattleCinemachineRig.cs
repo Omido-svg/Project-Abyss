@@ -57,6 +57,12 @@ public class BattleCinemachineRig : MonoBehaviour
     private float lastAppliedOverviewOrthographicSize = float.NaN;
     private bool lastAppliedForceOrthographic;
 
+    // Planning 카메라는 플레이어가 움직일 수 있으므로,
+    // 컷신 구도 계산과 R Reset에 사용할 원래 Overview Pose를 별도로 보존한다.
+    private bool overviewHomePoseCaptured;
+    private Vector3 overviewHomeLocalPosition;
+    private Quaternion overviewHomeLocalRotation;
+
     public BattleCameraRigSlot ActiveSlot { get; private set; }
     public CinemachineCamera ActiveCamera { get; private set; }
 
@@ -67,6 +73,21 @@ public class BattleCinemachineRig : MonoBehaviour
     public bool UsesOrthographicOverview =>
         allowLegacyOrthographicOverview &&
         forceOrthographic;
+
+    public Vector3 OverviewReferenceForward
+    {
+        get
+        {
+            CaptureOverviewHomePoseIfNeeded();
+
+            if (overviewHomePoseCaptured)
+                return overviewHomeLocalRotation * Vector3.forward;
+
+            return OverviewCamera != null
+                ? OverviewCamera.transform.forward
+                : Vector3.forward;
+        }
+    }
 
     public float OverviewPerspectiveFov
     {
@@ -117,6 +138,7 @@ public class BattleCinemachineRig : MonoBehaviour
                 70f);
 
         ResolveReferences();
+        CaptureOverviewHomePoseIfNeeded();
         NormalizePriorities();
         ApplyProjectionPolicy();
         CaptureBaseBlendIfNeeded();
@@ -298,6 +320,32 @@ public class BattleCinemachineRig : MonoBehaviour
     {
         RestoreBaseBlend();
         SetLive(BattleCameraRigSlot.Overview);
+    }
+
+    public void CaptureOverviewHomePoseIfNeeded()
+    {
+        if (overviewHomePoseCaptured || OverviewCamera == null)
+            return;
+
+        Transform overviewTransform = OverviewCamera.transform;
+        overviewHomeLocalPosition = overviewTransform.localPosition;
+        overviewHomeLocalRotation = overviewTransform.localRotation;
+        overviewHomePoseCaptured = true;
+    }
+
+    public bool ResetOverviewPoseToHome()
+    {
+        ResolveReferences();
+        CaptureOverviewHomePoseIfNeeded();
+
+        if (!overviewHomePoseCaptured || OverviewCamera == null)
+            return false;
+
+        OverviewCamera.transform.SetLocalPositionAndRotation(
+            overviewHomeLocalPosition,
+            overviewHomeLocalRotation);
+
+        return true;
     }
 
     private bool SetLive(

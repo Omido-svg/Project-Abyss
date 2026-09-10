@@ -177,7 +177,7 @@ public static class ProjectAbyssTestEncounterSetup
                 "- 보스 Prefab\n" +
                 "- 일반/혼합/보스 전투 Switcher\n" +
                 $"- Timeline 연출 보정 스킬 {repairedVisualCount}개\n\n" +
-                "Play 후 좌측 상단 패널에서 플레이어와 전투 종류를 바꿀 수 있습니다.",
+                "Play 후 [90] DEBUG & ANALYSIS/Battle Analysis Runtime의 Battle Live Debug Inspector에서 플레이어와 전투 종류를 바꿀 수 있습니다.",
                 "확인");
         }
         catch (Exception exception)
@@ -669,15 +669,6 @@ public static class ProjectAbyssTestEncounterSetup
             new List<SkillDefinition>(loadout.DuelSkills);
         EditorUtility.SetDirty(loadout);
 
-        NormalEnemySkillSet skillSet =
-            LoadOrCreate<NormalEnemySkillSet>(
-                DataRoot + "/NormalEnemy_Test_SkillSet.asset");
-
-        skillSet.NormalAttack = normalAttack;
-        skillSet.DuelSkill = duel;
-        skillSet.PrestigeSkill = null;
-        EditorUtility.SetDirty(skillSet);
-
         CharacterData data =
             LoadOrCreate<CharacterData>(
                 DataRoot + "/NormalEnemy_Test_Data.asset");
@@ -708,9 +699,7 @@ public static class ProjectAbyssTestEncounterSetup
             CharacterAuthoringKind.NormalEnemy,
             "훈련용 일반 적",
             data,
-            skillSet,
-            loadout,
-            null);
+            loadout);
 
         bundle.ConfigureNormalEnemy(60, true);
         bundle.ConfigurePresentationProfile(animations.Profile);
@@ -781,25 +770,6 @@ public static class ProjectAbyssTestEncounterSetup
         CharacterAuthoringBundle sourceBundle =
             sourceLink?.Bundle;
 
-        EliteEnemySkillSet sourceSkillSet =
-            sourceBundle?.SkillSet as EliteEnemySkillSet;
-
-        if (sourceSkillSet == null)
-        {
-            SerializedObject eliteSerialized =
-                new SerializedObject(sceneElite);
-
-            sourceSkillSet =
-                eliteSerialized.FindProperty("skillSet")
-                    ?.objectReferenceValue as EliteEnemySkillSet;
-        }
-
-        if (sourceSkillSet == null)
-        {
-            throw new InvalidOperationException(
-                "현재 정예 적에서 EliteEnemySkillSet을 찾지 못해 보스 Prefab을 만들 수 없습니다.");
-        }
-
         CharacterCombatLoadout sourceLoadout =
             sourceBundle?.CombatLoadout ??
             sceneElite.Data?.CombatLoadout;
@@ -862,9 +832,7 @@ public static class ProjectAbyssTestEncounterSetup
             CharacterAuthoringKind.EliteEnemy,
             "훈련용 보스",
             bossData,
-            sourceSkillSet,
-            sourceLoadout,
-            sourceBundle?.VisualProfile);
+            sourceLoadout);
 
         bossBundle.ConfigureEliteEnemy(
             true,

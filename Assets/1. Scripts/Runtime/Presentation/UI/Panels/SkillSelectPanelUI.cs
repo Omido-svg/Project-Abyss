@@ -106,6 +106,9 @@ public sealed class SkillSelectPanelUI : MonoBehaviour
 
     private void Update()
     {
+        if (BattlePlanningCameraController.IsCameraMovementActive)
+            return;
+
         if (IsVisible && Input.GetKeyDown(KeyCode.Escape))
             Cancel();
     }

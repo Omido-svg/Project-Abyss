@@ -114,9 +114,15 @@ public sealed class BattleVfxInstance : MonoBehaviour
     private IEnumerator ReleaseRoutine(float delay, bool useUnscaledTime)
     {
         if (useUnscaledTime)
-            yield return new WaitForSecondsRealtime(delay);
+        {
+            yield return
+                BattlePlaybackSpeedController
+                    .WaitForBattleUnscaledSeconds(delay);
+        }
         else
+        {
             yield return new WaitForSeconds(delay);
+        }
 
         releaseRoutine = null;
         Release();

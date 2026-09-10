@@ -18,9 +18,7 @@ MonoBehaviour:
     CombatLoadout\uACFC Animator\uB97C \uBB36\uC2B5\uB2C8\uB2E4."
   characterData: {fileID: 11400000, guid: bc59ef365359be644bc16e661b1e7240, type: 2}
   combatLoadout: {fileID: 11400000, guid: 2dbf693936d873742afef74044506075, type: 2}
-  skillSet: {fileID: 11400000, guid: de1abc5d164c1e241ba422cd9e9dc661, type: 2}
   characterPrefab: {fileID: 3805066174418032028, guid: 313514a8600fa0745baa91b72c409ffc, type: 3}
-  visualProfile: {fileID: 0}
   presentationProfile: {fileID: 11400000, guid: caa7ae9fa3b84b94ba1c8a71193b0756, type: 2}
   animatorController: {fileID: 9100000, guid: ef38ca94e98bb5c4f8c4f636c7318a67, type: 2}
   avatar: {fileID: 0}
@@ -41,7 +39,7 @@ MonoBehaviour:
     ExpectedMomentumDriftPerTurn: 15
   includedAssets:
   - {fileID: 11400000, guid: bc59ef365359be644bc16e661b1e7240, type: 2}
-  - {fileID: 11400000, guid: de1abc5d164c1e241ba422cd9e9dc661, type: 2}
+  - {fileID: 0}
   - {fileID: 11400000, guid: 2dbf693936d873742afef74044506075, type: 2}
   - {fileID: 11400000, guid: 6a7df3e678fffd4439fd494c51209239, type: 2}
   - {fileID: 11400000, guid: 4b80d9ad43d0de14bb655a20d16b1cb4, type: 2}

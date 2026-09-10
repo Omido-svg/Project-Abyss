@@ -191,8 +191,19 @@ public sealed class YujinMechanic : CombatMechanic, ICharacterUniqueGaugeProvide
         YujinWeaponType weapon,
         int paidEnergyCost = WeaponSwitchEnergyCost)
     {
-        if (!CanSwitchWeapon(weapon))
+        // 이 메서드는 ActionResolver가 FORESIGHT를 실제 해결하는 동안 호출된다.
+        // 따라서 UI/계획 입력용 잠금(IsWeaponSwitchLocked)을 검사하면 안 된다.
+        // 기존 구현은 CanSwitchWeapon()을 재사용해 IsResolving=true인 순간
+        // 모든 환형 실행을 조용히 거절하고 있었다.
+        if (!CanQueueResolvedWeaponSwitch(weapon))
+        {
+            Debug.LogWarning(
+                $"[유진][환형] 예약 실패 / " +
+                $"Current={currentWeapon}, Requested={weapon}, " +
+                $"Pending={hasPendingWeapon}, UsedThisTurn={weaponSwitchUsedThisTurn}, " +
+                $"Resolving={IsWeaponSwitchLocked}");
             return false;
+        }
 
         pendingWeapon = weapon;
         hasPendingWeapon = true;
@@ -205,6 +216,19 @@ public sealed class YujinMechanic : CombatMechanic, ICharacterUniqueGaugeProvide
             $"적용=다음 턴 / 지불한 빛={pendingWeaponEnergyPaid}");
 
         return true;
+    }
+
+    /// <summary>
+    /// 이미 비용이 지불된 환형 도사림을 전투 해결 중 예약할 때 사용하는 검증.
+    /// 입력 잠금은 계획/UI에만 적용하고, 실제 해결 경로에서는 현재 상태 불변식만 검사한다.
+    /// </summary>
+    private bool CanQueueResolvedWeaponSwitch(
+        YujinWeaponType weapon)
+    {
+        return owner != null &&
+               !weaponSwitchUsedThisTurn &&
+               !hasPendingWeapon &&
+               weapon != currentWeapon;
     }
 
     /// <summary>
@@ -661,10 +685,15 @@ public sealed class YujinMechanic : CombatMechanic, ICharacterUniqueGaugeProvide
     {
         if (hasPendingWeapon)
         {
+            YujinWeaponType previous = currentWeapon;
             YujinWeaponType next = pendingWeapon;
             hasPendingWeapon = false;
             pendingWeaponEnergyPaid = 0;
             SetWeapon(next);
+
+            Debug.Log(
+                $"[유진][환형] {previous} -> {currentWeapon} 전환 완료 / " +
+                $"Turn={turn}");
         }
 
         weaponSwitchUsedThisTurn = false;

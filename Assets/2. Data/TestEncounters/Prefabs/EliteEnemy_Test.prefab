@@ -1054,7 +1054,6 @@ MonoBehaviour:
   data: {fileID: 11400000, guid: bc59ef365359be644bc16e661b1e7240, type: 2}
   equippedItems: []
   equippedAugments: []
-  skillSet: {fileID: 11400000, guid: de1abc5d164c1e241ba422cd9e9dc661, type: 2}
   usePostureRotation: 1
   postureSettings:
     MinimumTurns: 2

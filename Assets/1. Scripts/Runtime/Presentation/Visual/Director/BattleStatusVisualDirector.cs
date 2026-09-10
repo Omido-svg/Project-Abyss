@@ -273,7 +273,9 @@ public class BattleStatusVisualDirector : MonoBehaviour
                 }
                 else if (useUnscaledTime)
                 {
-                    yield return new WaitForSecondsRealtime(delayBetweenRequests);
+                    yield return
+                        BattlePlaybackSpeedController
+                            .WaitForBattleUnscaledSeconds(delayBetweenRequests);
                 }
                 else
                 {

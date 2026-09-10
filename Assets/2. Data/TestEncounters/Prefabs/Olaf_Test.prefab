@@ -254,7 +254,6 @@ MonoBehaviour:
   data: {fileID: 11400000, guid: d1cf9da0e7b9f1645adef9d684f92c62, type: 2}
   equippedItems: []
   equippedAugments: []
-  skillSet: {fileID: 11400000, guid: 3d75845fdbab70e4790338bfc8e669ab, type: 2}
   partHitPoints: 180
 --- !u!114 &7226958623971327456
 MonoBehaviour:

@@ -21,11 +21,15 @@ public sealed class BattleActionOrderRailUI : MonoBehaviour
     [SerializeField] private BattleUIManager uiManager;
     [SerializeField] private SkillSelectPanelUI skillSelectPanel;
 
-    [Header("Layout")]
+    [Header("Editor Authoring Seed (Play Mode does not overwrite RectTransform)")]
     [SerializeField, Min(320f)] private float width = 420f;
     [SerializeField, Min(420f)] private float height = 680f;
-    [SerializeField] private Vector2 topLeftOffset = new(18f, -88f);
+    [SerializeField] private Vector2 topLeftOffset = new(18f, -144f);
     [SerializeField, Range(4, 20)] private int maximumRows = 10;
+
+    [Header("Maximize / Minimize")]
+    [SerializeField] private bool startCollapsed;
+    [SerializeField, Min(44f)] private float collapsedHeight = 58f;
 
     [Header("Visual")]
     [SerializeField] private Color panelColor =
@@ -68,6 +72,8 @@ public sealed class BattleActionOrderRailUI : MonoBehaviour
     private RectTransform panelRoot;
     private RectTransform contentRoot;
     private TMP_Text headerText;
+    private Button sizeToggleButton;
+    private TMP_Text sizeToggleLabel;
     private readonly List<GameObject> generatedRows = new();
     private readonly Dictionary<long, GameObject> rowsByActionId = new();
     private readonly Dictionary<long, GameObject> reactiveRowsByEventId = new();
@@ -75,7 +81,8 @@ public sealed class BattleActionOrderRailUI : MonoBehaviour
     private readonly HashSet<long> completedResolutionActions = new();
     private readonly HashSet<long> domainCompletedResolutionActions = new();
     private readonly ActionPhaseSorter sorter = new();
-    private readonly HashSet<ActionSlot> clashSlots = new();
+    private readonly Dictionary<ActionSlot, ActionSlot> clashPartnerBySlot = new();
+    private readonly HashSet<GameObject> completedResolutionRows = new();
 
     private BattleEvent boundBattleEvent;
     private BattleAnimationDirector animationDirector;
@@ -84,6 +91,12 @@ public sealed class BattleActionOrderRailUI : MonoBehaviour
     private bool wasResolving;
     private int resolutionRemainingActionCount;
     private int lastSignature = int.MinValue;
+    private bool missingSceneViewLogged;
+    private bool collapseStateInitialized;
+    private bool isCollapsed;
+    private float expandedSizeDeltaY;
+
+    public bool IsCollapsed => isCollapsed;
 
     public void Configure(
         BattleManager manager,
@@ -94,6 +107,7 @@ public sealed class BattleActionOrderRailUI : MonoBehaviour
         uiManager = managerUi;
         ResolveReferences();
         EnsureView();
+        InitializeCollapseStateIfNeeded();
         EnsureBattleEventBinding();
         EnsureAnimationDirectorBinding();
         Rebuild(force: true);
@@ -103,6 +117,7 @@ public sealed class BattleActionOrderRailUI : MonoBehaviour
     {
         ResolveReferences();
         EnsureView();
+        InitializeCollapseStateIfNeeded();
         EnsureBattleEventBinding();
         EnsureAnimationDirectorBinding();
     }
@@ -115,8 +130,11 @@ public sealed class BattleActionOrderRailUI : MonoBehaviour
 
         UnbindBattleEvent();
         UnbindAnimationDirector();
+        UnbindSizeToggle();
         ClearRows();
-        DestroyOverlayView();
+
+        // Scene-authored Overlay는 이 컴포넌트가 소유/생성한 런타임 임시 객체가 아니다.
+        // Scene unload가 수명을 관리하므로 여기서 Destroy하지 않는다.
     }
 
     /// <summary>
@@ -156,6 +174,7 @@ public sealed class BattleActionOrderRailUI : MonoBehaviour
     {
         ResolveReferences();
         EnsureView();
+        InitializeCollapseStateIfNeeded();
 
         if (overlayCanvas == null ||
             canvasGroup == null)
@@ -181,6 +200,8 @@ public sealed class BattleActionOrderRailUI : MonoBehaviour
             hidden
                 ? 0f
                 : 1f;
+        canvasGroup.interactable = !hidden;
+        canvasGroup.blocksRaycasts = !hidden;
 
         if (hidden)
             return;
@@ -206,6 +227,7 @@ public sealed class BattleActionOrderRailUI : MonoBehaviour
             wasResolving = false;
             completedResolutionActions.Clear();
             domainCompletedResolutionActions.Clear();
+            completedResolutionRows.Clear();
             resolutionRemainingActionCount = 0;
             Rebuild(force: true);
             return;
@@ -314,6 +336,7 @@ public sealed class BattleActionOrderRailUI : MonoBehaviour
         wasResolving = true;
         completedResolutionActions.Clear();
         domainCompletedResolutionActions.Clear();
+        completedResolutionRows.Clear();
 
         // BattleManager는 TurnManager.IsResolving=true가 되기 직전에
         // Resolution UI를 먼저 연다. 그 프레임에도 정확한 남은 행동 수를 보존한다.
@@ -334,12 +357,32 @@ public sealed class BattleActionOrderRailUI : MonoBehaviour
             return 0;
 
         int count = 0;
+        int combatFallbackCount = 0;
 
         foreach (ActionSlot slot in slots)
         {
-            if (IsVisibleActionPhase(slot?.Phase))
+            if (slot == null ||
+                !IsVisibleActionPhase(slot.Phase))
+            {
+                continue;
+            }
+
+            if (slot.Phase == ActionPhase.COMBAT)
+                combatFallbackCount++;
+            else
                 count++;
         }
+
+        IReadOnlyList<ClashPair> combatPairs =
+            battleManager?.ClashBuilder
+                ?.BuildClashPreview(slots);
+
+        // COMBAT는 실제 실행 큐와 같은 ClashPair 단위로 센다.
+        // 합은 두 ActionSlot이더라도 전투 순서상 하나의 실행 단위다.
+        count +=
+            combatPairs != null
+                ? combatPairs.Count
+                : combatFallbackCount;
 
         return count;
     }
@@ -492,8 +535,8 @@ public sealed class BattleActionOrderRailUI : MonoBehaviour
             completed,
             request.OpponentAction);
 
-        // 합처럼 두 행동이 같은 VisualRequest에서 함께 끝나는 경우에도
-        // 현재 레일의 위쪽 행부터 짧은 간격으로 하나씩 사라지게 한다.
+        // 합의 두 ActionId는 같은 UI Row를 공유한다.
+        // 같은 VisualRequest에서 두 행동이 함께 완료되어도 Row는 한 번만 제거한다.
         completed.Sort(
             (left, right) =>
                 GetRowSiblingIndex(left)
@@ -517,10 +560,24 @@ public sealed class BattleActionOrderRailUI : MonoBehaviour
         if (destination == null ||
             action == null ||
             action.ActionId <= 0 ||
-            !rowsByActionId.ContainsKey(action.ActionId) ||
-            destination.Contains(action.ActionId))
+            !rowsByActionId.TryGetValue(
+                action.ActionId,
+                out GameObject row) ||
+            row == null)
         {
             return;
+        }
+
+        // 이미 같은 실행 단위(Row)가 들어 있다면 합 상대 ActionId는 중복 추가하지 않는다.
+        foreach (long existingActionId in destination)
+        {
+            if (rowsByActionId.TryGetValue(
+                    existingActionId,
+                    out GameObject existingRow) &&
+                existingRow == row)
+            {
+                return;
+            }
         }
 
         destination.Add(
@@ -575,13 +632,38 @@ public sealed class BattleActionOrderRailUI : MonoBehaviour
         domainCompletedResolutionActions.Remove(
             actionId);
 
-        // 행동순서 레일은 실제 실행 큐의 PRETURN/FORESIGHT/COMBAT 행을 모두 표시한다.
-        if (!rowsByActionId.ContainsKey(actionId) ||
-            !completedResolutionActions.Add(actionId))
+        if (!rowsByActionId.TryGetValue(
+                actionId,
+                out GameObject row) ||
+            row == null ||
+            !completedResolutionRows.Add(row))
         {
             return;
         }
 
+        // 합 Row는 두 ActionId가 같은 GameObject를 가리킨다.
+        // 한쪽 행동이 완료되면 같은 실행 단위에 속한 모든 ActionId를 함께 완료 처리한다.
+        List<long> groupedActionIds =
+            new List<long>(2);
+
+        foreach (KeyValuePair<long, GameObject> pair
+                 in rowsByActionId)
+        {
+            if (pair.Value == row)
+                groupedActionIds.Add(pair.Key);
+        }
+
+        foreach (long groupedActionId in groupedActionIds)
+        {
+            domainCompletedResolutionActions.Remove(
+                groupedActionId);
+            completedResolutionActions.Add(
+                groupedActionId);
+            rowsByActionId.Remove(
+                groupedActionId);
+        }
+
+        // Header count는 ActionSlot 수가 아니라 실제 실행 단위(Row) 수다.
         resolutionRemainingActionCount =
             Mathf.Max(
                 0,
@@ -591,24 +673,16 @@ public sealed class BattleActionOrderRailUI : MonoBehaviour
             resolutionRemainingActionCount);
 
         AnimateCompletedRow(
-            actionId,
+            row,
             delay);
     }
 
     private void AnimateCompletedRow(
-        long actionId,
+        GameObject row,
         float delay)
     {
-        if (!rowsByActionId.TryGetValue(
-                actionId,
-                out GameObject row) ||
-            row == null)
-        {
+        if (row == null)
             return;
-        }
-
-        rowsByActionId.Remove(
-            actionId);
 
         CanvasGroup group =
             row.GetComponent<CanvasGroup>();
@@ -718,6 +792,26 @@ public sealed class BattleActionOrderRailUI : MonoBehaviour
             return;
         }
 
+        if (TryResolveSceneView())
+        {
+            missingSceneViewLogged = false;
+            return;
+        }
+
+        // Play Mode에서는 고정 HUD Canvas/Panel을 생성하거나 배치하지 않는다.
+        if (Application.isPlaying)
+        {
+            if (!missingSceneViewLogged)
+            {
+                missingSceneViewLogged = true;
+                Debug.LogWarning(
+                    "[BattleActionOrderRailUI] Scene-authored 행동 순서 HUD가 없습니다. " +
+                    "Editor 변환 도구로 Scene에 생성한 뒤 RectTransform을 직접 배치하세요.",
+                    this);
+            }
+            return;
+        }
+
         Transform existing =
             transform.Find(
                 "PlanningActionOrderOverlay");
@@ -745,15 +839,8 @@ public sealed class BattleActionOrderRailUI : MonoBehaviour
                 false);
         }
 
-        // 중첩 Canvas 상태에서는 부모 Scale/상위 Canvas 스케일을 상속해서
-        // 화면에서 행동순서가 과도하게 작아질 수 있다.
-        // 항상 독립 Root ScreenSpaceOverlay Canvas로 승격한다.
-        if (canvasGo.transform.parent != null)
-        {
-            canvasGo.transform.SetParent(
-                null,
-                false);
-        }
+        // Scene authoring 단계에서 host 아래 독립 Overlay Canvas로 유지한다.
+        // Play Mode에서는 hierarchy/RectTransform을 변경하지 않는다.
 
         overlayCanvas =
             canvasGo.GetComponent<Canvas>();
@@ -783,14 +870,14 @@ public sealed class BattleActionOrderRailUI : MonoBehaviour
         GraphicRaycaster raycaster =
             canvasGo.GetComponent<GraphicRaycaster>();
 
-        // 이 레일은 정보 전용이다.
-        raycaster.enabled = false;
+        // 레일 본체는 정보 전용이지만 최대화/최소화 버튼만 입력을 받아야 한다.
+        raycaster.enabled = true;
 
         canvasGroup =
             canvasGo.GetComponent<CanvasGroup>();
 
-        canvasGroup.interactable = false;
-        canvasGroup.blocksRaycasts = false;
+        canvasGroup.interactable = true;
+        canvasGroup.blocksRaycasts = true;
 
         RectTransform canvasRect =
             canvasGo.GetComponent<RectTransform>();
@@ -945,6 +1032,289 @@ public sealed class BattleActionOrderRailUI : MonoBehaviour
         layout.childForceExpandHeight = false;
     }
 
+    private bool TryResolveSceneView()
+    {
+        Transform existing =
+            transform.Find(
+                "PlanningActionOrderOverlay");
+
+        if (existing == null)
+            return false;
+
+        Canvas canvas = existing.GetComponent<Canvas>();
+        CanvasGroup group = existing.GetComponent<CanvasGroup>();
+        RectTransform panel =
+            existing.Find("Panel") as RectTransform;
+        RectTransform content =
+            panel != null
+                ? panel.Find("Content") as RectTransform
+                : null;
+        TMP_Text header =
+            panel != null
+                ? panel.Find("Header")?.GetComponent<TMP_Text>()
+                : null;
+        Transform toggleTransform =
+            panel != null
+                ? panel.Find("SizeToggle")
+                : null;
+        Button toggleButton =
+            toggleTransform != null
+                ? toggleTransform.GetComponent<Button>()
+                : null;
+        TMP_Text toggleLabel =
+            toggleTransform != null
+                ? toggleTransform.Find("Label")?.GetComponent<TMP_Text>()
+                : null;
+
+        if (canvas == null ||
+            group == null ||
+            panel == null ||
+            content == null ||
+            header == null)
+        {
+            return false;
+        }
+
+        overlayCanvas = canvas;
+        canvasGroup = group;
+        panelRoot = panel;
+        contentRoot = content;
+        headerText = header;
+        sizeToggleButton = toggleButton;
+        sizeToggleLabel = toggleLabel;
+        BindSizeToggle();
+        return true;
+    }
+
+#if UNITY_EDITOR
+    public void EditorAuthorSceneView()
+    {
+        EnsureView();
+        EnsureSizeToggleEditor();
+
+        // 기존 Scene-authored HUD를 다시 resolve해 새 버튼 참조를 캐시한다.
+        overlayCanvas = null;
+        canvasGroup = null;
+        panelRoot = null;
+        contentRoot = null;
+        headerText = null;
+        sizeToggleButton = null;
+        sizeToggleLabel = null;
+        TryResolveSceneView();
+    }
+
+    private void EnsureSizeToggleEditor()
+    {
+        if (panelRoot == null)
+            return;
+
+        Transform existing =
+            panelRoot.Find("SizeToggle");
+
+        GameObject buttonObject;
+
+        if (existing != null)
+        {
+            buttonObject = existing.gameObject;
+        }
+        else
+        {
+            buttonObject =
+                new GameObject(
+                    "SizeToggle",
+                    typeof(RectTransform),
+                    typeof(CanvasRenderer),
+                    typeof(Image),
+                    typeof(Button));
+            buttonObject.transform.SetParent(
+                panelRoot,
+                false);
+        }
+
+        RectTransform rect =
+            buttonObject.GetComponent<RectTransform>();
+
+        // 아래 값은 Editor에서 최초 생성할 때만 쓰는 seed다.
+        // Play Mode에서는 위치/Anchor를 절대 다시 덮어쓰지 않는다.
+        if (existing == null)
+        {
+            rect.anchorMin = new Vector2(1f, 1f);
+            rect.anchorMax = new Vector2(1f, 1f);
+            rect.pivot = new Vector2(1f, 1f);
+            rect.anchoredPosition = new Vector2(-8f, -8f);
+            rect.sizeDelta = new Vector2(78f, 34f);
+        }
+
+        Image image =
+            buttonObject.GetComponent<Image>();
+        image.color = new Color(0.12f, 0.14f, 0.18f, 0.96f);
+        image.raycastTarget = true;
+
+        Button button =
+            buttonObject.GetComponent<Button>();
+        button.targetGraphic = image;
+
+        Transform labelExisting =
+            buttonObject.transform.Find("Label");
+        TMP_Text label;
+
+        if (labelExisting != null)
+        {
+            label =
+                labelExisting.GetComponent<TMP_Text>();
+        }
+        else
+        {
+            GameObject labelObject =
+                new GameObject(
+                    "Label",
+                    typeof(RectTransform),
+                    typeof(TextMeshProUGUI));
+            labelObject.transform.SetParent(
+                buttonObject.transform,
+                false);
+
+            RectTransform labelRect =
+                labelObject.GetComponent<RectTransform>();
+            labelRect.anchorMin = Vector2.zero;
+            labelRect.anchorMax = Vector2.one;
+            labelRect.offsetMin = Vector2.zero;
+            labelRect.offsetMax = Vector2.zero;
+
+            label =
+                labelObject.GetComponent<TextMeshProUGUI>();
+        }
+
+        if (label != null)
+        {
+            label.text = "최소화";
+            label.fontSize = 18f;
+            label.enableAutoSizing = true;
+            label.fontSizeMin = 11f;
+            label.fontSizeMax = 18f;
+            label.alignment = TextAlignmentOptions.Center;
+            label.color = Color.white;
+            label.raycastTarget = false;
+        }
+
+        GraphicRaycaster raycaster =
+            overlayCanvas != null
+                ? overlayCanvas.GetComponent<GraphicRaycaster>()
+                : null;
+        if (raycaster != null)
+            raycaster.enabled = true;
+
+        if (canvasGroup != null)
+        {
+            canvasGroup.interactable = true;
+            canvasGroup.blocksRaycasts = true;
+        }
+    }
+#endif
+
+    private void InitializeCollapseStateIfNeeded()
+    {
+        if (collapseStateInitialized ||
+            panelRoot == null ||
+            contentRoot == null)
+        {
+            return;
+        }
+
+        collapseStateInitialized = true;
+        expandedSizeDeltaY = panelRoot.sizeDelta.y;
+
+        // Authoring 값이 우연히 접힌 높이보다 작더라도 복원 가능한 값을 확보한다.
+        if (Mathf.Abs(expandedSizeDeltaY) < collapsedHeight + 1f)
+            expandedSizeDeltaY = Mathf.Max(height, collapsedHeight + 120f);
+
+        BindSizeToggle();
+        SetCollapsed(startCollapsed, rebuildWhenExpanded: false);
+    }
+
+    private void BindSizeToggle()
+    {
+        if (sizeToggleButton == null)
+            return;
+
+        sizeToggleButton.onClick.RemoveListener(ToggleCollapsed);
+        sizeToggleButton.onClick.AddListener(ToggleCollapsed);
+    }
+
+    private void UnbindSizeToggle()
+    {
+        if (sizeToggleButton != null)
+            sizeToggleButton.onClick.RemoveListener(ToggleCollapsed);
+    }
+
+    private void ToggleCollapsed()
+    {
+        SetCollapsed(!isCollapsed, rebuildWhenExpanded: true);
+    }
+
+    public void SetCollapsed(bool collapsed)
+    {
+        SetCollapsed(collapsed, rebuildWhenExpanded: true);
+    }
+
+    private void SetCollapsed(
+        bool collapsed,
+        bool rebuildWhenExpanded)
+    {
+        if (panelRoot == null ||
+            contentRoot == null)
+        {
+            return;
+        }
+
+        if (!collapseStateInitialized)
+        {
+            collapseStateInitialized = true;
+            expandedSizeDeltaY = panelRoot.sizeDelta.y;
+        }
+
+        if (!isCollapsed &&
+            !collapsed &&
+            Mathf.Abs(panelRoot.sizeDelta.y) > collapsedHeight + 1f)
+        {
+            expandedSizeDeltaY = panelRoot.sizeDelta.y;
+        }
+
+        isCollapsed = collapsed;
+        contentRoot.gameObject.SetActive(!collapsed);
+
+        Vector2 size = panelRoot.sizeDelta;
+        size.y = collapsed
+            ? Mathf.Max(44f, collapsedHeight)
+            : expandedSizeDeltaY;
+        panelRoot.sizeDelta = size;
+
+        RefreshSizeToggleLabel();
+
+        if (!collapsed && rebuildWhenExpanded)
+        {
+            lastSignature = int.MinValue;
+            Rebuild(force: true);
+        }
+    }
+
+    private void RefreshSizeToggleLabel()
+    {
+        if (sizeToggleLabel != null)
+        {
+            sizeToggleLabel.text =
+                isCollapsed
+                    ? "최대화"
+                    : "최소화";
+        }
+
+        if (sizeToggleButton != null)
+        {
+            sizeToggleButton.gameObject.name =
+                "SizeToggle";
+        }
+    }
+
     private void Rebuild(
         bool force)
     {
@@ -989,32 +1359,68 @@ public sealed class BattleActionOrderRailUI : MonoBehaviour
         orderedActions.Sort(
             sorter.CompareForExecution);
 
+        ClearRows();
+
         BuildClashSet(
             slots);
 
-        ClearRows();
+        HashSet<ActionSlot> consumed =
+            new HashSet<ActionSlot>();
+
+        int totalExecutionUnits = 0;
+        int shownExecutionUnits = 0;
+
+        foreach (ActionSlot slot in orderedActions)
+        {
+            if (slot == null ||
+                consumed.Contains(slot))
+            {
+                continue;
+            }
+
+            ActionSlot partner = null;
+
+            bool isClashUnit =
+                slot.Phase == ActionPhase.COMBAT &&
+                clashPartnerBySlot.TryGetValue(
+                    slot,
+                    out partner) &&
+                partner != null &&
+                !consumed.Contains(partner);
+
+            consumed.Add(slot);
+
+            if (isClashUnit)
+                consumed.Add(partner);
+
+            totalExecutionUnits++;
+
+            if (shownExecutionUnits >= maximumRows)
+                continue;
+
+            if (isClashUnit)
+            {
+                CreateClashRow(
+                    slot,
+                    partner);
+            }
+            else
+            {
+                CreateRow(
+                    slot);
+            }
+
+            shownExecutionUnits++;
+        }
 
         if (battleManager?.TurnManager?.IsResolving == true)
         {
             resolutionRemainingActionCount =
-                orderedActions.Count;
-        }
-
-        int shown =
-            Mathf.Min(
-                maximumRows,
-                orderedActions.Count);
-
-        for (int index = 0;
-             index < shown;
-             index++)
-        {
-            CreateRow(
-                orderedActions[index]);
+                totalExecutionUnits;
         }
 
         int hidden =
-            orderedActions.Count - shown;
+            totalExecutionUnits - shownExecutionUnits;
 
         if (hidden > 0)
         {
@@ -1025,7 +1431,7 @@ public sealed class BattleActionOrderRailUI : MonoBehaviour
         UpdateHeaderCount(
             battleManager?.TurnManager?.IsResolving == true
                 ? resolutionRemainingActionCount
-                : orderedActions.Count);
+                : totalExecutionUnits);
     }
 
     private int BuildSignature(
@@ -1123,7 +1529,7 @@ public sealed class BattleActionOrderRailUI : MonoBehaviour
     private void BuildClashSet(
         IReadOnlyList<ActionSlot> slots)
     {
-        clashSlots.Clear();
+        clashPartnerBySlot.Clear();
 
         IReadOnlyList<ClashPair> pairs =
             battleManager?.ClashBuilder
@@ -1143,11 +1549,11 @@ public sealed class BattleActionOrderRailUI : MonoBehaviour
                 continue;
             }
 
-            clashSlots.Add(
-                pair.First);
+            clashPartnerBySlot[pair.First] =
+                pair.Second;
 
-            clashSlots.Add(
-                pair.Second);
+            clashPartnerBySlot[pair.Second] =
+                pair.First;
         }
     }
 
@@ -1159,10 +1565,6 @@ public sealed class BattleActionOrderRailUI : MonoBehaviour
 
         bool playerSide =
             slot?.Owner == player;
-
-        bool clash =
-            slot != null &&
-            clashSlots.Contains(slot);
 
         bool selected =
             slot != null &&
@@ -1207,12 +1609,9 @@ public sealed class BattleActionOrderRailUI : MonoBehaviour
         generatedRows.Add(
             row);
 
-        if (slot != null &&
-            slot.ActionId > 0)
-        {
-            rowsByActionId[slot.ActionId] =
-                row;
-        }
+        RegisterRowAction(
+            row,
+            slot);
 
         Image background =
             row.GetComponent<Image>();
@@ -1242,11 +1641,9 @@ public sealed class BattleActionOrderRailUI : MonoBehaviour
             CreateImage(
                 "Accent",
                 row.transform,
-                clash
-                    ? clashAccent
-                    : playerSide
-                        ? playerAccent
-                        : enemyAccent);
+                playerSide
+                    ? playerAccent
+                    : enemyAccent);
 
         RectTransform accentRect =
             accent.rectTransform;
@@ -1306,11 +1703,14 @@ public sealed class BattleActionOrderRailUI : MonoBehaviour
             "행동";
 
         string relation =
-            clash
-                ? "<color=#FFD12A>합</color>"
-                : playerSide
-                    ? "<color=#4FA5FF>→</color>"
-                    : "<color=#FF5A5A>→</color>";
+            playerSide
+                ? "<color=#4FA5FF>→</color>"
+                : "<color=#FF5A5A>→</color>";
+
+        string target =
+            slot?.TargetCharacter != null
+                ? $"{GetCharacterName(slot.TargetCharacter)} · {GetPartLabel(slot.TargetPart)}"
+                : string.Empty;
 
         string orderLabel =
             GetOrderLabel(slot);
@@ -1318,7 +1718,8 @@ public sealed class BattleActionOrderRailUI : MonoBehaviour
         label.text =
             $"<b>{orderLabel}</b>  " +
             $"<size=78%>{side} · {owner} · {part}</size>\n" +
-            $"<size=78%>{skill}  {relation}</size>";
+            $"<size=78%>{skill}  {relation}" +
+            $"{(string.IsNullOrEmpty(target) ? string.Empty : $"  {target}")}</size>";
 
         if (hoveredPlayer)
         {
@@ -1338,6 +1739,210 @@ public sealed class BattleActionOrderRailUI : MonoBehaviour
                     0.66f,
                     1f);
         }
+    }
+
+    private void CreateClashRow(
+        ActionSlot first,
+        ActionSlot second)
+    {
+        if (first == null || second == null)
+            return;
+
+        Character player =
+            battleManager?.BattleContext?.Player;
+
+        ActionSlot playerAction =
+            first.Owner == player
+                ? first
+                : second.Owner == player
+                    ? second
+                    : first;
+
+        ActionSlot opponentAction =
+            ReferenceEquals(playerAction, first)
+                ? second
+                : first;
+
+        bool selected =
+            IsSelectedPlayerAction(first, player) ||
+            IsSelectedPlayerAction(second, player);
+
+        long hoveredActionId =
+            BattleWorldActionSlotCellUI
+                .HoveredCell
+                ?.GetRepresentedActionSlot()
+                ?.ActionId ?? 0;
+
+        bool hoveredPlayer =
+            hoveredActionId > 0 &&
+            (hoveredActionId == first.ActionId ||
+             hoveredActionId == second.ActionId);
+
+        ActionSlot hoveredTargetSlot =
+            BattleWorldActionSlotCellUI
+                .HoveredTargetCell
+                ?.TargetSlot;
+
+        bool hoveredTarget =
+            hoveredTargetSlot == first ||
+            hoveredTargetSlot == second;
+
+        GameObject row =
+            new GameObject(
+                $"Clash_{first.ActionId}_{second.ActionId}",
+                typeof(RectTransform),
+                typeof(CanvasRenderer),
+                typeof(Image),
+                typeof(CanvasGroup),
+                typeof(LayoutElement));
+
+        row.transform.SetParent(
+            contentRoot,
+            false);
+
+        generatedRows.Add(row);
+
+        // 합은 두 ActionId가 하나의 실행 단위 UI를 공유한다.
+        RegisterRowAction(row, first);
+        RegisterRowAction(row, second);
+
+        Image background =
+            row.GetComponent<Image>();
+
+        background.color =
+            hoveredPlayer
+                ? hoveredPlayerBackground
+                : hoveredTarget
+                    ? hoveredTargetBackground
+                    : selected
+                        ? selectedBackground
+                        : new Color(
+                            0.16f,
+                            0.125f,
+                            0.025f,
+                            0.90f);
+
+        background.raycastTarget = false;
+
+        LayoutElement element =
+            row.GetComponent<LayoutElement>();
+
+        element.preferredHeight = 88f;
+        element.minHeight = 82f;
+
+        Image accent =
+            CreateImage(
+                "ClashAccent",
+                row.transform,
+                clashAccent);
+
+        RectTransform accentRect =
+            accent.rectTransform;
+
+        accentRect.anchorMin =
+            new Vector2(0f, 0f);
+        accentRect.anchorMax =
+            new Vector2(0f, 1f);
+        accentRect.pivot =
+            new Vector2(0f, 0.5f);
+        accentRect.anchoredPosition =
+            Vector2.zero;
+        accentRect.sizeDelta =
+            new Vector2(7f, 0f);
+
+        TMP_Text label =
+            CreateText(
+                "Label",
+                row.transform,
+                20f,
+                TextAlignmentOptions.Left);
+
+        RectTransform labelRect =
+            label.rectTransform;
+
+        labelRect.anchorMin =
+            Vector2.zero;
+        labelRect.anchorMax =
+            Vector2.one;
+        labelRect.offsetMin =
+            new Vector2(16f, 4f);
+        labelRect.offsetMax =
+            new Vector2(-10f, -4f);
+
+        string speedLabel =
+            first.Speed == second.Speed
+                ? $"속도 {first.Speed}"
+                : $"속도 {first.Speed} ↔ {second.Speed}";
+
+        label.text =
+            $"<b><color=#FFD12A>[ 합 ]</color>  {speedLabel}</b>\n" +
+            $"<size=78%><color=#62AEFF>아군  {FormatClashParticipant(playerAction)}</color></size>\n" +
+            $"<size=78%><color=#FFD12A>VS</color>  <color=#FF6B6B>적  {FormatClashParticipant(opponentAction)}</color></size>";
+
+        if (hoveredPlayer)
+        {
+            label.color =
+                new Color(
+                    1f,
+                    0.93f,
+                    0.44f,
+                    1f);
+        }
+        else if (hoveredTarget)
+        {
+            label.color =
+                new Color(
+                    1f,
+                    0.92f,
+                    0.66f,
+                    1f);
+        }
+    }
+
+    private bool IsSelectedPlayerAction(
+        ActionSlot slot,
+        Character player)
+    {
+        return slot != null &&
+               slot.Owner == player &&
+               uiManager != null &&
+               uiManager.IsWorldPlanningSlotSelected(
+                   slot.Owner,
+                   slot.Part,
+                   slot.ActionIndex);
+    }
+
+    private void RegisterRowAction(
+        GameObject row,
+        ActionSlot slot)
+    {
+        if (row == null ||
+            slot == null ||
+            slot.ActionId <= 0)
+        {
+            return;
+        }
+
+        rowsByActionId[slot.ActionId] = row;
+    }
+
+    private string FormatClashParticipant(
+        ActionSlot slot)
+    {
+        if (slot == null)
+            return "--";
+
+        string owner =
+            GetCharacterName(slot.Owner);
+
+        string part =
+            GetPartLabel(slot.Part);
+
+        string skill =
+            slot.Skill?.SkillName ??
+            "행동";
+
+        return $"{owner} · {part} · {skill}";
     }
 
     private static string GetOrderLabel(
@@ -1616,6 +2221,8 @@ public sealed class BattleActionOrderRailUI : MonoBehaviour
 
         generatedRows.Clear();
         rowsByActionId.Clear();
+        clashPartnerBySlot.Clear();
+        completedResolutionRows.Clear();
         reactiveRowsByEventId.Clear();
         reactiveRowStartedAt.Clear();
     }
@@ -1625,16 +2232,8 @@ public sealed class BattleActionOrderRailUI : MonoBehaviour
         if (overlayCanvas == null)
             return;
 
-        Transform overlay =
-            overlayCanvas.transform;
-
-        if (overlay.parent != null)
-        {
-            overlay.SetParent(
-                null,
-                false);
-        }
-
+        // 위치/부모 Transform은 Scene authoring 값 그대로 둔다.
+        // 런타임에서는 표시 계약에 필요한 Canvas mode/sorting만 보장한다.
         overlayCanvas.renderMode =
             RenderMode.ScreenSpaceOverlay;
 
@@ -1653,6 +2252,9 @@ public sealed class BattleActionOrderRailUI : MonoBehaviour
         panelRoot = null;
         contentRoot = null;
         headerText = null;
+        sizeToggleButton = null;
+        sizeToggleLabel = null;
+        collapseStateInitialized = false;
 
         if (overlay == null)
             return;

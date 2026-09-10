@@ -3257,7 +3257,6 @@ GameObject:
   - component: {fileID: 1068877084}
   - component: {fileID: 1068877083}
   - component: {fileID: 1068877088}
-  - component: {fileID: 1068877089}
   - component: {fileID: 1068877090}
   m_Layer: 0
   m_Name: Enemy 3
@@ -3373,20 +3372,7 @@ MonoBehaviour:
   data: {fileID: 11400000, guid: 15b65a39a7f305a4187f5ffeb15cbfb0, type: 2}
   equippedItems: []
   equippedAugments: []
-  skillSet: {fileID: 0}
   singleMaxHP: 50
---- !u!114 &1068877089
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1068877082}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 92f3087b424726149b6cfa1041a77f91, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!114 &1068877090
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3711,7 +3697,6 @@ GameObject:
   - component: {fileID: 1174378445}
   - component: {fileID: 1174378444}
   - component: {fileID: 1174378449}
-  - component: {fileID: 1174378450}
   - component: {fileID: 1174378451}
   m_Layer: 0
   m_Name: Enemy 2
@@ -3827,20 +3812,7 @@ MonoBehaviour:
   data: {fileID: 11400000, guid: 56feff8428bac514a8e49f36158f3ed7, type: 2}
   equippedItems: []
   equippedAugments: []
-  skillSet: {fileID: 0}
   singleMaxHP: 50
---- !u!114 &1174378450
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1174378443}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 92f3087b424726149b6cfa1041a77f91, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!114 &1174378451
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -4029,7 +4001,6 @@ GameObject:
   - component: {fileID: 1244269857}
   - component: {fileID: 1244269856}
   - component: {fileID: 1244269861}
-  - component: {fileID: 1244269862}
   - component: {fileID: 1244269863}
   m_Layer: 0
   m_Name: Enemy 1
@@ -4145,20 +4116,7 @@ MonoBehaviour:
   data: {fileID: 11400000, guid: 90a4820980ad3f641a004944af763fc1, type: 2}
   equippedItems: []
   equippedAugments: []
-  skillSet: {fileID: 0}
   singleMaxHP: 50
---- !u!114 &1244269862
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1244269855}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 92f3087b424726149b6cfa1041a77f91, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!114 &1244269863
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -4741,12 +4699,6 @@ MonoBehaviour:
       DisadvantageThreshold: -30
       AdvantageThreshold: 30
       OverwhelmThreshold: 70
-      LastStandMultiplier: 0.5
-      DisadvantageMultiplier: 0.5
-      BalanceMultiplier: 1
-      AdvantageMultiplier: 1
-      OverwhelmMultiplier: 2
-      MaximumOverwhelmMultiplier: 2
       HitShift: 5
       DuelVictoryShift: 25
       LastStandHitShiftMultiplier: 2
@@ -4768,7 +4720,6 @@ MonoBehaviour:
     UseLegacyAttackDefenseStats: 0
   battleUIManager: {fileID: 0}
   battleAnimationDirector: {fileID: 0}
-  defaultVisualProfile: {fileID: 0}
 --- !u!4 &1453355685
 Transform:
   m_ObjectHideFlags: 0
@@ -4797,7 +4748,6 @@ GameObject:
   - component: {fileID: 1478351537}
   - component: {fileID: 1478351536}
   - component: {fileID: 1478351541}
-  - component: {fileID: 1478351542}
   - component: {fileID: 1478351543}
   m_Layer: 0
   m_Name: Enemy 4
@@ -4913,20 +4863,7 @@ MonoBehaviour:
   data: {fileID: 11400000, guid: fa44a93d52182de409a55d85f797298c, type: 2}
   equippedItems: []
   equippedAugments: []
-  skillSet: {fileID: 0}
   singleMaxHP: 50
---- !u!114 &1478351542
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1478351535}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 92f3087b424726149b6cfa1041a77f91, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!114 &1478351543
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -7898,7 +7835,6 @@ GameObject:
   - component: {fileID: 2094296665}
   - component: {fileID: 2094296664}
   - component: {fileID: 2094296668}
-  - component: {fileID: 2094296669}
   - component: {fileID: 2094296670}
   m_Layer: 0
   m_Name: Olaf
@@ -8014,19 +7950,6 @@ MonoBehaviour:
   data: {fileID: 11400000, guid: e9bc03b760a7e094eb95540f97744572, type: 2}
   equippedItems: []
   equippedAugments: []
-  skillSet: {fileID: 0}
---- !u!114 &2094296669
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2094296663}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 92f3087b424726149b6cfa1041a77f91, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!114 &2094296670
 MonoBehaviour:
   m_ObjectHideFlags: 0

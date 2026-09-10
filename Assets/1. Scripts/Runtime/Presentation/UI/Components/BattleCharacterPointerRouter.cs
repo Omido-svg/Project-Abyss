@@ -116,6 +116,13 @@ public sealed class BattleCharacterPointerRouter : MonoBehaviour
     {
         ResolveReferences();
 
+        if (BattlePlanningCameraController.IsCameraMovementActive)
+        {
+            SetHoveredCharacter(null);
+            ClearSelectedCharacter();
+            return;
+        }
+
         if (BattlePresentationInteractionLock.IsLocked)
         {
             SetHoveredCharacter(null);

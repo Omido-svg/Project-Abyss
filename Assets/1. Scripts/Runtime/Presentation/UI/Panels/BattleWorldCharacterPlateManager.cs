@@ -15,6 +15,8 @@ public sealed class BattleWorldCharacterPlateManager : MonoBehaviour
     [SerializeField] private float canvasScale = 0.0062f;
     [SerializeField] private BattleWorldSlotArrowOverlayUI slotArrowOverlay;
     [SerializeField] private BattleActionOrderRailUI actionOrderRail;
+    private bool actionOrderRailMissingLogged;
+    private bool slotArrowOverlayMissingLogged;
 
     private readonly List<GameObject> generated = new();
     private readonly Dictionary<Character, BattleWorldCharacterPlateUI> plates = new();
@@ -182,11 +184,30 @@ public sealed class BattleWorldCharacterPlateManager : MonoBehaviour
     private void EnsureActionOrderRail()
     {
         if (actionOrderRail == null)
-            actionOrderRail = GetComponent<BattleActionOrderRailUI>();
+        {
+            BattleSceneHudRegistry registry =
+                BattleSceneHudRegistry.Find();
+
+            actionOrderRail =
+                registry != null
+                    ? registry.ActionOrderRail
+                    : null;
+
+        }
 
         if (actionOrderRail == null)
-            actionOrderRail = gameObject.AddComponent<BattleActionOrderRailUI>();
+        {
+            if (!actionOrderRailMissingLogged)
+            {
+                actionOrderRailMissingLogged = true;
+                Debug.LogError(
+                    "[BattleWorldCharacterPlateManager] Registry의 Scene-authored BattleActionOrderRailUI 참조가 없습니다.",
+                    this);
+            }
+            return;
+        }
 
+        actionOrderRailMissingLogged = false;
         actionOrderRail.Configure(
             battleManager,
             battleUiManager,
@@ -196,11 +217,30 @@ public sealed class BattleWorldCharacterPlateManager : MonoBehaviour
     private void EnsureSlotArrowOverlay()
     {
         if (slotArrowOverlay == null)
-            slotArrowOverlay = GetComponent<BattleWorldSlotArrowOverlayUI>();
+        {
+            BattleSceneHudRegistry registry =
+                BattleSceneHudRegistry.Find();
+
+            slotArrowOverlay =
+                registry != null
+                    ? registry.WorldSlotArrowOverlay
+                    : null;
+
+        }
 
         if (slotArrowOverlay == null)
-            slotArrowOverlay = gameObject.AddComponent<BattleWorldSlotArrowOverlayUI>();
+        {
+            if (!slotArrowOverlayMissingLogged)
+            {
+                slotArrowOverlayMissingLogged = true;
+                Debug.LogError(
+                    "[BattleWorldCharacterPlateManager] Registry의 Scene-authored BattleWorldSlotArrowOverlayUI 참조가 없습니다.",
+                    this);
+            }
+            return;
+        }
 
+        slotArrowOverlayMissingLogged = false;
         slotArrowOverlay.Configure(
             battleManager,
             battleUiManager,

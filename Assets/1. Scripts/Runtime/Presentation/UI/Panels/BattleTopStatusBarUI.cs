@@ -27,7 +27,12 @@ public sealed class BattleTopStatusBarUI : MonoBehaviour
     private Vector3 normalLightScale = Vector3.one;
     private bool lightVisualCaptured;
     private bool insufficientFeedbackActive;
-    private GameplayV5ProgressionHudUI gameplayV5Hud;
+    [Header("Scene-authored HUD")]
+    [SerializeField] private GameplayV5ProgressionHudUI gameplayV5Hud;
+    private bool progressionHudMissingLogged;
+    private GameplayV5ProgressionHudUI configuredGameplayV5Hud;
+    private BattleManager configuredGameplayV5Manager;
+    private TMP_Text configuredGameplayV5Template;
 
     public void Configure(
         BattleManager manager,
@@ -82,16 +87,49 @@ public sealed class BattleTopStatusBarUI : MonoBehaviour
     {
         if (gameplayV5Hud == null)
         {
-            gameplayV5Hud =
-                GetComponent<GameplayV5ProgressionHudUI>();
+            BattleSceneHudRegistry registry =
+                BattleSceneHudRegistry.Find();
 
-            if (gameplayV5Hud == null)
-                gameplayV5Hud = gameObject.AddComponent<GameplayV5ProgressionHudUI>();
+            gameplayV5Hud =
+                registry != null
+                    ? registry.ProgressionHud
+                    : null;
+        }
+
+        if (gameplayV5Hud == null)
+        {
+            if (!progressionHudMissingLogged)
+            {
+                progressionHudMissingLogged = true;
+                Debug.LogError(
+                    "[BattleTopStatusBarUI] Registry의 GameplayV5ProgressionHudUI 참조가 없습니다. " +
+                    "고정 HUD는 전역 Find fallback으로 숨기지 않습니다.",
+                    this);
+            }
+            return;
+        }
+
+        progressionHudMissingLogged = false;
+
+        TMP_Text template =
+            momentumText != null
+                ? momentumText
+                : turnText;
+
+        if (ReferenceEquals(configuredGameplayV5Hud, gameplayV5Hud) &&
+            ReferenceEquals(configuredGameplayV5Manager, battleManager) &&
+            ReferenceEquals(configuredGameplayV5Template, template))
+        {
+            return;
         }
 
         gameplayV5Hud.Configure(
             battleManager,
-            momentumText != null ? momentumText : turnText);
+            template);
+
+        configuredGameplayV5Hud = gameplayV5Hud;
+        configuredGameplayV5Manager = battleManager;
+        configuredGameplayV5Template = template;
     }
 
     public void Refresh()

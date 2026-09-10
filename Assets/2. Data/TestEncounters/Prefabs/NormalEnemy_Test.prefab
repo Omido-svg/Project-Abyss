@@ -1290,7 +1290,6 @@ MonoBehaviour:
   data: {fileID: 11400000, guid: 524638d844d1c984fa17c165dd447196, type: 2}
   equippedItems: []
   equippedAugments: []
-  skillSet: {fileID: 11400000, guid: dff3f156de67bcc4da5b3b29a35f5a2e, type: 2}
   singleMaxHP: 60
 --- !u!136 &8271209258265707190
 CapsuleCollider:

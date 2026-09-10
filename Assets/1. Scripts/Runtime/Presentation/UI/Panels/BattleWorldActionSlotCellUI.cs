@@ -327,6 +327,9 @@ public sealed class BattleWorldActionSlotCellUI : MonoBehaviour,
 
     public void OnPointerClick(PointerEventData eventData)
     {
+        if (BattlePlanningCameraController.IsCameraMovementActive)
+            return;
+
         if (manager == null || eventData == null)
             return;
 

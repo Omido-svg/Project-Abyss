@@ -176,7 +176,7 @@ public class BattleCameraDirector : MonoBehaviour
 
         Vector3 referenceForward =
             rig.OverviewCamera != null
-                ? rig.OverviewCamera.transform.forward
+                ? rig.OverviewReferenceForward
                 : rig.PoseCamera.transform.forward;
 
         if (referenceForward.sqrMagnitude <= 0.0001f)
@@ -228,7 +228,7 @@ public class BattleCameraDirector : MonoBehaviour
         {
             Vector3 referenceForward =
                 rig.OverviewCamera != null
-                    ? rig.OverviewCamera.transform.forward
+                    ? rig.OverviewReferenceForward
                     : -focusTarget.forward;
 
             offset =
@@ -305,7 +305,7 @@ public class BattleCameraDirector : MonoBehaviour
 
         Vector3 referenceForward =
             rig.OverviewCamera != null
-                ? rig.OverviewCamera.transform.forward
+                ? rig.OverviewReferenceForward
                 : rig.PoseCamera.transform.forward;
 
         if (referenceForward.sqrMagnitude <= 0.0001f)
@@ -628,8 +628,9 @@ public class BattleCameraDirector : MonoBehaviour
 
         if (useUnscaledTime)
         {
-            yield return new WaitForSecondsRealtime(
-                duration);
+            yield return
+                BattlePlaybackSpeedController
+                    .WaitForBattleUnscaledSeconds(duration);
 
             yield break;
         }

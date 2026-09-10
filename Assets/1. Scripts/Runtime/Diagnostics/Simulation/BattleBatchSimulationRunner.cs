@@ -923,56 +923,13 @@ public sealed class BattleBatchSimulationRunner : MonoBehaviour
 
     private void EnsurePersistentControlOverlay()
     {
-        EnsurePersistentRoot();
-
-        if (persistentOverlayRoot != null &&
-            persistentPanelToggle != null)
-        {
-            return;
-        }
-
-        GameObject overlay = new GameObject(
-            "BattleAnalysisPersistentOverlay",
-            typeof(RectTransform),
-            typeof(Canvas),
-            typeof(CanvasScaler),
-            typeof(GraphicRaycaster));
-
-        overlay.transform.SetParent(
-            transform,
-            false);
-
-        Canvas canvas = overlay.GetComponent<Canvas>();
-        canvas.renderMode = RenderMode.ScreenSpaceOverlay;
-        canvas.sortingOrder = short.MaxValue - 8;
-
-        CanvasScaler scaler =
-            overlay.GetComponent<CanvasScaler>();
-        scaler.uiScaleMode =
-            CanvasScaler.ScaleMode.ScaleWithScreenSize;
-        scaler.referenceResolution =
-            new Vector2(1920f, 1080f);
-        scaler.screenMatchMode =
-            CanvasScaler.ScreenMatchMode.MatchWidthOrHeight;
-        scaler.matchWidthOrHeight = 0.5f;
-
-        persistentOverlayRoot = overlay;
-
-        // AddComponent의 Awake에서 Runtime Fallback UI가 즉시 생성된다.
-        persistentPanelToggle =
-            overlay.AddComponent<BattleAnalysisPanelToggle>();
-
-        persistentPanel =
-            overlay.GetComponentInChildren<
-                BattleAnalysisDebugPanel>(true);
-
-        if (persistentPanel != null)
-        {
-            panel = persistentPanel;
-            RegisterPanel(persistentPanel);
-        }
-
-        DisableSceneLocalAnalysisControls();
+        // v4: 동적 분석 제어는 Game View Overlay가 아니라
+        // Scene의 Battle Live Debug Inspector Custom Inspector에서 수행한다.
+        // Runner 자체는 DontDestroyOnLoad로 유지하지만 별도 Canvas/UI를 생성하지 않는다.
+        persistentOverlayRoot = null;
+        persistentPanel = null;
+        persistentPanelToggle = null;
+        panel = null;
     }
 
     private void DisableSceneLocalAnalysisControls()

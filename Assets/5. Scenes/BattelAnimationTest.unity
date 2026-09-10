@@ -1080,18 +1080,6 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 2773726033093029892, guid: 1bc64ea4d78d46d4d8905c341217be68, type: 3}
   m_PrefabInstance: {fileID: 891893399}
   m_PrefabAsset: {fileID: 0}
---- !u!114 &377962555
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 377962553}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: aef701c4dfff52649b1070bcafe238b7, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!95 &377962556
 Animator:
   serializedVersion: 7
@@ -1858,18 +1846,6 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 6273795992420303399, guid: 8773a60b5fbd4d94fa89250f6c909818, type: 3}
   m_PrefabInstance: {fileID: 1942539578}
   m_PrefabAsset: {fileID: 0}
---- !u!114 &541519632
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 541519630}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: aef701c4dfff52649b1070bcafe238b7, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!95 &541519633
 Animator:
   serializedVersion: 7
@@ -4040,7 +4016,6 @@ GameObject:
   - component: {fileID: 1244269857}
   - component: {fileID: 1244269856}
   - component: {fileID: 1244269864}
-  - component: {fileID: 1244269862}
   - component: {fileID: 1244269866}
   - component: {fileID: 1244269865}
   - component: {fileID: 1244269867}
@@ -4137,18 +4112,6 @@ Transform:
   - {fileID: 243524348}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 92.48, z: 0}
---- !u!114 &1244269862
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1244269855}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 92f3087b424726149b6cfa1041a77f91, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!114 &1244269864
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -4164,7 +4127,6 @@ MonoBehaviour:
   data: {fileID: 11400000, guid: bc59ef365359be644bc16e661b1e7240, type: 2}
   equippedItems: []
   equippedAugments: []
-  skillSet: {fileID: 11400000, guid: de1abc5d164c1e241ba422cd9e9dc661, type: 2}
   usePostureRotation: 1
   postureSettings:
     MinimumTurns: 2
@@ -4711,12 +4673,6 @@ MonoBehaviour:
       DisadvantageThreshold: -30
       AdvantageThreshold: 30
       OverwhelmThreshold: 70
-      LastStandMultiplier: 0.5
-      DisadvantageMultiplier: 0.5
-      BalanceMultiplier: 1
-      AdvantageMultiplier: 1
-      OverwhelmMultiplier: 2
-      MaximumOverwhelmMultiplier: 2
       HitShift: 5
       DuelVictoryShift: 25
       LastStandHitShiftMultiplier: 2
@@ -4738,7 +4694,6 @@ MonoBehaviour:
     UseLegacyAttackDefenseStats: 0
   battleUIManager: {fileID: 605390726}
   battleAnimationDirector: {fileID: 2113237152}
-  defaultVisualProfile: {fileID: 11400000, guid: 6ad6ee546df81ab4ebe3dcb118388219, type: 2}
 --- !u!4 &1453355685
 Transform:
   m_ObjectHideFlags: 0
@@ -8492,7 +8447,6 @@ GameObject:
   - component: {fileID: 2094296665}
   - component: {fileID: 2094296664}
   - component: {fileID: 2094296668}
-  - component: {fileID: 2094296669}
   - component: {fileID: 2094296671}
   - component: {fileID: 2094296672}
   - component: {fileID: 2094296673}
@@ -8604,19 +8558,6 @@ MonoBehaviour:
   data: {fileID: 11400000, guid: e9bc03b760a7e094eb95540f97744572, type: 2}
   equippedItems: []
   equippedAugments: []
-  skillSet: {fileID: 11400000, guid: 3d75845fdbab70e4790338bfc8e669ab, type: 2}
---- !u!114 &2094296669
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2094296663}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 92f3087b424726149b6cfa1041a77f91, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!114 &2094296671
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -8957,7 +8898,6 @@ MonoBehaviour:
   skillCutsceneDirector: {fileID: 0}
   floatingTextManager: {fileID: 2113237150}
   damageNumberManager: {fileID: 2113237156}
-  defaultVisualProfile: {fileID: 11400000, guid: 6ad6ee546df81ab4ebe3dcb118388219, type: 2}
   targetArrowUI: {fileID: 1289930843}
   momentumScrollbarUI: {fileID: 1805580445}
   vfxManager: {fileID: 2113237154}

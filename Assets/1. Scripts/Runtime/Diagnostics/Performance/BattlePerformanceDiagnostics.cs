@@ -47,7 +47,7 @@ public sealed class BattlePerformanceDiagnostics : MonoBehaviour
     [SerializeField, HideInInspector] private bool showOverlay;
     [SerializeField] private Vector2 overlayPosition = new(12f, 12f);
     [SerializeField] private Vector2 overlaySize = new(520f, 330f);
-    [SerializeField] private bool showPersistentToggleButton = true;
+    [SerializeField] private bool showPersistentToggleButton;
     [SerializeField] private Vector2 toggleButtonSize = new(210f, 34f);
     [SerializeField] private Vector2 toggleButtonMargin = new(12f, 12f);
 
@@ -182,30 +182,10 @@ public sealed class BattlePerformanceDiagnostics : MonoBehaviour
 
     private void OnGUI()
     {
-        // New Input System 전용 프로젝트에서도 동작하도록 IMGUI 키 이벤트를 사용한다.
+        // Diagnostics는 이제 Game View에 UI를 그리지 않는다.
+        // Performance/격리/CSV 제어는 Scene의 Battle Live Debug Inspector에서 수행한다.
+        // 기존 F9/F10/F5/F6/F7 단축키는 빠른 진단용으로만 유지한다.
         HandleGuiHotkeys(Event.current);
-
-        // 다른 OnGUI보다 앞에 표시되도록 충분히 낮은 depth를 사용한다.
-        GUI.depth = -10000;
-
-        if (showOverlay && !string.IsNullOrEmpty(cachedOverlay))
-        {
-            overlayStyle ??= new GUIStyle(GUI.skin.box)
-            {
-                alignment = TextAnchor.UpperLeft,
-                fontSize = 14,
-                richText = false,
-                padding = new RectOffset(10, 10, 8, 8),
-                wordWrap = false
-            };
-
-            GUI.Box(
-                new Rect(overlayPosition.x, overlayPosition.y, overlaySize.x, overlaySize.y),
-                cachedOverlay,
-                overlayStyle);
-        }
-
-        DrawPersistentToggleButton();
     }
 
     private void OnDisable()
@@ -261,9 +241,7 @@ public sealed class BattlePerformanceDiagnostics : MonoBehaviour
 
         bool handled = true;
 
-        if (guiEvent.keyCode == toggleOverlayKey)
-            ToggleOverlayVisibility();
-        else if (guiEvent.keyCode == toggleCaptureKey)
+        if (guiEvent.keyCode == toggleCaptureKey)
             ToggleCapture();
         else if (guiEvent.keyCode == exportCsvKey)
             ExportCsv();
@@ -399,6 +377,12 @@ public sealed class BattlePerformanceDiagnostics : MonoBehaviour
     }
 
     public bool IsOverlayVisible => showOverlay;
+    public bool CaptureEnabled => captureEnabled;
+    public int CapturedSampleCount => samples.Count;
+    public string LiveSummary => cachedOverlay;
+    public bool DebugUiSuppressed => debugUiSuppressed;
+    public bool WorldCanvasesSuppressed => worldCanvasesSuppressed;
+    public bool OutlinesSuppressed => outlinesSuppressed;
 
     public void ToggleOverlayVisibility()
     {
@@ -428,7 +412,7 @@ public sealed class BattlePerformanceDiagnostics : MonoBehaviour
         SetOverlayVisible(startOverlayVisible);
     }
 
-    private void ToggleCapture()
+    public void ToggleCapture()
     {
         captureEnabled = !captureEnabled;
         Debug.Log($"[BattlePerformanceDiagnostics] CSV capture: {captureEnabled}", this);
@@ -598,7 +582,7 @@ public sealed class BattlePerformanceDiagnostics : MonoBehaviour
     private void RebuildOverlay(Sample sample)
     {
         overlayBuilder.Clear();
-        overlayBuilder.AppendLine("PROJECT ABYSS PERFORMANCE DIAGNOSTICS");
+        overlayBuilder.AppendLine("PROJECT ABYSS PERFORMANCE DIAGNOSTICS / INSPECTOR LIVE");
         overlayBuilder.Append("FPS / frame       : ").Append(sample.Fps.ToString("0.0")).Append(" / ")
             .Append(sample.FrameMs.ToString("0.00")).AppendLine(" ms");
         overlayBuilder.Append("CPU main / render : ").Append(FormatMs(sample.CpuMainMs)).Append(" / ")
@@ -615,9 +599,8 @@ public sealed class BattlePerformanceDiagnostics : MonoBehaviour
         overlayBuilder.Append("F5 Outline A/B    : ").AppendLine(outlinesSuppressed ? "OFF" : "ON");
         overlayBuilder.Append("F6 Debug UI A/B   : ").AppendLine(debugUiSuppressed ? "OFF" : "ON");
         overlayBuilder.Append("F7 World Canvas   : ").AppendLine(worldCanvasesSuppressed ? "OFF" : "ON");
-        overlayBuilder.Append(toggleOverlayKey).Append(" Overlay        : ON    F9 Capture: ").AppendLine(captureEnabled ? "ON" : "OFF");
-        overlayBuilder.AppendLine("Top-right button  : click to hide/show this panel");
-        overlayBuilder.Append("F10 Export CSV    : ").Append(samples.Count).AppendLine(" samples");
+        overlayBuilder.Append("Capture           : ").AppendLine(captureEnabled ? "ON" : "OFF");
+        overlayBuilder.Append("Captured samples  : ").AppendLine(samples.Count.ToString());
         overlayBuilder.AppendLine();
         overlayBuilder.AppendLine("Interpretation: CPU+GC spike = UI/TMP/script; GPU spike = render/shader.");
 
@@ -684,7 +667,7 @@ public sealed class BattlePerformanceDiagnostics : MonoBehaviour
         }
     }
 
-    private void ToggleDebugUiIsolation()
+    public void ToggleDebugUiIsolation()
     {
         debugUiSuppressed = !debugUiSuppressed;
 
@@ -697,7 +680,7 @@ public sealed class BattlePerformanceDiagnostics : MonoBehaviour
         Debug.Log($"[BattlePerformanceDiagnostics] DebugBattleUI A/B: {(debugUiSuppressed ? "OFF" : "RESTORED")}", this);
     }
 
-    private void ToggleWorldCanvasIsolation()
+    public void ToggleWorldCanvasIsolation()
     {
         worldCanvasesSuppressed = !worldCanvasesSuppressed;
 
@@ -710,7 +693,7 @@ public sealed class BattlePerformanceDiagnostics : MonoBehaviour
         Debug.Log($"[BattlePerformanceDiagnostics] World-space Canvas A/B: {(worldCanvasesSuppressed ? "OFF" : "RESTORED")}", this);
     }
 
-    private void ToggleOutlineIsolation()
+    public void ToggleOutlineIsolation()
     {
         outlinesSuppressed = !outlinesSuppressed;
 

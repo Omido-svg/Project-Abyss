@@ -5,9 +5,8 @@ using UnityEngine.UI;
 
 /// <summary>
 /// Gameplay v5 전용 상단 HUD.
-/// 기존 TopStatusBar 오른쪽의 빈 공간에 현재 감정 / 고조 / 열광 / 감정 증강 상태를
-/// 런타임으로 구성한다. Scene/Pefab 직렬화에 의존하지 않으므로 Play Mode에서 생성된
-/// 하이어라키와 실제 Scene 에셋을 혼동하지 않는다.
+/// 고정 View는 Scene에 미리 배치하고 런타임에서는 데이터/색/게이지만 갱신한다.
+/// RectTransform 위치/크기/Anchor는 Play Mode에서 변경하지 않는다.
 /// </summary>
 [DisallowMultipleComponent]
 public sealed class GameplayV5ProgressionHudUI : MonoBehaviour
@@ -22,17 +21,25 @@ public sealed class GameplayV5ProgressionHudUI : MonoBehaviour
     [SerializeField, Min(0f)] private float levelUpPulseDuration = 0.30f;
     [SerializeField, Range(1f, 1.5f)] private float levelUpPulseScale = 1.10f;
 
-    private RectTransform root;
-    private Image background;
-    private Image accent;
-    private Outline outline;
-    private TMP_Text emotionText;
-    private TMP_Text exaltationText;
-    private TMP_Text fervorText;
-    private RectTransform exaltationFillRect;
-    private Image exaltationFill;
-    private TMP_Text templateText;
+    [Header("Scene-authored View")]
+    [SerializeField] private RectTransform root;
+    [SerializeField] private Image background;
+    [SerializeField] private Image accent;
+    [SerializeField] private Outline outline;
+    [SerializeField] private TMP_Text emotionText;
+    [SerializeField] private TMP_Text exaltationText;
+    [SerializeField] private TMP_Text fervorText;
+    [SerializeField] private RectTransform exaltationFillRect;
+    [SerializeField] private Image exaltationFill;
+    [SerializeField] private TMP_Text templateText;
+    [SerializeField] private EmotionAugmentChoiceUI choiceUi;
+
     private float nextRefresh;
+    private bool missingViewLogged;
+    private bool missingChoiceUiLogged;
+    private EmotionAugmentChoiceUI configuredChoiceUi;
+    private BattleManager configuredChoiceManager;
+    private TMP_Text configuredChoiceTemplate;
 
     private Coroutine exaltationAnimationRoutine;
     private int observedFervorLevel = -1;
@@ -143,9 +150,25 @@ public sealed class GameplayV5ProgressionHudUI : MonoBehaviour
         {
             root = existing as RectTransform;
             CacheExistingReferences(existing);
+            missingViewLogged = false;
             return;
         }
 
+        // Play Mode에서는 고정 HUD를 절대 생성하거나 배치하지 않는다.
+        if (Application.isPlaying)
+        {
+            if (!missingViewLogged)
+            {
+                missingViewLogged = true;
+                Debug.LogWarning(
+                    "[GameplayV5ProgressionHudUI] Scene-authored GameplayV5ProgressionHUD가 없습니다. " +
+                    "Editor 변환 도구로 Scene View를 만든 뒤 위치를 Inspector에서 조정하세요.",
+                    this);
+            }
+            return;
+        }
+
+        // Editor에서 명시적으로 Authoring 명령을 실행했을 때만 최초 View를 만든다.
         GameObject rootGo = new GameObject(
             RootName,
             typeof(RectTransform),
@@ -227,6 +250,13 @@ public sealed class GameplayV5ProgressionHudUI : MonoBehaviour
         root.SetAsLastSibling();
     }
 
+#if UNITY_EDITOR
+    public void EditorAuthorSceneView()
+    {
+        EnsureView();
+    }
+#endif
+
     private void CacheExistingReferences(
         Transform existing)
     {
@@ -251,19 +281,46 @@ public sealed class GameplayV5ProgressionHudUI : MonoBehaviour
         if (battleManager == null)
             return;
 
-        Transform uiRoot = FindUiRoot();
-        if (uiRoot == null)
-            return;
+        if (choiceUi == null)
+        {
+            BattleSceneHudRegistry registry =
+                BattleSceneHudRegistry.Find();
 
-        EmotionAugmentChoiceUI choiceUi =
-            uiRoot.GetComponent<EmotionAugmentChoiceUI>();
+            choiceUi =
+                registry != null
+                    ? registry.EmotionAugmentChoiceUi
+                    : null;
+        }
 
         if (choiceUi == null)
-            choiceUi = uiRoot.gameObject.AddComponent<EmotionAugmentChoiceUI>();
+        {
+            if (!missingChoiceUiLogged)
+            {
+                missingChoiceUiLogged = true;
+                Debug.LogError(
+                    "[GameplayV5ProgressionHudUI] Registry의 EmotionAugmentChoiceUI 참조가 없습니다. " +
+                    "고정 HUD는 전역 Find fallback으로 숨기지 않습니다.",
+                    this);
+            }
+            return;
+        }
+
+        missingChoiceUiLogged = false;
+
+        if (ReferenceEquals(configuredChoiceUi, choiceUi) &&
+            ReferenceEquals(configuredChoiceManager, battleManager) &&
+            ReferenceEquals(configuredChoiceTemplate, templateText))
+        {
+            return;
+        }
 
         choiceUi.Configure(
             battleManager,
             templateText);
+
+        configuredChoiceUi = choiceUi;
+        configuredChoiceManager = battleManager;
+        configuredChoiceTemplate = templateText;
     }
 
     private Transform FindUiRoot()

@@ -569,10 +569,19 @@ public sealed class SkillCutsceneRuntimeContext :
         {
             case SkillCutsceneEventType
                 .SetTimeScale:
-                Time.timeScale =
-                    Mathf.Max(
-                        0.01f,
-                        clip.TimeScale);
+                if (BattlePlaybackSpeedController.Instance != null &&
+                    BattlePlaybackSpeedController.Instance.IsResolutionActive)
+                {
+                    BattlePlaybackSpeedController.Instance
+                        .ApplyAuthoredTimeScale(clip.TimeScale);
+                }
+                else
+                {
+                    Time.timeScale =
+                        Mathf.Max(
+                            0.01f,
+                            clip.TimeScale);
+                }
                 break;
 
             case SkillCutsceneEventType
@@ -1048,6 +1057,14 @@ public sealed class SkillCutsceneRuntimeContext :
 
     private void RestoreCapturedTimeScale()
     {
+        if (BattlePlaybackSpeedController.Instance != null &&
+            BattlePlaybackSpeedController.Instance.IsResolutionActive)
+        {
+            BattlePlaybackSpeedController.Instance
+                .RestoreNominalBattleTimeScale();
+            return;
+        }
+
         if (!capturedTimeScale)
             return;
 

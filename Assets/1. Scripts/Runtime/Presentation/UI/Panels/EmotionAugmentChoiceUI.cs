@@ -44,6 +44,7 @@ public sealed class EmotionAugmentChoiceUI : MonoBehaviour
     private bool manuallyMinimized;
     private bool isChoosing;
     private bool blocksBattleArrows;
+    private bool missingSceneViewLogged;
 
     /// <summary>
     /// 증강 3택 Overlay가 실제 화면을 덮고 있는 동안 전투 계획/합 화살표를 숨긴다.
@@ -230,12 +231,142 @@ public sealed class EmotionAugmentChoiceUI : MonoBehaviour
 
     private void EnsureView()
     {
-        if (overlayRoot != null && cards != null)
+        if (overlayRoot != null &&
+            cards != null &&
+            minimizedRoot != null)
+        {
             return;
+        }
+
+        if (TryResolveSceneView())
+        {
+            missingSceneViewLogged = false;
+            return;
+        }
+
+        // Play Mode에서는 고정 Overlay/Card/버튼을 생성하거나 배치하지 않는다.
+        if (Application.isPlaying)
+        {
+            if (!missingSceneViewLogged)
+            {
+                missingSceneViewLogged = true;
+                Debug.LogWarning(
+                    "[EmotionAugmentChoiceUI] Scene-authored 증강 선택 View가 없습니다. " +
+                    "Tools > Project Abyss > UI > Convert Current Battle Scene To Scene-Authored HUD를 실행하세요.",
+                    this);
+            }
+            return;
+        }
 
         BuildOverlay();
         BuildMinimizedChip();
+        TryResolveSceneView();
     }
+
+    private bool TryResolveSceneView()
+    {
+        Transform overlay = transform.Find(RootName);
+        Transform minimized = transform.Find(MinimizedName);
+
+        if (overlay == null || minimized == null)
+            return false;
+
+        overlayRoot = overlay.gameObject;
+        overlayCanvasGroup = overlay.GetComponent<CanvasGroup>();
+
+        Transform panel = overlay.Find("Panel");
+        if (panel == null)
+            return false;
+
+        panelRect = panel as RectTransform;
+        panelCanvasGroup = panel.GetComponent<CanvasGroup>();
+        panelImage = panel.GetComponent<Image>();
+        panelOutline = panel.GetComponent<Outline>();
+        accent = panel.Find("EmotionAccent")?.GetComponent<Image>();
+        titleText = panel.Find("Title")?.GetComponent<TMP_Text>();
+        subtitleText = panel.Find("Subtitle")?.GetComponent<TMP_Text>();
+        minimizeButton = panel.Find("Minimize")?.GetComponent<Button>();
+
+        cards = new ChoiceCard[3];
+        for (int i = 0; i < cards.Length; i++)
+        {
+            Transform cardTransform =
+                panel.Find($"Choice_{i + 1}");
+
+            if (cardTransform == null)
+                return false;
+
+            RectTransform rect =
+                cardTransform as RectTransform;
+
+            cards[i] = new ChoiceCard
+            {
+                Root = cardTransform.gameObject,
+                Rect = rect,
+                CanvasGroup = cardTransform.GetComponent<CanvasGroup>(),
+                Button = cardTransform.GetComponent<Button>(),
+                Background = cardTransform.GetComponent<Image>(),
+                Outline = cardTransform.GetComponent<Outline>(),
+                Title = cardTransform.Find("Title")?.GetComponent<TMP_Text>(),
+                Body = cardTransform.Find("Body")?.GetComponent<TMP_Text>()
+            };
+        }
+
+        minimizedRoot = minimized.gameObject;
+        reopenButton = minimized.GetComponent<Button>();
+        minimizedText = minimized.Find("Text")?.GetComponent<TMP_Text>();
+
+        BindSceneButtons();
+        return overlayCanvasGroup != null &&
+               panelRect != null &&
+               panelCanvasGroup != null &&
+               minimizeButton != null &&
+               reopenButton != null;
+    }
+
+    private void BindSceneButtons()
+    {
+        if (minimizeButton != null)
+        {
+            minimizeButton.onClick.RemoveListener(MinimizeTemporarily);
+            minimizeButton.onClick.AddListener(MinimizeTemporarily);
+        }
+
+        if (reopenButton != null)
+        {
+            reopenButton.onClick.RemoveListener(ReopenPendingOffer);
+            reopenButton.onClick.AddListener(ReopenPendingOffer);
+        }
+
+        BindChoiceButton(0, ChooseFirst);
+        BindChoiceButton(1, ChooseSecond);
+        BindChoiceButton(2, ChooseThird);
+    }
+
+    private void BindChoiceButton(int index, UnityEngine.Events.UnityAction action)
+    {
+        if (cards == null ||
+            index < 0 ||
+            index >= cards.Length ||
+            cards[index]?.Button == null)
+        {
+            return;
+        }
+
+        cards[index].Button.onClick.RemoveListener(action);
+        cards[index].Button.onClick.AddListener(action);
+    }
+
+    private void ChooseFirst() => Choose(0);
+    private void ChooseSecond() => Choose(1);
+    private void ChooseThird() => Choose(2);
+
+#if UNITY_EDITOR
+    public void EditorAuthorSceneView()
+    {
+        EnsureView();
+    }
+#endif
 
     private void BuildOverlay()
     {
@@ -322,9 +453,6 @@ public sealed class EmotionAugmentChoiceUI : MonoBehaviour
             "잠시 닫기",
             15f);
 
-        minimizeButton.onClick.AddListener(
-            MinimizeTemporarily);
-
         cards = new ChoiceCard[3];
 
         float width = 0.275f;
@@ -379,8 +507,6 @@ public sealed class EmotionAugmentChoiceUI : MonoBehaviour
 
         reopenButton = go.GetComponent<Button>();
         reopenButton.targetGraphic = image;
-        reopenButton.onClick.AddListener(ReopenPendingOffer);
-
         minimizedText = CreateText(
             rect,
             "Text",
@@ -456,9 +582,6 @@ public sealed class EmotionAugmentChoiceUI : MonoBehaviour
         body.textWrappingMode = TextWrappingModes.Normal;
         body.overflowMode = TextOverflowModes.Ellipsis;
 
-        int captured = index;
-        button.onClick.AddListener(() => Choose(captured));
-
         return new ChoiceCard
         {
             Root = go,
@@ -480,6 +603,10 @@ public sealed class EmotionAugmentChoiceUI : MonoBehaviour
             return;
 
         EnsureView();
+
+        if (overlayRoot == null || cards == null)
+            return;
+
         manuallyMinimized = false;
         SetMinimizedVisible(false);
         ConfigureOfferVisuals(offer);

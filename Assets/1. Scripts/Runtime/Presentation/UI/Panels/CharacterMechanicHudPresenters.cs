@@ -188,6 +188,18 @@ internal sealed class YujinMechanicHudPresenter :
         builder.Append("    ");
         builder.Append("<color=#E8C875><b>살수의 감</b></color>  ");
         builder.Append(mechanic?.Sense ?? 0);
+
+        if (mechanic?.HasPendingWeapon == true)
+        {
+            builder.AppendLine();
+            builder.Append(
+                "<color=#F0C36E><b>다음 턴 무기</b></color>  ");
+            builder.Append(
+                YujinWeaponHudView.GetWeaponDisplayName(
+                    mechanic.PendingWeapon));
+            builder.Append("  <color=#A9B8C8>(환형 예약)</color>");
+        }
+
         builder.AppendLine();
         builder.Append("다음 각인·추격 감 사용  ");
         builder.Append(

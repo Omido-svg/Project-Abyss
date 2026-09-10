@@ -106,6 +106,7 @@ public sealed class BattleWorldSlotArrowOverlayUI : MonoBehaviour
     private readonly HashSet<ActionSlot> resolvedPlayerClashSlots = new();
     private readonly HashSet<ActionSlot> resolvedEnemyClashSlots = new();
     private bool hiddenForResolution;
+    private bool missingSceneOverlayLogged;
 
     // 클릭 전 Hover에서만 사용하는 임시 합 시각화 상태.
     // 실제 ActionSlot.TargetSlot / ClashBuilder 결과는 변경하지 않는다.
@@ -196,6 +197,35 @@ public sealed class BattleWorldSlotArrowOverlayUI : MonoBehaviour
 
     private void EnsureOverlay()
     {
+        if (overlayCanvas != null &&
+            arrowRoot != null &&
+            hoverPreviewRoot != null &&
+            hoverPreviewBackground != null &&
+            hoverPreviewText != null)
+        {
+            return;
+        }
+
+        if (TryResolveSceneOverlay())
+        {
+            missingSceneOverlayLogged = false;
+            return;
+        }
+
+        // Play Mode에서는 고정 Overlay Canvas/Hover Preview를 만들거나 배치하지 않는다.
+        if (Application.isPlaying)
+        {
+            if (!missingSceneOverlayLogged)
+            {
+                missingSceneOverlayLogged = true;
+                Debug.LogWarning(
+                    "[BattleWorldSlotArrowOverlayUI] Scene-authored WorldSlotArrowOverlay가 없습니다. " +
+                    "Editor 변환 도구를 실행하세요.",
+                    this);
+            }
+            return;
+        }
+
         if (overlayCanvas == null || arrowRoot == null)
         {
             Transform existing = transform.Find("WorldSlotArrowOverlay");
@@ -216,8 +246,6 @@ public sealed class BattleWorldSlotArrowOverlayUI : MonoBehaviour
 
             overlayCanvas = canvasGo.GetComponent<Canvas>();
             overlayCanvas.renderMode = RenderMode.ScreenSpaceOverlay;
-
-            // WorldSpace Plate보다 앞에서 보이되 일반 Screen UI와는 별도 표시 계약으로 제어한다.
             overlayCanvas.overrideSorting = true;
             overlayCanvas.sortingOrder = 20;
 
@@ -244,6 +272,37 @@ public sealed class BattleWorldSlotArrowOverlayUI : MonoBehaviour
         EnsureHoverPreview();
     }
 
+    private bool TryResolveSceneOverlay()
+    {
+        Transform existing = transform.Find("WorldSlotArrowOverlay");
+        if (existing == null)
+            return false;
+
+        Canvas canvas = existing.GetComponent<Canvas>();
+        RectTransform arrowsRoot =
+            existing.Find("Arrows") as RectTransform;
+        Transform preview = existing.Find("HoverClashPreview");
+        Image previewBackground = preview?.GetComponent<Image>();
+        TMP_Text previewText =
+            preview?.Find("Text")?.GetComponent<TMP_Text>();
+
+        if (canvas == null ||
+            arrowsRoot == null ||
+            preview == null ||
+            previewBackground == null ||
+            previewText == null)
+        {
+            return false;
+        }
+
+        overlayCanvas = canvas;
+        arrowRoot = arrowsRoot;
+        hoverPreviewRoot = preview as RectTransform;
+        hoverPreviewBackground = previewBackground;
+        hoverPreviewText = previewText;
+        return hoverPreviewRoot != null;
+    }
+
     private void EnsureHoverPreview()
     {
         if (overlayCanvas == null)
@@ -260,25 +319,34 @@ public sealed class BattleWorldSlotArrowOverlayUI : MonoBehaviour
             overlayCanvas.transform.Find(
                 "HoverClashPreview");
 
-        GameObject rootGo;
-
         if (existing != null)
         {
-            rootGo = existing.gameObject;
-        }
-        else
-        {
-            rootGo = new GameObject(
-                "HoverClashPreview",
-                typeof(RectTransform),
-                typeof(CanvasRenderer),
-                typeof(Image),
-                typeof(Outline));
+            hoverPreviewRoot = existing as RectTransform;
+            hoverPreviewBackground = existing.GetComponent<Image>();
+            hoverPreviewText =
+                existing.Find("Text")?.GetComponent<TMP_Text>();
 
-            rootGo.transform.SetParent(
-                overlayCanvas.transform,
-                false);
+            if (hoverPreviewRoot != null &&
+                hoverPreviewBackground != null &&
+                hoverPreviewText != null)
+            {
+                return;
+            }
         }
+
+        if (Application.isPlaying)
+            return;
+
+        GameObject rootGo = new GameObject(
+            "HoverClashPreview",
+            typeof(RectTransform),
+            typeof(CanvasRenderer),
+            typeof(Image),
+            typeof(Outline));
+
+        rootGo.transform.SetParent(
+            overlayCanvas.transform,
+            false);
 
         hoverPreviewRoot =
             rootGo.GetComponent<RectTransform>();
@@ -315,26 +383,14 @@ public sealed class BattleWorldSlotArrowOverlayUI : MonoBehaviour
                 2f,
                 -2f);
 
-        Transform textExisting =
-            rootGo.transform.Find("Text");
+        GameObject textGo = new GameObject(
+            "Text",
+            typeof(RectTransform),
+            typeof(TextMeshProUGUI));
 
-        GameObject textGo;
-
-        if (textExisting != null)
-        {
-            textGo = textExisting.gameObject;
-        }
-        else
-        {
-            textGo = new GameObject(
-                "Text",
-                typeof(RectTransform),
-                typeof(TextMeshProUGUI));
-
-            textGo.transform.SetParent(
-                rootGo.transform,
-                false);
-        }
+        textGo.transform.SetParent(
+            rootGo.transform,
+            false);
 
         RectTransform textRect =
             textGo.GetComponent<RectTransform>();
@@ -349,22 +405,25 @@ public sealed class BattleWorldSlotArrowOverlayUI : MonoBehaviour
 
         hoverPreviewText.alignment =
             TextAlignmentOptions.Center;
-
-        hoverPreviewText.fontStyle =
-            FontStyles.Bold;
-
+        hoverPreviewText.fontStyle = FontStyles.Bold;
         hoverPreviewText.fontSize = 19f;
         hoverPreviewText.enableAutoSizing = true;
         hoverPreviewText.fontSizeMin = 13f;
         hoverPreviewText.fontSizeMax = 19f;
         hoverPreviewText.textWrappingMode =
             TextWrappingModes.NoWrap;
-
         hoverPreviewText.raycastTarget = false;
 
         hoverPreviewRoot.SetAsLastSibling();
         SetHoverPreviewVisible(false);
     }
+
+#if UNITY_EDITOR
+    public void EditorAuthorSceneView()
+    {
+        EnsureOverlay();
+    }
+#endif
 
     private void RefreshArrows()
     {

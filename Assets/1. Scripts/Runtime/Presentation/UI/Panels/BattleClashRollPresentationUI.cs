@@ -221,7 +221,7 @@ public sealed class BattleClashRollPresentationUI : MonoBehaviour
                 yield break;
             }
 
-            elapsed += Time.unscaledDeltaTime;
+            elapsed += BattlePlaybackSpeedController.BattleUnscaledDeltaTime;
             canvasGroup.alpha = Mathf.Clamp01(elapsed / duration);
             yield return null;
         }
@@ -493,7 +493,7 @@ public sealed class BattleClashRollPresentationUI : MonoBehaviour
 
         while (elapsed < duration)
         {
-            elapsed += Time.unscaledDeltaTime;
+            elapsed += BattlePlaybackSpeedController.BattleUnscaledDeltaTime;
             canvasGroup.alpha =
                 Mathf.Lerp(
                     startAlpha,
@@ -1231,7 +1231,7 @@ public sealed class BattleClashRollPresentationUI : MonoBehaviour
 
         while (elapsed < safeDuration)
         {
-            elapsed += Time.unscaledDeltaTime;
+            elapsed += BattlePlaybackSpeedController.BattleUnscaledDeltaTime;
             yield return null;
         }
     }
