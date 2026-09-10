@@ -1,5 +1,3 @@
-using System.Text;
-using DG.Tweening;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -64,36 +62,11 @@ public sealed class CharacterMechanicHudUI : MonoBehaviour
     [SerializeField]
     private Image panelHeaderImage;
 
-    private readonly StringBuilder builder =
-        new StringBuilder();
-
-    private YujinMechanic boundYujinMechanic;
-    private Sequence weaponSequence;
-    private bool hasDisplayedWeapon;
-    private YujinWeaponType displayedWeapon;
-
-    private bool weaponButtonPositionsCaptured;
-    private Vector2 baekuButtonHomePosition;
-    private Vector2 jeokseolButtonHomePosition;
-    private Vector2 nakilButtonHomePosition;
-
-    private static readonly Color BaekuBase =
-        new Color(0.16f, 0.28f, 0.42f, 0.96f);
-
-    private static readonly Color BaekuAccent =
-        new Color(0.62f, 0.86f, 1f, 1f);
-
-    private static readonly Color JeokseolBase =
-        new Color(0.42f, 0.10f, 0.14f, 0.96f);
-
-    private static readonly Color JeokseolAccent =
-        new Color(1f, 0.28f, 0.32f, 1f);
-
-    private static readonly Color NakilBase =
-        new Color(0.42f, 0.25f, 0.04f, 0.96f);
-
-    private static readonly Color NakilAccent =
-        new Color(1f, 0.70f, 0.12f, 1f);
+    private CharacterMechanicHudPanelView panelView;
+    private YujinWeaponHudView yujinWeaponView;
+    private ICharacterMechanicHudPresenter olafPresenter;
+    private ICharacterMechanicHudPresenter yujinPresenter;
+    private ICharacterMechanicHudPresenter activePresenter;
 
     private void Awake()
     {
@@ -105,24 +78,31 @@ public sealed class CharacterMechanicHudUI : MonoBehaviour
 
         ResolveBattleManager();
         EnsureView();
-        BindControls();
+        RebuildPresenters();
     }
 
     private void OnEnable()
     {
         ResolveBattleManager();
+
+        if (enableLegacyCharacterPanel &&
+            olafPresenter == null)
+        {
+            EnsureView();
+            RebuildPresenters();
+        }
     }
 
     private void OnDisable()
     {
-        UnbindYujinMechanic();
-        KillWeaponAnimation();
+        DeactivatePresenter();
     }
 
     private void OnDestroy()
     {
-        UnbindYujinMechanic();
-        KillWeaponAnimation();
+        DeactivatePresenter();
+        yujinWeaponView?.Dispose();
+        yujinWeaponView = null;
     }
 
     private void Update()
@@ -132,823 +112,92 @@ public sealed class CharacterMechanicHudUI : MonoBehaviour
 
         if (player == null)
         {
-            UnbindYujinMechanic();
-
-            if (summaryText != null)
-                summaryText.text = "캐릭터 고유 정보: 전투 준비 중";
-
-            if (yujinControls != null)
-                yujinControls.SetActive(false);
-
-            SetWeaponAnnouncementVisible(false);
+            DeactivatePresenter();
+            panelView?.SetPresentation(
+                "캐릭터 고유 정보",
+                false);
+            panelView?.SetSummary(
+                "캐릭터 고유 정보: 전투 준비 중");
             return;
         }
 
-        if (player is Olaf olaf)
+        ICharacterMechanicHudPresenter presenter =
+            ResolvePresenter(player);
+
+        if (presenter == null)
         {
-            UnbindYujinMechanic();
-            DrawOlaf(olaf);
-
-            if (yujinControls != null)
-                yujinControls.SetActive(false);
-
-            SetWeaponAnnouncementVisible(false);
-            return;
-        }
-
-        if (player is Yujin yujin)
-        {
-            DrawYujin(yujin);
-
-            if (yujinControls != null)
-                yujinControls.SetActive(true);
-
-            return;
-        }
-
-        UnbindYujinMechanic();
-
-        if (summaryText != null)
-        {
-            summaryText.text =
+            DeactivatePresenter();
+            panelView?.SetPresentation(
+                $"{player.Data?.CharacterName ?? player.name}  ·  전용 HUD",
+                false);
+            panelView?.SetSummary(
                 $"{player.Data?.CharacterName ?? player.name}\n" +
-                "전용 HUD 없음";
-        }
-
-        if (yujinControls != null)
-            yujinControls.SetActive(false);
-
-        SetWeaponAnnouncementVisible(false);
-    }
-
-    private void DrawOlaf(
-        Olaf olaf)
-    {
-        OlafMadnessMechanic mechanic =
-            olaf.MadnessMechanic;
-
-        SetPanelPresentation(
-            "올라프  ·  광기 운용",
-            false);
-
-        builder.Clear();
-        builder.Append("<color=#F2B35F><b>광기</b></color>  ");
-        builder.Append(mechanic?.CurrentMadness ?? 0);
-        builder.Append('/');
-        builder.Append(mechanic?.MaxMadness ?? 10);
-
-        if (mechanic?.IsBlooming == true)
-        {
-            builder.Append(
-                "  <color=#FFD66B><b>만개</b></color>");
-        }
-
-        builder.AppendLine();
-        builder.AppendLine();
-        builder.AppendLine(
-            "<color=#8DCBFF><b>내 부위 상태</b></color>");
-        AppendOwnPartStates(olaf);
-        builder.AppendLine();
-        builder.AppendLine();
-        builder.AppendLine(
-            "<color=#FF8B7B><b>적 혈상</b></color>");
-        AppendEnemyPartValues(
-            (enemy, part) =>
-                enemy.GetPartStatus<Bleeding>(part)?.Stack ?? 0,
-            "혈상");
-
-        if (summaryText != null)
-            summaryText.text = builder.ToString();
-    }
-
-    private void DrawYujin(
-        Yujin yujin)
-    {
-        YujinMechanic mechanic =
-            yujin.YujinMechanic;
-
-        BindYujinMechanic(mechanic);
-
-        SetPanelPresentation(
-            "유진  ·  무기 운용",
-            true);
-
-        builder.Clear();
-        builder.Append("<color=#8DCBFF><b>현재 무기</b></color>  ");
-        builder.Append(
-            GetWeaponDisplayName(
-                mechanic?.CurrentWeapon ??
-                YujinWeaponType.Baeku));
-        builder.Append("    ");
-        builder.Append("<color=#E8C875><b>살수의 감</b></color>  ");
-        builder.Append(mechanic?.Sense ?? 0);
-        builder.AppendLine();
-        builder.Append("다음 각인·추격 감 사용  ");
-        builder.Append(
-            mechanic?.AutoUseSense == true
-                ? "<color=#72E0A2><b>ON</b></color>"
-                : "<color=#9AA6B2><b>OFF</b></color>");
-        builder.AppendLine();
-        builder.AppendLine(
-            "<color=#A9B8C8>환형  빛 1 · 턴당 1회 · 행동 선택 전</color>");
-        builder.AppendLine();
-        builder.AppendLine(
-            "<color=#8DCBFF><b>내 부위 상태</b></color>");
-        AppendOwnPartStates(yujin);
-        builder.AppendLine();
-        builder.AppendLine();
-        builder.AppendLine(
-            "<color=#F0C36E><b>적 표식</b></color>");
-        AppendEnemyPartValues(
-            (enemy, part) => mechanic?.GetMark(part) ?? 0,
-            "표식");
-
-        if (summaryText != null)
-            summaryText.text = builder.ToString();
-
-        if (autoSenseToggle != null)
-        {
-            autoSenseToggle.interactable =
-                mechanic != null;
-
-            if (mechanic != null &&
-                autoSenseToggle.isOn != mechanic.AutoUseSense)
-            {
-                autoSenseToggle.SetIsOnWithoutNotify(
-                    mechanic.AutoUseSense);
-            }
-        }
-
-        if (mechanic != null)
-        {
-            UpdateWeaponButtonState(mechanic);
-
-            if (!hasDisplayedWeapon)
-            {
-                displayedWeapon =
-                    mechanic.CurrentWeapon;
-
-                hasDisplayedWeapon = true;
-                ApplyWeaponSelectionImmediate(
-                    displayedWeapon);
-            }
-            else if (displayedWeapon !=
-                     mechanic.CurrentWeapon)
-            {
-                // 자동계획이나 디버그 도구가 직접 무기를 바꾼 경우에도
-                // 버튼 클릭과 같은 전환 연출을 재생한다.
-                YujinWeaponType previous =
-                    displayedWeapon;
-
-                displayedWeapon =
-                    mechanic.CurrentWeapon;
-
-                PlayWeaponChangeAnimation(
-                    previous,
-                    displayedWeapon);
-            }
-        }
-    }
-
-    private void AppendOwnPartStates(
-        Character character)
-    {
-        PartType[] order =
-        {
-            PartType.HEAD,
-            PartType.RIGHT_HAND,
-            PartType.LEFT_HAND,
-            PartType.LEGS
-        };
-
-        int wrote = 0;
-
-        for (int i = 0;
-             i < order.Length;
-             i++)
-        {
-            BodyPart part =
-                FindBodyPart(
-                    character,
-                    order[i]);
-
-            if (part == null)
-                continue;
-
-            if (wrote > 0)
-            {
-                builder.Append(
-                    wrote % 2 == 0
-                        ? "\n"
-                        : "      ");
-            }
-
-            builder.Append(
-                GetPartDisplayName(part.Type));
-            builder.Append("  ");
-            builder.Append(
-                GetPartStateDisplayName(part.State));
-
-            wrote++;
-        }
-
-        if (wrote == 0)
-            builder.Append('-');
-    }
-
-    private void AppendEnemyPartValues(
-        System.Func<Character, BodyPart, int> selector,
-        string label)
-    {
-        if (selector == null ||
-            battleManager?.BattleContext?.Enemies == null)
-        {
-            builder.Append('-');
+                "전용 HUD 없음");
             return;
         }
 
-        bool wroteAnyValue = false;
-
-        foreach (Character enemy in
-                 battleManager.BattleContext.Enemies)
+        if (!ReferenceEquals(activePresenter, presenter))
         {
-            if (enemy == null ||
-                enemy.BodyParts == null)
-            {
-                continue;
-            }
-
-            bool wroteEnemyName = false;
-            bool wrotePart = false;
-
-            foreach (BodyPart part in enemy.BodyParts)
-            {
-                if (part == null)
-                    continue;
-
-                int value =
-                    Mathf.Max(
-                        0,
-                        selector(enemy, part));
-
-                // 0인 값은 숨겨 패널이 길게 넘치지 않도록 한다.
-                if (value <= 0)
-                    continue;
-
-                if (!wroteEnemyName)
-                {
-                    if (wroteAnyValue)
-                        builder.AppendLine();
-
-                    builder.Append(
-                        enemy.Data?.CharacterName ?? enemy.name);
-                    builder.Append("  ");
-                    wroteEnemyName = true;
-                }
-
-                if (wrotePart)
-                    builder.Append("  ·  ");
-
-                builder.Append(
-                    GetPartDisplayName(part.Type));
-                builder.Append(' ');
-                builder.Append(value);
-
-                wrotePart = true;
-                wroteAnyValue = true;
-            }
+            DeactivatePresenter();
+            activePresenter = presenter;
         }
 
-        if (!wroteAnyValue)
-        {
-            builder.Append(label);
-            builder.Append(" 없음");
-        }
+        activePresenter.Present(player);
     }
 
-    private static BodyPart FindBodyPart(
-        Character character,
-        PartType type)
+    private ICharacterMechanicHudPresenter ResolvePresenter(
+        Character player)
     {
-        if (character?.BodyParts == null)
-            return null;
+        if (olafPresenter?.CanPresent(player) == true)
+            return olafPresenter;
 
-        foreach (BodyPart part in character.BodyParts)
-        {
-            if (part != null &&
-                part.Type == type)
-            {
-                return part;
-            }
-        }
+        if (yujinPresenter?.CanPresent(player) == true)
+            return yujinPresenter;
 
         return null;
     }
 
-    private static string GetPartDisplayName(
-        PartType type)
+    private void DeactivatePresenter()
     {
-        return type switch
-        {
-            PartType.HEAD => "머리",
-            PartType.RIGHT_HAND => "오른손",
-            PartType.LEFT_HAND => "왼손",
-            PartType.LEGS => "다리",
-            _ => type.ToString()
-        };
+        activePresenter?.Deactivate();
+        activePresenter = null;
     }
 
-    private static string GetPartStateDisplayName(
-        BodyPartState state)
+    private void RebuildPresenters()
     {
-        return state switch
-        {
-            BodyPartState.Normal =>
-                "<color=#B9D4EA>정상</color>",
-
-            BodyPartState.Weakened =>
-                "<color=#F6C96A>약화</color>",
-
-            BodyPartState.Broken =>
-                "<color=#FF746C>파괴</color>",
-
-            _ => state.ToString()
-        };
-    }
-
-    private void BindControls()
-    {
-        baekuButton?.onClick.RemoveAllListeners();
-        jeokseolButton?.onClick.RemoveAllListeners();
-        nakilButton?.onClick.RemoveAllListeners();
-        autoSenseToggle?.onValueChanged.RemoveAllListeners();
-
-        baekuButton?.onClick.AddListener(
-            () => SwitchWeapon(
-                YujinWeaponType.Baeku));
-
-        jeokseolButton?.onClick.AddListener(
-            () => SwitchWeapon(
-                YujinWeaponType.Jeokseol));
-
-        nakilButton?.onClick.AddListener(
-            () => SwitchWeapon(
-                YujinWeaponType.Nakil));
-
-        autoSenseToggle?.onValueChanged.AddListener(
-            value =>
-            {
-                BattleCharacterPointerRouter
-                    .BlockWorldInputForFrames(2);
-
-                YujinMechanic mechanic =
-                    GetYujinMechanic();
-
-                if (mechanic != null)
-                    mechanic.AutoUseSense = value;
-            });
-    }
-
-    private void SwitchWeapon(
-        YujinWeaponType weapon)
-    {
-        BattleCharacterPointerRouter
-            .BlockWorldInputForFrames(2);
-
-        YujinMechanic mechanic =
-            GetYujinMechanic();
-
-        if (mechanic == null)
-            return;
-
-        mechanic.TrySwitchWeapon(weapon);
-    }
-
-    private void BindYujinMechanic(
-        YujinMechanic mechanic)
-    {
-        if (ReferenceEquals(
-                boundYujinMechanic,
-                mechanic))
-        {
-            return;
-        }
-
-        UnbindYujinMechanic();
-        boundYujinMechanic = mechanic;
-        hasDisplayedWeapon = false;
-
-        if (boundYujinMechanic != null)
-        {
-            boundYujinMechanic.WeaponChanged +=
-                OnWeaponChanged;
-        }
-    }
-
-    private void UnbindYujinMechanic()
-    {
-        if (boundYujinMechanic != null)
-        {
-            boundYujinMechanic.WeaponChanged -=
-                OnWeaponChanged;
-        }
-
-        boundYujinMechanic = null;
-        hasDisplayedWeapon = false;
-    }
-
-    private void OnWeaponChanged(
-        YujinWeaponType previous,
-        YujinWeaponType current)
-    {
-        displayedWeapon = current;
-        hasDisplayedWeapon = true;
-
-        PlayWeaponChangeAnimation(
-            previous,
-            current);
-    }
-
-    private void UpdateWeaponButtonState(
-        YujinMechanic mechanic)
-    {
-        UpdateWeaponButton(
-            baekuButton,
-            YujinWeaponType.Baeku,
-            mechanic,
-            BaekuBase,
-            BaekuAccent);
-
-        UpdateWeaponButton(
-            jeokseolButton,
-            YujinWeaponType.Jeokseol,
-            mechanic,
-            JeokseolBase,
-            JeokseolAccent);
-
-        UpdateWeaponButton(
-            nakilButton,
-            YujinWeaponType.Nakil,
-            mechanic,
-            NakilBase,
-            NakilAccent);
-    }
-
-    private static void UpdateWeaponButton(
-        Button button,
-        YujinWeaponType weapon,
-        YujinMechanic mechanic,
-        Color baseColor,
-        Color accentColor)
-    {
-        if (button == null ||
-            mechanic == null)
-        {
-            return;
-        }
-
-        bool selected =
-            mechanic.CurrentWeapon == weapon;
-
-        button.interactable =
-            mechanic.CanSwitchWeapon(weapon);
-
-        Image image =
-            button.GetComponent<Image>();
-
-        if (image != null)
-        {
-            image.color = selected
-                ? Color.Lerp(baseColor, accentColor, 0.52f)
-                : baseColor;
-        }
-    }
-
-    private void PlayWeaponChangeAnimation(
-        YujinWeaponType previous,
-        YujinWeaponType current)
-    {
-        EnsureWeaponPresentation();
-        KillWeaponAnimation();
-        RestoreWeaponButtonPositions();
-
-        RectTransform target =
-            GetWeaponButtonRect(current);
-
-        Color accent =
-            GetWeaponAccent(current);
-
-        ApplyAnnouncementContent(current);
-
-        weaponSequence = DOTween.Sequence()
-            .SetUpdate(true);
-
-        if (weaponSelectionFrame != null &&
-            target != null)
-        {
-            weaponSelectionFrame.gameObject.SetActive(true);
-
-            weaponSequence.Join(
-                weaponSelectionFrame
-                    .DOAnchorPos(
-                        target.anchoredPosition,
-                        0.20f)
-                    .SetEase(Ease.OutBack));
-        }
-
-        if (weaponSelectionFrameImage != null)
-        {
-            weaponSequence.Join(
-                weaponSelectionFrameImage
-                    .DOColor(accent, 0.18f));
-        }
-
-        if (weaponAnnouncementGroup != null)
-        {
-            weaponAnnouncementRoot.gameObject.SetActive(true);
-            weaponAnnouncementGroup.alpha = 0f;
-
-            weaponSequence.Join(
-                weaponAnnouncementGroup
-                    .DOFade(1f, 0.12f));
-        }
-
-        if (weaponAnnouncementRoot != null)
-        {
-            weaponAnnouncementRoot.localScale =
-                new Vector3(0.92f, 0.92f, 1f);
-
-            weaponSequence.Join(
-                weaponAnnouncementRoot
-                    .DOScale(1f, 0.20f)
-                    .SetEase(Ease.OutBack));
-        }
-
-        AppendWeaponSpecificMotion(
-            weaponSequence,
-            current,
-            target);
-
-        weaponSequence.AppendInterval(0.72f);
-
-        if (weaponAnnouncementGroup != null)
-        {
-            weaponSequence.Append(
-                weaponAnnouncementGroup
-                    .DOFade(0f, 0.22f));
-        }
-
-        weaponSequence.OnComplete(() =>
-        {
-            if (weaponAnnouncementRoot != null)
-                weaponAnnouncementRoot.gameObject.SetActive(false);
-
-            weaponSequence = null;
-        });
-    }
-
-    private static void AppendWeaponSpecificMotion(
-        Sequence sequence,
-        YujinWeaponType weapon,
-        RectTransform target)
-    {
-        if (sequence == null ||
-            target == null)
-        {
-            return;
-        }
-
-        target.DOKill(false);
-        target.localScale = Vector3.one;
-        target.localRotation = Quaternion.identity;
-
-        switch (weapon)
-        {
-            case YujinWeaponType.Baeku:
-                // 백우: 세 코인을 상징하는 짧고 안정적인 3연속 맥동.
-                sequence.Append(
-                    target.DOScale(1.12f, 0.08f));
-                sequence.Append(
-                    target.DOScale(0.98f, 0.07f));
-                sequence.Append(
-                    target.DOScale(1.08f, 0.07f));
-                sequence.Append(
-                    target.DOScale(1f, 0.08f));
-                break;
-
-            case YujinWeaponType.Jeokseol:
-                // 적설: 위치를 직접 건드리지 않고 회전과 크기만 흔든다.
-                // DOPunchAnchorPos는 Sequence가 중간에 Kill될 때 버튼의
-                // anchoredPosition을 오염시킬 수 있으므로 사용하지 않는다.
-                sequence.Append(
-                    target.DOPunchRotation(
-                        new Vector3(0f, 0f, -10f),
-                        0.30f,
-                        7,
-                        0.48f));
-                sequence.Join(
-                    target.DOPunchScale(
-                        new Vector3(0.11f, 0.05f, 0f),
-                        0.30f,
-                        5,
-                        0.42f));
-                break;
-
-            case YujinWeaponType.Nakil:
-                // 낙일: 단일 코인과 처형을 상징하는 한 번의 강한 낙하 충격.
-                sequence.Append(
-                    target.DOScale(1.24f, 0.12f)
-                        .SetEase(Ease.OutExpo));
-                sequence.Join(
-                    target.DOLocalRotate(
-                        new Vector3(0f, 0f, -8f),
-                        0.12f));
-                sequence.Append(
-                    target.DOScale(1f, 0.18f)
-                        .SetEase(Ease.OutBounce));
-                sequence.Join(
-                    target.DOLocalRotate(
-                        Vector3.zero,
-                        0.18f));
-                break;
-        }
-    }
-
-    private void ApplyWeaponSelectionImmediate(
-        YujinWeaponType weapon)
-    {
-        EnsureWeaponPresentation();
-        RestoreWeaponButtonPositions();
-
-        RectTransform target =
-            GetWeaponButtonRect(weapon);
-
-        if (weaponSelectionFrame != null &&
-            target != null)
-        {
-            weaponSelectionFrame.gameObject.SetActive(true);
-            weaponSelectionFrame.anchoredPosition =
-                target.anchoredPosition;
-        }
-
-        if (weaponSelectionFrameImage != null)
-        {
-            weaponSelectionFrameImage.color =
-                GetWeaponAccent(weapon);
-        }
-    }
-
-    private void ApplyAnnouncementContent(
-        YujinWeaponType weapon)
-    {
-        if (weaponAnnouncementBackground != null)
-        {
-            weaponAnnouncementBackground.color =
-                Color.Lerp(
-                    GetWeaponBase(weapon),
-                    Color.black,
-                    0.14f);
-        }
-
-        if (weaponAnnouncementText == null)
-            return;
-
-        weaponAnnouncementText.text =
-            weapon switch
-            {
-                YujinWeaponType.Baeku =>
-                    "백우 전환  ·  3코인 / 안정형",
-
-                YujinWeaponType.Jeokseol =>
-                    "적설 전환  ·  2코인 / 다부위",
-
-                YujinWeaponType.Nakil =>
-                    "낙일 전환  ·  1코인 / 처형형",
-
-                _ => weapon.ToString()
-            };
-
-        weaponAnnouncementText.color =
-            GetWeaponAccent(weapon);
-    }
-
-    private void KillWeaponAnimation()
-    {
-        if (weaponSequence != null)
-        {
-            weaponSequence.Kill(false);
-            weaponSequence = null;
-        }
-
-        ResetButtonTransform(
-            baekuButton,
-            baekuButtonHomePosition,
-            weaponButtonPositionsCaptured);
-
-        ResetButtonTransform(
-            jeokseolButton,
-            jeokseolButtonHomePosition,
-            weaponButtonPositionsCaptured);
-
-        ResetButtonTransform(
-            nakilButton,
-            nakilButtonHomePosition,
-            weaponButtonPositionsCaptured);
-    }
-
-    private void CaptureWeaponButtonPositions(
-        bool force = false)
-    {
-        if (weaponButtonPositionsCaptured &&
-            !force)
-        {
-            return;
-        }
-
-        RectTransform baekuRect =
-            baekuButton?.transform as RectTransform;
-
-        RectTransform jeokseolRect =
-            jeokseolButton?.transform as RectTransform;
-
-        RectTransform nakilRect =
-            nakilButton?.transform as RectTransform;
-
-        if (baekuRect == null ||
-            jeokseolRect == null ||
-            nakilRect == null)
-        {
-            return;
-        }
-
-        baekuButtonHomePosition =
-            baekuRect.anchoredPosition;
-
-        jeokseolButtonHomePosition =
-            jeokseolRect.anchoredPosition;
-
-        nakilButtonHomePosition =
-            nakilRect.anchoredPosition;
-
-        weaponButtonPositionsCaptured = true;
-    }
-
-    private void RestoreWeaponButtonPositions()
-    {
-        CaptureWeaponButtonPositions();
-
-        if (!weaponButtonPositionsCaptured)
-            return;
-
-        SetButtonAnchoredPosition(
-            baekuButton,
-            baekuButtonHomePosition);
-
-        SetButtonAnchoredPosition(
-            jeokseolButton,
-            jeokseolButtonHomePosition);
-
-        SetButtonAnchoredPosition(
-            nakilButton,
-            nakilButtonHomePosition);
-    }
-
-    private static void ResetButtonTransform(
-        Button button,
-        Vector2 homePosition,
-        bool restorePosition)
-    {
-        RectTransform rect =
-            button?.transform as RectTransform;
-
-        if (rect == null)
-            return;
-
-        rect.DOKill(false);
-
-        if (restorePosition)
-            rect.anchoredPosition = homePosition;
-
-        rect.localScale = Vector3.one;
-        rect.localRotation = Quaternion.identity;
-    }
-
-    private static void SetButtonAnchoredPosition(
-        Button button,
-        Vector2 anchoredPosition)
-    {
-        RectTransform rect =
-            button?.transform as RectTransform;
-
-        if (rect != null)
-            rect.anchoredPosition = anchoredPosition;
-    }
-
-    private YujinMechanic GetYujinMechanic()
-    {
-        return (
-            battleManager?.BattleContext?.Player
-            as Yujin)?.YujinMechanic;
+        DeactivatePresenter();
+        yujinWeaponView?.Dispose();
+
+        panelView =
+            new CharacterMechanicHudPanelView(
+                transform as RectTransform,
+                summaryText,
+                panelTitleText,
+                yujinControls);
+
+        yujinWeaponView =
+            new YujinWeaponHudView(
+                baekuButton,
+                jeokseolButton,
+                nakilButton,
+                autoSenseToggle,
+                weaponSelectionFrame,
+                weaponSelectionFrameImage,
+                weaponAnnouncementRoot,
+                weaponAnnouncementGroup,
+                weaponAnnouncementBackground,
+                weaponAnnouncementText);
+
+        olafPresenter =
+            new OlafMechanicHudPresenter(
+                panelView,
+                () => battleManager);
+
+        yujinPresenter =
+            new YujinMechanicHudPresenter(
+                panelView,
+                yujinWeaponView,
+                () => battleManager);
     }
 
     private void ResolveBattleManager()
@@ -1012,8 +261,6 @@ public sealed class CharacterMechanicHudUI : MonoBehaviour
         ApplySharedFont();
         EnsureWeaponPresentation();
 
-        CaptureWeaponButtonPositions(force: true);
-        RestoreWeaponButtonPositions();
     }
 
     private void EnsurePanelHeader(
@@ -1188,7 +435,7 @@ public sealed class CharacterMechanicHudUI : MonoBehaviour
                     "백우",
                     controls,
                     Vector2.zero,
-                    BaekuBase);
+                    YujinWeaponHudView.BaekuBase);
         }
 
         if (jeokseolButton == null)
@@ -1199,7 +446,7 @@ public sealed class CharacterMechanicHudUI : MonoBehaviour
                     "적설",
                     controls,
                     Vector2.zero,
-                    JeokseolBase);
+                    YujinWeaponHudView.JeokseolBase);
         }
 
         if (nakilButton == null)
@@ -1210,23 +457,23 @@ public sealed class CharacterMechanicHudUI : MonoBehaviour
                     "낙일",
                     controls,
                     Vector2.zero,
-                    NakilBase);
+                    YujinWeaponHudView.NakilBase);
         }
 
         ConfigureWeaponButton(
             baekuButton,
             new Vector2(0f, 66f),
-            BaekuBase);
+            YujinWeaponHudView.BaekuBase);
 
         ConfigureWeaponButton(
             jeokseolButton,
             new Vector2(128f, 66f),
-            JeokseolBase);
+            YujinWeaponHudView.JeokseolBase);
 
         ConfigureWeaponButton(
             nakilButton,
             new Vector2(256f, 66f),
-            NakilBase);
+            YujinWeaponHudView.NakilBase);
 
         if (autoSenseToggle == null)
         {
@@ -1452,30 +699,6 @@ public sealed class CharacterMechanicHudUI : MonoBehaviour
         autoSenseHelpText.raycastTarget = false;
     }
 
-    private void SetPanelPresentation(
-        string title,
-        bool showYujinControls)
-    {
-        RectTransform root =
-            transform as RectTransform;
-
-        if (root != null)
-        {
-            root.sizeDelta =
-                new Vector2(
-                    430f,
-                    showYujinControls
-                        ? 340f
-                        : 246f);
-        }
-
-        if (panelTitleText != null)
-            panelTitleText.text = title;
-
-        if (yujinControls != null)
-            yujinControls.SetActive(showYujinControls);
-    }
-
     private void ApplySharedFont()
     {
         TMP_FontAsset sharedFont =
@@ -1570,7 +793,7 @@ public sealed class CharacterMechanicHudUI : MonoBehaviour
                 frame.GetComponent<Image>();
 
             weaponSelectionFrameImage.color =
-                BaekuAccent;
+                YujinWeaponHudView.BaekuAccent;
 
             weaponSelectionFrameImage.raycastTarget = false;
             frame.transform.SetAsFirstSibling();
@@ -1713,74 +936,6 @@ public sealed class CharacterMechanicHudUI : MonoBehaviour
             weaponAnnouncementText.alignment =
                 TextAlignmentOptions.Center;
         }
-    }
-
-    private void SetWeaponAnnouncementVisible(
-        bool visible)
-    {
-        if (weaponAnnouncementRoot == null)
-            return;
-
-        if (!visible)
-        {
-            KillWeaponAnimation();
-            weaponAnnouncementRoot.gameObject.SetActive(false);
-
-            if (weaponAnnouncementGroup != null)
-                weaponAnnouncementGroup.alpha = 0f;
-        }
-    }
-
-    private RectTransform GetWeaponButtonRect(
-        YujinWeaponType weapon)
-    {
-        Button button =
-            weapon switch
-            {
-                YujinWeaponType.Baeku => baekuButton,
-                YujinWeaponType.Jeokseol => jeokseolButton,
-                YujinWeaponType.Nakil => nakilButton,
-                _ => null
-            };
-
-        return button?.transform
-            as RectTransform;
-    }
-
-    private static Color GetWeaponBase(
-        YujinWeaponType weapon)
-    {
-        return weapon switch
-        {
-            YujinWeaponType.Baeku => BaekuBase,
-            YujinWeaponType.Jeokseol => JeokseolBase,
-            YujinWeaponType.Nakil => NakilBase,
-            _ => Color.gray
-        };
-    }
-
-    private static Color GetWeaponAccent(
-        YujinWeaponType weapon)
-    {
-        return weapon switch
-        {
-            YujinWeaponType.Baeku => BaekuAccent,
-            YujinWeaponType.Jeokseol => JeokseolAccent,
-            YujinWeaponType.Nakil => NakilAccent,
-            _ => Color.white
-        };
-    }
-
-    private static string GetWeaponDisplayName(
-        YujinWeaponType weapon)
-    {
-        return weapon switch
-        {
-            YujinWeaponType.Baeku => "백우",
-            YujinWeaponType.Jeokseol => "적설",
-            YujinWeaponType.Nakil => "낙일",
-            _ => weapon.ToString()
-        };
     }
 
     private static TMP_Text CreateText(

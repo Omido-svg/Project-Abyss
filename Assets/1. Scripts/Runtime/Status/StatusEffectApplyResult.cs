@@ -16,6 +16,12 @@ public sealed class StatusEffectApplyResult
     public StatusEffect Effect;
     public StatusEffect IncomingEffect;
 
+    // 스킬 효과에서 유래한 상태라면 논리 Action/교환과 프레젠테이션을 연결한다.
+    public BattleAction SourceAction;
+    public int SourceExchangeIndex = -1;
+    public SkillEffectTiming SourceEffectTiming;
+    public bool HasSourceEffectTiming;
+
     public StatusEffectApplyKind Kind;
 
     public int StackBefore;

@@ -1,5 +1,4 @@
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Text;
 using DG.Tweening;
@@ -94,8 +93,7 @@ public sealed class BattleCharacterDetailPanelUI : MonoBehaviour
     private Vector2 shownSurfacePosition;
     private bool shownSurfacePositionCaptured;
     private bool isHiding;
-    private Coroutine detailCameraFocusRoutine;
-    private Transform runtimeCorrectedCameraPoint;
+    private CharacterDetailCameraPresenter cameraPresenter;
     private int detailRequestVersion;
 
     public bool IsVisible =>
@@ -160,6 +158,7 @@ public sealed class BattleCharacterDetailPanelUI : MonoBehaviour
             : null;
 
         ResolveUiReferences();
+        EnsureCameraPresenter();
         ConfigureScrollViews();
         BindButtons();
         ApplyReadableTextSettings();
@@ -170,6 +169,7 @@ public sealed class BattleCharacterDetailPanelUI : MonoBehaviour
     private void Awake()
     {
         ResolveUiReferences();
+        EnsureCameraPresenter();
         ConfigureScrollViews();
         canvasGroup ??= GetComponent<CanvasGroup>();
 
@@ -237,6 +237,7 @@ public sealed class BattleCharacterDetailPanelUI : MonoBehaviour
             return;
 
         ResolveUiReferences();
+        EnsureCameraPresenter();
         ConfigureScrollViews();
         BindButtons();
         ApplyReadableTextSettings();
@@ -266,7 +267,7 @@ public sealed class BattleCharacterDetailPanelUI : MonoBehaviour
         SelectTab(BattleCharacterDetailTab.Summary);
         RefreshHeader();
         LogBoundDetailData(target);
-        RequestCameraFocus(target);
+        cameraPresenter?.RequestFocus(target);
 
         if (canvasGroup != null)
         {
@@ -312,7 +313,7 @@ public sealed class BattleCharacterDetailPanelUI : MonoBehaviour
 
     public void HideForResolution()
     {
-        StopDetailCameraFocusRoutine();
+        cameraPresenter?.CancelPendingFocus();
         KillVisibilityTween();
         isHiding = false;
         character = null;
@@ -321,7 +322,7 @@ public sealed class BattleCharacterDetailPanelUI : MonoBehaviour
         ClearGeneratedKeywordItems();
         HideKeywordPopup();
         HideImmediate(false);
-        cameraDirector?.ReturnFromInteraction();
+        cameraPresenter?.ReturnFromInteraction();
         BattleCharacterPointerRouter.ClearPersistentSelection();
     }
 
@@ -370,7 +371,7 @@ public sealed class BattleCharacterDetailPanelUI : MonoBehaviour
 
     private void CompleteHide()
     {
-        StopDetailCameraFocusRoutine();
+        cameraPresenter?.CancelPendingFocus();
         character = null;
         selectedSkill = null;
         ClearGeneratedListItems();
@@ -378,7 +379,7 @@ public sealed class BattleCharacterDetailPanelUI : MonoBehaviour
         HideKeywordPopup();
         HideImmediate(false);
 
-        cameraDirector?.ReturnFromInteraction();
+        cameraPresenter?.ReturnFromInteraction();
         BattleCharacterPointerRouter.ClearPersistentSelection();
         modeController?.ShowDefaultMode();
     }
@@ -1063,435 +1064,6 @@ public sealed class BattleCharacterDetailPanelUI : MonoBehaviour
             keywordPopup.SetActive(false);
     }
 
-    private void RequestCameraFocus(Character target)
-    {
-        StopDetailCameraFocusRoutine();
-
-        // 상세 패널이 선택된 캐릭터의 CameraPoint를 즉시 적용합니다.
-        FocusCameraOnCharacter(target);
-
-        if (isActiveAndEnabled)
-        {
-            detailCameraFocusRoutine =
-                StartCoroutine(ReassertDetailCameraAtEndOfFrame(target));
-        }
-    }
-
-    private IEnumerator ReassertDetailCameraAtEndOfFrame(Character target)
-    {
-        yield return new WaitForEndOfFrame();
-
-        detailCameraFocusRoutine = null;
-
-        if (target == null ||
-            character != target ||
-            modeController?.CurrentMode != BattleUiScreenMode.CharacterDetails)
-        {
-            yield break;
-        }
-
-        FocusCameraOnCharacter(target);
-    }
-
-    private void StopDetailCameraFocusRoutine()
-    {
-        if (detailCameraFocusRoutine == null)
-            return;
-
-        StopCoroutine(detailCameraFocusRoutine);
-        detailCameraFocusRoutine = null;
-    }
-
-    private void FocusCameraOnCharacter(
-        Character target)
-    {
-        if (target == null ||
-            cameraDirector == null)
-        {
-            return;
-        }
-
-        Transform cameraPoint =
-            FindOwnedCameraPoint(
-                target,
-                detailCameraPointKey);
-
-        string resolvedKey =
-            detailCameraPointKey;
-
-        if (cameraPoint == null &&
-            allowCloseCameraFallback)
-        {
-            cameraPoint =
-                FindOwnedCameraPoint(
-                    target,
-                    "CloseCameraPoint");
-
-            resolvedKey =
-                "CloseCameraPoint";
-
-            if (cameraPoint == null)
-            {
-                cameraPoint =
-                    FindOwnedCameraPoint(
-                        target,
-                        "FrontCameraPoint");
-
-                resolvedKey =
-                    "FrontCameraPoint";
-            }
-
-            if (cameraPoint != null)
-            {
-                Debug.LogWarning(
-                    "[CharacterDetailPanel] DetailCameraPoint가 없어 " +
-                    $"Fallback을 사용합니다. " +
-                    $"Target={GetCharacterName(target)}#{target.GetInstanceID()}, " +
-                    $"Fallback={resolvedKey}, " +
-                    $"PointPath={BattleCharacterPointerRouter.GetHierarchyPath(cameraPoint)}",
-                    target);
-            }
-        }
-
-        if (cameraPoint == null)
-        {
-            Debug.LogError(
-                "[CharacterDetailPanel] 대상 캐릭터 하위에서 상세 카메라 포인트를 찾지 못했습니다. " +
-                $"Target={GetCharacterName(target)}#{target.GetInstanceID()}, " +
-                $"TargetPath={BattleCharacterPointerRouter.GetHierarchyPath(target.transform)}, " +
-                $"Key={detailCameraPointKey}",
-                target);
-
-            return;
-        }
-
-        if (!cameraPoint.IsChildOf(
-                target.transform))
-        {
-            Debug.LogError(
-                "[CharacterDetailPanel] 다른 캐릭터의 CameraPoint 사용을 차단했습니다. " +
-                $"Target={GetCharacterName(target)}#{target.GetInstanceID()}, " +
-                $"TargetPath={BattleCharacterPointerRouter.GetHierarchyPath(target.transform)}, " +
-                $"PointPath={BattleCharacterPointerRouter.GetHierarchyPath(cameraPoint)}",
-                target);
-
-            return;
-        }
-
-        Vector3 lookTarget =
-            ResolveCharacterLookTarget(
-                target,
-                out Bounds visualBounds,
-                out bool hasVisualBounds);
-
-        Transform focusPoint =
-            cameraPoint;
-
-        bool pointValid =
-            IsCameraPointAimingAtTarget(
-                cameraPoint,
-                lookTarget,
-                out float targetFacingDot,
-                out float targetDistance);
-
-        if (!pointValid &&
-            autoCorrectMisalignedCameraPoint)
-        {
-            focusPoint =
-                BuildCorrectedRuntimeCameraPoint(
-                    target,
-                    cameraPoint,
-                    lookTarget,
-                    visualBounds,
-                    hasVisualBounds,
-                    targetDistance);
-
-            Debug.LogWarning(
-                "[CharacterDetailPanel][CAMERA_POINT_CORRECTED] " +
-                $"Target={GetCharacterName(target)}#{target.GetInstanceID()}, " +
-                $"SourcePoint={BattleCharacterPointerRouter.GetHierarchyPath(cameraPoint)}, " +
-                $"SourcePosition={cameraPoint.position}, " +
-                $"SourceRotation={cameraPoint.rotation.eulerAngles}, " +
-                $"TargetFacingDot={targetFacingDot:0.###}, " +
-                $"TargetDistance={targetDistance:0.###}, " +
-                $"CorrectedPosition={focusPoint.position}, " +
-                $"CorrectedRotation={focusPoint.rotation.eulerAngles}, " +
-                $"LookTarget={lookTarget}",
-                target);
-        }
-        else if (!pointValid)
-        {
-            Debug.LogError(
-                "[CharacterDetailPanel] CameraPoint가 대상 캐릭터를 바라보지 않습니다. " +
-                $"Target={GetCharacterName(target)}#{target.GetInstanceID()}, " +
-                $"PointPath={BattleCharacterPointerRouter.GetHierarchyPath(cameraPoint)}, " +
-                $"TargetFacingDot={targetFacingDot:0.###}, " +
-                $"TargetDistance={targetDistance:0.###}",
-                target);
-
-            return;
-        }
-
-        Debug.Log(
-            "[CharacterDetailPanel][CAMERA_FOCUS] " +
-            $"Target={GetCharacterName(target)}#{target.GetInstanceID()}, " +
-            $"Key={resolvedKey}, " +
-            $"SourcePoint={cameraPoint.name}#{cameraPoint.GetInstanceID()}, " +
-            $"SourcePointPath={BattleCharacterPointerRouter.GetHierarchyPath(cameraPoint)}, " +
-            $"AppliedPoint={focusPoint.name}#{focusPoint.GetInstanceID()}, " +
-            $"Position={focusPoint.position}, " +
-            $"Rotation={focusPoint.rotation.eulerAngles}, " +
-            $"LookTarget={lookTarget}",
-            target);
-
-        cameraDirector.FocusFromTransform(
-            focusPoint,
-            null,
-            useCameraPointRotation: true);
-    }
-
-    private bool IsCameraPointAimingAtTarget(
-        Transform cameraPoint,
-        Vector3 lookTarget,
-        out float targetFacingDot,
-        out float targetDistance)
-    {
-        targetFacingDot =
-            -1f;
-
-        targetDistance =
-            0f;
-
-        if (cameraPoint == null)
-            return false;
-
-        Vector3 toTarget =
-            lookTarget -
-            cameraPoint.position;
-
-        targetDistance =
-            toTarget.magnitude;
-
-        if (targetDistance <
-            minimumDetailCameraDistance)
-        {
-            return false;
-        }
-
-        targetFacingDot =
-            Vector3.Dot(
-                cameraPoint.forward.normalized,
-                toTarget /
-                targetDistance);
-
-        return targetFacingDot >=
-               minimumTargetFacingDot;
-    }
-
-    private Transform BuildCorrectedRuntimeCameraPoint(
-        Character target,
-        Transform sourcePoint,
-        Vector3 lookTarget,
-        Bounds visualBounds,
-        bool hasVisualBounds,
-        float sourceDistance)
-    {
-        if (runtimeCorrectedCameraPoint == null)
-        {
-            GameObject runtimePointObject =
-                new(
-                    "__RuntimeCorrectedDetailCameraPoint");
-
-            runtimePointObject.hideFlags =
-                HideFlags.HideInHierarchy |
-                HideFlags.DontSaveInBuild;
-
-            runtimeCorrectedCameraPoint =
-                runtimePointObject.transform;
-        }
-
-        if (runtimeCorrectedCameraPoint.parent !=
-            target.transform)
-        {
-            runtimeCorrectedCameraPoint.SetParent(
-                target.transform,
-                worldPositionStays: true);
-        }
-
-        Vector3 correctedPosition =
-            sourcePoint != null
-                ? sourcePoint.position
-                : lookTarget;
-
-        float safeDistance =
-            Mathf.Max(
-                minimumDetailCameraDistance,
-                sourceDistance);
-
-        if (sourcePoint == null ||
-            sourceDistance <
-            minimumDetailCameraDistance)
-        {
-            Camera sourceCamera =
-                Camera.main;
-
-            if (sourceCamera == null)
-            {
-                sourceCamera =
-                    FindFirstObjectByType<Camera>();
-            }
-
-            Vector3 viewDirection =
-                sourceCamera != null
-                    ? sourceCamera.transform.position -
-                      lookTarget
-                    : -target.transform.forward;
-
-            if (viewDirection.sqrMagnitude <
-                0.0001f)
-            {
-                viewDirection =
-                    -target.transform.forward;
-            }
-
-            viewDirection.Normalize();
-
-            float boundsDistance =
-                hasVisualBounds
-                    ? Mathf.Max(
-                        2.5f,
-                        visualBounds.extents.magnitude *
-                        2.2f)
-                    : 3f;
-
-            safeDistance =
-                Mathf.Max(
-                    safeDistance,
-                    boundsDistance);
-
-            correctedPosition =
-                lookTarget +
-                viewDirection *
-                safeDistance;
-        }
-
-        Vector3 correctedForward =
-            lookTarget -
-            correctedPosition;
-
-        if (correctedForward.sqrMagnitude <
-            0.0001f)
-        {
-            correctedForward =
-                target.transform.forward;
-        }
-
-        runtimeCorrectedCameraPoint.position =
-            correctedPosition;
-
-        runtimeCorrectedCameraPoint.rotation =
-            Quaternion.LookRotation(
-                correctedForward.normalized,
-                Vector3.up);
-
-        return runtimeCorrectedCameraPoint;
-    }
-
-    private static Vector3 ResolveCharacterLookTarget(
-        Character target,
-        out Bounds visualBounds,
-        out bool hasVisualBounds)
-    {
-        hasVisualBounds =
-            TryGetCharacterVisualBounds(
-                target,
-                out visualBounds);
-
-        if (!hasVisualBounds)
-        {
-            visualBounds =
-                new Bounds(
-                    target.transform.position +
-                    Vector3.up * 1.4f,
-                    Vector3.one);
-        }
-
-        return visualBounds.center +
-               Vector3.up *
-               visualBounds.extents.y *
-               0.08f;
-    }
-
-    private static bool TryGetCharacterVisualBounds(
-        Character target,
-        out Bounds bounds)
-    {
-        bounds =
-            default;
-
-        if (target == null)
-            return false;
-
-        Renderer[] renderers =
-            target.GetComponentsInChildren<Renderer>(
-                true);
-
-        bool initialized =
-            false;
-
-        foreach (Renderer renderer
-                 in renderers)
-        {
-            if (renderer == null ||
-                !renderer.enabled ||
-                !renderer.gameObject.activeInHierarchy)
-            {
-                continue;
-            }
-
-            Bounds rendererBounds =
-                renderer.bounds;
-
-            if (!IsFinite(
-                    rendererBounds.center) ||
-                !IsFinite(
-                    rendererBounds.extents) ||
-                rendererBounds.extents.sqrMagnitude <=
-                0.000001f)
-            {
-                continue;
-            }
-
-            if (!initialized)
-            {
-                bounds =
-                    rendererBounds;
-
-                initialized =
-                    true;
-            }
-            else
-            {
-                bounds.Encapsulate(
-                    rendererBounds);
-            }
-        }
-
-        return initialized;
-    }
-
-    private static bool IsFinite(
-        Vector3 value)
-    {
-        return
-            !float.IsNaN(value.x) &&
-            !float.IsNaN(value.y) &&
-            !float.IsNaN(value.z) &&
-            !float.IsInfinity(value.x) &&
-            !float.IsInfinity(value.y) &&
-            !float.IsInfinity(value.z);
-    }
-
     private static void LogBoundDetailData(
         Character target)
     {
@@ -1514,64 +1086,31 @@ public sealed class BattleCharacterDetailPanelUI : MonoBehaviour
             target);
     }
 
-    private static Transform FindOwnedCameraPoint(
-        Character target,
-        string key)
-    {
-        if (target == null ||
-            string.IsNullOrWhiteSpace(key))
-        {
-            return null;
-        }
-
-        Transform[] transforms =
-            target.GetComponentsInChildren<Transform>(
-                true);
-
-        Transform fallback =
-            null;
-
-        foreach (Transform candidate
-                 in transforms)
-        {
-            if (candidate == null ||
-                candidate == target.transform ||
-                !string.Equals(
-                    candidate.name,
-                    key,
-                    StringComparison.Ordinal))
-            {
-                continue;
-            }
-
-            if (!candidate.IsChildOf(
-                    target.transform))
-            {
-                continue;
-            }
-
-            if (candidate.parent != null &&
-                string.Equals(
-                    candidate.parent.name,
-                    "CameraPoints",
-                    StringComparison.Ordinal))
-            {
-                return candidate;
-            }
-
-            fallback ??=
-                candidate;
-        }
-
-        return fallback;
-    }
-
     private static string GetCharacterName(Character target)
     {
         if (target == null)
             return "NULL";
 
         return target.Data?.CharacterName ?? target.name;
+    }
+
+    private void EnsureCameraPresenter()
+    {
+        cameraPresenter ??=
+            new CharacterDetailCameraPresenter(
+                this,
+                () => character,
+                () =>
+                    modeController?.CurrentMode ==
+                    BattleUiScreenMode.CharacterDetails);
+
+        cameraPresenter.Configure(
+            cameraDirector,
+            detailCameraPointKey,
+            allowCloseCameraFallback,
+            minimumTargetFacingDot,
+            autoCorrectMisalignedCameraPoint,
+            minimumDetailCameraDistance);
     }
 
     private void ResolveUiReferences()
@@ -1975,12 +1514,13 @@ public sealed class BattleCharacterDetailPanelUI : MonoBehaviour
 
     private void OnDisable()
     {
-        StopDetailCameraFocusRoutine();
+        cameraPresenter?.CancelPendingFocus();
     }
 
     private void OnDestroy()
     {
-        StopDetailCameraFocusRoutine();
+        cameraPresenter?.Dispose();
+        cameraPresenter = null;
         KillVisibilityTween();
         ClearGeneratedListItems();
         ClearGeneratedKeywordItems();

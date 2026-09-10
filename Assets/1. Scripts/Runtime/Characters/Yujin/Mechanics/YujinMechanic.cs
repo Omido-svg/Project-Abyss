@@ -874,7 +874,9 @@ public sealed class YujinMechanic : CombatMechanic, ICharacterUniqueGaugeProvide
                             owner,
                             target,
                             part,
-                            new SealedPartStatus(1)));
+                            new SealedPartStatus(1),
+                            sourceAction,
+                            sourceAction?.CurrentRollIndex ?? -1));
                 break;
 
             case YujinWeaponType.Nakil:

@@ -43,7 +43,9 @@ public class NormalEnemyBloodScentMechanic : CombatMechanic
                     owner,
                     winnerAction.Target,
                     winnerAction.TargetPart,
-                    bleeding));
+                    bleeding,
+                    winnerAction,
+                    winnerAction.CurrentRollIndex));
         }
         else
         {
@@ -51,7 +53,9 @@ public class NormalEnemyBloodScentMechanic : CombatMechanic
                 EffectRequest.CharacterStatus(
                     owner,
                     winnerAction.Target,
-                    bleeding));
+                    bleeding,
+                    winnerAction,
+                    winnerAction.CurrentRollIndex));
         }
 
         Debug.Log(

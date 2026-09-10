@@ -188,7 +188,9 @@ public sealed class OlafBloodyAxeMechanic :
                     owner,
                     context.Target,
                     context.TargetPart,
-                    bleeding));
+                    bleeding,
+                    context.Action,
+                    context.Action?.CurrentRollIndex ?? -1));
         }
 
         if (!applyToCharacterWhenPartUnavailable)
@@ -198,7 +200,9 @@ public sealed class OlafBloodyAxeMechanic :
             EffectRequest.CharacterStatus(
                 owner,
                 context.Target,
-                bleeding));
+                bleeding,
+                context.Action,
+                context.Action?.CurrentRollIndex ?? -1));
     }
 
     private string GetOwnerName()

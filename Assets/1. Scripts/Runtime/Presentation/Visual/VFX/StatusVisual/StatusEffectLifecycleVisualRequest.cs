@@ -13,6 +13,11 @@ public class StatusEffectLifecycleVisualRequest
     public Character Target;
     public BodyPart TargetPart;
 
+    public BattleAction SourceAction;
+    public int SourceExchangeIndex = -1;
+    public SkillEffectTiming SourceEffectTiming;
+    public bool HasSourceEffectTiming;
+
     public string StatusKey;
     public StatusEffectVisualPhase Phase;
 

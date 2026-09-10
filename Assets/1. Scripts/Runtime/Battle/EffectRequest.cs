@@ -4,6 +4,10 @@ public class EffectRequest
     public DamageContext DamageContext;
 
     public BattleAction SourceAction;
+    public int SourceExchangeIndex = -1;
+    public SkillEffectTiming SourceEffectTiming;
+    public bool HasSourceEffectTiming;
+
     public Character SourceCharacter;
     public BodyPart SourcePart;
     public Skill SourceSkill;
@@ -46,11 +50,21 @@ public class EffectRequest
         Character source,
         Character target,
         BodyPart targetPart,
-        StatusEffect statusEffect)
+        StatusEffect statusEffect,
+        BattleAction sourceAction = null,
+        int sourceExchangeIndex = -1,
+        SkillEffectTiming sourceEffectTiming = default,
+        bool hasSourceEffectTiming = false)
     {
         return new EffectRequest
         {
+            SourceAction = sourceAction,
+            SourceExchangeIndex = sourceExchangeIndex,
+            SourceEffectTiming = sourceEffectTiming,
+            HasSourceEffectTiming = hasSourceEffectTiming,
             SourceCharacter = source,
+            SourcePart = sourceAction?.OwnerPart,
+            SourceSkill = sourceAction?.Skill,
             TargetCharacter = target,
             TargetPart = targetPart,
             StatusEffect = statusEffect
@@ -60,11 +74,21 @@ public class EffectRequest
     public static EffectRequest CharacterStatus(
         Character source,
         Character target,
-        StatusEffect statusEffect)
+        StatusEffect statusEffect,
+        BattleAction sourceAction = null,
+        int sourceExchangeIndex = -1,
+        SkillEffectTiming sourceEffectTiming = default,
+        bool hasSourceEffectTiming = false)
     {
         return new EffectRequest
         {
+            SourceAction = sourceAction,
+            SourceExchangeIndex = sourceExchangeIndex,
+            SourceEffectTiming = sourceEffectTiming,
+            HasSourceEffectTiming = hasSourceEffectTiming,
             SourceCharacter = source,
+            SourcePart = sourceAction?.OwnerPart,
+            SourceSkill = sourceAction?.Skill,
             TargetCharacter = target,
             StatusEffect = statusEffect
         };

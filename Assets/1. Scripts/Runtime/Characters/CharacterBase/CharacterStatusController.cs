@@ -67,7 +67,14 @@ public class CharacterStatusController
         Character source)
     {
         return AddCharacterStatusInternal(
-            effect, source, null, wasTransferred: false);
+            effect,
+            source,
+            null,
+            wasTransferred: false,
+            sourceAction: null,
+            sourceExchangeIndex: -1,
+            sourceEffectTiming: default,
+            hasSourceEffectTiming: false);
     }
 
     public StatusEffectApplyResult AddStatus(
@@ -76,7 +83,34 @@ public class CharacterStatusController
         BodyPart sourcePart)
     {
         return AddCharacterStatusInternal(
-            effect, source, sourcePart, wasTransferred: false);
+            effect,
+            source,
+            sourcePart,
+            wasTransferred: false,
+            sourceAction: null,
+            sourceExchangeIndex: -1,
+            sourceEffectTiming: default,
+            hasSourceEffectTiming: false);
+    }
+
+    public StatusEffectApplyResult AddStatus(
+        StatusEffect effect,
+        Character source,
+        BodyPart sourcePart,
+        BattleAction sourceAction,
+        int sourceExchangeIndex,
+        SkillEffectTiming sourceEffectTiming,
+        bool hasSourceEffectTiming)
+    {
+        return AddCharacterStatusInternal(
+            effect,
+            source,
+            sourcePart,
+            false,
+            sourceAction,
+            sourceExchangeIndex,
+            sourceEffectTiming,
+            hasSourceEffectTiming);
     }
 
     public StatusEffectApplyResult AddPartStatus(
@@ -84,21 +118,59 @@ public class CharacterStatusController
         StatusEffect effect,
         Character source)
     {
+        return AddPartStatus(
+            part,
+            effect,
+            source,
+            sourceAction: null,
+            sourceExchangeIndex: -1,
+            sourceEffectTiming: default,
+            hasSourceEffectTiming: false);
+    }
+
+    public StatusEffectApplyResult AddPartStatus(
+        BodyPart part,
+        StatusEffect effect,
+        Character source,
+        BattleAction sourceAction,
+        int sourceExchangeIndex,
+        SkillEffectTiming sourceEffectTiming,
+        bool hasSourceEffectTiming)
+    {
         if (owner == null || effect == null)
-            return Rejected(effect, part);
+        {
+            return StampSource(
+                Rejected(effect, part),
+                sourceAction,
+                sourceExchangeIndex,
+                sourceEffectTiming,
+                hasSourceEffectTiming);
+        }
 
         if (part != null &&
             part.Owner != null &&
             part.Owner != owner)
         {
-            return Rejected(effect, part);
+            return StampSource(
+                Rejected(effect, part),
+                sourceAction,
+                sourceExchangeIndex,
+                sourceEffectTiming,
+                hasSourceEffectTiming);
         }
 
         // Single HP 대상 또는 이미 파괴된 부위는 캐릭터 상태로 받는다.
         if (part == null || part.IsBroken)
         {
             return AddCharacterStatusInternal(
-                effect, source, part, wasTransferred: part != null);
+                effect,
+                source,
+                part,
+                part != null,
+                sourceAction,
+                sourceExchangeIndex,
+                sourceEffectTiming,
+                hasSourceEffectTiming);
         }
 
         effect.Initialize(owner, source, part);
@@ -111,6 +183,13 @@ public class CharacterStatusController
             StatusEffectApplyResult merged =
                 existing.ApplyIncoming(effect);
 
+            StampSource(
+                merged,
+                sourceAction,
+                sourceExchangeIndex,
+                sourceEffectTiming,
+                hasSourceEffectTiming);
+
             RaiseApplyEvents(merged);
             return merged;
         }
@@ -120,6 +199,13 @@ public class CharacterStatusController
 
         StatusEffectApplyResult result =
             CreateAppliedResult(effect, part, false);
+
+        StampSource(
+            result,
+            sourceAction,
+            sourceExchangeIndex,
+            sourceEffectTiming,
+            hasSourceEffectTiming);
 
         RaiseApplyEvents(result);
 
@@ -135,10 +221,21 @@ public class CharacterStatusController
         StatusEffect effect,
         Character source,
         BodyPart sourcePart,
-        bool wasTransferred)
+        bool wasTransferred,
+        BattleAction sourceAction,
+        int sourceExchangeIndex,
+        SkillEffectTiming sourceEffectTiming,
+        bool hasSourceEffectTiming)
     {
         if (owner == null || effect == null)
-            return Rejected(effect, null);
+        {
+            return StampSource(
+                Rejected(effect, null),
+                sourceAction,
+                sourceExchangeIndex,
+                sourceEffectTiming,
+                hasSourceEffectTiming);
+        }
 
         effect.Initialize(owner, source, null, sourcePart);
 
@@ -152,6 +249,13 @@ public class CharacterStatusController
                     effect,
                     wasTransferred);
 
+            StampSource(
+                merged,
+                sourceAction,
+                sourceExchangeIndex,
+                sourceEffectTiming,
+                hasSourceEffectTiming);
+
             RaiseApplyEvents(merged);
             return merged;
         }
@@ -164,6 +268,13 @@ public class CharacterStatusController
                 effect,
                 null,
                 wasTransferred);
+
+        StampSource(
+            result,
+            sourceAction,
+            sourceExchangeIndex,
+            sourceEffectTiming,
+            hasSourceEffectTiming);
 
         RaiseApplyEvents(result);
 
@@ -531,6 +642,23 @@ public class CharacterStatusController
         }
 
         return null;
+    }
+
+    private static StatusEffectApplyResult StampSource(
+        StatusEffectApplyResult result,
+        BattleAction sourceAction,
+        int sourceExchangeIndex,
+        SkillEffectTiming sourceEffectTiming,
+        bool hasSourceEffectTiming)
+    {
+        if (result == null)
+            return null;
+
+        result.SourceAction = sourceAction;
+        result.SourceExchangeIndex = sourceExchangeIndex;
+        result.SourceEffectTiming = sourceEffectTiming;
+        result.HasSourceEffectTiming = hasSourceEffectTiming;
+        return result;
     }
 
     private void RaiseApplyEvents(

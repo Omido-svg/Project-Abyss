@@ -177,6 +177,8 @@ public class TargetArrowUI : MonoBehaviour
             screenModeController;
         subscribedModeController.ModeChanged +=
             HandleScreenModeChanged;
+        subscribedModeController.ResolutionOverlayChanged +=
+            HandleResolutionOverlayChanged;
     }
 
     private void UnsubscribeScreenModeController()
@@ -186,6 +188,8 @@ public class TargetArrowUI : MonoBehaviour
 
         subscribedModeController.ModeChanged -=
             HandleScreenModeChanged;
+        subscribedModeController.ResolutionOverlayChanged -=
+            HandleResolutionOverlayChanged;
         subscribedModeController = null;
     }
 
@@ -193,6 +197,17 @@ public class TargetArrowUI : MonoBehaviour
         BattleUiScreenMode mode)
     {
         if (mode == BattleUiScreenMode.CharacterDetails)
+        {
+            HideAll();
+            return;
+        }
+
+        Refresh();
+    }
+
+    private void HandleResolutionOverlayChanged(bool active)
+    {
+        if (active)
         {
             HideAll();
             return;
@@ -232,8 +247,9 @@ public class TargetArrowUI : MonoBehaviour
 
         // 캐릭터 상세 화면은 전투 계획을 읽는 화면이 아니므로
         // 계획/합/현재 행동 화살표와 버튼 강조를 모두 숨긴다.
-        if (screenModeController?.CurrentMode ==
-            BattleUiScreenMode.CharacterDetails)
+        if (screenModeController?.IsResolutionOverlayActive == true ||
+            screenModeController?.CurrentMode ==
+                BattleUiScreenMode.CharacterDetails)
         {
             HideAll();
             return;

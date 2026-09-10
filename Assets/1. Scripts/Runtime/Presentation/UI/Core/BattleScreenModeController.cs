@@ -19,7 +19,10 @@ public sealed class BattleScreenModeController : MonoBehaviour
     public BattleUiScreenMode CurrentMode { get; private set; } =
         BattleUiScreenMode.DefaultBattle;
 
+    public bool IsResolutionOverlayActive { get; private set; }
+
     public event Action<BattleUiScreenMode> ModeChanged;
+    public event Action<bool> ResolutionOverlayChanged;
 
     public void Configure(
         GameObject defaultLayer,
@@ -54,6 +57,21 @@ public sealed class BattleScreenModeController : MonoBehaviour
         ApplyMode(BattleUiScreenMode.CharacterDetails);
     }
 
+    /// <summary>
+    /// Resolution은 별도 화면 모드가 아니라 현재 base mode 위에 올라가는 overlay 상태다.
+    /// resolving 중에 상세/스킬 모드 요청이 바뀌어도 기록만 유지하고,
+    /// overlay가 끝날 때 최신 CurrentMode를 다시 적용한다.
+    /// </summary>
+    public void SetResolutionOverlayActive(bool active)
+    {
+        if (IsResolutionOverlayActive == active)
+            return;
+
+        IsResolutionOverlayActive = active;
+        ApplyMode(CurrentMode);
+        ResolutionOverlayChanged?.Invoke(active);
+    }
+
     private void ApplyMode(BattleUiScreenMode mode)
     {
         bool changed =
@@ -61,24 +79,31 @@ public sealed class BattleScreenModeController : MonoBehaviour
 
         CurrentMode = mode;
 
+        bool allowBaseLayers =
+            !IsResolutionOverlayActive;
+
         SetActive(
             defaultBattleLayer,
+            allowBaseLayers &&
             mode == BattleUiScreenMode.DefaultBattle);
 
         SetActive(
             skillSelectionLayer,
+            allowBaseLayers &&
             mode == BattleUiScreenMode.SkillSelection);
 
         SetActive(
             characterDetailLayer,
+            allowBaseLayers &&
             mode == BattleUiScreenMode.CharacterDetails);
 
         if (keepVisibleInAllModes != null)
         {
             foreach (GameObject target in keepVisibleInAllModes)
             {
-                if (target != null && !target.activeSelf)
-                    target.SetActive(true);
+                SetActive(
+                    target,
+                    allowBaseLayers);
             }
         }
 

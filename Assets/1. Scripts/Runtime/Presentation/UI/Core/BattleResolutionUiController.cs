@@ -1,17 +1,11 @@
-using System.Collections.Generic;
 using UnityEngine;
 
 [DisallowMultipleComponent]
 public sealed class BattleResolutionUiController : MonoBehaviour
 {
-    private sealed class ActiveState
-    {
-        public GameObject Target;
-        public bool WasActive;
-    }
-
     [Header("References")]
     [SerializeField] private BattleManager battleManager;
+    [SerializeField] private BattleScreenModeController screenModeController;
     [SerializeField] private GameObject abyssBattleUiRoot;
     [SerializeField] private GameObject persistentTopLayer;
     [SerializeField] private GameObject defaultBattleLayer;
@@ -28,13 +22,13 @@ public sealed class BattleResolutionUiController : MonoBehaviour
     [SerializeField] private bool detectResolutionState = true;
     [SerializeField] private bool retireLegacyClashOverview = true;
 
-    private readonly List<ActiveState> rootStates = new();
-    private readonly List<ActiveState> defaultLayerStates = new();
-
     private CanvasGroup clashOverviewCanvasGroup;
     private bool overviewInteractable;
     private bool overviewBlocksRaycasts;
     private bool isResolutionPresentationActive;
+    private bool persistentTopLayerWasActive;
+    private bool clashPresentationLayerWasActive;
+    private bool capturedResolutionLayerState;
 
     public static BattleResolutionUiController Instance
     {
@@ -153,12 +147,17 @@ public sealed class BattleResolutionUiController : MonoBehaviour
 
         ResolveReferences();
         ApplyLegacyOverviewRetirement();
-        CaptureStates();
+        CaptureResolutionLayerState();
 
         isResolutionPresentationActive = true;
 
-        characterDetailPanel?.HideForResolution();
         BattlePresentationInteractionLock.SetLocked(true);
+        screenModeController?.SetResolutionOverlayActive(true);
+
+        // overlay를 먼저 잠근 뒤 상세 패널을 닫고 base mode를 Default로 정규화한다.
+        // 따라서 상세 Layer가 한 프레임 다시 보이지 않고, Resolution 종료 후 빈 상세 화면도 복원되지 않는다.
+        characterDetailPanel?.HideForResolution();
+        screenModeController?.ShowDefaultMode();
 
         // Resolution에서는 정적인 전투 UI를 모두 숨기고,
         // 캐릭터 월드 HUD(HP/흐트러짐/고유 게이지)와 행동 순서 레일만 유지한다.
@@ -195,15 +194,16 @@ public sealed class BattleResolutionUiController : MonoBehaviour
         clashRollPresentation?.HideImmediate();
 
         RestoreOverviewInteraction();
-        RestoreStates(defaultLayerStates);
-        RestoreStates(rootStates);
 
-        // UI Root가 원래 상태로 돌아온 뒤 World HUD와 레일을 Planning 상태로 복귀한다.
+        // Base mode의 최종 가시성은 ScreenModeController 한 곳에서 다시 계산한다.
+        // Resolution 시작 당시 snapshot으로 skill/detail/default를 되살리지 않으므로
+        // resolving 중 바뀐 최신 CurrentMode를 덮어쓰지 않는다.
+        screenModeController?.SetResolutionOverlayActive(false);
+        RestoreResolutionLayerState();
+
+        // 공유 Screen UI가 복구된 뒤 World HUD와 레일을 Planning 상태로 복귀한다.
         worldPlateManager?.RestoreAfterResolution();
         actionOrderRail?.RestoreAfterResolution();
-
-        defaultLayerStates.Clear();
-        rootStates.Clear();
 
         isResolutionPresentationActive = false;
         BattlePresentationInteractionLock.SetLocked(false);
@@ -218,6 +218,13 @@ public sealed class BattleResolutionUiController : MonoBehaviour
     {
         if (battleManager == null)
             battleManager = FindFirstObjectByType<BattleManager>();
+
+        if (screenModeController == null)
+        {
+            screenModeController =
+                FindFirstObjectByType<BattleScreenModeController>(
+                    FindObjectsInactive.Include);
+        }
 
         if (abyssBattleUiRoot == null)
             abyssBattleUiRoot = gameObject;
@@ -289,50 +296,37 @@ public sealed class BattleResolutionUiController : MonoBehaviour
         clashOverviewPanel.SetActive(false);
     }
 
-    private void CaptureStates()
+    private void CaptureResolutionLayerState()
     {
-        rootStates.Clear();
-        defaultLayerStates.Clear();
+        persistentTopLayerWasActive =
+            persistentTopLayer != null &&
+            persistentTopLayer.activeSelf;
 
-        if (abyssBattleUiRoot != null)
+        clashPresentationLayerWasActive =
+            clashPresentationLayer != null &&
+            clashPresentationLayer.activeSelf;
+
+        capturedResolutionLayerState = true;
+    }
+
+    private void RestoreResolutionLayerState()
+    {
+        if (!capturedResolutionLayerState)
+            return;
+
+        if (persistentTopLayer != null)
         {
-            Transform root = abyssBattleUiRoot.transform;
-
-            for (int index = 0;
-                 index < root.childCount;
-                 index++)
-            {
-                GameObject child =
-                    root.GetChild(index).gameObject;
-
-                rootStates.Add(
-                    new ActiveState
-                    {
-                        Target = child,
-                        WasActive = child.activeSelf
-                    });
-            }
+            persistentTopLayer.SetActive(
+                persistentTopLayerWasActive);
         }
 
-        if (defaultBattleLayer != null)
+        if (clashPresentationLayer != null)
         {
-            Transform root = defaultBattleLayer.transform;
-
-            for (int index = 0;
-                 index < root.childCount;
-                 index++)
-            {
-                GameObject child =
-                    root.GetChild(index).gameObject;
-
-                defaultLayerStates.Add(
-                    new ActiveState
-                    {
-                        Target = child,
-                        WasActive = child.activeSelf
-                    });
-            }
+            clashPresentationLayer.SetActive(
+                clashPresentationLayerWasActive);
         }
+
+        capturedResolutionLayerState = false;
     }
 
     private void HideStaticBattleUiForResolution()
@@ -340,9 +334,15 @@ public sealed class BattleResolutionUiController : MonoBehaviour
         // 캐릭터 머리 위 World HUD와 Damage/VFX 계층은 이 전용 Screen UI Layer들과
         // 분리되어 있으므로 건드리지 않는다.
         persistentTopLayer?.SetActive(false);
-        defaultBattleLayer?.SetActive(false);
-        skillSelectionLayer?.SetActive(false);
-        characterDetailLayer?.SetActive(false);
+
+        // 공유 base layer는 ScreenModeController가 overlay와 CurrentMode를 합성해 소유한다.
+        // Controller가 없는 레거시 Scene에서만 기존 직접 숨김을 fallback으로 유지한다.
+        if (screenModeController == null)
+        {
+            defaultBattleLayer?.SetActive(false);
+            skillSelectionLayer?.SetActive(false);
+            characterDetailLayer?.SetActive(false);
+        }
 
         // ClashRollPresentationLayer는 숨기지 않는다.
         // 합 교환의 RNG 결과 UI가 Resolution 중 이 Layer에서 재생된다.
@@ -385,22 +385,6 @@ public sealed class BattleResolutionUiController : MonoBehaviour
 
         clashOverviewCanvasGroup.blocksRaycasts =
             overviewBlocksRaycasts;
-    }
-
-    private static void RestoreStates(
-        List<ActiveState> states)
-    {
-        if (states == null)
-            return;
-
-        foreach (ActiveState state in states)
-        {
-            if (state?.Target == null)
-                continue;
-
-            state.Target.SetActive(
-                state.WasActive);
-        }
     }
 
     private static Transform FindDirectChild(

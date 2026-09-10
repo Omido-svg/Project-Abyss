@@ -35,7 +35,7 @@ public abstract class Skill
     public Character Owner => owner;
 
     private BattleEvent registeredBattleEvent;
-    private readonly HashSet<SkillEffectDispatchKey> activeEffectDispatches = new();
+    private readonly SkillEffectDispatcher effectDispatcher = new();
 
     protected virtual SkillDefinition RuntimeDefinition => null;
     public SkillDefinition Definition => RuntimeDefinition;
@@ -181,7 +181,7 @@ public abstract class Skill
     }
 
     public int UseCountThisTurn =>
-        SkillUsageTracker.GetUseCount(
+        SkillUsageLedger.GetUseCount(
             owner,
             GetUsageIdentity());
 
@@ -190,66 +190,9 @@ public abstract class Skill
 
     public virtual bool CanUseByResource(Character character)
     {
-        if (character == null)
-            return false;
-
-        if (!character.CanAffordEnergy(EnergyCost))
-            return false;
-
-        SkillDefinition definition = RuntimeDefinition;
-
-        if (definition != null &&
-            definition.OverrideResourceRules)
-        {
-            if (character.RuntimeStatus == null)
-                return false;
-
-            if (definition.RequireFullPrestige)
-            {
-                if (character.CurrentStatus == null ||
-                    character.CurrentStatus.maxPrestige <= 0 ||
-                    character.RuntimeStatus.currentPrestige <
-                    character.CurrentStatus.maxPrestige)
-                {
-                    return false;
-                }
-            }
-
-            if (definition.PrestigeCost > 0 &&
-                character.RuntimeStatus.currentPrestige <
-                definition.PrestigeCost)
-            {
-                return false;
-            }
-
-            if (!string.IsNullOrWhiteSpace(
-                    definition.CustomResourceKey) &&
-                definition.CustomResourceCost > 0 &&
-                SkillResourceAccess.Get(
-                    character,
-                    definition.CustomResourceKey) <
-                definition.CustomResourceCost)
-            {
-                return false;
-            }
-
-            return true;
-        }
-
-        if (ActionType != ActionType.Prestige)
-            return true;
-
-        if (character.CurrentStatus == null ||
-            character.RuntimeStatus == null)
-        {
-            return false;
-        }
-
-        if (character.CurrentStatus.maxPrestige <= 0)
-            return false;
-
-        return character.RuntimeStatus.currentPrestige >=
-               character.CurrentStatus.maxPrestige;
+        return SkillCostService.CanUse(
+            this,
+            character);
     }
 
     public virtual bool TryConsumeResource(
@@ -262,72 +205,10 @@ public abstract class Skill
             return false;
         }
 
-        // 모든 비용의 충족 여부를 먼저 검증한 뒤 실제 차감한다.
-        // 에너지가 부족한 행동은 효과 실행 전에 취소된다.
-        if (!character.TryConsumeEnergy(
-                EnergyCost,
-                sourceAction,
-                this))
-        {
-            return false;
-        }
-
-        SkillDefinition definition = RuntimeDefinition;
-
-        if (definition != null &&
-            definition.OverrideResourceRules)
-        {
-            if (character.RuntimeStatus != null)
-            {
-                if (definition.ConsumeAllPrestige)
-                {
-                    character.RuntimeStatus.currentPrestige = 0;
-                }
-                else if (definition.PrestigeCost > 0)
-                {
-                    character.RuntimeStatus.currentPrestige =
-                        Mathf.Max(
-                            0,
-                            character.RuntimeStatus.currentPrestige -
-                            definition.PrestigeCost);
-                }
-            }
-
-            if (!string.IsNullOrWhiteSpace(
-                    definition.CustomResourceKey))
-            {
-                if (definition.ConsumeAllCustomResource)
-                {
-                    SkillResourceAccess.Set(
-                        character,
-                        definition.CustomResourceKey,
-                        0);
-                }
-                else if (definition.CustomResourceCost > 0)
-                {
-                    SkillResourceAccess.Modify(
-                        character,
-                        definition.CustomResourceKey,
-                        -definition.CustomResourceCost,
-                        0,
-                        int.MaxValue);
-                }
-            }
-
-            return true;
-        }
-
-        if (ActionType == ActionType.Prestige &&
-            character.RuntimeStatus != null)
-        {
-            character.RuntimeStatus.currentPrestige = 0;
-
-            Debug.Log(
-                $"{character.Data?.CharacterName ?? character.name} " +
-                "위세 게이지 소모 : 0");
-        }
-
-        return true;
+        return SkillCostService.TryConsume(
+            this,
+            character,
+            sourceAction);
     }
 
     // 기존 호출부 호환. 신규 해결 파이프라인은 TryConsumeResource의 반환값을 확인한다.
@@ -398,35 +279,7 @@ public abstract class Skill
 
     public virtual RollResult RollPowerResult()
     {
-        SkillResolverType fallbackType =
-            RuntimeDefinition?.ResolverType ??
-            CharacterRandomDebugOverride
-                .InferResolverType(
-                    Resolver);
-
-        if (CharacterRandomDebugOverride.TryCreateRoll(
-                owner,
-                this,
-                null,
-                fallbackType,
-                0,
-                out RollResult debugResult))
-        {
-            return debugResult;
-        }
-
-        if (Resolver == null)
-        {
-            return new RollResult
-            {
-                BasePower = BasePower,
-                RawValue = 0,
-                ModifiedValue = 0,
-                FinalPower = BasePower
-            };
-        }
-
-        return Resolver.RollResult(this);
+        return SkillRollService.RollBase(this);
     }
 
     public SkillRollData GetRollData(int exchangeIndex) =>
@@ -442,31 +295,9 @@ public abstract class Skill
 
     public virtual RollResult RollPowerResultForExchange(int exchangeIndex)
     {
-        SkillRollData data = GetRollData(exchangeIndex);
-        if (data == null)
-            return RollPowerResult();
-
-        SkillResolverType fallbackType =
-            RuntimeDefinition?.ResolverType ??
-            CharacterRandomDebugOverride
-                .InferResolverType(
-                    Resolver);
-
-        if (CharacterRandomDebugOverride.TryCreateRoll(
-                owner,
-                this,
-                data,
-                fallbackType,
-                exchangeIndex,
-                out RollResult debugResult))
-        {
-            return debugResult;
-        }
-
-        return CombatRollResolver.Roll(
+        return SkillRollService.RollExchange(
             this,
-            data,
-            fallbackType);
+            exchangeIndex);
     }
 
     public void NotifyBeforeUse(
@@ -931,121 +762,31 @@ public abstract class Skill
             bool isOneSided = false,
             bool rollSucceeded = false)
     {
-        SkillDefinition definition = RuntimeDefinition;
-
-        if (definition == null ||
-            action == null ||
-            (!definition.HasEffectEntries &&
-             (definition.Effects == null || definition.Effects.Count == 0)))
-        {
-            return Array.Empty<SkillEffectResult>();
-        }
-
-        SkillEffectDispatchKey dispatchKey =
-            new SkillEffectDispatchKey(
-                action.ActionId,
-                timing);
-
-        if (!activeEffectDispatches.Add(dispatchKey))
-            return Array.Empty<SkillEffectResult>();
-
-        try
-        {
-            SkillEffectContext context =
-                new SkillEffectContext(
-                    action,
-                    definition,
-                    timing,
-                    opponentAction,
-                    damageContext,
-                    killContext,
-                    exchangeResult,
-                    UseCountThisTurn,
-                    rollIndex,
-                    rollResult,
-                    isClash,
-                    isOneSided,
-                    rollSucceeded);
-
-            return ExecuteDefinitionEntries(
-                definition,
-                context,
-                timing);
-        }
-        finally
-        {
-            activeEffectDispatches.Remove(
-                dispatchKey);
-        }
+        return effectDispatcher.Execute(
+            RuntimeDefinition,
+            action,
+            timing,
+            UseCountThisTurn,
+            opponentAction,
+            damageContext,
+            killContext,
+            exchangeResult,
+            rollIndex,
+            rollResult,
+            isClash,
+            isOneSided,
+            rollSucceeded);
     }
 
     private IReadOnlyList<SkillEffectResult>
         ExecuteOwnerDefinitionEffects(
             SkillEffectTiming timing)
     {
-        SkillDefinition definition = RuntimeDefinition;
-
-        if (definition == null ||
-            owner == null ||
-            (!definition.HasEffectEntries &&
-             (definition.Effects == null || definition.Effects.Count == 0)))
-        {
-            return Array.Empty<SkillEffectResult>();
-        }
-
-        SkillEffectDispatchKey dispatchKey =
-            new SkillEffectDispatchKey(
-                0,
-                timing);
-
-        if (!activeEffectDispatches.Add(dispatchKey))
-            return Array.Empty<SkillEffectResult>();
-
-        try
-        {
-            SkillEffectContext context =
-                new SkillEffectContext(
-                    owner,
-                    definition,
-                    timing,
-                    UseCountThisTurn);
-
-            return ExecuteDefinitionEntries(
-                definition,
-                context,
-                timing);
-        }
-        finally
-        {
-            activeEffectDispatches.Remove(
-                dispatchKey);
-        }
-    }
-
-    private static IReadOnlyList<SkillEffectResult>
-        ExecuteDefinitionEntries(
-            SkillDefinition definition,
-            SkillEffectContext context,
-            SkillEffectTiming timing)
-    {
-        List<SkillEffectResult> results = new();
-
-        foreach (SkillEffectEntry entry
-                 in definition.EnumerateEffectEntries())
-        {
-            if (entry?.Definition == null)
-                continue;
-
-            SkillEffectResult result =
-                entry.TryApply(
-                    context,
-                    timing);
-
-            if (result != null)
-                results.Add(result);
-        }
-
-        return results;
+        return effectDispatcher.ExecuteOwner(
+            owner,
+            RuntimeDefinition,
+            timing,
+            UseCountThisTurn);
     }
 
     public void NotifyExchangeWin(
@@ -1172,7 +913,6 @@ public abstract class Skill
 
     private void OnTurnStart(int turn)
     {
-        SkillUsageTracker.ResetOwner(owner);
         ExecuteOwnerDefinitionEffects(
             SkillEffectTiming.OnTurnStart);
     }
@@ -1188,7 +928,7 @@ public abstract class Skill
         if (action?.Skill != this)
             return;
 
-        SkillUsageTracker.Increment(
+        SkillUsageLedger.Increment(
             owner,
             GetUsageIdentity());
 
@@ -1321,129 +1061,4 @@ public abstract class Skill
             rollSucceeded: true);
     }
 
-    private readonly struct SkillEffectDispatchKey :
-        IEquatable<SkillEffectDispatchKey>
-    {
-        private readonly long actionId;
-        private readonly SkillEffectTiming timing;
-
-        public SkillEffectDispatchKey(
-            long actionId,
-            SkillEffectTiming timing)
-        {
-            this.actionId = actionId;
-            this.timing = timing;
-        }
-
-        public bool Equals(
-            SkillEffectDispatchKey other) =>
-            actionId == other.actionId &&
-            timing == other.timing;
-
-        public override bool Equals(object obj) =>
-            obj is SkillEffectDispatchKey other &&
-            Equals(other);
-
-        public override int GetHashCode()
-        {
-            unchecked
-            {
-                return (actionId.GetHashCode() * 397) ^
-                       (int)timing;
-            }
-        }
-    }
-}
-
-internal static class SkillUsageTracker
-{
-    private sealed class UsageKey : IEquatable<UsageKey>
-    {
-        public Character Owner;
-        public object Identity;
-
-        public bool Equals(UsageKey other) =>
-            other != null &&
-            Owner == other.Owner &&
-            ReferenceEquals(Identity, other.Identity);
-
-        public override bool Equals(object obj) =>
-            obj is UsageKey other && Equals(other);
-
-        public override int GetHashCode()
-        {
-            unchecked
-            {
-                int ownerHash = Owner == null
-                    ? 0
-                    : Owner.GetHashCode();
-
-                int identityHash = Identity == null
-                    ? 0
-                    : Identity.GetHashCode();
-
-                return (ownerHash * 397) ^ identityHash;
-            }
-        }
-    }
-
-    private static readonly Dictionary<UsageKey, int>
-        useCounts = new();
-
-    public static int GetUseCount(
-        Character owner,
-        object identity)
-    {
-        if (owner == null || identity == null)
-            return 0;
-
-        UsageKey lookup = new UsageKey
-        {
-            Owner = owner,
-            Identity = identity
-        };
-
-        return useCounts.TryGetValue(
-            lookup,
-            out int value)
-            ? value
-            : 0;
-    }
-
-    public static void Increment(
-        Character owner,
-        object identity)
-    {
-        if (owner == null || identity == null)
-            return;
-
-        UsageKey key = new UsageKey
-        {
-            Owner = owner,
-            Identity = identity
-        };
-
-        useCounts.TryGetValue(
-            key,
-            out int value);
-
-        useCounts[key] = value + 1;
-    }
-
-    public static void ResetOwner(Character owner)
-    {
-        if (owner == null)
-            return;
-
-        List<UsageKey> removeTargets = new();
-
-        foreach (UsageKey key in useCounts.Keys)
-        {
-            if (key.Owner == owner)
-                removeTargets.Add(key);
-        }
-
-        foreach (UsageKey key in removeTargets)
-            useCounts.Remove(key);
-    }
 }

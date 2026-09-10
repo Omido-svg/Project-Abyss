@@ -96,8 +96,18 @@ public partial class BattleAnimationDirector : MonoBehaviour
     /// </summary>
     public event Action<BattleVisualRequest> VisualRequestCompleted;
 
+    /// <summary>
+    /// 논리 BattleAction의 특정 교환이 실제 Timeline hit frame에 도달했을 때 발행한다.
+    /// 상태 VFX처럼 논리 결과를 해당 시각 시점에 합류시키는 Presenter가 사용한다.
+    /// exchangeIndex는 일방/비합 요청에서 -1일 수 있다.
+    /// </summary>
+    public event Action<BattleAction, int, int> HitFramePresented;
+
     private BattleVisualRequestBuilder requestBuilder;
     private BattleVisualDamagePresenter damagePresenter;
+    private BattleHitPresenter hitPresenter;
+    private SkillTimelineEventRouter timelineEventRouter;
+    private ClashStageController clashStageController;
     private BattleVisualPlaybackState activePlayback;
 
     public bool IsPlaying =>
@@ -112,10 +122,7 @@ public partial class BattleAnimationDirector : MonoBehaviour
             new BattleVisualRequestBuilder(
                 defaultVisualProfile);
 
-        damagePresenter =
-            new BattleVisualDamagePresenter(
-                battleUIManager,
-                logDebug);
+        RebuildPresentationPresenters();
     }
 
     private void OnDisable()
@@ -215,6 +222,90 @@ public partial class BattleAnimationDirector : MonoBehaviour
             vfxManager = FindFirstObjectByType<BattleVfxManager>();
     }
 
+    private void EnsurePresentationPresenters()
+    {
+        if (damagePresenter != null &&
+            hitPresenter != null &&
+            timelineEventRouter != null &&
+            clashStageController != null)
+        {
+            return;
+        }
+
+        RebuildPresentationPresenters();
+    }
+
+    private void RebuildPresentationPresenters()
+    {
+        damagePresenter =
+            new BattleVisualDamagePresenter(
+                battleUIManager,
+                logDebug);
+
+        hitPresenter =
+            new BattleHitPresenter(
+                damagePresenter,
+                damageNumberManager,
+                vfxManager,
+                IsPlaybackActive,
+                NotifyHitFramePresented,
+                logMissingReferences,
+                logDebug,
+                this);
+
+        timelineEventRouter =
+            new SkillTimelineEventRouter(
+                hitPresenter,
+                cameraDirector,
+                logDebug,
+                this);
+
+        clashStageController =
+            new ClashStageController(
+                this,
+                clashParticipantSpacing,
+                clashStagingMoveSpeed,
+                clashStagingArriveDistance,
+                clashMotionPlaybackSpeed,
+                clashEnterMaximumDuration,
+                clashReengageMaximumDuration,
+                clashExitMaximumDuration,
+                clashMissingMotionFallbackDuration);
+    }
+
+    private bool IsPlaybackActive(
+        BattleVisualPlaybackState playback)
+    {
+        return playback != null &&
+               ReferenceEquals(
+                   activePlayback,
+                   playback);
+    }
+
+    private void NotifyHitFramePresented(
+        BattleAction sourceAction,
+        int exchangeIndex,
+        int hitIndex)
+    {
+        if (sourceAction == null)
+            return;
+
+        try
+        {
+            HitFramePresented?.Invoke(
+                sourceAction,
+                exchangeIndex,
+                hitIndex);
+        }
+        catch (Exception exception)
+        {
+            // 프레젠테이션 관찰자 실패가 Timeline 재생 자체를 중단시키지 않게 격리한다.
+            Debug.LogException(
+                exception,
+                this);
+        }
+    }
+
     public void AssignClashRollPresentationUI(
         BattleClashRollPresentationUI value)
     {
@@ -241,6 +332,10 @@ public partial class BattleAnimationDirector : MonoBehaviour
                 "[BattleAnimationDirector] 비활성 상태에서는 전투 연출을 시작할 수 없습니다.");
             yield break;
         }
+
+        // ResolveReferences에서 갱신된 Scene/UI/VFX 참조를 새 playback presenter에 반영한다.
+        // 재생 중인 presenter를 교체하지 않도록 isPlaying 검사 뒤에 수행한다.
+        RebuildPresentationPresenters();
 
         isPlaying = true;
         BattleVisualPlaybackState playback =
@@ -509,9 +604,6 @@ public partial class BattleAnimationDirector : MonoBehaviour
             yield break;
         }
 
-        int hitFrameCount =
-            0;
-
         bool allowDefinitionStaging =
             !isClashAttack ||
             isOneSided ||
@@ -588,121 +680,25 @@ public partial class BattleAnimationDirector : MonoBehaviour
             }
         }
 
+        EnsurePresentationPresenters();
+
+        Action<SkillCutsceneEventClip> timelineEventHandler =
+            timelineEventRouter?.CreateHandler(
+                playback,
+                request,
+                visual,
+                views.TargetView,
+                exchangeIndex,
+                isClashAttack,
+                isOneSided);
+
         yield return skillCutsceneDirector
             .PlaySequence(
                 request,
                 definition,
                 isClashAttack,
                 playbackSpeed,
-                eventClip =>
-                {
-                    if (eventClip == null)
-                        return;
-
-                    switch (eventClip.EventType)
-                    {
-                        case SkillCutsceneEventType.Hit:
-                        {
-                            int hitIndex =
-                                eventClip.HitIndex >= 0
-                                    ? eventClip.HitIndex
-                                    : hitFrameCount;
-
-                            hitFrameCount =
-                                Mathf.Max(
-                                    hitFrameCount,
-                                    hitIndex + 1);
-
-                            ApplyHitFrame(
-                                playback,
-                                views,
-                                visual,
-                                hitIndex,
-                                exchangeIndex:
-                                    exchangeIndex,
-                                isClash:
-                                    isClashAttack,
-                                isOneSided:
-                                    isOneSided);
-
-                            break;
-                        }
-
-                        case SkillCutsceneEventType.Vfx:
-                            if (!definition.UseExplicitVisualFxTracks)
-                            {
-                                PlaySkillVfx(
-                                    playback,
-                                    request,
-                                    visual,
-                                    eventClip.VfxTiming,
-                                    eventClip.HitIndex);
-                            }
-                            break;
-
-                        case SkillCutsceneEventType
-                            .CameraShake:
-                            PlayHitCameraShake(
-                                visual);
-                            break;
-
-                        case SkillCutsceneEventType
-                            .CameraImpactPulse:
-                        {
-                            int pulseHitIndex =
-                                eventClip.HitIndex >= 0
-                                    ? eventClip.HitIndex
-                                    : Mathf.Max(0, hitFrameCount - 1);
-
-                            int pulseDamage =
-                                damagePresenter != null
-                                    ? damagePresenter.GetDamageForHitIndex(
-                                        playback,
-                                        pulseHitIndex)
-                                    : 0;
-
-                            TriggerCameraImpactPulse(
-                                playback,
-                                request,
-                                visual,
-                                eventClip.CameraImpactTiming,
-                                pulseHitIndex,
-                                exchangeIndex,
-                                pulseDamage,
-                                request.WasCritical && pulseHitIndex == 0,
-                                request.BrokePart,
-                                request.WasKilled,
-                                isClashAttack,
-                                isOneSided);
-                            break;
-                        }
-
-                        case SkillCutsceneEventType
-                            .TargetHitReaction:
-                            if (views.TargetView != null)
-                            {
-                                playback.ActiveReactionView =
-                                    views.TargetView;
-
-                                views.TargetView.PlayReaction(
-                                    visual.TargetReaction);
-                            }
-                            break;
-
-                        case SkillCutsceneEventType
-                            .Custom:
-                            if (logDebug)
-                            {
-                                Debug.Log(
-                                    "[BattleAnimationDirector] " +
-                                    "Timeline Custom Event / " +
-                                    $"Key={eventClip.CustomEventKey}",
-                                    this);
-                            }
-
-                            break;
-                    }
-                });
+                timelineEventHandler);
 
         views.AttackerView?
             .RefreshVisualState();
@@ -829,16 +825,21 @@ public partial class BattleAnimationDirector : MonoBehaviour
             useStructuredClashPresentation &&
             HasActualClashExchange(request);
 
-        ClashPresentationSession clashSession =
+        ClashStageController.Session clashSession =
             hasActualClash
-                ? CreateClashPresentationSession(
+                ? clashStageController.CreateSession(
                     request,
-                    rootViews)
+                    rootViews.AttackerView,
+                    rootViews.TargetView,
+                    rootViews.AttackerMover,
+                    rootViews.TargetMover,
+                    rootViews.AttackerFacing,
+                    rootViews.TargetFacing)
                 : null;
 
         if (clashSession != null)
         {
-            yield return PlayClashEnter(
+            yield return clashStageController.Enter(
                 playback,
                 clashSession);
         }
@@ -885,7 +886,7 @@ public partial class BattleAnimationDirector : MonoBehaviour
             if (clashSession != null &&
                 !exchange.IsOneSided)
             {
-                yield return PlayPairedClashMotion(
+                yield return clashStageController.PlayPairedMotion(
                     clashSession.FirstView,
                     ClashMotionKey.Contest,
                     clashSession.SecondView,
@@ -952,7 +953,7 @@ public partial class BattleAnimationDirector : MonoBehaviour
             {
                 if (!exchange.HasResolvedWinner)
                 {
-                    yield return PlayPairedClashMotion(
+                    yield return clashStageController.PlayPairedMotion(
                         clashSession.FirstView,
                         ClashMotionKey.Tie,
                         clashSession.SecondView,
@@ -967,7 +968,7 @@ public partial class BattleAnimationDirector : MonoBehaviour
                             exchange.WinnerAction.Owner,
                             exchange.LoserAction.Owner);
 
-                    yield return PlayPairedClashMotion(
+                    yield return clashStageController.PlayPairedMotion(
                         resultViews.AttackerView,
                         ClashMotionKey.Advantage,
                         resultViews.TargetView,
@@ -1026,7 +1027,7 @@ public partial class BattleAnimationDirector : MonoBehaviour
                 !exchange.IsOneSided &&
                 hasNextPairedExchange)
             {
-                yield return PlayClashReengage(
+                yield return clashStageController.Reengage(
                     clashSession,
                     animationSpeed);
             }
@@ -1052,13 +1053,13 @@ public partial class BattleAnimationDirector : MonoBehaviour
             !sequenceEndedByKill &&
             !playback.IsCancellationRequested)
         {
-            yield return PlayClashExit(
+            yield return clashStageController.Exit(
                 clashSession);
         }
 
-        yield return RestoreClashSequenceStaging(
+        yield return clashStageController.Restore(
             playback,
-            rootViews,
+            clashSession,
             killedCharacter);
 
         playback.ResetToRootRequest();
@@ -1147,321 +1148,6 @@ public partial class BattleAnimationDirector : MonoBehaviour
         return false;
     }
 
-    private ClashPresentationSession
-        CreateClashPresentationSession(
-            BattleVisualRequest request,
-            CharacterViewSet views)
-    {
-        if (request == null ||
-            request.Attacker == null ||
-            request.Target == null)
-        {
-            return null;
-        }
-
-        Vector3 firstPosition =
-            views.AttackerMover != null
-                ? views.AttackerMover.CurrentWorldPosition
-                : request.Attacker.transform.position;
-
-        Vector3 secondPosition =
-            views.TargetMover != null
-                ? views.TargetMover.CurrentWorldPosition
-                : request.Target.transform.position;
-
-        Vector3 direction =
-            secondPosition - firstPosition;
-
-        direction.y = 0f;
-
-        if (direction.sqrMagnitude <= 0.0001f)
-        {
-            direction =
-                request.Attacker.transform.forward;
-
-            direction.y = 0f;
-        }
-
-        if (direction.sqrMagnitude <= 0.0001f)
-            direction = Vector3.forward;
-
-        direction.Normalize();
-
-        Vector3 midpoint =
-            (firstPosition + secondPosition) *
-            0.5f;
-
-        float halfSpacing =
-            Mathf.Max(
-                0.25f,
-                clashParticipantSpacing * 0.5f);
-
-        Vector3 firstAnchor =
-            midpoint - direction * halfSpacing;
-
-        Vector3 secondAnchor =
-            midpoint + direction * halfSpacing;
-
-        firstAnchor.y = firstPosition.y;
-        secondAnchor.y = secondPosition.y;
-
-        return new ClashPresentationSession
-        {
-            FirstCharacter = request.Attacker,
-            SecondCharacter = request.Target,
-            FirstView = views.AttackerView,
-            SecondView = views.TargetView,
-            FirstMover = views.AttackerMover,
-            SecondMover = views.TargetMover,
-            FirstFacing = views.AttackerFacing,
-            SecondFacing = views.TargetFacing,
-            FirstAnchor = firstAnchor,
-            SecondAnchor = secondAnchor
-        };
-    }
-
-    private IEnumerator PlayClashEnter(
-        BattleVisualPlaybackState playback,
-        ClashPresentationSession session)
-    {
-        if (playback == null ||
-            session == null)
-        {
-            yield break;
-        }
-
-        if (session.FirstMover != null)
-        {
-            playback.TrackStagedMover(
-                session.FirstMover,
-                null);
-        }
-
-        if (session.SecondMover != null)
-        {
-            playback.TrackStagedMover(
-                session.SecondMover,
-                null);
-        }
-
-        playback.ShouldRestoreFacing =
-            session.FirstFacing != null ||
-            session.SecondFacing != null;
-
-        yield return MoveClashParticipants(
-            session,
-            ClashMotionKey.Enter,
-            clashEnterMaximumDuration,
-            clashMotionPlaybackSpeed);
-    }
-
-    private IEnumerator PlayClashReengage(
-        ClashPresentationSession session,
-        float exchangeSpeed)
-    {
-        if (session == null)
-            yield break;
-
-        yield return MoveClashParticipants(
-            session,
-            ClashMotionKey.Reengage,
-            clashReengageMaximumDuration,
-            clashMotionPlaybackSpeed *
-            Mathf.Max(0.01f, exchangeSpeed));
-    }
-
-    private IEnumerator PlayClashExit(
-        ClashPresentationSession session)
-    {
-        if (session == null)
-            yield break;
-
-        yield return PlayPairedClashMotion(
-            session.FirstView,
-            ClashMotionKey.Exit,
-            session.SecondView,
-            ClashMotionKey.Exit,
-            1f,
-            clashExitMaximumDuration);
-    }
-
-    private IEnumerator MoveClashParticipants(
-        ClashPresentationSession session,
-        ClashMotionKey motionKey,
-        float maximumMotionDuration,
-        float playbackSpeed)
-    {
-        if (session == null)
-            yield break;
-
-        session.FirstFacing?.FacePositionInstant(
-            session.SecondAnchor);
-
-        session.SecondFacing?.FacePositionInstant(
-            session.FirstAnchor);
-
-        List<Coroutine> routines =
-            new List<Coroutine>();
-
-        if (session.FirstMover != null)
-        {
-            routines.Add(
-                StartCoroutine(
-                    session.FirstMover
-                        .MoveToWorldPosition(
-                            session.FirstAnchor,
-                            clashStagingMoveSpeed,
-                            clashStagingArriveDistance)));
-        }
-
-        if (session.SecondMover != null)
-        {
-            routines.Add(
-                StartCoroutine(
-                    session.SecondMover
-                        .MoveToWorldPosition(
-                            session.SecondAnchor,
-                            clashStagingMoveSpeed,
-                            clashStagingArriveDistance)));
-        }
-
-        if (session.FirstView != null)
-        {
-            routines.Add(
-                StartCoroutine(
-                    session.FirstView
-                        .PlayClashMotion(
-                            motionKey,
-                            playbackSpeed,
-                            maximumMotionDuration,
-                            clashMissingMotionFallbackDuration)));
-        }
-
-        if (session.SecondView != null &&
-            !ReferenceEquals(
-                session.SecondView,
-                session.FirstView))
-        {
-            routines.Add(
-                StartCoroutine(
-                    session.SecondView
-                        .PlayClashMotion(
-                            motionKey,
-                            playbackSpeed,
-                            maximumMotionDuration,
-                            clashMissingMotionFallbackDuration)));
-        }
-
-        foreach (Coroutine routine in routines)
-        {
-            if (routine != null)
-                yield return routine;
-        }
-
-        yield return FaceClashParticipants(
-            session);
-    }
-
-    private IEnumerator FaceClashParticipants(
-        ClashPresentationSession session)
-    {
-        if (session == null)
-            yield break;
-
-        List<Coroutine> routines =
-            new List<Coroutine>();
-
-        Vector3 firstPosition =
-            session.FirstMover != null
-                ? session.FirstMover.CurrentWorldPosition
-                : session.FirstCharacter.transform.position;
-
-        Vector3 secondPosition =
-            session.SecondMover != null
-                ? session.SecondMover.CurrentWorldPosition
-                : session.SecondCharacter.transform.position;
-
-        if (session.FirstFacing != null)
-        {
-            routines.Add(
-                StartCoroutine(
-                    session.FirstFacing
-                        .FacePositionSmooth(
-                            secondPosition)));
-        }
-
-        if (session.SecondFacing != null)
-        {
-            routines.Add(
-                StartCoroutine(
-                    session.SecondFacing
-                        .FacePositionSmooth(
-                            firstPosition)));
-        }
-
-        foreach (Coroutine routine in routines)
-        {
-            if (routine != null)
-                yield return routine;
-        }
-    }
-
-    private IEnumerator PlayPairedClashMotion(
-        CharacterView firstView,
-        ClashMotionKey firstKey,
-        CharacterView secondView,
-        ClashMotionKey secondKey,
-        float playbackSpeed,
-        float maximumDuration)
-    {
-        List<Coroutine> routines =
-            new List<Coroutine>();
-
-        float safeSpeed =
-            clashMotionPlaybackSpeed *
-            Mathf.Max(0.01f, playbackSpeed);
-
-        if (firstView != null)
-        {
-            routines.Add(
-                StartCoroutine(
-                    firstView.PlayClashMotion(
-                        firstKey,
-                        safeSpeed,
-                        maximumDuration,
-                        clashMissingMotionFallbackDuration)));
-        }
-
-        if (secondView != null &&
-            !ReferenceEquals(
-                firstView,
-                secondView))
-        {
-            routines.Add(
-                StartCoroutine(
-                    secondView.PlayClashMotion(
-                        secondKey,
-                        safeSpeed,
-                        maximumDuration,
-                        clashMissingMotionFallbackDuration)));
-        }
-
-        if (routines.Count == 0 &&
-            clashMissingMotionFallbackDuration > 0f)
-        {
-            yield return new WaitForSeconds(
-                clashMissingMotionFallbackDuration);
-
-            yield break;
-        }
-
-        foreach (Coroutine routine in routines)
-        {
-            if (routine != null)
-                yield return routine;
-        }
-    }
-
     private IEnumerator PlayClashExchangeAttack(
         BattleVisualPlaybackState playback,
         BattleVisualRequest attackRequest,
@@ -1492,10 +1178,7 @@ public partial class BattleAnimationDirector : MonoBehaviour
         playback.ActiveActionView = views.AttackerView;
         playback.ActiveTargetView = views.TargetView;
 
-        damagePresenter ??=
-            new BattleVisualDamagePresenter(
-                battleUIManager,
-                logDebug);
+        EnsurePresentationPresenters();
 
         damagePresenter.Prepare(
             playback,
@@ -1526,88 +1209,6 @@ public partial class BattleAnimationDirector : MonoBehaviour
 
         playback.ActiveActionView = null;
         playback.ActiveTargetView = null;
-    }
-
-    private IEnumerator RestoreClashSequenceStaging(
-        BattleVisualPlaybackState playback,
-        CharacterViewSet rootViews,
-        Character preserveAtCurrentPosition = null)
-    {
-        if (playback == null)
-            yield break;
-
-        List<Coroutine> returnRoutines =
-            new List<Coroutine>();
-
-        foreach (KeyValuePair<
-                     CharacterActionMover,
-                     CharacterActionMoveSettings> pair
-                 in playback.StagedMoverSettings)
-        {
-            CharacterActionMover mover =
-                pair.Key;
-
-            if (mover == null)
-                continue;
-
-            bool isPreservedMover =
-                preserveAtCurrentPosition != null &&
-                ((ReferenceEquals(
-                      preserveAtCurrentPosition,
-                      playback.RootRequest?.Attacker) &&
-                  ReferenceEquals(
-                      mover,
-                      rootViews.AttackerMover)) ||
-                 (ReferenceEquals(
-                      preserveAtCurrentPosition,
-                      playback.RootRequest?.Target) &&
-                  ReferenceEquals(
-                      mover,
-                      rootViews.TargetMover)));
-
-            if (isPreservedMover)
-                continue;
-
-            IEnumerator routine =
-                pair.Value != null
-                    ? mover.ReturnToDefaultPosition(
-                        pair.Value)
-                    : mover.ReturnToDefaultPosition();
-
-            returnRoutines.Add(
-                StartCoroutine(
-                    routine));
-        }
-
-        foreach (Coroutine routine
-                 in returnRoutines)
-        {
-            if (routine != null)
-                yield return routine;
-        }
-
-        playback.ClearStagedMovers();
-
-        if (playback.ShouldRestoreFacing)
-        {
-            CharacterView preservedView =
-                ReferenceEquals(
-                    preserveAtCurrentPosition,
-                    playback.RootRequest?.Attacker)
-                    ? rootViews.AttackerView
-                    : ReferenceEquals(
-                        preserveAtCurrentPosition,
-                        playback.RootRequest?.Target)
-                        ? rootViews.TargetView
-                        : null;
-
-            yield return ReturnFacing(
-                rootViews,
-                preservedView);
-
-            playback.ShouldRestoreFacing =
-                false;
-        }
     }
 
     private IEnumerator ShowClashPowerStep(
@@ -1709,102 +1310,6 @@ public partial class BattleAnimationDirector : MonoBehaviour
 
 
 
-    private void PlaySkillVfx(
-        BattleVisualPlaybackState playback,
-        BattleVisualRequest request,
-        SkillVisualDefinition visual,
-        BattleVfxTiming timing,
-        int hitIndex = -1,
-        int damage = 0)
-    {
-        if (request == null ||
-            visual == null ||
-            vfxManager == null ||
-            visual.VfxCues == null)
-        {
-            return;
-        }
-
-        BattleVfxContext context =
-            BattleVfxContext.FromRequest(
-                request,
-                hitIndex,
-                damage);
-
-        context.AttackerView =
-            playback?.ActiveActionView ??
-            BattleCameraTargetResolver.GetView(
-                request.Attacker);
-
-        context.TargetView =
-            playback?.ActiveTargetView ??
-            BattleCameraTargetResolver.GetView(
-                request.Target);
-        context.BindPlayback(playback);
-
-        for (int i = 0; i < visual.VfxCues.Count; i++)
-        {
-            BattleVfxCue cue = visual.VfxCues[i];
-
-            if (cue == null || cue.Timing != timing)
-                continue;
-
-            if (!ShouldPlayAutoDistributedHitCue(
-                    visual,
-                    cue,
-                    i,
-                    hitIndex))
-            {
-                continue;
-            }
-
-            vfxManager.PlayCue(
-                cue,
-                context,
-                i);
-        }
-    }
-
-    private static bool ShouldPlayAutoDistributedHitCue(
-        SkillVisualDefinition visual,
-        BattleVfxCue cue,
-        int cueIndex,
-        int hitIndex)
-    {
-        if (visual?.VfxCues == null ||
-            cue == null ||
-            hitIndex < 0 ||
-            cue.Timing != BattleVfxTiming.OnHitFrame ||
-            cue.UseHitIndexFilter)
-        {
-            return true;
-        }
-
-        int matchingCueCount = 0;
-        int matchingCueOrdinal = -1;
-
-        for (int i = 0; i < visual.VfxCues.Count; i++)
-        {
-            BattleVfxCue candidate = visual.VfxCues[i];
-
-            if (!cue.CanAutoDistributeByHitIndexWith(candidate))
-                continue;
-
-            if (i == cueIndex)
-                matchingCueOrdinal = matchingCueCount;
-
-            matchingCueCount++;
-        }
-
-        if (matchingCueCount <= 1 || matchingCueOrdinal < 0)
-            return true;
-
-        // HitIndex 0에는 첫 Cue, HitIndex 1에는 두 번째 Cue를 배정한다.
-        // 따라서 Duel 2히트의 복제된 BloodSplash가 첫 타격에 겹쳐 나오거나
-        // 두 번째 타격에서 재생 기록 충돌로 사라지는 문제를 동시에 막는다.
-        return matchingCueOrdinal == hitIndex;
-    }
-
     private IEnumerator PlayMomentumExchangeStep(
         BattleVisualPlaybackState playback,
         BattleClashVisualExchange exchange)
@@ -1880,10 +1385,7 @@ public partial class BattleAnimationDirector : MonoBehaviour
 
         playback.HasBegun = true;
 
-        damagePresenter ??=
-            new BattleVisualDamagePresenter(
-                battleUIManager,
-                logDebug);
+        EnsurePresentationPresenters();
 
         if (prepareDamage)
         {
@@ -1930,266 +1432,6 @@ public partial class BattleAnimationDirector : MonoBehaviour
 
 
 
-
-    private void ApplyHitFrame(
-        BattleVisualPlaybackState playback,
-        CharacterViewSet views,
-        SkillVisualDefinition visual,
-        int hitIndex,
-        int? damageOverride = null,
-        int exchangeIndex = -1,
-        bool isClash = false,
-        bool isOneSided = false)
-    {
-        if (playback == null ||
-            playback.IsCancellationRequested ||
-            playback.IsCompleted ||
-            playback.IsCleanedUp ||
-            !ReferenceEquals(activePlayback, playback))
-        {
-            return;
-        }
-
-        BattleVisualRequest request =
-            playback.Request;
-
-        if (request == null ||
-            visual == null ||
-            !visual.HasHitFrameDamage)
-        {
-            return;
-        }
-
-        CharacterView primaryTargetView =
-            views.TargetView;
-
-        if (primaryTargetView == null &&
-            request.Target != null)
-        {
-            primaryTargetView =
-                BattleCameraTargetResolver.GetView(
-                    request.Target);
-        }
-
-        int primaryDamage =
-            damageOverride ??
-            damagePresenter.GetDamageForHitIndex(
-                playback,
-                hitIndex);
-
-        if (logDebug)
-        {
-            Debug.Log(
-                $"[BattleAnimationDirector] HitFrame 적용 : " +
-                $"{request.Attacker?.Data.CharacterName} -> {request.Target?.Data.CharacterName} / " +
-                $"HitIndex={hitIndex} / PrimaryDamage={primaryDamage} / " +
-                $"Impacts={request.TargetImpacts?.Count ?? 0}");
-        }
-
-        bool useExplicitVisualFx =
-            visual.UseExplicitVisualFxTracks;
-
-        // 위치 기반 VFX는 해당 view/target이 있을 때만 재생한다.
-        // 아래 presentation state/HUD commit은 view 존재 여부와 무관하게 반드시 진행한다.
-        if (!useExplicitVisualFx &&
-            primaryTargetView != null)
-        {
-            PlaySkillVfx(
-                playback,
-                request,
-                visual,
-                BattleVfxTiming.OnHitFrame,
-                hitIndex,
-                primaryDamage);
-
-            if (request.WasCritical && hitIndex == 0)
-            {
-                PlaySkillVfx(
-                    playback,
-                    request,
-                    visual,
-                    BattleVfxTiming.OnCritical,
-                    hitIndex,
-                    primaryDamage);
-            }
-        }
-
-        // F04/F05: 데이터/HUD를 먼저 같은 hit 시점으로 진행한다.
-        // TargetView 하나가 누락되어도 다른 대상과 read model은 정상 진행한다.
-        damagePresenter.ApplyHit(
-            playback,
-            hitIndex,
-            primaryDamage);
-
-        bool usedImpactList =
-            request.TargetImpacts != null &&
-            request.TargetImpacts.Count > 0;
-
-        if (usedImpactList)
-        {
-            foreach (TargetImpactPresentation impact
-                     in request.TargetImpacts)
-            {
-                if (impact?.Target == null)
-                    continue;
-
-                int impactDamage =
-                    damagePresenter.GetImpactDamageForHitIndex(
-                        impact,
-                        hitIndex);
-
-                CharacterView targetView =
-                    impact.IsPrimary &&
-                    primaryTargetView != null
-                        ? primaryTargetView
-                        : BattleCameraTargetResolver.GetView(
-                            impact.Target);
-
-                if (targetView == null)
-                {
-                    if (logDebug)
-                    {
-                        Debug.LogWarning(
-                            $"[BattleAnimationDirector] Impact TargetView 없음. " +
-                            $"HUD/read model만 진행 / " +
-                            $"Target={impact.Target.name}, " +
-                            $"Part={impact.TargetPart?.Type.ToString() ?? "SINGLE_HP"}");
-                    }
-
-                    continue;
-                }
-
-                playback.ActiveReactionView =
-                    targetView;
-                playback.ReactionViews.Add(
-                    targetView);
-
-                targetView.PlayReaction(
-                    ResolveTargetReaction(
-                        impact,
-                        visual,
-                        hitIndex));
-
-                if (impactDamage > 0)
-                {
-                    ShowDamageNumber(
-                        targetView,
-                        impact.TargetPart,
-                        impactDamage,
-                        impact.WasCritical
-                            ? BattleDamageNumberStyle.CriticalHp
-                            : BattleDamageNumberStyle.NormalHp);
-                }
-            }
-        }
-        else if (primaryTargetView != null)
-        {
-            // DamageContext 없는 구형/진단 request 호환.
-            playback.ActiveReactionView =
-                primaryTargetView;
-            playback.ReactionViews.Add(
-                primaryTargetView);
-
-            primaryTargetView.PlayReaction(
-                ResolveTargetReaction(
-                    request,
-                    visual,
-                    hitIndex));
-
-            if (primaryDamage > 0)
-            {
-                ShowDamageNumber(
-                    primaryTargetView,
-                    request.TargetPart,
-                    primaryDamage,
-                    request.WasCritical
-                        ? BattleDamageNumberStyle.CriticalHp
-                        : BattleDamageNumberStyle.NormalHp);
-            }
-        }
-
-        // 흐트러짐은 현재 primary exchange 대상에만 존재하며 교환당 한 번 표시한다.
-        if (hitIndex == 0 &&
-            request.StaggerDamage > 0 &&
-            primaryTargetView != null)
-        {
-            ShowDamageNumber(
-                primaryTargetView,
-                request.TargetPart,
-                request.StaggerDamage,
-                BattleDamageNumberStyle.Stagger);
-        }
-    }
-
-    private static HitReactionKey
-        ResolveTargetReaction(
-            TargetImpactPresentation impact,
-            SkillVisualDefinition visual,
-            int hitIndex)
-    {
-        if (impact == null ||
-            visual == null)
-        {
-            return HitReactionKey.HeavyHit;
-        }
-
-        bool isFinalHit =
-            impact.IsFinalHit(hitIndex);
-
-        if (isFinalHit &&
-            impact.WasKilled)
-        {
-            return HitReactionKey.Death;
-        }
-
-        if (isFinalHit &&
-            impact.BrokePart)
-        {
-            return HitReactionKey.PartBreak;
-        }
-
-        return visual.TargetReaction;
-    }
-
-    private static HitReactionKey
-        ResolveTargetReaction(
-            BattleVisualRequest request,
-            SkillVisualDefinition visual,
-            int hitIndex)
-    {
-        if (request?.PrimaryImpact != null)
-        {
-            return ResolveTargetReaction(
-                request.PrimaryImpact,
-                visual,
-                hitIndex);
-        }
-
-        if (request == null ||
-            visual == null)
-        {
-            return HitReactionKey.HeavyHit;
-        }
-
-        int expectedHitCount =
-            request.HitDamages != null &&
-            request.HitDamages.Count > 0
-                ? request.HitDamages.Count
-                : Mathf.Max(
-                    1,
-                    visual.ExpectedHitFrameCount);
-
-        bool isFinalHit =
-            hitIndex >= expectedHitCount - 1;
-
-        if (isFinalHit && request.WasKilled)
-            return HitReactionKey.Death;
-
-        if (isFinalHit && request.BrokePart)
-            return HitReactionKey.PartBreak;
-
-        return visual.TargetReaction;
-    }
 
     private IEnumerator ShowClashPower(
         BattleVisualPlaybackState playback,
@@ -2383,21 +1625,4 @@ public partial class BattleAnimationDirector : MonoBehaviour
         public CharacterActionMover TargetMover;
     }
 
-    private sealed class ClashPresentationSession
-    {
-        public Character FirstCharacter;
-        public Character SecondCharacter;
-
-        public CharacterView FirstView;
-        public CharacterView SecondView;
-
-        public CharacterActionMover FirstMover;
-        public CharacterActionMover SecondMover;
-
-        public CharacterFacingController FirstFacing;
-        public CharacterFacingController SecondFacing;
-
-        public Vector3 FirstAnchor;
-        public Vector3 SecondAnchor;
-    }
 }

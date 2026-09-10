@@ -50,7 +50,11 @@ public class ApplyStatusIfConditionEffect : SkillEffectDefinition
                     context.Owner,
                     context.Target,
                     context.TargetPart,
-                    effect));
+                    effect,
+                    context.Action,
+                    context.RollIndex,
+                    context.Timing,
+                    true));
             return;
         }
 
@@ -58,6 +62,10 @@ public class ApplyStatusIfConditionEffect : SkillEffectDefinition
             EffectRequest.CharacterStatus(
                 context.Owner,
                 context.Target,
-                effect));
+                effect,
+                context.Action,
+                context.RollIndex,
+                context.Timing,
+                true));
     }
 }

@@ -221,10 +221,17 @@ public class BattleEffectResolver
             return false;
         }
 
-        request.TargetCharacter.AddStatus(
-            request.StatusEffect,
-            request.SourceCharacter);
-        return true;
+        StatusEffectApplyResult result =
+            request.TargetCharacter.ApplyStatus(
+                request.StatusEffect,
+                request.SourceCharacter,
+                request.SourcePart,
+                request.SourceAction,
+                request.SourceExchangeIndex,
+                request.SourceEffectTiming,
+                request.HasSourceEffectTiming);
+
+        return result?.Succeeded == true;
     }
 
     public bool ApplyBodyPartStatus(EffectRequest request)
@@ -239,20 +246,33 @@ public class BattleEffectResolver
         // Single HP 대상은 TargetPart가 null이어도 캐릭터 상태로 정상 적용한다.
         if (request.TargetPart == null)
         {
-            request.TargetCharacter.AddStatus(
-                request.StatusEffect,
-                request.SourceCharacter);
-            return true;
+            StatusEffectApplyResult characterResult =
+                request.TargetCharacter.ApplyStatus(
+                    request.StatusEffect,
+                    request.SourceCharacter,
+                    request.SourcePart,
+                    request.SourceAction,
+                    request.SourceExchangeIndex,
+                    request.SourceEffectTiming,
+                    request.HasSourceEffectTiming);
+
+            return characterResult?.Succeeded == true;
         }
 
         if (request.TargetPart.IsBroken)
             return false;
 
-        request.TargetCharacter.AddPartStatus(
-            request.TargetPart,
-            request.StatusEffect,
-            request.SourceCharacter);
-        return true;
+        StatusEffectApplyResult partResult =
+            request.TargetCharacter.ApplyPartStatus(
+                request.TargetPart,
+                request.StatusEffect,
+                request.SourceCharacter,
+                request.SourceAction,
+                request.SourceExchangeIndex,
+                request.SourceEffectTiming,
+                request.HasSourceEffectTiming);
+
+        return partResult?.Succeeded == true;
     }
 
     public bool ForceBreakPart(EffectRequest request)

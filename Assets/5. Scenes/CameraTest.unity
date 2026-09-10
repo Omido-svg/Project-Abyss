@@ -11674,6 +11674,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   battleManager: {fileID: 1453355684}
+  screenModeController: {fileID: 0}
   abyssBattleUiRoot: {fileID: 1224758944}
   persistentTopLayer: {fileID: 1368870902}
   defaultBattleLayer: {fileID: 2014420935}

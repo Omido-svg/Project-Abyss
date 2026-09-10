@@ -63,7 +63,9 @@ public class EliteEnemyMechanic : CombatMechanic
                     owner,
                     winnerAction.Target,
                     winnerAction.TargetPart,
-                    bleeding));
+                    bleeding,
+                    winnerAction,
+                    winnerAction.CurrentRollIndex));
         }
         else
         {
@@ -71,7 +73,9 @@ public class EliteEnemyMechanic : CombatMechanic
                 EffectRequest.CharacterStatus(
                     owner,
                     winnerAction.Target,
-                    bleeding));
+                    bleeding,
+                    winnerAction,
+                    winnerAction.CurrentRollIndex));
         }
 
         Debug.Log(

@@ -70,7 +70,11 @@ public class OlafNormalBleedEffect : SkillEffectDefinition
                         context.Owner,
                         context.Target,
                         context.TargetPart,
-                        bleeding));
+                        bleeding,
+                        context.Action,
+                        context.RollIndex,
+                        context.Timing,
+                        true));
         }
         else
         {
@@ -79,7 +83,11 @@ public class OlafNormalBleedEffect : SkillEffectDefinition
                     EffectRequest.CharacterStatus(
                         context.Owner,
                         context.Target,
-                        bleeding));
+                        bleeding,
+                        context.Action,
+                        context.RollIndex,
+                        context.Timing,
+                        true));
         }
 
         if (!applied)

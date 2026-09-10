@@ -234,7 +234,9 @@ public sealed class OlafMadnessMechanic : CombatMechanic, ICharacterUniqueGaugeP
             ApplyBleeding(
                 myAction.Target,
                 myAction.TargetPart,
-                ScaleBleeding(commonAmount));
+                ScaleBleeding(commonAmount),
+                myAction,
+                exchange.ExchangeIndex);
         }
 
         if (myAction.ActionType != ActionType.Duel ||
@@ -253,7 +255,9 @@ public sealed class OlafMadnessMechanic : CombatMechanic, ICharacterUniqueGaugeP
                 ApplyBleeding(
                     myAction.Target,
                     myAction.TargetPart,
-                    ScaleBleeding(1));
+                    ScaleBleeding(1),
+                    myAction,
+                    exchange.ExchangeIndex);
 
                 TryExplodeBleeding(myAction);
             }
@@ -269,7 +273,9 @@ public sealed class OlafMadnessMechanic : CombatMechanic, ICharacterUniqueGaugeP
             ApplyBleeding(
                 myAction.Target,
                 myAction.TargetPart,
-                ScaleBleeding(1));
+                ScaleBleeding(1),
+                myAction,
+                exchange.ExchangeIndex);
 
             if (!won)
             {
@@ -315,7 +321,9 @@ public sealed class OlafMadnessMechanic : CombatMechanic, ICharacterUniqueGaugeP
     private void ApplyBleeding(
         Character target,
         BodyPart part,
-        int amount)
+        int amount,
+        BattleAction sourceAction = null,
+        int sourceExchangeIndex = -1)
     {
         if (target == null ||
             part == null ||
@@ -331,7 +339,9 @@ public sealed class OlafMadnessMechanic : CombatMechanic, ICharacterUniqueGaugeP
                     owner,
                     target,
                     part,
-                    new Bleeding(amount)));
+                    new Bleeding(amount),
+                    sourceAction,
+                    sourceExchangeIndex));
     }
 
     private bool TryExplodeBleeding(
@@ -421,7 +431,9 @@ public sealed class OlafMadnessMechanic : CombatMechanic, ICharacterUniqueGaugeP
         ApplyBleeding(
             action.Target,
             action.TargetPart,
-            amount);
+            amount,
+            action,
+            action?.CurrentRollIndex ?? -1);
     }
 
     private void ApplyBurstingMadness(

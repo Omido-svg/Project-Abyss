@@ -527,6 +527,7 @@ public abstract class Character : MonoBehaviour
     {
         UnbindCombatRuleActivationEvents();
         eventBinder.UnbindAll();
+        SkillUsageLedger.ClearOwner(this);
         mechanicController?.Reset();
 
         statusController?.ClearAll(
@@ -915,9 +916,17 @@ public abstract class Character : MonoBehaviour
         if (!IsInitialized || IsDead)
             return;
 
+        int safeTurn = Mathf.Max(1, currentTurn);
+
+        // F09: owner 단위 usage ledger는 활성 Skill 각각이 아니라
+        // 턴 준비 단계에서 Character당 한 번만 reset한다.
+        SkillUsageLedger.BeginTurn(
+            this,
+            safeTurn);
+
         combatRulesRuntime?.EvaluateBossPhase(
             battleContext,
-            Mathf.Max(1, currentTurn));
+            safeTurn);
     }
 
     public virtual void TurnStart()
@@ -1445,6 +1454,25 @@ public abstract class Character : MonoBehaviour
         statusController?.AddStatus(effect, source, sourcePart);
     }
 
+    public StatusEffectApplyResult ApplyStatus(
+        StatusEffect effect,
+        Character source,
+        BodyPart sourcePart,
+        BattleAction sourceAction,
+        int sourceExchangeIndex,
+        SkillEffectTiming sourceEffectTiming,
+        bool hasSourceEffectTiming)
+    {
+        return statusController?.AddStatus(
+            effect,
+            source,
+            sourcePart,
+            sourceAction,
+            sourceExchangeIndex,
+            sourceEffectTiming,
+            hasSourceEffectTiming);
+    }
+
     public void RemoveStatus(StatusEffect effect)
     {
         RemoveStatus(
@@ -1866,6 +1894,28 @@ public abstract class Character : MonoBehaviour
             return;
 
         statusController.AddPartStatus(part, effect, source);
+    }
+
+    public StatusEffectApplyResult ApplyPartStatus(
+        BodyPart part,
+        StatusEffect effect,
+        Character source,
+        BattleAction sourceAction,
+        int sourceExchangeIndex,
+        SkillEffectTiming sourceEffectTiming,
+        bool hasSourceEffectTiming)
+    {
+        if (statusController == null)
+            return null;
+
+        return statusController.AddPartStatus(
+            part,
+            effect,
+            source,
+            sourceAction,
+            sourceExchangeIndex,
+            sourceEffectTiming,
+            hasSourceEffectTiming);
     }
 
     public void RemovePartStatus(
