@@ -1,0 +1,136 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 31fe54716cfe5f94a8e4099100095278, type: 3}
+  m_Name: SecondaryRigPresetLibrary_v2
+  m_EditorClassIdentifier: 
+  dataVersion: 2
+  presets:
+  - PresetName: HAIR
+    OverrideManifestSpring: 1
+    Settings:
+      Stiffness: 0.32
+      Damping: 0.76
+      Gravity: 0.16
+      MaxAngle: 48
+      ParticleRadius: 0.014
+      EnableCollision: 1
+      Layer: 2
+      CollidesWith: 5
+      EnableSelfCollision: 0
+      CollideWithinSamePart: 0
+      EnableCrossChainConstraint: 0
+      CrossChainStiffness: 0
+  - PresetName: LONG_HAIR
+    OverrideManifestSpring: 1
+    Settings:
+      Stiffness: 0.25
+      Damping: 0.73
+      Gravity: 0.2
+      MaxAngle: 60
+      ParticleRadius: 0.016
+      EnableCollision: 1
+      Layer: 2
+      CollidesWith: 5
+      EnableSelfCollision: 0
+      CollideWithinSamePart: 0
+      EnableCrossChainConstraint: 0
+      CrossChainStiffness: 0
+  - PresetName: SHORT_HAIR
+    OverrideManifestSpring: 1
+    Settings:
+      Stiffness: 0.55
+      Damping: 0.82
+      Gravity: 0.08
+      MaxAngle: 28
+      ParticleRadius: 0.01
+      EnableCollision: 1
+      Layer: 2
+      CollidesWith: 5
+      EnableSelfCollision: 0
+      CollideWithinSamePart: 0
+      EnableCrossChainConstraint: 0
+      CrossChainStiffness: 0
+  - PresetName: LONG_COAT
+    OverrideManifestSpring: 1
+    Settings:
+      Stiffness: 0.34
+      Damping: 0.74
+      Gravity: 0.26
+      MaxAngle: 50
+      ParticleRadius: 0.02
+      EnableCollision: 1
+      Layer: 4
+      CollidesWith: 7
+      EnableSelfCollision: 0
+      CollideWithinSamePart: 0
+      EnableCrossChainConstraint: 1
+      CrossChainStiffness: 0.3
+  - PresetName: SKIRT
+    OverrideManifestSpring: 1
+    Settings:
+      Stiffness: 0.38
+      Damping: 0.76
+      Gravity: 0.3
+      MaxAngle: 55
+      ParticleRadius: 0.02
+      EnableCollision: 1
+      Layer: 4
+      CollidesWith: 7
+      EnableSelfCollision: 0
+      CollideWithinSamePart: 0
+      EnableCrossChainConstraint: 1
+      CrossChainStiffness: 0.35
+  - PresetName: CAPE
+    OverrideManifestSpring: 1
+    Settings:
+      Stiffness: 0.28
+      Damping: 0.72
+      Gravity: 0.22
+      MaxAngle: 65
+      ParticleRadius: 0.018
+      EnableCollision: 1
+      Layer: 4
+      CollidesWith: 7
+      EnableSelfCollision: 0
+      CollideWithinSamePart: 0
+      EnableCrossChainConstraint: 1
+      CrossChainStiffness: 0.25
+  - PresetName: RIBBON
+    OverrideManifestSpring: 1
+    Settings:
+      Stiffness: 0.3
+      Damping: 0.72
+      Gravity: 0.12
+      MaxAngle: 70
+      ParticleRadius: 0.009
+      EnableCollision: 1
+      Layer: 8
+      CollidesWith: 7
+      EnableSelfCollision: 0
+      CollideWithinSamePart: 0
+      EnableCrossChainConstraint: 0
+      CrossChainStiffness: 0
+  - PresetName: ACCESSORY
+    OverrideManifestSpring: 1
+    Settings:
+      Stiffness: 0.5
+      Damping: 0.8
+      Gravity: 0.18
+      MaxAngle: 45
+      ParticleRadius: 0.01
+      EnableCollision: 1
+      Layer: 8
+      CollidesWith: 7
+      EnableSelfCollision: 0
+      CollideWithinSamePart: 0
+      EnableCrossChainConstraint: 0
+      CrossChainStiffness: 0
