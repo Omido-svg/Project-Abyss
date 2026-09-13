@@ -149,6 +149,10 @@ public sealed class BattleWorldSlotArrowOverlayUI : MonoBehaviour
     public void SetResolutionHidden(
         bool hidden)
     {
+        // Destroy된 MonoBehaviour의 managed wrapper가 남아 호출되는 경우를 방어한다.
+        if (this == null)
+            return;
+
         hiddenForResolution = hidden;
         EnsureOverlay();
 
@@ -197,6 +201,9 @@ public sealed class BattleWorldSlotArrowOverlayUI : MonoBehaviour
 
     private void EnsureOverlay()
     {
+        if (this == null)
+            return;
+
         if (overlayCanvas != null &&
             arrowRoot != null &&
             hoverPreviewRoot != null &&
@@ -274,6 +281,9 @@ public sealed class BattleWorldSlotArrowOverlayUI : MonoBehaviour
 
     private bool TryResolveSceneOverlay()
     {
+        if (this == null)
+            return false;
+
         Transform existing = transform.Find("WorldSlotArrowOverlay");
         if (existing == null)
             return false;

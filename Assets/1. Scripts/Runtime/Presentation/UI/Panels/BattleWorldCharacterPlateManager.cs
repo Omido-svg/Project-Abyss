@@ -96,7 +96,8 @@ public sealed class BattleWorldCharacterPlateManager : MonoBehaviour
     {
         resolutionPresentationActive = true;
         SetActionSlotStripsHidden(true);
-        slotArrowOverlay?.SetResolutionHidden(true);
+        if (slotArrowOverlay != null)
+            slotArrowOverlay.SetResolutionHidden(true);
 
         if (resolutionReparented ||
             battleUiRoot == null ||
@@ -122,7 +123,8 @@ public sealed class BattleWorldCharacterPlateManager : MonoBehaviour
     {
         resolutionPresentationActive = false;
         SetActionSlotStripsHidden(false);
-        slotArrowOverlay?.SetResolutionHidden(false);
+        if (slotArrowOverlay != null)
+            slotArrowOverlay.SetResolutionHidden(false);
 
         if (!resolutionReparented)
             return;

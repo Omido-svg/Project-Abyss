@@ -585,14 +585,24 @@ public class BattleManager : MonoBehaviour
 
     private void EndBattleInternal(string reason)
     {
-        BattlePlaybackSpeedController.Instance?
-            .SetResolutionActive(false);
-        BattleResolutionUiController.EndCurrentResolution();
-
         if (endingOrEnded)
             return;
 
+        // 종료 플래그를 가장 먼저 세워 OnDisable -> OnDestroy 연쇄 호출에서
+        // 동일한 종료/Presentation 정리가 두 번 실행되지 않게 한다.
         endingOrEnded = true;
+
+        if (BattlePlaybackSpeedController.Instance != null)
+        {
+            RunCleanupStep(
+                "BattlePlaybackSpeedController.SetResolutionActive",
+                () => BattlePlaybackSpeedController.Instance.SetResolutionActive(false));
+        }
+
+        RunCleanupStep(
+            "BattleResolutionUI.EndCurrentResolution",
+            BattleResolutionUiController.EndCurrentResolution);
+
         BattleEvent battleEvent = BattleContext?._battleEvent;
 
         try
@@ -660,7 +670,8 @@ public class BattleManager : MonoBehaviour
             BattleContext.Services = null;
 
         lifecycleGuard.Dispose();
-        rosterController?.ReleaseSpawnedRoster();
+        if (rosterController != null)
+            rosterController.ReleaseSpawnedRoster();
     }
 
     private void HandleTurnFatalError(Exception exception)
@@ -703,7 +714,8 @@ public class BattleManager : MonoBehaviour
                 BattleContext.Services = null;
 
             battleUIManager?.ClearParticipantButtons();
-            rosterController?.ReleaseSpawnedRoster();
+            if (rosterController != null)
+            rosterController.ReleaseSpawnedRoster();
             enabled = false;
         }
     }

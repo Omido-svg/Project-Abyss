@@ -508,6 +508,11 @@ public sealed class BattleClashRollPresentationUI : MonoBehaviour
 
     public void HideImmediate()
     {
+        // Destroy된 UnityEngine.Object의 managed wrapper가 남아 있는 상태에서
+        // 외부 종료 코드가 호출해도 StopAllCoroutines()까지 진입하지 않는다.
+        if (this == null)
+            return;
+
         if (isHidingImmediate)
             return;
 

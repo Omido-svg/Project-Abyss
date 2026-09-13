@@ -120,8 +120,10 @@ public sealed class BattleResolutionUiController : MonoBehaviour
 
     private void OnDisable()
     {
-        if (isResolutionPresentationActive)
-            EndResolutionPresentation();
+        // OnDisable/scene teardown 시에는 Planning UI를 다시 복구하지 않는다.
+        // 자식 UI가 먼저 Destroy된 상태에서 RestoreAfterResolution()을 호출하면
+        // Unity fake-null 객체를 다시 만져 MissingReferenceException이 발생할 수 있다.
+        CancelResolutionPresentationForTeardown();
 
         if (Instance == this)
             Instance = null;
@@ -129,12 +131,16 @@ public sealed class BattleResolutionUiController : MonoBehaviour
 
     public static void BeginCurrentResolution()
     {
-        Instance?.BeginResolutionPresentation();
+        // UnityEngine.Object의 null-conditional(?.)은 Destroy된 fake-null을
+        // 안전하게 거르지 못하므로 Unity의 == null 연산자를 사용한다.
+        if (Instance != null)
+            Instance.BeginResolutionPresentation();
     }
 
     public static void EndCurrentResolution()
     {
-        Instance?.EndResolutionPresentation();
+        if (Instance != null)
+            Instance.EndResolutionPresentation();
     }
 
     public void BeginResolutionPresentation()
@@ -191,27 +197,54 @@ public sealed class BattleResolutionUiController : MonoBehaviour
         if (!isResolutionPresentationActive)
             return;
 
-        clashRollPresentation?.HideImmediate();
+        // 재진입/중복 종료를 먼저 차단한다. 정상 Resolution 종료에서는 아래에서
+        // Planning UI를 복구하지만, 이미 Destroy된 Unity Object는 건드리지 않는다.
+        isResolutionPresentationActive = false;
+        BattlePresentationInteractionLock.SetLocked(false);
+
+        if (clashRollPresentation != null)
+            clashRollPresentation.HideImmediate();
 
         RestoreOverviewInteraction();
 
         // Base mode의 최종 가시성은 ScreenModeController 한 곳에서 다시 계산한다.
         // Resolution 시작 당시 snapshot으로 skill/detail/default를 되살리지 않으므로
         // resolving 중 바뀐 최신 CurrentMode를 덮어쓰지 않는다.
-        screenModeController?.SetResolutionOverlayActive(false);
+        if (screenModeController != null)
+            screenModeController.SetResolutionOverlayActive(false);
+
         RestoreResolutionLayerState();
 
         // 공유 Screen UI가 복구된 뒤 World HUD와 레일을 Planning 상태로 복귀한다.
-        worldPlateManager?.RestoreAfterResolution();
-        actionOrderRail?.RestoreAfterResolution();
+        if (worldPlateManager != null)
+            worldPlateManager.RestoreAfterResolution();
 
-        isResolutionPresentationActive = false;
-        BattlePresentationInteractionLock.SetLocked(false);
+        if (actionOrderRail != null)
+            actionOrderRail.RestoreAfterResolution();
 
         Debug.Log(
             "[BattleResolutionUI][END] " +
             "기본 전투 UI와 입력을 복구합니다.",
             this);
+    }
+
+    /// <summary>
+    /// Scene teardown / GameObject disable 중에는 정상 Resolution 종료처럼
+    /// 다른 UI를 Planning 상태로 되살리지 않는다. 이미 파괴된 형제/자식 UI를
+    /// 참조하지 않고 이 Controller가 소유한 상태만 안전하게 해제한다.
+    /// </summary>
+    private void CancelResolutionPresentationForTeardown()
+    {
+        if (!isResolutionPresentationActive)
+            return;
+
+        isResolutionPresentationActive = false;
+        BattlePresentationInteractionLock.SetLocked(false);
+
+        // 아직 살아 있는 경우에만 즉시 숨긴다. Unity의 fake-null을
+        // 걸러내기 위해 ?. 대신 명시적 null 비교를 사용한다.
+        if (clashRollPresentation != null)
+            clashRollPresentation.HideImmediate();
     }
 
     private void ResolveReferences()
