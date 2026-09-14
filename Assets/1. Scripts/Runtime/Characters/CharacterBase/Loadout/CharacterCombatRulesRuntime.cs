@@ -750,14 +750,22 @@ public sealed class CharacterCombatRulesRuntime
             return null;
         }
 
+        if (!string.IsNullOrWhiteSpace(config.LinkedPartId))
+        {
+            foreach (BodyPart part in owner.BodyParts)
+            {
+                if (part != null &&
+                    string.Equals(part.PartId, config.LinkedPartId, System.StringComparison.Ordinal))
+                {
+                    return part;
+                }
+            }
+        }
+
         foreach (BodyPart part in owner.BodyParts)
         {
-            if (part != null &&
-                part.Type ==
-                config.LinkedPartType)
-            {
+            if (part != null && part.Type == config.LinkedPartType)
                 return part;
-            }
         }
 
         return null;

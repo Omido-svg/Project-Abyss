@@ -11,9 +11,14 @@ public class EliteEnemy : Enemy, ICharacterAuthoringTarget
     [SerializeField]
     private EnemyPostureSettings postureSettings = new();
 
+    [Header("P0 D-06 — data-defined five body parts")]
+    [SerializeField]
+    private List<EnemyBodyPartDefinition> bodyPartDefinitions = new();
+
     private readonly List<BodyPart> bodyParts = new();
 
     public override IReadOnlyList<BodyPart> BodyParts => bodyParts;
+    public IReadOnlyList<EnemyBodyPartDefinition> BodyPartDefinitions => bodyPartDefinitions;
 
     public override bool SupportsLastStand => true;
 
@@ -32,6 +37,11 @@ public class EliteEnemy : Enemy, ICharacterAuthoringTarget
             bundle.ElitePostureSettings ??
             new EnemyPostureSettings();
 
+        if (bundle.EliteBodyPartDefinitions != null && bundle.EliteBodyPartDefinitions.Count > 0)
+        {
+            bodyPartDefinitions = new List<EnemyBodyPartDefinition>(bundle.EliteBodyPartDefinitions);
+        }
+
         return true;
     }
 
@@ -49,10 +59,39 @@ public class EliteEnemy : Enemy, ICharacterAuthoringTarget
     {
         bodyParts.Clear();
 
-        bodyParts.Add(new BodyPart(PartType.HEAD, 50));
-        bodyParts.Add(new BodyPart(PartType.LEFT_HAND, 50));
-        bodyParts.Add(new BodyPart(PartType.RIGHT_HAND, 50));
-        bodyParts.Add(new BodyPart(PartType.LEGS, 50));
+        IReadOnlyList<EnemyBodyPartDefinition> definitions = GetEffectiveBodyPartDefinitions();
+        for (int i = 0; i < definitions.Count; i++)
+        {
+            EnemyBodyPartDefinition definition = definitions[i];
+            if (definition != null)
+                bodyParts.Add(definition.CreateRuntimePart(i));
+        }
+    }
+
+    private IReadOnlyList<EnemyBodyPartDefinition> GetEffectiveBodyPartDefinitions()
+    {
+        if (bodyPartDefinitions != null && bodyPartDefinitions.Count == 5)
+            return bodyPartDefinitions;
+
+        // 기존 4부위 Prefab의 직렬화 호환만 위한 fallback.
+        // 실제 적별 값은 Inspector/Authoring 데이터 5개로 저장해야 한다.
+        Debug.LogWarning(
+            $"[P0 D-06] {name}: Elite/Boss bodyPartDefinitions가 5개가 아닙니다. " +
+            "호환용 5부위 템플릿을 사용합니다. 적별 부위 이름/역할/디버프를 데이터로 저장하세요.");
+
+        return CreateCompatibilityFivePartTemplate();
+    }
+
+    private static List<EnemyBodyPartDefinition> CreateCompatibilityFivePartTemplate()
+    {
+        return new List<EnemyBodyPartDefinition>
+        {
+            new() { PartId = "head", DisplayName = "Head", LegacyType = PartType.HEAD, SlotRole = BodyPartSlotRole.Hybrid, MaxPartHP = 50f },
+            new() { PartId = "left_arm", DisplayName = "Left Arm", LegacyType = PartType.LEFT_HAND, SlotRole = BodyPartSlotRole.Attack, MaxPartHP = 50f, RollCountPenalty = 1 },
+            new() { PartId = "right_arm", DisplayName = "Right Arm", LegacyType = PartType.RIGHT_HAND, SlotRole = BodyPartSlotRole.Attack, MaxPartHP = 50f, RollCountPenalty = 1 },
+            new() { PartId = "legs", DisplayName = "Legs", LegacyType = PartType.LEGS, SlotRole = BodyPartSlotRole.Preparation, MaxPartHP = 50f, SpeedMaxPenalty = 1 },
+            new() { PartId = "extra", DisplayName = "Extra", LegacyType = PartType.CUSTOM, SlotRole = BodyPartSlotRole.Hybrid, MaxPartHP = 50f }
+        };
     }
 
     //--------------------------------
@@ -91,6 +130,9 @@ public class EliteEnemy : Enemy, ICharacterAuthoringTarget
         if (part == null)
             return null;
 
+        if (part.UsesDataDefinedRules)
+            return new DataDrivenPartDisabled(part);
+
         return part.Type switch
         {
             PartType.HEAD => new HeadDisabled(),
@@ -110,6 +152,9 @@ public class EliteEnemy : Enemy, ICharacterAuthoringTarget
     {
         if (part == null)
             return null;
+
+        if (part.UsesDataDefinedRules)
+            return new DataDrivenBrokenPart(part);
 
         return part.Type switch
         {

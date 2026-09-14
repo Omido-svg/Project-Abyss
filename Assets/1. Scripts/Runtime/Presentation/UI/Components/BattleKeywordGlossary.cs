@@ -325,6 +325,7 @@ public static class BattleKeywordGlossary
             StatusEffectId.Protection => "보호",
             StatusEffectId.Rupture => "균열",
             StatusEffectId.Heat => "열기",
+            StatusEffectId.Swift => "신속",
             StatusEffectId.Regeneration => "재생",
             StatusEffectId.Pain => "고통",
             _ => id.ToString()

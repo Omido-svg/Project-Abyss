@@ -268,7 +268,7 @@ public class BodyPartButton : MonoBehaviour, IPointerClickHandler
 
         string targetText = bodyPart == null
             ? "SINGLE_HP"
-            : bodyPart.Type.ToString();
+            : bodyPart.DisplayName;
 
         BattleDebugLog.UIInput(
             $"[BUTTON CLICK] {GetOwnerName()} / {targetText}");

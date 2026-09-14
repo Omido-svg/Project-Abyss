@@ -984,10 +984,55 @@ public abstract class Character : MonoBehaviour
         }
 
         modified = Mathf.Max(0, modified);
+        if (modified <= 0)
+            return;
+
+        // P0 D-07 확정 규칙:
+        // 모든 체력 회복은 값을 나누지 않고 전체 HP +N 과 최저 비파괴 부위 +N에 동시에 들어간다.
         RuntimeStatus.currentHP =
             Mathf.Min(
                 RuntimeStatus.currentHP + modified,
                 MaxCombatHP);
+
+        RestoreLowestBodyPartHpPreserveState(modified);
+    }
+
+    private void RestoreLowestBodyPartHpPreserveState(int amount)
+    {
+        if (amount <= 0 || BodyParts == null || BodyParts.Count == 0)
+            return;
+
+        BodyPart selected = null;
+        float lowestHp = float.MaxValue;
+        int selectedIndex = int.MaxValue;
+        bool selectedIsHead = false;
+
+        for (int i = 0; i < BodyParts.Count; i++)
+        {
+            BodyPart part = BodyParts[i];
+            if (part == null || part.IsBroken)
+                continue;
+
+            bool isHead = part.Type == PartType.HEAD;
+            float hp = part.PartHP;
+
+            bool lower = hp < lowestHp - 0.0001f;
+            bool tied = Mathf.Abs(hp - lowestHp) <= 0.0001f;
+            bool winsTie = tied &&
+                           ((selectedIsHead && !isHead) ||
+                            (selectedIsHead == isHead && i < selectedIndex));
+
+            if (!lower && !winsTie)
+                continue;
+
+            selected = part;
+            lowestHp = hp;
+            selectedIndex = i;
+            selectedIsHead = isHead;
+        }
+
+        // RestoreHpPreserveState는 Weakened를 Normal로 되돌리지 않는다.
+        selected?.RestoreHpPreserveState(amount);
     }
 
     public bool SetMaxCombatHpForDebug(
@@ -1821,6 +1866,11 @@ public abstract class Character : MonoBehaviour
             return;
 
         resourceController.AddBlock(amount);
+    }
+
+    public void RemoveBlock(int amount)
+    {
+        resourceController?.RemoveBlock(amount);
     }
 
     public void ClearBlock()

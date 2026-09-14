@@ -179,6 +179,20 @@ public class DamageManager
 
         CaptureBeforeSnapshot(context);
 
+        // P0 D-09: 한 RED/Attack 타격은 흐트러짐 -> 창 개방 -> HP 내성 순서다.
+        // 따라서 창을 여는 바로 그 타격의 HP부터 Vulnerability override를 받는다.
+        if (context.Action != null &&
+            context.Action.CurrentRollType == CombatRollType.Attack)
+        {
+            StaggerGaugeMechanic stagger =
+                context.Target?.GetMechanic<StaggerGaugeMechanic>();
+
+            stagger?.ApplyBeforeHealthDamage(
+                context.Action,
+                Mathf.Max(0, request.RawPower),
+                request.PhysicalType);
+        }
+
         pipeline.Calculate(context);
 
         Character target =

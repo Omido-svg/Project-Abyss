@@ -1247,7 +1247,7 @@ public class TargetArrowUI : MonoBehaviour
         if (a == b)
             return true;
 
-        return a.Type == b.Type;
+        return a.HasSameIdentity(b);
     }
 
     private int DrawCurrentVisualHighlights()

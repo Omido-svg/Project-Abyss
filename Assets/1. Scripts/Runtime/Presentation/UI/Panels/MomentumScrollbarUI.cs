@@ -887,9 +887,9 @@ public sealed class MomentumScrollbarUI : MonoBehaviour
 
         if (momentum <= lastStand)
             return disadvantageColor;
-        if (momentum < disadvantage)
+        if (momentum <= disadvantage)
             return disadvantageColor;
-        if (momentum <= advantage)
+        if (momentum < advantage)
             return balanceColor;
         if (momentum < overwhelm)
             return advantageColor;
@@ -913,9 +913,9 @@ public sealed class MomentumScrollbarUI : MonoBehaviour
 
         if (momentum <= lastStand)
             return "짓눌림";
-        if (momentum < disadvantage)
+        if (momentum <= disadvantage)
             return "열세";
-        if (momentum <= advantage)
+        if (momentum < advantage)
             return "균형";
         if (momentum < overwhelm)
             return "우세";

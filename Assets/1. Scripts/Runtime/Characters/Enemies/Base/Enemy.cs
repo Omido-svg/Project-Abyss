@@ -440,8 +440,6 @@ protected virtual ActionSlot SelectBestSlotForPart(
                 second == null;
         }
 
-        return
-            first == second ||
-            first.Type == second.Type;
+        return first.HasSameIdentity(second);
     }
 }

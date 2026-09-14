@@ -9,6 +9,7 @@ public sealed class ActionPlanAssignmentRequest
     public BodyPart TargetPart;
     public TargetSelectionRule TargetRule;
     public ActionSlot TargetSlot;
+    public string PlanningChoiceId;
 }
 
 public sealed class ActionPlanAssignmentResult
@@ -70,7 +71,8 @@ public sealed class BattleActionPlanCommandService
                 request.OwnerPart),
             ActionIndex = request.ActionIndex,
             Phase = request.Skill.DefaultPhase,
-            TargetSlot = request.TargetSlot
+            TargetSlot = request.TargetSlot,
+            PlanningChoiceId = request.PlanningChoiceId
         };
 
         ActionPlanningSkillContext planningContext =
@@ -79,7 +81,13 @@ public sealed class BattleActionPlanCommandService
                 request.OwnerPart,
                 request.Skill,
                 request.ActionIndex,
-                actionManager.Slots);
+                actionManager.Slots,
+                request.PlanningChoiceId);
+
+        string choiceBlockReason =
+            ActionPlanningMechanicPolicy.GetSkillSelectionBlockReason(planningContext);
+        if (!string.IsNullOrWhiteSpace(choiceBlockReason))
+            return Fail(result, choiceBlockReason);
 
         ActionPlanningMechanicPolicy.ConfigurePlannedSlot(
             planningContext,
@@ -87,9 +95,22 @@ public sealed class BattleActionPlanCommandService
 
         if (!actionManager.TryAddOrReplaceSlot(slot))
         {
-            return Fail(
-                result,
-                "에너지 예산 또는 슬롯 계약을 만족하지 못했습니다.");
+            return Fail(result, "에너지 예산 또는 슬롯 계약을 만족하지 못했습니다.");
+        }
+
+        if (result.PreviousSlot != null)
+            ActionPlanningMechanicPolicy.RollbackPlannedSlot(request.Owner, result.PreviousSlot);
+
+        if (!ActionPlanningMechanicPolicy.TryCommitPlannedSlot(
+                request.Owner, slot, out string commitFailure))
+        {
+            actionManager.RemoveSlot(request.Owner, request.OwnerPart, request.ActionIndex);
+            if (result.PreviousSlot != null)
+            {
+                actionManager.TryAddOrReplaceSlot(result.PreviousSlot);
+                ActionPlanningMechanicPolicy.TryCommitPlannedSlot(request.Owner, result.PreviousSlot, out _);
+            }
+            return Fail(result, string.IsNullOrWhiteSpace(commitFailure) ? "Planning 즉시 효과 적용 실패" : commitFailure);
         }
 
         result.Success = true;
@@ -212,17 +233,27 @@ public sealed class BattleActionPlanCommandService
         BodyPart part,
         int actionIndex)
     {
-        return actionManager != null &&
-               actionManager.RemoveSlot(
-                   owner,
-                   part,
-                   actionIndex);
+        if (actionManager == null)
+            return false;
+
+        ActionSlot slot = actionManager.FindSlot(owner, part, actionIndex);
+        if (slot != null)
+            ActionPlanningMechanicPolicy.RollbackPlannedSlot(owner, slot);
+
+        return actionManager.RemoveSlot(owner, part, actionIndex);
     }
 
     public void ResetOwner(Character owner)
     {
-        if (owner != null)
-            actionManager?.RemoveSlotsByOwner(owner);
+        if (owner == null || actionManager == null)
+            return;
+
+        foreach (ActionSlot slot in actionManager.Slots)
+        {
+            if (slot?.Owner == owner)
+                ActionPlanningMechanicPolicy.RollbackPlannedSlot(owner, slot);
+        }
+        actionManager.RemoveSlotsByOwner(owner);
     }
 
     public ActionPlanValidationResult ValidateSkillSelection(

@@ -294,6 +294,14 @@ public sealed class CharacterResourceController
             $"현재 가드 : {owner.RuntimeStatus.currentBlock}");
     }
 
+    public void RemoveBlock(int amount)
+    {
+        if (owner?.RuntimeStatus == null || amount <= 0)
+            return;
+
+        owner.RuntimeStatus.currentBlock = Mathf.Max(0, owner.RuntimeStatus.currentBlock - amount);
+    }
+
     public void ClearBlock()
     {
         if (owner?.RuntimeStatus == null)

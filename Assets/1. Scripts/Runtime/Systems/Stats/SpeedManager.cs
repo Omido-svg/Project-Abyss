@@ -104,16 +104,24 @@ public class SpeedManager
             maxSpeed = sharedMax;
         }
 
-        BodyPart legs =
-            character.GetBodyPart(
-                PartType.LEGS);
+        int weakenedSpeedMaxPenalty = 0;
+        BodyPart legs = character.GetBodyPart(PartType.LEGS);
+        if (legs?.IsWeakened == true && !legs.UsesDataDefinedRules)
+            weakenedSpeedMaxPenalty = 1;
 
-        if (legs?.IsWeakened == true)
+        if (character.BodyParts != null)
         {
-            maxSpeed = Mathf.Max(
-                minSpeed,
-                maxSpeed - 1);
+            foreach (BodyPart bodyPart in character.BodyParts)
+            {
+                if (bodyPart?.IsWeakened == true && bodyPart.UsesDataDefinedRules)
+                    weakenedSpeedMaxPenalty = Mathf.Max(weakenedSpeedMaxPenalty, bodyPart.WeakenedSpeedMaxPenalty);
+            }
         }
+
+        if (weakenedSpeedMaxPenalty > 0)
+            maxSpeed = Mathf.Max(minSpeed, maxSpeed - weakenedSpeedMaxPenalty);
+
+        maxSpeed += CommonStatusSpeedRules.GetSpeedMaximumIncrease(character, part);
 
         return Random.Range(
             minSpeed,

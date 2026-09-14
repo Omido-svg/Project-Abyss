@@ -207,9 +207,7 @@ public sealed class BattlePlanningQueryService
                 second == null;
         }
 
-        return
-            first == second ||
-            first.Type == second.Type;
+        return first.HasSameIdentity(second);
     }
 
 }

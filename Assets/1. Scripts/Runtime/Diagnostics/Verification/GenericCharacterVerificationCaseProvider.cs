@@ -618,8 +618,8 @@ public sealed class GenericCharacterVerificationCaseProvider :
         List<string> errors =
             new List<string>();
 
-        HashSet<PartType> types =
-            new HashSet<PartType>();
+        HashSet<PartType> types = new HashSet<PartType>();
+        HashSet<string> partIds = new HashSet<string>(System.StringComparer.Ordinal);
 
         IReadOnlyList<BodyPart> parts =
             character.BodyParts;
@@ -647,8 +647,15 @@ public sealed class GenericCharacterVerificationCaseProvider :
                 if (part.Owner != character)
                     errors.Add($"{part.Type}: Owner 불일치");
 
-                if (!types.Add(part.Type))
+                if (part.UsesDataDefinedRules)
+                {
+                    if (string.IsNullOrWhiteSpace(part.PartId) || !partIds.Add(part.PartId))
+                        errors.Add($"{part.DisplayName}: PartId 중복/비어있음 ({part.PartId})");
+                }
+                else if (!types.Add(part.Type))
+                {
                     errors.Add($"{part.Type}: 중복 부위 타입");
+                }
 
                 if (part.MaxPartHP <= 0f ||
                     part.PartHP <= 0f)

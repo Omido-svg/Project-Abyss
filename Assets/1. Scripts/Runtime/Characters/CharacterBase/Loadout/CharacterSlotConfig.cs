@@ -12,6 +12,8 @@ public sealed class CharacterSlotConfig
     [Header("Optional body-part link")]
     public bool HasLinkedPart = true;
     public PartType LinkedPartType = PartType.HEAD;
+    [Tooltip("가변 적 부위는 안정적인 PartId로 연결합니다. 비어 있으면 LinkedPartType을 사용합니다.")]
+    public string LinkedPartId;
 
     [Header("Optional shared body-part speed override")]
     [Tooltip(

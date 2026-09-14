@@ -54,13 +54,23 @@ public sealed class FervorManager
             return;
 
         MomentumState finalState = momentum.GetFinalTurnState(player);
+        int finalMomentum = momentum.GetPerspectiveValue(player);
         int gain = settings.GetGain(finalState);
+        int before = Exaltation;
+
+        if (gain > 0)
+        {
+            Exaltation += gain;
+            ExaltationChanged?.Invoke(before, Exaltation);
+        }
+
+        Debug.Log(
+            $"[Fervor][TurnEnd] Turn={turn}, FinalMomentum={finalMomentum}, " +
+            $"State={finalState}, Gain={gain:+#;-#;0}, Exaltation={before}->{Exaltation}, " +
+            $"Level={FervorLevel}");
+
         if (gain <= 0)
             return;
-
-        int before = Exaltation;
-        Exaltation += gain;
-        ExaltationChanged?.Invoke(before, Exaltation);
 
         while (FervorLevel < settings.MaximumLevel)
         {
@@ -81,7 +91,9 @@ public sealed class FervorManager
                 FervorLevel,
                 Exaltation));
 
-            Debug.Log($"[Fervor] Turn={turn}, Level={previousLevel}->{FervorLevel}, Exaltation={Exaltation}, Energy={player.CurrentEnergy}/{player.MaxEnergy}");
+            Debug.Log(
+                $"[Fervor][LevelUp] Turn={turn}, Level={previousLevel}->{FervorLevel}, " +
+                $"Exaltation={Exaltation}, Energy={player.CurrentEnergy}/{player.MaxEnergy}");
         }
     }
 }

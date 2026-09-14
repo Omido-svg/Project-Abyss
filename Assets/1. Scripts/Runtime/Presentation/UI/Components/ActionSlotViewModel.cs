@@ -38,7 +38,7 @@ public sealed class ActionSlotViewModel
             string partName =
                 TargetPart == null
                     ? "SINGLE HP"
-                    : TargetPart.Type.ToString();
+                    : TargetPart.DisplayName;
 
             return $"{targetName} / {partName}";
         }

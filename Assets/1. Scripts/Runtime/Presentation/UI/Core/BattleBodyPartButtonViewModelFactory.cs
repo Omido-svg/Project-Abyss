@@ -600,7 +600,6 @@ internal static class BattleBodyPartButtonViewModelFactory
             return first == null && second == null;
         }
 
-        return first == second ||
-               first.Type == second.Type;
+        return first.HasSameIdentity(second);
     }
 }

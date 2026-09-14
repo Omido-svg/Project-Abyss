@@ -525,8 +525,7 @@ public sealed class ActionPlanValidator
         if (first == null || second == null)
             return first == null && second == null;
 
-        return first == second ||
-               first.Type == second.Type;
+        return first.HasSameIdentity(second);
     }
 
     private static ActionPlanValidationResult Invalid(

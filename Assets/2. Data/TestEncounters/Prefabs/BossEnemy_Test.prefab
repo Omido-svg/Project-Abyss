@@ -2176,6 +2176,47 @@ MonoBehaviour:
     CrouchingAttackSlotLimit: 2
     OffensiveAttackSlotLimit: 4
     ExpectedMomentumDriftPerTurn: 15
+  bodyPartDefinitions:
+  - PartId: head
+    DisplayName: Head
+    LegacyType: 0
+    MaxPartHP: 50
+    SlotRole: 2
+    RollCountPenalty: 0
+    SpeedMaxPenalty: 0
+    NormalAttackOnly: 0
+  - PartId: left_arm
+    DisplayName: Left Arm
+    LegacyType: 1
+    MaxPartHP: 50
+    SlotRole: 0
+    RollCountPenalty: 1
+    SpeedMaxPenalty: 0
+    NormalAttackOnly: 0
+  - PartId: right_arm
+    DisplayName: Right Arm
+    LegacyType: 2
+    MaxPartHP: 50
+    SlotRole: 0
+    RollCountPenalty: 1
+    SpeedMaxPenalty: 0
+    NormalAttackOnly: 0
+  - PartId: legs
+    DisplayName: Legs
+    LegacyType: 3
+    MaxPartHP: 50
+    SlotRole: 1
+    RollCountPenalty: 0
+    SpeedMaxPenalty: 1
+    NormalAttackOnly: 0
+  - PartId: extra
+    DisplayName: Extra
+    LegacyType: 4
+    MaxPartHP: 50
+    SlotRole: 2
+    RollCountPenalty: 0
+    SpeedMaxPenalty: 0
+    NormalAttackOnly: 0
 --- !u!114 &747166939083886608
 MonoBehaviour:
   m_ObjectHideFlags: 0

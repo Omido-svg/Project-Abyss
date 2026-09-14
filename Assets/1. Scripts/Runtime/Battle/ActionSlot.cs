@@ -17,6 +17,10 @@ public class ActionSlot
     // 유진 결투 스킬처럼 캐릭터 고유 재굴림 자원을 자동 사용한다.
     public bool UseCharacterRerollResource;
 
+    // 캐릭터 고유 2단계 Planning 선택 (예: 유진 환형의 목표 무기).
+    public string PlanningChoiceId;
+    public bool PlanningEffectCommitted;
+
     public bool HasActionId => ActionId > 0;
 
     public bool AllowsSkill(Skill skill)

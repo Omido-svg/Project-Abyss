@@ -6,7 +6,15 @@ public enum PartType
     HEAD,
     LEFT_HAND,
     RIGHT_HAND,
-    LEGS
+    LEGS,
+    CUSTOM = 4
+}
+
+public enum BodyPartSlotRole
+{
+    Attack = 0,
+    Preparation = 1,
+    Hybrid = 2
 }
 
 public enum BodyPartState
@@ -19,6 +27,13 @@ public enum BodyPartState
 public class BodyPart
 {
     public PartType Type { get; private set; }
+    public string PartId { get; private set; }
+    public string DisplayName { get; private set; }
+    public BodyPartSlotRole SlotRole { get; private set; }
+    public bool UsesDataDefinedRules { get; private set; }
+    public int WeakenedRollCountPenalty { get; private set; }
+    public int WeakenedSpeedMaxPenalty { get; private set; }
+    public bool WeakenedNormalOnly { get; private set; }
 
     public float MaxPartHP { get; private set; }
     public float PartHP { get; set; }
@@ -46,8 +61,38 @@ public class BodyPart
     public BodyPart(
         PartType type,
         float maxPartHP)
+        : this(
+            type.ToString(),
+            type.ToString(),
+            type,
+            maxPartHP,
+            GetDefaultSlotRole(type),
+            false,
+            0,
+            0,
+            false)
     {
+    }
+
+    public BodyPart(
+        string partId,
+        string displayName,
+        PartType type,
+        float maxPartHP,
+        BodyPartSlotRole slotRole,
+        bool usesDataDefinedRules,
+        int weakenedRollCountPenalty,
+        int weakenedSpeedMaxPenalty,
+        bool weakenedNormalOnly)
+    {
+        PartId = string.IsNullOrWhiteSpace(partId) ? type.ToString() : partId.Trim();
+        DisplayName = string.IsNullOrWhiteSpace(displayName) ? PartId : displayName.Trim();
         Type = type;
+        SlotRole = slotRole;
+        UsesDataDefinedRules = usesDataDefinedRules;
+        WeakenedRollCountPenalty = Mathf.Max(0, weakenedRollCountPenalty);
+        WeakenedSpeedMaxPenalty = Mathf.Max(0, weakenedSpeedMaxPenalty);
+        WeakenedNormalOnly = weakenedNormalOnly;
         MaxPartHP = Mathf.Max(1f, maxPartHP);
         PartHP = MaxPartHP;
         State = BodyPartState.Normal;
@@ -226,6 +271,60 @@ public class BodyPart
                 MaxPartHP);
 
         Revision++;
+    }
+
+    public int ApplyBreakAuthorityDamage(int damage)
+    {
+        if (damage <= 0 || !IsWeakened || IsBroken)
+            return 0;
+
+        int before = Mathf.Max(0, Mathf.CeilToInt(PartHP));
+        int applied = Mathf.Min(before, damage);
+        PartHP = Mathf.Max(0f, PartHP - applied);
+        if (applied > 0)
+            Revision++;
+        return applied;
+    }
+
+    public int RestoreHpPreserveState(int amount)
+    {
+        if (amount <= 0 || IsBroken)
+            return 0;
+
+        int before = Mathf.FloorToInt(PartHP);
+        PartHP = Mathf.Min(MaxPartHP, PartHP + amount);
+        int applied = Mathf.Max(0, Mathf.FloorToInt(PartHP) - before);
+        if (applied > 0)
+            Revision++;
+        return applied;
+    }
+
+    private static BodyPartSlotRole GetDefaultSlotRole(PartType type)
+    {
+        return type switch
+        {
+            PartType.HEAD => BodyPartSlotRole.Hybrid,
+            PartType.LEFT_HAND => BodyPartSlotRole.Attack,
+            PartType.RIGHT_HAND => BodyPartSlotRole.Attack,
+            PartType.LEGS => BodyPartSlotRole.Preparation,
+            _ => BodyPartSlotRole.Attack
+        };
+    }
+
+    public bool HasSameIdentity(BodyPart other)
+    {
+        if (ReferenceEquals(this, other))
+            return true;
+        if (other == null || Owner != other.Owner)
+            return false;
+
+        if (!string.IsNullOrWhiteSpace(PartId) &&
+            !string.IsNullOrWhiteSpace(other.PartId))
+        {
+            return string.Equals(PartId, other.PartId, System.StringComparison.Ordinal);
+        }
+
+        return Type == other.Type;
     }
 
     private string OwnerName()

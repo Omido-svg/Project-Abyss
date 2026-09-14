@@ -23,6 +23,7 @@ public partial class BattleUIManager : MonoBehaviour
 
     private BattlePlanningQueryService planningQuery;
     private BattleActionPlanCommandService actionPlanCommands;
+    private BattlePlanningChoiceOverlay planningChoiceOverlay;
 
     private BattleActionPlanCommandService PlanCommands
     {
@@ -797,19 +798,47 @@ public partial class BattleUIManager : MonoBehaviour
 
         if (skill.ActionType == ActionType.Preparation)
         {
-            // 도사림도 START 전까지는 실제 ActionSlot 계획으로 유지한다.
-            // 이 시점에는 효과/빛을 소비하지 않기 때문에 우클릭/Reset이
-            // UI뿐 아니라 백엔드에서도 완전한 행동 취소가 된다.
+            ActionPlanningSkillContext choiceContext = new(
+                selectedOwner,
+                selectedOwnerPart,
+                skill,
+                selectedActionIndex,
+                battleManager?.ActionManager?.Slots);
+
+            IReadOnlyList<ActionPlanningChoiceOption> choices =
+                ActionPlanningMechanicPolicy.GetPlanningChoices(choiceContext);
+
+            if (choices != null && choices.Count > 0)
+            {
+                planningChoiceOverlay ??= gameObject.AddComponent<BattlePlanningChoiceOverlay>();
+                Character capturedOwner = selectedOwner;
+                BodyPart capturedPart = selectedOwnerPart;
+                int capturedIndex = selectedActionIndex;
+
+                planningChoiceOverlay.Show(
+                    $"{skill.SkillName} — 대상 선택",
+                    choices,
+                    choiceId =>
+                    {
+                        selectedOwner = capturedOwner;
+                        selectedOwnerPart = capturedPart;
+                        selectedActionIndex = capturedIndex;
+                        if (!CreateSlot(skill, null, choiceId))
+                            return;
+                        skillSelectPanel?.Hide();
+                        ClearSelection();
+                        RefreshAllBodyPartButtons();
+                    });
+                return;
+            }
+
             if (!CreateSlot(skill))
                 return;
 
-            if (skillSelectPanel != null)
-                skillSelectPanel.Hide();
-
+            skillSelectPanel?.Hide();
             BattleDebugLog.UIInput(
                 $"[Preparation Planned] {skill.SkillName} / " +
                 $"Part={selectedOwnerPart?.Type}, Index={selectedActionIndex}");
-
             ClearSelection();
             RefreshAllBodyPartButtons();
             return;
@@ -1176,7 +1205,8 @@ public partial class BattleUIManager : MonoBehaviour
 
     private bool CreateSlot(
         Skill skill,
-        ActionSlot targetSlot = null)
+        ActionSlot targetSlot = null,
+        string planningChoiceId = null)
     {
         if (!IsManagerReady())
             return false;
@@ -1216,7 +1246,8 @@ public partial class BattleUIManager : MonoBehaviour
                     Target = resolvedTarget,
                     TargetPart = resolvedTargetPart,
                     TargetRule = selection.TargetRule,
-                    TargetSlot = targetSlot
+                    TargetSlot = targetSlot,
+                    PlanningChoiceId = planningChoiceId
                 });
 
         if (result?.Success != true ||
@@ -1792,9 +1823,7 @@ public partial class BattleUIManager : MonoBehaviour
                 b == null;
         }
 
-        return
-            a == b ||
-            a.Type == b.Type;
+        return a.HasSameIdentity(b);
     }
 
     private bool IsSameTargetPart(

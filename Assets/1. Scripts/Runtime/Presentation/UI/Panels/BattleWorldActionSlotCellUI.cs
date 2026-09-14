@@ -1204,6 +1204,6 @@ public sealed class BattleWorldActionSlotCellUI : MonoBehaviour,
         if (a == null || b == null)
             return false;
 
-        return a.Owner == b.Owner && a.Type == b.Type;
+        return a.HasSameIdentity(b);
     }
 }

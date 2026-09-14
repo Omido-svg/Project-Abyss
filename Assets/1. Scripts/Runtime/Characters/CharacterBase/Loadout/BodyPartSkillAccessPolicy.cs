@@ -20,9 +20,23 @@ public static class BodyPartSkillAccessPolicy
         if (part == null)
             return true;
 
-        return Allows(
-            part.Type,
-            actionType);
+        if (part.UsesDataDefinedRules)
+        {
+            return part.SlotRole switch
+            {
+                BodyPartSlotRole.Attack =>
+                    actionType == ActionType.NormalAttack || actionType == ActionType.Duel,
+                BodyPartSlotRole.Preparation =>
+                    actionType == ActionType.Preparation,
+                BodyPartSlotRole.Hybrid =>
+                    actionType == ActionType.NormalAttack ||
+                    actionType == ActionType.Duel ||
+                    actionType == ActionType.Preparation,
+                _ => false
+            };
+        }
+
+        return Allows(part.Type, actionType);
     }
 
     public static bool Allows(
@@ -87,6 +101,17 @@ public static class BodyPartSkillAccessPolicy
     {
         if (part == null)
             return "캐릭터 슬롯";
+
+        if (part.UsesDataDefinedRules)
+        {
+            return part.SlotRole switch
+            {
+                BodyPartSlotRole.Attack => "공격 전용",
+                BodyPartSlotRole.Preparation => "도사림 전용",
+                BodyPartSlotRole.Hybrid => "공격 · 도사림 겸용",
+                _ => "사용 가능 스킬 없음"
+            };
+        }
 
         return part.Type switch
         {

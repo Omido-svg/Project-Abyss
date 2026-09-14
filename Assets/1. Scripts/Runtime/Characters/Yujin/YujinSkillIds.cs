@@ -9,6 +9,10 @@ public static class YujinSkillIds
     public const string Capture = "yujin.preparation.capture";
     public const string Sentencing = "yujin.preparation.sentencing";
 
+    public const string HwanhyeongAttack = "yujin.preparation.hwanhyeong.attack";
+    public const string HwanhyeongDefense = "yujin.preparation.hwanhyeong.defense";
+
+    // P0 migration aliases. 새 데이터에서는 사용하지 않는다.
     public const string HwanhyeongBaeku = "yujin.preparation.hwanhyeong.baeku";
     public const string HwanhyeongJeokseol = "yujin.preparation.hwanhyeong.jeokseol";
     public const string HwanhyeongNakil = "yujin.preparation.hwanhyeong.nakil";

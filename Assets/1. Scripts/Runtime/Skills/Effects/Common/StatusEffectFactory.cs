@@ -14,7 +14,8 @@ public enum StatusEffectId
     Heat = 10,
     Regeneration = 11,
     Pain = 12,
-    OlafBloodWound = 13
+    OlafBloodWound = 13,
+    Swift = 14
 }
 
 public static class StatusEffectFactory
@@ -67,6 +68,8 @@ public static class StatusEffectFactory
                 new RuptureStatus(safeStack),
             StatusEffectId.Heat =>
                 new HeatStatus(safeStack),
+            StatusEffectId.Swift =>
+                new SwiftStatus(safeStack),
             StatusEffectId.Regeneration =>
                 new RegenerationStatus(safeStack),
             StatusEffectId.Pain =>

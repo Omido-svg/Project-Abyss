@@ -47,6 +47,7 @@ public sealed class CharacterAuthoringBundle : ScriptableObject
     [Header("Elite Enemy")]
     [SerializeField] private bool useElitePostureRotation = true;
     [SerializeField] private EnemyPostureSettings elitePostureSettings = new();
+    [SerializeField] private List<EnemyBodyPartDefinition> eliteBodyPartDefinitions = new();
 
     [Header("Authoring Contents")]
     [SerializeField] private List<Object> includedAssets = new();
@@ -71,6 +72,7 @@ public sealed class CharacterAuthoringBundle : ScriptableObject
     public int NormalEnemySingleMaxHp => Mathf.Max(1, normalEnemySingleMaxHp);
     public bool UseElitePostureRotation => useElitePostureRotation;
     public EnemyPostureSettings ElitePostureSettings => elitePostureSettings;
+    public IReadOnlyList<EnemyBodyPartDefinition> EliteBodyPartDefinitions => eliteBodyPartDefinitions;
     public IReadOnlyList<Object> IncludedAssets => includedAssets;
     public IReadOnlyList<Object> SupportingAssets => supportingAssets;
 
@@ -114,6 +116,18 @@ public sealed class CharacterAuthoringBundle : ScriptableObject
         useElitePostureRotation = usePosture;
         elitePostureSettings = settings ?? new EnemyPostureSettings();
         elitePostureSettings.Normalize();
+    }
+
+    public void ConfigureEliteBodyParts(IReadOnlyList<EnemyBodyPartDefinition> definitions)
+    {
+        eliteBodyPartDefinitions ??= new List<EnemyBodyPartDefinition>();
+        eliteBodyPartDefinitions.Clear();
+        if (definitions == null) return;
+        for (int i = 0; i < definitions.Count; i++)
+        {
+            EnemyBodyPartDefinition definition = definitions[i];
+            if (definition != null) eliteBodyPartDefinitions.Add(definition);
+        }
     }
 
     public void SynchronizeCharacterDataLoadout()
@@ -176,6 +190,7 @@ public sealed class CharacterAuthoringBundle : ScriptableObject
         normalEnemySingleMaxHp = Mathf.Max(1, normalEnemySingleMaxHp);
         equippedItems ??= new List<CharacterItem>();
         equippedAugments ??= new List<CharacterAugment>();
+        eliteBodyPartDefinitions ??= new List<EnemyBodyPartDefinition>();
         includedAssets ??= new List<Object>();
         supportingAssets ??= new List<Object>();
         elitePostureSettings ??= new EnemyPostureSettings();

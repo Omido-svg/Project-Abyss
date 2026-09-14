@@ -68,6 +68,56 @@ public static class ActionPlanningMechanicPolicy
         }
     }
 
+    public static IReadOnlyList<ActionPlanningChoiceOption> GetPlanningChoices(
+        ActionPlanningSkillContext context)
+    {
+        IReadOnlyList<CombatMechanic> mechanics = context.Owner?.Mechanics;
+        if (mechanics == null)
+            return System.Array.Empty<ActionPlanningChoiceOption>();
+
+        foreach (CombatMechanic mechanic in mechanics)
+        {
+            if (mechanic is IActionPlanningChoiceRule rule)
+            {
+                IReadOnlyList<ActionPlanningChoiceOption> choices = rule.GetPlanningChoices(context);
+                if (choices != null && choices.Count > 0)
+                    return choices;
+            }
+        }
+        return System.Array.Empty<ActionPlanningChoiceOption>();
+    }
+
+    public static bool TryCommitPlannedSlot(Character owner, ActionSlot slot, out string failureReason)
+    {
+        failureReason = string.Empty;
+        IReadOnlyList<CombatMechanic> mechanics = owner?.Mechanics;
+        if (mechanics == null || slot == null)
+            return true;
+
+        foreach (CombatMechanic mechanic in mechanics)
+        {
+            if (mechanic is IActionPlanningCommitRule rule &&
+                !rule.TryCommitPlannedSlot(slot, out failureReason))
+            {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    public static void RollbackPlannedSlot(Character owner, ActionSlot slot)
+    {
+        IReadOnlyList<CombatMechanic> mechanics = owner?.Mechanics;
+        if (mechanics == null || slot == null)
+            return;
+
+        foreach (CombatMechanic mechanic in mechanics)
+        {
+            if (mechanic is IActionPlanningCommitRule rule)
+                rule.RollbackPlannedSlot(slot);
+        }
+    }
+
     public static void RestorePlanningState(
         Character owner,
         ActionSlot slot)

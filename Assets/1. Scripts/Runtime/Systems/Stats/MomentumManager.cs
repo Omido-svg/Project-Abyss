@@ -92,9 +92,9 @@ public class MomentumManager
             return MomentumState.LastStand;
 
         int value = GetPerspectiveValue(owner);
-        if (value < settings.DisadvantageThreshold)
+        if (value <= settings.DisadvantageThreshold)
             return MomentumState.Disadvantage;
-        if (value <= settings.AdvantageThreshold)
+        if (value < settings.AdvantageThreshold)
             return MomentumState.Balance;
         if (value < settings.OverwhelmThreshold)
             return MomentumState.Advantage;
@@ -106,9 +106,9 @@ public class MomentumManager
         int value = GetPerspectiveValue(owner);
         if (value <= settings.LastStandThreshold)
             return MomentumState.LastStand;
-        if (value < settings.DisadvantageThreshold)
+        if (value <= settings.DisadvantageThreshold)
             return MomentumState.Disadvantage;
-        if (value <= settings.AdvantageThreshold)
+        if (value < settings.AdvantageThreshold)
             return MomentumState.Balance;
         if (value < settings.OverwhelmThreshold)
             return MomentumState.Advantage;

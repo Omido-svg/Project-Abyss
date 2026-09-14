@@ -14,6 +14,13 @@ public sealed class StaggerGaugeMechanic : ReactiveCombatMechanic,
     private bool vulnerabilityWindowOpen;
     private int recoverAfterTurn = -1;
 
+    // P0 D-09: RED/Attack 한 타격 안에서는 흐트러짐을 HP보다 먼저 계산한다.
+    // DamagePipeline이 HP 내성을 계산하기 전에 이 snapshot을 만든 뒤 Exchange에 붙인다.
+    private long pendingAttackActionId = -1;
+    private int pendingAttackBefore = -1;
+    private int pendingAttackAfter = -1;
+    private int pendingAttackApplied;
+
     public int CurrentGauge => currentGauge;
     public int MaxGauge => maxGauge;
     public bool IsVulnerabilityWindowOpen => vulnerabilityWindowOpen;
@@ -40,6 +47,40 @@ public sealed class StaggerGaugeMechanic : ReactiveCombatMechanic,
         currentGauge = maxGauge;
         vulnerabilityWindowOpen = false;
         recoverAfterTurn = -1;
+        ClearPendingAttackSnapshot();
+    }
+
+    public void ApplyBeforeHealthDamage(
+        BattleAction action,
+        int rawRollPower,
+        PhysicalDamageType physicalType)
+    {
+        if (action == null || action.CurrentRollType != CombatRollType.Attack ||
+            owner == null || owner.IsDead || vulnerabilityWindowOpen)
+        {
+            return;
+        }
+
+        int raw = Mathf.Max(0, rawRollPower);
+        if (raw <= 0)
+            return;
+
+        float multiplier = owner.Data?.StaggerResistances?.GetMultiplier(physicalType) ?? 1f;
+        int staggerDamage = Mathf.Max(0, Mathf.FloorToInt(raw * multiplier));
+        if (staggerDamage <= 0)
+            return;
+
+        int before = currentGauge;
+        currentGauge = Mathf.Max(0, currentGauge - staggerDamage);
+        int applied = Mathf.Max(0, before - currentGauge);
+
+        pendingAttackActionId = action.ActionId;
+        pendingAttackBefore = before;
+        pendingAttackAfter = currentGauge;
+        pendingAttackApplied = applied;
+
+        if (currentGauge <= 0)
+            OpenVulnerabilityWindow();
     }
 
     public void ApplyRequiredExchangeReaction(
@@ -58,6 +99,18 @@ public sealed class StaggerGaugeMechanic : ReactiveCombatMechanic,
         Character target = winner.Target ?? exchange.LoserAction?.Owner;
         if (target == null || target.IsDead)
             return;
+
+        if (winner.CurrentRollType == CombatRollType.Attack && target == owner)
+        {
+            if (pendingAttackActionId == winner.ActionId && pendingAttackApplied > 0)
+            {
+                exchange.StaggerDamage = pendingAttackApplied;
+                exchange.StaggerGaugeBefore = pendingAttackBefore;
+                exchange.StaggerGaugeAfter = pendingAttackAfter;
+            }
+            ClearPendingAttackSnapshot();
+            return;
+        }
 
         int staggerDamage = CalculateStaggerDamage(winner, target);
         if (staggerDamage <= 0)
@@ -130,6 +183,14 @@ public sealed class StaggerGaugeMechanic : ReactiveCombatMechanic,
         PhysicalDamageType type = PhysicalDamageResolver.Resolve(action);
         float multiplier = target.Data?.StaggerResistances?.GetMultiplier(type) ?? 1f;
         return Mathf.Max(0, Mathf.FloorToInt(raw * multiplier));
+    }
+
+    private void ClearPendingAttackSnapshot()
+    {
+        pendingAttackActionId = -1;
+        pendingAttackBefore = -1;
+        pendingAttackAfter = -1;
+        pendingAttackApplied = 0;
     }
 
     private void OpenVulnerabilityWindow()

@@ -125,24 +125,24 @@ public sealed class CharacterDamageController
 
         if (targetPart.IsWeakened)
         {
-            // 약화는 파괴 전 단계다.
-            // 이 타격에서는 부위 HP와 캐릭터 HP를 감소시키지 않는다.
-            // 파괴 권한이 있는 공격만 상태를 Broken으로 전환하며,
-            // 직접 HP 피해는 이후 Broken 부위를 다시 공격할 때부터 발생한다.
+            // P0 D-07 확정 불변식:
+            // 약화 상태는 회복으로 풀리지 않는다. 이후 타격은 전체 HP를 계속 깎고,
+            // 파괴 권한이 있는 타격만 회복되어 올라간 부위 HP도 함께 깎아 0에서 파괴한다.
+            owner.ReduceCurrentHP(request.Damage);
+
             if (request.CanBreakPart)
             {
-                bodyPartController?.TryBreakWeakenedPart(
-                    targetPart,
-                    owner.ActiveDamageContext?.Attacker,
-                    owner.ActiveDamageContext?.Action);
-            }
-            else
-            {
-                Debug.Log(
-                    $"{OwnerName()}의 {targetPart.Type} 부위는 약화 상태입니다. " +
-                    "파괴 권한이 없는 공격은 피해를 주지 못합니다.");
+                targetPart.ApplyBreakAuthorityDamage(request.Damage);
+                if (targetPart.PartHP <= 0f)
+                {
+                    bodyPartController?.TryBreakWeakenedPart(
+                        targetPart,
+                        owner.ActiveDamageContext?.Attacker,
+                        owner.ActiveDamageContext?.Action);
+                }
             }
 
+            owner.CheckDead();
             return;
         }
 

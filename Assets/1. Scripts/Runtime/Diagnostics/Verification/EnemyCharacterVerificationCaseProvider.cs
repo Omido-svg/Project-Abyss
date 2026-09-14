@@ -58,10 +58,10 @@ public sealed class EnemyCharacterVerificationCaseProvider :
         {
             yield return CharacterVerificationCaseDefinition.Create(
                 EliteBodyPartContract,
-                "정예 적 4부위 전투 모델",
+                "정예 적 5부위 전투 모델",
                 CharacterVerificationCategory.Boundary,
                 CharacterVerificationExecutionMode.IsolatedRuntime,
-                "EliteEnemy가 HEAD/LEFT_HAND/RIGHT_HAND/LEGS 4부위를 정확히 구성하고 Last Stand를 지원하는지 검사합니다.");
+                "EliteEnemy가 데이터 정의 5부위를 구성하고 각 부위의 안정적인 PartId/슬롯 역할을 가지며 Last Stand를 지원하는지 검사합니다.");
 
             yield return CharacterVerificationCaseDefinition.Create(
                 ElitePostureSlotContract,
@@ -212,52 +212,29 @@ public sealed class EnemyCharacterVerificationCaseProvider :
                 "Character가 EliteEnemy가 아님");
         }
 
-        PartType[] expected =
+        IReadOnlyList<BodyPart> parts = enemy.BodyParts;
+        List<string> failures = new List<string>();
+
+        if (parts == null || parts.Count != 5)
+            failures.Add($"BodyPart Count={parts?.Count ?? 0}, Expected=5");
+
+        HashSet<string> ids = new HashSet<string>(System.StringComparer.Ordinal);
+        if (parts != null)
         {
-            PartType.HEAD,
-            PartType.LEFT_HAND,
-            PartType.RIGHT_HAND,
-            PartType.LEGS
-        };
-
-        IReadOnlyList<BodyPart> parts =
-            enemy.BodyParts;
-
-        List<string> failures =
-            new List<string>();
-
-        if (parts == null ||
-            parts.Count != expected.Length)
-        {
-            failures.Add(
-                $"BodyPart Count={parts?.Count ?? 0}, Expected=4");
-        }
-
-        foreach (PartType type in expected)
-        {
-            BodyPart part =
-                parts?.FirstOrDefault(
-                    candidate =>
-                        candidate != null &&
-                        candidate.Type == type);
-
-            if (part == null)
+            for (int i = 0; i < parts.Count; i++)
             {
-                failures.Add(
-                    $"필수 부위 누락: {type}");
-                continue;
-            }
-
-            if (part.Owner != enemy)
-            {
-                failures.Add(
-                    $"{type}: Owner 불일치");
-            }
-
-            if (part.MaxPartHP <= 0)
-            {
-                failures.Add(
-                    $"{type}: MaxHP={part.MaxPartHP}");
+                BodyPart part = parts[i];
+                if (part == null)
+                {
+                    failures.Add($"Part[{i}]=NULL");
+                    continue;
+                }
+                if (part.Owner != enemy) failures.Add($"{part.PartId}: Owner 불일치");
+                if (part.MaxPartHP <= 0) failures.Add($"{part.PartId}: MaxHP={part.MaxPartHP}");
+                if (string.IsNullOrWhiteSpace(part.PartId) || !ids.Add(part.PartId))
+                    failures.Add($"PartId 중복/비어있음: {part.PartId}");
+                if (!part.UsesDataDefinedRules)
+                    failures.Add($"{part.PartId}: UsesDataDefinedRules=false");
             }
         }
 
@@ -266,10 +243,10 @@ public sealed class EnemyCharacterVerificationCaseProvider :
 
         return failures.Count == 0
             ? context.Pass(
-                "HEAD/LEFT_HAND/RIGHT_HAND/LEGS 4부위 + LastStand",
+                "Data-defined 5부위 + unique PartId + LastStand",
                 "PASS")
             : context.Fail(
-                "HEAD/LEFT_HAND/RIGHT_HAND/LEGS 4부위 + LastStand",
+                "Data-defined 5부위 + unique PartId + LastStand",
                 $"FAIL {failures.Count}",
                 string.Join("\n", failures));
     }

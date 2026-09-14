@@ -51,9 +51,8 @@ public sealed class YujinCharacterVerificationCaseProvider :
         YujinSkillIds.Brand,
         YujinSkillIds.JointLiability,
         YujinSkillIds.Retrial,
-        YujinSkillIds.HwanhyeongBaeku,
-        YujinSkillIds.HwanhyeongJeokseol,
-        YujinSkillIds.HwanhyeongNakil
+        YujinSkillIds.HwanhyeongAttack,
+        YujinSkillIds.HwanhyeongDefense
     };
 
     public bool Supports(
@@ -73,14 +72,14 @@ public sealed class YujinCharacterVerificationCaseProvider :
             "유진 스킬 ID 전체 등록",
             CharacterVerificationCategory.Data,
             CharacterVerificationExecutionMode.DataOnly,
-            "기존 9개 스킬과 환형 준비 행동 3종을 포함한 고유 SkillId 12개가 데이터 그래프에 모두 존재하는지 검사합니다.");
+            "P0 확정 환형(공격)/(수비) 2종을 포함한 유진 고유 SkillId가 데이터 그래프에 존재하는지 검사합니다.");
 
         yield return CharacterVerificationCaseDefinition.Create(
             HwanhyeongLoadoutContract,
-            "환형 3종 기본 도사림 장착",
+            "환형 모드 1종 장착 + 2종 후보",
             CharacterVerificationCategory.Preparation,
             CharacterVerificationExecutionMode.DataOnly,
-            "백우·적설·낙일 환형 3종이 기본 장착 도사림이며 포획·선고는 교체 후보로 보존되는지 검사합니다.");
+            "환형(공격)/(수비) 중 하나만 장착되고 둘 다 후보이며 포획·선고가 함께 유지되는지 검사합니다.");
 
         yield return CharacterVerificationCaseDefinition.Create(
             MechanicRegistration,
@@ -241,14 +240,16 @@ public sealed class YujinCharacterVerificationCaseProvider :
 
         string[] hwanhyeongIds =
         {
-            YujinSkillIds.HwanhyeongBaeku,
-            YujinSkillIds.HwanhyeongJeokseol,
-            YujinSkillIds.HwanhyeongNakil
+            YujinSkillIds.HwanhyeongAttack,
+            YujinSkillIds.HwanhyeongDefense
         };
 
+        int equippedHwanhyeongCount = hwanhyeongIds.Count(equipped.Contains);
         bool equippedExactly =
             equipped.Count == 3 &&
-            hwanhyeongIds.All(equipped.Contains);
+            equippedHwanhyeongCount == 1 &&
+            equipped.Contains(YujinSkillIds.Capture) &&
+            equipped.Contains(YujinSkillIds.Sentencing);
 
         HashSet<string> candidates =
             new HashSet<string>(
@@ -294,10 +295,10 @@ public sealed class YujinCharacterVerificationCaseProvider :
 
         return valid
             ? context.Pass(
-                "환형 3종 기본 장착 + 기존 도사림 후보 보존",
+                "환형 모드 1종 장착 + 공격/수비 2종 후보 + 기존 도사림 보존",
                 detail)
             : context.Fail(
-                "환형 3종 기본 장착 + 기존 도사림 후보 보존",
+                "환형 모드 1종 장착 + 공격/수비 2종 후보 + 기존 도사림 보존",
                 detail);
     }
 

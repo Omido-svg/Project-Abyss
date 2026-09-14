@@ -339,7 +339,7 @@ public sealed class CharacterVerificationWindow :
         EditorGUILayout.HelpBox(
             "Coverage 범위는 Player/Enemy 구분이 아니라 CharacterAuthoringBundle 전체입니다. " +
             "모든 스킬의 자원·굴림·피해 대상·Effect Entry, 필수 Mechanic 이벤트를 강제 검증하고, " +
-            "NormalEnemy SingleHP·3회 굴림과 EliteEnemy 4부위·자세 슬롯 계약도 별도 Assert합니다. " +
+            "NormalEnemy SingleHP·3회 굴림과 EliteEnemy 데이터 정의 5부위·자세 슬롯 계약도 별도 Assert합니다. " +
             "Full Suite는 CameraTest를 Olaf→Yujin→Hifumi MixedBattle로 자동 재시작하며 " +
             "각 전투에서 Normal/Elite 적의 실제 ActionStart도 기록합니다.",
             MessageType.None);

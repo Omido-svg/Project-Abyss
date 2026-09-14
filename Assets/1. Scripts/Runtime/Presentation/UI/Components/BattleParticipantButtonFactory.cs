@@ -1675,7 +1675,7 @@ public sealed class BattleParticipantButtonFactory : MonoBehaviour
         string targetName =
             part == null
                 ? "SINGLE_HP"
-                : part.Type.ToString();
+                : part.DisplayName;
 
         return
             $"{side}_{participantIndex}_" +

@@ -738,12 +738,6 @@ MonoBehaviour:
       overrideSpeedRange: 0
       minSpeed: 3
       maxSpeed: 8
-      overrideOffense: 0
-      flatDamageBonus: 0
-      damageMultiplier: 1
-      overrideDefense: 0
-      defense: 0
-      defensePenetrationRate: 0
       overridePrestigeGain: 0
       prestigeGainMultiplier: 1
     partSettings:
@@ -3530,6 +3524,47 @@ MonoBehaviour:
     CrouchingAttackSlotLimit: 2
     OffensiveAttackSlotLimit: 4
     ExpectedMomentumDriftPerTurn: 15
+  bodyPartDefinitions:
+  - PartId: head
+    DisplayName: Head
+    LegacyType: 0
+    MaxPartHP: 50
+    SlotRole: 2
+    RollCountPenalty: 0
+    SpeedMaxPenalty: 0
+    NormalAttackOnly: 0
+  - PartId: left_arm
+    DisplayName: Left Arm
+    LegacyType: 1
+    MaxPartHP: 50
+    SlotRole: 0
+    RollCountPenalty: 1
+    SpeedMaxPenalty: 0
+    NormalAttackOnly: 0
+  - PartId: right_arm
+    DisplayName: Right Arm
+    LegacyType: 2
+    MaxPartHP: 50
+    SlotRole: 0
+    RollCountPenalty: 1
+    SpeedMaxPenalty: 0
+    NormalAttackOnly: 0
+  - PartId: legs
+    DisplayName: Legs
+    LegacyType: 3
+    MaxPartHP: 50
+    SlotRole: 1
+    RollCountPenalty: 0
+    SpeedMaxPenalty: 1
+    NormalAttackOnly: 0
+  - PartId: extra
+    DisplayName: Extra
+    LegacyType: 4
+    MaxPartHP: 50
+    SlotRole: 2
+    RollCountPenalty: 0
+    SpeedMaxPenalty: 0
+    NormalAttackOnly: 0
 --- !u!1 &1289930839
 GameObject:
   m_ObjectHideFlags: 0
@@ -3588,6 +3623,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   battleManager: {fileID: 1453355684}
+  screenModeController: {fileID: 0}
   canvas: {fileID: 253689328}
   arrowRoot: {fileID: 1289930840}
   bodyPartButtonRegistry: {fileID: 0}
@@ -3970,19 +4006,6 @@ MonoBehaviour:
   rosterController: {fileID: 0}
   autoInitializeOnAwake: 1
   autoStartBattle: 1
-  legacyPlayer: {fileID: 2094296668}
-  legacyEnemies:
-  - {fileID: 1244269864}
-  legacyPlayerButtons:
-  - {fileID: 1632426706}
-  - {fileID: 1213347054}
-  - {fileID: 478031303}
-  - {fileID: 1603813231}
-  legacyEnemyButtons:
-  - {fileID: 1091805358}
-  - {fileID: 1582033875}
-  - {fileID: 2090521073}
-  - {fileID: 1854957847}
   battleRuleSettings:
     Momentum:
       Minimum: -100
@@ -3992,25 +4015,50 @@ MonoBehaviour:
       AdvantageThreshold: 30
       OverwhelmThreshold: 70
       HitShift: 5
-      DuelVictoryShift: 25
+      DuelExchangeTotalShift: 40
       LastStandHitShiftMultiplier: 2
+    Fervor:
+      OverwhelmGain: 10
+      AdvantageGain: 5
+      BalanceGain: 2
+      DisadvantageGain: 0
+      LastStandGain: 0
+      Level1Cost: 4
+      Level2Cost: 8
+      Level3Cost: 10
+      MaximumLevel: 3
+    Stagger:
+      PlayerMaximum: 350
+      NormalEnemyMaximum: 100
+      EliteEnemyMaximum: 100
+      BossMaximum: 400
+      VulnerabilityHpResistanceOverride: 2
+      StaggerRollSelfRecoveryRatio: 1
     Clash:
       DefaultExchangeRollCount: 3
       SpeedWeight: 1
       MaxTieRerolls: 64
+      MaxCharacterRerollsPerExchange: 64
       ConsumeResourceOnActionStart: 1
     Energy:
       DefaultMaximum: 3
       TurnStartGain: 1
       StartFull: 1
     Prestige:
-      ClashStartCharge: 1
-      HitDealtCharge: 1
-      HitTakenCharge: 1
-      ClashVictoryCharge: 1
-      PreparationDoesNotCharge: 1
-    UseLegacyAttackDefenseStats: 0
+      ExchangeParticipantCharge: 5
+      OneSidedParticipantCharge: 5
+      ExcludePreparationActions: 1
+    Progression:
+      MaximumSkillUpgradeLevel: 2
+      SecondUpgradeCostMultiplier: 1.5
+      NormalAttackLoadoutLimit: 3
+      DuelLoadoutLimit: 2
+      PreparationLoadoutLimit: 3
+      PrestigeLoadoutLimit: 1
   battleUIManager: {fileID: 605390726}
+  hasConfiguredEmotion: 0
+  configuredEmotion: 0
+  emotionAugmentCatalog: {fileID: 0}
   battleAnimationDirector: {fileID: 0}
 --- !u!4 &1453355685
 Transform:
@@ -5220,7 +5268,15 @@ MonoBehaviour:
   maxMomentum: 100
   animateDuration: 0.35
   exchangeAnimateDuration: 0.18
+  cursorMovePulseScale: 1.22
+  cursorArrivalPulseScale: 1.34
+  cursorArrivalPulseDuration: 0.1
   useUnscaledTime: 1
+  showGameplayV5Zones: 1
+  disadvantageColor: {r: 0.92, g: 0.28, b: 0.3, a: 0.88}
+  balanceColor: {r: 0.72, g: 0.76, b: 0.84, a: 0.78}
+  advantageColor: {r: 0.3, g: 0.72, b: 1, a: 0.9}
+  overwhelmColor: {r: 1, g: 0.76, b: 0.22, a: 0.95}
   logMomentumAnimation: 1
 --- !u!114 &1805580446
 MonoBehaviour:
@@ -7315,6 +7371,7 @@ MonoBehaviour:
   data: {fileID: 11400000, guid: e9bc03b760a7e094eb95540f97744572, type: 2}
   equippedItems: []
   equippedAugments: []
+  partHitPoints: 180
 --- !u!114 &2094296670
 MonoBehaviour:
   m_ObjectHideFlags: 0

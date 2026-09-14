@@ -10,6 +10,38 @@ public interface ICommonRollMaxReductionStatus
     int GetMaxReduction(BattleAction action);
 }
 
+public interface ICommonSpeedMaximumStatus
+{
+    int GetSpeedMaximumIncrease(BodyPart part);
+}
+
+public static class CommonStatusSpeedRules
+{
+    public static int GetSpeedMaximumIncrease(Character character, BodyPart part)
+    {
+        if (character == null)
+            return 0;
+
+        int total = 0;
+        foreach (StatusEffect effect in character.StatusEffects)
+        {
+            if (effect is ICommonSpeedMaximumStatus speed)
+                total += speed.GetSpeedMaximumIncrease(part);
+        }
+
+        if (part?.StatusEffects != null)
+        {
+            foreach (StatusEffect effect in part.StatusEffects)
+            {
+                if (effect is ICommonSpeedMaximumStatus speed)
+                    total += speed.GetSpeedMaximumIncrease(part);
+            }
+        }
+
+        return Mathf.Max(0, total);
+    }
+}
+
 public abstract class OneTurnCommonStatus : StatusEffect
 {
     private readonly int maxStack;
@@ -86,26 +118,38 @@ public sealed class RuptureStatus : OneTurnCommonStatus
         Mathf.Max(0f, damage + Stack);
 }
 
-/// <summary>열기만 공용 상태 중 지속형이다. 매 턴 시작 시 위세 +N.</summary>
-public sealed class HeatStatus : StatusEffect
+/// <summary>
+/// P0 D-08 확정 규칙: 열기는 1턴 크기형이며 적용되는 순간 위세 +N을 1회 지급한다.
+/// 다음 턴 예약은 DeferredStatusEffect가 TurnStart에 실제 HeatStatus를 생성하여 지급한다.
+/// </summary>
+public sealed class HeatStatus : OneTurnCommonStatus
 {
-    public override StatusEffectDurationPolicy DurationPolicy =>
-        StatusEffectDurationPolicy.Permanent;
-    public override StatusEffectStackPolicy StackPolicy =>
-        StatusEffectStackPolicy.AddStacks;
+    public HeatStatus(int stack = 1) : base("열기", stack, 99) { }
 
-    public HeatStatus(int stack = 1)
-    {
-        Name = "열기";
-        Stack = Mathf.Max(0, stack);
-        Duration = -1;
-    }
-
-    public override void OnTurnStart(StatusEffectTickContext context)
+    public override void OnApply()
     {
         if (Owner != null && Stack > 0)
             Owner.AddPrestige(Stack);
     }
+
+    public override void Merge(StatusEffect other)
+    {
+        int before = Stack;
+        base.Merge(other);
+        int gained = Mathf.Max(0, Stack - before);
+        if (Owner != null && gained > 0)
+            Owner.AddPrestige(gained);
+    }
+}
+
+/// <summary>
+/// P0 D-08 확정 규칙: 신속은 다음 턴 전용 크기형 상태이며 속도 굴림의 최댓값 +N.
+/// 카드에서 즉시 부여하지 말고 DeferredStatusEffect(StatusEffectId.Swift, ...)로 예약한다.
+/// </summary>
+public sealed class SwiftStatus : OneTurnCommonStatus, ICommonSpeedMaximumStatus
+{
+    public SwiftStatus(int stack = 1) : base("신속", stack, 99) { }
+    public int GetSpeedMaximumIncrease(BodyPart part) => Stack;
 }
 
 /// <summary>최신 문서 우선 규칙에 따라 재생도 1턴형으로 변경한다.</summary>

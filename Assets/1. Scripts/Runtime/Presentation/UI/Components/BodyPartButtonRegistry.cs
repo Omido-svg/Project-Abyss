@@ -107,7 +107,8 @@ public sealed class BodyPartButtonRegistry : MonoBehaviour
 
             if (part != null &&
                 button.BodyPart != null &&
-                button.BodyPart.Type == part.Type)
+                button.BodyPart.Owner == part.Owner &&
+                string.Equals(button.BodyPart.PartId, part.PartId, System.StringComparison.Ordinal))
             {
                 return button;
             }
@@ -186,8 +187,8 @@ public sealed class BodyPartButtonRegistry : MonoBehaviour
 
             if (part != null &&
                 button.BodyPart != null &&
-                button.BodyPart.Type == part.Type &&
-                button.Owner == part.Owner)
+                button.Owner == part.Owner &&
+                string.Equals(button.BodyPart.PartId, part.PartId, System.StringComparison.Ordinal))
             {
                 destination.Add(button);
             }

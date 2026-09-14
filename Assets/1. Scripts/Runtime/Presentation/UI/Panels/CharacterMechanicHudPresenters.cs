@@ -575,7 +575,8 @@ internal sealed class YujinWeaponHudView : IDisposable
         BattleCharacterPointerRouter
             .BlockWorldInputForFrames(2);
 
-        boundMechanic?.TrySwitchWeapon(weapon);
+        // P0 D-02: 무기 전환은 HUD 직접 클릭이 아니라 환형 카드 사용 -> 2택 UI로만 수행한다.
+        // HUD 버튼은 현재 무기 표시 전용이다.
     }
 
     private void BindMechanic(YujinMechanic mechanic)
@@ -645,7 +646,7 @@ internal sealed class YujinWeaponHudView : IDisposable
             return;
 
         bool selected = mechanic.CurrentWeapon == weapon;
-        button.interactable = mechanic.CanSwitchWeapon(weapon);
+        button.interactable = false;
 
         Image image = button.GetComponent<Image>();
 
