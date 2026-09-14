@@ -247,26 +247,26 @@ public static class GameSystemVerificationRunner
 
         RunCase(
             report,
-            "system.target.crosspart_slower_redirect_fails",
-            "다른 부위의 느린 가로채기 실패",
+            "system.target.crosspart_slower_exact_target_clashes",
+            "느린 슬롯도 exact TargetSlot이면 합",
             GameSystemVerificationCategory.Targeting,
-            "challengerSpeed < incomingSpeed 이면 일방공격",
-            () => VerifyCrossPartRedirect(data, 9, 10, expected: false));
+            "속도와 무관하게 정확한 공격 TargetSlot 조준이면 합",
+            () => VerifyCrossPartRedirect(data, 9, 10, expected: true));
 
         RunCase(
             report,
-            "system.target.crosspart_equal_redirect_fails",
-            "동속 가로채기 실패",
+            "system.target.crosspart_equal_exact_target_clashes",
+            "동속 슬롯도 exact TargetSlot이면 합",
             GameSystemVerificationCategory.Targeting,
-            "challengerSpeed == incomingSpeed 이면 일방공격",
-            () => VerifyCrossPartRedirect(data, 10, 10, expected: false));
+            "속도와 무관하게 정확한 공격 TargetSlot 조준이면 합",
+            () => VerifyCrossPartRedirect(data, 10, 10, expected: true));
 
         RunCase(
             report,
-            "system.target.crosspart_faster_redirect_clashes",
-            "더 빠른 가로채기 합",
+            "system.target.crosspart_faster_exact_target_clashes",
+            "빠른 슬롯도 exact TargetSlot이면 합",
             GameSystemVerificationCategory.Targeting,
-            "challengerSpeed > incomingSpeed 이면 가로채기 합",
+            "속도와 무관하게 정확한 공격 TargetSlot 조준이면 합",
             () => VerifyCrossPartRedirect(data, 11, 10, expected: true));
 
         RunCase(
@@ -280,25 +280,25 @@ public static class GameSystemVerificationRunner
         RunCase(
             report,
             "system.target.explicit_target_not_stolen",
-            "명시 TargetSlot 자동 탈취 금지",
+            "명시 TargetSlot 우선",
             GameSystemVerificationCategory.Targeting,
-            "지정한 A와 합 실패해도 나를 노리는 B로 자동 재매칭하지 않음",
+            "내가 지정한 exact TargetSlot이 유효하면 상대의 다른 조준과 무관하게 그 슬롯과 합",
             () => VerifyExplicitTargetNotStolen(data));
 
         RunCase(
             report,
-            "system.pairing.failed_redirect_two_onesided",
-            "실패한 가로채기 = 양쪽 일방공격",
+            "system.pairing.slower_exact_target_one_clash",
+            "느린 exact TargetSlot도 실제 합",
             GameSystemVerificationCategory.Pairing,
-            "느린 제3자 지정은 Clash 0 / OneSided 2",
+            "느린 지정도 Clash 1 / 속도는 합 성립 조건이 아님",
             () => VerifyFailedRedirectPairing(data));
 
         RunCase(
             report,
-            "system.pairing.valid_redirect_one_clash",
-            "성공한 가로채기 = 실제 합",
+            "system.pairing.faster_exact_target_one_clash",
+            "빠른 exact TargetSlot도 실제 합",
             GameSystemVerificationCategory.Pairing,
-            "더 빠른 제3자 지정은 Clash 1",
+            "빠른 지정도 Clash 1",
             () => VerifySuccessfulRedirectPairing(data));
 
         RunCase(
@@ -849,27 +849,24 @@ public static class GameSystemVerificationRunner
                 },
                 new HashSet<ActionSlot>());
 
-        bool wouldClashWithB =
-            ClashMatchPolicy.CanRedirectOrOppose(
-                source.Owner,
-                source.Part,
-                source.Speed,
-                unrelatedB,
-                out _);
+        bool canChallengeChosen =
+            policy.CanChallenge(
+                source,
+                chosenA);
 
         bool valid =
-            match == null &&
-            wouldClashWithB;
+            canChallengeChosen &&
+            match == chosenA;
 
         string actual =
-            $"ChosenAValid={policy.CanChallenge(source, chosenA)}, " +
-            $"BWouldOppose={wouldClashWithB}, Match={(match == null ? "NULL" : match.ActionId.ToString())}";
+            $"ChosenAValid={canChallengeChosen}, " +
+            $"Match={(match == null ? "NULL" : match.ActionId.ToString())}";
 
         return valid
             ? ProbeResult.Pass(actual)
             : ProbeResult.Fail(
                 actual,
-                "A에 대한 느린 가로채기 실패 후 B로 자동 재매칭되면 안 됩니다.");
+                "exact TargetSlot 지정은 속도/상대 조준 방향과 무관하게 그 슬롯과 합해야 합니다.");
     }
 
     private static ProbeResult VerifyFailedRedirectPairing(
@@ -913,15 +910,18 @@ public static class GameSystemVerificationRunner
             result.Pairs.Count(pair => pair != null && !pair.IsClash);
 
         bool valid =
-            clashCount == 0 &&
-            oneSideCount == 2;
+            result.Count == 1 &&
+            clashCount == 1 &&
+            oneSideCount == 0;
 
         string actual =
             $"Pairs={result.Count}, Clash={clashCount}, OneSided={oneSideCount}";
 
         return valid
             ? ProbeResult.Pass(actual)
-            : ProbeResult.Fail(actual);
+            : ProbeResult.Fail(
+                actual,
+                "정확한 TargetSlot 지정은 느려도 합이어야 합니다.");
     }
 
     private static ProbeResult VerifySuccessfulRedirectPairing(
@@ -1035,11 +1035,21 @@ public static class GameSystemVerificationRunner
                     (pair.First == incoming ||
                      pair.Second == incoming)) == 1;
 
+        ClashPair clash =
+            result.Pairs.FirstOrDefault(
+                pair => pair?.IsClash == true);
+
+        bool latestWon =
+            clash != null &&
+            (clash.First == originalResponse ||
+             clash.Second == originalResponse);
+
         bool valid =
             result.Count == 2 &&
             clashCount == 1 &&
             oneSideCount == 1 &&
-            incomingUsedOnce;
+            incomingUsedOnce &&
+            latestWon;
 
         string actual =
             $"Pairs={result.Count}, Clash={clashCount}, " +
@@ -1047,7 +1057,8 @@ public static class GameSystemVerificationRunner
             result.Pairs.Count(
                 pair =>
                     pair != null &&
-                    (pair.First == incoming || pair.Second == incoming));
+                    (pair.First == incoming || pair.Second == incoming)) +
+            $", LatestWon={latestWon}";
 
         return valid
             ? ProbeResult.Pass(actual)

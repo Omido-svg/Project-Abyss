@@ -1,18 +1,17 @@
 using System.Collections.Generic;
 
 /// <summary>
-/// COMBAT 행동끼리 합이 가능한지와,
-/// 특정 공격이 어느 상대 행동과 합할지를 결정한다.
+/// COMBAT 행동의 합 성립 규칙.
 ///
-/// 2026-08-17 Focused Encounter / 가로채기 규칙:
-/// - 정확한 적 ActionSlot을 지정할 수 있다.
-/// - 적 행동이 노린 정확한 부위의 행동 슬롯은 속도와 무관하게 그 행동에 대응 합을 걸 수 있다.
-/// - 원래 대상이 아닌 캐릭터가 공격을 가로채려면 자신의 속도가 적 행동보다 반드시 높아야 한다.
-/// - 같은 속도는 가로채기로 인정하지 않는다.
-/// - 가로채기 조건을 만족하지 않아도 공격 자체는 취소하지 않는다. 두 행동은 각각 일방 공격으로 남을 수 있다.
-/// - TargetSlot이 지정된 행동은 그 슬롯 외의 행동과 자동으로 합하지 않는다.
-/// - 적이 나를 공격하고 있다는 이유만으로 내가 다른 적에게 지정한 행동을 자동으로 낚아채 합으로 바꾸지 않는다.
-/// - 여러 유효 행동이 같은 적 슬롯을 노리면 ActionPhaseSorter의 실행 우선순위가 높은 행동이 먼저 슬롯을 점유한다.
+/// P0 D-05 확정 규칙:
+/// - 내 공격 슬롯이 상대의 살아 있는 공격 슬롯(TargetSlot)을 조준하면 합이 성립한다.
+/// - 상대 슬롯이 누구를 조준했는지, 두 슬롯의 속도가 얼마인지는 합 성립 여부에 관여하지 않는다.
+/// - 속도는 실행 순서와 합 판정 보정에만 사용한다.
+/// - 공격하지 않는 슬롯/파괴된 슬롯/정확한 TargetSlot이 없는 공격은 합이 아니라 일방타격이다.
+/// - 한 상대 슬롯을 여러 슬롯이 조준하면 가장 나중에 계획된(ActionId가 큰) 유효 슬롯이 합을 가져간다.
+///
+/// 기존 Focused Encounter의 속도 가로채기 API는 호출부 호환을 위해 남기지만,
+/// 새 규칙에서는 합 성립 조건으로 속도를 사용하지 않는다.
 /// </summary>
 public sealed class ClashMatchPolicy
 {
@@ -37,12 +36,10 @@ public sealed class ClashMatchPolicy
             return false;
         }
 
-        if (slot.Phase !=
-            ActionPhase.COMBAT)
-        {
+        if (slot.Phase != ActionPhase.COMBAT)
             return false;
-        }
 
+        // 새 정본에서 "공격 슬롯"은 합에 들어갈 수 있는 COMBAT 스킬이다.
         if (!slot.Skill.CanClash)
             return false;
 
@@ -52,26 +49,19 @@ public sealed class ClashMatchPolicy
             return false;
         }
 
-        // 독립 행동/일반몹 행동을 위해 Part == null 자체는 허용한다.
         if (slot.Part != null &&
             slot.Part.IsBroken)
         {
             return false;
         }
 
-        // TargetPart가 Broken이어도 공격 및 합 후보가 될 수 있다.
         return true;
     }
 
     /// <summary>
-    /// Focused Encounter식 가로채기 가능 여부.
-    ///
-    /// Project Abyss는 한 Character 안의 BodyPart가 각각 행동 슬롯이므로
-    /// '원래 공격 대상' 예외도 Character 단위가 아니라 정확한 BodyPart 단위로 판정한다.
-    ///
-    /// - incoming이 challenger의 정확한 행동 부위를 노림: 속도와 무관하게 대응 합 가능
-    /// - 다른 부위를 노림: 제3자 가로채기로 취급하며 challengerSpeed > incoming.Speed 필요
-    /// - 동속/느림: 가로채기 실패 -> 서로 일방공격
+    /// 레거시 호출부 호환 API.
+    /// 새 정본에서는 속도 가로채기가 합 성립 조건이 아니므로,
+    /// incoming이 challenger 쪽을 공격하고 있는지만 확인한다.
     /// </summary>
     public static bool CanRedirectOrOppose(
         Character challengerOwner,
@@ -101,32 +91,12 @@ public sealed class ClashMatchPolicy
             return false;
         }
 
-        // 림버스의 "원래 그 슬롯을 노리던 공격에 대한 대응" 예외.
-        // 플레이어 전체 Character만 같다고 원래 대상으로 취급하면
-        // 머리를 노린 적 공격을 느린 오른팔이 받아 합하는 잘못된 가로채기가 발생한다.
-        if (IsOriginalTargetSlot(
-                challengerOwner,
-                challengerPart,
-                incoming))
-        {
-            return true;
-        }
-
-        // 다른 부위의 공격을 가져오는 것은 가로채기다.
-        // 반드시 더 빨라야 하며 동속은 실패한다.
-        if (challengerSpeed > incoming.Speed)
-        {
-            isRedirect = true;
-            return true;
-        }
-
-        return false;
+        return incoming.TargetCharacter == challengerOwner;
     }
 
-
     /// <summary>
-    /// challenger가 incoming 행동을 실제 합 상대로 가져갈 수 있는지 검사한다.
-    /// 대상 의도(TargetSlot 또는 TargetCharacter/TargetPart)와 속도 가로채기 규칙을 함께 본다.
+    /// challenger가 incoming을 정확한 TargetSlot으로 조준했는지만 본다.
+    /// 상대의 조준 방향과 속도는 합 성립과 무관하다.
     /// </summary>
     public bool CanChallenge(
         ActionSlot challenger,
@@ -139,19 +109,12 @@ public sealed class ClashMatchPolicy
             return false;
         }
 
-        if (!TargetsActionSource(
-                challenger,
-                incoming))
-        {
+        if (challenger.TargetCharacter != incoming.Owner)
             return false;
-        }
 
-        return CanRedirectOrOppose(
-            challenger.Owner,
-            challenger.Part,
-            challenger.Speed,
-            incoming,
-            out _);
+        return IsSameSlot(
+            challenger.TargetSlot,
+            incoming);
     }
 
     public ActionSlot FindBestMatch(
@@ -165,95 +128,104 @@ public sealed class ClashMatchPolicy
             return null;
         }
 
-        // 1) 정확한 상대 슬롯을 지정한 행동은 TargetSlot이 절대 우선한다.
-        // 합이 성립하지 않더라도 다른 적 행동이 이 source를 공격한다는 이유로
-        // 자동 재매칭하지 않는다. 지정한 대상에 대한 일방 공격으로 남는다.
+        // source가 직접 상대 공격 슬롯을 조준했다면 그 의도를 우선한다.
+        // 다만 그 상대 슬롯을 더 나중에 계획된 다른 공격이 조준했다면
+        // 정본의 "마지막으로 조준한 슬롯이 합을 가져간다" 규칙에 따라 양보한다.
         if (source.TargetSlot != null)
         {
-            if (source.TargetSlot == source ||
-                (usedSlots != null &&
-                 usedSlots.Contains(source.TargetSlot)))
+            ActionSlot target = source.TargetSlot;
+
+            if (target == source ||
+                (usedSlots != null && usedSlots.Contains(target)) ||
+                !CanChallenge(source, target) ||
+                !IsLatestChallenger(source, target, combatSlots, usedSlots))
             {
                 return null;
             }
 
-            return CanChallenge(
-                    source,
-                    source.TargetSlot)
-                ? source.TargetSlot
-                : null;
+            return target;
         }
 
-        // 2) 반대편 행동이 이 source를 정확히 지정한 경우.
-        // 느린 제3자가 TargetSlot만 꽂았다고 해서 역방향에서 합이 성립하면 안 된다.
+        // source 자체를 조준한 슬롯들 가운데 가장 마지막 유효 조준만 합을 가져간다.
+        ActionSlot latest = null;
         foreach (ActionSlot candidate in combatSlots)
         {
-            if (candidate == null || candidate == source)
-                continue;
-
-            if (usedSlots != null && usedSlots.Contains(candidate))
-                continue;
-
-            if (IsSameSlot(
-                    candidate.TargetSlot,
-                    source) &&
-                CanChallenge(
-                    candidate,
-                    source))
+            if (candidate == null ||
+                candidate == source ||
+                (usedSlots != null && usedSlots.Contains(candidate)) ||
+                !CanChallenge(candidate, source))
             {
-                return candidate;
+                continue;
+            }
+
+            if (latest == null ||
+                ComparePlanningOrder(candidate, latest) > 0)
+            {
+                latest = candidate;
             }
         }
 
-        // 3) Focused Encounter에서는 합 상대를 TargetPart로 추론하지 않는다.
-        // 정확한 ActionSlot(TargetSlot)을 지정하지 않은 행동은 자동 합 후보가 아니다.
-        return null;
+        return latest;
     }
 
-    private bool TargetsActionSource(
+    private bool IsLatestChallenger(
         ActionSlot challenger,
-        ActionSlot incoming)
+        ActionSlot target,
+        IReadOnlyList<ActionSlot> combatSlots,
+        HashSet<ActionSlot> usedSlots)
     {
         if (challenger == null ||
-            incoming == null ||
-            challenger.TargetCharacter != incoming.Owner)
+            target == null ||
+            combatSlots == null)
         {
             return false;
         }
 
-        // 정확한 슬롯을 명시했다면 그 슬롯 외의 다른 행동과는 합하지 않는다.
-        if (challenger.TargetSlot != null)
+        foreach (ActionSlot candidate in combatSlots)
         {
-            return IsSameSlot(
-                challenger.TargetSlot,
-                incoming);
+            if (candidate == null ||
+                candidate == challenger ||
+                candidate == target ||
+                (usedSlots != null && usedSlots.Contains(candidate)) ||
+                !CanChallenge(candidate, target))
+            {
+                continue;
+            }
+
+            if (ComparePlanningOrder(candidate, challenger) > 0)
+                return false;
         }
 
-        // Focused Encounter의 합은 정확한 ActionSlot 지정으로만 성립한다.
-        return false;
+        return true;
     }
 
-    private static bool IsOriginalTargetSlot(
-        Character challengerOwner,
-        BodyPart challengerPart,
-        ActionSlot incoming)
+    private static int ComparePlanningOrder(
+        ActionSlot a,
+        ActionSlot b)
     {
-        if (challengerOwner == null ||
-            incoming == null ||
-            incoming.TargetCharacter != challengerOwner)
-        {
-            return false;
-        }
+        if (a == null && b == null)
+            return 0;
+        if (a == null)
+            return -1;
+        if (b == null)
+            return 1;
 
-        // 단일 HP 대상처럼 부위 개념이 없는 전투원.
-        if (incoming.TargetPart == null)
-            return challengerPart == null;
+        // ActionId는 ActionManager가 예약 순서대로 증가시키므로
+        // "마지막으로 조준한 슬롯"의 1차 기준으로 사용한다.
+        int actionIdCompare =
+            a.ActionId.CompareTo(b.ActionId);
+        if (actionIdCompare != 0)
+            return actionIdCompare;
 
-        // BodyPart 전투원은 정확히 적이 노린 그 부위의 행동만
-        // 속도 무관 대응 예외를 받는다.
-        return IsSamePart(
-            challengerPart,
-            incoming.TargetPart);
+        // 검증/프리뷰처럼 ActionId가 없는 경우의 결정론적 fallback.
+        int indexCompare =
+            a.ActionIndex.CompareTo(b.ActionIndex);
+        if (indexCompare != 0)
+            return indexCompare;
+
+        // 마지막 fallback은 실행 정렬 결과가 안정적으로 유지되도록 속도를 쓴다.
+        // 이것은 "합 성립 조건"이 아니라 동일 식별자 충돌의 결정론적 tie-breaker다.
+        return a.Speed.CompareTo(b.Speed);
     }
 
     private static bool IsSameSlot(
@@ -270,19 +242,5 @@ public sealed class ClashMatchPolicy
                b.ActionId > 0 &&
                a.ActionId == b.ActionId &&
                a.Owner == b.Owner;
-    }
-
-    private static bool IsSamePart(
-        BodyPart a,
-        BodyPart b)
-    {
-        if (a == null || b == null)
-            return false;
-
-        if (a == b)
-            return true;
-
-        return a.Owner == b.Owner &&
-               a.Type == b.Type;
     }
 }

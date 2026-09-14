@@ -1159,13 +1159,11 @@ public sealed class PlayerAutoPlanEstimator
                     ? DamageType.Direct
                     : DamageType.SkillPart;
 
+        // P0 D-01: 파괴 권한은 기세/보스 등급에서 자동 획득하지 않는다.
+        // 실제 스킬이 파괴 권한을 선언한 경우에만 약화 부위 파괴를 기대값에 반영한다.
         bool canBreakPart =
             targetPart?.IsWeakened == true &&
-            (owner.Data?.CombatantTier == CombatantTier.Boss ||
-             (owner is Enemy
-                 ? context?.Services?.MomentumManager?
-                       .CanStandardBreakPart(owner) == true
-                 : skill.CanBreakPart));
+            skill.CanBreakPart;
 
         DamageRequest request =
             DamageRequest.FromAction(
