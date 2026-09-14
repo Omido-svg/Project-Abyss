@@ -52,6 +52,38 @@ public sealed class CharacterAuthoringBundleEditor : Editor
             "Initial Passives",
             (bundle.EquippedPassives?.Count ?? 0).ToString());
 
+        if (bundle.Kind == CharacterAuthoringKind.EliteEnemy)
+        {
+            serializedObject.Update();
+
+            EditorGUILayout.Space(8f);
+            EditorGUILayout.LabelField(
+                "P0 Elite / Boss Body Parts",
+                EditorStyles.boldLabel);
+            EditorGUILayout.HelpBox(
+                "Elite/Boss는 5부위를 데이터로 정의합니다. 각 부위의 이름, 슬롯 역할, " +
+                "약화 디버프와 파괴 디버프를 여기서 편집합니다. 파괴 시 슬롯 상실은 공통 규칙이며, " +
+                "아래 Broken 필드는 그 위에 추가되는 적별 페널티입니다.",
+                MessageType.None);
+
+            SerializedProperty usePosture =
+                serializedObject.FindProperty("useElitePostureRotation");
+            SerializedProperty posture =
+                serializedObject.FindProperty("elitePostureSettings");
+            SerializedProperty parts =
+                serializedObject.FindProperty("eliteBodyPartDefinitions");
+
+            if (usePosture != null)
+                EditorGUILayout.PropertyField(usePosture);
+            if (posture != null)
+                EditorGUILayout.PropertyField(posture, true);
+            if (parts != null)
+                EditorGUILayout.PropertyField(parts, true);
+
+            if (serializedObject.ApplyModifiedProperties())
+                EditorUtility.SetDirty(bundle);
+        }
+
         showRaw = EditorGUILayout.Foldout(
             showRaw,
             "Raw Bundle Inspector",

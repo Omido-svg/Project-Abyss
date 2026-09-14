@@ -33,30 +33,7 @@ public sealed class BattleStatusRowUI : MonoBehaviour
         if (icon != null)
             icon.enabled = icon.sprite != null;
 
-        string stack =
-            effect.Stack > 0
-                ? $" ×{effect.Stack}"
-                : string.Empty;
-
-        string duration =
-            effect.IsPermanent
-                ? "∞"
-                : Mathf.Max(0, effect.Duration).ToString();
-
-        string sourcePart =
-            effect.SourcePart == null
-                ? string.Empty
-                : $" · 원천 {effect.SourcePart.Type}";
-
-        string scope =
-            effect.IsCharacterEffect
-                ? "전체 슬롯"
-                : effect.OwnerPart?.Type.ToString() ?? "부위";
-
         label.richText = true;
-        label.text =
-            $"<b>{effect.Name}</b>{stack}  " +
-            $"<color=#C9D2E3>[{duration}]</color>\n" +
-            $"적용 {scope}{sourcePart}";
+        label.text = BattleStatusUiText.BuildListLabel(effect, effect.Owner);
     }
 }

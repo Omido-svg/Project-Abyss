@@ -1589,6 +1589,11 @@ public abstract class Character : MonoBehaviour
         resourceController?.IncreaseEnergyMaximum(amount, fillToMaximum);
     }
 
+    public void AdjustEnergyMaximum(int delta, bool fillToMaximum = false)
+    {
+        resourceController?.AdjustEnergyMaximum(delta, fillToMaximum);
+    }
+
     public CharacterRuntimeSnapshot CaptureRuntimeSnapshot()
     {
         return CharacterRuntimeSnapshot.Capture(this);

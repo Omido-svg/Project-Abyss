@@ -1071,6 +1071,12 @@ MonoBehaviour:
     RollCountPenalty: 0
     SpeedMaxPenalty: 0
     NormalAttackOnly: 0
+    BrokenRollCountPenalty: 0
+    BrokenSpeedMaxPenalty: 0
+    BrokenEnergyMaxPenalty: 1
+    BrokenNormalAttackOnly: 0
+    BrokenForbiddenSkillIds: []
+    BrokenForbiddenPostures: 0
   - PartId: left_arm
     DisplayName: Left Arm
     LegacyType: 1
@@ -1079,6 +1085,12 @@ MonoBehaviour:
     RollCountPenalty: 1
     SpeedMaxPenalty: 0
     NormalAttackOnly: 0
+    BrokenRollCountPenalty: 0
+    BrokenSpeedMaxPenalty: 0
+    BrokenEnergyMaxPenalty: 0
+    BrokenNormalAttackOnly: 0
+    BrokenForbiddenSkillIds: []
+    BrokenForbiddenPostures: 0
   - PartId: right_arm
     DisplayName: Right Arm
     LegacyType: 2
@@ -1087,6 +1099,12 @@ MonoBehaviour:
     RollCountPenalty: 1
     SpeedMaxPenalty: 0
     NormalAttackOnly: 0
+    BrokenRollCountPenalty: 0
+    BrokenSpeedMaxPenalty: 0
+    BrokenEnergyMaxPenalty: 0
+    BrokenNormalAttackOnly: 0
+    BrokenForbiddenSkillIds: []
+    BrokenForbiddenPostures: 0
   - PartId: legs
     DisplayName: Legs
     LegacyType: 3
@@ -1095,6 +1113,12 @@ MonoBehaviour:
     RollCountPenalty: 0
     SpeedMaxPenalty: 1
     NormalAttackOnly: 0
+    BrokenRollCountPenalty: 0
+    BrokenSpeedMaxPenalty: 0
+    BrokenEnergyMaxPenalty: 0
+    BrokenNormalAttackOnly: 0
+    BrokenForbiddenSkillIds: []
+    BrokenForbiddenPostures: 0
   - PartId: extra
     DisplayName: Extra
     LegacyType: 4
@@ -1103,6 +1127,12 @@ MonoBehaviour:
     RollCountPenalty: 0
     SpeedMaxPenalty: 0
     NormalAttackOnly: 0
+    BrokenRollCountPenalty: 0
+    BrokenSpeedMaxPenalty: 0
+    BrokenEnergyMaxPenalty: 0
+    BrokenNormalAttackOnly: 0
+    BrokenForbiddenSkillIds: []
+    BrokenForbiddenPostures: 0
 --- !u!114 &2751953105971383420
 MonoBehaviour:
   m_ObjectHideFlags: 0

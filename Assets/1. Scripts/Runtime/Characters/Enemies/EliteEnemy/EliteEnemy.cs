@@ -86,7 +86,15 @@ public class EliteEnemy : Enemy, ICharacterAuthoringTarget
     {
         return new List<EnemyBodyPartDefinition>
         {
-            new() { PartId = "head", DisplayName = "Head", LegacyType = PartType.HEAD, SlotRole = BodyPartSlotRole.Hybrid, MaxPartHP = 50f },
+            new()
+            {
+                PartId = "head",
+                DisplayName = "Head",
+                LegacyType = PartType.HEAD,
+                SlotRole = BodyPartSlotRole.Hybrid,
+                MaxPartHP = 50f,
+                BrokenEnergyMaxPenalty = 1
+            },
             new() { PartId = "left_arm", DisplayName = "Left Arm", LegacyType = PartType.LEFT_HAND, SlotRole = BodyPartSlotRole.Attack, MaxPartHP = 50f, RollCountPenalty = 1 },
             new() { PartId = "right_arm", DisplayName = "Right Arm", LegacyType = PartType.RIGHT_HAND, SlotRole = BodyPartSlotRole.Attack, MaxPartHP = 50f, RollCountPenalty = 1 },
             new() { PartId = "legs", DisplayName = "Legs", LegacyType = PartType.LEGS, SlotRole = BodyPartSlotRole.Preparation, MaxPartHP = 50f, SpeedMaxPenalty = 1 },
@@ -164,6 +172,99 @@ public class EliteEnemy : Enemy, ICharacterAuthoringTarget
             PartType.LEGS => new BrokenLegs(),
             _ => null
         };
+    }
+
+
+    public override void OnBodyPartBroken(
+        BodyPart part,
+        StatusEffect disabledDebuff)
+    {
+        base.OnBodyPartBroken(part, disabledDebuff);
+
+        if (part == null || !part.UsesDataDefinedRules)
+            return;
+
+        StatusEffect broken = CreateBrokenPartStatus(part);
+        if (broken != null)
+            AddStatus(broken, this, part);
+
+        GetMechanic<EnemyPostureMechanic>()
+            ?.RefreshForbiddenPostures();
+    }
+
+    public bool IsPostureForbidden(EnemyPosture posture)
+    {
+        if (BodyParts == null)
+            return false;
+
+        EnemyPostureMask mask = posture.ToMask();
+        if (mask == EnemyPostureMask.None)
+            return false;
+
+        for (int i = 0; i < BodyParts.Count; i++)
+        {
+            BodyPart part = BodyParts[i];
+            if (part == null ||
+                !part.IsBroken ||
+                !part.UsesDataDefinedRules)
+            {
+                continue;
+            }
+
+            EnemyBodyPartDefinition definition =
+                FindDefinitionForPart(part, i);
+
+            if (definition != null &&
+                (definition.BrokenForbiddenPostures & mask) != 0)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    public bool TryGetBodyPartDefinition(
+        BodyPart part,
+        out EnemyBodyPartDefinition definition)
+    {
+        definition = null;
+        if (part == null || bodyPartDefinitions == null)
+            return false;
+
+        for (int i = 0; i < bodyPartDefinitions.Count; i++)
+        {
+            EnemyBodyPartDefinition candidate = bodyPartDefinitions[i];
+            if (candidate == null)
+                continue;
+
+            string definitionId = candidate.PartId?.Trim();
+            if (!string.IsNullOrWhiteSpace(definitionId) &&
+                string.Equals(
+                    definitionId,
+                    part.PartId,
+                    System.StringComparison.Ordinal))
+            {
+                definition = candidate;
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private EnemyBodyPartDefinition FindDefinitionForPart(
+        BodyPart part,
+        int fallbackIndex)
+    {
+        if (TryGetBodyPartDefinition(part, out EnemyBodyPartDefinition definition))
+            return definition;
+
+        return bodyPartDefinitions != null &&
+               fallbackIndex >= 0 &&
+               fallbackIndex < bodyPartDefinitions.Count
+            ? bodyPartDefinitions[fallbackIndex]
+            : null;
     }
 
     //--------------------------------

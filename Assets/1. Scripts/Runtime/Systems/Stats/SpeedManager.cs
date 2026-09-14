@@ -121,6 +121,19 @@ public class SpeedManager
         if (weakenedSpeedMaxPenalty > 0)
             maxSpeed = Mathf.Max(minSpeed, maxSpeed - weakenedSpeedMaxPenalty);
 
+        int brokenSpeedMaxPenalty = 0;
+        if (character.BodyParts != null)
+        {
+            foreach (BodyPart bodyPart in character.BodyParts)
+            {
+                if (bodyPart?.IsBroken == true && bodyPart.UsesDataDefinedRules)
+                    brokenSpeedMaxPenalty += Mathf.Max(0, bodyPart.BrokenSpeedMaxPenalty);
+            }
+        }
+
+        if (brokenSpeedMaxPenalty > 0)
+            maxSpeed = Mathf.Max(minSpeed, maxSpeed - brokenSpeedMaxPenalty);
+
         maxSpeed += CommonStatusSpeedRules.GetSpeedMaximumIncrease(character, part);
 
         return Random.Range(

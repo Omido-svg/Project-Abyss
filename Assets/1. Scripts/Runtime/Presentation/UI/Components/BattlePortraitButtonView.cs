@@ -200,7 +200,7 @@ public sealed class BattlePortraitButtonView : MonoBehaviour
             partText.text =
                 part == null
                     ? "본체"
-                    : GetPartName(part.Type);
+                    : BattleBodyPartUiText.GetDisplayName(part);
         }
 
         if (hpText != null)

@@ -1154,8 +1154,8 @@ public sealed class BattleWorldSlotArrowOverlayUI : MonoBehaviour
         {
             string enemyTarget =
                 targetSlot.TargetPart != null
-                    ? GetPartLabel(
-                        targetSlot.TargetPart.Type)
+                    ? BattleBodyPartUiText.GetDisplayName(
+                        targetSlot.TargetPart)
                     : "대상";
 
             string speedDetail =
@@ -1312,19 +1312,6 @@ public sealed class BattleWorldSlotArrowOverlayUI : MonoBehaviour
 
         color.a = 1f;
         return color;
-    }
-
-    private static string GetPartLabel(
-        PartType type)
-    {
-        return type switch
-        {
-            PartType.HEAD => "머리",
-            PartType.LEFT_HAND => "왼팔",
-            PartType.RIGHT_HAND => "오른팔",
-            PartType.LEGS => "다리",
-            _ => "대상"
-        };
     }
 
     private string GetAdvantageLabel(

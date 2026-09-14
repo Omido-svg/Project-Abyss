@@ -324,7 +324,7 @@ public sealed class SkillSelectPanelUI : MonoBehaviour
             "플레이어";
 
         slotHeaderText.text =
-            $"{ownerName} · {GetPartName(selectedPart.Type)} · " +
+            $"{ownerName} · {BattleBodyPartUiText.GetDisplayName(selectedPart)} · " +
             $"행동 슬롯 {selectedActionIndex + 1}/{maxActionSlots} · " +
             BodyPartSkillAccessPolicy.GetAccessLabel(
                 selectedPart);
@@ -508,15 +508,4 @@ public sealed class SkillSelectPanelUI : MonoBehaviour
         KillVisibilityTween();
     }
 
-    private static string GetPartName(PartType type)
-    {
-        return type switch
-        {
-            PartType.HEAD => "머리",
-            PartType.LEFT_HAND => "왼손",
-            PartType.RIGHT_HAND => "오른손",
-            PartType.LEGS => "다리",
-            _ => type.ToString()
-        };
-    }
 }

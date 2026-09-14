@@ -473,7 +473,7 @@ internal static class BattleBodyPartButtonViewModelFactory
         return
             $"<size=72%>{characterName}</size>\n" +
             $"<color={stateColor}><b>" +
-            $"{part.Type} [{displayedState}]" +
+            $"{BattleBodyPartUiText.GetDisplayName(part)} [{displayedState}]" +
             "</b></color>";
     }
 

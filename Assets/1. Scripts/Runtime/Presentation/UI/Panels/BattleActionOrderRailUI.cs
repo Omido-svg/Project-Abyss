@@ -2291,21 +2291,10 @@ public sealed class BattleActionOrderRailUI : MonoBehaviour
         return name;
     }
 
-    private static string GetPartLabel(
-        BodyPart part)
-    {
-        if (part == null)
-            return "행동";
-
-        return part.Type switch
-        {
-            PartType.HEAD => "머리",
-            PartType.LEFT_HAND => "왼팔",
-            PartType.RIGHT_HAND => "오른팔",
-            PartType.LEGS => "다리",
-            _ => "행동"
-        };
-    }
+    private static string GetPartLabel(BodyPart part) =>
+        part == null
+            ? "행동"
+            : BattleBodyPartUiText.GetDisplayName(part);
 
     private static Image CreateImage(
         string name,

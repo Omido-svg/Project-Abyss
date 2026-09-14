@@ -989,14 +989,10 @@ public sealed class BattleWorldActionSlotCellUI : MonoBehaviour,
         // 플레이어 슬롯은 스킬 지정 여부와 무관하게 속도를 항상 표시한다.
         RefreshPlanningSpeedText();
 
-        string partName = part?.Type switch
-        {
-            PartType.HEAD => "머리",
-            PartType.LEFT_HAND => "왼팔",
-            PartType.RIGHT_HAND => "오른팔",
-            PartType.LEGS => "다리",
-            _ => "슬롯"
-        };
+        string partName =
+            part == null
+                ? "슬롯"
+                : BattleBodyPartUiText.GetDisplayName(part);
 
         if (plannedSlot?.Skill != null)
         {

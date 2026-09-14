@@ -251,7 +251,7 @@ public sealed class BattleConfiguredSlotBoardUI : MonoBehaviour
                     ? planned.TargetCharacter.Data?.CharacterName ??
                       planned.TargetCharacter.name
                     : $"{planned.TargetCharacter.Data?.CharacterName ?? planned.TargetCharacter.name} " +
-                      $"{planned.TargetPart.Type}";
+                      $"{BattleBodyPartUiText.GetDisplayName(planned.TargetPart)}";
 
         string costText =
             planned?.Skill == null

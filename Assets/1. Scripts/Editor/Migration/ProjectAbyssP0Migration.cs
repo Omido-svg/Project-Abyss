@@ -528,6 +528,12 @@ public static class ProjectAbyssP0Migration
             SetInt(element, "RollCountPenalty", source.RollCountPenalty);
             SetInt(element, "SpeedMaxPenalty", source.SpeedMaxPenalty);
             SetBool(element, "NormalAttackOnly", source.NormalAttackOnly);
+            SetInt(element, "BrokenRollCountPenalty", source.BrokenRollCountPenalty);
+            SetInt(element, "BrokenSpeedMaxPenalty", source.BrokenSpeedMaxPenalty);
+            SetInt(element, "BrokenEnergyMaxPenalty", source.BrokenEnergyMaxPenalty);
+            SetBool(element, "BrokenNormalAttackOnly", source.BrokenNormalAttackOnly);
+            SetStringArray(element, "BrokenForbiddenSkillIds", source.BrokenForbiddenSkillIds);
+            SetInt(element, "BrokenForbiddenPostures", (int)source.BrokenForbiddenPostures);
         }
     }
 
@@ -541,7 +547,8 @@ public static class ProjectAbyssP0Migration
                 DisplayName = "Head",
                 LegacyType = PartType.HEAD,
                 SlotRole = BodyPartSlotRole.Hybrid,
-                MaxPartHP = 50f
+                MaxPartHP = 50f,
+                BrokenEnergyMaxPenalty = 1
             },
             new()
             {
@@ -633,6 +640,21 @@ public static class ProjectAbyssP0Migration
 
     private static void SetEnum(SerializedProperty parent, string name, int value) =>
         RequireRelative(parent, name).enumValueIndex = value;
+
+    private static void SetStringArray(
+        SerializedProperty parent,
+        string name,
+        IReadOnlyList<string> values)
+    {
+        SerializedProperty property = RequireRelative(parent, name);
+        if (!property.isArray)
+            throw new InvalidOperationException($"Serialized field '{name}' is not an array: {property.propertyPath}");
+
+        int count = values?.Count ?? 0;
+        property.arraySize = count;
+        for (int i = 0; i < count; i++)
+            property.GetArrayElementAtIndex(i).stringValue = values[i] ?? string.Empty;
+    }
 
     private static SerializedProperty RequireRelative(SerializedProperty parent, string name)
     {

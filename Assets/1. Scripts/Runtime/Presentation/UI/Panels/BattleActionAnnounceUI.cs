@@ -180,20 +180,10 @@ public class BattleActionAnnounceUI : MonoBehaviour
                fallback;
     }
 
-    private static string GetPartName(BodyPart part)
-    {
-        if (part == null)
-            return "전신";
-
-        return part.Type switch
-        {
-            PartType.HEAD => "머리",
-            PartType.LEFT_HAND => "왼손",
-            PartType.RIGHT_HAND => "오른손",
-            PartType.LEGS => "다리",
-            _ => part.Type.ToString()
-        };
-    }
+    private static string GetPartName(BodyPart part) =>
+        part == null
+            ? "전신"
+            : BattleBodyPartUiText.GetDisplayName(part);
 
     private static string GetSkillName(Skill skill)
     {

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using UnityEngine;
 
 /// <summary>
 /// 적 역시 Character이므로 플레이어블과 동일한 Character Verification 파이프라인에서
@@ -213,10 +214,16 @@ public sealed class EnemyCharacterVerificationCaseProvider :
         }
 
         IReadOnlyList<BodyPart> parts = enemy.BodyParts;
+        IReadOnlyList<EnemyBodyPartDefinition> definitions =
+            context.Bundle?.EliteBodyPartDefinitions;
+
         List<string> failures = new List<string>();
 
         if (parts == null || parts.Count != 5)
             failures.Add($"BodyPart Count={parts?.Count ?? 0}, Expected=5");
+
+        if (definitions == null || definitions.Count != 5)
+            failures.Add($"Definition Count={definitions?.Count ?? 0}, Expected=5");
 
         HashSet<string> ids = new HashSet<string>(System.StringComparer.Ordinal);
         if (parts != null)
@@ -229,12 +236,62 @@ public sealed class EnemyCharacterVerificationCaseProvider :
                     failures.Add($"Part[{i}]=NULL");
                     continue;
                 }
-                if (part.Owner != enemy) failures.Add($"{part.PartId}: Owner 불일치");
-                if (part.MaxPartHP <= 0) failures.Add($"{part.PartId}: MaxHP={part.MaxPartHP}");
+
+                if (part.Owner != enemy)
+                    failures.Add($"{part.PartId}: Owner 불일치");
+
+                if (part.MaxPartHP <= 0)
+                    failures.Add($"{part.PartId}: MaxHP={part.MaxPartHP}");
+
                 if (string.IsNullOrWhiteSpace(part.PartId) || !ids.Add(part.PartId))
                     failures.Add($"PartId 중복/비어있음: {part.PartId}");
+
                 if (!part.UsesDataDefinedRules)
                     failures.Add($"{part.PartId}: UsesDataDefinedRules=false");
+
+                if (definitions == null || i >= definitions.Count || definitions[i] == null)
+                    continue;
+
+                EnemyBodyPartDefinition definition = definitions[i];
+                if (!string.Equals(part.PartId, definition.PartId?.Trim(), System.StringComparison.Ordinal))
+                    failures.Add($"Part[{i}] PartId runtime={part.PartId}, data={definition.PartId}");
+                if (!string.Equals(part.DisplayName, definition.DisplayName?.Trim(), System.StringComparison.Ordinal))
+                    failures.Add($"{part.PartId}: DisplayName runtime={part.DisplayName}, data={definition.DisplayName}");
+                if (part.SlotRole != definition.SlotRole)
+                    failures.Add($"{part.PartId}: SlotRole runtime={part.SlotRole}, data={definition.SlotRole}");
+                if (part.WeakenedRollCountPenalty != Mathf.Max(0, definition.RollCountPenalty))
+                    failures.Add($"{part.PartId}: WeakenedRollPenalty 불일치");
+                if (part.WeakenedSpeedMaxPenalty != Mathf.Max(0, definition.SpeedMaxPenalty))
+                    failures.Add($"{part.PartId}: WeakenedSpeedPenalty 불일치");
+                if (part.WeakenedNormalOnly != definition.NormalAttackOnly)
+                    failures.Add($"{part.PartId}: WeakenedNormalOnly 불일치");
+                if (part.BrokenRollCountPenalty != Mathf.Max(0, definition.BrokenRollCountPenalty))
+                    failures.Add($"{part.PartId}: BrokenRollPenalty 불일치");
+                if (part.BrokenSpeedMaxPenalty != Mathf.Max(0, definition.BrokenSpeedMaxPenalty))
+                    failures.Add($"{part.PartId}: BrokenSpeedPenalty 불일치");
+                if (part.BrokenEnergyMaxPenalty != Mathf.Max(0, definition.BrokenEnergyMaxPenalty))
+                    failures.Add($"{part.PartId}: BrokenEnergyPenalty 불일치");
+                if (part.BrokenNormalOnly != definition.BrokenNormalAttackOnly)
+                    failures.Add($"{part.PartId}: BrokenNormalOnly 불일치");
+
+                string[] runtimeForbiddenSkills =
+                    part.BrokenForbiddenSkillIds?
+                        .Where(value => !string.IsNullOrWhiteSpace(value))
+                        .Select(value => value.Trim())
+                        .Distinct(StringComparer.Ordinal)
+                        .OrderBy(value => value, StringComparer.Ordinal)
+                        .ToArray() ?? Array.Empty<string>();
+
+                string[] dataForbiddenSkills =
+                    definition.BrokenForbiddenSkillIds?
+                        .Where(value => !string.IsNullOrWhiteSpace(value))
+                        .Select(value => value.Trim())
+                        .Distinct(StringComparer.Ordinal)
+                        .OrderBy(value => value, StringComparer.Ordinal)
+                        .ToArray() ?? Array.Empty<string>();
+
+                if (!runtimeForbiddenSkills.SequenceEqual(dataForbiddenSkills))
+                    failures.Add($"{part.PartId}: BrokenForbiddenSkillIds 불일치");
             }
         }
 
@@ -243,10 +300,10 @@ public sealed class EnemyCharacterVerificationCaseProvider :
 
         return failures.Count == 0
             ? context.Pass(
-                "Data-defined 5부위 + unique PartId + LastStand",
+                "Data-defined 5부위 + 약화/파괴 데이터 복사 + LastStand",
                 "PASS")
             : context.Fail(
-                "Data-defined 5부위 + unique PartId + LastStand",
+                "Data-defined 5부위 + 약화/파괴 데이터 복사 + LastStand",
                 $"FAIL {failures.Count}",
                 string.Join("\n", failures));
     }

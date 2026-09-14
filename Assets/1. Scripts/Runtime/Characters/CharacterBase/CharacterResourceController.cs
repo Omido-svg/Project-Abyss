@@ -74,11 +74,25 @@ public sealed class CharacterResourceController
         if (amount <= 0)
             return;
 
+        AdjustEnergyMaximum(amount, fillToMaximum);
+    }
+
+    public void AdjustEnergyMaximum(int delta, bool fillToMaximum)
+    {
+        if (delta == 0)
+            return;
+
         Resources ??= new CombatResourceBank();
         int before = CurrentEnergy;
-        int newMaximum = Mathf.Max(1, MaxEnergy + amount);
-        int after = fillToMaximum ? newMaximum : Mathf.Clamp(before, 0, newMaximum);
-        Resources.Configure(CombatResourceKeys.Energy, after, newMaximum);
+        int newMaximum = Mathf.Max(0, MaxEnergy + delta);
+        int after = fillToMaximum && delta > 0
+            ? newMaximum
+            : Mathf.Clamp(before, 0, newMaximum);
+
+        Resources.Configure(
+            CombatResourceKeys.Energy,
+            after,
+            newMaximum);
 
         PublishResourceChange(
             CombatResourceKeys.Energy,

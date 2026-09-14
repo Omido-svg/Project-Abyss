@@ -579,11 +579,18 @@ public sealed class BattleCharacterDetailPanelUI : MonoBehaviour
                 if (part == null)
                     continue;
 
+                string partName = BattleBodyPartUiText.GetDisplayName(part);
+
                 builder.AppendLine(
-                    $"{GetPartName(part.Type),-4}  " +
+                    $"{partName,-8}  " +
                     $"{Mathf.RoundToInt(part.PartHP)}/" +
                     $"{Mathf.RoundToInt(part.MaxPartHP)}  " +
                     $"[{GetPartStateName(part.State)}]");
+
+                builder.AppendLine(
+                    $"<size=82%><color=#AEB8C8>" +
+                    $"{BattleBodyPartUiText.BuildRuleSummary(part)}" +
+                    $"</color></size>");
             }
         }
 

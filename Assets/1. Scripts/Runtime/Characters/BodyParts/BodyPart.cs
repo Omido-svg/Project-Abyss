@@ -35,6 +35,14 @@ public class BodyPart
     public int WeakenedSpeedMaxPenalty { get; private set; }
     public bool WeakenedNormalOnly { get; private set; }
 
+    public int BrokenRollCountPenalty { get; private set; }
+    public int BrokenSpeedMaxPenalty { get; private set; }
+    public int BrokenEnergyMaxPenalty { get; private set; }
+    public bool BrokenNormalOnly { get; private set; }
+    public IReadOnlyList<string> BrokenForbiddenSkillIds => brokenForbiddenSkillIds;
+
+    private readonly List<string> brokenForbiddenSkillIds = new();
+
     public float MaxPartHP { get; private set; }
     public float PartHP { get; set; }
 
@@ -70,7 +78,12 @@ public class BodyPart
             false,
             0,
             0,
-            false)
+            false,
+            0,
+            0,
+            0,
+            false,
+            null)
     {
     }
 
@@ -83,7 +96,12 @@ public class BodyPart
         bool usesDataDefinedRules,
         int weakenedRollCountPenalty,
         int weakenedSpeedMaxPenalty,
-        bool weakenedNormalOnly)
+        bool weakenedNormalOnly,
+        int brokenRollCountPenalty,
+        int brokenSpeedMaxPenalty,
+        int brokenEnergyMaxPenalty,
+        bool brokenNormalOnly,
+        IReadOnlyList<string> brokenForbiddenSkillIds)
     {
         PartId = string.IsNullOrWhiteSpace(partId) ? type.ToString() : partId.Trim();
         DisplayName = string.IsNullOrWhiteSpace(displayName) ? PartId : displayName.Trim();
@@ -93,6 +111,26 @@ public class BodyPart
         WeakenedRollCountPenalty = Mathf.Max(0, weakenedRollCountPenalty);
         WeakenedSpeedMaxPenalty = Mathf.Max(0, weakenedSpeedMaxPenalty);
         WeakenedNormalOnly = weakenedNormalOnly;
+
+        BrokenRollCountPenalty = Mathf.Max(0, brokenRollCountPenalty);
+        BrokenSpeedMaxPenalty = Mathf.Max(0, brokenSpeedMaxPenalty);
+        BrokenEnergyMaxPenalty = Mathf.Max(0, brokenEnergyMaxPenalty);
+        BrokenNormalOnly = brokenNormalOnly;
+
+        this.brokenForbiddenSkillIds.Clear();
+        if (brokenForbiddenSkillIds != null)
+        {
+            foreach (string skillId in brokenForbiddenSkillIds)
+            {
+                if (string.IsNullOrWhiteSpace(skillId))
+                    continue;
+
+                string normalized = skillId.Trim();
+                if (!this.brokenForbiddenSkillIds.Contains(normalized))
+                    this.brokenForbiddenSkillIds.Add(normalized);
+            }
+        }
+
         MaxPartHP = Mathf.Max(1f, maxPartHP);
         PartHP = MaxPartHP;
         State = BodyPartState.Normal;

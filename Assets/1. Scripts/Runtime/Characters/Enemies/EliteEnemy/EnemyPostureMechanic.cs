@@ -8,6 +8,28 @@ public enum EnemyPosture
     Offensive = 2
 }
 
+[Flags]
+public enum EnemyPostureMask
+{
+    None = 0,
+    Normal = 1 << 0,
+    Crouching = 1 << 1,
+    Offensive = 1 << 2,
+    All = Normal | Crouching | Offensive
+}
+
+public static class EnemyPostureMaskExtensions
+{
+    public static EnemyPostureMask ToMask(this EnemyPosture posture) =>
+        posture switch
+        {
+            EnemyPosture.Normal => EnemyPostureMask.Normal,
+            EnemyPosture.Crouching => EnemyPostureMask.Crouching,
+            EnemyPosture.Offensive => EnemyPostureMask.Offensive,
+            _ => EnemyPostureMask.None
+        };
+}
+
 [Serializable]
 public sealed class EnemyPostureSettings
 {
@@ -104,12 +126,7 @@ public sealed class EnemyPostureMechanic : CombatMechanic
         if (turnsRemaining > 0)
             return;
 
-        current = current switch
-        {
-            EnemyPosture.Normal => EnemyPosture.Crouching,
-            EnemyPosture.Crouching => EnemyPosture.Offensive,
-            _ => EnemyPosture.Normal
-        };
+        current = ResolveNextAllowedPosture(current);
 
         RollDuration();
 
@@ -120,6 +137,43 @@ public sealed class EnemyPostureMechanic : CombatMechanic
             $"ExpectedPlayerMomentumDrift=" +
             $"{ExpectedPlayerMomentumDrift:+#;-#;0}, " +
             $"Duration={turnsRemaining}");
+    }
+
+    public void RefreshForbiddenPostures()
+    {
+        EliteEnemy elite = owner as EliteEnemy;
+        if (elite == null || !elite.IsPostureForbidden(current))
+            return;
+
+        EnemyPosture previous = current;
+        current = ResolveNextAllowedPosture(current);
+        RollDuration();
+
+        Debug.Log(
+            $"[EnemyPosture] 금지 자세 이탈 / " +
+            $"{owner.Data?.CharacterName} / {previous} -> {current}");
+    }
+
+    private EnemyPosture ResolveNextAllowedPosture(EnemyPosture from)
+    {
+        EnemyPosture candidate = from;
+        EliteEnemy elite = owner as EliteEnemy;
+
+        for (int i = 0; i < 3; i++)
+        {
+            candidate = candidate switch
+            {
+                EnemyPosture.Normal => EnemyPosture.Crouching,
+                EnemyPosture.Crouching => EnemyPosture.Offensive,
+                _ => EnemyPosture.Normal
+            };
+
+            if (elite == null || !elite.IsPostureForbidden(candidate))
+                return candidate;
+        }
+
+        // 모든 자세가 금지된 비정상 데이터에서는 현재 자세를 유지한다.
+        return from;
     }
 
     private void RollDuration()
