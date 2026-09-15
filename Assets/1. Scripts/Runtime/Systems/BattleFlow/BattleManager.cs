@@ -552,32 +552,29 @@ public class BattleManager : MonoBehaviour
             return;
         }
 
-        // C-03: 계획 단계에서 이미 실행된 도사림은 이번 턴 행동을 소비한 확정 상태다.
-        // 일반 reset 경로가 해당 슬롯을 삭제해 즉시 효과만 남기는 상태를 만들지 않는다.
-        List<ActionSlot> snapshot =
-            new List<ActionSlot>(ActionManager.Slots);
+        PlanningActionCancellationService cancellation =
+            new PlanningActionCancellationService(
+                ActionManager);
 
-        int removed = 0;
-        int preservedCommitted = 0;
+        int cancelled =
+            cancellation.CancelOwner(
+                player,
+                out string failureReason);
 
-        foreach (ActionSlot slot in snapshot)
+        if (!string.IsNullOrWhiteSpace(
+                failureReason))
         {
-            if (slot?.Owner != player)
-                continue;
-
-            if (slot.PlanningEffectCommitted)
-            {
-                preservedCommitted++;
-                continue;
-            }
-
-            if (ActionManager.RemoveSlot(slot))
-                removed++;
+            Debug.LogWarning(
+                $"[BATTLE] Player planning reset partially failed. " +
+                $"Cancelled={cancelled}, Reason={failureReason}");
+        }
+        else
+        {
+            Debug.Log(
+                $"[BATTLE] Player planning reset. " +
+                $"Cancelled={cancelled}, Energy={player.CurrentEnergy}/{player.MaxEnergy}");
         }
 
-        Debug.Log(
-            $"[BATTLE] Player actions reset. Removed={removed}, " +
-            $"PreservedCommittedPreparation={preservedCommitted}");
         battleUIManager?.RefreshAllBodyPartButtons();
     }
 

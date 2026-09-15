@@ -166,35 +166,140 @@ public sealed class HifumiMechanic : CombatMechanic, ICharacterUniqueGaugeProvid
         if (action?.Owner != owner)
             return;
 
-        ExecuteSkillId(action.Skill?.Definition?.SkillId);
+        ExecuteSkillId(
+            action.Skill?.Definition?.SkillId,
+            action);
     }
 
     public void ExecuteSkillForVerification(string skillId)
     {
-        ExecuteSkillId(skillId);
+        ExecuteSkillId(
+            skillId,
+            null);
     }
 
-    private void ExecuteSkillId(string id)
+    private void ExecuteSkillId(
+        string id,
+        BattleAction action)
     {
         if (id == HifumiSkillIds.PokerFace)
         {
+            bool before = pokerFaceActive;
             pokerFaceActive = true;
+
+            action?.Slot?.PlanningUndo?.Record(
+                () => pokerFaceActive = before);
         }
         else if (id == HifumiSkillIds.EngraveBone)
         {
+            bool before = engraveBoneActive;
             engraveBoneActive = true;
+
+            action?.Slot?.PlanningUndo?.Record(
+                () => engraveBoneActive = before);
         }
         else if (id == HifumiSkillIds.GiveFlesh)
         {
+            int boneBefore = bone;
+
+            DeferredStatusEffect deferredBefore =
+                FindDeferredStatus(
+                    StatusEffectId.Rupture);
+
+            int deferredStackBefore =
+                deferredBefore?.Stack ?? 0;
+
+            int deferredDurationBefore =
+                deferredBefore?.PendingDuration ?? 0;
+
             AddBone(100);
             QueueNextTurnRupture();
+
+            action?.Slot?.PlanningUndo?.Record(
+                () =>
+                {
+                    bone = boneBefore;
+
+                    DeferredStatusEffect current =
+                        FindDeferredStatus(
+                            StatusEffectId.Rupture);
+
+                    if (deferredStackBefore <= 0)
+                    {
+                        if (current != null)
+                            owner?.RemoveStatus(current);
+                    }
+                    else if (current != null)
+                    {
+                        current.RestorePendingStateForPlanning(
+                            deferredStackBefore,
+                            deferredDurationBefore);
+                    }
+                });
         }
         else if (id == HifumiSkillIds.FoldHand)
         {
             if (bone >= 100)
             {
+                int boneBefore = bone;
+                int hpBefore =
+                    owner?.CurrentHP ?? 0;
+
+                List<BodyPart> parts =
+                    new List<BodyPart>();
+
+                List<float> partHp =
+                    new List<float>();
+
+                List<float> partMaxHp =
+                    new List<float>();
+
+                List<BodyPartState> partStates =
+                    new List<BodyPartState>();
+
+                if (owner?.BodyParts != null)
+                {
+                    foreach (BodyPart part in owner.BodyParts)
+                    {
+                        if (part == null)
+                            continue;
+
+                        parts.Add(part);
+                        partHp.Add(part.PartHP);
+                        partMaxHp.Add(part.MaxPartHP);
+                        partStates.Add(part.State);
+                    }
+                }
+
                 ConsumeBone(100);
                 owner?.RestoreCurrentHP(70);
+
+                action?.Slot?.PlanningUndo?.Record(
+                    () =>
+                    {
+                        bone = boneBefore;
+
+                        if (owner?.RuntimeStatus != null)
+                        {
+                            owner.RuntimeStatus.currentHP =
+                                Mathf.Clamp(
+                                    hpBefore,
+                                    0,
+                                    owner.MaxCombatHP);
+                        }
+
+                        for (int i = 0;
+                             i < parts.Count;
+                             i++)
+                        {
+                            owner?.SetBodyPartStateForDebug(
+                                parts[i],
+                                partHp[i],
+                                partMaxHp[i],
+                                partStates[i],
+                                clearNonStructuralStatuses: false);
+                        }
+                    });
             }
         }
         else if (id == HifumiSkillIds.GamblerMove)
@@ -611,6 +716,25 @@ public sealed class HifumiMechanic : CombatMechanic, ICharacterUniqueGaugeProvid
             owner.RestoreCurrentHP(30);
         else if (band >= 3)
             owner.RestoreCurrentHP(60);
+    }
+
+    private DeferredStatusEffect FindDeferredStatus(
+        StatusEffectId id)
+    {
+        if (owner?.StatusEffects == null)
+            return null;
+
+        foreach (StatusEffect effect
+                 in owner.StatusEffects)
+        {
+            if (effect is DeferredStatusEffect deferred &&
+                deferred.DeferredStatusId == id)
+            {
+                return deferred;
+            }
+        }
+
+        return null;
     }
 
     private void QueueNextTurnRupture()

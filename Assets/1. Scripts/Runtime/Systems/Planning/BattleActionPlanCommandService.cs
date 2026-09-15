@@ -36,6 +36,7 @@ public sealed class BattleActionPlanCommandService
     private readonly ActionManager actionManager;
     private readonly SpeedManager speedManager;
     private readonly ActionPlanValidator validator;
+    private readonly PlanningActionCancellationService cancellationService;
 
     public BattleActionPlanCommandService(
         ActionManager actionManager,
@@ -44,6 +45,9 @@ public sealed class BattleActionPlanCommandService
         this.actionManager = actionManager;
         this.speedManager = speedManager;
         validator = new ActionPlanValidator(actionManager);
+        cancellationService =
+            new PlanningActionCancellationService(
+                actionManager);
     }
 
     public ActionPlanAssignmentResult TryAssign(
@@ -136,6 +140,10 @@ public sealed class BattleActionPlanCommandService
             return Fail(result, "계획 확정 시 자원 비용을 지불할 수 없습니다.");
         }
         slot.ResourceCostCommitted = true;
+        slot.CommittedEnergyCost =
+            System.Math.Max(
+                0,
+                slot.Skill.EnergyCost);
 
         // C-03: 도사림은 누르는 순간 사용시 효과까지 실행하고 Resolution에서 다시 실행하지 않는다.
         if (slot.Skill.ActionType == ActionType.Preparation)
@@ -210,6 +218,10 @@ public sealed class BattleActionPlanCommandService
             return result;
         }
         transient.ResourceCostCommitted = true;
+        transient.CommittedEnergyCost =
+            System.Math.Max(
+                0,
+                skill.EnergyCost);
 
         owner.BattleEvent?.RaiseActionStart(action);
         skill.Execute(action);
@@ -332,6 +344,33 @@ public sealed class BattleActionPlanCommandService
         return null;
     }
 
+    /// <summary>
+    /// UI/AutoPlan에서 사용자가 명시적으로 Planning 행동을 취소한다.
+    /// 즉시 도사림 효과와 Planning commit을 rollback하고, 이 슬롯이 실제로 낸
+    /// 에너지 비용만 환불한다. 전투 중 슬롯 소실은 이 API를 사용하지 않는다.
+    /// </summary>
+    public bool Cancel(
+        Character owner,
+        BodyPart part,
+        int actionIndex,
+        out string failureReason)
+    {
+        return cancellationService.Cancel(
+            owner,
+            part,
+            actionIndex,
+            out failureReason);
+    }
+
+    public int CancelOwner(
+        Character owner,
+        out string failureReason)
+    {
+        return cancellationService.CancelOwner(
+            owner,
+            out failureReason);
+    }
+
     public bool Remove(
         Character owner,
         BodyPart part,
@@ -355,12 +394,16 @@ public sealed class BattleActionPlanCommandService
         if (owner == null || actionManager == null)
             return;
 
-        foreach (ActionSlot slot in actionManager.Slots)
+        cancellationService.CancelOwner(
+            owner,
+            out string failureReason);
+
+        if (!string.IsNullOrWhiteSpace(
+                failureReason))
         {
-            if (slot?.Owner == owner)
-                ActionPlanningMechanicPolicy.RollbackPlannedSlot(owner, slot);
+            UnityEngine.Debug.LogWarning(
+                $"[Planning Reset] {failureReason}");
         }
-        actionManager.RemoveSlotsByOwner(owner);
     }
 
     public ActionPlanValidationResult ValidateSkillSelection(

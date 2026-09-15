@@ -41,13 +41,6 @@ public sealed class BattleAutoPlanButtonPanel :
 
     private PlayerAutoPlanMode? activeMode;
 
-    // Auto-plan is a planning UI transaction. C-04 still keeps committed costs
-    // non-refundable when a live action disappears during combat, but explicitly
-    // cancelling/replacing the auto-plan before resolution must restore the
-    // energy that existed before this auto-plan session started.
-    private bool hasAutoPlanEnergySnapshot;
-    private int autoPlanEnergySnapshot;
-
     public PlayerAutoPlanMode? ActiveMode =>
         activeMode;
 
@@ -312,25 +305,17 @@ public sealed class BattleAutoPlanButtonPanel :
         battleUiManager?
             .CancelCurrentSelection();
 
-        // The first interactive auto-plan captures the energy baseline.
-        // Switching WinRate <-> Damage is a re-plan of the same UI transaction,
-        // so undo the previous auto-plan costs before calculating the new one.
-        if (!activeMode.HasValue)
+        // 자동계획은 현재 수동/자동 Planning을 명시적으로 취소한 뒤 새로 계산한다.
+        // CancelOwner가 각 슬롯의 즉시 도사림 효과와 실제 지불 Energy를 함께 되돌리므로,
+        // WinRate <-> Damage 전환도 같은 transaction 경로를 사용한다.
+        if (!RollbackAutoPlanSession())
         {
-            CaptureAutoPlanEnergySnapshot();
+            SetStatus(
+                "현재 Planning 행동을 취소하지 못해 자동 계획을 다시 짤 수 없습니다.");
+            return;
         }
-        else if (activeMode.Value != mode)
-        {
-            if (!RollbackAutoPlanSession(
-                    clearSnapshot: false))
-            {
-                SetStatus(
-                    "도사림 즉시 효과가 이미 확정되어 자동 계획을 다시 짤 수 없습니다.");
-                return;
-            }
 
-            activeMode = null;
-        }
+        activeMode = null;
 
         PlayerAutoPlanResult result =
             service.BuildAndApply(
@@ -345,9 +330,8 @@ public sealed class BattleAutoPlanButtonPanel :
         {
             // A failed auto-plan can already have committed one or more costs
             // before a later planning hook rejects the plan. Explicit UI planning
-            // failure is rolled back to the pre-auto-plan energy baseline.
-            if (RollbackAutoPlanSession(
-                    clearSnapshot: true))
+            // failure is rolled back through the same explicit Planning cancellation path.
+            if (RollbackAutoPlanSession())
             {
                 activeMode = null;
             }
@@ -374,15 +358,14 @@ public sealed class BattleAutoPlanButtonPanel :
         battleUiManager?
             .CancelCurrentSelection();
 
-        if (!RollbackAutoPlanSession(
-                clearSnapshot: true))
+        if (!RollbackAutoPlanSession())
         {
             SetStatus(
-                "도사림 즉시 효과가 이미 확정되어 자동 계획을 취소할 수 없습니다.");
+                "현재 Planning 행동을 취소하지 못했습니다.");
 
             Debug.LogWarning(
                 "[PlayerAutoPlan][CANCEL BLOCKED] " +
-                "계획 단계에서 이미 실행된 도사림이 있어 rollback을 거부했습니다.",
+                "Planning 취소 중 일부 상태를 되돌리지 못했습니다.",
                 this);
             return;
         }
@@ -478,7 +461,7 @@ public sealed class BattleAutoPlanButtonPanel :
         // plan has left the editable planning transaction (resolution/turn reset,
         // external cleanup, etc.). Do not refund here: C-04's no-refund rule still
         // applies to runtime slot loss. Just discard the UI rollback snapshot.
-        DiscardAutoPlanEnergySnapshot();
+        
         ClearModeVisualOnly();
 
         if (statusText != null &&
@@ -489,104 +472,30 @@ public sealed class BattleAutoPlanButtonPanel :
         }
     }
 
-    private void CaptureAutoPlanEnergySnapshot()
+    private bool RollbackAutoPlanSession()
     {
         Character player =
             battleManager?.BattleContext?.Player;
 
         if (player == null)
-        {
-            DiscardAutoPlanEnergySnapshot();
-            return;
-        }
-
-        autoPlanEnergySnapshot =
-            player.CurrentEnergy;
-        hasAutoPlanEnergySnapshot = true;
-
-        Debug.Log(
-            $"[PlayerAutoPlan][SNAPSHOT] Energy={autoPlanEnergySnapshot}",
-            this);
-    }
-
-    private bool RollbackAutoPlanSession(
-        bool clearSnapshot)
-    {
-        Character player =
-            battleManager?.BattleContext?.Player;
-
-        // C-03: 도사림은 누르는 순간 효과가 확정된다. generic Skill.Execute의
-        // 임의 효과를 완전히 되돌리는 역연산은 존재하지 않으므로, 이미 즉시 실행된
-        // 도사림이 포함된 자동계획은 취소/모드교체 rollback 자체를 금지한다.
-        if (HasCommittedImmediatePlayerAction(player))
-        {
-            Debug.LogWarning(
-                "[PlayerAutoPlan][ROLLBACK BLOCKED] " +
-                "Committed preparation cannot be reverted safely.",
-                this);
             return false;
-        }
 
-        // Remove the auto-generated slots first so UI/validation immediately sees
-        // an empty player plan. This is an explicit planning rollback, not combat
-        // invalidation.
         battleManager?
             .ResetPlayerActions();
 
-        if (player != null &&
-            hasAutoPlanEnergySnapshot)
+        bool cleared =
+            battleManager?.ActionManager?
+                .CountSlots(player) == 0;
+
+        if (cleared)
         {
-            int before = player.CurrentEnergy;
-            int delta =
-                autoPlanEnergySnapshot - before;
-
-            if (delta != 0)
-            {
-                player.AddEnergy(
-                    delta,
-                    CombatResourceChangeReason.Restore);
-            }
-
             Debug.Log(
-                $"[PlayerAutoPlan][ROLLBACK] Energy={before}->{player.CurrentEnergy}",
+                $"[PlayerAutoPlan][ROLLBACK] " +
+                $"Planning cleared / Energy={player.CurrentEnergy}/{player.MaxEnergy}",
                 this);
         }
 
-        if (clearSnapshot)
-            DiscardAutoPlanEnergySnapshot();
-
-        return true;
-    }
-
-    private bool HasCommittedImmediatePlayerAction(
-        Character player)
-    {
-        ActionManager actionManager =
-            battleManager?.ActionManager;
-
-        if (player == null ||
-            actionManager == null ||
-            actionManager.IsDisposed)
-        {
-            return false;
-        }
-
-        foreach (ActionSlot slot in actionManager.Slots)
-        {
-            if (slot?.Owner == player &&
-                slot.PlanningEffectCommitted)
-            {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    private void DiscardAutoPlanEnergySnapshot()
-    {
-        hasAutoPlanEnergySnapshot = false;
-        autoPlanEnergySnapshot = 0;
+        return cleared;
     }
 
     private void ClearModeVisualOnly()

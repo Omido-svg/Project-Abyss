@@ -18,6 +18,15 @@ public sealed class PlayerAutoPlanApplicationService
             return 0;
         }
 
+        // 자동계획 UI는 적용 전에 기존 player plan을 명시적 Cancel한다.
+        // 여기까지 owner slot이 남아 있다면 raw replacement로 비용/즉시효과를 유실하지 않도록 fail-closed.
+        if (actionManager.CountSlots(owner) > 0)
+            return 0;
+
+        PlanningActionCancellationService cancellation =
+            new PlanningActionCancellationService(
+                actionManager);
+
         // 이미 즉시 실행된 도사림이 있으면 자동계획 전체 교체로 그 행동 소비를 지울 수 없다.
         foreach (ActionSlot existing in actionManager.Slots)
         {
@@ -61,7 +70,9 @@ public sealed class PlayerAutoPlanApplicationService
             {
                 // 자동 계획은 원자적으로 계산되지만 비용/캐릭터 고유 hook이 런타임 상태 변화로
                 // 실패할 수 있다. 이미 commit된 비용/효과는 정본상 환불하지 않고 계획만 제거한다.
-                actionManager.RemoveSlotsByOwner(owner);
+                cancellation.CancelOwner(
+                    owner,
+                    out _);
                 return 0;
             }
 
@@ -69,11 +80,17 @@ public sealed class PlayerAutoPlanApplicationService
             if (!slot.ResourceCostCommitted &&
                 !slot.Skill.TryConsumeResource(owner, action))
             {
-                actionManager.RemoveSlotsByOwner(owner);
+                cancellation.CancelOwner(
+                    owner,
+                    out _);
                 return 0;
             }
 
             slot.ResourceCostCommitted = true;
+            slot.CommittedEnergyCost =
+                System.Math.Max(
+                    0,
+                    slot.Skill.EnergyCost);
             committed.Add(slot);
         }
 

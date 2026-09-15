@@ -24,6 +24,15 @@ public class ActionSlot
     // 0915 planning contract: 비용은 계획 시 실제 commit한다.
     public bool ResourceCostCommitted;
 
+    // 전투 중 슬롯 소실(C-04)과 사용자의 Planning 취소를 구분하기 위한
+    // 정확한 commit 금액. Runtime 제거는 이 값을 환불하지 않고,
+    // PlanningActionCancellationService만 명시적 취소에서 환불한다.
+    public int CommittedEnergyCost;
+
+    // Planning에서 즉시 실행된 도사림의 역연산 journal.
+    // 캐릭터 고유 도사림은 실행 시 자신이 만든 변경만 기록한다.
+    public PlanningUndoJournal PlanningUndo { get; } = new();
+
     // 도사림/위세처럼 계획 단계에서 이미 실행한 행동은 Resolution queue에 다시 넣지 않는다.
     public bool SkipResolution;
 

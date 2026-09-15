@@ -84,6 +84,34 @@ internal static class SkillUsageLedger
         useCounts[key] = value + 1;
     }
 
+    public static void Decrement(
+        Character owner,
+        object identity)
+    {
+        if (owner == null || identity == null)
+            return;
+
+        UsageKey key = new UsageKey
+        {
+            Owner = owner,
+            Identity = identity
+        };
+
+        if (!useCounts.TryGetValue(
+                key,
+                out int value))
+        {
+            return;
+        }
+
+        int next = Math.Max(0, value - 1);
+
+        if (next <= 0)
+            useCounts.Remove(key);
+        else
+            useCounts[key] = next;
+    }
+
     public static void BeginTurn(
         Character owner,
         int turn)

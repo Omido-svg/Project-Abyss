@@ -163,16 +163,47 @@ public sealed class OlafMadnessMechanic : CombatMechanic, ICharacterUniqueGaugeP
             case OlafSkillIds.Crouch:
                 // 0915 C-24: 웅크리기는 기존 방어도를 덮어쓰지 않고 +12 가산한다.
                 owner.AddBlock(CrouchBlockGain);
+                action.Slot?.PlanningUndo?.Record(
+                    () => owner?.RemoveBlock(CrouchBlockGain));
                 break;
 
             case OlafSkillIds.Glare:
                 owner.AddTurnClashPowerBonus(1);
+                action.Slot?.PlanningUndo?.Record(
+                    () => owner?.AddTurnClashPowerBonus(-1));
                 break;
 
             case OlafSkillIds.ShowOff:
-                WeakenLowestNormalPart();
+            {
+                int madnessBefore = madness;
+                BodyPart weakened =
+                    WeakenLowestNormalPart(
+                        out float hpBeforeWeaken);
+
                 AddMadness(2);
+
+                int appliedMadness =
+                    Mathf.Max(
+                        0,
+                        madness - madnessBefore);
+
+                action.Slot?.PlanningUndo?.Record(
+                    () =>
+                    {
+                        madness =
+                            Mathf.Max(
+                                0,
+                                madness - appliedMadness);
+
+                        if (weakened?.IsWeakened == true)
+                        {
+                            owner?.RestoreTemporaryWeakenedPart(
+                                weakened,
+                                hpBeforeWeaken);
+                        }
+                    });
                 break;
+            }
 
             case OlafSkillIds.BloomingWound:
                 ApplyBloomingWound(action);
@@ -505,12 +536,14 @@ public sealed class OlafMadnessMechanic : CombatMechanic, ICharacterUniqueGaugeP
             ?.ApplyDamageContext(request);
     }
 
-    private void WeakenLowestNormalPart()
+    private BodyPart WeakenLowestNormalPart(
+        out float hpBeforeWeaken)
     {
         BodyPart selected = null;
+        hpBeforeWeaken = 0f;
 
         if (owner?.BodyParts == null)
-            return;
+            return null;
 
         foreach (BodyPart part in owner.BodyParts)
         {
@@ -530,11 +563,16 @@ public sealed class OlafMadnessMechanic : CombatMechanic, ICharacterUniqueGaugeP
 
         if (selected != null)
         {
+            hpBeforeWeaken =
+                selected.PartHP;
+
             owner.WeakenPart(
                 selected,
                 owner,
                 null);
         }
+
+        return selected;
     }
 
     private void NormalizeWeakenedParts(int count)

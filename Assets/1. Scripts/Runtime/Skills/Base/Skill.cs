@@ -192,6 +192,18 @@ public abstract class Skill
     public bool IsFirstUseThisTurn =>
         UseCountThisTurn == 1;
 
+    /// <summary>
+    /// Planning에서 즉시 실행된 도사림을 명시적으로 취소했을 때
+    /// ActionStart가 올린 이번 턴 사용 횟수만 되돌린다.
+    /// 전투 중 슬롯 소실/Resolution 경로에서는 호출하지 않는다.
+    /// </summary>
+    internal void RollbackPlanningUse()
+    {
+        SkillUsageLedger.Decrement(
+            owner,
+            GetUsageIdentity());
+    }
+
     public virtual bool CanUseByResource(Character character)
     {
         return SkillCostService.CanUse(

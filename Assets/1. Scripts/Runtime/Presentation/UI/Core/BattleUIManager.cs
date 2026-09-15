@@ -1684,10 +1684,28 @@ public partial class BattleUIManager : MonoBehaviour
         if (slot == null)
             return false;
 
-        PlanCommands?.Remove(
-            owner,
-            part,
-            actionIndex);
+        BattleActionPlanCommandService commands =
+            PlanCommands;
+
+        string failureReason =
+            string.Empty;
+
+        if (commands == null ||
+            !commands.Cancel(
+                owner,
+                part,
+                actionIndex,
+                out failureReason))
+        {
+            if (!string.IsNullOrWhiteSpace(
+                    failureReason))
+            {
+                Debug.LogWarning(
+                    $"[Planning Cancel] {failureReason}");
+            }
+
+            return false;
+        }
 
         actionIndexCursorByPart[part] =
             Mathf.Max(0, actionIndex - 1);

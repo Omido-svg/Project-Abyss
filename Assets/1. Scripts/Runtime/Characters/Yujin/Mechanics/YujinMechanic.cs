@@ -17,6 +17,14 @@ public sealed class YujinMechanic : CombatMechanic, ICharacterUniqueGaugeProvide
     private readonly HashSet<string>
         freeRetrialRerolls = new();
 
+    // Planning에서 즉시 적용되는 도사림을 ActionId 단위로 추적한다.
+    // 우클릭/AutoPlan 재계획 시 특정 슬롯 하나만 취소해도 다른 동일 도사림은 유지된다.
+    private readonly HashSet<long>
+        capturePlanningActions = new();
+
+    private readonly HashSet<long>
+        sentencingPlanningActions = new();
+
     private YujinWeaponType currentWeapon;
     private YujinWeaponType pendingWeapon;
     private bool hasPendingWeapon;
@@ -118,6 +126,8 @@ public sealed class YujinMechanic : CombatMechanic, ICharacterUniqueGaugeProvide
     {
         marks.Clear();
         freeRetrialRerolls.Clear();
+        capturePlanningActions.Clear();
+        sentencingPlanningActions.Clear();
         sense = 0;
         weaponSwitchUsedThisTurn = false;
         hasPendingWeapon = false;
@@ -796,11 +806,21 @@ public sealed class YujinMechanic : CombatMechanic, ICharacterUniqueGaugeProvide
         switch (skillId)
         {
             case YujinSkillIds.Capture:
-                captureActive = true;
+                RegisterPlanningToggle(
+                    action,
+                    capturePlanningActions,
+                    () => captureActive = true,
+                    () => captureActive =
+                        capturePlanningActions.Count > 0);
                 break;
 
             case YujinSkillIds.Sentencing:
-                sentencingActive = true;
+                RegisterPlanningToggle(
+                    action,
+                    sentencingPlanningActions,
+                    () => sentencingActive = true,
+                    () => sentencingActive =
+                        sentencingPlanningActions.Count > 0);
                 break;
 
             case YujinSkillIds.Brand:
@@ -818,8 +838,41 @@ public sealed class YujinMechanic : CombatMechanic, ICharacterUniqueGaugeProvide
         }
     }
 
+    private static void RegisterPlanningToggle(
+        BattleAction action,
+        HashSet<long> activeActions,
+        System.Action activate,
+        System.Action refresh)
+    {
+        if (activeActions == null)
+            return;
+
+        long actionId =
+            action?.ActionId ?? 0;
+
+        if (actionId > 0)
+            activeActions.Add(actionId);
+
+        activate?.Invoke();
+
+        if (action?.Slot?.PlanningUndo == null)
+            return;
+
+        action.Slot.PlanningUndo.Record(
+            () =>
+            {
+                if (actionId > 0)
+                    activeActions.Remove(actionId);
+
+                refresh?.Invoke();
+            });
+    }
+
     private void OnTurnStart(int turn)
     {
+        capturePlanningActions.Clear();
+        sentencingPlanningActions.Clear();
+
         if (hasPendingWeapon)
         {
             YujinWeaponType previous = currentWeapon;
@@ -845,6 +898,8 @@ public sealed class YujinMechanic : CombatMechanic, ICharacterUniqueGaugeProvide
 
     private void ClearTurnBuffs()
     {
+        capturePlanningActions.Clear();
+        sentencingPlanningActions.Clear();
         captureActive = false;
         sentencingActive = false;
         brandActive = false;
