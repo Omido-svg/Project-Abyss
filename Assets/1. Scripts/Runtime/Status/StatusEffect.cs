@@ -288,6 +288,14 @@ public abstract class StatusEffect
             Random.Range(0, candidates.Count)];
     }
 
+    internal int ConsumeStacks(int amount)
+    {
+        int safe = Mathf.Max(0, amount);
+        int consumed = Mathf.Min(Stack, safe);
+        Stack = Mathf.Max(0, Stack - consumed);
+        return consumed;
+    }
+
     public void DecreaseDuration()
     {
         if (IsPermanent)

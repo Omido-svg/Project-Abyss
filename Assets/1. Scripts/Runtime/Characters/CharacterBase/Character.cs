@@ -223,7 +223,8 @@ public abstract class Character : MonoBehaviour
 
     public virtual bool SupportsLastStand =>
         Data != null &&
-        (Data.CombatantTier == CombatantTier.EliteEnemy ||
+        (Data.CombatantTier == CombatantTier.Player ||
+         Data.CombatantTier == CombatantTier.EliteEnemy ||
          Data.CombatantTier == CombatantTier.Boss);
 
     public bool IsDead
@@ -414,9 +415,13 @@ public abstract class Character : MonoBehaviour
 
             if (Data?.EnableStaggerGauge == true)
             {
-                AddMechanic(
-                    new StaggerGaugeMechanic(
-                        Data.GetEffectiveMaxStaggerGauge(battleContext?.Rules)));
+                int maximumStagger =
+                    Data.GetEffectiveMaxStaggerGauge(battleContext?.Rules);
+
+                // 0915 C-41: Elite의 기본 최대치는 미정(Unset=0). 데이터가 확정되기 전에는
+                // 임의 100으로 게이지를 생성하지 않는다.
+                if (maximumStagger > 0)
+                    AddMechanic(new StaggerGaugeMechanic(maximumStagger));
             }
 
             foreach (CombatMechanic mechanic
@@ -929,8 +934,8 @@ public abstract class Character : MonoBehaviour
 
         statusController?.OnTurnEnd();
 
-        ClearBlock();
-
+        // 0915 C-23: 방어도는 턴 종료에 지워지지 않는다.
+        // 전투 종료 시 TurnManager.EndBattle에서만 초기화한다.
         CheckDead();
     }
 
@@ -1416,6 +1421,15 @@ public abstract class Character : MonoBehaviour
         statusController?.RemoveStatusesFromSourcePart(
             part,
             StatusEffectRemoveReason.PartBroken);
+
+        StatusEffect broken = CreateBrokenPartStatus(part);
+        if (broken != null)
+        {
+            statusController?.AddStatus(
+                broken,
+                this,
+                part);
+        }
     }
 
     protected virtual StatusEffect CreateBrokenPartStatus(
@@ -1638,6 +1652,14 @@ public abstract class Character : MonoBehaviour
                 mechanicController.ModifyRoll(
                     action,
                     value);
+        }
+
+        // 0915 C-19: 직전 턴을 짓눌림으로 끝낸 보상은 다음 턴의
+        // 모든 판정값 +1이다. 현재 Momentum band와 섞지 않는다.
+        if (battleContext?.Services?.MomentumManager?
+                .HasLastStandJudgmentBonus(this) == true)
+        {
+            value += 1;
         }
 
         // 공용 상태이상은 "범위 전체 이동"과 "최댓값 절단"을 별도 누산한다.

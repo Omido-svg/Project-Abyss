@@ -18,22 +18,26 @@ public static class GameSystemVerificationRunner
     }
 
     public static GameSystemVerificationReport RunDataChecks() =>
-        RunInternal(null, true, false, false);
+        RunInternal(null, true, false, false, includePhaseB: true);
 
     public static GameSystemVerificationReport RunContracts() =>
         RunDataChecks();
 
     public static GameSystemVerificationReport RunLivePlanAudit(
         BattleManager manager) =>
-        RunInternal(manager, false, false, true);
+        RunInternal(manager, false, false, true, includePhaseB: true);
 
     public static GameSystemVerificationReport RunPhaseA(
         BattleManager manager) =>
-        RunInternal(manager, true, true, true);
+        RunInternal(manager, true, true, true, includePhaseB: false);
+
+    public static GameSystemVerificationReport RunPhaseB(
+        BattleManager manager) =>
+        RunInternal(manager, true, true, true, includePhaseB: true);
 
     public static GameSystemVerificationReport RunFull(
         BattleManager manager) =>
-        RunPhaseA(manager);
+        RunPhaseB(manager);
 
     public static IReadOnlyList<IGameSystemVerificationModule> DiscoverModules() =>
         GameSystemVerificationModuleRegistry.DiscoverModules();
@@ -48,7 +52,8 @@ public static class GameSystemVerificationRunner
         BattleManager manager,
         bool includeStatic,
         bool includeIsolated,
-        bool includeLive)
+        bool includeLive,
+        bool includePhaseB)
     {
         DateTime started = DateTime.Now;
         GameSystemVerificationReport report = CreateReport(started, manager);
@@ -57,12 +62,19 @@ public static class GameSystemVerificationRunner
             GameSystemVerificationModuleRegistry.DiscoverModules();
         List<RegisteredCase> registered = BuildRegisteredCases(modules, report);
 
-        AddCoverageResults(report, registered);
+        AddCoverageResults(report, registered, includePhaseB);
 
         foreach (RegisteredCase registeredCase in registered)
         {
             if (registeredCase?.Case == null)
                 continue;
+
+            if (!includePhaseB &&
+                CanonicalGameSystemVerificationSpec.PhaseBRequirements.Contains(
+                    registeredCase.Case.RequirementId))
+            {
+                continue;
+            }
 
             if (!ShouldRun(
                     registeredCase.Case.ExecutionMode,
@@ -172,7 +184,8 @@ public static class GameSystemVerificationRunner
 
     private static void AddCoverageResults(
         GameSystemVerificationReport report,
-        IReadOnlyList<RegisteredCase> registered)
+        IReadOnlyList<RegisteredCase> registered,
+        bool includePhaseB)
     {
         IEnumerable<GameSystemVerificationCase> cases =
             registered?.Select(item => item.Case) ??
@@ -208,14 +221,16 @@ public static class GameSystemVerificationRunner
             "system.coverage.phase_b",
             missingB.Count == 0
                 ? GameSystemVerificationStatus.Pass
-                : GameSystemVerificationStatus.Pending,
+                : (includePhaseB
+                    ? GameSystemVerificationStatus.Fail
+                    : GameSystemVerificationStatus.Pending),
             "Phase B 18개 Requirement에 검증 Case 연결",
             $"Covered={CanonicalGameSystemVerificationSpec.PhaseBRequirements.Count - missingB.Count}/" +
             $"{CanonicalGameSystemVerificationSpec.PhaseBRequirements.Count}",
             missingB.Count == 0
                 ? null
-                : "Pending=" + string.Join(", ", missingB),
-            false);
+                : "Missing=" + string.Join(", ", missingB),
+            includePhaseB);
     }
 
     private static bool ShouldRun(

@@ -175,6 +175,15 @@ public class CharacterStatusController
 
         effect.Initialize(owner, source, part);
 
+        StatusEffectApplyResult algebraResult =
+            ResolveOppositePartStatus(part, effect);
+        if (algebraResult != null)
+        {
+            StampSource(algebraResult, sourceAction, sourceExchangeIndex, sourceEffectTiming, hasSourceEffectTiming);
+            RaiseApplyEvents(algebraResult);
+            return algebraResult;
+        }
+
         StatusEffect existing =
             FindSamePartStatus(part, effect);
 
@@ -238,6 +247,15 @@ public class CharacterStatusController
         }
 
         effect.Initialize(owner, source, null, sourcePart);
+
+        StatusEffectApplyResult algebraResult =
+            ResolveOppositeCharacterStatus(effect);
+        if (algebraResult != null)
+        {
+            StampSource(algebraResult, sourceAction, sourceExchangeIndex, sourceEffectTiming, hasSourceEffectTiming);
+            RaiseApplyEvents(algebraResult);
+            return algebraResult;
+        }
 
         StatusEffect existing =
             FindSameStatus(effect);
@@ -606,6 +624,85 @@ public class CharacterStatusController
     public bool HasPartStatus<T>(BodyPart part) where T : StatusEffect
     {
         return GetPartStatus<T>(part) != null;
+    }
+
+    private StatusEffectApplyResult ResolveOppositeCharacterStatus(StatusEffect incoming)
+    {
+        foreach (StatusEffect existing in characterStatuses.ToArray())
+        {
+            if (!CommonStatusAlgebra.AreOpposites(existing, incoming))
+                continue;
+
+            int incomingBefore = incoming.Stack;
+            int existingBefore = existing.Stack;
+            int cancelled = Mathf.Min(incomingBefore, existingBefore);
+            existing.ConsumeStacks(cancelled);
+            incoming.ConsumeStacks(cancelled);
+
+            if (existing.Stack <= 0)
+                RemoveStatus(existing, StatusEffectRemoveReason.Cleared);
+
+            if (incoming.Stack <= 0)
+            {
+                return new StatusEffectApplyResult
+                {
+                    TargetCharacter = owner,
+                    TargetPart = null,
+                    Effect = incoming,
+                    IncomingEffect = incoming,
+                    Kind = StatusEffectApplyKind.Ignored,
+                    StackBefore = incomingBefore,
+                    StackAfter = 0,
+                    DurationBefore = incoming.Duration,
+                    DurationAfter = incoming.Duration
+                };
+            }
+
+            break;
+        }
+
+        return null;
+    }
+
+    private StatusEffectApplyResult ResolveOppositePartStatus(BodyPart part, StatusEffect incoming)
+    {
+        if (part == null)
+            return null;
+
+        foreach (StatusEffect existing in part.StatusEffects.ToArray())
+        {
+            if (!CommonStatusAlgebra.AreOpposites(existing, incoming))
+                continue;
+
+            int incomingBefore = incoming.Stack;
+            int existingBefore = existing.Stack;
+            int cancelled = Mathf.Min(incomingBefore, existingBefore);
+            existing.ConsumeStacks(cancelled);
+            incoming.ConsumeStacks(cancelled);
+
+            if (existing.Stack <= 0)
+                RemovePartStatus(part, existing, StatusEffectRemoveReason.Cleared);
+
+            if (incoming.Stack <= 0)
+            {
+                return new StatusEffectApplyResult
+                {
+                    TargetCharacter = owner,
+                    TargetPart = part,
+                    Effect = incoming,
+                    IncomingEffect = incoming,
+                    Kind = StatusEffectApplyKind.Ignored,
+                    StackBefore = incomingBefore,
+                    StackAfter = 0,
+                    DurationBefore = incoming.Duration,
+                    DurationAfter = incoming.Duration
+                };
+            }
+
+            break;
+        }
+
+        return null;
     }
 
     private StatusEffect FindSameStatus(StatusEffect effect)

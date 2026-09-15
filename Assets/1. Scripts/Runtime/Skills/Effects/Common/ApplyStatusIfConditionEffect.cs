@@ -8,6 +8,10 @@ public class ApplyStatusIfConditionEffect : SkillEffectDefinition
     public StatusEffectId StatusEffectId;
     [Min(1)] public int Stack = 1;
     [Min(1)] public int Duration = 3;
+    [Tooltip("Regeneration 전용. 0이면 Stack 값을 legacy 회복량으로 사용합니다.")]
+    [Min(0)] public int RegenerationHealAmount;
+    [Tooltip("Regeneration 전용 회복 채널입니다.")]
+    public RegenerationRecoveryChannel RegenerationChannel = RegenerationRecoveryChannel.HitPoints;
 
     [Tooltip("선택된 대상에 부위가 있어도 캐릭터 상태로 적용합니다.")]
     public bool ForceCharacterStatus;
@@ -33,7 +37,9 @@ public class ApplyStatusIfConditionEffect : SkillEffectDefinition
             StatusEffectFactory.Create(
                 StatusEffectId,
                 overrides?.ResolveStack(Stack) ?? Stack,
-                overrides?.ResolveDuration(Duration) ?? Duration);
+                overrides?.ResolveDuration(Duration) ?? Duration,
+                RegenerationHealAmount,
+                RegenerationChannel);
 
         if (effect == null)
             return;
@@ -42,14 +48,16 @@ public class ApplyStatusIfConditionEffect : SkillEffectDefinition
             overrides?.ResolveForceCharacterStatus(ForceCharacterStatus) ??
             ForceCharacterStatus;
 
-        if (!forceCharacterStatus &&
-            context.TargetPart != null)
+        CombatStatusAnchor anchor =
+            CombatStatusAnchor.Resolve(context.Target, context.TargetPart);
+
+        if (!forceCharacterStatus && anchor.IsPartAnchor)
         {
             context.Resolver.ApplyBodyPartStatus(
                 EffectRequest.BodyPartStatus(
                     context.Owner,
                     context.Target,
-                    context.TargetPart,
+                    anchor.Part,
                     effect,
                     context.Action,
                     context.RollIndex,

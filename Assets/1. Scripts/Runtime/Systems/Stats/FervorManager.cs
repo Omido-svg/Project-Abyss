@@ -1,6 +1,11 @@
 using System;
 using UnityEngine;
 
+public interface IFervorTurnEndGainModifier
+{
+    int ModifyTurnEndFervorGain(MomentumState finalState, int currentGain);
+}
+
 public readonly struct FervorLevelUpContext
 {
     public readonly int Turn;
@@ -56,6 +61,16 @@ public sealed class FervorManager
         MomentumState finalState = momentum.GetFinalTurnState(player);
         int finalMomentum = momentum.GetPerspectiveValue(player);
         int gain = settings.GetGain(finalState);
+
+        if (player.Mechanics != null)
+        {
+            foreach (CombatMechanic mechanic in player.Mechanics)
+            {
+                if (mechanic is IFervorTurnEndGainModifier modifier)
+                    gain = Mathf.Max(0, modifier.ModifyTurnEndFervorGain(finalState, gain));
+            }
+        }
+
         int before = Exaltation;
 
         if (gain > 0)

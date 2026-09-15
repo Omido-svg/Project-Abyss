@@ -37,7 +37,7 @@ public readonly struct HifumiCounterPreview
 /// 히후미 코어: 뼈 0~500 / 짓눌림 생존 / 친치로 / 반격.
 /// 기획 미확정값은 PATCH_NOTES의 Provisional Decisions에 기록한다.
 /// </summary>
-public sealed class HifumiMechanic : CombatMechanic, ICharacterUniqueGaugeProvider, IChinchiroOutcomeOverride
+public sealed class HifumiMechanic : CombatMechanic, ICharacterUniqueGaugeProvider, IChinchiroOutcomeOverride, IFervorTurnEndGainModifier
 {
     public const int MaxBone = 500;
     public const int BloomThreshold = 500;
@@ -136,9 +136,8 @@ public sealed class HifumiMechanic : CombatMechanic, ICharacterUniqueGaugeProvid
 
         int result = damage;
 
-        // 짓눌림: 받는 피해 절반. 자해 비용은 캐릭터 외부 공격이 아니므로 제외한다.
-        if (context.DamageType != DamageType.SelfCost && IsLastStand())
-            result = Mathf.CeilToInt(result * 0.5f);
+        // 0915 C-20: 구 버전의 짓눌림 피해 반감은 제거됐다.
+        // 히후미도 실제 post-mitigation 피해를 그대로 뼈로 환산한다.
 
         // 최신 사용자 문서 우선: 포커페이스는 "교환당 -1".
         if (pokerFaceActive && context.Action != null)
@@ -146,6 +145,20 @@ public sealed class HifumiMechanic : CombatMechanic, ICharacterUniqueGaugeProvid
 
 
         return result;
+    }
+
+    public int ModifyTurnEndFervorGain(
+        MomentumState finalState,
+        int currentGain)
+    {
+        // 0915 C-21: 히후미는 열세/짓눌림에서도 고조 +3.
+        if (finalState == MomentumState.Disadvantage ||
+            finalState == MomentumState.LastStand)
+        {
+            return Mathf.Max(currentGain, 3);
+        }
+
+        return currentGain;
     }
 
     public void ExecuteSkill(BattleAction action)
@@ -253,9 +266,7 @@ public sealed class HifumiMechanic : CombatMechanic, ICharacterUniqueGaugeProvid
     {
         int result = Mathf.Max(0, damage);
 
-        if (lastStand)
-            result = Mathf.CeilToInt(result * 0.5f);
-
+        // 0915 C-20: lastStand는 피해량을 바꾸지 않는다.
         if (pokerFace)
             result = Mathf.Max(0, result - 1);
 
@@ -270,9 +281,7 @@ public sealed class HifumiMechanic : CombatMechanic, ICharacterUniqueGaugeProvid
     {
         int gain = Mathf.Max(0, appliedDamage);
 
-        if (!selfCost && lastStand)
-            gain *= 2;
-
+        // 0915 19.2: 뼈는 실제로 받은 피해 1:1. 짓눌림 배수 없음.
         if (pokerFaceHit)
             gain += 4;
 
@@ -420,12 +429,8 @@ public sealed class HifumiMechanic : CombatMechanic, ICharacterUniqueGaugeProvid
         if (applied <= 0)
             return;
 
+        // 0915 19.2: 방어/감소 적용 뒤 실제 받은 피해를 정확히 1:1로 적립한다.
         int gain = applied;
-        // PPT의 친치로 대실패는 "60 자해 → 같은 양 60 뼈"로 명시되어 있으므로
-        // SelfCost는 짓눌림의 ×2 획득 보정에서 제외한다.
-        if (context.DamageType != DamageType.SelfCost && IsLastStand())
-            gain *= 2;
-
         AddBone(gain);
 
         // 포커페이스의 +4는 실제 피격 이벤트당 추가로 적립한다.
@@ -618,10 +623,6 @@ public sealed class HifumiMechanic : CombatMechanic, ICharacterUniqueGaugeProvid
             owner);
     }
 
-    private bool IsLastStand()
-    {
-        return battleContext?.Services?.MomentumManager?.IsLastStand(owner) == true;
-    }
 
     private void ResolveAllIn()
     {

@@ -2,8 +2,12 @@ using UnityEngine;
 
 public enum PrestigeChargeReason
 {
+    // 기존 enum 값은 diagnostics/source compatibility를 위해 보존한다.
     ExchangeParticipant = 0,
-    OneSidedParticipant = 1
+    OneSidedParticipant = 1,
+    ClashStart = 2,
+    ClashWin = 3,
+    Kill = 4
 }
 
 public sealed class PrestigeChargeContext
@@ -17,53 +21,39 @@ public sealed class PrestigeChargeContext
 
 public interface IPrestigeChargeModifier
 {
-    int ModifyPrestigeCharge(
-        PrestigeChargeContext context,
-        int currentAmount);
+    int ModifyPrestigeCharge(PrestigeChargeContext context, int currentAmount);
 }
 
+/// <summary>
+/// 0915 C-22 사건 기반 위세 충전 서비스.
+/// 합 시작 +1 / 교환(일방 포함) +1 / 합 다수결 승리 +2 / 적 처치 +5.
+/// </summary>
 public sealed class PrestigeChargeService
 {
     private readonly BattleContext battleContext;
     private readonly PrestigeRuleSettings settings;
 
-    public PrestigeChargeService(
-        BattleContext battleContext)
+    public PrestigeChargeService(BattleContext battleContext)
     {
         this.battleContext = battleContext;
-
-        settings =
-            battleContext?.Rules?.Prestige ??
-            new PrestigeRuleSettings();
-
+        settings = battleContext?.Rules?.Prestige ?? new PrestigeRuleSettings();
         settings.Normalize();
     }
 
-    public int ChargeExchangeParticipant(
-        Character recipient,
-        Character other,
-        BattleAction sourceAction)
-    {
-        return Charge(
-            recipient,
-            other,
-            sourceAction,
-            PrestigeChargeReason.ExchangeParticipant,
-            settings.ExchangeParticipantCharge);
-    }
+    public int ChargeClashStart(Character recipient, Character other, BattleAction sourceAction) =>
+        Charge(recipient, other, sourceAction, PrestigeChargeReason.ClashStart, settings.ClashStartCharge);
 
-    public int ChargeOneSidedParticipant(
-        Character recipient,
-        Character other,
-        BattleAction sourceAction)
-    {
-        return Charge(
-            recipient,
-            other,
-            sourceAction,
-            PrestigeChargeReason.OneSidedParticipant,
-            settings.OneSidedParticipantCharge);
-    }
+    public int ChargeExchangeParticipant(Character recipient, Character other, BattleAction sourceAction) =>
+        Charge(recipient, other, sourceAction, PrestigeChargeReason.ExchangeParticipant, settings.ExchangeCharge);
+
+    public int ChargeOneSidedParticipant(Character recipient, Character other, BattleAction sourceAction) =>
+        Charge(recipient, other, sourceAction, PrestigeChargeReason.OneSidedParticipant, settings.ExchangeCharge);
+
+    public int ChargeClashWinner(Character recipient, Character other, BattleAction sourceAction) =>
+        Charge(recipient, other, sourceAction, PrestigeChargeReason.ClashWin, settings.ClashWinCharge);
+
+    public int ChargeKill(Character recipient, Character victim, BattleAction sourceAction) =>
+        Charge(recipient, victim, sourceAction, PrestigeChargeReason.Kill, settings.KillCharge);
 
     private int Charge(
         Character recipient,
@@ -72,49 +62,29 @@ public sealed class PrestigeChargeService
         PrestigeChargeReason reason,
         int baseAmount)
     {
-        if (recipient == null ||
-            recipient.IsDead ||
-            baseAmount <= 0)
-        {
+        if (recipient == null || recipient.IsDead || baseAmount <= 0)
             return 0;
-        }
 
         if (settings.ExcludePreparationActions &&
-            sourceAction?.ActionType ==
-            ActionType.Preparation)
-        {
+            sourceAction?.ActionType == ActionType.Preparation)
             return 0;
-        }
 
-        PrestigeChargeContext context =
-            new PrestigeChargeContext
-            {
-                Reason = reason,
-                Recipient = recipient,
-                OtherCharacter = other,
-                SourceAction = sourceAction,
-                BaseAmount = baseAmount
-            };
+        PrestigeChargeContext context = new()
+        {
+            Reason = reason,
+            Recipient = recipient,
+            OtherCharacter = other,
+            SourceAction = sourceAction,
+            BaseAmount = baseAmount
+        };
 
         int amount = baseAmount;
-
         if (recipient.Mechanics != null)
         {
-            foreach (CombatMechanic mechanic
-                     in recipient.Mechanics)
+            foreach (CombatMechanic mechanic in recipient.Mechanics)
             {
-                if (mechanic is not
-                    IPrestigeChargeModifier modifier)
-                {
-                    continue;
-                }
-
-                amount =
-                    Mathf.Max(
-                        0,
-                        modifier.ModifyPrestigeCharge(
-                            context,
-                            amount));
+                if (mechanic is IPrestigeChargeModifier modifier)
+                    amount = Mathf.Max(0, modifier.ModifyPrestigeCharge(context, amount));
             }
         }
 
@@ -132,8 +102,7 @@ public sealed class PrestigeChargeService
             return 0;
 
         Debug.Log(
-            $"[PrestigeCharge] " +
-            $"Target={recipient.Data?.CharacterName}, " +
+            $"[PrestigeCharge] Target={recipient.Data?.CharacterName}, " +
             $"Reason={reason}, Amount={amount}");
 
         return amount;

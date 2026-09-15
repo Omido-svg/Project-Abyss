@@ -11,7 +11,7 @@ public sealed class YujinMechanic : CombatMechanic, ICharacterUniqueGaugeProvide
     public const int MarkIgnitionThreshold = 44;
     public const int WeaponSwitchEnergyCost = 1;
 
-    private readonly Dictionary<BodyPart, int>
+    private readonly Dictionary<CombatStatusAnchor, int>
         marks = new();
 
     private readonly HashSet<string>
@@ -660,10 +660,20 @@ public sealed class YujinMechanic : CombatMechanic, ICharacterUniqueGaugeProvide
     public int GetMark(
         BodyPart part)
     {
-        return part != null &&
-               marks.TryGetValue(
-                   part,
-                   out int value)
+        return part?.Owner != null
+            ? GetMark(part.Owner, part)
+            : 0;
+    }
+
+    public int GetMark(
+        Character target,
+        BodyPart part = null)
+    {
+        CombatStatusAnchor anchor =
+            CombatStatusAnchor.Resolve(target, part);
+
+        return anchor.IsValid &&
+               marks.TryGetValue(anchor, out int value)
             ? value
             : 0;
     }
@@ -878,15 +888,15 @@ public sealed class YujinMechanic : CombatMechanic, ICharacterUniqueGaugeProvide
         string skillId =
             action.Skill?.Definition?.SkillId;
 
-        List<BodyPart> hitParts =
-            CollectHitParts(
+        List<CombatStatusAnchor> hitAnchors =
+            CollectHitAnchors(
                 action,
                 exchange);
 
         if (skillId == YujinSkillIds.Inspection)
         {
-            AddMarkToParts(
-                hitParts,
+            AddMarkToAnchors(
+                hitAnchors,
                 CurrentWeaponProfile.BaseMarkAmount,
                 action);
         }
@@ -897,23 +907,23 @@ public sealed class YujinMechanic : CombatMechanic, ICharacterUniqueGaugeProvide
         else if (skillId == YujinSkillIds.Inscription &&
                  opponent?.ActionType == ActionType.Duel)
         {
-            AddMarkToParts(
-                hitParts,
+            AddMarkToAnchors(
+                hitAnchors,
                 CurrentWeaponProfile.BaseMarkAmount * 2,
                 action);
         }
 
         if (brandActive)
         {
-            AddMarkToParts(
-                hitParts,
+            AddMarkToAnchors(
+                hitAnchors,
                 3,
                 action);
         }
 
         TryExecuteNakil(
             action,
-            hitParts);
+            hitAnchors);
 
         if (skillId == YujinSkillIds.Pursuit &&
             opponent?.ActionType == ActionType.Duel &&
@@ -924,24 +934,26 @@ public sealed class YujinMechanic : CombatMechanic, ICharacterUniqueGaugeProvide
         }
     }
 
-    private List<BodyPart> CollectHitParts(
+    private List<CombatStatusAnchor> CollectHitAnchors(
         BattleAction action,
         ClashExchangeResult exchange)
     {
-        List<BodyPart> result =
-            new List<BodyPart>();
+        List<CombatStatusAnchor> result =
+            new List<CombatStatusAnchor>();
 
-        AddUniquePart(
+        AddUniqueAnchor(
             result,
-            action.TargetPart);
+            action?.Target,
+            action?.TargetPart);
 
-        if (exchange.SecondaryDamageContexts != null)
+        if (exchange?.SecondaryDamageContexts != null)
         {
             foreach (DamageContext context
                      in exchange.SecondaryDamageContexts)
             {
-                AddUniquePart(
+                AddUniqueAnchor(
                     result,
+                    context?.Target,
                     context?.TargetPart);
             }
         }
@@ -949,69 +961,71 @@ public sealed class YujinMechanic : CombatMechanic, ICharacterUniqueGaugeProvide
         return result;
     }
 
-    private static void AddUniquePart(
-        ICollection<BodyPart> parts,
+    private static void AddUniqueAnchor(
+        ICollection<CombatStatusAnchor> anchors,
+        Character target,
         BodyPart part)
     {
-        if (parts != null &&
-            part != null &&
-            !part.IsBroken &&
-            !parts.Contains(part))
-        {
-            parts.Add(part);
-        }
+        if (anchors == null || target == null)
+            return;
+
+        CombatStatusAnchor anchor =
+            CombatStatusAnchor.Resolve(target, part);
+
+        if (anchor.IsValid && !anchors.Contains(anchor))
+            anchors.Add(anchor);
     }
 
-    private void AddMarkToParts(
-        IEnumerable<BodyPart> parts,
+    private void AddMarkToAnchors(
+        IEnumerable<CombatStatusAnchor> anchors,
         int amount,
         BattleAction sourceAction)
     {
-        if (parts == null)
+        if (anchors == null)
             return;
 
-        foreach (BodyPart part in parts)
-            AddMark(part, amount, sourceAction);
+        foreach (CombatStatusAnchor anchor in anchors)
+            AddMark(anchor, amount, sourceAction);
     }
 
     private void AddMark(
-        BodyPart part,
+        CombatStatusAnchor anchor,
         int amount,
         BattleAction sourceAction)
     {
-        if (part == null ||
-            part.IsBroken ||
+        if (!anchor.IsValid ||
+            anchor.IsBroken ||
             amount <= 0)
         {
             return;
         }
 
         int value =
-            GetMark(part) +
+            GetMark(anchor.Character, anchor.Part) +
             amount;
 
         if (value < MarkIgnitionThreshold)
         {
-            marks[part] = value;
+            marks[anchor] = value;
             return;
         }
 
         // 오버플로는 이월하지 않는다.
-        marks[part] = 0;
+        marks[anchor] = 0;
 
         IgniteMark(
-            part,
+            anchor,
             sourceAction);
 
         TriggerJointLiability();
     }
 
     private void IgniteMark(
-        BodyPart part,
+        CombatStatusAnchor anchor,
         BattleAction sourceAction)
     {
         Character target =
-            part?.Owner;
+            anchor.Character;
 
         if (target == null)
             return;
@@ -1026,47 +1040,66 @@ public sealed class YujinMechanic : CombatMechanic, ICharacterUniqueGaugeProvide
                 break;
 
             case YujinWeaponType.Jeokseol:
-                battleContext?.EffectResolver
-                    ?.ApplyBodyPartStatus(
-                        EffectRequest.BodyPartStatus(
-                            owner,
-                            target,
-                            part,
-                            new SealedPartStatus(1),
-                            sourceAction,
-                            sourceAction?.CurrentRollIndex ?? -1));
+                if (anchor.IsPartAnchor)
+                {
+                    battleContext?.EffectResolver
+                        ?.ApplyBodyPartStatus(
+                            EffectRequest.BodyPartStatus(
+                                owner,
+                                target,
+                                anchor.Part,
+                                new SealedPartStatus(1),
+                                sourceAction,
+                                sourceAction?.CurrentRollIndex ?? -1));
+                }
+                else
+                {
+                    battleContext?.EffectResolver
+                        ?.ApplyCharacterStatus(
+                            EffectRequest.CharacterStatus(
+                                owner,
+                                target,
+                                new SealedPartStatus(1),
+                                sourceAction,
+                                sourceAction?.CurrentRollIndex ?? -1));
+                }
                 break;
 
             case YujinWeaponType.Nakil:
-                target.WeakenPart(
-                    part,
-                    owner,
-                    sourceAction);
+                // 부위가 없는 일반 몹은 약화/파괴 조건을 발동하지 않는다.
+                if (anchor.IsPartAnchor)
+                {
+                    target.WeakenPart(
+                        anchor.Part,
+                        owner,
+                        sourceAction);
+                }
                 break;
         }
     }
 
     private void TryExecuteNakil(
         BattleAction action,
-        IEnumerable<BodyPart> hitParts)
+        IEnumerable<CombatStatusAnchor> hitAnchors)
     {
         if (CurrentWeapon != YujinWeaponType.Nakil ||
             action?.LastRollResult?.IsCritical != true ||
-            hitParts == null)
+            hitAnchors == null)
         {
             return;
         }
 
-        foreach (BodyPart part in hitParts)
+        foreach (CombatStatusAnchor anchor in hitAnchors)
         {
-            if (part?.IsWeakened != true ||
-                part.IsBroken)
+            if (!anchor.IsPartAnchor ||
+                anchor.Part?.IsWeakened != true ||
+                anchor.Part.IsBroken)
             {
                 continue;
             }
 
-            part.Owner?.ForceBreakPart(
-                part,
+            anchor.Character?.ForceBreakPart(
+                anchor.Part,
                 owner,
                 action);
 
@@ -1194,23 +1227,28 @@ public sealed class YujinMechanic : CombatMechanic, ICharacterUniqueGaugeProvide
     {
         brandActive = true;
 
-        List<BodyPart> targets =
-            new List<BodyPart>();
+        List<CombatStatusAnchor> targets =
+            new List<CombatStatusAnchor>();
 
-        AddUniquePart(
+        AddUniqueAnchor(
             targets,
+            action.Target,
             action.TargetPart);
 
         if (CurrentWeapon ==
                 YujinWeaponType.Jeokseol &&
             action.Slot?.SecondaryTargetPart != null)
         {
-            AddUniquePart(
+            BodyPart secondary =
+                action.Slot.SecondaryTargetPart;
+
+            AddUniqueAnchor(
                 targets,
-                action.Slot.SecondaryTargetPart);
+                secondary.Owner,
+                secondary);
         }
 
-        AddMarkToParts(
+        AddMarkToAnchors(
             targets,
             CurrentWeaponProfile.CriticalValue,
             action);

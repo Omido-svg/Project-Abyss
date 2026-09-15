@@ -7,6 +7,8 @@ using UnityEngine;
 /// </summary>
 public sealed class OlafMadnessMechanic : CombatMechanic, ICharacterUniqueGaugeProvider
 {
+    public const int CrouchBlockGain = 12;
+
     public const int MaxMadnessValue = 10;
 
     private int madness;
@@ -159,8 +161,8 @@ public sealed class OlafMadnessMechanic : CombatMechanic, ICharacterUniqueGaugeP
         switch (id)
         {
             case OlafSkillIds.Crouch:
-                if (owner.RuntimeStatus != null)
-                    owner.RuntimeStatus.currentBlock = 12;
+                // 0915 C-24: 웅크리기는 기존 방어도를 덮어쓰지 않고 +12 가산한다.
+                owner.AddBlock(CrouchBlockGain);
                 break;
 
             case OlafSkillIds.Glare:
@@ -325,23 +327,34 @@ public sealed class OlafMadnessMechanic : CombatMechanic, ICharacterUniqueGaugeP
         BattleAction sourceAction = null,
         int sourceExchangeIndex = -1)
     {
-        if (target == null ||
-            part == null ||
-            part.IsBroken ||
-            amount <= 0)
-        {
+        if (target == null || amount <= 0)
             return;
-        }
 
-        battleContext?.EffectResolver
-            ?.ApplyBodyPartStatus(
-                EffectRequest.BodyPartStatus(
-                    owner,
-                    target,
-                    part,
-                    new Bleeding(amount),
-                    sourceAction,
-                    sourceExchangeIndex));
+        CombatStatusAnchor anchor =
+            CombatStatusAnchor.Resolve(target, part);
+
+        if (!anchor.IsValid)
+            return;
+
+        EffectRequest request = anchor.IsPartAnchor
+            ? EffectRequest.BodyPartStatus(
+                owner,
+                target,
+                anchor.Part,
+                new Bleeding(amount),
+                sourceAction,
+                sourceExchangeIndex)
+            : EffectRequest.CharacterStatus(
+                owner,
+                target,
+                new Bleeding(amount),
+                sourceAction,
+                sourceExchangeIndex);
+
+        if (anchor.IsPartAnchor)
+            battleContext?.EffectResolver?.ApplyBodyPartStatus(request);
+        else
+            battleContext?.EffectResolver?.ApplyCharacterStatus(request);
     }
 
     private bool TryExplodeBleeding(
@@ -356,16 +369,18 @@ public sealed class OlafMadnessMechanic : CombatMechanic, ICharacterUniqueGaugeP
         Character target =
             action.Target;
 
-        BodyPart part =
-            action.TargetPart;
+        CombatStatusAnchor anchor =
+            CombatStatusAnchor.Resolve(
+                target,
+                action.TargetPart);
 
-        Bleeding bleeding =
-            target?.GetPartStatus<Bleeding>(part);
+        Bleeding bleeding = anchor.IsPartAnchor
+            ? target?.GetPartStatus<Bleeding>(anchor.Part)
+            : target?.GetStatus<Bleeding>();
 
-        if (bleeding == null ||
-            !bleeding.CanExplode ||
-            part == null ||
-            part.IsBroken)
+        if (!anchor.IsValid ||
+            bleeding == null ||
+            !bleeding.CanExplode)
         {
             return false;
         }
@@ -376,23 +391,33 @@ public sealed class OlafMadnessMechanic : CombatMechanic, ICharacterUniqueGaugeP
         int stack =
             bleeding.ConsumeAll();
 
-        target.RemovePartStatus(
-            part,
-            bleeding,
-            StatusEffectRemoveReason.Manual);
+        if (anchor.IsPartAnchor)
+        {
+            target.RemovePartStatus(
+                anchor.Part,
+                bleeding,
+                StatusEffectRemoveReason.Manual);
+        }
+        else
+        {
+            target.RemoveStatus(
+                bleeding,
+                StatusEffectRemoveReason.Manual);
+        }
 
         int damage =
             stack * 10;
 
-        int hpBefore =
-            Mathf.CeilToInt(part.PartHP);
+        int hpBefore = anchor.IsPartAnchor
+            ? Mathf.CeilToInt(anchor.Part.PartHP)
+            : target.CurrentHP;
 
         DamageRequest request =
             DamageRequest.Custom(
                 DamageType.BleedExplosion,
                 owner,
                 target,
-                part,
+                anchor.Part,
                 damage,
                 1f,
                 canBreakPart: false,
@@ -406,11 +431,12 @@ public sealed class OlafMadnessMechanic : CombatMechanic, ICharacterUniqueGaugeP
         battleContext?.ResolveDamageManager()
             ?.ApplyDamageContext(request);
 
-        if (damage >= hpBefore &&
-            !part.IsBroken)
+        if (anchor.IsPartAnchor &&
+            damage >= hpBefore &&
+            !anchor.Part.IsBroken)
         {
             target.ForceBreakPart(
-                part,
+                anchor.Part,
                 owner,
                 action);
         }
@@ -441,9 +467,14 @@ public sealed class OlafMadnessMechanic : CombatMechanic, ICharacterUniqueGaugeP
     {
         AddMadness(2);
 
-        int bleeding =
-            action.Target?.GetPartStatus<Bleeding>(
-                action.TargetPart)?.Stack ?? 0;
+        CombatStatusAnchor anchor =
+            CombatStatusAnchor.Resolve(
+                action.Target,
+                action.TargetPart);
+
+        int bleeding = anchor.IsPartAnchor
+            ? action.Target?.GetPartStatus<Bleeding>(anchor.Part)?.Stack ?? 0
+            : action.Target?.GetStatus<Bleeding>()?.Stack ?? 0;
 
         int damage =
             CurrentMadness * 5 +

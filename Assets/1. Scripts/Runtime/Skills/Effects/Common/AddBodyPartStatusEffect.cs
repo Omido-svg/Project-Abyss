@@ -15,6 +15,10 @@ public class AddBodyPartStatusEffect : SkillEffectDefinition
     public StatusEffectId StatusEffectId;
     [Min(1)] public int Stack = 1;
     [Min(1)] public int Duration = 3;
+    [Tooltip("Regeneration 전용. 0이면 Stack 값을 legacy 회복량으로 사용합니다.")]
+    [Min(0)] public int RegenerationHealAmount;
+    [Tooltip("Regeneration 전용 회복 채널입니다.")]
+    public RegenerationRecoveryChannel RegenerationChannel = RegenerationRecoveryChannel.HitPoints;
     [Tooltip("이번 턴 즉시 적용하거나 다음 TurnStart에 예약 적용합니다.")]
     [FormerlySerializedAs("Timing")]
     public StatusApplicationTiming ApplicationTiming =
@@ -44,22 +48,29 @@ public class AddBodyPartStatusEffect : SkillEffectDefinition
             ? new DeferredStatusEffect(
                 StatusEffectId,
                 resolvedStack,
-                resolvedDuration)
+                resolvedDuration,
+                RegenerationHealAmount,
+                RegenerationChannel)
             : StatusEffectFactory.Create(
                 StatusEffectId,
                 resolvedStack,
-                resolvedDuration);
+                resolvedDuration,
+                RegenerationHealAmount,
+                RegenerationChannel);
 
         if (effect == null)
             return;
 
-        if (context.TargetPart != null)
+        CombatStatusAnchor anchor =
+            CombatStatusAnchor.Resolve(context.Target, context.TargetPart);
+
+        if (anchor.IsPartAnchor)
         {
             context.Resolver.ApplyBodyPartStatus(
                 EffectRequest.BodyPartStatus(
                     context.Owner,
                     context.Target,
-                    context.TargetPart,
+                    anchor.Part,
                     effect,
                     context.Action,
                     context.RollIndex,

@@ -49,7 +49,7 @@ public class CharacterData : ScriptableObject
 
     [Header("Stagger Gauge")]
     public bool EnableStaggerGauge = true;
-    [Tooltip("끄면 CombatantTier의 확정 기본값(Player 350 / Normal·Elite 100 / Boss 400)을 사용합니다.")]
+    [Tooltip("끄면 CombatantTier 기본값을 사용합니다. Player 350 / Normal 100 / Boss 400. Elite는 0915 C-41에 따라 Unset(0)이므로 데이터 Override가 필요합니다.")]
     public bool OverrideMaxStaggerGauge;
     [Min(1)] public int MaxStaggerGauge = 100;
     [HideInInspector, Min(0f)] public float StaggerDamageRatio = 1f;

@@ -11,6 +11,8 @@ public sealed class BattleRuntimeServices
     public ActionManager ActionManager { get; set; }
     public MomentumManager MomentumManager { get; set; }
     public FervorManager FervorManager { get; set; }
+    public PrestigeChargeService PrestigeChargeService { get; set; }
+    public BattleRewardService RewardService { get; set; }
     public EmotionAugmentManager EmotionAugmentManager { get; set; }
     public SpeedManager SpeedManager { get; set; }
     public DamageManager DamageManager { get; set; }
@@ -29,6 +31,8 @@ public sealed class BattleRuntimeServices
             ActionManager = ActionManager,
             MomentumManager = MomentumManager,
             FervorManager = FervorManager,
+            PrestigeChargeService = PrestigeChargeService,
+            RewardService = RewardService,
             EmotionAugmentManager = EmotionAugmentManager,
             SpeedManager = SpeedManager,
             DamageManager = DamageManager,

@@ -24,6 +24,7 @@ public class ClashManager
         this.momentumManager = momentumManager;
 
         prestigeChargeService =
+            battleContext?.Services?.PrestigeChargeService ??
             new PrestigeChargeService(battleContext);
 
         attackWeightTargetResolver =
@@ -233,6 +234,10 @@ public class ClashManager
                     momentumManager.CurrentMomentum
             };
 
+        // 0915 C-22: 합 시작 시 양 참가자 +1.
+        result.PrestigeGain += prestigeChargeService.ChargeClashStart(first.Owner, second.Owner, first);
+        result.PrestigeGain += prestigeChargeService.ChargeClashStart(second.Owner, first.Owner, second);
+
         int firstRemaining =
             first.GetEffectiveExchangeRollCount();
         int secondRemaining =
@@ -299,6 +304,12 @@ public class ClashManager
                 result.LoserAction);
             battleContext._battleEvent.RaiseClashLose(
                 result.LoserAction,
+                result.WinnerAction);
+
+            // 0915 C-22: paired exchange 다수결 합 승리 보너스 +2.
+            result.PrestigeGain += prestigeChargeService.ChargeClashWinner(
+                result.WinnerAction.Owner,
+                result.LoserAction.Owner,
                 result.WinnerAction);
 
             ApplyClashWinnerContinuationRules(
@@ -948,6 +959,12 @@ public class ClashManager
         if (!damagePower.HasDamage &&
             action.Skill?.IsBlue == true)
         {
+            Character blueTarget = action.Target;
+            int blueDealtGain = prestigeChargeService.ChargeOneSidedParticipant(
+                action.Owner, blueTarget, action);
+            int blueTakenGain = prestigeChargeService.ChargeOneSidedParticipant(
+                blueTarget, action.Owner, action);
+
             ClashExchangeResult staggerExchange = new ClashExchangeResult
             {
                 ExchangeIndex = exchangeIndex,
@@ -961,7 +978,9 @@ public class ClashManager
                 WinnerAction = action,
                 LoserAction = exhaustedOpponent,
                 MomentumBefore = momentumBefore,
-                MomentumAfter = momentumBefore
+                MomentumAfter = momentumBefore,
+                FirstPrestigeGain = blueDealtGain,
+                SecondPrestigeGain = blueTakenGain
             };
 
             action.Skill?.NotifyRollResolved(
@@ -1529,29 +1548,7 @@ public class ClashManager
     private bool CanContinueRoll(
         BattleAction action)
     {
-        if (action == null ||
-            action.Owner == null ||
-            action.Skill == null)
-        {
-            return false;
-        }
-
-        if (action.Owner.IsDead)
-            return false;
-
-        if (action.Target != null &&
-            action.Target.IsDead)
-        {
-            return false;
-        }
-
-        if (action.OwnerPart != null &&
-            action.OwnerPart.IsBroken)
-        {
-            return false;
-        }
-
-        return true;
+        return ClashContinuationPolicy.CanContinue(action);
     }
 
     private void LogExchange(

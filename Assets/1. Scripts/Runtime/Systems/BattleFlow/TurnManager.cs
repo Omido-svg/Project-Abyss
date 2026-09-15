@@ -73,6 +73,7 @@ public class TurnManager
             actionManager?.ResetForBattle();
             momentumManager?.Reset();
             battleContext?.Services?.FervorManager?.ResetForBattle();
+            battleContext?.Services?.RewardService?.ResetForBattle();
             battleContext?.Services?.EmotionAugmentManager?.ResetForBattle();
 
             battleContext?._battleEvent?
@@ -434,6 +435,26 @@ public class TurnManager
             catch (Exception exception)
             {
                 Debug.LogException(exception);
+            }
+        }
+
+        if (battleContext?.AllCharacters != null)
+        {
+            foreach (Character character in battleContext.AllCharacters)
+            {
+                if (character == null)
+                    continue;
+
+                character.ClearBlock();
+
+                // C-17: BrokenHead의 최대 빛 감소는 전투 한정 temporary modifier다.
+                // roster 파괴 시점까지 기다리지 않고 BattleEnd에서 즉시 복원한다.
+                IReadOnlyList<StatusEffect> statuses = character.StatusEffects;
+                for (int index = (statuses?.Count ?? 0) - 1; index >= 0; index--)
+                {
+                    if (statuses[index] is BrokenHead brokenHead)
+                        character.RemoveStatus(brokenHead, StatusEffectRemoveReason.Cleared);
+                }
             }
         }
 

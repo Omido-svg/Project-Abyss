@@ -16,7 +16,12 @@ public static class CanonicalGameSystemVerificationSpec
 
     public const int EnergyStartMaximum = 3;
     public const int EnergyTurnStartGain = 1;
-    public const int EnergyPowerPerPoint = 2;
+
+    // PowerFormulaService.EnergyPowerPerPoint 역시 const이므로
+    // 이 값까지 const로 두면 C# 컴파일러가 Verification의 비교식을
+    // 컴파일 타임에 항상 false/true로 접어 CS0162를 발생시킨다.
+    // 독립 Test Oracle의 값은 유지하되 runtime-readonly로 둔다.
+    public static readonly int EnergyPowerPerPoint = 2;
 
     public const int MomentumMinimum = -100;
     public const int MomentumMaximum = 100;

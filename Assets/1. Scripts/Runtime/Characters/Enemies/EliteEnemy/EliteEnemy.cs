@@ -184,10 +184,7 @@ public class EliteEnemy : Enemy, ICharacterAuthoringTarget
         if (part == null || !part.UsesDataDefinedRules)
             return;
 
-        StatusEffect broken = CreateBrokenPartStatus(part);
-        if (broken != null)
-            AddStatus(broken, this, part);
-
+        // Broken status는 이제 Character 공통 break 경로가 정확히 한 번 부여한다.
         GetMechanic<EnemyPostureMechanic>()
             ?.RefreshForbiddenPostures();
     }

@@ -27,13 +27,30 @@ public static class StatusEffectFactory
         return Create(
             id,
             stack,
-            3);
+            3,
+            0,
+            RegenerationRecoveryChannel.HitPoints);
     }
 
     public static StatusEffect Create(
         StatusEffectId id,
         int stack,
         int duration)
+    {
+        return Create(
+            id,
+            stack,
+            duration,
+            0,
+            RegenerationRecoveryChannel.HitPoints);
+    }
+
+    public static StatusEffect Create(
+        StatusEffectId id,
+        int stack,
+        int duration,
+        int regenerationHealAmount,
+        RegenerationRecoveryChannel regenerationChannel)
     {
         int safeStack =
             UnityEngine.Mathf.Max(1, stack);
@@ -56,10 +73,9 @@ public static class StatusEffectFactory
                 new StrengthStatus(safeStack),
             StatusEffectId.Weakness =>
                 new WeaknessStatus(safeStack),
-            StatusEffectId.Sturdy =>
-                new SturdyStatus(safeStack),
-            StatusEffectId.Disarm =>
-                new DisarmStatus(safeStack),
+            // 0915 C-27: (미정) 키워드는 신규 Runtime 효과를 만들지 않는다.
+            StatusEffectId.Sturdy => null,
+            StatusEffectId.Disarm => null,
             StatusEffectId.Fracture =>
                 new FractureStatus(safeStack),
             StatusEffectId.Protection =>
@@ -71,7 +87,10 @@ public static class StatusEffectFactory
             StatusEffectId.Swift =>
                 new SwiftStatus(safeStack),
             StatusEffectId.Regeneration =>
-                new RegenerationStatus(safeStack),
+                new RegenerationStatus(
+                    safeDuration,
+                    regenerationHealAmount > 0 ? regenerationHealAmount : safeStack,
+                    regenerationChannel),
             StatusEffectId.Pain =>
                 new PainStatus(safeStack),
             StatusEffectId.OlafBloodWound =>

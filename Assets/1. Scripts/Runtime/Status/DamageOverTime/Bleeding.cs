@@ -58,12 +58,15 @@ public sealed class Bleeding : StatusEffect, IUniqueKeywordStatus
     public override void OnTurnEnd(StatusEffectTickContext context)
     {
         if (context?.TargetCharacter == null ||
-            context.TargetPart == null ||
-            context.TargetPart.IsBroken ||
             Stack <= 0)
         {
             return;
         }
+
+        CombatStatusAnchor anchor =
+            CombatStatusAnchor.Resolve(
+                context.TargetCharacter,
+                context.TargetPart);
 
         int tickDamage =
             Mathf.Max(0, Stack * DamagePerStack);
@@ -72,10 +75,10 @@ public sealed class Bleeding : StatusEffect, IUniqueKeywordStatus
         {
             DamageRequest request =
                 DamageRequest.Custom(
-                    DamageType.StatusPart,
+                    anchor.StatusDamageType,
                     Source ?? Owner,
                     context.TargetCharacter,
-                    context.TargetPart,
+                    anchor.Part,
                     tickDamage,
                     1f,
                     canBreakPart: false,

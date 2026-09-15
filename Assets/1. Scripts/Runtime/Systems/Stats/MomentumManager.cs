@@ -52,6 +52,8 @@ public class MomentumManager
     private bool enemyLastStandJudgmentThisTurn;
     private bool playerLastStandJudgmentNextTurn;
     private bool enemyLastStandJudgmentNextTurn;
+    private bool playerOverwhelmEnergyNextTurn;
+    private bool enemyOverwhelmEnergyNextTurn;
 
     public const int MaxMomentum = 100;
     public const int MinMomentum = -100;
@@ -75,6 +77,8 @@ public class MomentumManager
         enemyLastStandJudgmentThisTurn = false;
         playerLastStandJudgmentNextTurn = false;
         enemyLastStandJudgmentNextTurn = false;
+        playerOverwhelmEnergyNextTurn = false;
+        enemyOverwhelmEnergyNextTurn = false;
     }
 
     public void BeginTurn()
@@ -83,6 +87,26 @@ public class MomentumManager
         enemyLastStandJudgmentThisTurn = enemyLastStandJudgmentNextTurn;
         playerLastStandJudgmentNextTurn = false;
         enemyLastStandJudgmentNextTurn = false;
+
+        // 0915 C-19: 짓누름의 빛 보상도 별도 pending flag로 소비한다.
+        // PreviousFinalState는 C-46 조건 authoring용 snapshot이므로 지우지 않는다.
+        bool grantPlayerOverwhelmEnergy = playerOverwhelmEnergyNextTurn;
+        bool grantEnemyOverwhelmEnergy = enemyOverwhelmEnergyNextTurn;
+        playerOverwhelmEnergyNextTurn = false;
+        enemyOverwhelmEnergyNextTurn = false;
+
+        if (grantPlayerOverwhelmEnergy)
+            battleContext?.Player?.AddEnergy(1, CombatResourceChangeReason.TurnRefill);
+
+        if (grantEnemyOverwhelmEnergy && battleContext?.Enemies != null)
+        {
+            foreach (Character enemy in battleContext.Enemies)
+            {
+                if (enemy?.SupportsLastStand == true && !enemy.IsDead)
+                    enemy.AddEnergy(1, CombatResourceChangeReason.TurnRefill);
+            }
+        }
+
         CurrentMomentum = 0;
     }
 
@@ -92,6 +116,8 @@ public class MomentumManager
         enemyPreviousFinalState = EvaluateBand(-CurrentMomentum);
         playerLastStandJudgmentNextTurn = playerPreviousFinalState == MomentumState.LastStand;
         enemyLastStandJudgmentNextTurn = enemyPreviousFinalState == MomentumState.LastStand;
+        playerOverwhelmEnergyNextTurn = playerPreviousFinalState == MomentumState.Overwhelm;
+        enemyOverwhelmEnergyNextTurn = enemyPreviousFinalState == MomentumState.Overwhelm;
     }
 
     // 현재 B만 본다. 직전 턴 발악 예약은 이 API의 결과를 덮어쓰지 않는다.
@@ -138,10 +164,8 @@ public class MomentumManager
 
     public MomentumShiftResult ApplyHit(Character attacker)
     {
-        int amount = settings.HitShift;
-        if (attacker?.SupportsLastStand == true && IsLastStand(attacker))
-            amount *= settings.LastStandHitShiftMultiplier;
-        return ApplyShift(attacker, amount, MomentumShiftReason.Hit);
+        // 0915 C-20: 직전 턴 짓눌림은 판정 +1만 예약하며 기세 이동량을 배수하지 않는다.
+        return ApplyShift(attacker, settings.HitShift, MomentumShiftReason.Hit);
     }
 
     /// <summary>
@@ -151,8 +175,7 @@ public class MomentumManager
     public MomentumShiftResult ApplyDuelExchangeVictory(Character winner, int skillBonus = 0)
     {
         int amount = settings.DuelExchangeTotalShift + Mathf.Max(0, skillBonus);
-        if (winner?.SupportsLastStand == true && IsLastStand(winner))
-            amount = Mathf.Max(amount, settings.HitShift * settings.LastStandHitShiftMultiplier);
+        // 0915 C-20: 구 LastStand 배수 없음.
         return ApplyShift(winner, amount, MomentumShiftReason.DuelVictory);
     }
 

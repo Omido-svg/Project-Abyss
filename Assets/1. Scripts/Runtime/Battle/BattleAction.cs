@@ -16,6 +16,7 @@ public class BattleAction
     private Character resolutionTarget;
     private BodyPart resolutionTargetPart;
     private bool hasResolutionTargetOverride;
+    private bool primaryTargetTerminatedDuringResolution;
 
     public long ActionId => Slot == null ? 0 : Slot.ActionId;
     public int ActionIndex => Slot == null ? 0 : Slot.ActionIndex;
@@ -61,6 +62,14 @@ public class BattleAction
         hasResolutionTargetOverride &&
         (resolutionTarget != DeclaredTarget ||
          resolutionTargetPart != DeclaredTargetPart);
+
+    /// <summary>
+    /// C-09: 이 Action의 현재 primary target이 이번 해석 중 사망하거나 파괴되었는지.
+    /// 처음부터 파괴되어 있던 부위를 조준한 경우에는 false이며, 그 행동은 1.5 규칙대로
+    /// 전체 HP 일방타격을 계속할 수 있다.
+    /// </summary>
+    public bool PrimaryTargetTerminatedDuringResolution =>
+        primaryTargetTerminatedDuringResolution;
 
     public Skill Skill => Slot == null ? null : Slot.Skill;
     public int Speed => Slot == null ? 0 : Slot.Speed;
@@ -287,6 +296,7 @@ public class BattleAction
         LastDamageContext = null;
         LastDamageResult = null;
         LastDamageEventResult = null;
+        primaryTargetTerminatedDuringResolution = false;
     }
 
     public int GetEffectiveExchangeRollCount()
@@ -481,6 +491,16 @@ public class BattleAction
 
         if (context == null)
             return;
+
+        // 0915 C-09: "이미 파괴된 부위를 처음부터 조준"한 행동과
+        // "이 Action의 타격으로 방금 target/part가 종료"된 행동을 구분한다.
+        // secondary AttackWeight target의 종료는 primary action의 남은 굴림을 지우지 않는다.
+        if (context.Target == Target &&
+            context.TargetPart == TargetPart &&
+            (context.WasKilled || context.BrokePart))
+        {
+            primaryTargetTerminatedDuringResolution = true;
+        }
 
         bool isNewContext =
             !DamageContexts.Contains(

@@ -644,7 +644,7 @@ public sealed partial class BattleResolverRollVisualUI :
             result?.DiceMin ?? 1;
 
         int maximum =
-            result?.DiceMax ?? 6;
+            result?.DiceMax ?? 8;
 
         if (minimum == 0 &&
             maximum == 0)
@@ -665,12 +665,12 @@ public sealed partial class BattleResolverRollVisualUI :
             result?.DiceMin ?? 1;
 
         int maximum =
-            result?.DiceMax ?? 6;
+            result?.DiceMax ?? 8;
 
         if (minimum == 0 &&
             maximum == 0)
         {
-            return 6;
+            return 8;
         }
 
         return

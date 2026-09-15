@@ -168,9 +168,10 @@ public sealed class CharacterDamageController
 
         if (targetPart.IsWeakened)
         {
-            Debug.Log(
-                $"{OwnerName()} {targetPart.Type} 부위는 이미 약화 상태입니다. " +
-                $"{request.SourceEffect?.Name} 피해로 파괴되지 않습니다.");
+            // 0915 C-13: 약화 부위의 HP는 1에서 유지되지만
+            // 같은 타격의 post-mitigation 요청 피해는 Whole HP에 계속 전량 반영한다.
+            owner.ReduceCurrentHP(request.Damage);
+            owner.CheckDead();
             return;
         }
 
@@ -181,10 +182,9 @@ public sealed class CharacterDamageController
         int actualDamage = targetPart.ApplyDamage(
             request.Damage);
 
-        if (actualDamage <= 0)
-            return;
-
-        owner.ReduceCurrentHP(actualDamage);
+        // 0915 C-12: Part clamp와 Whole HP는 서로 다른 장부다.
+        // Part가 1에서 멈추더라도 Whole HP에는 요청 피해 전량을 적용한다.
+        owner.ReduceCurrentHP(request.Damage);
 
         Debug.Log(
             $"{OwnerName()}의 {targetPart.Type} 부위에 " +
@@ -249,14 +249,10 @@ public sealed class CharacterDamageController
             0,
             Mathf.CeilToInt(targetPart.PartHP));
 
-        // Normal 부위 피해는 실제 남은 부위 HP까지만 전체 HP에서 차감한다.
-        // 초과분은 다음 상태로 넘기지 않고 소멸한다.
+        // 0915 C-12: 부위 장부는 1에서 clamp될 수 있지만 Whole HP 장부는
+        // post-mitigation 요청 피해를 전량 받는다. 둘을 같은 actualDamage로 묶지 않는다.
         int actualDamage = targetPart.ApplyDamage(damage);
-
-        if (actualDamage <= 0)
-            return;
-
-        owner.ReduceCurrentHP(actualDamage);
+        owner.ReduceCurrentHP(damage);
 
         Debug.Log(
             $"{OwnerName()}의 {targetPart.Type} 부위에 {actualDamage} 피해 " +

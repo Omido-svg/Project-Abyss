@@ -9,6 +9,8 @@ public sealed class BattleRuntimeComposition
     public ActionManager ActionManager => Services?.ActionManager;
     public MomentumManager MomentumManager => Services?.MomentumManager;
     public FervorManager FervorManager => Services?.FervorManager;
+    public PrestigeChargeService PrestigeChargeService => Services?.PrestigeChargeService;
+    public BattleRewardService RewardService => Services?.RewardService;
     public EmotionAugmentManager EmotionAugmentManager => Services?.EmotionAugmentManager;
     public SpeedManager SpeedManager => Services?.SpeedManager;
     public DamageManager DamageManager => Services?.DamageManager;
@@ -41,6 +43,8 @@ public static class BattleRuntimeFactory
 
         context.Services = services;
 
+        services.RewardService?.Dispose();
+
         services.CoroutineHost =
             new UnityBattleCoroutineHost(coroutineOwner);
         services.BattleLogger =
@@ -51,6 +55,10 @@ public static class BattleRuntimeFactory
             new MomentumManager(context);
         services.FervorManager =
             new FervorManager(context, services.MomentumManager);
+        services.PrestigeChargeService =
+            new PrestigeChargeService(context);
+        services.RewardService =
+            new BattleRewardService(context, services.PrestigeChargeService);
         services.EmotionAugmentManager =
             new EmotionAugmentManager(context, services.FervorManager);
         services.SpeedManager =

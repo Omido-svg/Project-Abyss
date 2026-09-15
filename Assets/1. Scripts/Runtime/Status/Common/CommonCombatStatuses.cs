@@ -73,29 +73,31 @@ public abstract class OneTurnCommonStatus : StatusEffect
 public sealed class StrengthStatus : OneTurnCommonStatus, ICommonRollShiftStatus
 {
     public StrengthStatus(int stack = 1) : base("힘", stack, 4) { }
+    // 0915 C-27: 힘은 RED/BLUE 여부와 무관하게 모든 전투 굴림에 적용한다.
     public int GetRollShift(BattleAction action) =>
-        action?.CurrentRollType == CombatRollType.Attack ? Stack : 0;
+        action != null ? Stack : 0;
 }
 
 public sealed class WeaknessStatus : OneTurnCommonStatus, ICommonRollShiftStatus
 {
     public WeaknessStatus(int stack = 1) : base("쇠약", stack, 4) { }
+    // 0915 C-27: 쇠약은 RED/BLUE 여부와 무관하게 모든 전투 굴림에 적용한다.
     public int GetRollShift(BattleAction action) =>
-        action?.CurrentRollType == CombatRollType.Attack ? -Stack : 0;
+        action != null ? -Stack : 0;
 }
 
+// 0915 C-27: 견고/무장해제의 실제 효과는 (미정). 타입은 구 에셋 호환용으로만 남기며
+// 신규 Factory authoring에서는 생성하지 않는다.
 public sealed class SturdyStatus : OneTurnCommonStatus, ICommonRollShiftStatus
 {
     public SturdyStatus(int stack = 1) : base("견고", stack, 3) { }
-    public int GetRollShift(BattleAction action) =>
-        action?.CurrentRollType == CombatRollType.Stagger ? Stack : 0;
+    public int GetRollShift(BattleAction action) => 0;
 }
 
 public sealed class DisarmStatus : OneTurnCommonStatus, ICommonRollShiftStatus
 {
     public DisarmStatus(int stack = 1) : base("무장해제", stack, 4) { }
-    public int GetRollShift(BattleAction action) =>
-        action?.CurrentRollType == CombatRollType.Stagger ? -Stack : 0;
+    public int GetRollShift(BattleAction action) => 0;
 }
 
 public sealed class FractureStatus : OneTurnCommonStatus, ICommonRollMaxReductionStatus
@@ -153,13 +155,22 @@ public sealed class SwiftStatus : OneTurnCommonStatus, ICommonSpeedMaximumStatus
 }
 
 /// <summary>
-/// P0 D-08: 재생은 지속형이다. Stack과 Duration은 남은 턴 수를 같은 값으로 유지한다.
-/// 정본이 공용 재생의 기본 회복량을 별도로 확정하지 않았기 때문에, 기존 런타임 호환을 위해
-/// 최초 부여 N을 턴당 회복량으로도 보존한다. 추후 데이터에 회복량 필드가 생기면 분리 가능하다.
+/// 0915 C-48: 재생은 지속형이며 Stack/Duration은 남은 턴 수를 나타낸다.
+/// 턴당 회복량과 회복 채널은 별도 데이터다.
+/// </summary>
+public enum RegenerationRecoveryChannel
+{
+    HitPoints = 0,
+    Stagger = 1
+}
+
+/// <summary>
+/// 0915 C-48: 지속시간, 턴당 회복량, 회복 채널을 서로 독립적으로 보관한다.
 /// </summary>
 public sealed class RegenerationStatus : StatusEffect
 {
-    private readonly int healPerTurn;
+    public int HealAmount { get; private set; }
+    public RegenerationRecoveryChannel Channel { get; private set; }
 
     public override StatusEffectDurationPolicy DurationPolicy =>
         StatusEffectDurationPolicy.TurnEnd;
@@ -167,30 +178,49 @@ public sealed class RegenerationStatus : StatusEffect
     public override StatusEffectStackPolicy StackPolicy =>
         StatusEffectStackPolicy.AddStacksAndRefreshDuration;
 
-    public RegenerationStatus(int turns = 1)
+    public RegenerationStatus(
+        int turns = 1,
+        int healAmount = 1,
+        RegenerationRecoveryChannel channel = RegenerationRecoveryChannel.HitPoints)
     {
         Name = "재생";
-        int safeTurns = Mathf.Max(1, turns);
-        Stack = safeTurns;
-        Duration = safeTurns;
-        healPerTurn = safeTurns;
+        Duration = Mathf.Max(1, turns);
+        Stack = Duration;
+        HealAmount = Mathf.Max(0, healAmount);
+        Channel = channel;
     }
+
+    public override bool CanMergeWith(StatusEffect other) =>
+        other is RegenerationStatus regeneration &&
+        regeneration.Channel == Channel;
 
     public override void Merge(StatusEffect other)
     {
-        if (other is not RegenerationStatus regeneration)
+        if (other is not RegenerationStatus regeneration ||
+            regeneration.Channel != Channel)
             return;
 
-        int addedTurns = Mathf.Max(1, regeneration.Stack);
-        Duration = Mathf.Clamp(Duration + addedTurns, 1, 99);
+        // 기존 지속형 재생의 "재부여 시 남은 턴 추가" 동작은 보존하되,
+        // 회복량과 채널은 턴 수와 독립된 축으로 유지한다.
+        Duration = Mathf.Clamp(
+            Duration + Mathf.Max(1, regeneration.Duration),
+            1,
+            99);
+        HealAmount = Mathf.Max(HealAmount, regeneration.HealAmount);
         Stack = Duration;
     }
 
     public override void OnTurnEnd(StatusEffectTickContext context)
     {
-        Owner?.RestoreCurrentHP(healPerTurn);
+        if (Owner == null || HealAmount <= 0)
+            return;
 
-        // ProcessTurnEnd가 이 호출 뒤 Duration을 1 감소시키므로 미리 같은 값으로 맞춘다.
+        if (Channel == RegenerationRecoveryChannel.Stagger)
+            Owner.GetMechanic<StaggerGaugeMechanic>()?.Recover(HealAmount);
+        else
+            Owner.RestoreCurrentHP(HealAmount);
+
+        // ProcessTurnEnd가 이 호출 뒤 Duration을 1 감소시킨다.
         Stack = Mathf.Max(0, Duration - 1);
     }
 }

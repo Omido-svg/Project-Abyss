@@ -82,6 +82,9 @@ public class NormalEnemy : Enemy, ICharacterAuthoringTarget
 
 internal static class NormalEnemyRuntimeSkill
 {
+    public const int FallbackDiceMin = 1;
+    public const int FallbackDiceMax = 8;
+
     public static Skill Create(SkillDefinition definition)
     {
         if (definition == null)
@@ -135,15 +138,14 @@ internal static class NormalEnemyRuntimeSkill
     private static SkillResolver CreateUniformDice(
         SkillDefinition definition)
     {
-        int minimum = definition?.DiceMin ?? 1;
-        int maximum = definition?.DiceMax ?? 6;
+        int minimum = definition?.DiceMin ?? FallbackDiceMin;
+        int maximum = definition?.DiceMax ?? FallbackDiceMax;
 
-        // 기존 비-Dice 에셋에서 주사위 범위가 비어 있으면
-        // 일반 적 기준선인 균등 D6으로 안전하게 복구한다.
-        if (minimum == 0 && maximum == 0)
+        // 0915 C-43: 범위 미지정 일반 몹은 균등 D8(1~8) fallback.
+        if (minimum <= 0 && maximum <= 0)
         {
-            minimum = 1;
-            maximum = 6;
+            minimum = FallbackDiceMin;
+            maximum = FallbackDiceMax;
         }
 
         if (maximum < minimum)

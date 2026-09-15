@@ -8,6 +8,8 @@ public sealed class DeferredStatusEffect : StatusEffect
 {
     private readonly StatusEffectId statusEffectId;
     private int pendingDuration;
+    private int regenerationHealAmount;
+    private RegenerationRecoveryChannel regenerationChannel;
 
     public override StatusEffectDurationPolicy DurationPolicy =>
         StatusEffectDurationPolicy.TurnStart;
@@ -18,11 +20,15 @@ public sealed class DeferredStatusEffect : StatusEffect
     public DeferredStatusEffect(
         StatusEffectId statusEffectId,
         int stack,
-        int duration)
+        int duration,
+        int regenerationHealAmount = 0,
+        RegenerationRecoveryChannel regenerationChannel = RegenerationRecoveryChannel.HitPoints)
     {
         this.statusEffectId = statusEffectId;
         Stack = Mathf.Max(1, stack);
         pendingDuration = duration;
+        this.regenerationHealAmount = Mathf.Max(0, regenerationHealAmount);
+        this.regenerationChannel = regenerationChannel;
         Duration = 1;
         Name = $"예약:{statusEffectId}";
     }
@@ -37,13 +43,17 @@ public sealed class DeferredStatusEffect : StatusEffect
 
         Stack += Mathf.Max(1, deferred.Stack);
         pendingDuration = Mathf.Max(pendingDuration, deferred.pendingDuration);
+        regenerationHealAmount = Mathf.Max(regenerationHealAmount, deferred.regenerationHealAmount);
+        regenerationChannel = deferred.regenerationChannel;
         Duration = 1;
     }
 
     public override bool CanMergeWith(StatusEffect other)
     {
         return other is DeferredStatusEffect deferred &&
-               deferred.statusEffectId == statusEffectId;
+               deferred.statusEffectId == statusEffectId &&
+               (statusEffectId != StatusEffectId.Regeneration ||
+                deferred.regenerationChannel == regenerationChannel);
     }
 
     public override void OnTurnStart(StatusEffectTickContext context)
@@ -54,7 +64,9 @@ public sealed class DeferredStatusEffect : StatusEffect
         StatusEffect actual = StatusEffectFactory.Create(
             statusEffectId,
             Stack,
-            pendingDuration);
+            pendingDuration,
+            regenerationHealAmount,
+            regenerationChannel);
 
         if (actual == null)
             return;

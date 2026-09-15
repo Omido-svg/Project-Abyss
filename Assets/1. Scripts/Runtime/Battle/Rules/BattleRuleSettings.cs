@@ -50,8 +50,9 @@ public sealed class MomentumRuleSettings
     [Tooltip("Duel vs Duel의 개별 교환 승리 한 번이 만드는 총 기세 이동량입니다. HitShift에 더하는 값이 아닙니다.")]
     [Min(0)] public int DuelExchangeTotalShift = 40;
 
-    [Tooltip("발악 중 일반 적중 이동 배수. 발악 판정은 직전 턴 종료 상태를 이번 턴 전체에 고정합니다.")]
-    [Min(1)] public int LastStandHitShiftMultiplier = 2;
+    // 0915 C-20: 구 발악 적중 배수는 폐기되었다.
+    // 직렬화 호환을 위해 필드는 남기되 Runtime은 사용하지 않고 Normalize에서 1로 고정한다.
+    [HideInInspector] public int LastStandHitShiftMultiplier = 1;
 
     public void Normalize()
     {
@@ -63,7 +64,7 @@ public sealed class MomentumRuleSettings
         OverwhelmThreshold = 70;
         HitShift = Mathf.Max(0, HitShift <= 5 ? 20 : HitShift);
         DuelExchangeTotalShift = Mathf.Max(HitShift, DuelExchangeTotalShift <= 20 ? 40 : DuelExchangeTotalShift);
-        LastStandHitShiftMultiplier = Mathf.Max(1, LastStandHitShiftMultiplier);
+        LastStandHitShiftMultiplier = 1;
     }
 }
 
@@ -120,7 +121,7 @@ public sealed class StaggerRuleSettings
 {
     [Min(1)] public int PlayerMaximum = 350;
     [Min(1)] public int NormalEnemyMaximum = 100;
-    [Min(1)] public int EliteEnemyMaximum = 100;
+    [Min(0)] public int EliteEnemyMaximum = 0; // 0915 C-41: 0 = Unset/data-required
     [Min(1)] public int BossMaximum = 400;
 
     [Min(0f)] public float VulnerabilityHpResistanceOverride = 2f;
@@ -139,7 +140,7 @@ public sealed class StaggerRuleSettings
     {
         PlayerMaximum = Mathf.Max(1, PlayerMaximum);
         NormalEnemyMaximum = Mathf.Max(1, NormalEnemyMaximum);
-        EliteEnemyMaximum = Mathf.Max(1, EliteEnemyMaximum);
+        EliteEnemyMaximum = Mathf.Max(0, EliteEnemyMaximum);
         BossMaximum = Mathf.Max(1, BossMaximum);
         VulnerabilityHpResistanceOverride = Mathf.Max(0f, VulnerabilityHpResistanceOverride);
         StaggerRollSelfRecoveryRatio = 1f;
@@ -202,17 +203,34 @@ public sealed class EnergyRuleSettings
 [Serializable]
 public sealed class PrestigeRuleSettings
 {
-    [Header("Exchange-based charge")]
-    [Min(0)] public int ExchangeParticipantCharge = 5;
-    [Min(0)] public int OneSidedParticipantCharge = 5;
+    [Header("0915 event-based charge")]
+    [Min(0)] public int ClashStartCharge = 1;
+    [Min(0)] public int ExchangeCharge = 1;
+    [Min(0)] public int ClashWinCharge = 2;
+    [Min(0)] public int KillCharge = 5;
 
-    [Tooltip("준비 행동은 교환 위세 충전 대상에서 제외합니다.")]
+    // 구 데이터 직렬화 호환용. Runtime에서는 사용하지 않는다.
+    [HideInInspector, FormerlySerializedAs("ExchangeParticipantCharge")]
+    public int LegacyExchangeParticipantCharge;
+    [HideInInspector, FormerlySerializedAs("OneSidedParticipantCharge")]
+    public int LegacyOneSidedParticipantCharge;
+
+    [Tooltip("준비 행동은 위세 충전 사건이 아닙니다.")]
     [FormerlySerializedAs("PreparationDoesNotCharge")]
     public bool ExcludePreparationActions = true;
 
+    // Diagnostics/구 API source compatibility. 실제 값은 0915 ExchangeCharge(1).
+    public int ExchangeParticipantCharge => ExchangeCharge;
+    public int OneSidedParticipantCharge => ExchangeCharge;
+
     public void Normalize()
     {
-        ExchangeParticipantCharge = 5;
-        OneSidedParticipantCharge = 5;
+        ClashStartCharge = 1;
+        ExchangeCharge = 1;
+        ClashWinCharge = 2;
+        KillCharge = 5;
+        ExcludePreparationActions = true;
+        LegacyExchangeParticipantCharge = 0;
+        LegacyOneSidedParticipantCharge = 0;
     }
 }
