@@ -89,6 +89,11 @@ public sealed class PlayerAutoPlanApplicationService
             owner.BattleEvent?.RaiseActionEnd(action);
             slot.PlanningEffectCommitted = true;
             slot.SkipResolution = true;
+
+            UnityEngine.Debug.Log(
+                $"[PLAYER PLAN COMMIT] Owner={owner.Data?.CharacterName ?? owner.name}, " +
+                $"Skill={slot.Skill.SkillName}, CostCommitted={slot.ResourceCostCommitted}, " +
+                $"Energy={owner.CurrentEnergy}/{owner.MaxEnergy}, ImmediatePreparation=True");
         }
 
         return applied;

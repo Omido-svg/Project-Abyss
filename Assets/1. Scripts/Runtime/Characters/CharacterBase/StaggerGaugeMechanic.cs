@@ -139,12 +139,16 @@ public sealed class StaggerGaugeMechanic : ReactiveCombatMechanic,
                 OpenVulnerabilityWindow();
         }
 
-        // 흐트러짐 공격 굴림은 HP를 주지 않는 대신 자신 흐트러짐을 회복한다.
+        // C-10 / 0915 정본 BLUE:
+        // 상대에게 주는 흐트러짐 피해는 상대 내성을 적용하지만, 자기 회복은
+        // "굴림 값만큼"의 고정값이며 상대 내성/규칙 배율의 영향을 받지 않는다.
         if (winner.Owner == owner &&
             winner.Skill.IsBlue)
         {
-            float ratio = battleContext?.Rules?.Stagger?.StaggerRollSelfRecoveryRatio ?? 1f;
-            Recover(Mathf.FloorToInt(staggerDamage * Mathf.Max(0f, ratio)));
+            int fixedSelfRecovery =
+                Mathf.Max(0, winner.GetDamagePower());
+
+            Recover(fixedSelfRecovery);
         }
     }
 

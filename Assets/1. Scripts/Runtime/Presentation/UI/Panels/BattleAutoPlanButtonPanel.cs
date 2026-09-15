@@ -321,8 +321,14 @@ public sealed class BattleAutoPlanButtonPanel :
         }
         else if (activeMode.Value != mode)
         {
-            RollbackAutoPlanSession(
-                clearSnapshot: false);
+            if (!RollbackAutoPlanSession(
+                    clearSnapshot: false))
+            {
+                SetStatus(
+                    "도사림 즉시 효과가 이미 확정되어 자동 계획을 다시 짤 수 없습니다.");
+                return;
+            }
+
             activeMode = null;
         }
 
@@ -340,9 +346,11 @@ public sealed class BattleAutoPlanButtonPanel :
             // A failed auto-plan can already have committed one or more costs
             // before a later planning hook rejects the plan. Explicit UI planning
             // failure is rolled back to the pre-auto-plan energy baseline.
-            RollbackAutoPlanSession(
-                clearSnapshot: true);
-            activeMode = null;
+            if (RollbackAutoPlanSession(
+                    clearSnapshot: true))
+            {
+                activeMode = null;
+            }
         }
 
         SetStatus(
@@ -366,8 +374,18 @@ public sealed class BattleAutoPlanButtonPanel :
         battleUiManager?
             .CancelCurrentSelection();
 
-        RollbackAutoPlanSession(
-            clearSnapshot: true);
+        if (!RollbackAutoPlanSession(
+                clearSnapshot: true))
+        {
+            SetStatus(
+                "도사림 즉시 효과가 이미 확정되어 자동 계획을 취소할 수 없습니다.");
+
+            Debug.LogWarning(
+                "[PlayerAutoPlan][CANCEL BLOCKED] " +
+                "계획 단계에서 이미 실행된 도사림이 있어 rollback을 거부했습니다.",
+                this);
+            return;
+        }
 
         activeMode = null;
 
@@ -491,11 +509,23 @@ public sealed class BattleAutoPlanButtonPanel :
             this);
     }
 
-    private void RollbackAutoPlanSession(
+    private bool RollbackAutoPlanSession(
         bool clearSnapshot)
     {
         Character player =
             battleManager?.BattleContext?.Player;
+
+        // C-03: 도사림은 누르는 순간 효과가 확정된다. generic Skill.Execute의
+        // 임의 효과를 완전히 되돌리는 역연산은 존재하지 않으므로, 이미 즉시 실행된
+        // 도사림이 포함된 자동계획은 취소/모드교체 rollback 자체를 금지한다.
+        if (HasCommittedImmediatePlayerAction(player))
+        {
+            Debug.LogWarning(
+                "[PlayerAutoPlan][ROLLBACK BLOCKED] " +
+                "Committed preparation cannot be reverted safely.",
+                this);
+            return false;
+        }
 
         // Remove the auto-generated slots first so UI/validation immediately sees
         // an empty player plan. This is an explicit planning rollback, not combat
@@ -524,6 +554,33 @@ public sealed class BattleAutoPlanButtonPanel :
 
         if (clearSnapshot)
             DiscardAutoPlanEnergySnapshot();
+
+        return true;
+    }
+
+    private bool HasCommittedImmediatePlayerAction(
+        Character player)
+    {
+        ActionManager actionManager =
+            battleManager?.ActionManager;
+
+        if (player == null ||
+            actionManager == null ||
+            actionManager.IsDisposed)
+        {
+            return false;
+        }
+
+        foreach (ActionSlot slot in actionManager.Slots)
+        {
+            if (slot?.Owner == player &&
+                slot.PlanningEffectCommitted)
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private void DiscardAutoPlanEnergySnapshot()

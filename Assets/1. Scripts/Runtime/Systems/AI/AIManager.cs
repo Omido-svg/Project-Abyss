@@ -60,9 +60,193 @@ public class AIManager
                 if (!IsValidFinalSlot(enemy, slot))
                     continue;
 
-                actionManager.AddOrReplaceSlot(slot);
+                if (!actionManager.TryAddOrReplaceSlot(slot))
+                    continue;
+
+                if (!TryCommitPlannedSlot(
+                        enemy,
+                        slot,
+                        out string failureReason))
+                {
+                    actionManager.RemoveSlot(slot);
+
+                    Debug.LogWarning(
+                        $"[AI PLAN COMMIT FAILED] " +
+                        $"Owner={GetCharacterDebugName(enemy)}, " +
+                        $"Skill={slot.Skill?.SkillName ?? "NULL"}, " +
+                        $"Reason={failureReason}");
+                }
             }
         }
+
+        // C-04 safety net: 실제 ActionManager에 남아 Resolution으로 갈 적 슬롯은
+        // 반드시 계획 단계에서 비용 commit이 끝나 있어야 한다.
+        // 동일 표시 이름의 다중 일반 적처럼 개별 AI loop에서 commit 로그가 누락되는
+        // 경로가 생겨도 Resolution 직전 invariant를 한 번 더 강제한다.
+        EnsureAllEnemySlotsCommitted();
+    }
+
+
+    private void EnsureAllEnemySlotsCommitted()
+    {
+        if (battleContext?.Enemies == null ||
+            actionManager == null)
+        {
+            return;
+        }
+
+        List<ActionSlot> snapshot =
+            new List<ActionSlot>(actionManager.Slots);
+
+        foreach (ActionSlot slot in snapshot)
+        {
+            if (slot?.Owner is not Enemy enemy ||
+                slot.Skill == null ||
+                !battleContext.Enemies.Contains(enemy))
+            {
+                continue;
+            }
+
+            bool preparationNeedsCommit =
+                slot.Skill.ActionType == ActionType.Preparation &&
+                (!slot.PlanningEffectCommitted || !slot.SkipResolution);
+
+            if (slot.ResourceCostCommitted &&
+                !preparationNeedsCommit)
+            {
+                continue;
+            }
+
+            if (!IsValidFinalSlot(enemy, slot))
+            {
+                actionManager.RemoveSlot(slot);
+                Debug.LogWarning(
+                    $"[AI PLAN INVARIANT REMOVE] " +
+                    $"Owner={GetCharacterDebugName(enemy)}, " +
+                    $"ActionId={slot.ActionId}, " +
+                    $"Skill={slot.Skill.SkillName}, " +
+                    "Resolution 직전 유효성 검사를 통과하지 못해 슬롯을 제거했습니다.");
+                continue;
+            }
+
+            if (!TryCommitPlannedSlot(
+                    enemy,
+                    slot,
+                    out string failureReason))
+            {
+                actionManager.RemoveSlot(slot);
+                Debug.LogWarning(
+                    $"[AI PLAN INVARIANT COMMIT FAILED] " +
+                    $"Owner={GetCharacterDebugName(enemy)}, " +
+                    $"ActionId={slot.ActionId}, " +
+                    $"Skill={slot.Skill.SkillName}, " +
+                    $"Reason={failureReason}");
+                continue;
+            }
+
+            Debug.Log(
+                $"[AI PLAN INVARIANT REPAIRED] " +
+                $"Owner={GetCharacterDebugName(enemy)}, " +
+                $"ActionId={slot.ActionId}, " +
+                $"Skill={slot.Skill.SkillName}, " +
+                $"CostCommitted={slot.ResourceCostCommitted}, " +
+                $"ImmediatePreparation={slot.PlanningEffectCommitted}");
+        }
+    }
+
+
+    /// <summary>
+    /// C-03/C-04: 적 AI도 플레이어와 동일하게 계획 확정 시
+    /// mechanic hook과 자원 비용을 commit한다.
+    /// 이후 Resolution 중 슬롯이 무효화되어도 이미 낸 비용은 환불하지 않는다.
+    /// 도사림은 계획 단계에서 즉시 실행하고 Resolution queue에서 제외한다.
+    /// </summary>
+    private bool TryCommitPlannedSlot(
+        Enemy enemy,
+        ActionSlot slot,
+        out string failureReason)
+    {
+        failureReason = string.Empty;
+
+        if (enemy == null ||
+            slot == null ||
+            slot.Owner != enemy ||
+            slot.Skill == null)
+        {
+            failureReason = "AI 계획 슬롯 정보가 올바르지 않습니다.";
+            return false;
+        }
+
+        // 후처리 invariant pass가 다시 들어와도 도사림 효과를 중복 실행하지 않는다.
+        if (slot.ResourceCostCommitted)
+        {
+            if (slot.Skill.ActionType != ActionType.Preparation)
+                return true;
+
+            if (slot.PlanningEffectCommitted)
+            {
+                slot.SkipResolution = true;
+                return true;
+            }
+        }
+
+        if (!ActionPlanningMechanicPolicy.TryCommitPlannedSlot(
+                enemy,
+                slot,
+                out failureReason))
+        {
+            if (string.IsNullOrWhiteSpace(failureReason))
+                failureReason = "Planning mechanic commit 실패";
+
+            return false;
+        }
+
+        BattleAction planningAction =
+            new BattleAction
+            {
+                Slot = slot
+            };
+
+        if (!slot.ResourceCostCommitted &&
+            !slot.Skill.TryConsumeResource(
+                enemy,
+                planningAction))
+        {
+            ActionPlanningMechanicPolicy.RollbackPlannedSlot(
+                enemy,
+                slot);
+
+            failureReason =
+                "계획 확정 시 자원 비용을 지불할 수 없습니다.";
+            return false;
+        }
+
+        slot.ResourceCostCommitted = true;
+
+        if (slot.Skill.ActionType == ActionType.Preparation)
+        {
+            enemy.BattleEvent?.RaiseActionStart(
+                planningAction);
+
+            slot.Skill.Execute(
+                planningAction);
+
+            enemy.BattleEvent?.RaiseActionEnd(
+                planningAction);
+
+            slot.PlanningEffectCommitted = true;
+            slot.SkipResolution = true;
+        }
+
+        Debug.Log(
+            $"[AI PLAN COMMIT] " +
+            $"Owner={GetCharacterDebugName(enemy)}, " +
+            $"Skill={slot.Skill.SkillName}, " +
+            $"CostCommitted={slot.ResourceCostCommitted}, " +
+            $"Energy={enemy.CurrentEnergy}/{enemy.MaxEnergy}, " +
+            $"ImmediatePreparation={slot.PlanningEffectCommitted}");
+
+        return true;
     }
 
     private bool IsValidFinalSlot(
@@ -138,6 +322,16 @@ public class AIManager
         }
 
         return true;
+    }
+
+    private string GetCharacterDebugName(
+        Character character)
+    {
+        if (character == null)
+            return "NULL";
+
+        return
+            $"{GetCharacterName(character)}#{character.GetInstanceID()}";
     }
 
     private string GetCharacterName(

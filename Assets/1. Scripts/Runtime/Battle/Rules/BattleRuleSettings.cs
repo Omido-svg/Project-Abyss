@@ -124,6 +124,7 @@ public sealed class StaggerRuleSettings
     [Min(1)] public int BossMaximum = 400;
 
     [Min(0f)] public float VulnerabilityHpResistanceOverride = 2f;
+    [Tooltip("0915 호환 필드. BLUE 자기 흐트러짐 회복은 굴림 값 100% 고정이며 Normalize에서 1로 강제됩니다.")]
     [Min(0f)] public float StaggerRollSelfRecoveryRatio = 1f;
 
     public int GetTierMaximum(CombatantTier tier) => tier switch
@@ -141,7 +142,7 @@ public sealed class StaggerRuleSettings
         EliteEnemyMaximum = Mathf.Max(1, EliteEnemyMaximum);
         BossMaximum = Mathf.Max(1, BossMaximum);
         VulnerabilityHpResistanceOverride = Mathf.Max(0f, VulnerabilityHpResistanceOverride);
-        StaggerRollSelfRecoveryRatio = Mathf.Max(0f, StaggerRollSelfRecoveryRatio);
+        StaggerRollSelfRecoveryRatio = 1f;
     }
 }
 
