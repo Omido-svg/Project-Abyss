@@ -4,14 +4,28 @@ using System.Collections.Generic;
 public enum GameSystemVerificationCategory
 {
     Data,
+    Contract,
     Planning,
     Speed,
     Targeting,
     Pairing,
     Resource,
+    Damage,
+    Momentum,
+    Fervor,
+    Prestige,
+    Status,
     Phase,
     Lifecycle,
+    Coverage,
     LiveState
+}
+
+public enum GameSystemVerificationExecutionMode
+{
+    StaticContract,
+    IsolatedRuntime,
+    LiveScene
 }
 
 public enum GameSystemVerificationStatus
@@ -19,6 +33,7 @@ public enum GameSystemVerificationStatus
     Pass,
     Fail,
     Skip,
+    Pending,
     Error
 }
 
@@ -26,9 +41,13 @@ public enum GameSystemVerificationStatus
 public sealed class GameSystemVerificationCaseResult
 {
     public string CaseId;
+    public string RequirementId;
+    public string ModuleId;
     public string DisplayName;
     public GameSystemVerificationCategory Category;
+    public GameSystemVerificationExecutionMode ExecutionMode;
     public GameSystemVerificationStatus Status;
+    public bool Required = true;
     public string Expected;
     public string Actual;
     public string Details;
@@ -39,6 +58,7 @@ public sealed class GameSystemVerificationCaseResult
 public sealed class GameSystemVerificationReport
 {
     public string SessionId;
+    public string SpecId;
     public string StartedAt;
     public string FinishedAt;
     public string SceneName;
@@ -47,6 +67,7 @@ public sealed class GameSystemVerificationReport
     public int PassCount;
     public int FailCount;
     public int SkipCount;
+    public int PendingCount;
     public int ErrorCount;
 
     public List<GameSystemVerificationCaseResult> Results = new();
@@ -54,15 +75,32 @@ public sealed class GameSystemVerificationReport
     [NonSerialized]
     public string OutputDirectory;
 
-    public bool Succeeded =>
-        FailCount == 0 &&
-        ErrorCount == 0;
+    public bool Succeeded
+    {
+        get
+        {
+            if (Results == null)
+                return true;
+
+            foreach (GameSystemVerificationCaseResult result in Results)
+            {
+                if (result == null || !result.Required)
+                    continue;
+
+                if (result.Status != GameSystemVerificationStatus.Pass)
+                    return false;
+            }
+
+            return true;
+        }
+    }
 
     public void RecalculateCounts()
     {
         PassCount = 0;
         FailCount = 0;
         SkipCount = 0;
+        PendingCount = 0;
         ErrorCount = 0;
 
         if (Results == null)
@@ -78,15 +116,15 @@ public sealed class GameSystemVerificationReport
                 case GameSystemVerificationStatus.Pass:
                     PassCount++;
                     break;
-
                 case GameSystemVerificationStatus.Fail:
                     FailCount++;
                     break;
-
                 case GameSystemVerificationStatus.Skip:
                     SkipCount++;
                     break;
-
+                case GameSystemVerificationStatus.Pending:
+                    PendingCount++;
+                    break;
                 case GameSystemVerificationStatus.Error:
                     ErrorCount++;
                     break;
