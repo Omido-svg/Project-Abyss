@@ -2,41 +2,57 @@ using System;
 using UnityEngine;
 
 /// <summary>
-/// 현재 인게임 Roster의 Character를 복제해 시스템 규칙만 안전하게 검사하는 샌드박스.
-/// 실제 BattleManager의 HP/에너지/속도/ActionManager는 변경하지 않는다.
+/// Production BattleRuntimeFactory를 그대로 사용하는 Verification Coroutine Host.
+/// </summary>
+public sealed class GameSystemVerificationCoroutineHost : MonoBehaviour
+{
+}
+
+/// <summary>
+/// Production BattleRuntimeFactory를 그대로 사용해 Player/Enemy clone을 초기화하는
+/// Game System Verification용 격리 Host.
+/// 검증 전용으로 Manager graph를 재조립하지 않으므로 실제 게임의 Composition Root 변경을 자동 추적한다.
 /// </summary>
 public sealed class GameSystemVerificationFixture : IDisposable
 {
     private GameObject root;
     private GameObject playerClone;
     private GameObject enemyClone;
+    private GameSystemVerificationCoroutineHost coroutineOwner;
+    private BattleLifecycleGuard lifecycleGuard;
     private UnityEngine.Random.State randomStateBefore;
     private bool hasRandomState;
+    private bool disposed;
 
     public Character Player { get; private set; }
     public Character Enemy { get; private set; }
     public BattleContext Context { get; private set; }
-    public SpeedManager SpeedManager { get; private set; }
+    public BattleRuntimeComposition Runtime { get; private set; }
+    public Exception FatalError { get; private set; }
+
+    public ActionManager ActionManager => Runtime?.ActionManager;
+    public SpeedManager SpeedManager => Runtime?.SpeedManager;
+    public DamageManager DamageManager => Runtime?.DamageManager;
+    public MomentumManager MomentumManager => Runtime?.MomentumManager;
+    public FervorManager FervorManager => Runtime?.FervorManager;
+    public ClashManager ClashManager => Runtime?.ClashManager;
+    public ClashBuilder ClashBuilder => Runtime?.ClashBuilder;
+    public TurnManager TurnManager => Runtime?.TurnManager;
 
     public static GameSystemVerificationFixture Create(
         Character playerSource,
-        Character enemySource)
+        Character enemySource,
+        BattleRuleSettings sourceRules = null)
     {
         if (playerSource == null)
             throw new InvalidOperationException("Player source가 없습니다.");
-
         if (enemySource == null)
             throw new InvalidOperationException("Enemy source가 없습니다.");
 
-        GameSystemVerificationFixture fixture =
-            new GameSystemVerificationFixture();
-
+        GameSystemVerificationFixture fixture = new();
         try
         {
-            fixture.Build(
-                playerSource,
-                enemySource);
-
+            fixture.Build(playerSource, enemySource, sourceRules);
             return fixture;
         }
         catch
@@ -48,46 +64,23 @@ public sealed class GameSystemVerificationFixture : IDisposable
 
     private void Build(
         Character playerSource,
-        Character enemySource)
+        Character enemySource,
+        BattleRuleSettings sourceRules)
     {
-        // Sandbox 초기화/Speed Roll이 UnityEngine.Random 전역 상태를 소비해도
-        // 실제 전투 RNG 결과가 바뀌지 않도록 전체 검증 구간을 격리한다.
-        randomStateBefore =
-            UnityEngine.Random.state;
+        randomStateBefore = UnityEngine.Random.state;
+        hasRandomState = true;
 
-        hasRandomState =
-            true;
-
-        root =
-            new GameObject(
-                "[Game System Verification Sandbox]");
-
-        // Full System Coverage는 Play Mode 전용이고 Dispose에서 즉시 제거한다.
-        // DontSaveInEditor 플래그는 Editor persistence 검사와 충돌할 수 있으므로
-        // Hierarchy 숨김 + Build 제외만 사용한다.
-        root.hideFlags =
-            HideFlags.HideInHierarchy |
-            HideFlags.DontSaveInBuild;
-
+        root = new GameObject("[Game System Verification Sandbox]");
+        root.hideFlags = HideFlags.HideInHierarchy | HideFlags.DontSaveInBuild;
         root.SetActive(false);
 
-        playerClone =
-            CreateClone(
-                playerSource.gameObject,
-                "_SystemVerificationPlayer");
+        coroutineOwner = root.AddComponent<GameSystemVerificationCoroutineHost>();
 
-        enemyClone =
-            CreateClone(
-                enemySource.gameObject,
-                "_SystemVerificationEnemy");
+        playerClone = CreateClone(playerSource.gameObject, "_SystemVerificationPlayer");
+        enemyClone = CreateClone(enemySource.gameObject, "_SystemVerificationEnemy");
 
-        Player =
-            ResolveCharacter(
-                playerClone);
-
-        Enemy =
-            ResolveCharacter(
-                enemyClone);
+        Player = ResolveCharacter(playerClone);
+        Enemy = ResolveCharacter(enemyClone);
 
         if (Player == null || Enemy == null)
         {
@@ -95,82 +88,82 @@ public sealed class GameSystemVerificationFixture : IDisposable
                 "검증 Clone에서 Character Component를 찾지 못했습니다.");
         }
 
-        DisableNonEssentialBehaviours(
-            playerClone,
-            Player);
+        DisableNonEssentialBehaviours(playerClone, Player);
+        DisableNonEssentialBehaviours(enemyClone, Enemy);
 
-        DisableNonEssentialBehaviours(
-            enemyClone,
-            Enemy);
-
-        Context =
-            new BattleContext
-            {
-                Player = Player,
-                SuppressPresentation = true
-            };
-
+        Context = new BattleContext
+        {
+            Player = Player,
+            Rules = CloneRules(sourceRules),
+            SuppressPresentation = true
+        };
         Context.Enemies.Add(Enemy);
+        Context.EffectResolver = new BattleEffectResolver(Context);
 
-        MomentumManager verificationMomentum =
-            new MomentumManager(Context);
+        lifecycleGuard = new BattleLifecycleGuard();
 
-        DamageManager verificationDamage =
-            new DamageManager(
-                Context,
-                verificationMomentum);
+        root.SetActive(true);
 
-        Context.Services =
-            new BattleRuntimeServices
-            {
-                MomentumManager = verificationMomentum,
-                DamageManager = verificationDamage
-            };
-
-        Context.EffectResolver =
-            new BattleEffectResolver(Context);
+        Runtime = BattleRuntimeFactory.Create(
+            Context,
+            coroutineOwner,
+            null,
+            lifecycleGuard,
+            exception => FatalError = exception);
 
         Player.Initialize(Context);
         Enemy.Initialize(Context);
 
-        if (!Player.IsInitialized ||
-            !Enemy.IsInitialized)
+        if (!Player.IsInitialized || !Enemy.IsInitialized)
         {
             throw new InvalidOperationException(
                 "System Verification Character.Initialize 실패");
         }
 
-        SpeedManager =
-            new SpeedManager(Context);
+        if (!lifecycleGuard.MarkReady())
+        {
+            throw new InvalidOperationException(
+                "System Verification BattleLifecycleGuard Ready 전환 실패");
+        }
 
-        Context.Services.SpeedManager =
-            SpeedManager;
-
-        SpeedManager.RollAllSpeed();
+        Runtime.SpeedManager?.RollAllSpeed();
     }
 
-    private GameObject CreateClone(
-        GameObject source,
-        string suffix)
+    public CharacterRuntimeSnapshot CapturePlayer() =>
+        CharacterRuntimeSnapshot.Capture(Player);
+
+    public CharacterRuntimeSnapshot CaptureEnemy() =>
+        CharacterRuntimeSnapshot.Capture(Enemy);
+
+    public bool HasProductionServiceGraph()
     {
-        GameObject clone =
-            UnityEngine.Object.Instantiate(
-                source,
-                root.transform,
-                false);
+        BattleRuntimeServices services = Context?.Services;
+        return services != null &&
+               services.ActionManager != null &&
+               services.MomentumManager != null &&
+               services.FervorManager != null &&
+               services.SpeedManager != null &&
+               services.DamageManager != null &&
+               services.ClashManager != null &&
+               services.ActionResolver != null &&
+               services.ClashBuilder != null &&
+               services.AIManager != null &&
+               services.TurnManager != null &&
+               services.CoroutineHost != null;
+    }
 
-        clone.name =
-            source.name + suffix;
-
-        clone.hideFlags =
-            HideFlags.HideInHierarchy |
-            HideFlags.DontSaveInBuild;
-
+    private GameObject CreateClone(GameObject source, string suffix)
+    {
+        GameObject clone = UnityEngine.Object.Instantiate(
+            source,
+            root.transform,
+            false);
+        clone.name = source.name + suffix;
+        clone.hideFlags = HideFlags.HideInHierarchy | HideFlags.DontSaveInBuild;
         return clone;
     }
 
-    private static Character ResolveCharacter(
-        GameObject source)
+    private static Character ResolveCharacter(GameObject source)
     {
         return source == null
             ? null
@@ -201,11 +194,41 @@ public sealed class GameSystemVerificationFixture : IDisposable
         }
     }
 
-    public void Dispose()
+    private static BattleRuleSettings CloneRules(BattleRuleSettings source)
     {
+        if (source == null)
+        {
+            BattleRuleSettings defaults = new();
+            defaults.Normalize();
+            return defaults;
+        }
+
         try
         {
-            Player?.DisposeRuntime();
+            BattleRuleSettings clone =
+                JsonUtility.FromJson<BattleRuleSettings>(
+                    JsonUtility.ToJson(source));
+            clone ??= new BattleRuleSettings();
+            clone.Normalize();
+            return clone;
+        }
+        catch
+        {
+            BattleRuleSettings fallback = new();
+            fallback.Normalize();
+            return fallback;
+        }
+    }
+
+    public void Dispose()
+    {
+        if (disposed)
+            return;
+        disposed = true;
+
+        try
+        {
+            Runtime?.TurnManager?.EndBattle();
         }
         catch (Exception exception)
         {
@@ -214,6 +237,7 @@ public sealed class GameSystemVerificationFixture : IDisposable
 
         try
         {
+            Player?.DisposeRuntime();
             Enemy?.DisposeRuntime();
         }
         catch (Exception exception)
@@ -230,9 +254,11 @@ public sealed class GameSystemVerificationFixture : IDisposable
             Debug.LogException(exception);
         }
 
+        lifecycleGuard?.Dispose();
+
         Player = null;
         Enemy = null;
-        SpeedManager = null;
+        Runtime = null;
 
         if (Context != null)
         {
@@ -241,13 +267,11 @@ public sealed class GameSystemVerificationFixture : IDisposable
             Context.Services = null;
             Context.EffectResolver = null;
         }
-
         Context = null;
 
         if (root != null)
         {
             root.SetActive(false);
-
 #if UNITY_EDITOR
             UnityEngine.Object.DestroyImmediate(root);
 #else
@@ -261,14 +285,12 @@ public sealed class GameSystemVerificationFixture : IDisposable
         root = null;
         playerClone = null;
         enemyClone = null;
+        coroutineOwner = null;
 
         if (hasRandomState)
         {
-            UnityEngine.Random.state =
-                randomStateBefore;
-
-            hasRandomState =
-                false;
+            UnityEngine.Random.state = randomStateBefore;
+            hasRandomState = false;
         }
     }
 }
