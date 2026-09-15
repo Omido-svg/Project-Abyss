@@ -12,10 +12,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a85a262093fed2b45a6f05cb3a256be9, type: 3}
   m_Name: Olaf_BacksToWall
   m_EditorClassIdentifier: 
+  phaseASchemaVersion: 1
   skillId: olaf.prestige.backs_to_wall
   SkillName: "\uBC30\uC218\uC9C4"
   ActionType: 3
+  Color: 0
+  BasePowerRule: 3
   BasePower: 0
+  BasePowerFlatAdjustment: 0
   PhysicalType: 0
   CanBreakPart: 0
   GainPrestige: 1
@@ -60,6 +64,7 @@ MonoBehaviour:
   Effects: []
   OverrideEnergyCost: 1
   EnergyCost: 0
+  UpgradeProfile: {fileID: 0}
   OverrideResourceRules: 1
   RequireFullPrestige: 0
   PrestigeCost: 70
@@ -69,4 +74,4 @@ MonoBehaviour:
   ConsumeAllCustomResource: 0
   OverridePrestigeUsePolicy: 1
   PrestigeUsePolicy: 1
-  VisualDefinition: {fileID: 11400000, guid: 5b9648cecd1a6ed4cb18b26a57552acd, type: 2}
+  presentationAsset: {fileID: 11400000, guid: 5b9648cecd1a6ed4cb18b26a57552acd, type: 2}

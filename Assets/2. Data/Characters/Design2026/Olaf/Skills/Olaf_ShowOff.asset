@@ -12,10 +12,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a85a262093fed2b45a6f05cb3a256be9, type: 3}
   m_Name: Olaf_ShowOff
   m_EditorClassIdentifier: 
+  phaseASchemaVersion: 1
   skillId: olaf.preparation.show_off
   SkillName: "\uAC00\uC624\uC7A1\uAE30"
   ActionType: 2
+  Color: 0
+  BasePowerRule: 3
   BasePower: 0
+  BasePowerFlatAdjustment: 0
   PhysicalType: 0
   CanBreakPart: 0
   GainPrestige: 1
@@ -58,6 +62,7 @@ MonoBehaviour:
   Effects: []
   OverrideEnergyCost: 1
   EnergyCost: 1
+  UpgradeProfile: {fileID: 0}
   OverrideResourceRules: 0
   RequireFullPrestige: 0
   PrestigeCost: 0
@@ -67,4 +72,4 @@ MonoBehaviour:
   ConsumeAllCustomResource: 0
   OverridePrestigeUsePolicy: 0
   PrestigeUsePolicy: 1
-  VisualDefinition: {fileID: 11400000, guid: 61395457718127a4eaa9ff2de9912ab4, type: 2}
+  presentationAsset: {fileID: 11400000, guid: 61395457718127a4eaa9ff2de9912ab4, type: 2}

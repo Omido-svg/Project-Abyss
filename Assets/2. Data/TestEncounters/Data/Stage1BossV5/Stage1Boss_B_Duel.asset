@@ -12,10 +12,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a85a262093fed2b45a6f05cb3a256be9, type: 3}
   m_Name: Stage1Boss_B_Duel
   m_EditorClassIdentifier: 
+  phaseASchemaVersion: 1
   skillId: STAGE1_BOSS_B
   SkillName: B
   ActionType: 1
+  Color: 1
+  BasePowerRule: 3
   BasePower: 0
+  BasePowerFlatAdjustment: 0
   PhysicalType: 0
   CanBreakPart: 1
   GainPrestige: 1
@@ -48,6 +52,7 @@ MonoBehaviour:
     ChinchiroArashiPower: 24
     JudgmentModifier: 0
     ReuseValueAcrossAction: 0
+    EffectEntries: []
     OnWinEffectEntries: []
     OnLoseEffectEntries: []
     OnWinEffects: []
@@ -73,6 +78,7 @@ MonoBehaviour:
     ChinchiroArashiPower: 24
     JudgmentModifier: 0
     ReuseValueAcrossAction: 0
+    EffectEntries: []
     OnWinEffectEntries: []
     OnLoseEffectEntries: []
     OnWinEffects: []

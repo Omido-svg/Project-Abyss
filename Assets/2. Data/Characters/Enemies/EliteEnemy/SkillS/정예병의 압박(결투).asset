@@ -12,10 +12,15 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a85a262093fed2b45a6f05cb3a256be9, type: 3}
   m_Name: "\uC815\uC608\uBCD1\uC758 \uC555\uBC15(\uACB0\uD22C)"
   m_EditorClassIdentifier: 
+  phaseASchemaVersion: 1
   skillId: 5fb3b00e68684389a86c92f3e0345061
   SkillName: "\uC815\uC608\uBCD1\uC758 \uC555\uBC15(\uACB0\uD22C)"
   ActionType: 1
+  Color: 0
+  BasePowerRule: 3
   BasePower: 6
+  BasePowerFlatAdjustment: 0
+  PhysicalType: 0
   CanBreakPart: 0
   GainPrestige: 1
   AttackWeight:
@@ -30,6 +35,9 @@ MonoBehaviour:
   Rolls:
   - Index: 0
     Type: 1
+    OverridePhysicalType: 0
+    PhysicalType: 0
+    DiceMode: 0
     MinPower: 7
     MaxPower: 11
     RngSource: 1
@@ -46,12 +54,16 @@ MonoBehaviour:
     ChinchiroArashiPower: 24
     JudgmentModifier: 0
     ReuseValueAcrossAction: 0
+    EffectEntries: []
     OnWinEffectEntries: []
     OnLoseEffectEntries: []
     OnWinEffects: []
     OnLoseEffects: []
   - Index: 1
     Type: 0
+    OverridePhysicalType: 0
+    PhysicalType: 0
+    DiceMode: 0
     MinPower: 7
     MaxPower: 11
     RngSource: 1
@@ -68,12 +80,16 @@ MonoBehaviour:
     ChinchiroArashiPower: 24
     JudgmentModifier: 0
     ReuseValueAcrossAction: 0
+    EffectEntries: []
     OnWinEffectEntries: []
     OnLoseEffectEntries: []
     OnWinEffects: []
     OnLoseEffects: []
   - Index: 2
     Type: 1
+    OverridePhysicalType: 0
+    PhysicalType: 0
+    DiceMode: 0
     MinPower: 7
     MaxPower: 11
     RngSource: 1
@@ -90,6 +106,7 @@ MonoBehaviour:
     ChinchiroArashiPower: 24
     JudgmentModifier: 0
     ReuseValueAcrossAction: 0
+    EffectEntries: []
     OnWinEffectEntries: []
     OnLoseEffectEntries: []
     OnWinEffects: []
@@ -142,10 +159,16 @@ MonoBehaviour:
       ForceCharacterStatus: 0
       OverrideGiveToSelectedTarget: 0
       GiveToSelectedTarget: 0
+    OverrideTiming: 0
+    Timing: 0
+    Conditions: []
+    RestrictToRoll: 0
+    RollNumber: 1
   Effects:
   - {fileID: 11400000, guid: c709f54ed5bb5934eae625088ed3d772, type: 2}
   OverrideEnergyCost: 1
   EnergyCost: 1
+  UpgradeProfile: {fileID: 0}
   OverrideResourceRules: 0
   RequireFullPrestige: 0
   PrestigeCost: 0
@@ -155,4 +178,4 @@ MonoBehaviour:
   ConsumeAllCustomResource: 0
   OverridePrestigeUsePolicy: 0
   PrestigeUsePolicy: 1
-  VisualDefinition: {fileID: 11400000, guid: 203df655b02da1844a4cdc12ead711a5, type: 2}
+  presentationAsset: {fileID: 11400000, guid: 203df655b02da1844a4cdc12ead711a5, type: 2}

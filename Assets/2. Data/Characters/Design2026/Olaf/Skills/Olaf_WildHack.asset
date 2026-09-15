@@ -12,10 +12,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a85a262093fed2b45a6f05cb3a256be9, type: 3}
   m_Name: Olaf_WildHack
   m_EditorClassIdentifier: 
+  phaseASchemaVersion: 1
   skillId: olaf.normal.wild_hack
   SkillName: "\uB9C8\uAD6C\uC7A1\uC774"
   ActionType: 0
+  Color: 1
+  BasePowerRule: 3
   BasePower: 16
+  BasePowerFlatAdjustment: 0
   PhysicalType: 0
   CanBreakPart: 0
   GainPrestige: 1
@@ -30,6 +34,8 @@ MonoBehaviour:
   Rolls:
   - Index: 0
     Type: 0
+    OverridePhysicalType: 0
+    PhysicalType: 0
     DiceMode: 1
     MinPower: 1
     MaxPower: 8
@@ -47,12 +53,15 @@ MonoBehaviour:
     ChinchiroArashiPower: 24
     JudgmentModifier: 0
     ReuseValueAcrossAction: 0
+    EffectEntries: []
     OnWinEffectEntries: []
     OnLoseEffectEntries: []
     OnWinEffects: []
     OnLoseEffects: []
   - Index: 1
     Type: 0
+    OverridePhysicalType: 0
+    PhysicalType: 0
     DiceMode: 1
     MinPower: 1
     MaxPower: 8
@@ -70,12 +79,15 @@ MonoBehaviour:
     ChinchiroArashiPower: 24
     JudgmentModifier: 0
     ReuseValueAcrossAction: 0
+    EffectEntries: []
     OnWinEffectEntries: []
     OnLoseEffectEntries: []
     OnWinEffects: []
     OnLoseEffects: []
   - Index: 2
     Type: 0
+    OverridePhysicalType: 0
+    PhysicalType: 0
     DiceMode: 1
     MinPower: 1
     MaxPower: 8
@@ -93,6 +105,7 @@ MonoBehaviour:
     ChinchiroArashiPower: 24
     JudgmentModifier: 0
     ReuseValueAcrossAction: 0
+    EffectEntries: []
     OnWinEffectEntries: []
     OnLoseEffectEntries: []
     OnWinEffects: []
@@ -126,6 +139,7 @@ MonoBehaviour:
   Effects: []
   OverrideEnergyCost: 1
   EnergyCost: 0
+  UpgradeProfile: {fileID: 0}
   OverrideResourceRules: 0
   RequireFullPrestige: 0
   PrestigeCost: 0
@@ -135,4 +149,4 @@ MonoBehaviour:
   ConsumeAllCustomResource: 0
   OverridePrestigeUsePolicy: 0
   PrestigeUsePolicy: 1
-  VisualDefinition: {fileID: 11400000, guid: 0cc186a79ff3445449176042b1ac9ac9, type: 2}
+  presentationAsset: {fileID: 11400000, guid: 0cc186a79ff3445449176042b1ac9ac9, type: 2}

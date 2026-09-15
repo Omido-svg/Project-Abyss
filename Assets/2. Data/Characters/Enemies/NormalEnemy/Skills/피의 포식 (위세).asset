@@ -12,10 +12,15 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a85a262093fed2b45a6f05cb3a256be9, type: 3}
   m_Name: "\uD53C\uC758 \uD3EC\uC2DD (\uC704\uC138)"
   m_EditorClassIdentifier: 
+  phaseASchemaVersion: 1
   skillId: 35a5b1e98c8547218682cc24566c91c0
   SkillName: "\uD53C\uC758 \uD3EC\uC2DD (\uC704\uC138)"
   ActionType: 3
+  Color: 0
+  BasePowerRule: 3
   BasePower: 10
+  BasePowerFlatAdjustment: 0
+  PhysicalType: 0
   CanBreakPart: 0
   GainPrestige: 1
   AttackWeight:
@@ -28,6 +33,9 @@ MonoBehaviour:
   Rolls:
   - Index: 0
     Type: 0
+    OverridePhysicalType: 0
+    PhysicalType: 0
+    DiceMode: 0
     MinPower: 11
     MaxPower: 16
     RngSource: 1
@@ -44,12 +52,16 @@ MonoBehaviour:
     ChinchiroArashiPower: 24
     JudgmentModifier: 0
     ReuseValueAcrossAction: 0
+    EffectEntries: []
     OnWinEffectEntries: []
     OnLoseEffectEntries: []
     OnWinEffects: []
     OnLoseEffects: []
   - Index: 1
     Type: 0
+    OverridePhysicalType: 0
+    PhysicalType: 0
+    DiceMode: 0
     MinPower: 11
     MaxPower: 16
     RngSource: 1
@@ -66,12 +78,16 @@ MonoBehaviour:
     ChinchiroArashiPower: 24
     JudgmentModifier: 0
     ReuseValueAcrossAction: 0
+    EffectEntries: []
     OnWinEffectEntries: []
     OnLoseEffectEntries: []
     OnWinEffects: []
     OnLoseEffects: []
   - Index: 2
     Type: 0
+    OverridePhysicalType: 0
+    PhysicalType: 0
+    DiceMode: 0
     MinPower: 11
     MaxPower: 16
     RngSource: 1
@@ -88,6 +104,7 @@ MonoBehaviour:
     ChinchiroArashiPower: 24
     JudgmentModifier: 0
     ReuseValueAcrossAction: 0
+    EffectEntries: []
     OnWinEffectEntries: []
     OnLoseEffectEntries: []
     OnWinEffects: []
@@ -140,6 +157,11 @@ MonoBehaviour:
       ForceCharacterStatus: 0
       OverrideGiveToSelectedTarget: 0
       GiveToSelectedTarget: 0
+    OverrideTiming: 0
+    Timing: 0
+    Conditions: []
+    RestrictToRoll: 0
+    RollNumber: 1
   - Definition: {fileID: 11400000, guid: a200abf019adbe645837091fe29ea897, type: 2}
     Overrides:
       OverrideStack: 1
@@ -162,11 +184,17 @@ MonoBehaviour:
       ForceCharacterStatus: 0
       OverrideGiveToSelectedTarget: 0
       GiveToSelectedTarget: 0
+    OverrideTiming: 0
+    Timing: 0
+    Conditions: []
+    RestrictToRoll: 0
+    RollNumber: 1
   Effects:
   - {fileID: 11400000, guid: faacc00a12e67cb49a20b6c972ff1cd7, type: 2}
   - {fileID: 11400000, guid: c709f54ed5bb5934eae625088ed3d772, type: 2}
   OverrideEnergyCost: 1
   EnergyCost: 0
+  UpgradeProfile: {fileID: 0}
   OverrideResourceRules: 0
   RequireFullPrestige: 0
   PrestigeCost: 0
@@ -176,4 +204,4 @@ MonoBehaviour:
   ConsumeAllCustomResource: 0
   OverridePrestigeUsePolicy: 0
   PrestigeUsePolicy: 1
-  VisualDefinition: {fileID: 11400000, guid: bf3c5301a35b192408812a95ae117021, type: 2}
+  presentationAsset: {fileID: 11400000, guid: bf3c5301a35b192408812a95ae117021, type: 2}

@@ -12,10 +12,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a85a262093fed2b45a6f05cb3a256be9, type: 3}
   m_Name: "\uD47C\uB3C8 \uAC78\uAE30"
   m_EditorClassIdentifier: 
+  phaseASchemaVersion: 1
   skillId: hifumi.normal.small_change
   SkillName: "\uD47C\uB3C8 \uAC78\uAE30"
   ActionType: 0
+  Color: 0
+  BasePowerRule: 3
   BasePower: 12
+  BasePowerFlatAdjustment: 0
   PhysicalType: 0
   CanBreakPart: 0
   GainPrestige: 1
@@ -57,6 +61,7 @@ MonoBehaviour:
   Effects: []
   OverrideEnergyCost: 1
   EnergyCost: 0
+  UpgradeProfile: {fileID: 0}
   OverrideResourceRules: 0
   RequireFullPrestige: 0
   PrestigeCost: 0
@@ -66,4 +71,4 @@ MonoBehaviour:
   ConsumeAllCustomResource: 0
   OverridePrestigeUsePolicy: 0
   PrestigeUsePolicy: 1
-  VisualDefinition: {fileID: 11400000, guid: 545daedfebfc045488c2f94b6d883ac3, type: 2}
+  presentationAsset: {fileID: 11400000, guid: 545daedfebfc045488c2f94b6d883ac3, type: 2}

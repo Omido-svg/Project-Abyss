@@ -12,10 +12,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a85a262093fed2b45a6f05cb3a256be9, type: 3}
   m_Name: Olaf_Rend
   m_EditorClassIdentifier: 
+  phaseASchemaVersion: 1
   skillId: olaf.duel.rend
   SkillName: "\uB09C\uB3C4\uC9C8"
   ActionType: 1
+  Color: 1
+  BasePowerRule: 3
   BasePower: 12
+  BasePowerFlatAdjustment: 0
   PhysicalType: 0
   CanBreakPart: 0
   GainPrestige: 1
@@ -35,6 +39,8 @@ MonoBehaviour:
   Rolls:
   - Index: 0
     Type: 0
+    OverridePhysicalType: 0
+    PhysicalType: 0
     DiceMode: 1
     MinPower: 1
     MaxPower: 8
@@ -52,12 +58,15 @@ MonoBehaviour:
     ChinchiroArashiPower: 24
     JudgmentModifier: 0
     ReuseValueAcrossAction: 0
+    EffectEntries: []
     OnWinEffectEntries: []
     OnLoseEffectEntries: []
     OnWinEffects: []
     OnLoseEffects: []
   - Index: 1
     Type: 0
+    OverridePhysicalType: 0
+    PhysicalType: 0
     DiceMode: 1
     MinPower: 1
     MaxPower: 8
@@ -75,12 +84,15 @@ MonoBehaviour:
     ChinchiroArashiPower: 24
     JudgmentModifier: 0
     ReuseValueAcrossAction: 0
+    EffectEntries: []
     OnWinEffectEntries: []
     OnLoseEffectEntries: []
     OnWinEffects: []
     OnLoseEffects: []
   - Index: 2
     Type: 0
+    OverridePhysicalType: 0
+    PhysicalType: 0
     DiceMode: 1
     MinPower: 1
     MaxPower: 8
@@ -98,6 +110,7 @@ MonoBehaviour:
     ChinchiroArashiPower: 24
     JudgmentModifier: 0
     ReuseValueAcrossAction: 0
+    EffectEntries: []
     OnWinEffectEntries: []
     OnLoseEffectEntries: []
     OnWinEffects: []
@@ -131,6 +144,7 @@ MonoBehaviour:
   Effects: []
   OverrideEnergyCost: 1
   EnergyCost: 2
+  UpgradeProfile: {fileID: 0}
   OverrideResourceRules: 0
   RequireFullPrestige: 0
   PrestigeCost: 0
@@ -140,4 +154,4 @@ MonoBehaviour:
   ConsumeAllCustomResource: 0
   OverridePrestigeUsePolicy: 0
   PrestigeUsePolicy: 1
-  VisualDefinition: {fileID: 11400000, guid: ff594ce140dc1d0418e60678e586cd82, type: 2}
+  presentationAsset: {fileID: 11400000, guid: ff594ce140dc1d0418e60678e586cd82, type: 2}

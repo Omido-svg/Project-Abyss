@@ -12,10 +12,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a85a262093fed2b45a6f05cb3a256be9, type: 3}
   m_Name: Olaf_BurstingMadness
   m_EditorClassIdentifier: 
+  phaseASchemaVersion: 1
   skillId: olaf.prestige.bursting_madness
   SkillName: "\uD130\uB728\uB9AC\uB294 \uAD11\uAE30"
   ActionType: 3
+  Color: 0
+  BasePowerRule: 3
   BasePower: 0
+  BasePowerFlatAdjustment: 0
   PhysicalType: 0
   CanBreakPart: 0
   GainPrestige: 1
@@ -59,6 +63,7 @@ MonoBehaviour:
   Effects: []
   OverrideEnergyCost: 1
   EnergyCost: 0
+  UpgradeProfile: {fileID: 0}
   OverrideResourceRules: 1
   RequireFullPrestige: 0
   PrestigeCost: 65
@@ -68,4 +73,4 @@ MonoBehaviour:
   ConsumeAllCustomResource: 0
   OverridePrestigeUsePolicy: 1
   PrestigeUsePolicy: 1
-  VisualDefinition: {fileID: 11400000, guid: 706447fe3626fc64ea31f1798eff90fd, type: 2}
+  presentationAsset: {fileID: 11400000, guid: 706447fe3626fc64ea31f1798eff90fd, type: 2}

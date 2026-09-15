@@ -5,6 +5,15 @@ using UnityEngine.Serialization;
 [CreateAssetMenu(menuName = "Battle/Skill/Skill Definition", fileName = "NewSkillDefinition")]
 public class SkillDefinition : ScriptableObject
 {
+    public const int CurrentPhaseASchemaVersion = 1;
+
+    [SerializeField, HideInInspector]
+    private int phaseASchemaVersion;
+
+    public int PhaseASchemaVersion => phaseASchemaVersion;
+    public bool IsPhaseASchemaMigrated =>
+        phaseASchemaVersion >= CurrentPhaseASchemaVersion;
+
     [Header("Identity")]
     [SerializeField, Tooltip("저장 데이터와 상점 카탈로그에서 사용하는 안정적인 식별자입니다.")]
     private string skillId;
@@ -117,6 +126,13 @@ public class SkillDefinition : ScriptableObject
     {
         presentationAsset = value;
     }
+
+#if UNITY_EDITOR
+    public void MarkPhaseASchemaMigrated()
+    {
+        phaseASchemaVersion = CurrentPhaseASchemaVersion;
+    }
+#endif
 
 
     public bool HasEffectEntries =>
