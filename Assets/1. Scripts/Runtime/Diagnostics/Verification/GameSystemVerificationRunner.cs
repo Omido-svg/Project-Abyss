@@ -59,9 +59,6 @@ public static class GameSystemVerificationRunner
 
         AddCoverageResults(report, registered);
 
-        using GameSystemVerificationContext context =
-            new(manager);
-
         foreach (RegisteredCase registeredCase in registered)
         {
             if (registeredCase?.Case == null)
@@ -76,11 +73,15 @@ public static class GameSystemVerificationRunner
                 continue;
             }
 
+            // IMPORTANT:
+            // Verification Case끼리 슬롯/에너지/기세/상태/이벤트 구독을 공유하지 않는다.
+            // 각 Case마다 새 Context를 만들고, IsolatedRuntime Case라면 그 Context 안에서
+            // 새 clone + 새 Production BattleRuntimeFactory graph를 생성한다.
             ExecuteCase(
                 report,
                 registeredCase.ModuleId,
                 registeredCase.Case,
-                context);
+                manager);
         }
 
         Complete(report);
@@ -236,10 +237,16 @@ public static class GameSystemVerificationRunner
         GameSystemVerificationReport report,
         string moduleId,
         GameSystemVerificationCase verificationCase,
-        GameSystemVerificationContext context)
+        BattleManager manager)
     {
         Stopwatch stopwatch = Stopwatch.StartNew();
         GameSystemVerificationProbeResult probe;
+
+        // Case-level isolation:
+        // 이 Context는 이 Case가 끝나는 즉시 Dispose된다.
+        // 따라서 IsolatedRuntime fixture 또한 Case마다 새로 생성/폐기된다.
+        using GameSystemVerificationContext context =
+            new(manager);
 
         try
         {

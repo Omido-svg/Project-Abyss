@@ -175,8 +175,8 @@ public static class GameSystemVerificationReportWriter
     private static string Csv(string value)
     {
         string safe = (value ?? string.Empty)
-            .Replace(""", """");
-        return """ + safe + """;
+            .Replace("\"", "\"\"");
+        return "\"" + safe + "\"";
     }
 
     private static string Sanitize(string value)
