@@ -24,9 +24,8 @@ public readonly struct DamagePowerResolution
 }
 
 /// <summary>
-/// Gameplay v5: CombatRollType.Stagger(legacy Defense=1)는 HP 피해를 주지 않는다.
-/// Attack이 교환에서 이기면 상대 굴림 종류와 무관하게 자신의 순수 피해 굴림값으로 HP 피해를 준다.
-/// 흐트러짐 피해는 StaggerGaugeMechanic이 교환 이벤트에서 별도로 처리한다.
+/// 0915 정본: HP 피해 여부는 roll별 CombatRollType이 아니라 SkillColor가 결정한다.
+/// RED는 HP+흐트러짐, BLUE는 HP 없이 흐트러짐 + 자기 흐트러짐 회복.
 /// </summary>
 public static class DamagePowerResolver
 {
@@ -35,13 +34,13 @@ public static class DamagePowerResolver
         if (winner == null || loser == null)
             return DamagePowerResolution.None();
 
-        if (winner.CurrentRollType == CombatRollType.Stagger)
+        if (winner.Skill?.IsBlue == true)
             return DamagePowerResolution.None(wasDefenseResolution: true);
 
         int purePower = winner.GetDamagePower();
         return new DamagePowerResolution(
             hasDamage: true,
-            wasDefenseResolution: loser.CurrentRollType == CombatRollType.Stagger,
+            wasDefenseResolution: loser.Skill?.IsBlue == true,
             primaryPower: purePower,
             applyPrimaryMomentum: true,
             secondaryPower: purePower,
@@ -53,7 +52,7 @@ public static class DamagePowerResolver
         if (action == null)
             return DamagePowerResolution.None();
 
-        if (action.CurrentRollType == CombatRollType.Stagger)
+        if (action.Skill?.IsBlue == true)
             return DamagePowerResolution.None(wasDefenseResolution: true);
 
         int purePower = action.GetDamagePower();

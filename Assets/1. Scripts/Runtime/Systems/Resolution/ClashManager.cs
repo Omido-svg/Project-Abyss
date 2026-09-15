@@ -104,6 +104,7 @@ public class ClashManager
                 firstStarted = true;
 
                 firstReady =
+                    firstAction.Slot?.ResourceCostCommitted == true ||
                     !clashRules.ConsumeResourceOnActionStart ||
                     TryConsumeResource(firstAction);
             }
@@ -116,6 +117,7 @@ public class ClashManager
                 secondStarted = true;
 
                 secondReady =
+                    secondAction.Slot?.ResourceCostCommitted == true ||
                     !clashRules.ConsumeResourceOnActionStart ||
                     TryConsumeResource(secondAction);
             }
@@ -931,7 +933,7 @@ public class ClashManager
 
         bool oneSidedSucceeded =
             damagePower.HasDamage ||
-            action.CurrentRollType == CombatRollType.Stagger;
+            action.Skill?.IsBlue == true;
 
         action.Skill?.NotifyRollOutcome(
             action,
@@ -944,7 +946,7 @@ public class ClashManager
         // Gameplay v5: 일방 Stagger 굴림도 실제 흐트러짐 공격으로 성립한다.
         // HP DamageContext/잔효과/기세 이동만 만들지 않고 교환 이벤트는 반드시 발행한다.
         if (!damagePower.HasDamage &&
-            action.CurrentRollType == CombatRollType.Stagger)
+            action.Skill?.IsBlue == true)
         {
             ClashExchangeResult staggerExchange = new ClashExchangeResult
             {
@@ -1400,7 +1402,8 @@ public class ClashManager
         if (action?.Skill == null)
             return false;
 
-        if (!clashRules.ConsumeResourceOnActionStart &&
+        if (action.Slot?.ResourceCostCommitted != true &&
+            !clashRules.ConsumeResourceOnActionStart &&
             !TryConsumeResource(action))
         {
             return false;

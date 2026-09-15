@@ -138,9 +138,12 @@ public sealed class ClashPowerPipeline
                 self.Speed -
                 opponent.Speed);
 
-        // 속도 차이가 6 이상일 때만 합 수치 +1.
+        // 0915 정본: 빠른 쪽만 1~5면 +1, 6 이상이면 +2.
+        if (speedGap <= 0)
+            return 0;
+
         return speedGap >= 6
-            ? 1
-            : 0;
+            ? 2
+            : 1;
     }
 }

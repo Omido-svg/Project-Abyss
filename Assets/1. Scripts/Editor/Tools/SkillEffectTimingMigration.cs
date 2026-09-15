@@ -32,6 +32,8 @@ public static class SkillEffectTimingMigration
                 "Rules 2026-09 정본 Trigger로 기계적으로 옮길 수 있는 값만 이관합니다.\n\n" +
                 "- OnRollSuccess / OnRollWin → 승리시\n" +
                 "- OnRollFailure / OnRollLose → 패배시\n" +
+                "- OnClashWin/Lose → 합 종료시 + Clash 결과 Condition\n" +
+                "- AfterDamage/Critical/Kill/Part 전이 → 정본 Trigger + Runtime Event Condition\n" +
                 "- Roll의 구 OnWin/OnLose 리스트 → Roll EffectEntries\n\n" +
                 "합 시작/적중/행동 종료 같은 과거 phase와, " +
                 "정본 카드 문구를 보고 판단해야 하는 값은 자동 변경하지 않습니다.\n\n" +
@@ -133,6 +135,29 @@ public static class SkillEffectTimingMigration
             bool changed = false;
             string path = AssetDatabase.GetAssetPath(skill);
 
+            int legacySkillEffectCount = CountValidDefinitions(skill.Effects);
+            if (legacySkillEffectCount > 0 &&
+                (skill.EffectEntries == null || skill.EffectEntries.Count == 0))
+            {
+                summary.LegacySkillListCount += legacySkillEffectCount;
+                summary.Messages.Add(
+                    $"LEGACY SKILL EFFECT LIST {path}: {legacySkillEffectCount} definitions");
+
+                if (migrate)
+                {
+                    Undo.RecordObject(skill, "Migrate legacy skill effect list");
+                    skill.EffectEntries ??= new List<SkillEffectEntry>();
+                    foreach (SkillEffectDefinition effect in skill.Effects)
+                    {
+                        if (effect != null)
+                            skill.EffectEntries.Add(SkillEffectEntry.FromLegacy(effect));
+                    }
+                    skill.Effects.Clear();
+                    changed = true;
+                    summary.MigratedCount += legacySkillEffectCount;
+                }
+            }
+
             changed |= ProcessEntries(
                 skill.EffectEntries,
                 $"{path} / Skill EffectEntries",
@@ -210,43 +235,127 @@ public static class SkillEffectTimingMigration
                 continue;
             }
 
-            // Override가 꺼져 있으면 실제 trigger는 Effect Template 소유다.
-            // Template migration은 별도로 처리할 수 있지만, Roll 위치에서 OnExecute 같은
-            // Skill-level trigger를 사용한 것은 문맥 오류일 수 있으므로 반드시 보고한다.
-            if (!entry.OverrideTiming)
-            {
-                summary.ManualReviewCount++;
-                summary.Messages.Add(
-                    $"MANUAL {location}[{i}]: effective {timing} from Effect Definition");
-                continue;
-            }
-
-            if (SkillEffectTimingCatalog.TryGetCanonicalMigration(
+            if (TryGetEntryMigration(
                     timing,
-                    out SkillEffectTiming replacement) &&
-                replacement != timing &&
+                    out SkillEffectTiming replacement,
+                    out SkillEffectConditionType? conditionType) &&
                 ContainsTiming(allowedTimings, replacement))
             {
                 summary.MigratableCount++;
                 summary.Messages.Add(
-                    $"MIGRATABLE {location}[{i}]: {timing} -> {replacement}");
+                    $"MIGRATABLE {location}[{i}]: {timing} -> {replacement}" +
+                    (conditionType.HasValue
+                        ? $" + Condition({conditionType.Value})"
+                        : string.Empty));
 
-                if (migrate)
+                if (!migrate)
+                    continue;
+
+                entry.OverrideTiming = true;
+                entry.Timing = replacement;
+                entry.Conditions ??= new List<SkillEffectCondition>();
+
+                if (conditionType.HasValue &&
+                    !HasCondition(entry.Conditions, conditionType.Value))
                 {
-                    entry.Timing = replacement;
-                    changed = true;
-                    summary.MigratedCount++;
+                    entry.Conditions.Add(
+                        new SkillEffectCondition
+                        {
+                            Type = conditionType.Value,
+                            Subject = SkillEffectConditionSubject.Target
+                        });
                 }
+
+                changed = true;
+                summary.MigratedCount++;
+                continue;
             }
-            else
-            {
-                summary.ManualReviewCount++;
-                summary.Messages.Add(
-                    $"MANUAL {location}[{i}]: {timing}");
-            }
+
+            summary.ManualReviewCount++;
+            summary.Messages.Add(
+                $"MANUAL {location}[{i}]: effective {timing}" +
+                (!entry.OverrideTiming
+                    ? " from Effect Definition"
+                    : string.Empty));
         }
 
         return changed;
+    }
+
+    private static bool TryGetEntryMigration(
+        SkillEffectTiming legacy,
+        out SkillEffectTiming replacement,
+        out SkillEffectConditionType? conditionType)
+    {
+        conditionType = null;
+
+        switch (legacy)
+        {
+            case SkillEffectTiming.OnRollSuccess:
+            case SkillEffectTiming.OnRollWin:
+                replacement = SkillEffectTiming.OnExchangeWin;
+                return true;
+
+            case SkillEffectTiming.OnRollFailure:
+            case SkillEffectTiming.OnRollLose:
+                replacement = SkillEffectTiming.OnExchangeLose;
+                return true;
+
+            case SkillEffectTiming.OnClashWin:
+                replacement = SkillEffectTiming.OnClashEnd;
+                conditionType = SkillEffectConditionType.ClashWon;
+                return true;
+
+            case SkillEffectTiming.OnClashLose:
+                replacement = SkillEffectTiming.OnClashEnd;
+                conditionType = SkillEffectConditionType.ClashLost;
+                return true;
+
+            case SkillEffectTiming.AfterDamage:
+                replacement = SkillEffectTiming.OnExchangeWin;
+                conditionType = SkillEffectConditionType.RuntimeAfterDamage;
+                return true;
+
+            case SkillEffectTiming.OnCritical:
+                replacement = SkillEffectTiming.OnExchangeWin;
+                conditionType = SkillEffectConditionType.WasCritical;
+                return true;
+
+            case SkillEffectTiming.OnKill:
+                replacement = SkillEffectTiming.OnExchangeWin;
+                conditionType = SkillEffectConditionType.KilledTarget;
+                return true;
+
+            case SkillEffectTiming.OnPartWeakened:
+                replacement = SkillEffectTiming.OnExchangeWin;
+                conditionType = SkillEffectConditionType.TargetWasWeakenedByThisDamage;
+                return true;
+
+            case SkillEffectTiming.OnPartBroken:
+                replacement = SkillEffectTiming.OnExchangeWin;
+                conditionType = SkillEffectConditionType.TargetWasBrokenByThisDamage;
+                return true;
+
+            default:
+                replacement = legacy;
+                return SkillEffectTimingCatalog.IsAuthoringTiming(legacy);
+        }
+    }
+
+    private static bool HasCondition(
+        IReadOnlyList<SkillEffectCondition> conditions,
+        SkillEffectConditionType type)
+    {
+        if (conditions == null)
+            return false;
+
+        for (int i = 0; i < conditions.Count; i++)
+        {
+            if (conditions[i]?.Type == type)
+                return true;
+        }
+
+        return false;
     }
 
     private static int CountValidEntries(
@@ -361,6 +470,7 @@ public static class SkillEffectTimingMigration
                 Overrides = new SkillEffectOverrides(),
                 OverrideTiming = true,
                 Timing = timing,
+                Conditions = new List<SkillEffectCondition>(),
                 RestrictToRoll = false,
                 RollNumber = 1
             });
@@ -377,9 +487,47 @@ public static class SkillEffectTimingMigration
             Overrides = CloneOverrides(source.Overrides),
             OverrideTiming = true,
             Timing = timing,
+            Conditions = CloneConditions(source.Conditions),
             RestrictToRoll = source.RestrictToRoll,
             RollNumber = source.RollNumber
         };
+    }
+
+    private static List<SkillEffectCondition> CloneConditions(
+        IReadOnlyList<SkillEffectCondition> source)
+    {
+        List<SkillEffectCondition> result = new();
+        if (source == null)
+            return result;
+
+        for (int i = 0; i < source.Count; i++)
+        {
+            SkillEffectCondition condition = source[i];
+            if (condition == null)
+                continue;
+
+            result.Add(new SkillEffectCondition
+            {
+                Type = condition.Type,
+                Invert = condition.Invert,
+                Subject = condition.Subject,
+                StatusEffectId = condition.StatusEffectId,
+                CheckCharacterStatus = condition.CheckCharacterStatus,
+                CheckPartStatus = condition.CheckPartStatus,
+                AnyOwnerPart = condition.AnyOwnerPart,
+                OwnerPartType = condition.OwnerPartType,
+                Threshold = condition.Threshold,
+                Minimum = condition.Minimum,
+                Maximum = condition.Maximum,
+                Ratio = condition.Ratio,
+                MinimumRatio = condition.MinimumRatio,
+                MaximumRatio = condition.MaximumRatio,
+                ResourceKey = condition.ResourceKey,
+                MomentumState = condition.MomentumState
+            });
+        }
+
+        return result;
     }
 
     private static SkillEffectOverrides CloneOverrides(
@@ -435,12 +583,14 @@ public static class SkillEffectTimingMigration
         public int MigratableCount;
         public int ManualReviewCount;
         public int LegacyRollListCount;
+        public int LegacySkillListCount;
         public int MigratedCount;
         public readonly List<string> Messages = new();
 
         public string BuildDialog() =>
             $"정본 Trigger 항목: {CanonicalCount}\n" +
             $"자동 이관 가능 구형 Trigger: {MigratableCount}\n" +
+            $"구형 Skill Effects 항목: {LegacySkillListCount}\n" +
             $"구형 Roll OnWin/OnLose 항목: {LegacyRollListCount}\n" +
             $"수동 검토 필요: {ManualReviewCount}\n" +
             $"이번 실행에서 이관: {MigratedCount}\n\n" +

@@ -17,7 +17,15 @@ public class SkillDefinition : ScriptableObject
     [Header("Basic")]
     public string SkillName;
     public ActionType ActionType;
+
+    [Header("0915 Canonical Color / Power")]
+    [Tooltip("정본: 스킬 전체가 RED 또는 BLUE 한 색을 가집니다. Unset은 기존 SO 이관용 fallback입니다.")]
+    public SkillColor Color = SkillColor.Unset;
+
+    [Tooltip("기본은 굴림수 곡선 + 빛*2. 명시된 캐릭터/카드 예외만 다른 Rule을 사용합니다.")]
+    public SkillBasePowerRule BasePowerRule = SkillBasePowerRule.CanonicalCurve;
     public int BasePower;
+    public int BasePowerFlatAdjustment;
     [Tooltip("공격 스킬의 물리 속성: 절단 / 둔격 / 관통. 유진은 현재 무기가 이 값을 덮어씁니다.")]
     public PhysicalDamageType PhysicalType = PhysicalDamageType.Cut;
     public bool CanBreakPart;

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>
@@ -19,6 +20,10 @@ public sealed class SkillEffectEntry
 
     public SkillEffectTiming Timing =
         SkillEffectTiming.OnExecute;
+
+    [Header("Entry Conditions — optional")]
+    [Tooltip("Trigger는 정본 5종만 사용하고, 기세/스택/흐트러짐/결과 사건 등 세부 조건은 여기서 작성합니다.")]
+    public List<SkillEffectCondition> Conditions = new();
 
     [Header("Roll Filter — optional")]
     [Tooltip(
@@ -46,7 +51,11 @@ public sealed class SkillEffectEntry
         SkillEffectTiming scheduledTiming =
             EffectiveTiming;
 
-        if (currentTiming != scheduledTiming)
+        bool runtimeEventWake =
+            currentTiming != scheduledTiming &&
+            CanWakeFromRuntimeEvent(currentTiming);
+
+        if (currentTiming != scheduledTiming && !runtimeEventWake)
         {
             return SkillEffectResult.NotScheduled(
                 Definition,
@@ -67,11 +76,58 @@ public sealed class SkillEffectEntry
             }
         }
 
+        if (!EvaluateEntryConditions(context))
+        {
+            return SkillEffectResult.ConditionFailed(
+                Definition,
+                currentTiming,
+                context,
+                "Entry condition failed.");
+        }
+
+        // Runtime Event wake일 때는 내부 사건 시점을 실제 실행 시점으로 넘긴다.
+        // Authoring Timing 값 자체는 5종 계약을 유지한다.
         return Definition.TryApply(
             context,
             currentTiming,
             Overrides,
-            scheduledTiming);
+            runtimeEventWake ? currentTiming : scheduledTiming);
+    }
+
+    private bool EvaluateEntryConditions(SkillEffectContext context)
+    {
+        if (Conditions == null || Conditions.Count == 0)
+            return true;
+
+        for (int i = 0; i < Conditions.Count; i++)
+        {
+            SkillEffectCondition condition = Conditions[i];
+            if (condition != null && !condition.Evaluate(context))
+                return false;
+        }
+        return true;
+    }
+
+    private bool CanWakeFromRuntimeEvent(SkillEffectTiming runtimeTiming)
+    {
+        if (SkillEffectTimingCatalog.IsAuthoringTiming(runtimeTiming))
+            return false;
+
+        if (Conditions != null)
+        {
+            for (int i = 0; i < Conditions.Count; i++)
+            {
+                SkillEffectCondition condition = Conditions[i];
+                if (condition != null &&
+                    condition.IsRuntimeEventConditionFor(runtimeTiming))
+                {
+                    return true;
+                }
+            }
+        }
+
+        return Definition != null &&
+               Definition.CanWakeFromRuntimeEvent(runtimeTiming);
     }
 
     public static SkillEffectEntry FromLegacy(
@@ -85,6 +141,7 @@ public sealed class SkillEffectEntry
             Timing = definition != null
                 ? definition.Timing
                 : SkillEffectTiming.OnExecute,
+            Conditions = new List<SkillEffectCondition>(),
             RestrictToRoll = false,
             RollNumber = 1
         };

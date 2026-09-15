@@ -24,7 +24,7 @@ public class DataNormalSkill : NormalSkill
         }
 
         SkillName = definition.SkillName;
-        BasePower = definition.BasePower;
+        BasePower = PowerFormulaService.ResolveBasePower(definition);
         Resolver = definition.CreateResolver();
     }
 

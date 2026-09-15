@@ -3,7 +3,7 @@ using System.Collections.Generic;
 /// <summary>
 /// Project Abyss의 플레이어형 부위별 스킬 카테고리 계약.
 ///
-/// HEAD       : 일반 / 결투 / 도사림 / 위세
+/// HEAD       : 일반 / 결투 / 도사림
 /// LEFT_HAND  : 일반 / 결투
 /// RIGHT_HAND : 일반 / 결투
 /// LEGS       : 도사림
@@ -48,8 +48,7 @@ public static class BodyPartSkillAccessPolicy
             PartType.HEAD =>
                 actionType == ActionType.NormalAttack ||
                 actionType == ActionType.Duel ||
-                actionType == ActionType.Preparation ||
-                actionType == ActionType.Prestige,
+                actionType == ActionType.Preparation,
 
             PartType.LEFT_HAND =>
                 actionType == ActionType.NormalAttack ||
@@ -115,7 +114,7 @@ public static class BodyPartSkillAccessPolicy
 
         return part.Type switch
         {
-            PartType.HEAD => "전체 스킬 사용 가능",
+            PartType.HEAD => "일반 · 결투 · 도사림",
             PartType.LEFT_HAND => "일반 · 결투 전용",
             PartType.RIGHT_HAND => "일반 · 결투 전용",
             PartType.LEGS => "도사림 전용",

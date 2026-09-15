@@ -151,7 +151,7 @@ public sealed class ProgressionRuleSettings
     [Range(1, 5)] public int MaximumSkillUpgradeLevel = 2;
     [Min(0f)] public float SecondUpgradeCostMultiplier = 1.5f;
     public int NormalAttackLoadoutLimit = 3;
-    public int DuelLoadoutLimit = 2;
+    public int DuelLoadoutLimit = 3;
     public int PreparationLoadoutLimit = 3;
     public int PrestigeLoadoutLimit = 1;
 
@@ -160,7 +160,7 @@ public sealed class ProgressionRuleSettings
         MaximumSkillUpgradeLevel = Mathf.Clamp(MaximumSkillUpgradeLevel, 1, 5);
         SecondUpgradeCostMultiplier = Mathf.Max(0f, SecondUpgradeCostMultiplier);
         NormalAttackLoadoutLimit = Mathf.Max(0, NormalAttackLoadoutLimit);
-        DuelLoadoutLimit = Mathf.Max(0, DuelLoadoutLimit);
+        DuelLoadoutLimit = 3;
         PreparationLoadoutLimit = Mathf.Max(0, PreparationLoadoutLimit);
         PrestigeLoadoutLimit = Mathf.Max(0, PrestigeLoadoutLimit);
     }

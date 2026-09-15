@@ -24,10 +24,16 @@ public sealed class SkillEffectEntryDrawer : PropertyDrawer
             property.FindPropertyRelative("Definition");
 
         const int schedulingRows = 2;
+        SerializedProperty conditions =
+            property.FindPropertyRelative("Conditions");
+        float conditionsHeight = conditions != null
+            ? EditorGUI.GetPropertyHeight(conditions, true) + Gap
+            : 0f;
 
         return line +
                Gap +
                schedulingRows * (line + Gap) +
+               conditionsHeight +
                GetRows(definition?.objectReferenceValue).Count *
                (line + Gap);
     }
@@ -58,6 +64,8 @@ public sealed class SkillEffectEntryDrawer : PropertyDrawer
             property.FindPropertyRelative("RestrictToRoll");
         SerializedProperty rollNumber =
             property.FindPropertyRelative("RollNumber");
+        SerializedProperty conditions =
+            property.FindPropertyRelative("Conditions");
 
         Rect foldout = new(
             header.x,
@@ -103,6 +111,17 @@ public sealed class SkillEffectEntryDrawer : PropertyDrawer
             rollNumber,
             "Roll Number");
         y += line + Gap;
+
+        if (conditions != null)
+        {
+            float height = EditorGUI.GetPropertyHeight(conditions, true);
+            EditorGUI.PropertyField(
+                new Rect(position.x, y, position.width, height),
+                conditions,
+                new GUIContent("Conditions"),
+                true);
+            y += height + Gap;
+        }
 
         foreach (OverrideRow row in GetRows(
                      definition?.objectReferenceValue))

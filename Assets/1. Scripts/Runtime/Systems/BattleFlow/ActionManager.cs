@@ -47,7 +47,9 @@ public class ActionManager : IDisposable
         if (isDisposed || slots.Count == 0)
             return Array.Empty<ActionSlot>();
 
-        return GetAllSlots();
+        List<ActionSlot> result = GetAllSlots();
+        result.RemoveAll(slot => slot == null || slot.SkipResolution);
+        return result;
     }
 
     public void Dispose()
@@ -933,7 +935,8 @@ public class ActionManager : IDisposable
             if (excludedBySlotId || excludedByActionKey)
                 continue;
 
-            total += Mathf.Max(0, slot.Skill.EnergyCost);
+            if (!slot.ResourceCostCommitted)
+                total += Mathf.Max(0, slot.Skill.EnergyCost);
 
             if (total >= int.MaxValue)
                 return int.MaxValue;

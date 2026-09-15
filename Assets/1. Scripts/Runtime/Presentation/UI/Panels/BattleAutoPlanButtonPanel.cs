@@ -41,6 +41,13 @@ public sealed class BattleAutoPlanButtonPanel :
 
     private PlayerAutoPlanMode? activeMode;
 
+    // Auto-plan is a planning UI transaction. C-04 still keeps committed costs
+    // non-refundable when a live action disappears during combat, but explicitly
+    // cancelling/replacing the auto-plan before resolution must restore the
+    // energy that existed before this auto-plan session started.
+    private bool hasAutoPlanEnergySnapshot;
+    private int autoPlanEnergySnapshot;
+
     public PlayerAutoPlanMode? ActiveMode =>
         activeMode;
 
@@ -305,6 +312,20 @@ public sealed class BattleAutoPlanButtonPanel :
         battleUiManager?
             .CancelCurrentSelection();
 
+        // The first interactive auto-plan captures the energy baseline.
+        // Switching WinRate <-> Damage is a re-plan of the same UI transaction,
+        // so undo the previous auto-plan costs before calculating the new one.
+        if (!activeMode.HasValue)
+        {
+            CaptureAutoPlanEnergySnapshot();
+        }
+        else if (activeMode.Value != mode)
+        {
+            RollbackAutoPlanSession(
+                clearSnapshot: false);
+            activeMode = null;
+        }
+
         PlayerAutoPlanResult result =
             service.BuildAndApply(
                 battleManager,
@@ -313,6 +334,15 @@ public sealed class BattleAutoPlanButtonPanel :
         if (result?.Success == true)
         {
             activeMode = mode;
+        }
+        else
+        {
+            // A failed auto-plan can already have committed one or more costs
+            // before a later planning hook rejects the plan. Explicit UI planning
+            // failure is rolled back to the pre-auto-plan energy baseline.
+            RollbackAutoPlanSession(
+                clearSnapshot: true);
+            activeMode = null;
         }
 
         SetStatus(
@@ -336,8 +366,8 @@ public sealed class BattleAutoPlanButtonPanel :
         battleUiManager?
             .CancelCurrentSelection();
 
-        battleManager?
-            .ResetPlayerActions();
+        RollbackAutoPlanSession(
+            clearSnapshot: true);
 
         activeMode = null;
 
@@ -426,6 +456,11 @@ public sealed class BattleAutoPlanButtonPanel :
         if (playerSlotCount > 0)
             return;
 
+        // Slots disappearing outside the explicit auto-plan cancel path means the
+        // plan has left the editable planning transaction (resolution/turn reset,
+        // external cleanup, etc.). Do not refund here: C-04's no-refund rule still
+        // applies to runtime slot loss. Just discard the UI rollback snapshot.
+        DiscardAutoPlanEnergySnapshot();
         ClearModeVisualOnly();
 
         if (statusText != null &&
@@ -434,6 +469,67 @@ public sealed class BattleAutoPlanButtonPanel :
             SetStatus(
                 "적 행동에 맞춰 자동 지정");
         }
+    }
+
+    private void CaptureAutoPlanEnergySnapshot()
+    {
+        Character player =
+            battleManager?.BattleContext?.Player;
+
+        if (player == null)
+        {
+            DiscardAutoPlanEnergySnapshot();
+            return;
+        }
+
+        autoPlanEnergySnapshot =
+            player.CurrentEnergy;
+        hasAutoPlanEnergySnapshot = true;
+
+        Debug.Log(
+            $"[PlayerAutoPlan][SNAPSHOT] Energy={autoPlanEnergySnapshot}",
+            this);
+    }
+
+    private void RollbackAutoPlanSession(
+        bool clearSnapshot)
+    {
+        Character player =
+            battleManager?.BattleContext?.Player;
+
+        // Remove the auto-generated slots first so UI/validation immediately sees
+        // an empty player plan. This is an explicit planning rollback, not combat
+        // invalidation.
+        battleManager?
+            .ResetPlayerActions();
+
+        if (player != null &&
+            hasAutoPlanEnergySnapshot)
+        {
+            int before = player.CurrentEnergy;
+            int delta =
+                autoPlanEnergySnapshot - before;
+
+            if (delta != 0)
+            {
+                player.AddEnergy(
+                    delta,
+                    CombatResourceChangeReason.Restore);
+            }
+
+            Debug.Log(
+                $"[PlayerAutoPlan][ROLLBACK] Energy={before}->{player.CurrentEnergy}",
+                this);
+        }
+
+        if (clearSnapshot)
+            DiscardAutoPlanEnergySnapshot();
+    }
+
+    private void DiscardAutoPlanEnergySnapshot()
+    {
+        hasAutoPlanEnergySnapshot = false;
+        autoPlanEnergySnapshot = 0;
     }
 
     private void ClearModeVisualOnly()

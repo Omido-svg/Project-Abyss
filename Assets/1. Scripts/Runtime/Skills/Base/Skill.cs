@@ -160,6 +160,10 @@ public abstract class Skill
         }
     }
 
+    public SkillColor Color => SkillColorRules.Resolve(RuntimeDefinition);
+    public bool IsRed => Color == SkillColor.Red;
+    public bool IsBlue => Color == SkillColor.Blue;
+
     public virtual float IgnoreBlock => 0f;
 
     public virtual PrestigeUsePolicy PrestigeUsePolicy

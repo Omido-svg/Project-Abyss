@@ -44,10 +44,14 @@ public class MomentumManager
     private readonly BattleContext battleContext;
     private readonly MomentumRuleSettings settings;
 
-    private bool playerLastStandThisTurn;
-    private bool enemyLastStandThisTurn;
-    private bool playerLastStandNextTurn;
-    private bool enemyLastStandNextTurn;
+    // 직전 턴 최종 band와 그 결과로 예약된 다음 턴 판정 보너스는
+    // 현재 턴의 실시간 Momentum band와 절대 섞지 않는다.
+    private MomentumState playerPreviousFinalState = MomentumState.Balance;
+    private MomentumState enemyPreviousFinalState = MomentumState.Balance;
+    private bool playerLastStandJudgmentThisTurn;
+    private bool enemyLastStandJudgmentThisTurn;
+    private bool playerLastStandJudgmentNextTurn;
+    private bool enemyLastStandJudgmentNextTurn;
 
     public const int MaxMomentum = 100;
     public const int MinMomentum = -100;
@@ -65,55 +69,54 @@ public class MomentumManager
     public void Reset()
     {
         CurrentMomentum = 0;
-        playerLastStandThisTurn = false;
-        enemyLastStandThisTurn = false;
-        playerLastStandNextTurn = false;
-        enemyLastStandNextTurn = false;
+        playerPreviousFinalState = MomentumState.Balance;
+        enemyPreviousFinalState = MomentumState.Balance;
+        playerLastStandJudgmentThisTurn = false;
+        enemyLastStandJudgmentThisTurn = false;
+        playerLastStandJudgmentNextTurn = false;
+        enemyLastStandJudgmentNextTurn = false;
     }
 
     public void BeginTurn()
     {
-        playerLastStandThisTurn = playerLastStandNextTurn;
-        enemyLastStandThisTurn = enemyLastStandNextTurn;
-        playerLastStandNextTurn = false;
-        enemyLastStandNextTurn = false;
+        playerLastStandJudgmentThisTurn = playerLastStandJudgmentNextTurn;
+        enemyLastStandJudgmentThisTurn = enemyLastStandJudgmentNextTurn;
+        playerLastStandJudgmentNextTurn = false;
+        enemyLastStandJudgmentNextTurn = false;
         CurrentMomentum = 0;
     }
 
     public void FinalizeTurn()
     {
-        playerLastStandNextTurn = CurrentMomentum <= settings.LastStandThreshold;
-        enemyLastStandNextTurn = -CurrentMomentum <= settings.LastStandThreshold;
+        playerPreviousFinalState = EvaluateBand(CurrentMomentum);
+        enemyPreviousFinalState = EvaluateBand(-CurrentMomentum);
+        playerLastStandJudgmentNextTurn = playerPreviousFinalState == MomentumState.LastStand;
+        enemyLastStandJudgmentNextTurn = enemyPreviousFinalState == MomentumState.LastStand;
     }
 
-    public MomentumState GetState(Character owner)
+    // 현재 B만 본다. 직전 턴 발악 예약은 이 API의 결과를 덮어쓰지 않는다.
+    public MomentumState GetState(Character owner) =>
+        EvaluateBand(GetPerspectiveValue(owner));
+
+    public MomentumState GetCurrentBand(Character owner) =>
+        GetState(owner);
+
+    public MomentumState GetPreviousTurnFinalState(Character owner)
     {
-        if (owner?.SupportsLastStand == true && IsLastStandActive(owner))
-            return MomentumState.LastStand;
-
-        int value = GetPerspectiveValue(owner);
-        if (value <= settings.DisadvantageThreshold)
-            return MomentumState.Disadvantage;
-        if (value < settings.AdvantageThreshold)
-            return MomentumState.Balance;
-        if (value < settings.OverwhelmThreshold)
-            return MomentumState.Advantage;
-        return MomentumState.Overwhelm;
+        if (owner == null) return MomentumState.Balance;
+        return IsPlayerSide(owner)
+            ? playerPreviousFinalState
+            : enemyPreviousFinalState;
     }
 
-    public MomentumState GetFinalTurnState(Character owner)
-    {
-        int value = GetPerspectiveValue(owner);
-        if (value <= settings.LastStandThreshold)
-            return MomentumState.LastStand;
-        if (value <= settings.DisadvantageThreshold)
-            return MomentumState.Disadvantage;
-        if (value < settings.AdvantageThreshold)
-            return MomentumState.Balance;
-        if (value < settings.OverwhelmThreshold)
-            return MomentumState.Advantage;
-        return MomentumState.Overwhelm;
-    }
+    public bool HasLastStandJudgmentBonus(Character owner) =>
+        owner?.SupportsLastStand == true &&
+        (IsPlayerSide(owner)
+            ? playerLastStandJudgmentThisTurn
+            : enemyLastStandJudgmentThisTurn);
+
+    public MomentumState GetFinalTurnState(Character owner) =>
+        EvaluateBand(GetPerspectiveValue(owner));
 
     public int GetPerspectiveValue(Character owner)
     {
@@ -121,8 +124,9 @@ public class MomentumManager
         return IsPlayerSide(owner) ? CurrentMomentum : -CurrentMomentum;
     }
 
+    // Legacy 이름은 "직전 턴 짓눌림으로 얻은 이번 턴 판정 보너스"를 뜻한다.
     public bool IsLastStand(Character character) =>
-        character?.SupportsLastStand == true && IsLastStandActive(character);
+        HasLastStandJudgmentBonus(character);
 
     public bool IsOverwhelm(Character character) =>
         GetFinalTurnState(character) == MomentumState.Overwhelm;
@@ -172,8 +176,18 @@ public class MomentumManager
         return new MomentumShiftResult(before, CurrentMomentum, applied, reason);
     }
 
-    private bool IsLastStandActive(Character character) =>
-        IsPlayerSide(character) ? playerLastStandThisTurn : enemyLastStandThisTurn;
+    private MomentumState EvaluateBand(int value)
+    {
+        if (value <= settings.LastStandThreshold)
+            return MomentumState.LastStand;
+        if (value <= settings.DisadvantageThreshold)
+            return MomentumState.Disadvantage;
+        if (value < settings.AdvantageThreshold)
+            return MomentumState.Balance;
+        if (value < settings.OverwhelmThreshold)
+            return MomentumState.Advantage;
+        return MomentumState.Overwhelm;
+    }
 
     private bool IsPlayerSide(Character character) =>
         character != null && character == battleContext?.Player;

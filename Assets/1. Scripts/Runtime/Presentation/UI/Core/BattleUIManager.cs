@@ -44,6 +44,36 @@ public partial class BattleUIManager : MonoBehaviour
 
     public TargetSelectionViewModel Selection => selection;
 
+    /// <summary>
+    /// C-02: 위세는 부위 슬롯이 아니라 전역 Planning command에서 선택한다.
+    /// 별도 위세 버튼/패널은 이 목록을 사용한다.
+    /// </summary>
+    public IReadOnlyList<Skill> GetSelectablePrestigeSkillsForPlanning()
+    {
+        return battleManager?.BattleContext?.Player?.GetSelectablePrestigeSkills() ??
+               System.Array.Empty<Skill>();
+    }
+
+    public PrestigePlanningExecutionResult TryExecutePrestigePlanning(
+        Skill skill,
+        Character target = null,
+        BodyPart targetPart = null,
+        string planningChoiceId = null)
+    {
+        Character owner = battleManager?.BattleContext?.Player;
+        BattleActionPlanCommandService commands = PlanCommands;
+        if (commands == null)
+        {
+            return new PrestigePlanningExecutionResult
+            {
+                Success = false,
+                FailureReason = "Planning command service가 준비되지 않았습니다."
+            };
+        }
+        return commands.TryExecutePrestige(
+            owner, skill, target, targetPart, planningChoiceId);
+    }
+
     // 기존 내부 코드의 이름을 유지하되 실제 state storage는 별도 객체가 소유한다.
     private BattleInputMode inputMode
     {

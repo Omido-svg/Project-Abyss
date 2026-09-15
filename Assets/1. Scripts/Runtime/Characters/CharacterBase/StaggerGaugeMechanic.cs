@@ -55,7 +55,7 @@ public sealed class StaggerGaugeMechanic : ReactiveCombatMechanic,
         int rawRollPower,
         PhysicalDamageType physicalType)
     {
-        if (action == null || action.CurrentRollType != CombatRollType.Attack ||
+        if (action == null || action.Skill?.IsRed != true ||
             owner == null || owner.IsDead || vulnerabilityWindowOpen)
         {
             return;
@@ -90,17 +90,14 @@ public sealed class StaggerGaugeMechanic : ReactiveCombatMechanic,
             return;
 
         BattleAction winner = exchange.WinnerAction;
-        if (winner.CurrentRollType != CombatRollType.Attack &&
-            winner.CurrentRollType != CombatRollType.Stagger)
-        {
+        if (winner.Skill == null)
             return;
-        }
 
         Character target = winner.Target ?? exchange.LoserAction?.Owner;
         if (target == null || target.IsDead)
             return;
 
-        if (winner.CurrentRollType == CombatRollType.Attack && target == owner)
+        if (winner.Skill.IsRed && target == owner)
         {
             if (pendingAttackActionId == winner.ActionId && pendingAttackApplied > 0)
             {
@@ -144,7 +141,7 @@ public sealed class StaggerGaugeMechanic : ReactiveCombatMechanic,
 
         // 흐트러짐 공격 굴림은 HP를 주지 않는 대신 자신 흐트러짐을 회복한다.
         if (winner.Owner == owner &&
-            winner.CurrentRollType == CombatRollType.Stagger)
+            winner.Skill.IsBlue)
         {
             float ratio = battleContext?.Rules?.Stagger?.StaggerRollSelfRecoveryRatio ?? 1f;
             Recover(Mathf.FloorToInt(staggerDamage * Mathf.Max(0f, ratio)));

@@ -12,6 +12,9 @@ public sealed class CharacterSkillLoadoutState
     public List<string> PreparationSkillIds = new();
     public List<string> PrestigeSkillIds = new();
 
+    // 0915: 상점 획득(보유)과 현재 장착을 분리한다. 위세는 이 풀에 들어가지 않는다.
+    public List<string> OwnedSkillIds = new();
+
     public IReadOnlyList<string> GetIds(ActionType actionType)
     {
         return actionType switch

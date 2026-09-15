@@ -24,7 +24,7 @@ public class DataDuelSkill : DuelSkill
         }
 
         SkillName = definition.SkillName;
-        BasePower = definition.BasePower;
+        BasePower = PowerFormulaService.ResolveBasePower(definition);
         Resolver = definition.CreateResolver();
     }
 

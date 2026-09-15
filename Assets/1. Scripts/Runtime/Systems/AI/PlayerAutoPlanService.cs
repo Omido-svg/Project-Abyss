@@ -284,8 +284,8 @@ public sealed class PlayerAutoPlanService
         HashSet<ActionSlot> assignedThreats =
             new HashSet<ActionSlot>();
 
-        // 0단계: 도사림도 수동 계획과 동일하게 FORESIGHT ActionSlot로 계획한다.
-        // START 전에는 효과/자원을 확정하지 않으며 우클릭/Reset 가능한 동일한 계획 모델을 사용한다.
+        // 0단계: 도사림도 수동 계획과 같은 후보 슬롯으로 계산한다.
+        // 실제 적용 시 PlayerAutoPlanApplicationService가 비용과 즉시 효과를 계획 단계에서 commit한다.
         Candidate utility =
             FindBestMandatoryUtilityCandidate(
                 context,

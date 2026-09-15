@@ -17,6 +17,9 @@ public sealed class CharacterSkillShopService
     public IEnumerable<SkillDefinition> EnumerateOffers(
         ActionType actionType)
     {
+        if (actionType == ActionType.Prestige)
+            yield break;
+
         CharacterCombatRulesRuntime rules =
             character?.CombatRulesRuntime;
 
@@ -31,24 +34,26 @@ public sealed class CharacterSkillShopService
         }
     }
 
+    /// <summary>상점은 소유권만 추가한다. 장착 교체는 정비에서만 가능하다.</summary>
+    public bool TryPurchase(SkillDefinition purchased, out string reason)
+    {
+        CharacterSkillLoadoutRuntime loadout = character?.CombatRulesRuntime?.Loadout;
+        if (loadout == null)
+        {
+            reason = "캐릭터의 런타임 전투 규칙이 초기화되지 않았습니다.";
+            return false;
+        }
+        return loadout.TryAcquire(purchased, out reason);
+    }
+
+    [Obsolete("0915: 상점에서 즉시 장착 교체 금지. TryPurchase 후 Maintenance service를 사용하세요.")]
     public bool TryReplace(
         SkillDefinition equipped,
         SkillDefinition purchased,
         out string reason)
     {
-        CharacterCombatRulesRuntime rules =
-            character?.CombatRulesRuntime;
-
-        if (rules == null)
-        {
-            reason = "캐릭터의 런타임 전투 규칙이 초기화되지 않았습니다.";
-            return false;
-        }
-
-        return rules.TryReplaceSkill(
-            equipped,
-            purchased,
-            out reason);
+        reason = "0915 규칙: 상점에서는 획득만 가능하고 장착 교체는 정비에서만 가능합니다.";
+        return false;
     }
 
     public CharacterSkillLoadoutState CaptureState()

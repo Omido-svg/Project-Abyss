@@ -15,8 +15,8 @@ public enum SkillEffectTiming
     // Serialized compatibility block. 숫자를 바꾸거나 재사용하지 않는다.
     // ---------------------------------------------------------------------
     OnExecute = 0,                 // 정본: 사용시 / 준비 행동 발동
-    OnClashWin = 1,                // 정본: 합 승리시 (맞붙은 교환 다수결)
-    OnClashLose = 2,               // 정본: 합 패배시 (맞붙은 교환 다수결)
+    OnClashWin = 1,                // legacy/runtime: 합 다수결 승리 (카드 Authoring 금지)
+    OnClashLose = 2,               // legacy/runtime: 합 다수결 패배 (카드 Authoring 금지)
     AfterDamage = 3,               // 정본: 피해 적용 후
     OnCritical = 4,                // 정본: 크리티컬 피해 확정 후
     OnKill = 5,                    // 정본: 처치시
@@ -35,8 +35,8 @@ public enum SkillEffectTiming
     // 과거 Gameplay v5 detailed phase. 번호 보존용.
     // AuthoringTimings에 포함된 값만 신규 콘텐츠에서 사용한다.
     // ---------------------------------------------------------------------
-    OnBattleStart = 16,            // 정본
-    OnTurnStart = 17,              // 정본
+    OnBattleStart = 16,            // runtime lifecycle only
+    OnTurnStart = 17,              // runtime lifecycle only
     BeforeUse = 18,                // 호환 전용
     OnClashStart = 19,             // 시스템/호환 전용
     OnOneSidedStart = 20,          // 호환 전용
@@ -48,8 +48,8 @@ public enum SkillEffectTiming
     OnRollEnd = 26,                // 호환 전용
     OnAttackEnd = 27,              // 호환 전용
     OnSkillEnd = 28,               // 호환 전용
-    OnTurnEnd = 29,                // 정본
-    OnBattleEnd = 30,              // 정본
+    OnTurnEnd = 29,                // runtime lifecycle only
+    OnBattleEnd = 30,              // runtime lifecycle only
 
     // ---------------------------------------------------------------------
     // Rules 2026-09 canonical additions.
@@ -66,43 +66,24 @@ public enum SkillEffectTiming
 /// </summary>
 public static class SkillEffectTimingCatalog
 {
+    // 0915 정본: 카드 Authoring Trigger는 정확히 5개뿐이다.
+    // 나머지 enum 값은 직렬화/런타임 이벤트 호환 전용이며 신규 카드 UI에 노출하지 않는다.
     private static readonly SkillEffectTiming[] authoringTimings =
     {
-        SkillEffectTiming.OnBattleStart,
-        SkillEffectTiming.OnTurnStart,
-
-        // 카드/준비 행동의 핵심 문법
         SkillEffectTiming.OnExecute,
         SkillEffectTiming.OnDuelMatched,
         SkillEffectTiming.OnExchangeWin,
         SkillEffectTiming.OnExchangeLose,
-
-        // 실제 결과 기반 이벤트
-        SkillEffectTiming.AfterDamage,
-        SkillEffectTiming.OnCritical,
-        SkillEffectTiming.OnPartWeakened,
-        SkillEffectTiming.OnPartBroken,
-        SkillEffectTiming.OnKill,
-
-        // 합 단위 결과 / 종료. 승패는 맞붙은 교환 다수결, 종료는 남은 일방타격까지 처리한 뒤다.
-        SkillEffectTiming.OnClashWin,
-        SkillEffectTiming.OnClashLose,
-        SkillEffectTiming.OnClashEnd,
-
-        SkillEffectTiming.OnTurnEnd,
-        SkillEffectTiming.OnBattleEnd
+        SkillEffectTiming.OnClashEnd
     };
 
+    // Roll 위치에서 쓸 수 있는 정본 Trigger는 매칭/교환 승패뿐이다.
+    // 사용시/합 종료시는 SkillDefinition 레벨 EffectEntries에서 작성한다.
     private static readonly SkillEffectTiming[] rollAuthoringTimings =
     {
         SkillEffectTiming.OnDuelMatched,
         SkillEffectTiming.OnExchangeWin,
-        SkillEffectTiming.OnExchangeLose,
-        SkillEffectTiming.AfterDamage,
-        SkillEffectTiming.OnCritical,
-        SkillEffectTiming.OnPartWeakened,
-        SkillEffectTiming.OnPartBroken,
-        SkillEffectTiming.OnKill
+        SkillEffectTiming.OnExchangeLose
     };
 
     public static IReadOnlyList<SkillEffectTiming> AuthoringTimings =>

@@ -775,6 +775,12 @@ public abstract class Character : MonoBehaviour
             selectable);
     }
 
+    public IReadOnlyList<Skill> GetSelectablePrestigeSkills()
+    {
+        return combatRulesRuntime?.GetSelectablePrestigeSkills(characterSkills) ??
+               System.Array.Empty<Skill>();
+    }
+
     public T GetStatus<T>() where T : StatusEffect
     {
         if (statusController == null)

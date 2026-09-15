@@ -221,8 +221,7 @@ public sealed class CharacterCombatRulesRuntime
             if (config == null || !config.Enabled)
                 continue;
             if (config.Allows(ActionType.NormalAttack) ||
-                config.Allows(ActionType.Duel) ||
-                config.Allows(ActionType.Prestige))
+                config.Allows(ActionType.Duel))
             {
                 count++;
             }
@@ -393,6 +392,34 @@ public sealed class CharacterCombatRulesRuntime
     /// 구조적으로 선택 가능한 스킬만 반환한다.
     /// 빛, 상태이상, 위세 같은 현재 자원 조건은 UI/AI의 CanUseSkill에서 별도 검사한다.
     /// </summary>
+    /// <summary>
+    /// 위세는 부위 ActionSlot이 아닌 전역 Planning Command에서 선택한다.
+    /// </summary>
+    public IReadOnlyList<Skill> GetSelectablePrestigeSkills(
+        IReadOnlyList<Skill> runtimeSkills)
+    {
+        List<Skill> result = new();
+        if (runtimeSkills == null || loadoutRuntime == null)
+            return result;
+
+        IReadOnlyList<SkillDefinition> equipped =
+            loadoutRuntime.GetEquipped(ActionType.Prestige);
+        foreach (Skill skill in runtimeSkills)
+        {
+            if (skill?.Definition == null || skill.ActionType != ActionType.Prestige)
+                continue;
+            for (int i = 0; i < equipped.Count; i++)
+            {
+                if (ReferenceEquals(equipped[i], skill.Definition))
+                {
+                    result.Add(skill);
+                    break;
+                }
+            }
+        }
+        return result;
+    }
+
     public IReadOnlyList<Skill>
         GetAvailableSkillsForSlot(
             ActionSlot slot,
@@ -465,64 +492,47 @@ public sealed class CharacterCombatRulesRuntime
         return slot.AllowsSkill(skill);
     }
 
-    public bool TryEquipSkill(
+    public bool TryChoosePrestigeForRun(
         SkillDefinition definition,
         out string reason)
     {
         if (CurrentBossPhase != null)
         {
-            reason =
-                "보스 페이즈 스킬 풀은 페이즈 데이터로 교체되므로 " +
-                "전투 중 장착을 변경할 수 없습니다.";
+            reason = "보스 페이즈 중에는 런 위세를 선택할 수 없습니다.";
             return false;
         }
-
         if (loadoutRuntime == null)
         {
-            reason =
-                "런타임 스킬 장착 데이터가 초기화되지 않았습니다.";
+            reason = "런타임 스킬 장착 데이터가 초기화되지 않았습니다.";
             return false;
         }
-
-        return loadoutRuntime.TryEquip(
-            definition,
-            out reason);
+        return loadoutRuntime.TryChoosePrestigeForRun(definition, out reason);
     }
 
+    [Obsolete("0915: 장착 변경은 CharacterSkillMaintenanceService를 통해서만 수행합니다.")]
+    public bool TryEquipSkill(
+        SkillDefinition definition,
+        out string reason)
+    {
+        reason = "0915 규칙: 평타/결투/도사림 장착 변경은 정비에서만 가능합니다.";
+        return false;
+    }
+
+    [Obsolete("0915: 장착 변경은 CharacterSkillMaintenanceService를 통해서만 수행합니다.")]
     public bool TryUnequipSkill(
         SkillDefinition definition)
     {
-        if (CurrentBossPhase != null)
-            return false;
-
-        return loadoutRuntime != null &&
-               loadoutRuntime.TryUnequip(
-                   definition);
+        return false;
     }
 
+    [Obsolete("0915: 장착 변경은 CharacterSkillMaintenanceService를 통해서만 수행합니다.")]
     public bool TryReplaceSkill(
         SkillDefinition equipped,
         SkillDefinition replacement,
         out string reason)
     {
-        if (CurrentBossPhase != null)
-        {
-            reason =
-                "보스 페이즈 중에는 런타임 장착 스킬을 교체할 수 없습니다.";
-            return false;
-        }
-
-        if (loadoutRuntime == null)
-        {
-            reason =
-                "런타임 스킬 장착 데이터가 초기화되지 않았습니다.";
-            return false;
-        }
-
-        return loadoutRuntime.TryReplace(
-            equipped,
-            replacement,
-            out reason);
+        reason = "0915 규칙: 상점/일반 런타임에서 직접 교체할 수 없습니다. 정비 서비스를 사용하세요.";
+        return false;
     }
 
     public CharacterSkillLoadoutState CaptureLoadoutState()

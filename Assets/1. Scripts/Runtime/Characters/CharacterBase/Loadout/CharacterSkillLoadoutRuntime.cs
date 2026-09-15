@@ -12,6 +12,9 @@ public sealed class CharacterSkillLoadoutRuntime
 
     private readonly Dictionary<ActionType, List<SkillDefinition>>
         equippedByType = new();
+    private readonly HashSet<string> ownedSkillIds =
+        new(StringComparer.Ordinal);
+    private bool prestigeLockedForRun;
 
     public event Action LoadoutChanged;
 
@@ -26,6 +29,16 @@ public sealed class CharacterSkillLoadoutRuntime
         Initialize(ActionType.Duel);
         Initialize(ActionType.Preparation);
         Initialize(ActionType.Prestige);
+
+        foreach (ActionType type in new[] { ActionType.NormalAttack, ActionType.Duel, ActionType.Preparation, ActionType.Prestige })
+        {
+            foreach (SkillDefinition definition in GetEquipped(type))
+            {
+                if (definition != null && type != ActionType.Prestige)
+                    ownedSkillIds.Add(definition.SkillId);
+            }
+        }
+        prestigeLockedForRun = GetEquipped(ActionType.Prestige).Count > 0;
     }
 
     public bool HasSource => source != null;
@@ -50,6 +63,72 @@ public sealed class CharacterSkillLoadoutRuntime
             .Contains(definition);
     }
 
+    public bool Owns(SkillDefinition definition) =>
+        definition != null && ownedSkillIds.Contains(definition.SkillId);
+
+    public bool TryAcquire(SkillDefinition definition, out string reason)
+    {
+        reason = string.Empty;
+        if (definition == null)
+        {
+            reason = "획득할 스킬 정의가 없습니다.";
+            return false;
+        }
+        if (definition.ActionType == ActionType.Prestige)
+        {
+            reason = "위세는 수집 대상이 아닙니다. 런 시작 3형 선택으로만 지정합니다.";
+            return false;
+        }
+        if (!ValidateCandidate(definition, out reason))
+            return false;
+        ownedSkillIds.Add(definition.SkillId);
+        return true;
+    }
+
+    public bool TryChoosePrestigeForRun(SkillDefinition definition, out string reason)
+    {
+        reason = string.Empty;
+        if (definition == null || definition.ActionType != ActionType.Prestige)
+        {
+            reason = "위세 정의가 올바르지 않습니다.";
+            return false;
+        }
+        if (prestigeLockedForRun)
+        {
+            IReadOnlyList<SkillDefinition> current = GetEquipped(ActionType.Prestige);
+            if (current.Count == 1 && ReferenceEquals(current[0], definition))
+                return true;
+            reason = "위세는 런 시작 선택 후 해당 런에서 교체할 수 없습니다.";
+            return false;
+        }
+        if (!ValidateCandidate(definition, out reason))
+            return false;
+        List<SkillDefinition> values = GetMutableList(ActionType.Prestige);
+        values.Clear();
+        values.Add(definition);
+        prestigeLockedForRun = true;
+        LoadoutChanged?.Invoke();
+        return true;
+    }
+
+    public bool TryReplaceInMaintenance(
+        SkillDefinition equipped,
+        SkillDefinition replacement,
+        out string reason)
+    {
+        if (equipped?.ActionType == ActionType.Prestige || replacement?.ActionType == ActionType.Prestige)
+        {
+            reason = "위세는 정비 교체 대상이 아닙니다.";
+            return false;
+        }
+        if (!Owns(replacement))
+        {
+            reason = "보유하지 않은 스킬은 장착할 수 없습니다.";
+            return false;
+        }
+        return TryReplace(equipped, replacement, out reason);
+    }
+
     public bool TryEquip(
         SkillDefinition definition,
         out string reason)
@@ -58,6 +137,18 @@ public sealed class CharacterSkillLoadoutRuntime
 
         if (!ValidateCandidate(definition, out reason))
             return false;
+
+        if (definition.ActionType == ActionType.Prestige)
+        {
+            reason = "위세는 TryChoosePrestigeForRun으로만 선택할 수 있습니다.";
+            return false;
+        }
+
+        if (!Owns(definition))
+        {
+            reason = "보유하지 않은 스킬은 장착할 수 없습니다.";
+            return false;
+        }
 
         List<SkillDefinition> values =
             GetMutableList(definition.ActionType);
@@ -116,6 +207,18 @@ public sealed class CharacterSkillLoadoutRuntime
         if (!ValidateCandidate(replacement, out reason))
             return false;
 
+        if (equipped.ActionType == ActionType.Prestige || replacement.ActionType == ActionType.Prestige)
+        {
+            reason = "위세는 런 내 교체 대상이 아닙니다.";
+            return false;
+        }
+
+        if (!Owns(replacement))
+        {
+            reason = "보유하지 않은 스킬은 장착할 수 없습니다.";
+            return false;
+        }
+
         if (equipped.ActionType != replacement.ActionType)
         {
             reason = "서로 다른 스킬 카테고리끼리는 교체할 수 없습니다.";
@@ -168,6 +271,9 @@ public sealed class CharacterSkillLoadoutRuntime
         CaptureIds(ActionType.Duel, state.DuelSkillIds);
         CaptureIds(ActionType.Preparation, state.PreparationSkillIds);
         CaptureIds(ActionType.Prestige, state.PrestigeSkillIds);
+        state.OwnedSkillIds.Clear();
+        foreach (string id in ownedSkillIds)
+            state.OwnedSkillIds.Add(id);
         return state;
     }
 
@@ -218,6 +324,29 @@ public sealed class CharacterSkillLoadoutRuntime
             destination.Clear();
             destination.AddRange(pair.Value);
         }
+
+        ownedSkillIds.Clear();
+        if (state.OwnedSkillIds != null)
+        {
+            foreach (string id in state.OwnedSkillIds)
+            {
+                if (!string.IsNullOrWhiteSpace(id))
+                    ownedSkillIds.Add(id);
+            }
+        }
+
+        // 구 저장 데이터에는 OwnedSkillIds가 없으므로 현재 장착 중인 비-위세 카드는 최소 보유로 복구한다.
+        foreach (KeyValuePair<ActionType, List<SkillDefinition>> pair in equippedByType)
+        {
+            if (pair.Key == ActionType.Prestige)
+                continue;
+            foreach (SkillDefinition definition in pair.Value)
+            {
+                if (definition != null)
+                    ownedSkillIds.Add(definition.SkillId);
+            }
+        }
+        prestigeLockedForRun = GetEquipped(ActionType.Prestige).Count > 0;
 
         LoadoutChanged?.Invoke();
         return true;

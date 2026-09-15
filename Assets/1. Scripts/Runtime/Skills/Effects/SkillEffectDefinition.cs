@@ -48,7 +48,8 @@ public abstract class SkillEffectDefinition : ScriptableObject
         SkillEffectOverrides overrides,
         SkillEffectTiming scheduledTiming)
     {
-        if (currentTiming != scheduledTiming)
+        if (currentTiming != scheduledTiming &&
+            !CanWakeFromRuntimeEvent(currentTiming))
         {
             return SkillEffectResult.NotScheduled(
                 this,
@@ -84,6 +85,27 @@ public abstract class SkillEffectDefinition : ScriptableObject
             this,
             currentTiming,
             selectedContext);
+    }
+
+    public bool CanWakeFromRuntimeEvent(SkillEffectTiming runtimeTiming)
+    {
+        if (SkillEffectTimingCatalog.IsAuthoringTiming(runtimeTiming) ||
+            conditions == null)
+        {
+            return false;
+        }
+
+        for (int i = 0; i < conditions.Count; i++)
+        {
+            SkillEffectCondition condition = conditions[i];
+            if (condition != null &&
+                condition.IsRuntimeEventConditionFor(runtimeTiming))
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     public abstract void Apply(

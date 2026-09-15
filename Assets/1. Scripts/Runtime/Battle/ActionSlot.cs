@@ -21,6 +21,12 @@ public class ActionSlot
     public string PlanningChoiceId;
     public bool PlanningEffectCommitted;
 
+    // 0915 planning contract: 비용은 계획 시 실제 commit한다.
+    public bool ResourceCostCommitted;
+
+    // 도사림/위세처럼 계획 단계에서 이미 실행한 행동은 Resolution queue에 다시 넣지 않는다.
+    public bool SkipResolution;
+
     public bool HasActionId => ActionId > 0;
 
     public bool AllowsSkill(Skill skill)
