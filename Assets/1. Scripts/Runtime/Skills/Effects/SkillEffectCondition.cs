@@ -67,10 +67,24 @@ public class SkillEffectCondition
                 return true;
 
             case SkillEffectConditionType.ClashWon:
+                // 합 종료시처럼 Timing 자체가 승패를 뜻하지 않는 시점에서도
+                // 전체 합 결과를 조건으로 사용할 수 있게 ClashResult를 우선한다.
+                if (context.ClashResult != null)
+                {
+                    return context.ClashResult.WinnerAction ==
+                           context.Action;
+                }
+
                 return context.Timing ==
                        SkillEffectTiming.OnClashWin;
 
             case SkillEffectConditionType.ClashLost:
+                if (context.ClashResult != null)
+                {
+                    return context.ClashResult.LoserAction ==
+                           context.Action;
+                }
+
                 return context.Timing ==
                        SkillEffectTiming.OnClashLose;
 

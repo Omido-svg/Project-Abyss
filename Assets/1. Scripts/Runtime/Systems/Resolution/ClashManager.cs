@@ -390,6 +390,17 @@ public class ClashManager
         result.MomentumAfterResolution =
             momentumManager.CurrentMomentum;
 
+        // -----------------------------------------------------------------
+        // 4) 정본의 "합 종료시".
+        // 합 다수결 승/패 효과와 낙일 continuation, 남은 굴림의
+        // 일방타격까지 모두 끝난 뒤 양쪽 스킬에 1회 발행한다.
+        // 합이 붙지 않은 ResolveOneSide 경로에는 발행하지 않는다.
+        // -----------------------------------------------------------------
+        if (firstSkillExecuted)
+            first.Skill?.NotifyClashEnded(result);
+        if (secondSkillExecuted)
+            second.Skill?.NotifyClashEnded(result);
+
         first.Skill?.NotifyAttackEnd(
             first,
             second,

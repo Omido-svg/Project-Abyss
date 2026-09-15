@@ -22,7 +22,8 @@ internal sealed class SkillEffectDispatcher
         RollResult rollResult = null,
         bool isClash = false,
         bool isOneSided = false,
-        bool rollSucceeded = false)
+        bool rollSucceeded = false,
+        ClashResultContext clashResult = null)
     {
         if (definition == null ||
             action == null ||
@@ -55,7 +56,8 @@ internal sealed class SkillEffectDispatcher
                     rollResult,
                     isClash,
                     isOneSided,
-                    rollSucceeded);
+                    rollSucceeded,
+                    clashResult);
 
             return ExecuteEntries(
                 definition,

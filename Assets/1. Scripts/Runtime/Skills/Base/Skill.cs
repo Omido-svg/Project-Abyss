@@ -849,7 +849,8 @@ public abstract class Skill
             RollResult rollResult = null,
             bool isClash = false,
             bool isOneSided = false,
-            bool rollSucceeded = false)
+            bool rollSucceeded = false,
+            ClashResultContext clashResult = null)
     {
         return effectDispatcher.Execute(
             RuntimeDefinition,
@@ -864,7 +865,8 @@ public abstract class Skill
             rollResult,
             isClash,
             isOneSided,
-            rollSucceeded);
+            rollSucceeded,
+            clashResult);
     }
 
     private IReadOnlyList<SkillEffectResult>
@@ -899,18 +901,55 @@ public abstract class Skill
                 result.WinnerAction,
                 SkillEffectTiming.OnClashWin,
                 result.LoserAction,
-                isClash: true);
+                isClash: true,
+                clashResult: result);
         }
 
-        // OnClashLose는 신규 정본 Authoring에는 노출하지 않지만
-        // 기존 데이터 호환을 위해 패자 EffectDefinition은 계속 발행한다.
+        // 합 패배시도 정본 Authoring 트리거다. 승패는 실제 맞붙은
+        // 교환 승수의 다수결이며 일방타격은 집계하지 않는다.
         if (result.LoserAction.Skill == this)
         {
             ExecuteDefinitionEffects(
                 result.LoserAction,
                 SkillEffectTiming.OnClashLose,
                 result.WinnerAction,
-                isClash: true);
+                isClash: true,
+                clashResult: result);
+        }
+    }
+
+    /// <summary>
+    /// 정본의 "합 종료시". 맞붙는 교환과 남은 굴림의 일방타격까지
+    /// 해당 합에 속한 모든 굴림 처리가 끝난 뒤 양쪽 스킬에 1회 발동한다.
+    /// 합 전체 승리/패배(OnClashWin/OnClashLose)보다 늦은 시점이다.
+    /// </summary>
+    public void NotifyClashEnded(ClashResultContext result)
+    {
+        if (result == null ||
+            !result.IsClash)
+        {
+            return;
+        }
+
+        if (result.FirstAction?.Skill == this)
+        {
+            ExecuteDefinitionEffects(
+                result.FirstAction,
+                SkillEffectTiming.OnClashEnd,
+                result.SecondAction,
+                isClash: true,
+                clashResult: result);
+            return;
+        }
+
+        if (result.SecondAction?.Skill == this)
+        {
+            ExecuteDefinitionEffects(
+                result.SecondAction,
+                SkillEffectTiming.OnClashEnd,
+                result.FirstAction,
+                isClash: true,
+                clashResult: result);
         }
     }
 

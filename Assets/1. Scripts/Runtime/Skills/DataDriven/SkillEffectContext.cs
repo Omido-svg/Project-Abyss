@@ -18,6 +18,12 @@ public class SkillEffectContext
     public ClashExchangeResult ExchangeResult { get; }
 
     /// <summary>
+    /// 합 단위 트리거(OnClashWin/OnClashLose/OnClashEnd)에서 사용할
+    /// 전체 합 결과입니다. 일반 굴림/피해 트리거에서는 null일 수 있습니다.
+    /// </summary>
+    public ClashResultContext ClashResult { get; }
+
+    /// <summary>
     /// 굴림과 무관한 페이즈에서는 -1.
     /// UI에 보여줄 때는 RollNumber(1-based)를 사용한다.
     /// </summary>
@@ -77,6 +83,7 @@ public class SkillEffectContext
             false,
             false,
             false,
+            null,
             action?.Target,
             action?.TargetPart)
     {
@@ -105,6 +112,7 @@ public class SkillEffectContext
             false,
             false,
             false,
+            null,
             damageContext?.Target ??
             action?.Target,
             damageContext?.TargetPart ??
@@ -127,6 +135,39 @@ public class SkillEffectContext
         bool isOneSided,
         bool rollSucceeded)
         : this(
+            action,
+            skillDefinition,
+            timing,
+            opponentAction,
+            damageContext,
+            killContext,
+            exchangeResult,
+            useCountThisTurn,
+            rollIndex,
+            rollResult,
+            isClash,
+            isOneSided,
+            rollSucceeded,
+            null)
+    {
+    }
+
+    public SkillEffectContext(
+        BattleAction action,
+        SkillDefinition skillDefinition,
+        SkillEffectTiming timing,
+        BattleAction opponentAction,
+        DamageContext damageContext,
+        KillEventContext killContext,
+        ClashExchangeResult exchangeResult,
+        int useCountThisTurn,
+        int rollIndex,
+        RollResult rollResult,
+        bool isClash,
+        bool isOneSided,
+        bool rollSucceeded,
+        ClashResultContext clashResult)
+        : this(
             action?.Owner,
             action,
             skillDefinition,
@@ -141,6 +182,7 @@ public class SkillEffectContext
             isClash,
             isOneSided,
             rollSucceeded,
+            clashResult,
             damageContext?.Target ??
             action?.Target,
             damageContext?.TargetPart ??
@@ -172,6 +214,7 @@ public class SkillEffectContext
             false,
             false,
             false,
+            null,
             owner,
             null)
     {
@@ -192,6 +235,7 @@ public class SkillEffectContext
         bool isClash,
         bool isOneSided,
         bool rollSucceeded,
+        ClashResultContext clashResult,
         Character target,
         BodyPart targetPart)
     {
@@ -203,6 +247,7 @@ public class SkillEffectContext
         DamageContext = damageContext;
         KillContext = killContext;
         ExchangeResult = exchangeResult;
+        ClashResult = clashResult;
         UseCountThisTurn = useCountThisTurn;
         RollIndex = rollIndex;
         RollResult = rollResult;
@@ -312,6 +357,7 @@ public class SkillEffectContext
             IsClash,
             IsOneSided,
             RollSucceeded,
+            ClashResult,
             selectedCharacter,
             selectedPart);
     }

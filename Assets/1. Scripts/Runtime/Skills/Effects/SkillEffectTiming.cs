@@ -16,13 +16,13 @@ public enum SkillEffectTiming
     // ---------------------------------------------------------------------
     OnExecute = 0,                 // 정본: 사용시 / 준비 행동 발동
     OnClashWin = 1,                // 정본: 합 승리시 (맞붙은 교환 다수결)
-    OnClashLose = 2,               // 호환 전용
+    OnClashLose = 2,               // 정본: 합 패배시 (맞붙은 교환 다수결)
     AfterDamage = 3,               // 정본: 피해 적용 후
     OnCritical = 4,                // 정본: 크리티컬 피해 확정 후
     OnKill = 5,                    // 정본: 처치시
     OnActionEnd = 6,               // 호환 전용
-    OnExchangeWin = 7,             // 정본: 승리시
-    OnExchangeLose = 8,            // 정본: 패배시
+    OnExchangeWin = 7,             // 정본: 교환 승리시
+    OnExchangeLose = 8,            // 정본: 교환 패배시
     OnOneSideHit = 9,              // 호환 전용
     OnClashDraw = 10,              // 호환 전용
     OnMultiRollPenaltyStart = 11,   // 내부/호환 전용
@@ -56,7 +56,8 @@ public enum SkillEffectTiming
     // ---------------------------------------------------------------------
     OnDuelMatched = 31,            // 정본: 매칭시
     OnPartWeakened = 32,           // 해당 피해로 정상 -> 약화 전이
-    OnPartBroken = 33              // 해당 피해로 약화 -> 파괴 전이
+    OnPartBroken = 33,             // 해당 피해로 약화 -> 파괴 전이
+    OnClashEnd = 34                // 정본: 합 종료시 (남은 일방타격까지 모두 처리 후)
 }
 
 /// <summary>
@@ -83,8 +84,10 @@ public static class SkillEffectTimingCatalog
         SkillEffectTiming.OnPartBroken,
         SkillEffectTiming.OnKill,
 
-        // 합 단위 예외. 정본에서는 극소수만 사용한다.
+        // 합 단위 결과 / 종료. 승패는 맞붙은 교환 다수결, 종료는 남은 일방타격까지 처리한 뒤다.
         SkillEffectTiming.OnClashWin,
+        SkillEffectTiming.OnClashLose,
+        SkillEffectTiming.OnClashEnd,
 
         SkillEffectTiming.OnTurnEnd,
         SkillEffectTiming.OnBattleEnd
@@ -117,20 +120,21 @@ public static class SkillEffectTimingCatalog
         SkillEffectTiming.OnBattleStart => "전투 시작시",
         SkillEffectTiming.OnTurnStart => "턴 시작시",
         SkillEffectTiming.OnExecute => "사용시",
-        SkillEffectTiming.OnDuelMatched => "매칭시",
-        SkillEffectTiming.OnExchangeWin => "승리시",
-        SkillEffectTiming.OnExchangeLose => "패배시",
+        SkillEffectTiming.OnDuelMatched => "매칭시 (결투)",
+        SkillEffectTiming.OnExchangeWin => "교환 승리시",
+        SkillEffectTiming.OnExchangeLose => "교환 패배시",
         SkillEffectTiming.AfterDamage => "피해 적용 후",
         SkillEffectTiming.OnCritical => "크리티컬시",
         SkillEffectTiming.OnPartWeakened => "부위 약화시",
         SkillEffectTiming.OnPartBroken => "부위 파괴시",
         SkillEffectTiming.OnKill => "처치시",
-        SkillEffectTiming.OnClashWin => "합 승리시",
+        SkillEffectTiming.OnClashWin => "합 승리시 (다수결)",
+        SkillEffectTiming.OnClashLose => "합 패배시 (다수결)",
+        SkillEffectTiming.OnClashEnd => "합 종료시",
         SkillEffectTiming.OnTurnEnd => "턴 종료시",
         SkillEffectTiming.OnBattleEnd => "전투 종료시",
 
         // 아래는 Serialized compatibility / 내부 파이프라인용.
-        SkillEffectTiming.OnClashLose => "합 패배시 (호환 전용)",
         SkillEffectTiming.OnActionEnd => "행동 종료시 (호환 전용)",
         SkillEffectTiming.OnOneSideHit => "일방 적중시 (호환 전용)",
         SkillEffectTiming.OnClashDraw => "합 무승부시 (호환 전용)",
@@ -227,10 +231,10 @@ public static class SkillEffectTimingCatalog
             "정본의 '매칭시'. 원래 행동이 결투 대 결투로 매칭된 경우 각 굴림 위치마다 발동합니다. 상대 굴림이 먼저 소진되어 뒤쪽 위치가 일방타격이 되어도 원래 결투 대 결투 게이트는 유지됩니다.",
 
         SkillEffectTiming.OnExchangeWin =>
-            "정본의 '승리시'. 실제 맞붙은 교환에서 이긴 직후, 피해 적용 전에 발동합니다. 평타는 유효한 일방타격도 승리로 보지만 결투는 결투 대 결투에서 실제로 맞붙어 이긴 경우에만 발동합니다.",
+            "정본의 '승리시' = 교환 승리시. 해당 굴림이 상대 굴림과 실제로 맞붙어 이긴 직후, 피해 적용 전에 발동합니다. 평타는 유효한 일방타격도 승리로 보지만 결투는 결투 대 결투에서 실제로 맞붙어 이긴 경우에만 발동합니다. 합 전체 다수결 승리와는 별개입니다.",
 
         SkillEffectTiming.OnExchangeLose =>
-            "정본의 '패배시'. 실제 맞붙은 교환에서 진 직후, 피해 적용 전에 발동합니다. 결투의 패배 효과는 결투 대 결투 게이트 안에서만 발동합니다.",
+            "정본의 '패배시' = 교환 패배시. 해당 굴림이 상대 굴림과 실제로 맞붙어 진 직후, 피해 적용 전에 발동합니다. 결투의 패배 효과는 결투 대 결투 게이트 안에서만 발동합니다. 합 전체 다수결 패배와는 별개입니다.",
 
         SkillEffectTiming.AfterDamage =>
             "실제 피해 적용이 끝난 직후. DamageContext의 적용 피해량/가드/부위 HP 결과를 참조할 수 있습니다.",
@@ -248,7 +252,13 @@ public static class SkillEffectTimingCatalog
             "이 스킬의 피해로 대상 처치가 확정된 직후입니다.",
 
         SkillEffectTiming.OnClashWin =>
-            "합 단위 다수결 승리. 실제 맞부딪힌 교환 승수만 세고 일방타격은 제외합니다. 맞대결 교환이 모두 끝난 뒤, 남은 일방타격 처리 전에 확정됩니다.",
+            "합 전체 다수결 승리. 실제 맞부딪힌 교환 승수만 세고 일방타격은 제외합니다. 맞대결 교환이 모두 끝난 뒤, 남은 일방타격 처리 전에 확정됩니다.",
+
+        SkillEffectTiming.OnClashLose =>
+            "합 전체 다수결 패배. 실제 맞부딪힌 교환 승수만 세고 일방타격은 제외합니다. 맞대결 교환이 모두 끝난 뒤, 남은 일방타격 처리 전에 확정됩니다.",
+
+        SkillEffectTiming.OnClashEnd =>
+            "정본의 '합 종료시'. 합 승패 확정과 남은 굴림의 일방타격까지 모두 처리된 뒤 양쪽 스킬에 1회 발동합니다. 합이 붙지 않은 일방 공격에는 발동하지 않습니다. SkillEffectContext.ClashResult에서 교환 승수/일방타격 수 등 합 전체 결과를 참조할 수 있습니다.",
 
         SkillEffectTiming.OnTurnEnd =>
             "턴 종료 정산 시점입니다.",
@@ -257,13 +267,10 @@ public static class SkillEffectTimingCatalog
             "전투 종료가 확정된 뒤 1회입니다.",
 
         SkillEffectTiming.OnRollSuccess =>
-            "구형 Gameplay v5 값입니다. 신규 데이터는 '승리시(OnExchangeWin)'를 사용하세요.",
+            "구형 Gameplay v5 값입니다. 신규 데이터는 '교환 승리시(OnExchangeWin)'를 사용하세요.",
 
         SkillEffectTiming.OnRollFailure =>
-            "구형 Gameplay v5 값입니다. 신규 데이터는 '패배시(OnExchangeLose)'를 사용하세요.",
-
-        SkillEffectTiming.OnClashLose =>
-            "현재 정본 스킬 문법에는 합 단위 패배 트리거가 없습니다. 기존 데이터 호환용입니다.",
+            "구형 Gameplay v5 값입니다. 신규 데이터는 '교환 패배시(OnExchangeLose)'를 사용하세요.",
 
         _ =>
             "현재 정본 Skill Effect Authoring에는 노출하지 않는 내부/호환 타이밍입니다."
