@@ -2,8 +2,8 @@ using System;
 using UnityEngine;
 
 /// <summary>
-/// 재사용 가능한 SkillEffectDefinition과 스킬별 파라미터/실행 시점을 결합합니다.
-/// 같은 Effect Template 하나를 여러 스킬/여러 세부 페이즈에서 재사용할 수 있습니다.
+/// 재사용 가능한 SkillEffectDefinition과 스킬별 파라미터/발동 Trigger를 결합합니다.
+/// 같은 Effect Template 하나를 여러 스킬/여러 정본 Trigger에서 재사용할 수 있습니다.
 /// </summary>
 [Serializable]
 public sealed class SkillEffectEntry
@@ -11,10 +11,10 @@ public sealed class SkillEffectEntry
     public SkillEffectDefinition Definition;
     public SkillEffectOverrides Overrides = new SkillEffectOverrides();
 
-    [Header("Schedule Override — optional")]
+    [Header("Trigger Override — optional")]
     [Tooltip(
         "끄면 Effect Definition의 기본 Timing을 사용합니다. " +
-        "켜면 같은 Effect Template을 이 Entry에서 다른 세부 페이즈에 재사용할 수 있습니다.")]
+        "켜면 같은 Effect Template을 이 Entry에서 다른 정본 Trigger에 재사용할 수 있습니다.")]
     public bool OverrideTiming;
 
     public SkillEffectTiming Timing =

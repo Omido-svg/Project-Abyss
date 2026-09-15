@@ -94,7 +94,7 @@ public sealed class SkillEffectEntryDrawer : PropertyDrawer
             new Rect(position.x, y, position.width, line),
             overrideTiming,
             timing,
-            "Detailed Timing");
+            "Trigger");
         y += line + Gap;
 
         DrawSchedulingRow(
@@ -146,10 +146,26 @@ public sealed class SkillEffectEntryDrawer : PropertyDrawer
                 rect.width - 20f,
                 rect.height);
 
-            EditorGUI.PropertyField(
-                valueRect,
-                value,
-                new GUIContent(label));
+            if (label == "Trigger")
+            {
+                bool isRollEntry =
+                    value.propertyPath.Contains("Rolls.Array.data");
+
+                SkillEffectTimingDrawer.DrawPopup(
+                    valueRect,
+                    value,
+                    new GUIContent(label),
+                    isRollEntry
+                        ? SkillEffectTimingCatalog.RollAuthoringTimings
+                        : SkillEffectTimingCatalog.AuthoringTimings);
+            }
+            else
+            {
+                EditorGUI.PropertyField(
+                    valueRect,
+                    value,
+                    new GUIContent(label));
+            }
         }
     }
 

@@ -6,7 +6,7 @@ using UnityEngine;
 /// 유진의 무기, 살수의 감, 표식, 봉인, 처형, 재굴림, 위세를 통합한다.
 /// 표식과 결투 효과는 개별 교환 결과가 공개되는 즉시 처리한다.
 /// </summary>
-public sealed class YujinMechanic : CombatMechanic, ICharacterUniqueGaugeProvider, IActionPlanningRule, IActionPlanningChoiceRule, IActionPlanningCommitRule, IExchangeContinuationRule
+public sealed class YujinMechanic : CombatMechanic, ICharacterUniqueGaugeProvider, IActionPlanningRule, IActionPlanningChoiceRule, IActionPlanningCommitRule, IClashWinnerContinuationRule
 {
     public const int MarkIgnitionThreshold = 44;
     public const int WeaponSwitchEnergyCost = 1;
@@ -633,20 +633,26 @@ public sealed class YujinMechanic : CombatMechanic, ICharacterUniqueGaugeProvide
                skillId == YujinSkillIds.Pursuit;
     }
 
-    public bool RemovesOpponentRemainingRollsOnExchangeWin(
+    public bool RemovesOpponentRemainingRollsOnClashWin(
         BattleAction action)
     {
         return action?.Owner == owner &&
                CurrentWeapon == YujinWeaponType.Nakil;
     }
 
-    int IExchangeContinuationRule.ModifyOpponentRemainingRollCount(
+    int IClashWinnerContinuationRule.ModifyLoserRemainingRollCountAfterClash(
         BattleAction winnerAction,
-        BattleAction opponentAction,
+        BattleAction loserAction,
+        ClashResultContext result,
         int currentRemainingRollCount)
     {
-        return RemovesOpponentRemainingRollsOnExchangeWin(
-                winnerAction)
+        bool wonClash =
+            result != null &&
+            result.WinnerAction == winnerAction &&
+            result.LoserAction == loserAction;
+
+        return wonClash &&
+               RemovesOpponentRemainingRollsOnClashWin(winnerAction)
             ? 0
             : Mathf.Max(0, currentRemainingRollCount);
     }

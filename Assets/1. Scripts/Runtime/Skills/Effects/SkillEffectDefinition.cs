@@ -3,8 +3,9 @@ using UnityEngine;
 
 public abstract class SkillEffectDefinition : ScriptableObject
 {
-    [Header("Execution Contract")]
+    [Header("Trigger Contract — Rules 2026-09")]
     [SerializeField]
+    [Tooltip("정본 발동 Trigger. 신규 콘텐츠는 Authoring UI에 노출되는 정본 Trigger만 사용합니다.")]
     private SkillEffectTiming timing =
         SkillEffectTiming.OnExecute;
 

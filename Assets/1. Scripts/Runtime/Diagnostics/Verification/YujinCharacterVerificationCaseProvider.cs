@@ -132,10 +132,10 @@ public sealed class YujinCharacterVerificationCaseProvider :
 
         yield return CharacterVerificationCaseDefinition.Create(
             NakilRemainingRollRemoval,
-            "낙일 승리 시 상대 잔여 굴림 제거",
+            "낙일 합 승리 시 패자 잔여 굴림 제거",
             CharacterVerificationCategory.Duel,
             CharacterVerificationExecutionMode.IsolatedRuntime,
-            "낙일 상태의 유진이 교환에서 승리하면 첫 번째·두 번째 행동 위치와 무관하게 상대의 남은 굴림만 0이 되는지 검사합니다.");
+            "낙일 상태의 유진이 실제 맞붙은 교환 다수결로 합을 이기면 행동 위치와 무관하게 패자의 남은 굴림만 0이 되는지 검사합니다.");
 
         yield return CharacterVerificationCaseDefinition.Create(
             MarkIgnition,
@@ -1015,7 +1015,7 @@ public sealed class YujinCharacterVerificationCaseProvider :
 
         MethodInfo method =
             typeof(ClashManager).GetMethod(
-                "ApplyNakilRemainingRollRemoval",
+                "ApplyClashWinnerContinuationRules",
                 BindingFlags.Static |
                 BindingFlags.NonPublic);
 
@@ -1025,7 +1025,7 @@ public sealed class YujinCharacterVerificationCaseProvider :
             method == null)
         {
             return context.Fail(
-                "낙일 잔여 굴림 제거 Fixture와 실제 처리 메서드 존재",
+                "낙일 합 승리 잔여 굴림 제거 Fixture와 실제 처리 메서드 존재",
                 $"Mechanic={mechanic != null}, YujinSkill={yujinSkill != null}, " +
                 $"OpponentSkill={opponentSkill != null}, Method={method != null}");
         }
@@ -1051,138 +1051,126 @@ public sealed class YujinCharacterVerificationCaseProvider :
         mechanic.SetWeaponForVerification(
             YujinWeaponType.Nakil);
 
-        ClashExchangeResult firstWinner =
-            new ClashExchangeResult
+        ClashResultContext yujinFirstWin =
+            new ClashResultContext
             {
+                IsClash = true,
                 FirstAction = mine,
                 SecondAction = theirs,
+                FirstExchangeWins = 2,
+                SecondExchangeWins = 1,
                 WinnerAction = mine,
                 LoserAction = theirs,
-                IsDuelExchange = true
+                IsDraw = false
             };
 
         object[] firstArgs =
         {
-            firstWinner,
-            mine,
-            theirs,
+            yujinFirstWin,
             2,
             4
         };
 
-        method.Invoke(
-            null,
-            firstArgs);
+        method.Invoke(null, firstArgs);
 
         int firstRemainAfter =
-            (int)firstArgs[3];
-
+            (int)firstArgs[1];
         int secondRemainAfter =
-            (int)firstArgs[4];
+            (int)firstArgs[2];
 
-        ClashExchangeResult secondWinner =
-            new ClashExchangeResult
+        ClashResultContext yujinSecondWin =
+            new ClashResultContext
             {
+                IsClash = true,
                 FirstAction = theirs,
                 SecondAction = mine,
+                FirstExchangeWins = 1,
+                SecondExchangeWins = 2,
                 WinnerAction = mine,
                 LoserAction = theirs,
-                IsDuelExchange = true
+                IsDraw = false
             };
 
         object[] secondArgs =
         {
-            secondWinner,
-            theirs,
-            mine,
+            yujinSecondWin,
             5,
             3
         };
 
-        method.Invoke(
-            null,
-            secondArgs);
+        method.Invoke(null, secondArgs);
 
         int opponentFirstAfter =
-            (int)secondArgs[3];
-
+            (int)secondArgs[1];
         int yujinSecondAfter =
-            (int)secondArgs[4];
+            (int)secondArgs[2];
 
-        ClashExchangeResult oneSided =
-            new ClashExchangeResult
+        ClashResultContext draw =
+            new ClashResultContext
             {
+                IsClash = true,
                 FirstAction = mine,
                 SecondAction = theirs,
-                WinnerAction = mine,
-                LoserAction = theirs,
-                IsDuelExchange = true,
-                IsOneSided = true
+                FirstExchangeWins = 1,
+                SecondExchangeWins = 1,
+                WinnerAction = null,
+                LoserAction = null,
+                IsDraw = true
             };
 
-        object[] oneSidedArgs =
+        object[] drawArgs =
         {
-            oneSided,
-            mine,
-            theirs,
+            draw,
             2,
             4
         };
 
-        method.Invoke(
-            null,
-            oneSidedArgs);
+        method.Invoke(null, drawArgs);
 
-        int oneSideFirst =
-            (int)oneSidedArgs[3];
-
-        int oneSideSecond =
-            (int)oneSidedArgs[4];
+        int drawFirst =
+            (int)drawArgs[1];
+        int drawSecond =
+            (int)drawArgs[2];
 
         mechanic.SetWeaponForVerification(
             YujinWeaponType.Baeku);
 
         object[] nonNakilArgs =
         {
-            firstWinner,
-            mine,
-            theirs,
+            yujinFirstWin,
             2,
             4
         };
 
-        method.Invoke(
-            null,
-            nonNakilArgs);
+        method.Invoke(null, nonNakilArgs);
 
         int nonNakilFirst =
-            (int)nonNakilArgs[3];
-
+            (int)nonNakilArgs[1];
         int nonNakilSecond =
-            (int)nonNakilArgs[4];
+            (int)nonNakilArgs[2];
 
         bool valid =
             firstRemainAfter == 2 &&
             secondRemainAfter == 0 &&
             opponentFirstAfter == 0 &&
             yujinSecondAfter == 3 &&
-            oneSideFirst == 2 &&
-            oneSideSecond == 4 &&
+            drawFirst == 2 &&
+            drawSecond == 4 &&
             nonNakilFirst == 2 &&
             nonNakilSecond == 4;
 
         string detail =
             $"YujinFirst=2/{secondRemainAfter}, " +
             $"YujinSecond={opponentFirstAfter}/3, " +
-            $"OneSide={oneSideFirst}/{oneSideSecond}, " +
+            $"Draw={drawFirst}/{drawSecond}, " +
             $"Baeku={nonNakilFirst}/{nonNakilSecond}";
 
         return valid
             ? context.Pass(
-                "낙일 교환 승리 시 상대 잔여 굴림만 0·일방/다른 무기 미적용",
+                "낙일 합 다수결 승리 시 패자 잔여 굴림만 0·무승부/다른 무기 미적용",
                 detail)
             : context.Fail(
-                "낙일 교환 승리 시 상대 잔여 굴림만 0·일방/다른 무기 미적용",
+                "낙일 합 다수결 승리 시 패자 잔여 굴림만 0·무승부/다른 무기 미적용",
                 detail);
     }
 

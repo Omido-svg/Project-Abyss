@@ -44,10 +44,10 @@ public sealed class SkillRollData
     [Tooltip("같은 굴림 인덱스의 값을 행동 전체에서 재사용합니다.")]
     public bool ReuseValueAcrossAction;
 
-    [Header("Per-roll detailed phase effects — Gameplay v5")]
+    [Header("Per-roll trigger effects — Rules 2026-09")]
     [Tooltip(
-        "이 굴림 전용 세부 페이즈 효과입니다. " +
-        "Entry의 Timing을 OnRollStart/OnRollSuccess/OnHit/OnRollEnd 등으로 지정합니다.")]
+        "이 굴림 위치에만 붙는 정본 Trigger 효과입니다. " +
+        "매칭시/승리시/패배시/피해 후/크리티컬/부위 약화·파괴/처치 트리거만 사용합니다.")]
     public List<SkillEffectEntry> EffectEntries = new();
 
     [Header("Legacy per-roll win/lose effects")]

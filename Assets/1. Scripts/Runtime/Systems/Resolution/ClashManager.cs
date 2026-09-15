@@ -242,6 +242,73 @@ public class ClashManager
         bool firstOneSidedStarted = false;
         bool secondOneSidedStarted = false;
 
+        // -----------------------------------------------------------------
+        // 1) 실제로 맞붙는 교환을 먼저 모두 해결한다.
+        // 정본의 합 승자는 이 구간의 승수만 세며 일방타격은 포함하지 않는다.
+        // -----------------------------------------------------------------
+        while (firstRemaining > 0 &&
+               secondRemaining > 0)
+        {
+            bool firstCanRoll =
+                CanContinueRoll(first);
+            bool secondCanRoll =
+                CanContinueRoll(second);
+
+            if (!firstCanRoll || !secondCanRoll)
+                break;
+
+            ClashExchangeResult exchange =
+                ResolvePairedExchange(
+                    first,
+                    second,
+                    exchangeIndex,
+                    ref firstSkillExecuted,
+                    ref secondSkillExecuted);
+
+            firstRemaining--;
+            secondRemaining--;
+            result.PairedExchangeCount++;
+
+            AddExchangeResult(result, exchange);
+
+            if (exchange?.WinnerAction == first)
+                result.FirstExchangeWins++;
+            else if (exchange?.WinnerAction == second)
+                result.SecondExchangeWins++;
+
+            exchangeIndex++;
+        }
+
+        // -----------------------------------------------------------------
+        // 2) 맞붙는 교환이 끝난 즉시 합 다수결을 확정한다.
+        // OnClashWin과 낙일의 남은 굴림 삭제는 반드시 일방타격보다 먼저 처리한다.
+        // -----------------------------------------------------------------
+        FinalizeClashSummary(result);
+
+        first.Skill?.NotifyClashResolved(result);
+        second.Skill?.NotifyClashResolved(result);
+
+        if (!result.IsDraw &&
+            result.WinnerAction != null &&
+            result.LoserAction != null)
+        {
+            battleContext._battleEvent.RaiseClashWin(
+                result.WinnerAction,
+                result.LoserAction);
+            battleContext._battleEvent.RaiseClashLose(
+                result.LoserAction,
+                result.WinnerAction);
+
+            ApplyClashWinnerContinuationRules(
+                result,
+                ref firstRemaining,
+                ref secondRemaining);
+        }
+
+        // -----------------------------------------------------------------
+        // 3) 남은 굴림을 일방타격으로 처리한다.
+        // 이 구간은 위에서 확정한 합 다수결에 절대 포함되지 않는다.
+        // -----------------------------------------------------------------
         while (firstRemaining > 0 ||
                secondRemaining > 0)
         {
@@ -256,40 +323,22 @@ public class ClashManager
             if (!firstCanRoll && !secondCanRoll)
                 break;
 
+            // 정상적인 합에서는 맞붙는 교환 구간 종료 뒤 한쪽만 남는다.
+            // 둘 다 남아 있다면 타깃 파괴/외부 continuation 같은 비정상 전환이므로
+            // 다시 paired exchange를 만들지 않고 안전하게 종료한다.
             if (firstCanRoll && secondCanRoll)
             {
-                ClashExchangeResult exchange =
-                    ResolvePairedExchange(
-                        first,
-                        second,
-                        exchangeIndex,
-                        ref firstSkillExecuted,
-                        ref secondSkillExecuted);
-
-                firstRemaining--;
-                secondRemaining--;
-                result.PairedExchangeCount++;
-
-                AddExchangeResult(result, exchange);
-
-                if (exchange.WinnerAction == first)
-                    result.FirstExchangeWins++;
-                else if (exchange.WinnerAction == second)
-                    result.SecondExchangeWins++;
-
-                ApplyExchangeContinuationRules(
-                    exchange,
-                    first,
-                    second,
-                    ref firstRemaining,
-                    ref secondRemaining);
-
-                exchangeIndex++;
-                continue;
+                Debug.LogWarning(
+                    "[ClashManager] 합 다수결 확정 뒤 양쪽 굴림이 모두 남았습니다. " +
+                    "Rules 2026-09에서는 일방타격 구간에서 새 paired exchange를 만들지 않습니다.");
+                break;
             }
 
             BattleAction oneSideAction =
                 firstCanRoll ? first : second;
+
+            BattleAction exhaustedOpponent =
+                firstCanRoll ? second : first;
 
             ref bool oneSideSkillExecuted = ref
                 (firstCanRoll
@@ -300,9 +349,6 @@ public class ClashManager
                 !firstOneSidedStarted)
             {
                 firstOneSidedStarted = true;
-
-                // 이미 합 굴림을 수행한 행동이 상대 굴림 소진으로
-                // 일방 공격 구간에 진입하는 전환점이다.
                 if (firstSkillExecuted)
                     first.Skill?.NotifyOneSidedStart(first);
             }
@@ -310,7 +356,6 @@ public class ClashManager
                      !secondOneSidedStarted)
             {
                 secondOneSidedStarted = true;
-
                 if (secondSkillExecuted)
                     second.Skill?.NotifyOneSidedStart(second);
             }
@@ -318,9 +363,7 @@ public class ClashManager
             ClashExchangeResult oneSideExchange =
                 ResolveOneSideExchange(
                     oneSideAction,
-                    oneSideAction == first
-                        ? second
-                        : first,
+                    exhaustedOpponent,
                     exchangeIndex,
                     ref oneSideSkillExecuted,
                     cameFromClash: true);
@@ -344,9 +387,6 @@ public class ClashManager
             exchangeIndex++;
         }
 
-        FinalizeClashSummary(
-            result);
-
         result.MomentumAfterResolution =
             momentumManager.CurrentMomentum;
 
@@ -367,94 +407,67 @@ public class ClashManager
         return result;
     }
 
-    private static void ApplyExchangeContinuationRules(
-        ClashExchangeResult exchange,
-        BattleAction first,
-        BattleAction second,
+    private static void ApplyClashWinnerContinuationRules(
+        ClashResultContext result,
         ref int firstRemaining,
         ref int secondRemaining)
     {
-        if (exchange == null ||
-            exchange.WasCancelled ||
-            exchange.IsTie ||
-            exchange.IsOneSided ||
-            exchange.WinnerAction == null)
+        if (result == null ||
+            result.IsDraw ||
+            result.WinnerAction == null ||
+            result.LoserAction == null)
         {
             return;
         }
 
         BattleAction winner =
-            exchange.WinnerAction;
+            result.WinnerAction;
+        BattleAction loser =
+            result.LoserAction;
 
-        BattleAction opponent;
         int before;
-        int after;
-
-        if (winner == first)
-        {
-            opponent = second;
-            before = Mathf.Max(0, secondRemaining);
-            after = ModifyOpponentRemainingRollCount(
-                winner,
-                opponent,
-                before);
-            secondRemaining = after;
-        }
-        else if (winner == second)
-        {
-            opponent = first;
+        if (loser == result.FirstAction)
             before = Mathf.Max(0, firstRemaining);
-            after = ModifyOpponentRemainingRollCount(
-                winner,
-                opponent,
-                before);
-            firstRemaining = after;
-        }
+        else if (loser == result.SecondAction)
+            before = Mathf.Max(0, secondRemaining);
         else
-        {
-            return;
-        }
-
-        int removed =
-            Mathf.Max(0, before - after);
-
-        if (removed <= 0)
             return;
 
-        Debug.Log(
-            $"[ClashContinuation] {winner.Owner.name} 교환 승리 / " +
-            $"상대 남은 굴림 {removed}개 제거");
-    }
-
-    private static int ModifyOpponentRemainingRollCount(
-        BattleAction winner,
-        BattleAction opponent,
-        int currentRemainingRollCount)
-    {
-        int remaining =
-            Mathf.Max(0, currentRemainingRollCount);
-
+        int remaining = before;
         IReadOnlyList<CombatMechanic> mechanics =
             winner?.Owner?.Mechanics;
 
-        if (mechanics == null)
-            return remaining;
-
-        foreach (CombatMechanic mechanic in mechanics)
+        if (mechanics != null)
         {
-            if (mechanic is not IExchangeContinuationRule rule)
-                continue;
+            foreach (CombatMechanic mechanic in mechanics)
+            {
+                if (mechanic is not IClashWinnerContinuationRule rule)
+                    continue;
 
-            remaining =
-                Mathf.Max(
+                remaining = Mathf.Max(
                     0,
-                    rule.ModifyOpponentRemainingRollCount(
+                    rule.ModifyLoserRemainingRollCountAfterClash(
                         winner,
-                        opponent,
+                        loser,
+                        result,
                         remaining));
+            }
         }
 
-        return remaining;
+        if (loser == result.FirstAction)
+            firstRemaining = remaining;
+        else
+            secondRemaining = remaining;
+
+        int removed =
+            Mathf.Max(0, before - remaining);
+
+        if (removed > 0)
+        {
+            Debug.Log(
+                $"[ClashContinuation] {winner.Owner.name} 합 승리 / " +
+                $"패자 남은 굴림 {removed}개 제거");
+        }
     }
 
     private ClashExchangeResult ResolvePairedExchange(
@@ -507,6 +520,13 @@ public class ClashManager
             };
         }
 
+        // 정본의 "매칭시"는 RNG/승패보다 먼저, 굴림 위치마다 판정한다.
+        first.Skill?.NotifyDuelMatched(
+            first, second, exchangeIndex, isOneSided: false);
+        second.Skill?.NotifyDuelMatched(
+            second, first, exchangeIndex, isOneSided: false);
+
+        // 아래 RollStart는 구 Gameplay v5 데이터 호환용 phase다.
         first.Skill?.NotifyRollStart(
             first, second, exchangeIndex,
             isClash: true, isOneSided: false);
@@ -678,15 +698,6 @@ public class ClashManager
                     applyMomentum:
                         damagePower.ApplySecondaryMomentum);
 
-            winner.Skill?.NotifyExchangeWin(
-                winner,
-                loser,
-                damageContext);
-
-            loser.Skill?.NotifyExchangeLose(
-                loser,
-                winner,
-                damageContext);
         }
 
         int firstPrestigeGain =
@@ -882,6 +893,16 @@ public class ClashManager
             };
         }
 
+        if (cameFromClash)
+        {
+            action.Skill?.NotifyDuelMatched(
+                action,
+                exhaustedOpponent,
+                exchangeIndex,
+                isOneSided: true);
+        }
+
+        // 구 Gameplay v5 데이터 호환용 phase.
         action.Skill?.NotifyRollStart(
             action,
             exhaustedOpponent,
@@ -1153,10 +1174,26 @@ public class ClashManager
             result.FirstExchangeWins ==
             result.SecondExchangeWins;
 
-        // 표준 규칙은 교환별 결과만 사용합니다.
-        // 전체 합 다수결 승자와 추가 보상은 존재하지 않습니다.
-        result.WinnerAction = null;
-        result.LoserAction = null;
+        if (result.IsDraw)
+        {
+            result.WinnerAction = null;
+            result.LoserAction = null;
+            return;
+        }
+
+        bool firstWon =
+            result.FirstExchangeWins >
+            result.SecondExchangeWins;
+
+        result.WinnerAction =
+            firstWon
+                ? result.FirstAction
+                : result.SecondAction;
+
+        result.LoserAction =
+            firstWon
+                ? result.SecondAction
+                : result.FirstAction;
     }
 
     private void AddExchangeResult(
