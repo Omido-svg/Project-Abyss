@@ -2,13 +2,6 @@ using System;
 using UnityEngine;
 
 /// <summary>
-/// Production BattleRuntimeFactory를 그대로 사용하는 Verification Coroutine Host.
-/// </summary>
-public sealed class GameSystemVerificationCoroutineHost : MonoBehaviour
-{
-}
-
-/// <summary>
 /// Production BattleRuntimeFactory를 그대로 사용해 Player/Enemy clone을 초기화하는
 /// Game System Verification용 격리 Host.
 /// 검증 전용으로 Manager graph를 재조립하지 않으므로 실제 게임의 Composition Root 변경을 자동 추적한다.
