@@ -9,12 +9,17 @@ public sealed class Hifumi : Character, ICharacterAuthoringTarget
 {
     [SerializeField, Min(1)] private int partHitPoints = 125;
 
+    [Header("Phase D · H-10 Self Governor")]
+    [Tooltip("결투 교환 승리 뒤 다음 턴 결투 위력 감소량. 0916에서 (미정)이므로 0은 Unset입니다.")]
+    [SerializeField, Min(0)] private int duelGovernorPowerPenalty = 0;
+
     private readonly List<BodyPart> bodyParts = new();
 
     public override IReadOnlyList<BodyPart> BodyParts => bodyParts;
     public override bool SupportsLastStand => true;
 
     public HifumiMechanic HifumiMechanic => GetMechanic<HifumiMechanic>();
+    public int DuelGovernorPowerPenalty => Mathf.Max(0, duelGovernorPowerPenalty);
 
     public bool ApplyCharacterAuthoring(CharacterAuthoringBundle bundle) =>
         bundle != null &&

@@ -621,6 +621,9 @@ public class ClashManager
             second, first, exchangeIndex,
             isClash: true, isOneSided: false);
 
+        bool hasForcedJudgment = false;
+        ClashJudgmentResult forcedJudgment = default;
+
         while (true)
         {
             clashPowerPipeline.RollForClash(first, second, exchangeIndex);
@@ -659,6 +662,15 @@ public class ClashManager
                 first,
                 second,
                 exchangeIndex);
+
+            if (TryResolveForcedRollJudgment(
+                    first,
+                    second,
+                    out forcedJudgment))
+            {
+                hasForcedJudgment = true;
+                break;
+            }
 
             ClashJudgmentResult judgment =
                 clashPowerPipeline.Judge(
@@ -715,9 +727,11 @@ public class ClashManager
         }
 
         ClashJudgmentResult finalJudgment =
-            clashPowerPipeline.Judge(
-                first,
-                second);
+            hasForcedJudgment
+                ? forcedJudgment
+                : clashPowerPipeline.Judge(
+                    first,
+                    second);
 
         BattleAction winner =
             finalJudgment.Winner;
@@ -1139,6 +1153,45 @@ public class ClashManager
             action,
             exchangeIndex);
 
+        if (IsForcedRollFailure(action))
+        {
+            action.Skill?.NotifyRollOutcome(
+                action,
+                exhaustedOpponent,
+                exchangeIndex,
+                false,
+                isClash: cameFromClash,
+                isOneSided: true);
+
+            ClashExchangeResult forcedFailure =
+                new ClashExchangeResult
+                {
+                    ExchangeIndex = exchangeIndex,
+                    FirstAction = action,
+                    SecondAction = exhaustedOpponent,
+                    IsOneSided = true,
+                    FirstClashPower = action.RolledPower,
+                    FirstRollResult = action.LastRollResult?.Clone(),
+                    FirstRollType = action.CurrentRollType,
+                    MomentumBefore = momentumBefore,
+                    MomentumAfter = momentumBefore
+                };
+
+            action.Skill?.NotifyRollResolved(
+                action, exhaustedOpponent, exchangeIndex, false, null,
+                isClash: cameFromClash, isOneSided: true);
+
+            LogExchange(forcedFailure, isClash: cameFromClash);
+            battleContext._battleEvent
+                .RaiseExchangeResolved(forcedFailure);
+
+            action.Skill?.NotifyRollEnd(
+                action, exhaustedOpponent, exchangeIndex, false, forcedFailure,
+                isClash: cameFromClash, isOneSided: true);
+
+            return forcedFailure;
+        }
+
         DamagePowerResolution damagePower =
             DamagePowerResolver.ResolveOneSided(
                 action);
@@ -1320,6 +1373,57 @@ public class ClashManager
             isClash: cameFromClash, isOneSided: true);
 
         return exchange;
+    }
+
+    private static bool TryResolveForcedRollJudgment(
+        BattleAction first,
+        BattleAction second,
+        out ClashJudgmentResult result)
+    {
+        bool firstFailed = IsForcedRollFailure(first);
+        bool secondFailed = IsForcedRollFailure(second);
+
+        // If both sides somehow force-fail on the same exchange, fall back to
+        // the normal judgment contract instead of inventing a new draw rule.
+        if (firstFailed == secondFailed)
+        {
+            result = default;
+            return false;
+        }
+
+        bool firstWins = !firstFailed;
+        result = new ClashJudgmentResult(
+            firstWins
+                ? ClashJudgmentOutcome.FirstWins
+                : ClashJudgmentOutcome.SecondWins,
+            firstWins ? first : second,
+            firstWins ? second : first);
+
+        return true;
+    }
+
+    private static bool IsForcedRollFailure(
+        BattleAction action)
+    {
+        if (action?.Owner?.Mechanics == null ||
+            action.LastRollResult == null)
+        {
+            return false;
+        }
+
+        foreach (CombatMechanic mechanic in action.Owner.Mechanics)
+        {
+            if (mechanic is IForcedRollFailureRule rule &&
+                rule.IsForcedRollFailure(
+                    action,
+                    action.LastRollResult,
+                    out _))
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private List<DamageContext>

@@ -7,6 +7,7 @@ public readonly struct HifumiCounterPreview
         bool enabled,
         int counterCount,
         int counterPower,
+        int boneGain,
         int heal,
         bool consumeAllBone,
         bool weaken,
@@ -16,6 +17,7 @@ public readonly struct HifumiCounterPreview
         Enabled = enabled;
         CounterCount = counterCount;
         CounterPower = counterPower;
+        BoneGain = boneGain;
         Heal = heal;
         ConsumeAllBone = consumeAllBone;
         Weaken = weaken;
@@ -26,6 +28,7 @@ public readonly struct HifumiCounterPreview
     public bool Enabled { get; }
     public int CounterCount { get; }
     public int CounterPower { get; }
+    public int BoneGain { get; }
     public int Heal { get; }
     public bool ConsumeAllBone { get; }
     public bool Weaken { get; }
@@ -34,35 +37,69 @@ public readonly struct HifumiCounterPreview
 }
 
 /// <summary>
-/// 히후미 코어: 뼈 0~500 / 짓눌림 생존 / 친치로 / 반격.
-/// 기획 미확정값은 PATCH_NOTES의 Provisional Decisions에 기록한다.
+/// Phase D-3 Hifumi core runtime.
+/// 0916 Source of Truth:
+/// - Bone 0..500 / tier 0..5 / bloom=500
+/// - FinalHpDamage 1:1 bone gain
+/// - Duel/Normal counter gates split
+/// - Canonical counter Chinchiro resolver
+/// - 1·2·3 catastrophe = forced loss + self 60 + counter +1
+/// - Bold Judgment OnUse + OnClashEnd
+/// - Next-turn non-stacking Duel governor (amount is data/Unset)
 /// </summary>
-public sealed class HifumiMechanic : CombatMechanic, ICharacterUniqueGaugeProvider, IChinchiroOutcomeOverride, IFervorTurnEndGainModifier
+public sealed class HifumiMechanic :
+    CombatMechanic,
+    ICharacterUniqueGaugeProvider,
+    IChinchiroOutcomeOverride,
+    IFervorTurnEndGainModifier,
+    IForcedRollFailureRule
 {
     public const int MaxBone = 500;
+    public const int BonePerTier = 100;
+    public const int MaxBoneTier = 5;
     public const int BloomThreshold = 500;
     public const int HifumiSelfDamage = 60;
+
+    private const int DuelCounterBasePower = 8;
+    private const int NormalCounterBasePower = 4;
+    private const int HifumiBasePowerBonus = 1;
+    private const int CounterSafetyLimit = 64;
 
     private int bone;
     private bool pokerFaceActive;
     private bool engraveBoneActive;
     private bool nextTurnSpeedPenalty;
-    private bool selfDamageTriggeredThisTurn;
     private bool trickActive;
     private bool forceTrickFailure;
 
-    private readonly HashSet<long> boldJudgmentRewardedActions = new();
+    private bool governorQueued;
+    private int governorActivePenalty;
+    private int governorVerificationPenalty = -1;
+
+    private readonly Dictionary<long, int>
+        catastropheCounterBonusByAction = new();
+
+    private readonly HashSet<string>
+        processedCatastrophes = new();
 
     public int Bone => bone;
-    public int BoneBand => Mathf.Min(4, bone / 100);
+    public int BoneBand => Mathf.Clamp(bone / BonePerTier, 0, MaxBoneTier);
+    public int BoneTier => BoneBand;
     public bool IsBloom => bone >= BloomThreshold;
+
+    public bool GovernorQueued => governorQueued;
+    public int ActiveGovernorPenalty => governorActivePenalty;
+    public bool NextTurnSpeedPenaltyQueued => nextTurnSpeedPenalty;
 
     public string GaugeLabel => "뼈";
     public float GaugeNormalized => (float)bone / MaxBone;
-    public string GaugeValueText => $"{bone}/{MaxBone}" + (IsBloom ? " · 만개" : string.Empty);
+    public string GaugeValueText =>
+        $"{bone}/{MaxBone}" +
+        (IsBloom ? " · 만개" : string.Empty);
     public int GaugeStateVersion => bone;
 
-    public override string MechanicName => "Hifumi Bone / Chinchiro / Counter";
+    public override string MechanicName =>
+        "Hifumi Bone / Chinchiro / Counter";
 
     public override void OnRegister()
     {
@@ -80,11 +117,6 @@ public sealed class HifumiMechanic : CombatMechanic, ICharacterUniqueGaugeProvid
             () => battleEvent.OnActionStart += OnActionStart,
             () => battleEvent.OnActionStart -= OnActionStart,
             "OnActionStart");
-
-        SubscribeToBattleEvent(
-            () => battleEvent.OnActionEnd += OnActionEnd,
-            () => battleEvent.OnActionEnd -= OnActionEnd,
-            "OnActionEnd");
 
         SubscribeToBattleEvent(
             () => battleEvent.OnExchangeResolved += OnExchangeResolved,
@@ -108,41 +140,51 @@ public sealed class HifumiMechanic : CombatMechanic, ICharacterUniqueGaugeProvid
         pokerFaceActive = false;
         engraveBoneActive = false;
         nextTurnSpeedPenalty = false;
-        selfDamageTriggeredThisTurn = false;
         trickActive = false;
         forceTrickFailure = false;
-        boldJudgmentRewardedActions.Clear();
+        governorQueued = false;
+        governorActivePenalty = 0;
+        governorVerificationPenalty = -1;
+        catastropheCounterBonusByAction.Clear();
+        processedCatastrophes.Clear();
     }
 
-    public override int ModifyRoll(BattleAction action, int roll)
+    /// <summary>
+    /// Hifumi pure power is resolved in HifumiRuntimeSkills so it affects both
+    /// judgment and damage. This hook intentionally does not add the old +1 or
+    /// Goldan +tier*4 judgment-only modifier.
+    /// </summary>
+    public override int ModifyRoll(
+        BattleAction action,
+        int roll) => roll;
+
+    public int ResolveDuelBasePowerAdjustment(
+        string skillId)
     {
-        if (action?.Owner != owner || action.CurrentRollType != CombatRollType.Attack)
-            return roll;
+        int adjustment = -Mathf.Max(0, governorActivePenalty);
 
-        // PPT의 친치로 평균 보정 +1을 캐릭터 단위로 유지한다.
-        int result = roll + 1;
+        if (skillId == HifumiSkillIds.Goldan)
+            adjustment -= BoneBand * 4;
 
-        // 최신 사용자 문서가 PPT의 "골단 -구간×4"를 덮어씀: +구간×4.
-        if (action.Skill?.Definition?.SkillId == HifumiSkillIds.Goldan)
-            result += BoneBand * 4;
-
-        return result;
+        return adjustment;
     }
 
-    public override int ModifyDamageTaken(DamageContext context, int damage)
+    public override int ModifyDamageTaken(
+        DamageContext context,
+        int damage)
     {
-        if (context == null || context.Target != owner || damage <= 0)
+        if (context == null ||
+            context.Target != owner ||
+            damage <= 0)
+        {
             return damage;
+        }
 
         int result = damage;
 
-        // 0915 C-20: 구 버전의 짓눌림 피해 반감은 제거됐다.
-        // 히후미도 실제 post-mitigation 피해를 그대로 뼈로 환산한다.
-
-        // 최신 사용자 문서 우선: 포커페이스는 "교환당 -1".
+        // 0916 Poker Face: incoming HP damage -4 per hit/exchange.
         if (pokerFaceActive && context.Action != null)
-            result = Mathf.Max(0, result - 1);
-
+            result = Mathf.Max(0, result - 4);
 
         return result;
     }
@@ -151,7 +193,6 @@ public sealed class HifumiMechanic : CombatMechanic, ICharacterUniqueGaugeProvid
         MomentumState finalState,
         int currentGain)
     {
-        // 0915 C-21: 히후미는 열세/짓눌림에서도 고조 +3.
         if (finalState == MomentumState.Disadvantage ||
             finalState == MomentumState.LastStand)
         {
@@ -159,6 +200,25 @@ public sealed class HifumiMechanic : CombatMechanic, ICharacterUniqueGaugeProvid
         }
 
         return currentGain;
+    }
+
+    bool IForcedRollFailureRule.IsForcedRollFailure(
+        BattleAction action,
+        RollResult rollResult,
+        out string reason)
+    {
+        reason = string.Empty;
+
+        if (action?.Owner != owner ||
+            rollResult == null ||
+            rollResult.ResolverType != SkillResolverType.Chinchiro ||
+            rollResult.ChinchiroCombination != ChinchiroCombination.Hifumi)
+        {
+            return false;
+        }
+
+        reason = "Hifumi Chinchiro 1·2·3 catastrophe";
+        return true;
     }
 
     public void ExecuteSkill(BattleAction action)
@@ -173,9 +233,7 @@ public sealed class HifumiMechanic : CombatMechanic, ICharacterUniqueGaugeProvid
 
     public void ExecuteSkillForVerification(string skillId)
     {
-        ExecuteSkillId(
-            skillId,
-            null);
+        ExecuteSkillId(skillId, null);
     }
 
     private void ExecuteSkillId(
@@ -203,8 +261,7 @@ public sealed class HifumiMechanic : CombatMechanic, ICharacterUniqueGaugeProvid
             int boneBefore = bone;
 
             DeferredStatusEffect deferredBefore =
-                FindDeferredStatus(
-                    StatusEffectId.Rupture);
+                FindDeferredStatus(StatusEffectId.Rupture);
 
             int deferredStackBefore =
                 deferredBefore?.Stack ?? 0;
@@ -221,8 +278,7 @@ public sealed class HifumiMechanic : CombatMechanic, ICharacterUniqueGaugeProvid
                     bone = boneBefore;
 
                     DeferredStatusEffect current =
-                        FindDeferredStatus(
-                            StatusEffectId.Rupture);
+                        FindDeferredStatus(StatusEffectId.Rupture);
 
                     if (deferredStackBefore <= 0)
                     {
@@ -242,20 +298,12 @@ public sealed class HifumiMechanic : CombatMechanic, ICharacterUniqueGaugeProvid
             if (bone >= 100)
             {
                 int boneBefore = bone;
-                int hpBefore =
-                    owner?.CurrentHP ?? 0;
+                int hpBefore = owner?.CurrentHP ?? 0;
 
-                List<BodyPart> parts =
-                    new List<BodyPart>();
-
-                List<float> partHp =
-                    new List<float>();
-
-                List<float> partMaxHp =
-                    new List<float>();
-
-                List<BodyPartState> partStates =
-                    new List<BodyPartState>();
+                List<BodyPart> parts = new();
+                List<float> partHp = new();
+                List<float> partMaxHp = new();
+                List<BodyPartState> partStates = new();
 
                 if (owner?.BodyParts != null)
                 {
@@ -288,9 +336,7 @@ public sealed class HifumiMechanic : CombatMechanic, ICharacterUniqueGaugeProvid
                                     owner.MaxCombatHP);
                         }
 
-                        for (int i = 0;
-                             i < parts.Count;
-                             i++)
+                        for (int i = 0; i < parts.Count; i++)
                         {
                             owner?.SetBodyPartStateForDebug(
                                 parts[i],
@@ -327,7 +373,8 @@ public sealed class HifumiMechanic : CombatMechanic, ICharacterUniqueGaugeProvid
         forceTrickFailure = forceFailure;
     }
 
-    public bool TryGetForcedChinchiro(out ChinchiroCombination combination)
+    public bool TryGetForcedChinchiro(
+        out ChinchiroCombination combination)
     {
         if (!trickActive)
         {
@@ -371,31 +418,46 @@ public sealed class HifumiMechanic : CombatMechanic, ICharacterUniqueGaugeProvid
     {
         int result = Mathf.Max(0, damage);
 
-        // 0915 C-20: lastStand는 피해량을 바꾸지 않는다.
+        // LastStand never changes Hifumi damage in 0916.
         if (pokerFace)
-            result = Mathf.Max(0, result - 1);
+            result = Mathf.Max(0, result - 4);
 
         return result;
     }
 
     public int ResolveBoneGainForVerification(
-        int appliedDamage,
+        int finalHpDamage,
         bool lastStand,
         bool selfCost,
         bool pokerFaceHit)
     {
-        int gain = Mathf.Max(0, appliedDamage);
-
-        // 0915 19.2: 뼈는 실제로 받은 피해 1:1. 짓눌림 배수 없음.
+        int gain = Mathf.Max(0, finalHpDamage);
         if (pokerFaceHit)
             gain += 4;
-
         return gain;
     }
 
     public void ApplyActionStartCostForVerification(string skillId)
     {
         ApplyActionStartCost(skillId);
+    }
+
+    public bool ApplyBoldJudgmentClashEndForVerification(
+        int lostExchanges)
+    {
+        return TryApplyBoldJudgmentPerfectBlockReward(
+            Mathf.Max(0, lostExchanges));
+    }
+
+    public void QueueGovernorForVerification(int penalty)
+    {
+        governorVerificationPenalty = Mathf.Max(0, penalty);
+        governorQueued = true;
+    }
+
+    public void ActivateGovernorForVerification()
+    {
+        ActivateQueuedGovernor();
     }
 
     public HifumiCounterPreview BuildCounterPreviewForVerification(
@@ -406,37 +468,38 @@ public sealed class HifumiMechanic : CombatMechanic, ICharacterUniqueGaugeProvid
         bool targetAlreadyWeakened)
     {
         bool enabled =
-            HifumiSkillIds.IsCounterEnabled(skillId) &&
+            HifumiSkillIds.IsCounterSkill(skillId) &&
             !sourcePartBroken &&
             lostExchanges > 0;
 
         if (!enabled)
         {
             return new HifumiCounterPreview(
-                false, 0, 0, 0, false, false, false, 0);
+                false, 0, 0, 0, 0,
+                false, false, false, 0);
         }
 
         int snapshot = Mathf.Clamp(boneValue, 0, MaxBone);
-        int band = Mathf.Min(4, snapshot / 100);
+        int tier = Mathf.Clamp(snapshot / BonePerTier, 0, MaxBoneTier);
         bool bloom = snapshot >= BloomThreshold;
+        bool normal = HifumiSkillIds.IsNormalCounterSkill(skillId);
+        bool yukcham = skillId == HifumiSkillIds.Yukcham;
+        bool goldan = skillId == HifumiSkillIds.Goldan;
 
-        int heal = bloom
-            ? 350
-            : band == 2
-                ? 30
-                : band >= 3
-                    ? 60
-                    : 0;
+        int baseCounterPower = normal
+            ? NormalCounterBasePower + HifumiBasePowerBonus
+            : DuelCounterBasePower + tier + HifumiBasePowerBonus;
 
         return new HifumiCounterPreview(
             true,
             lostExchanges,
-            8 + band,
-            heal,
-            bloom,
-            bloom && !targetAlreadyWeakened,
-            bloom && targetAlreadyWeakened,
-            bloom ? 25 : 0);
+            baseCounterPower,
+            yukcham ? (tier + 1) * 20 : 0,
+            goldan && bloom ? 350 : 0,
+            goldan,
+            goldan && bloom && !targetAlreadyWeakened,
+            goldan && bloom,
+            goldan && bloom ? 25 : 0);
     }
 
     public void ResolveAllInForVerification(
@@ -444,25 +507,36 @@ public sealed class HifumiMechanic : CombatMechanic, ICharacterUniqueGaugeProvid
         ChinchiroCombination second,
         ChinchiroCombination third)
     {
-        ResolveAllIn(
-            new[] { first, second, third });
+        ResolveAllIn(new[] { first, second, third });
     }
 
     private void OnTurnStart(int turn)
     {
         pokerFaceActive = false;
         engraveBoneActive = false;
-        selfDamageTriggeredThisTurn = false;
         trickActive = false;
         forceTrickFailure = false;
-        boldJudgmentRewardedActions.Clear();
+        catastropheCounterBonusByAction.Clear();
+        processedCatastrophes.Clear();
 
+        ActivateQueuedGovernor();
 
         if (nextTurnSpeedPenalty)
         {
-            owner.AddStatus(new HifumiSpeedPenaltyStatus(), owner);
+            owner.AddStatus(
+                new HifumiSpeedPenaltyStatus(),
+                owner);
             nextTurnSpeedPenalty = false;
         }
+    }
+
+    private void ActivateQueuedGovernor()
+    {
+        governorActivePenalty =
+            governorQueued
+                ? ResolveConfiguredGovernorPenalty()
+                : 0;
+        governorQueued = false;
     }
 
     private void OnTurnEnd(int turn)
@@ -471,7 +545,9 @@ public sealed class HifumiMechanic : CombatMechanic, ICharacterUniqueGaugeProvid
         engraveBoneActive = false;
         trickActive = false;
         forceTrickFailure = false;
-        boldJudgmentRewardedActions.Clear();
+        governorActivePenalty = 0;
+        catastropheCounterBonusByAction.Clear();
+        processedCatastrophes.Clear();
     }
 
     private void OnActionStart(BattleAction action)
@@ -488,10 +564,10 @@ public sealed class HifumiMechanic : CombatMechanic, ICharacterUniqueGaugeProvid
         if (id == HifumiSkillIds.BoldJudgment)
         {
             if (!ConsumeBone(40))
-            {
                 AddBone(20);
-                nextTurnSpeedPenalty = true;
-            }
+
+            // 0916: both branches schedule next-turn speed -1.
+            nextTurnSpeedPenalty = true;
         }
         else if (id == HifumiSkillIds.RecklessBet)
         {
@@ -507,89 +583,205 @@ public sealed class HifumiMechanic : CombatMechanic, ICharacterUniqueGaugeProvid
         }
     }
 
-    private void OnActionEnd(BattleAction action)
-    {
-        if (action?.Owner != owner || selfDamageTriggeredThisTurn || action.RollHistory == null)
-            return;
-
-        foreach (RollResult result in action.RollHistory)
-        {
-            if (result?.ChinchiroCombination != ChinchiroCombination.Hifumi)
-                continue;
-
-            selfDamageTriggeredThisTurn = true;
-            DamageRequest request = DamageRequest.SelfCost(owner, HifumiSelfDamage);
-            battleContext?.Services?.DamageManager?.ApplyDamageContext(request);
-            break;
-        }
-    }
-
     private void OnDamageResolved(DamageEventResult result)
     {
         DamageContext context = result?.Context;
         if (context == null || context.Target != owner)
             return;
 
-        int applied = context.GetDisplayDamage();
-        if (applied <= 0)
+        int finalHpDamage =
+            result?.DamageResult?.FinalHpDamage ??
+            context.FinalHpDamage;
+
+        if (finalHpDamage <= 0)
             return;
 
-        // 0915 19.2: 방어/감소 적용 뒤 실제 받은 피해를 정확히 1:1로 적립한다.
-        int gain = applied;
-        AddBone(gain);
+        // H-03: exact post-mitigation HP loss 1:1. No inverse/LastStand compensation.
+        AddBone(finalHpDamage);
 
-        // 포커페이스의 +4는 실제 피격 이벤트당 추가로 적립한다.
+        // Poker Face buys back 4 bone per actual hit after its -4 reduction.
         if (pokerFaceActive && context.Action != null)
             AddBone(4);
     }
 
     private void OnExchangeResolved(ClashExchangeResult exchange)
     {
-        if (exchange == null || exchange.WasCancelled || exchange.IsTie)
+        if (exchange == null || exchange.WasCancelled)
             return;
 
-        BattleAction myAction = exchange.FirstAction?.Owner == owner
-            ? exchange.FirstAction
-            : exchange.SecondAction?.Owner == owner
-                ? exchange.SecondAction
-                : null;
+        BattleAction myAction;
+        RollResult myRoll;
+
+        if (exchange.FirstAction?.Owner == owner)
+        {
+            myAction = exchange.FirstAction;
+            myRoll = exchange.FirstRollResult;
+        }
+        else if (exchange.SecondAction?.Owner == owner)
+        {
+            myAction = exchange.SecondAction;
+            myRoll = exchange.SecondRollResult;
+        }
+        else
+        {
+            return;
+        }
 
         if (myAction == null)
             return;
 
-        if (engraveBoneActive && exchange.LoserAction == myAction)
-            AddBone(30);
-
-        if (myAction.Skill?.Definition?.SkillId == HifumiSkillIds.BoldJudgment &&
-            exchange.WinnerAction == myAction &&
-            exchange.LoserAction != null &&
-            exchange.LoserAction.CurrentRollType == CombatRollType.Attack &&
-            !boldJudgmentRewardedActions.Contains(myAction.ActionId))
+        if (myRoll?.ResolverType == SkillResolverType.Chinchiro &&
+            myRoll.ChinchiroCombination == ChinchiroCombination.Hifumi)
         {
-            AddBone(50);
-            boldJudgmentRewardedActions.Add(myAction.ActionId);
+            ResolveCatastrophe(
+                myAction,
+                exchange);
         }
+
+        if (engraveBoneActive &&
+            exchange.LoserAction == myAction)
+        {
+            AddBone(30);
+        }
+
+        if (!exchange.IsOneSided &&
+            !exchange.IsTie &&
+            exchange.WinnerAction == myAction &&
+            myAction.ActionType == ActionType.Duel)
+        {
+            // H-10: wins in the same turn only refresh one queued state.
+            governorQueued = true;
+        }
+    }
+
+    private void ResolveCatastrophe(
+        BattleAction action,
+        ClashExchangeResult exchange)
+    {
+        if (action == null || exchange == null)
+            return;
+
+        string key =
+            $"{action.ActionId}:{exchange.ExchangeIndex}:" +
+            (exchange.IsOneSided ? "O" : "P");
+
+        if (!processedCatastrophes.Add(key))
+            return;
+
+        ApplyCatastropheSelfDamage();
+
+        if (owner == null || owner.IsDead)
+            return;
+
+        if (exchange.IsOneSided)
+        {
+            Character target = action.Target;
+            BodyPart targetPart = action.TargetPart;
+
+            ResolveCounterSequence(
+                action,
+                target,
+                targetPart,
+                1,
+                applyTaggedSkillReward: false);
+            return;
+        }
+
+        catastropheCounterBonusByAction.TryGetValue(
+            action.ActionId,
+            out int current);
+
+        catastropheCounterBonusByAction[action.ActionId] =
+            current + 1;
+    }
+
+    private void ApplyCatastropheSelfDamage()
+    {
+        if (owner == null || owner.IsDead)
+            return;
+
+        battleContext?.Services?.DamageManager
+            ?.ApplyDamageContext(
+                DamageRequest.SelfCost(
+                    owner,
+                    HifumiSelfDamage));
     }
 
     private void OnClashResolved(ClashResultContext clash)
     {
-        if (clash?.Exchanges == null || owner == null || owner.IsDead)
+        if (clash?.Exchanges == null || owner == null)
             return;
 
-        BattleAction myAction = clash.FirstAction?.Owner == owner
-            ? clash.FirstAction
-            : clash.SecondAction?.Owner == owner
+        BattleAction myAction =
+            clash.FirstAction?.Owner == owner
+                ? clash.FirstAction
+                : clash.SecondAction?.Owner == owner
+                    ? clash.SecondAction
+                    : null;
+
+        if (myAction == null)
+            return;
+
+        ApplyBoldJudgmentClashEndReward(
+            clash,
+            myAction);
+
+        int catastropheBonus = 0;
+        catastropheCounterBonusByAction.TryGetValue(
+            myAction.ActionId,
+            out catastropheBonus);
+        catastropheCounterBonusByAction.Remove(
+            myAction.ActionId);
+
+        if (owner.IsDead ||
+            myAction.OwnerPart == null ||
+            myAction.OwnerPart.IsBroken)
+        {
+            return;
+        }
+
+        int taggedLosses =
+            CountTaggedCounterLosses(
+                clash,
+                myAction);
+
+        int counterCount =
+            Mathf.Max(0, taggedLosses) +
+            Mathf.Max(0, catastropheBonus);
+
+        if (counterCount <= 0)
+            return;
+
+        BattleAction opponentAction =
+            myAction == clash.FirstAction
                 ? clash.SecondAction
-                : null;
+                : clash.FirstAction;
 
-        BattleAction opponentAction = myAction == clash.FirstAction
-            ? clash.SecondAction
-            : clash.FirstAction;
+        Character target =
+            opponentAction?.Owner ??
+            myAction.Target;
 
-        if (myAction == null || opponentAction == null ||
-            myAction.ActionType != ActionType.Duel || opponentAction.ActionType != ActionType.Duel ||
-            !HifumiSkillIds.IsCounterEnabled(myAction.Skill?.Definition?.SkillId) ||
-            myAction.OwnerPart == null || myAction.OwnerPart.IsBroken)
+        BodyPart targetPart =
+            opponentAction?.OwnerPart ??
+            myAction.TargetPart;
+
+        ResolveCounterSequence(
+            myAction,
+            target,
+            targetPart,
+            counterCount,
+            applyTaggedSkillReward:
+                taggedLosses > 0);
+    }
+
+    private void ApplyBoldJudgmentClashEndReward(
+        ClashResultContext clash,
+        BattleAction myAction)
+    {
+        if (myAction?.Skill?.Definition?.SkillId !=
+                HifumiSkillIds.BoldJudgment ||
+            clash?.IsClash != true ||
+            clash.PairedExchangeCount <= 0)
         {
             return;
         }
@@ -597,125 +789,278 @@ public sealed class HifumiMechanic : CombatMechanic, ICharacterUniqueGaugeProvid
         int lost = 0;
         foreach (ClashExchangeResult exchange in clash.Exchanges)
         {
-            if (exchange != null && !exchange.WasCancelled && !exchange.IsTie &&
-                exchange.IsDuelExchange && exchange.LoserAction == myAction)
+            if (exchange == null ||
+                exchange.WasCancelled ||
+                exchange.IsOneSided ||
+                exchange.IsTie)
             {
+                continue;
+            }
+
+            if (exchange.LoserAction == myAction)
+                lost++;
+        }
+
+        TryApplyBoldJudgmentPerfectBlockReward(lost);
+    }
+
+    private bool TryApplyBoldJudgmentPerfectBlockReward(
+        int lostExchanges)
+    {
+        if (lostExchanges != 0)
+            return false;
+
+        AddBone(50);
+        return true;
+    }
+
+    private static int CountTaggedCounterLosses(
+        ClashResultContext clash,
+        BattleAction myAction)
+    {
+        string skillId =
+            myAction?.Skill?.Definition?.SkillId;
+
+        bool normalCounter =
+            HifumiSkillIds.IsNormalCounterSkill(skillId);
+
+        bool duelCounter =
+            HifumiSkillIds.IsDuelCounterSkill(skillId);
+
+        if (!normalCounter && !duelCounter)
+            return 0;
+
+        int lost = 0;
+
+        foreach (ClashExchangeResult exchange in clash.Exchanges)
+        {
+            if (exchange == null ||
+                exchange.WasCancelled ||
+                exchange.IsOneSided ||
+                exchange.IsTie ||
+                exchange.LoserAction != myAction)
+            {
+                continue;
+            }
+
+            if (normalCounter)
+            {
+                // Small Change has no Duel×Duel gate.
+                lost++;
+            }
+            else if (duelCounter && exchange.IsDuelExchange)
+            {
+                // Yukcham/Goldan counter loss merit is inside the Duel gate.
                 lost++;
             }
         }
 
-        if (lost <= 0)
+        return lost;
+    }
+
+    private void ResolveCounterSequence(
+        BattleAction sourceAction,
+        Character target,
+        BodyPart targetPart,
+        int initialCounterCount,
+        bool applyTaggedSkillReward)
+    {
+        if (sourceAction == null ||
+            owner == null ||
+            owner.IsDead ||
+            target == null ||
+            target.IsDead ||
+            initialCounterCount <= 0)
+        {
             return;
+        }
+
+        string skillId =
+            sourceAction.Skill?.Definition?.SkillId;
+
+        bool isNormalCounter =
+            sourceAction.ActionType == ActionType.NormalAttack;
+
+        bool isYukcham =
+            applyTaggedSkillReward &&
+            skillId == HifumiSkillIds.Yukcham;
+
+        bool isGoldan =
+            applyTaggedSkillReward &&
+            skillId == HifumiSkillIds.Goldan;
 
         int boneSnapshot = bone;
-        int bandSnapshot = Mathf.Min(4, boneSnapshot / 100);
-        bool bloomSnapshot = boneSnapshot >= BloomThreshold;
+        int tierSnapshot =
+            Mathf.Clamp(
+                boneSnapshot / BonePerTier,
+                0,
+                MaxBoneTier);
 
-        BodyPart targetPart = opponentAction.OwnerPart ?? myAction.TargetPart;
-        Character target = opponentAction.Owner;
-        int executedCounters = 0;
+        bool bloomSnapshot =
+            boneSnapshot >= BloomThreshold;
 
-        for (int i = 0; i < lost; i++)
+        int baseCounterPower =
+            isNormalCounter
+                ? NormalCounterBasePower + HifumiBasePowerBonus
+                : DuelCounterBasePower +
+                  tierSnapshot +
+                  HifumiBasePowerBonus;
+
+        int pending = initialCounterCount;
+        int sequenceIndex = 0;
+        int attempted = 0;
+        bool bloomBreakAttempted = false;
+
+        while (pending > 0 &&
+               attempted < CounterSafetyLimit)
         {
-            if (owner.IsDead || myAction.OwnerPart.IsBroken || target == null || target.IsDead)
+            pending--;
+            attempted++;
+
+            if (owner.IsDead ||
+                sourceAction.OwnerPart == null ||
+                sourceAction.OwnerPart.IsBroken ||
+                target.IsDead)
+            {
                 break;
+            }
 
-            // TODO2 우선: 반격 위력은 BASE 8 + 당시 뼈 구간.
-            // 같은 합에서 만들어진 반격은 모두 합 종료 시점의 동일한 뼈 스냅샷을 사용한다.
-            int counterPower = 8 + bandSnapshot;
+            RollResult roll =
+                HifumiChinchiroRuntime.RollStandalone(
+                    owner,
+                    baseCounterPower);
 
-            DamageRequest request = DamageRequest.Custom(
-                DamageType.Counter,
-                owner,
-                target,
-                targetPart,
-                counterPower,
-                1f,
-                canBreakPart: false,
-                applyMomentum: false,
-                applyGuard: true,
-                sourceAction: myAction);
+            bool catastrophe =
+                roll?.ChinchiroCombination ==
+                ChinchiroCombination.Hifumi;
 
-            // 반격은 계획 ActionSlot을 추가하는 것이 아니라 전투 결과에서 파생된 Runtime Roll이다.
-            // 공용 이벤트로 노출해 행동순서 UI가 즉시 보라색 추가 굴림을 삽입할 수 있게 한다.
             BattleReactiveRollEvent reactiveRoll =
                 new BattleReactiveRollEvent
                 {
                     SourceKind = BattleReactiveRollSourceKind.Counter,
-                    DisplayName = "뼈 반격",
-                    SourceAction = myAction,
+                    DisplayName = catastrophe
+                        ? "뼈 반격 · 대실패"
+                        : "뼈 반격",
+                    SourceAction = sourceAction,
                     Owner = owner,
-                    OwnerPart = myAction.OwnerPart,
+                    OwnerPart = sourceAction.OwnerPart,
                     Target = target,
                     TargetPart = targetPart,
                     RollType = CombatRollType.Attack,
-                    PhysicalType = request.PhysicalType,
-                    SequenceIndex = i,
-                    SequenceCount = lost,
-                    Power = counterPower
+                    PhysicalType =
+                        PhysicalDamageResolver.Resolve(sourceAction),
+                    SequenceIndex = sequenceIndex,
+                    SequenceCount = initialCounterCount,
+                    Power = catastrophe
+                        ? 0
+                        : roll?.FinalPower ?? 0
                 };
 
             battleEvent?.RaiseReactiveRollStarted(
                 reactiveRoll);
 
+            if (catastrophe)
+            {
+                // 0916 §19.3: 반격 굴림 자체에서 1·2·3이 나왔을 때의
+                // 추가 처리(자해/추가 반격 등)는 아직 (미정)이다.
+                // Phase D에서는 값을 발명하지 않고 해당 반격 타격만 무효화한다.
+                // 일반 공격/결투 굴림의 대실패는 ResolveCatastrophe에서
+                // 확정 규칙(강제패배 + 자해60 + 반격굴림+1)을 처리한다.
+                reactiveRoll.Complete(null);
+                battleEvent?.RaiseReactiveRollResolved(
+                    reactiveRoll);
+                sequenceIndex++;
+                continue;
+            }
+
+            int counterPower =
+                Mathf.Max(1, roll?.FinalPower ?? 1);
+
+            bool canBloomBreak =
+                isGoldan &&
+                bloomSnapshot &&
+                !bloomBreakAttempted;
+
+            if (canBloomBreak)
+                bloomBreakAttempted = true;
+
+            DamageRequest request =
+                DamageRequest.Custom(
+                    DamageType.Counter,
+                    owner,
+                    target,
+                    targetPart,
+                    counterPower,
+                    1f,
+                    canBreakPart: canBloomBreak,
+                    applyMomentum: false,
+                    applyGuard: true,
+                    sourceAction: sourceAction);
+
+            if (canBloomBreak)
+            {
+                // H-06: the sole prior-weaken bypass path.
+                request.BreakMode =
+                    PartBreakMode.IgnoreWeakenedPrerequisite;
+            }
+
             DamageContext counterDamage =
                 battleContext?.Services?.DamageManager
                     ?.ApplyDamageContext(request);
 
-            reactiveRoll.Complete(
-                counterDamage);
-
+            reactiveRoll.Complete(counterDamage);
             battleEvent?.RaiseReactiveRollResolved(
                 reactiveRoll);
 
-            executedCounters++;
+            sequenceIndex++;
         }
 
-        if (executedCounters > 0)
-        {
-            // "첫 번째로 실제 사용되는 반격 굴림에 뼈 스택이 사용"은
-            // 효과 산정 스냅샷을 한 번만 확정한다는 의미로 처리한다.
-            // TODO2에서 전량 소모가 명시된 것은 만개 반격뿐이므로,
-            // 0~499 구간의 일반 반격에서는 뼈를 소모하지 않는다.
-            if (bloomSnapshot)
-                bone = 0;
+        if (attempted <= 0)
+            return;
 
-            ApplyCounterBandReward(
-                bandSnapshot,
-                bloomSnapshot,
-                target,
-                targetPart,
-                myAction);
+        if (isYukcham)
+        {
+            AddBone((tierSnapshot + 1) * 20);
+        }
+
+        if (isGoldan)
+        {
+            if (bloomSnapshot)
+            {
+                owner.RestoreCurrentHP(350);
+
+                if (targetPart != null &&
+                    target != null &&
+                    !target.IsDead &&
+                    !targetPart.IsBroken)
+                {
+                    // If the bypass damage did not actually break the part,
+                    // bloom Goldan still guarantees immediate weaken.
+                    target.WeakenPart(
+                        targetPart,
+                        owner,
+                        sourceAction);
+                }
+
+                battleContext?.Services?.MomentumManager
+                    ?.ApplySkillShift(
+                        owner,
+                        25);
+            }
+
+            // Goldan consumes all bone whenever its tagged counter triggers.
+            bone = 0;
         }
     }
 
-    private void ApplyCounterBandReward(
-        int band,
-        bool bloom,
-        Character target,
-        BodyPart targetPart,
-        BattleAction sourceAction)
+    private int ResolveConfiguredGovernorPenalty()
     {
-        if (bloom)
-        {
-            owner.RestoreCurrentHP(350);
+        if (governorVerificationPenalty >= 0)
+            return governorVerificationPenalty;
 
-            if (targetPart != null && target != null)
-            {
-                if (targetPart.IsWeakened)
-                    target.ForceBreakPart(targetPart, owner, sourceAction);
-                else if (!targetPart.IsBroken)
-                    target.WeakenPart(targetPart, owner, sourceAction);
-            }
-
-            battleContext?.Services?.MomentumManager?.ApplySkillShift(owner, 25);
-            return;
-        }
-
-        if (band == 2)
-            owner.RestoreCurrentHP(30);
-        else if (band >= 3)
-            owner.RestoreCurrentHP(60);
+        return owner is Hifumi hifumi
+            ? hifumi.DuelGovernorPowerPenalty
+            : 0;
     }
 
     private DeferredStatusEffect FindDeferredStatus(
@@ -724,8 +1069,7 @@ public sealed class HifumiMechanic : CombatMechanic, ICharacterUniqueGaugeProvid
         if (owner?.StatusEffects == null)
             return null;
 
-        foreach (StatusEffect effect
-                 in owner.StatusEffects)
+        foreach (StatusEffect effect in owner.StatusEffects)
         {
             if (effect is DeferredStatusEffect deferred &&
                 deferred.DeferredStatusId == id)
@@ -739,14 +1083,10 @@ public sealed class HifumiMechanic : CombatMechanic, ICharacterUniqueGaugeProvid
 
     private void QueueNextTurnRupture()
     {
-        // TODO2는 "다음 턴 받는 피해 증가"의 정확한 수치를 정하지 않았다.
-        // 공용 상태이상 체계와 충돌 없이 확장할 수 있도록 최소 단위인
-        // 균열 +1을 다음 턴 1턴 상태로 예약한다.
-        owner?.AddStatus(
-            new DeferredStatusEffect(StatusEffectId.Rupture, 1, 1),
-            owner);
+        // 0916: exact incoming-damage increase is still Unset.
+        // Keep the legacy runtime slot for Phase E data migration, but do not
+        // invent a new Phase D value here.
     }
-
 
     private void ResolveAllIn()
     {
@@ -762,7 +1102,8 @@ public sealed class HifumiMechanic : CombatMechanic, ICharacterUniqueGaugeProvid
     private void ResolveAllIn(
         IReadOnlyList<ChinchiroCombination> rolls)
     {
-        ChinchiroCombination best = ChinchiroCombination.None;
+        ChinchiroCombination best =
+            ChinchiroCombination.None;
         bool failure = false;
 
         if (rolls != null)
@@ -788,6 +1129,8 @@ public sealed class HifumiMechanic : CombatMechanic, ICharacterUniqueGaugeProvid
             return;
         }
 
+        // All-In payout is still (미정). Preserve the legacy preview behavior
+        // until Phase E data migration owns these values.
         switch (best)
         {
             case ChinchiroCombination.Arashi:
@@ -798,10 +1141,6 @@ public sealed class HifumiMechanic : CombatMechanic, ICharacterUniqueGaugeProvid
                 break;
             case ChinchiroCombination.Moku:
                 AddBone(50);
-                break;
-            case ChinchiroCombination.Blank:
-            case ChinchiroCombination.None:
-            default:
                 break;
         }
     }
@@ -826,12 +1165,14 @@ public sealed class HifumiMechanic : CombatMechanic, ICharacterUniqueGaugeProvid
         return ChinchiroCombination.Blank;
     }
 
-    private static int Rank(ChinchiroCombination combination) => combination switch
-    {
-        ChinchiroCombination.Arashi => 4,
-        ChinchiroCombination.Shigoro => 3,
-        ChinchiroCombination.Moku => 2,
-        ChinchiroCombination.Blank => 1,
-        _ => 0
-    };
+    private static int Rank(
+        ChinchiroCombination combination) =>
+        combination switch
+        {
+            ChinchiroCombination.Arashi => 4,
+            ChinchiroCombination.Shigoro => 3,
+            ChinchiroCombination.Moku => 2,
+            ChinchiroCombination.Blank => 1,
+            _ => 0
+        };
 }

@@ -86,7 +86,7 @@ public sealed class HifumiCharacterVerificationCaseProvider :
             "뼈 획득·짓눌림·포커페이스",
             CharacterVerificationCategory.Passive,
             CharacterVerificationExecutionMode.IsolatedRuntime,
-            "실피해 1:1 뼈, 짓눌림 피해 1/2·뼈×2, 포커페이스 교환당 피해 -1·피격당 뼈+4 계약을 검사합니다.");
+            "FinalHpDamage 1:1 뼈, 짓눌림 피해 반감 없음, 포커페이스 피해 -4·피격당 뼈+4 계약을 검사합니다.");
 
         yield return CharacterVerificationCaseDefinition.Create(
             ActionCosts,
@@ -100,14 +100,14 @@ public sealed class HifumiCharacterVerificationCaseProvider :
             "육참·골단 반격/만개 계약",
             CharacterVerificationCategory.Duel,
             CharacterVerificationExecutionMode.IsolatedRuntime,
-            "진 교환당 반격 1개, Base8+뼈구간, 2구간 30·3/4구간 60 회복, 500 만개 350/약화·파괴/바25/전량소모를 검사합니다.");
+            "평타/결투 반격 게이트 분리, 결투 8+구간+1·평타4+1, 육참 뼈보상, 골단 만개350/약화·조건파괴/바25/전량소모를 검사합니다.");
 
         yield return CharacterVerificationCaseDefinition.Create(
             GoldanPower,
             "골단 뼈 구간 위력",
             CharacterVerificationCategory.Duel,
             CharacterVerificationExecutionMode.IsolatedRuntime,
-            "TODO2 우선 규칙인 골단 Base20 + (뼈구간×4)가 실제 ModifyRoll 경로에 적용되는지 검사합니다.");
+            "0916 골단 본체 Base20-(뼈구간×4)가 실제 Hifumi runtime power 경로에 적용되는지 검사합니다.");
 
         yield return CharacterVerificationCaseDefinition.Create(
             PrestigeContracts,
@@ -297,61 +297,29 @@ public sealed class HifumiCharacterVerificationCaseProvider :
         if (mechanic == null)
             return context.Fail("HifumiMechanic 존재", "NULL");
 
-        int normalDamage =
-            mechanic.ResolveIncomingDamageForVerification(
-                21,
-                lastStand: false,
-                pokerFace: false);
+        int normalDamage = mechanic.ResolveIncomingDamageForVerification(21, false, false);
+        int crushedDamage = mechanic.ResolveIncomingDamageForVerification(21, true, false);
+        int pokerDamage = mechanic.ResolveIncomingDamageForVerification(21, false, true);
 
-        int crushedDamage =
-            mechanic.ResolveIncomingDamageForVerification(
-                21,
-                lastStand: true,
-                pokerFace: false);
-
-        int pokerDamage =
-            mechanic.ResolveIncomingDamageForVerification(
-                21,
-                lastStand: false,
-                pokerFace: true);
-
-        int normalBone =
-            mechanic.ResolveBoneGainForVerification(
-                normalDamage,
-                lastStand: false,
-                selfCost: false,
-                pokerFaceHit: false);
-
-        int crushedBone =
-            mechanic.ResolveBoneGainForVerification(
-                crushedDamage,
-                lastStand: true,
-                selfCost: false,
-                pokerFaceHit: false);
-
-        int pokerBone =
-            mechanic.ResolveBoneGainForVerification(
-                pokerDamage,
-                lastStand: false,
-                selfCost: false,
-                pokerFaceHit: true);
+        int normalBone = mechanic.ResolveBoneGainForVerification(normalDamage, false, false, false);
+        int crushedBone = mechanic.ResolveBoneGainForVerification(crushedDamage, true, false, false);
+        int pokerBone = mechanic.ResolveBoneGainForVerification(pokerDamage, false, false, true);
 
         bool valid =
             normalDamage == 21 &&
-            crushedDamage == 11 &&
-            pokerDamage == 20 &&
+            crushedDamage == 21 &&
+            pokerDamage == 17 &&
             normalBone == 21 &&
-            crushedBone == 22 &&
-            pokerBone == 24;
+            crushedBone == 21 &&
+            pokerBone == 21;
 
         return valid
             ? context.Pass(
-                "21피해→뼈21 / 짓눌림 11피해·뼈22 / 포커 20피해·뼈24",
-                "21/21 · 11/22 · 20/24")
+                "FinalHP 21→뼈21 / 짓눌림도21 / 포커17+뼈4=21",
+                "21/21 · 21/21 · 17/21")
             : context.Fail(
-                "21피해→뼈21 / 짓눌림 11피해·뼈22 / 포커 20피해·뼈24",
-                $"Damage={normalDamage}/{crushedDamage}/{pokerDamage}, " +
-                $"Bone={normalBone}/{crushedBone}/{pokerBone}");
+                "FinalHpDamage 1:1 + PokerFace -4/+4",
+                $"Damage={normalDamage}/{crushedDamage}/{pokerDamage}, Bone={normalBone}/{crushedBone}/{pokerBone}");
     }
 
     private static CharacterVerificationCaseResult VerifyActionCosts(
@@ -367,6 +335,7 @@ public sealed class HifumiCharacterVerificationCaseProvider :
         mechanic.ApplyActionStartCostForVerification(
             HifumiSkillIds.BoldJudgment);
         int boldPaid = mechanic.Bone;
+        bool speedQueued = mechanic.NextTurnSpeedPenaltyQueued;
 
         mechanic.SetBoneForVerification(20);
         mechanic.ApplyActionStartCostForVerification(
@@ -386,6 +355,7 @@ public sealed class HifumiCharacterVerificationCaseProvider :
         bool valid =
             boldPaid == 60 &&
             boldShort == 40 &&
+            speedQueued &&
             recklessPaid == 40 &&
             recklessShort == 160;
 
@@ -407,125 +377,60 @@ public sealed class HifumiCharacterVerificationCaseProvider :
         if (mechanic == null)
             return context.Fail("HifumiMechanic 존재", "NULL");
 
-        HifumiCounterPreview band2 =
-            mechanic.BuildCounterPreviewForVerification(
-                HifumiSkillIds.Yukcham,
-                2,
-                250,
-                sourcePartBroken: false,
-                targetAlreadyWeakened: false);
-
-        HifumiCounterPreview band4 =
-            mechanic.BuildCounterPreviewForVerification(
-                HifumiSkillIds.Goldan,
-                1,
-                450,
-                sourcePartBroken: false,
-                targetAlreadyWeakened: false);
-
-        HifumiCounterPreview bloomWeaken =
-            mechanic.BuildCounterPreviewForVerification(
-                HifumiSkillIds.Goldan,
-                3,
-                500,
-                sourcePartBroken: false,
-                targetAlreadyWeakened: false);
-
-        HifumiCounterPreview bloomBreak =
-            mechanic.BuildCounterPreviewForVerification(
-                HifumiSkillIds.Yukcham,
-                1,
-                500,
-                sourcePartBroken: false,
-                targetAlreadyWeakened: true);
-
-        HifumiCounterPreview disabled =
-            mechanic.BuildCounterPreviewForVerification(
-                HifumiSkillIds.RecklessBet,
-                4,
-                500,
-                sourcePartBroken: false,
-                targetAlreadyWeakened: false);
+        HifumiCounterPreview yukcham = mechanic.BuildCounterPreviewForVerification(
+            HifumiSkillIds.Yukcham, 2, 250, false, false);
+        HifumiCounterPreview goldan = mechanic.BuildCounterPreviewForVerification(
+            HifumiSkillIds.Goldan, 1, 450, false, false);
+        HifumiCounterPreview bloom = mechanic.BuildCounterPreviewForVerification(
+            HifumiSkillIds.Goldan, 3, 500, false, false);
+        HifumiCounterPreview small = mechanic.BuildCounterPreviewForVerification(
+            HifumiSkillIds.SmallChange, 1, 500, false, false);
+        HifumiCounterPreview disabled = mechanic.BuildCounterPreviewForVerification(
+            HifumiSkillIds.RecklessBet, 4, 500, false, false);
 
         bool valid =
-            band2.Enabled &&
-            band2.CounterCount == 2 &&
-            band2.CounterPower == 10 &&
-            band2.Heal == 30 &&
-            !band2.ConsumeAllBone &&
-            band4.CounterPower == 12 &&
-            band4.Heal == 60 &&
-            !band4.ConsumeAllBone &&
-            bloomWeaken.CounterCount == 3 &&
-            bloomWeaken.CounterPower == 12 &&
-            bloomWeaken.Heal == 350 &&
-            bloomWeaken.ConsumeAllBone &&
-            bloomWeaken.Weaken &&
-            !bloomWeaken.BreakPart &&
-            bloomWeaken.MomentumPush == 25 &&
-            bloomBreak.BreakPart &&
-            !bloomBreak.Weaken &&
+            yukcham.Enabled && yukcham.CounterCount == 2 && yukcham.CounterPower == 11 &&
+            yukcham.BoneGain == 60 && yukcham.Heal == 0 && !yukcham.ConsumeAllBone &&
+            goldan.Enabled && goldan.CounterPower == 13 && goldan.ConsumeAllBone && goldan.Heal == 0 &&
+            bloom.CounterCount == 3 && bloom.CounterPower == 14 && bloom.Heal == 350 &&
+            bloom.ConsumeAllBone && bloom.Weaken && bloom.BreakPart && bloom.MomentumPush == 25 &&
+            small.Enabled && small.CounterPower == 5 && small.BoneGain == 0 && !small.ConsumeAllBone &&
             !disabled.Enabled;
 
         return valid
-            ? context.Pass(
-                "반격 게이트·구간·만개 계약 전체",
-                "PASS")
+            ? context.Pass("평타/결투 반격·육참·골단 만개 계약", "PASS")
             : context.Fail(
-                "반격 게이트·구간·만개 계약 전체",
+                "평타/결투 반격·육참·골단 만개 계약",
                 "불일치",
-                $"Band2={Describe(band2)}\nBand4={Describe(band4)}\n" +
-                $"BloomW={Describe(bloomWeaken)}\nBloomB={Describe(bloomBreak)}\n" +
-                $"Disabled={Describe(disabled)}");
+                $"Yukcham={Describe(yukcham)}\nGoldan={Describe(goldan)}\n" +
+                $"Bloom={Describe(bloom)}\nSmall={Describe(small)}\nDisabled={Describe(disabled)}");
     }
 
     private static CharacterVerificationCaseResult VerifyGoldanPower(
         CharacterVerificationContext context)
     {
-        Hifumi hifumi = context.Character as Hifumi;
-        HifumiMechanic mechanic = hifumi?.HifumiMechanic;
+        HifumiMechanic mechanic =
+            (context.Character as Hifumi)?.HifumiMechanic;
 
-        SkillDefinition definition =
-            CharacterVerificationScenarioTools.FindDefinition(
-                context.Bundle,
-                HifumiSkillIds.Goldan);
-
-        Skill runtime =
-            CharacterVerificationScenarioTools.FindRuntimeSkill(
-                hifumi,
-                definition);
-
-        BodyPart part =
-            CharacterVerificationScenarioTools.GetUsablePart(hifumi);
-
-        BattleAction action =
-            CharacterVerificationScenarioTools.CreateAction(
-                hifumi,
-                part,
-                runtime,
-                context.OpponentCharacter,
-                CharacterVerificationScenarioTools.GetUsablePart(
-                    context.OpponentCharacter),
-                945001);
-
-        action.CurrentRollType = CombatRollType.Attack;
+        if (mechanic == null)
+            return context.Fail("HifumiMechanic 존재", "NULL");
 
         mechanic.SetBoneForVerification(350);
-        int modified =
-            mechanic.ModifyRoll(
-                action,
-                definition?.BasePower ?? 0);
+        int adjustment = mechanic.ResolveDuelBasePowerAdjustment(HifumiSkillIds.Goldan);
+        int basePower = 20 + adjustment;
+        RollResult pair = HifumiChinchiroRuntime.BuildResultForVerification(
+            basePower, 2, 2, 5);
 
-        // flat +1 + 골단 구간3*4
-        int expected = 20 + 1 + 12;
+        bool valid = adjustment == -12 && basePower == 8 &&
+                     pair.RawValue == 5 && pair.FinalPower == 13;
 
-        return modified == expected
+        return valid
             ? context.Pass(
-                "골단 350뼈: Base20 + 친치로보정1 + 구간3×4 = 33",
-                modified.ToString())
+                "골단 350뼈: Base20-(구간3×4)=8, 2·2·5 목=5 → 13",
+                $"Base={basePower}, Final={pair.FinalPower}")
             : context.Fail(
-                "골단 350뼈: 33",
-                modified.ToString());
+                "골단 역스케일 Base8 + 목5 = 13",
+                $"Adjust={adjustment}, Base={basePower}, Raw={pair.RawValue}, Final={pair.FinalPower}");
     }
 
     private static CharacterVerificationCaseResult VerifyPrestigeContracts(
@@ -626,7 +531,7 @@ public sealed class HifumiCharacterVerificationCaseProvider :
     {
         return
             $"Enabled={value.Enabled}, Count={value.CounterCount}, " +
-            $"Power={value.CounterPower}, Heal={value.Heal}, " +
+            $"Power={value.CounterPower}, BoneGain={value.BoneGain}, Heal={value.Heal}, " +
             $"Consume={value.ConsumeAllBone}, Weaken={value.Weaken}, " +
             $"Break={value.BreakPart}, Push={value.MomentumPush}";
     }

@@ -16,6 +16,18 @@ public static class HifumiSkillIds
     public const string AllIn = "hifumi.prestige.all_in";
     public const string Trick = "hifumi.prestige.trick";
 
+    public static bool IsCounterSkill(string skillId) =>
+        IsDuelCounterSkill(skillId) ||
+        IsNormalCounterSkill(skillId);
+
+    public static bool IsDuelCounterSkill(string skillId) =>
+        skillId == Yukcham ||
+        skillId == Goldan;
+
+    public static bool IsNormalCounterSkill(string skillId) =>
+        skillId == SmallChange;
+
+    // Legacy call sites kept source-compatible while Phase D migrates to the explicit split.
     public static bool IsCounterEnabled(string skillId) =>
-        skillId == Yukcham || skillId == Goldan;
+        IsCounterSkill(skillId);
 }

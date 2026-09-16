@@ -83,4 +83,11 @@ public static class CanonicalGameSystemVerificationSpec
         {
             "Y-01", "Y-02", "Y-03", "Y-05", "Y-07"
         };
+
+    public static readonly IReadOnlyList<string> PhaseDHifumiRequirements =
+        new[]
+        {
+            "H-01", "H-02", "H-03", "H-05",
+            "H-06", "H-07", "H-09", "H-10"
+        };
 }

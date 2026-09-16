@@ -26,7 +26,8 @@ public static class GameSystemVerificationRunner
             includePhaseB: true,
             includePhaseC: true,
             includePhaseDOlaf: true,
-            includePhaseDYujin: true);
+            includePhaseDYujin: true,
+            includePhaseDHifumi: true);
 
     public static GameSystemVerificationReport RunContracts() =>
         RunDataChecks();
@@ -41,7 +42,8 @@ public static class GameSystemVerificationRunner
             includePhaseB: true,
             includePhaseC: true,
             includePhaseDOlaf: true,
-            includePhaseDYujin: true);
+            includePhaseDYujin: true,
+            includePhaseDHifumi: true);
 
     public static GameSystemVerificationReport RunPhaseA(
         BattleManager manager) =>
@@ -53,7 +55,8 @@ public static class GameSystemVerificationRunner
             includePhaseB: false,
             includePhaseC: false,
             includePhaseDOlaf: false,
-            includePhaseDYujin: false);
+            includePhaseDYujin: false,
+            includePhaseDHifumi: false);
 
     public static GameSystemVerificationReport RunPhaseB(
         BattleManager manager) =>
@@ -65,7 +68,8 @@ public static class GameSystemVerificationRunner
             includePhaseB: true,
             includePhaseC: false,
             includePhaseDOlaf: false,
-            includePhaseDYujin: false);
+            includePhaseDYujin: false,
+            includePhaseDHifumi: false);
 
     public static GameSystemVerificationReport RunPhaseC(
         BattleManager manager) =>
@@ -77,7 +81,8 @@ public static class GameSystemVerificationRunner
             includePhaseB: true,
             includePhaseC: true,
             includePhaseDOlaf: false,
-            includePhaseDYujin: false);
+            includePhaseDYujin: false,
+            includePhaseDHifumi: false);
 
     public static GameSystemVerificationReport RunPhaseDOlaf(
         BattleManager manager) =>
@@ -89,7 +94,8 @@ public static class GameSystemVerificationRunner
             includePhaseB: true,
             includePhaseC: true,
             includePhaseDOlaf: true,
-            includePhaseDYujin: false);
+            includePhaseDYujin: false,
+            includePhaseDHifumi: false);
 
     public static GameSystemVerificationReport RunPhaseDYujin(
         BattleManager manager) =>
@@ -101,11 +107,25 @@ public static class GameSystemVerificationRunner
             includePhaseB: true,
             includePhaseC: true,
             includePhaseDOlaf: false,
-            includePhaseDYujin: true);
+            includePhaseDYujin: true,
+            includePhaseDHifumi: false);
+
+    public static GameSystemVerificationReport RunPhaseDHifumi(
+        BattleManager manager) =>
+        RunInternal(
+            manager,
+            true,
+            true,
+            true,
+            includePhaseB: true,
+            includePhaseC: true,
+            includePhaseDOlaf: false,
+            includePhaseDYujin: false,
+            includePhaseDHifumi: true);
 
     public static GameSystemVerificationReport RunFull(
         BattleManager manager) =>
-        RunPhaseDYujin(manager);
+        RunPhaseDHifumi(manager);
 
     public static IReadOnlyList<IGameSystemVerificationModule> DiscoverModules() =>
         GameSystemVerificationModuleRegistry.DiscoverModules();
@@ -124,7 +144,8 @@ public static class GameSystemVerificationRunner
         bool includePhaseB,
         bool includePhaseC,
         bool includePhaseDOlaf,
-        bool includePhaseDYujin)
+        bool includePhaseDYujin,
+        bool includePhaseDHifumi)
     {
         DateTime started = DateTime.Now;
         GameSystemVerificationReport report = CreateReport(started, manager);
@@ -139,7 +160,8 @@ public static class GameSystemVerificationRunner
             includePhaseB,
             includePhaseC,
             includePhaseDOlaf,
-            includePhaseDYujin);
+            includePhaseDYujin,
+            includePhaseDHifumi);
 
         foreach (RegisteredCase registeredCase in registered)
         {
@@ -169,6 +191,13 @@ public static class GameSystemVerificationRunner
 
             if (!includePhaseDYujin &&
                 CanonicalGameSystemVerificationSpec.PhaseDYujinRequirements.Contains(
+                    registeredCase.Case.RequirementId))
+            {
+                continue;
+            }
+
+            if (!includePhaseDHifumi &&
+                CanonicalGameSystemVerificationSpec.PhaseDHifumiRequirements.Contains(
                     registeredCase.Case.RequirementId))
             {
                 continue;
@@ -286,7 +315,8 @@ public static class GameSystemVerificationRunner
         bool includePhaseB,
         bool includePhaseC,
         bool includePhaseDOlaf,
-        bool includePhaseDYujin)
+        bool includePhaseDYujin,
+        bool includePhaseDHifumi)
     {
         IEnumerable<GameSystemVerificationCase> cases =
             registered?.Select(item => item.Case) ??
@@ -392,6 +422,26 @@ public static class GameSystemVerificationRunner
                 ? null
                 : "Missing=" + string.Join(", ", missingDYujin),
             includePhaseDYujin);
+
+        List<string> missingDHifumi = CanonicalGameSystemVerificationSpec.PhaseDHifumiRequirements
+            .Where(id => !coverage.ContainsKey(id))
+            .ToList();
+
+        AddInfrastructureResult(
+            report,
+            "system.coverage.phase_d_hifumi",
+            missingDHifumi.Count == 0
+                ? GameSystemVerificationStatus.Pass
+                : (includePhaseDHifumi
+                    ? GameSystemVerificationStatus.Fail
+                    : GameSystemVerificationStatus.Pending),
+            "Phase D Hifumi 8개 Requirement에 검증 Case 연결",
+            $"Covered={CanonicalGameSystemVerificationSpec.PhaseDHifumiRequirements.Count - missingDHifumi.Count}/" +
+            $"{CanonicalGameSystemVerificationSpec.PhaseDHifumiRequirements.Count}",
+            missingDHifumi.Count == 0
+                ? null
+                : "Missing=" + string.Join(", ", missingDHifumi),
+            includePhaseDHifumi);
     }
 
     private static bool ShouldRun(
