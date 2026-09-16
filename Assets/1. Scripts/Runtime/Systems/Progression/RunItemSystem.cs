@@ -104,6 +104,12 @@ public sealed class RunInventory
     public bool HasEverAcquired(RunItemDefinition item) =>
         item != null && acquiredHistory.Contains(GetId(item));
 
+    public void Clear()
+    {
+        owned.Clear();
+        acquiredHistory.Clear();
+    }
+
     private static string GetId(RunItemDefinition item) =>
         string.IsNullOrWhiteSpace(item.ItemId) ? item.name : item.ItemId;
 }

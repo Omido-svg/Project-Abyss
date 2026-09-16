@@ -7,7 +7,8 @@ using System.Collections.Generic;
 /// </summary>
 public static class CanonicalGameSystemVerificationSpec
 {
-    public const string SpecId = "0915";
+    public const string SpecId = "0915-AB__0916-C";
+    public const string PhaseCTargetId = "0916";
 
     public const int NormalAttackLoadout = 3;
     public const int DuelLoadout = 3;
@@ -63,5 +64,11 @@ public static class CanonicalGameSystemVerificationSpec
             "C-09", "C-12", "C-13", "C-15", "C-17", "C-18",
             "C-19", "C-20", "C-21", "C-22", "C-23", "C-24",
             "C-25", "C-27", "C-48", "C-49", "C-41", "C-43"
+        };
+
+    public static readonly IReadOnlyList<string> PhaseCRequirements =
+        new[]
+        {
+            "C-34", "C-35", "C-36", "C-37", "C-39"
         };
 }

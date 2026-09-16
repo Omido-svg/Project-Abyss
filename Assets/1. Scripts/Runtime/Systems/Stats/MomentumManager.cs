@@ -107,11 +107,22 @@ public class MomentumManager
             }
         }
 
-        CurrentMomentum = 0;
+        int carried =
+            battleContext?.Services?.EmotionRulebreakerService?
+                .ConsumeCarriedMomentum() ?? 0;
+
+        CurrentMomentum =
+            Mathf.Clamp(
+                carried,
+                settings.Minimum,
+                settings.Maximum);
     }
 
     public void FinalizeTurn()
     {
+        battleContext?.Services?.EmotionRulebreakerService?
+            .CaptureMomentumForNextTurn(CurrentMomentum);
+
         playerPreviousFinalState = EvaluateBand(CurrentMomentum);
         enemyPreviousFinalState = EvaluateBand(-CurrentMomentum);
         playerLastStandJudgmentNextTurn = playerPreviousFinalState == MomentumState.LastStand;

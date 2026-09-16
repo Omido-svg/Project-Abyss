@@ -21,15 +21,27 @@ public sealed class StaggerGaugeMechanic : ReactiveCombatMechanic,
     private int pendingAttackAfter = -1;
     private int pendingAttackApplied;
 
-    public int CurrentGauge => currentGauge;
-    public int MaxGauge => maxGauge;
-    public bool IsVulnerabilityWindowOpen => vulnerabilityWindowOpen;
-    public string GaugeLabel => "흐트러짐";
-    public float GaugeNormalized => maxGauge <= 0 ? 0f : (float)currentGauge / maxGauge;
-    public string GaugeValueText => vulnerabilityWindowOpen
-        ? $"취약 · HP 내성 ×{GetVulnerabilityMultiplier():0.##}"
-        : $"{currentGauge}/{maxGauge}";
-    public int GaugeStateVersion => (currentGauge * 2) + (vulnerabilityWindowOpen ? 1 : 0);
+    private bool IsSuppressed =>
+        owner?.BattleContext?.Services?.EmotionRulebreakerService?
+            .IsStaggerGaugeSuppressed(owner) == true;
+
+    public int CurrentGauge => IsSuppressed ? 0 : currentGauge;
+    public int MaxGauge => IsSuppressed ? 0 : maxGauge;
+    public bool IsVulnerabilityWindowOpen => !IsSuppressed && vulnerabilityWindowOpen;
+    public string GaugeLabel => IsSuppressed ? "흐트러짐 제거" : "흐트러짐";
+    public float GaugeNormalized =>
+        IsSuppressed || maxGauge <= 0
+            ? 0f
+            : (float)currentGauge / maxGauge;
+    public string GaugeValueText => IsSuppressed
+        ? "제거됨"
+        : vulnerabilityWindowOpen
+            ? $"취약 · HP 내성 ×{GetVulnerabilityMultiplier():0.##}"
+            : $"{currentGauge}/{maxGauge}";
+    public int GaugeStateVersion =>
+        IsSuppressed
+            ? int.MinValue
+            : (currentGauge * 2) + (vulnerabilityWindowOpen ? 1 : 0);
 
     protected override ReactiveCombatEventMask EventMask =>
         ReactiveCombatEventMask.TurnEnd;
@@ -55,7 +67,8 @@ public sealed class StaggerGaugeMechanic : ReactiveCombatMechanic,
         int rawRollPower,
         PhysicalDamageType physicalType)
     {
-        if (action == null || action.Skill?.IsRed != true ||
+        if (IsSuppressed ||
+            action == null || action.Skill?.IsRed != true ||
             owner == null || owner.IsDead || vulnerabilityWindowOpen)
         {
             return;
@@ -86,7 +99,8 @@ public sealed class StaggerGaugeMechanic : ReactiveCombatMechanic,
     public void ApplyRequiredExchangeReaction(
         ClashExchangeResult exchange)
     {
-        if (exchange == null || exchange.WasCancelled || exchange.WinnerAction == null)
+        if (IsSuppressed ||
+            exchange == null || exchange.WasCancelled || exchange.WinnerAction == null)
             return;
 
         BattleAction winner = exchange.WinnerAction;
@@ -154,6 +168,15 @@ public sealed class StaggerGaugeMechanic : ReactiveCombatMechanic,
 
     protected override void OnTurnEnded(int turn)
     {
+        if (IsSuppressed)
+        {
+            vulnerabilityWindowOpen = false;
+            currentGauge = maxGauge;
+            recoverAfterTurn = -1;
+            ClearPendingAttackSnapshot();
+            return;
+        }
+
         if (!vulnerabilityWindowOpen || turn < recoverAfterTurn)
             return;
 
@@ -164,7 +187,7 @@ public sealed class StaggerGaugeMechanic : ReactiveCombatMechanic,
 
     public void Recover(int amount)
     {
-        if (amount <= 0 || vulnerabilityWindowOpen)
+        if (IsSuppressed || amount <= 0 || vulnerabilityWindowOpen)
             return;
         currentGauge = Mathf.Clamp(currentGauge + amount, 0, maxGauge);
     }

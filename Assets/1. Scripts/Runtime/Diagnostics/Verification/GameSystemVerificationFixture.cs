@@ -135,6 +135,7 @@ public sealed class GameSystemVerificationFixture : IDisposable
                services.ActionManager != null &&
                services.MomentumManager != null &&
                services.FervorManager != null &&
+               services.EmotionRulebreakerService != null &&
                services.SpeedManager != null &&
                services.DamageManager != null &&
                services.ClashManager != null &&

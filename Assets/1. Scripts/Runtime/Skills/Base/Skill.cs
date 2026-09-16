@@ -26,7 +26,21 @@ public abstract class Skill
     public string SkillName { get; protected set; }
     public abstract ActionType ActionType { get; }
 
-    public int BasePower { get; protected set; }
+    private int basePower;
+    public int BasePower
+    {
+        get
+        {
+            SkillDefinition definition = RuntimeDefinition;
+            SkillUpgradeState upgrades = owner?.BattleContext?.SkillUpgrades;
+            return basePower +
+                   SkillUpgradeService.GetCumulativeBasePowerDelta(
+                       definition,
+                       upgrades);
+        }
+        protected set => basePower = value;
+    }
+
     public SkillResolver Resolver { get; protected set; }
 
     protected Character owner;
@@ -146,17 +160,22 @@ public abstract class Skill
         {
             SkillDefinition definition = RuntimeDefinition;
 
-            if (definition?.OverrideEnergyCost == true)
-                return Mathf.Max(0, definition.EnergyCost);
+            int baseCost =
+                definition?.OverrideEnergyCost == true
+                    ? Mathf.Max(0, definition.EnergyCost)
+                    : ActionType switch
+                    {
+                        ActionType.Duel => 1,
+                        ActionType.NormalAttack => 0,
+                        ActionType.Preparation => 1,
+                        ActionType.Prestige => 0,
+                        _ => 0
+                    };
 
-            return ActionType switch
-            {
-                ActionType.Duel => 1,
-                ActionType.NormalAttack => 0,
-                ActionType.Preparation => 1,
-                ActionType.Prestige => 0,
-                _ => 0
-            };
+            return SkillUpgradeService.ResolveEnergyCost(
+                definition,
+                owner?.BattleContext?.SkillUpgrades,
+                baseCost);
         }
     }
 
@@ -298,8 +317,18 @@ public abstract class Skill
         return SkillRollService.RollBase(this);
     }
 
-    public SkillRollData GetRollData(int exchangeIndex) =>
-        RuntimeDefinition?.GetRollData(exchangeIndex);
+    public SkillRollData GetRollData(int exchangeIndex)
+    {
+        SkillDefinition definition = RuntimeDefinition;
+        SkillRollData source =
+            definition?.GetRollData(exchangeIndex);
+
+        return SkillUpgradeService.ResolveRollData(
+            definition,
+            owner?.BattleContext?.SkillUpgrades,
+            source,
+            exchangeIndex);
+    }
 
     public virtual CombatRollType GetRollType(int exchangeIndex) =>
         GetRollData(exchangeIndex)?.Type ?? CombatRollType.Attack;

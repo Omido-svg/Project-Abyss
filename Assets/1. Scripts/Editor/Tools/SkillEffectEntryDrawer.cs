@@ -23,7 +23,7 @@ public sealed class SkillEffectEntryDrawer : PropertyDrawer
         SerializedProperty definition =
             property.FindPropertyRelative("Definition");
 
-        const int schedulingRows = 2;
+        const int schedulingRows = 3;
         SerializedProperty conditions =
             property.FindPropertyRelative("Conditions");
         float conditionsHeight = conditions != null
@@ -56,6 +56,8 @@ public sealed class SkillEffectEntryDrawer : PropertyDrawer
             property.FindPropertyRelative("Definition");
         SerializedProperty overrides =
             property.FindPropertyRelative("Overrides");
+        SerializedProperty upgradeKey =
+            property.FindPropertyRelative("UpgradeKey");
         SerializedProperty overrideTiming =
             property.FindPropertyRelative("OverrideTiming");
         SerializedProperty timing =
@@ -97,6 +99,15 @@ public sealed class SkillEffectEntryDrawer : PropertyDrawer
 
         EditorGUI.indentLevel++;
         float y = header.yMax + Gap;
+
+        if (upgradeKey != null)
+        {
+            EditorGUI.PropertyField(
+                new Rect(position.x, y, position.width, line),
+                upgradeKey,
+                new GUIContent("Upgrade Key"));
+            y += line + Gap;
+        }
 
         DrawSchedulingRow(
             new Rect(position.x, y, position.width, line),

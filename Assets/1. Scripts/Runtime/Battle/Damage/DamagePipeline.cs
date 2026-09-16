@@ -50,10 +50,28 @@ public sealed class DamagePipeline
             StaggerGaugeMechanic stagger =
                 context.Target.GetMechanic<StaggerGaugeMechanic>();
 
-            context.PhysicalResistanceMultiplier =
-                stagger?.IsVulnerabilityWindowOpen == true
-                    ? (context.Target.BattleContext?.Rules?.Stagger?.VulnerabilityHpResistanceOverride ?? 2f)
-                    : context.Target.Data.PhysicalResistances.GetMultiplier(context.PhysicalType);
+            EmotionRulebreakerService rulebreakers =
+                context.Target.BattleContext?.Services?.EmotionRulebreakerService;
+
+            if (stagger?.IsVulnerabilityWindowOpen == true)
+            {
+                context.PhysicalResistanceMultiplier =
+                    context.Target.BattleContext?.Rules?.Stagger?
+                        .VulnerabilityHpResistanceOverride ?? 2f;
+            }
+            else if (rulebreakers?.TryGetHpResistanceOverride(
+                         context.Target,
+                         out float overrideMultiplier) == true)
+            {
+                context.PhysicalResistanceMultiplier =
+                    overrideMultiplier;
+            }
+            else
+            {
+                context.PhysicalResistanceMultiplier =
+                    context.Target.Data.PhysicalResistances
+                        .GetMultiplier(context.PhysicalType);
+            }
 
             damage = Mathf.Max(
                 0,

@@ -180,10 +180,19 @@ public abstract class Character : MonoBehaviour
     {
         get
         {
-            if (targetModel != null)
-                return targetModel.GetMaxHp(this);
+            int baseMaximum =
+                targetModel != null
+                    ? targetModel.GetMaxHp(this)
+                    : Mathf.Max(1, CurrentHP);
 
-            return Mathf.Max(1, CurrentHP);
+            // C-39 Health Shop / run-growth axis: Whole Max HP bonus only.
+            // Enemy/part Max HP에는 섞지 않는다.
+            int runBonus =
+                battleContext?.Player == this
+                    ? battleContext.RunProgression?.MaximumHpBonus ?? 0
+                    : 0;
+
+            return Mathf.Max(1, baseMaximum + Mathf.Max(0, runBonus));
         }
     }
 
@@ -663,15 +672,30 @@ public abstract class Character : MonoBehaviour
         int configured =
             combatRulesRuntime?.GetActiveSlotCount() ?? 0;
 
-        return configured > 0
-            ? configured
-            : GetMaxCombatActionSlots();
+        if (configured > 0)
+        {
+            return ApplyRulebreakerTotalSlotAdjustment(
+                configured,
+                combatOnly: false);
+        }
+
+        // 기존 계약 보존: structured rule이 없는 파생 Character는
+        // GetMaxCombatActionSlots() override(NormalEnemy/EliteEnemy)를 그대로 사용한다.
+        // 여기서 base 3을 직접 반환하면 일반몹 1-slot 계약이 깨진다.
+        return GetMaxCombatActionSlots();
     }
 
     public virtual int GetMaxCombatActionSlots()
     {
-        int configured = combatRulesRuntime?.GetActiveCombatSlotCount() ?? 0;
-        return configured > 0 ? configured : 3;
+        int baseLimit =
+            combatRulesRuntime?.GetActiveCombatSlotCount() ?? 0;
+
+        if (baseLimit <= 0)
+            baseLimit = 3;
+
+        return ApplyRulebreakerTotalSlotAdjustment(
+            baseLimit,
+            combatOnly: true);
     }
 
     public virtual int GetMaxActionSlotsForPart(BodyPart part)
@@ -683,10 +707,34 @@ public abstract class Character : MonoBehaviour
                 return globalConfigured;
             return IsSingleHpTarget ? 1 : 0;
         }
-        if (part.IsBroken)
+
+        EmotionRulebreakerService rulebreakers =
+            battleContext?.Services?.EmotionRulebreakerService;
+
+        if (rulebreakers?.ArePartSlotsSuppressed(this, part) == true)
             return 0;
 
-        int configured = combatRulesRuntime?.GetSlotCountForPart(part) ?? 0;
+        bool preservedBrokenSlot =
+            rulebreakers?.IsBrokenPartSlotPreserved(this, part) == true;
+
+        if (part.IsBroken && !preservedBrokenSlot)
+            return 0;
+
+        int baseSlots = GetBaseActionSlotCountForPart(part);
+        int additional =
+            rulebreakers?.GetAdditionalSlotCount(this, part) ?? 0;
+
+        return Mathf.Max(0, baseSlots + additional);
+    }
+
+    private int GetBaseActionSlotCountForPart(BodyPart part)
+    {
+        if (part == null)
+            return IsSingleHpTarget ? 1 : 0;
+
+        int configured =
+            combatRulesRuntime?.GetSlotCountForPart(part) ?? 0;
+
         if (combatRulesRuntime?.HasStructuredRules == true)
             return Mathf.Max(0, configured);
 
@@ -701,6 +749,46 @@ public abstract class Character : MonoBehaviour
         };
         mechanicController?.ModifyActionSlotPolicy(context);
         return Mathf.Max(0, context.MaxSlots);
+    }
+
+    private int ApplyRulebreakerTotalSlotAdjustment(
+        int baseLimit,
+        bool combatOnly)
+    {
+        EmotionRulebreakerService rulebreakers =
+            battleContext?.Services?.EmotionRulebreakerService;
+
+        if (rulebreakers == null || BodyParts == null)
+            return Mathf.Max(0, baseLimit);
+
+        int result = Mathf.Max(0, baseLimit);
+
+        foreach (BodyPart part in BodyParts)
+        {
+            if (part == null)
+                continue;
+
+            bool isCombatPart =
+                part.SlotRole == BodyPartSlotRole.Attack ||
+                part.SlotRole == BodyPartSlotRole.Hybrid;
+
+            if (combatOnly && !isCombatPart)
+                continue;
+
+            int basePartSlots =
+                GetBaseActionSlotCountForPart(part);
+
+            if (rulebreakers.ArePartSlotsSuppressed(this, part))
+                result -= basePartSlots;
+
+            if (!part.IsBroken ||
+                rulebreakers.IsBrokenPartSlotPreserved(this, part))
+            {
+                result += rulebreakers.GetAdditionalSlotCount(this, part);
+            }
+        }
+
+        return Mathf.Max(0, result);
     }
 
     public void ConfigureActionSlot(ActionSlot slot)
@@ -728,8 +816,17 @@ public abstract class Character : MonoBehaviour
 
         ConfigureActionSlot(slot);
 
-        if (slot.SlotConfig?.HasLinkedPart == true &&
-            slot.Part?.IsBroken == true)
+        EmotionRulebreakerService rulebreakers =
+            battleContext?.Services?.EmotionRulebreakerService;
+
+        if (slot.Part != null &&
+            rulebreakers?.ArePartSlotsSuppressed(this, slot.Part) == true)
+        {
+            return false;
+        }
+
+        if (slot.Part?.IsBroken == true &&
+            rulebreakers?.IsBrokenPartSlotPreserved(this, slot.Part) != true)
         {
             return false;
         }
@@ -1199,6 +1296,89 @@ public abstract class Character : MonoBehaviour
             return;
 
         bodyPartController.RecoverPart(part);
+    }
+
+    public bool BreakPartIgnoringDeathResistance(
+        BodyPart part,
+        Character source = null,
+        BattleAction sourceAction = null) =>
+        bodyPartController != null &&
+        bodyPartController.BreakPartIgnoringDeathResistance(
+            part,
+            source ?? this,
+            sourceAction);
+
+    public bool RegenerateBrokenPartAsWeakened(BodyPart part) =>
+        bodyPartController != null &&
+        bodyPartController.RegenerateBrokenPartAsWeakened(part);
+
+    public bool RecoverPartAtMaintenance(BodyPart part) =>
+        bodyPartController != null &&
+        bodyPartController.RecoverPartAtMaintenance(part);
+
+    /// <summary>
+    /// C-39 stage clear: HP pools만 전부 채우며 Weakened/Broken 상태 자체는 해제하지 않는다.
+    /// </summary>
+    public void RestoreAllRunHealthPreservePartStates()
+    {
+        if (RuntimeStatus == null)
+            return;
+
+        RuntimeStatus.currentHP = Mathf.Max(1, MaxCombatHP);
+
+        if (BodyParts == null)
+            return;
+
+        foreach (BodyPart part in BodyParts)
+        {
+            if (part == null || part.IsBroken)
+                continue;
+
+            part.RestoreHpPreserveState(int.MaxValue);
+        }
+    }
+
+    /// <summary>
+    /// C-35 revive hook. 사망 이벤트가 발행되기 전 LifeController가 호출한다.
+    /// </summary>
+    public bool RestoreFromRulebreakerRevive(
+        float hpRatio,
+        bool weakenAllParts)
+    {
+        if (RuntimeStatus == null)
+            return false;
+
+        int restoredHp =
+            Mathf.Max(
+                1,
+                Mathf.FloorToInt(
+                    MaxCombatHP *
+                    Mathf.Clamp01(hpRatio)));
+
+        RuntimeStatus.currentHP =
+            Mathf.Clamp(
+                restoredHp,
+                1,
+                Mathf.Max(1, MaxCombatHP));
+
+        if (weakenAllParts && BodyParts != null)
+        {
+            foreach (BodyPart part in BodyParts)
+            {
+                if (part == null)
+                    continue;
+
+                RemoveAllPartStatuses(
+                    part,
+                    StatusEffectRemoveReason.PartRecovered);
+
+                RemoveBrokenStatusForPart(part);
+                part.RegenerateAsWeakened();
+                ApplyDisabledStatusForPart(part);
+            }
+        }
+
+        return true;
     }
 
     public void RestoreTemporaryWeakenedPart(

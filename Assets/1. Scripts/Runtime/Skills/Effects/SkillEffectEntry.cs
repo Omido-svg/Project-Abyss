@@ -12,6 +12,12 @@ public sealed class SkillEffectEntry
     public SkillEffectDefinition Definition;
     public SkillEffectOverrides Overrides = new SkillEffectOverrides();
 
+    [Header("Run Upgrade — optional")]
+    [Tooltip(
+        "C-37 SkillUpgradeStep.EffectPayloads가 이 Entry를 안정적으로 찾는 키입니다. " +
+        "비어 있으면 효과 수치 강화 대상이 아닙니다.")]
+    public string UpgradeKey;
+
     [Header("Trigger Override — optional")]
     [Tooltip(
         "끄면 Effect Definition의 기본 Timing을 사용합니다. " +
@@ -87,10 +93,17 @@ public sealed class SkillEffectEntry
 
         // Runtime Event wake일 때는 내부 사건 시점을 실제 실행 시점으로 넘긴다.
         // Authoring Timing 값 자체는 5종 계약을 유지한다.
+        SkillEffectOverrides effectiveOverrides =
+            SkillUpgradeService.ResolveEffectOverrides(
+                context?.SkillDefinition,
+                context?.BattleContext?.SkillUpgrades,
+                UpgradeKey,
+                Overrides);
+
         return Definition.TryApply(
             context,
             currentTiming,
-            Overrides,
+            effectiveOverrides,
             runtimeEventWake ? currentTiming : scheduledTiming);
     }
 
@@ -137,6 +150,7 @@ public sealed class SkillEffectEntry
         {
             Definition = definition,
             Overrides = new SkillEffectOverrides(),
+            UpgradeKey = string.Empty,
             OverrideTiming = false,
             Timing = definition != null
                 ? definition.Timing

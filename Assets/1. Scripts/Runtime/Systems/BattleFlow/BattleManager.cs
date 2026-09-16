@@ -21,6 +21,7 @@ public class BattleManager : MonoBehaviour
     [SerializeField] private bool hasConfiguredEmotion;
     [SerializeField] private EmotionType configuredEmotion = EmotionType.Awe;
     [SerializeField] private EmotionAugmentCatalog emotionAugmentCatalog;
+    private RunProgressionState configuredRunProgression;
 
     [Header("Animation")]
     [SerializeField] private BattleAnimationDirector battleAnimationDirector;
@@ -45,6 +46,7 @@ public class BattleManager : MonoBehaviour
     public EmotionType? ConfiguredEmotion =>
         hasConfiguredEmotion ? configuredEmotion : null;
     public EmotionAugmentCatalog EmotionAugmentCatalog => emotionAugmentCatalog;
+    public RunProgressionState ConfiguredRunProgression => configuredRunProgression;
 
     public bool IsInitialized => initializedSuccessfully;
     public bool IsEndingOrEnded => endingOrEnded;
@@ -274,7 +276,10 @@ public class BattleManager : MonoBehaviour
                     hasConfiguredEmotion
                         ? configuredEmotion
                         : null,
-                EmotionAugmentCatalog = emotionAugmentCatalog
+                EmotionAugmentCatalog = emotionAugmentCatalog,
+                RunProgression = configuredRunProgression,
+                SkillUpgrades = configuredRunProgression?.SkillUpgrades ??
+                                new SkillUpgradeState()
             };
 
         BattleContext.EffectResolver =
@@ -324,6 +329,24 @@ public class BattleManager : MonoBehaviour
             enemy.Initialize(BattleContext);
             enemy.ForceRecalculateHP();
         }
+    }
+
+    /// <summary>
+    /// Phase C run state를 전투에 공유합니다. 전투 초기화 이후에는 변경하지 않습니다.
+    /// </summary>
+    public bool ConfigureRunProgression(
+        RunProgressionState runProgression)
+    {
+        if (initializationStarted || initializedSuccessfully)
+        {
+            Debug.LogWarning(
+                "[BattleManager] 전투 초기화 후에는 Run Progression을 변경할 수 없습니다.",
+                this);
+            return false;
+        }
+
+        configuredRunProgression = runProgression;
+        return true;
     }
 
     /// <summary>

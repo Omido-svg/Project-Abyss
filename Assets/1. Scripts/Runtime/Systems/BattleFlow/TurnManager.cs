@@ -74,6 +74,7 @@ public class TurnManager
             momentumManager?.Reset();
             battleContext?.Services?.FervorManager?.ResetForBattle();
             battleContext?.Services?.RewardService?.ResetForBattle();
+            battleContext?.Services?.EmotionRulebreakerService?.ResetForBattle();
             battleContext?.Services?.EmotionAugmentManager?.ResetForBattle();
 
             battleContext?._battleEvent?
@@ -269,6 +270,77 @@ public class TurnManager
                 lifecycleGuard.IsResolutionCurrent(
                     resolutionToken))
             {
+                EmotionRulebreakerService rulebreakers =
+                    battleContext?.Services?.EmotionRulebreakerService;
+
+                rulebreakers?.ObservePrimaryResolutionState(
+                    battleContext?.Player,
+                    momentumManager?.GetCurrentBand(battleContext?.Player) ??
+                    MomentumState.Balance);
+
+                int repeatSafety = 0;
+                while (failure == null &&
+                       repeatSafety < 4 &&
+                       rulebreakers != null &&
+                       rulebreakers.TryConsumePlayerResolutionRepeat(
+                           out bool payEnergyAgain))
+                {
+                    repeatSafety++;
+
+                    IReadOnlyList<ActionSlot> repeatSnapshot =
+                        BuildPlayerResolutionRepeatSnapshot();
+
+                    if (repeatSnapshot.Count == 0)
+                        break;
+
+                    if (payEnergyAgain &&
+                        !TryPayRepeatEnergy(repeatSnapshot))
+                    {
+                        Debug.Log(
+                            "[Emotion Rulebreaker] 해결 단계 반복 비용을 낼 빛이 없어 반복을 취소합니다.");
+                        break;
+                    }
+
+                    ActionExecutionQueue repeatQueue = null;
+                    try
+                    {
+                        repeatQueue =
+                            clashBuilder?.BuildQueue(
+                                repeatSnapshot);
+                    }
+                    catch (Exception exception)
+                    {
+                        failure = exception;
+                        break;
+                    }
+
+                    IEnumerator repeatRoutine = null;
+                    try
+                    {
+                        repeatRoutine =
+                            actionResolver?.Resolve(
+                                repeatQueue);
+                    }
+                    catch (Exception exception)
+                    {
+                        failure = exception;
+                    }
+
+                    if (failure == null &&
+                        repeatRoutine != null)
+                    {
+                        yield return ExecuteSafely(
+                            repeatRoutine,
+                            resolutionToken,
+                            exception => failure = exception);
+                    }
+                }
+            }
+
+            if (failure == null &&
+                lifecycleGuard.IsResolutionCurrent(
+                    resolutionToken))
+            {
                 try
                 {
                     EndTurnInternal();
@@ -400,6 +472,13 @@ public class TurnManager
             .ResolveTurnEnd(CurrentTurn);
         momentumManager?.FinalizeTurn();
 
+        battleContext?.Services?.EmotionRulebreakerService?
+            .ObserveTurnFinalState(
+                battleContext?.Player,
+                momentumManager?.GetPreviousTurnFinalState(
+                    battleContext?.Player) ??
+                MomentumState.Balance);
+
         battleLogger?
             .PrintTurn(CurrentTurn);
 
@@ -407,6 +486,53 @@ public class TurnManager
             $"===== TURN {CurrentTurn} END =====");
 
         CurrentTurn++;
+    }
+
+    private IReadOnlyList<ActionSlot> BuildPlayerResolutionRepeatSnapshot()
+    {
+        List<ActionSlot> result = new();
+        IReadOnlyList<ActionSlot> snapshot =
+            actionManager?.CreateExecutionSnapshot();
+
+        if (snapshot == null ||
+            battleContext?.Player == null)
+        {
+            return result;
+        }
+
+        for (int i = 0; i < snapshot.Count; i++)
+        {
+            ActionSlot slot = snapshot[i];
+            if (slot?.Owner != battleContext.Player ||
+                slot.Skill == null ||
+                slot.Phase != ActionPhase.COMBAT)
+            {
+                continue;
+            }
+
+            result.Add(slot);
+        }
+
+        return result;
+    }
+
+    private bool TryPayRepeatEnergy(
+        IReadOnlyList<ActionSlot> slots)
+    {
+        Character player = battleContext?.Player;
+        if (player == null || slots == null)
+            return false;
+
+        int total = 0;
+        for (int i = 0; i < slots.Count; i++)
+        {
+            Skill skill = slots[i]?.Skill;
+            if (skill != null)
+                total += Mathf.Max(0, skill.EnergyCost);
+        }
+
+        return total <= 0 ||
+               player.TryConsumeEnergy(total);
     }
 
     public void NextTurn()

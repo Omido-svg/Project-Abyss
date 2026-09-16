@@ -61,17 +61,31 @@ public sealed class CharacterLifeController
             return false;
         }
 
-        if (owner.RuntimeStatus != null &&
-            owner.RuntimeStatus.currentHP <= 0)
-        {
-            return true;
-        }
+        bool lethalByHp =
+            owner.RuntimeStatus != null &&
+            owner.RuntimeStatus.currentHP <= 0;
 
         CharacterTargetModel targetModel =
             owner.Targeting;
 
-        return targetModel != null &&
-               targetModel.IsStructureDestroyed(owner);
+        bool lethalByStructure =
+            targetModel != null &&
+            targetModel.IsStructureDestroyed(owner);
+
+        if (!lethalByHp && !lethalByStructure)
+            return false;
+
+        EmotionRulebreakerService rulebreakers =
+            owner.BattleContext?.Services?.EmotionRulebreakerService;
+
+        if (rulebreakers?.TryConsumeRevive(owner) == true)
+        {
+            Debug.Log(
+                $"[Emotion Rulebreaker] {owner.Data?.CharacterName ?? owner.name} 부활");
+            return false;
+        }
+
+        return true;
     }
 
     public void Die(

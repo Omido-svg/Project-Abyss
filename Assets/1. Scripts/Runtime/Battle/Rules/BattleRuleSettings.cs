@@ -151,7 +151,12 @@ public sealed class StaggerRuleSettings
 public sealed class ProgressionRuleSettings
 {
     [Range(1, 5)] public int MaximumSkillUpgradeLevel = 2;
-    [Min(0f)] public float SecondUpgradeCostMultiplier = 1.5f;
+
+    // C-36: 2회차 강화 비용은 0916 정본에서 (미정).
+    // 기존 SO의 직렬화 값은 받아오되 런타임 확정값으로 사용하지 않는다.
+    [HideInInspector, FormerlySerializedAs("SecondUpgradeCostMultiplier")]
+    public float LegacySecondUpgradeCostMultiplier;
+
     public int NormalAttackLoadoutLimit = 3;
     public int DuelLoadoutLimit = 3;
     public int PreparationLoadoutLimit = 3;
@@ -160,7 +165,7 @@ public sealed class ProgressionRuleSettings
     public void Normalize()
     {
         MaximumSkillUpgradeLevel = Mathf.Clamp(MaximumSkillUpgradeLevel, 1, 5);
-        SecondUpgradeCostMultiplier = Mathf.Max(0f, SecondUpgradeCostMultiplier);
+        LegacySecondUpgradeCostMultiplier = 0f;
         NormalAttackLoadoutLimit = Mathf.Max(0, NormalAttackLoadoutLimit);
         DuelLoadoutLimit = 3;
         PreparationLoadoutLimit = Mathf.Max(0, PreparationLoadoutLimit);

@@ -12,6 +12,7 @@ public sealed class BattleRuntimeComposition
     public PrestigeChargeService PrestigeChargeService => Services?.PrestigeChargeService;
     public BattleRewardService RewardService => Services?.RewardService;
     public EmotionAugmentManager EmotionAugmentManager => Services?.EmotionAugmentManager;
+    public EmotionRulebreakerService EmotionRulebreakerService => Services?.EmotionRulebreakerService;
     public SpeedManager SpeedManager => Services?.SpeedManager;
     public DamageManager DamageManager => Services?.DamageManager;
     public ClashManager ClashManager => Services?.ClashManager;
@@ -59,6 +60,8 @@ public static class BattleRuntimeFactory
             new PrestigeChargeService(context);
         services.RewardService =
             new BattleRewardService(context, services.PrestigeChargeService);
+        services.EmotionRulebreakerService =
+            new EmotionRulebreakerService(context);
         services.EmotionAugmentManager =
             new EmotionAugmentManager(context, services.FervorManager);
         services.SpeedManager =

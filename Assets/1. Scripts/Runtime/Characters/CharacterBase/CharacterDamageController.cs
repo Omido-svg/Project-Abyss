@@ -125,12 +125,26 @@ public sealed class CharacterDamageController
 
         if (targetPart.IsWeakened)
         {
-            // P0 D-07 확정 불변식:
-            // 약화 상태는 회복으로 풀리지 않는다. 이후 타격은 전체 HP를 계속 깎고,
-            // 파괴 권한이 있는 타격만 회복되어 올라간 부위 HP도 함께 깎아 0에서 파괴한다.
+            // P0 D-07 확정 불변식. 단 C-35 왕귀로 죽음의 저항이 해제된 대상은
+            // 일반 타격도 0까지 내려가며 파괴 권한/선행 약화 게이트를 우회한다.
             owner.ReduceCurrentHP(request.Damage);
 
-            if (request.CanBreakPart)
+            bool weakenedDeathResistanceDisabled =
+                owner.BattleContext?.Services?.EmotionRulebreakerService?
+                    .IsDeathResistanceDisabled(owner) == true;
+
+            if (weakenedDeathResistanceDisabled)
+            {
+                targetPart.ApplyDamageWithoutDeathResistance(request.Damage);
+                if (targetPart.PartHP <= 0f)
+                {
+                    bodyPartController?.BreakPartIgnoringDeathResistance(
+                        targetPart,
+                        owner.ActiveDamageContext?.Attacker,
+                        owner.ActiveDamageContext?.Action);
+                }
+            }
+            else if (request.CanBreakPart)
             {
                 targetPart.ApplyBreakAuthorityDamage(request.Damage);
                 if (targetPart.PartHP <= 0f)
@@ -168,9 +182,26 @@ public sealed class CharacterDamageController
 
         if (targetPart.IsWeakened)
         {
-            // 0915 C-13: 약화 부위의 HP는 1에서 유지되지만
-            // 같은 타격의 post-mitigation 요청 피해는 Whole HP에 계속 전량 반영한다.
+            // 0915 C-13 기본은 1 유지. C-35 왕귀로 죽음의 저항이 해제되면
+            // 상태 피해도 0까지 내려가 부위를 파괴할 수 있다.
             owner.ReduceCurrentHP(request.Damage);
+
+            bool weakenedStatusDeathResistanceDisabled =
+                owner.BattleContext?.Services?.EmotionRulebreakerService?
+                    .IsDeathResistanceDisabled(owner) == true;
+
+            if (weakenedStatusDeathResistanceDisabled)
+            {
+                targetPart.ApplyDamageWithoutDeathResistance(request.Damage);
+                if (targetPart.PartHP <= 0f)
+                {
+                    bodyPartController?.BreakPartIgnoringDeathResistance(
+                        targetPart,
+                        owner.ActiveDamageContext?.Attacker,
+                        owner.ActiveDamageContext?.Action);
+                }
+            }
+
             owner.CheckDead();
             return;
         }
@@ -179,8 +210,13 @@ public sealed class CharacterDamageController
             0,
             Mathf.CeilToInt(targetPart.PartHP));
 
-        int actualDamage = targetPart.ApplyDamage(
-            request.Damage);
+        bool deathResistanceDisabled =
+            owner.BattleContext?.Services?.EmotionRulebreakerService?
+                .IsDeathResistanceDisabled(owner) == true;
+
+        int actualDamage = deathResistanceDisabled
+            ? targetPart.ApplyDamageWithoutDeathResistance(request.Damage)
+            : targetPart.ApplyDamage(request.Damage);
 
         // 0915 C-12: Part clamp와 Whole HP는 서로 다른 장부다.
         // Part가 1에서 멈추더라도 Whole HP에는 요청 피해 전량을 적용한다.
@@ -191,7 +227,14 @@ public sealed class CharacterDamageController
             $"{request.SourceEffect?.Name} 피해 {actualDamage} " +
             $"HP : {beforePartHP} -> {targetPart.PartHP:0}");
 
-        if (targetPart.PartHP <= 1f)
+        if (deathResistanceDisabled && targetPart.PartHP <= 0f)
+        {
+            bodyPartController?.BreakPartIgnoringDeathResistance(
+                targetPart,
+                owner.ActiveDamageContext?.Attacker,
+                owner.ActiveDamageContext?.Action);
+        }
+        else if (targetPart.PartHP <= 1f)
         {
             bodyPartController?.WeakenPart(
                 targetPart,
@@ -249,16 +292,28 @@ public sealed class CharacterDamageController
             0,
             Mathf.CeilToInt(targetPart.PartHP));
 
-        // 0915 C-12: 부위 장부는 1에서 clamp될 수 있지만 Whole HP 장부는
-        // post-mitigation 요청 피해를 전량 받는다. 둘을 같은 actualDamage로 묶지 않는다.
-        int actualDamage = targetPart.ApplyDamage(damage);
+        bool deathResistanceDisabled =
+            owner.BattleContext?.Services?.EmotionRulebreakerService?
+                .IsDeathResistanceDisabled(owner) == true;
+
+        // C-12 기본은 1 clamp. C-35 왕귀가 활성화된 대상만 0까지 허용한다.
+        int actualDamage = deathResistanceDisabled
+            ? targetPart.ApplyDamageWithoutDeathResistance(damage)
+            : targetPart.ApplyDamage(damage);
         owner.ReduceCurrentHP(damage);
 
         Debug.Log(
             $"{OwnerName()}의 {targetPart.Type} 부위에 {actualDamage} 피해 " +
             $"HP : {beforePartHP} -> {targetPart.PartHP:0}");
 
-        if (targetPart.PartHP <= 1f)
+        if (deathResistanceDisabled && targetPart.PartHP <= 0f)
+        {
+            bodyPartController?.BreakPartIgnoringDeathResistance(
+                targetPart,
+                owner.ActiveDamageContext?.Attacker,
+                owner.ActiveDamageContext?.Action);
+        }
+        else if (targetPart.PartHP <= 1f)
         {
             bodyPartController?.WeakenPart(
                 targetPart,

@@ -29,6 +29,11 @@ public class BattleContext
     public EmotionType? SelectedEmotion { get; set; }
     public EmotionAugmentCatalog EmotionAugmentCatalog { get; set; }
 
+    // Phase C run-scoped progression. RunProgressionState가 주입되지 않은 전투도
+    // 독립 SkillUpgradeState를 가져 테스트/일반 전투가 정상 동작한다.
+    public RunProgressionState RunProgression { get; set; }
+    public SkillUpgradeState SkillUpgrades { get; set; } = new SkillUpgradeState();
+
     // 격리 Character Validator는 실제 전투 계산만 실행하고,
     // Scene의 UI/VFX/Timeline 큐에는 요청을 보내지 않는다.
     public bool SuppressPresentation { get; set; }

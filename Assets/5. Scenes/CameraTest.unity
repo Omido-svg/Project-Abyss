@@ -19171,8 +19171,12 @@ MonoBehaviour:
       TurnStartGain: 1
       StartFull: 1
     Prestige:
-      ExchangeParticipantCharge: 5
-      OneSidedParticipantCharge: 5
+      ClashStartCharge: 1
+      ExchangeCharge: 1
+      ClashWinCharge: 2
+      KillCharge: 5
+      LegacyExchangeParticipantCharge: 5
+      LegacyOneSidedParticipantCharge: 5
       ExcludePreparationActions: 1
     Progression:
       MaximumSkillUpgradeLevel: 2

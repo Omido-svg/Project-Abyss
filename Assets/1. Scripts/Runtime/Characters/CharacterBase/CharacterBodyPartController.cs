@@ -101,6 +101,27 @@ public class CharacterBodyPartController
         return true;
     }
 
+    /// <summary>
+    /// C-35 왕귀(짓누름) 전용. 죽음의 저항 해제 상태에서 0에 도달한 부위를
+    /// Skill.CanBreakPart / 선행 약화 게이트 없이 파괴한다.
+    /// </summary>
+    public bool BreakPartIgnoringDeathResistance(
+        BodyPart part,
+        Character source,
+        BattleAction sourceAction = null)
+    {
+        if (owner == null ||
+            part == null ||
+            (part.Owner != null && part.Owner != owner) ||
+            part.IsBroken)
+        {
+            return false;
+        }
+
+        BreakPartInternal(part, source, sourceAction);
+        return true;
+    }
+
     public void ForceBreakPart(BodyPart part)
     {
         ForceBreakPart(
@@ -151,8 +172,14 @@ public class CharacterBodyPartController
             $"[BREAK BEFORE] {owner.Data.CharacterName} {part.Type} " +
             $"State={part.State}, HP={part.PartHP}/{part.MaxPartHP}");
 
+        bool preserveSlots =
+            owner.BattleContext?.Services?.EmotionRulebreakerService?
+                .TryPreserveSlotsOnBreak(owner, part) == true;
+
         int removedSlotCount =
-            RemoveActionSlotsOfPart(part);
+            preserveSlots
+                ? 0
+                : RemoveActionSlotsOfPart(part);
 
         // 최신 규칙: 파괴는 해당 부위에 연결된 행동 슬롯만 상실시킨다.
         // 파괴 순간 남은 부위 HP를 전신 HP에 다시 차감하지 않는다.
@@ -268,6 +295,62 @@ public class CharacterBodyPartController
         Debug.Log(
             $"{owner.Data.CharacterName} {part.Type} 부위 회복 / " +
             $"HP +{recoverAmount} ({owner.CurrentHP}/{owner.MaxCombatHP})");
+    }
+
+    /// <summary>
+    /// C-35 부위 재생. 파괴 상태만 약화로 되돌리며 Whole HP를 회복하지 않는다.
+    /// </summary>
+    public bool RegenerateBrokenPartAsWeakened(BodyPart part)
+    {
+        if (owner == null ||
+            part == null ||
+            (part.Owner != null && part.Owner != owner) ||
+            !part.IsBroken)
+        {
+            return false;
+        }
+
+        owner.RemoveAllPartStatuses(
+            part,
+            StatusEffectRemoveReason.PartRecovered);
+
+        owner.RemoveBrokenStatusForPart(part);
+        part.RegenerateAsWeakened();
+        owner.ApplyDisabledStatusForPart(part);
+
+        owner.BattleEvent?.RaiseBodyPartRecovered(
+            owner,
+            part);
+
+        return true;
+    }
+
+    /// <summary>
+    /// C-39 정비 노드: 부위 상태만 정상으로 복구한다.
+    /// 일반 RecoverPart의 dual-heal은 수행하지 않는다.
+    /// </summary>
+    public bool RecoverPartAtMaintenance(BodyPart part)
+    {
+        if (owner == null ||
+            part == null ||
+            (part.Owner != null && part.Owner != owner) ||
+            (!part.IsBroken && !part.IsWeakened))
+        {
+            return false;
+        }
+
+        owner.RemoveAllPartStatuses(
+            part,
+            StatusEffectRemoveReason.PartRecovered);
+
+        part.Recover();
+        owner.RemoveBrokenStatusForPart(part);
+
+        owner.BattleEvent?.RaiseBodyPartRecovered(
+            owner,
+            part);
+
+        return true;
     }
 
     private ActionManager GetActionManager()

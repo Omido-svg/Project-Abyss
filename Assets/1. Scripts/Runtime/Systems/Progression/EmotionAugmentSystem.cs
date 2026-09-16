@@ -33,7 +33,8 @@ public sealed class EmotionAugmentDefinition : ScriptableObject
     public string DisplayName;
     public EmotionType Emotion;
     [Range(1, 3)] public int Tier = 1;
-    [Min(0f)] public float OfferWeight = 1f;
+    [HideInInspector, Tooltip("Legacy 0915 field. C-34 이후 제안은 가중 랜덤을 사용하지 않습니다.")]
+    public float OfferWeight = 1f;
     [TextArea(2, 6)] public string Description;
     public List<EmotionAugmentEffectDefinition> Effects = new();
 }
@@ -67,6 +68,35 @@ public sealed class EmotionAugmentCatalog : ScriptableObject
                 destination.Add(entry);
             }
         }
+    }
+
+    /// <summary>
+    /// C-34: 같은 감정/티어는 Catalog 순서의 정확히 3장을 항상 동일하게 제안한다.
+    /// 3장이 아니면 조용히 근사하지 않고 authoring 오류로 반환한다.
+    /// </summary>
+    public bool TryBuildCanonicalOffer(
+        EmotionType emotion,
+        int tier,
+        List<EmotionAugmentDefinition> destination,
+        out string reason)
+    {
+        if (destination == null)
+        {
+            reason = "destination is null";
+            return false;
+        }
+
+        GetCandidates(emotion, tier, destination);
+
+        if (destination.Count != 3)
+        {
+            reason =
+                $"{emotion} Tier {Mathf.Clamp(tier, 1, 3)}는 정확히 3장이어야 합니다. Actual={destination.Count}";
+            return false;
+        }
+
+        reason = string.Empty;
+        return true;
     }
 
     public int GetCandidateCount(
@@ -196,16 +226,14 @@ public sealed class EmotionAugmentManager
         int tier = Mathf.Clamp(levelUp.NewLevel, 1, 3);
         EmotionType emotion = context.SelectedEmotion.Value;
 
-        context.EmotionAugmentCatalog.GetCandidates(
-            emotion,
-            tier,
-            candidates);
-
-        if (candidates.Count == 0)
+        if (!context.EmotionAugmentCatalog.TryBuildCanonicalOffer(
+                emotion,
+                tier,
+                candidates,
+                out string reason))
         {
             Debug.LogWarning(
-                $"[EmotionAugment] {emotion} Tier {tier} 증강 후보가 없습니다. " +
-                "해당 레벨업에서는 선택 패널을 만들 수 없습니다.");
+                $"[EmotionAugment] C-34 canonical offer 생성 실패: {reason}");
             return;
         }
 
@@ -216,23 +244,9 @@ public sealed class EmotionAugmentManager
                 Emotion = emotion
             };
 
-        List<EmotionAugmentDefinition> pool =
-            new List<EmotionAugmentDefinition>(candidates);
-
-        while (offer.Choices.Count < 3 &&
-               pool.Count > 0)
-        {
-            int index = PickWeightedIndex(pool);
-            offer.Choices.Add(pool[index]);
-            pool.RemoveAt(index);
-        }
-
-        if (offer.Choices.Count < 3)
-        {
-            Debug.LogWarning(
-                $"[EmotionAugment] {emotion} Tier {tier} 후보가 " +
-                $"{offer.Choices.Count}개뿐입니다. 권장 구성은 정확히 3개입니다.");
-        }
+        // Catalog order is the canonical deterministic order.
+        for (int i = 0; i < candidates.Count; i++)
+            offer.Choices.Add(candidates[i]);
 
         QueueOffer(offer);
     }
@@ -296,33 +310,5 @@ public sealed class EmotionAugmentManager
         }
     }
 
-    private static int PickWeightedIndex(
-        List<EmotionAugmentDefinition> pool)
-    {
-        float total = 0f;
 
-        for (int i = 0; i < pool.Count; i++)
-        {
-            total += Mathf.Max(
-                0f,
-                pool[i]?.OfferWeight ?? 0f);
-        }
-
-        if (total <= 0f)
-            return UnityEngine.Random.Range(0, pool.Count);
-
-        float roll = UnityEngine.Random.Range(0f, total);
-
-        for (int i = 0; i < pool.Count; i++)
-        {
-            roll -= Mathf.Max(
-                0f,
-                pool[i]?.OfferWeight ?? 0f);
-
-            if (roll <= 0f)
-                return i;
-        }
-
-        return pool.Count - 1;
-    }
 }

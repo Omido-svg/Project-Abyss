@@ -14,6 +14,7 @@ public sealed class BattleRuntimeServices
     public PrestigeChargeService PrestigeChargeService { get; set; }
     public BattleRewardService RewardService { get; set; }
     public EmotionAugmentManager EmotionAugmentManager { get; set; }
+    public EmotionRulebreakerService EmotionRulebreakerService { get; set; }
     public SpeedManager SpeedManager { get; set; }
     public DamageManager DamageManager { get; set; }
     public ClashManager ClashManager { get; set; }
@@ -34,6 +35,7 @@ public sealed class BattleRuntimeServices
             PrestigeChargeService = PrestigeChargeService,
             RewardService = RewardService,
             EmotionAugmentManager = EmotionAugmentManager,
+            EmotionRulebreakerService = EmotionRulebreakerService,
             SpeedManager = SpeedManager,
             DamageManager = DamageManager,
             ClashManager = ClashManager,

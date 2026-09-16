@@ -17,6 +17,24 @@ internal static class SkillCostService
             return false;
 
         SkillDefinition definition = skill.Definition;
+        SkillUpgradeState upgrades =
+            character.BattleContext?.SkillUpgrades;
+
+        int prestigeCost =
+            definition == null
+                ? 0
+                : SkillUpgradeService.ResolvePrestigeCost(
+                    definition,
+                    upgrades,
+                    definition.PrestigeCost);
+
+        int customResourceCost =
+            definition == null
+                ? 0
+                : SkillUpgradeService.ResolveCustomResourceCost(
+                    definition,
+                    upgrades,
+                    definition.CustomResourceCost);
 
         if (definition != null &&
             definition.OverrideResourceRules)
@@ -35,20 +53,20 @@ internal static class SkillCostService
                 }
             }
 
-            if (definition.PrestigeCost > 0 &&
+            if (prestigeCost > 0 &&
                 character.RuntimeStatus.currentPrestige <
-                definition.PrestigeCost)
+                prestigeCost)
             {
                 return false;
             }
 
             if (!string.IsNullOrWhiteSpace(
                     definition.CustomResourceKey) &&
-                definition.CustomResourceCost > 0 &&
+                customResourceCost > 0 &&
                 SkillResourceAccess.Get(
                     character,
                     definition.CustomResourceKey) <
-                definition.CustomResourceCost)
+                customResourceCost)
             {
                 return false;
             }
@@ -93,6 +111,24 @@ internal static class SkillCostService
         }
 
         SkillDefinition definition = skill.Definition;
+        SkillUpgradeState upgrades =
+            character.BattleContext?.SkillUpgrades;
+
+        int prestigeCost =
+            definition == null
+                ? 0
+                : SkillUpgradeService.ResolvePrestigeCost(
+                    definition,
+                    upgrades,
+                    definition.PrestigeCost);
+
+        int customResourceCost =
+            definition == null
+                ? 0
+                : SkillUpgradeService.ResolveCustomResourceCost(
+                    definition,
+                    upgrades,
+                    definition.CustomResourceCost);
 
         if (definition != null &&
             definition.OverrideResourceRules)
@@ -103,13 +139,13 @@ internal static class SkillCostService
                 {
                     character.RuntimeStatus.currentPrestige = 0;
                 }
-                else if (definition.PrestigeCost > 0)
+                else if (prestigeCost > 0)
                 {
                     character.RuntimeStatus.currentPrestige =
                         Mathf.Max(
                             0,
                             character.RuntimeStatus.currentPrestige -
-                            definition.PrestigeCost);
+                            prestigeCost);
                 }
             }
 
@@ -123,12 +159,12 @@ internal static class SkillCostService
                         definition.CustomResourceKey,
                         0);
                 }
-                else if (definition.CustomResourceCost > 0)
+                else if (customResourceCost > 0)
                 {
                     SkillResourceAccess.Modify(
                         character,
                         definition.CustomResourceKey,
-                        -definition.CustomResourceCost,
+                        -customResourceCost,
                         0,
                         int.MaxValue);
                 }

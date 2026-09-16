@@ -206,6 +206,20 @@ public class BodyPart
     }
 
     /// <summary>
+    /// C-35 부위 재생: 파괴만 되돌리고 상태는 Weakened로 유지한다.
+    /// 정본상 파괴→약화이며 HP 회복 효과가 아니다.
+    /// </summary>
+    public void RegenerateAsWeakened()
+    {
+        State = BodyPartState.Weakened;
+        PartHP = 1f;
+        Revision++;
+
+        Debug.Log(
+            $"{OwnerName()}의 {Type} 부위 재생 / Broken -> Weakened");
+    }
+
+    /// <summary>
     /// 무력화 게이지처럼 일시적으로 부여된 약화를 해제한다.
     /// 일반 Recover와 달리 부위 HP를 최대치로 치유하지 않고 약화 전 HP를 복원한다.
     /// </summary>
@@ -309,6 +323,23 @@ public class BodyPart
                 MaxPartHP);
 
         Revision++;
+    }
+
+    /// <summary>
+    /// C-35 왕귀(짓누름): 죽음의 저항이 해제된 대상에만 사용한다.
+    /// Normal/Weakened 어느 상태에서도 0까지 실제 부위 HP를 깎을 수 있다.
+    /// </summary>
+    public int ApplyDamageWithoutDeathResistance(int damage)
+    {
+        if (damage <= 0 || IsBroken)
+            return 0;
+
+        int before = Mathf.Max(0, Mathf.CeilToInt(PartHP));
+        int applied = Mathf.Min(before, damage);
+        PartHP = Mathf.Max(0f, PartHP - applied);
+        if (applied > 0)
+            Revision++;
+        return applied;
     }
 
     public int ApplyBreakAuthorityDamage(int damage)
