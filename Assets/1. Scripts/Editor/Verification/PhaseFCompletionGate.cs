@@ -17,7 +17,7 @@ using UnityEngine.SceneManagement;
 /// </summary>
 public static class PhaseFCompletionGate
 {
-    public const string PhaseFProfileId = "PHASE_F_COMPLETION_V2";
+    public const string PhaseFProfileId = "PHASE_F_COMPLETION_V3";
 
     private enum EvidenceKind
     {
@@ -499,6 +499,13 @@ public static class PhaseFCompletionGate
             List<LoadedReport> matching = reports
                 .Where(x => HasCase(x.Report, definition.SignatureCaseId))
                 .Where(x => string.Equals(x.Report.SpecId, CanonicalGameSystemVerificationSpec.SpecId, StringComparison.Ordinal))
+                // Phase E Data Gate는 Olaf/Yujin/Hifumi의 StaticContract도 함께 실행한다.
+                // 따라서 캐릭터 signature 하나만으로 report를 고르면 Phase E report가
+                // "최신 Yujin report"처럼 오인될 수 있다. 캐릭터 evidence는 반드시
+                // live-manager case가 포함된 Runtime Gate report에서만 고른다.
+                .Where(x => definition.Kind == EvidenceKind.PhaseE
+                    ? !HasCase(x.Report, "system.live.manager_initialized")
+                    : HasCase(x.Report, "system.live.manager_initialized"))
                 .OrderByDescending(x => x.FinishedUtc)
                 .ToList();
 
@@ -616,6 +623,20 @@ public static class PhaseFCompletionGate
                 if (!string.Equals(extension, ".cs", StringComparison.OrdinalIgnoreCase) &&
                     !string.Equals(extension, ".asset", StringComparison.OrdinalIgnoreCase) &&
                     !string.Equals(extension, ".asmdef", StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+
+                // Phase E Data Gate의 C-44 audit는 검증 결과를 Manifest에 기록하고
+                // AssetDatabase.SaveAssets()를 호출한다. 그 때문에 검증을 실행한 것만으로
+                // Manifest mtime이 갱신되어, 이미 방금 통과한 Olaf/Hifumi Runtime report가
+                // 갑자기 STALE이 되는 순환 의존이 생겼다. Manifest는 "검증 산출물"이므로
+                // freshness source cutoff에서는 제외한다. 실제 Phase E 데이터 유효성은
+                // 별도의 Phase E evidence report가 직접 보증한다.
+                string normalized = file.Replace('\\', '/');
+                if (normalized.EndsWith(
+                        "/Assets/2. Data/Progression/PhaseE/PhaseEContentManifest.asset",
+                        StringComparison.OrdinalIgnoreCase))
                 {
                     continue;
                 }

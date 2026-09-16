@@ -1,0 +1,324 @@
+PROJECT ABYSS GAME SYSTEM VERIFICATION
+Spec: 0915-AB__0916-CD-Olaf-Yujin
+Scene: Battle Test Scene
+Player: 히후미
+Started: 2026-09-16T19:33:59.4029002+09:00
+Finished: 2026-09-16T19:33:59.5027357+09:00
+Result: PASSED
+TOTAL 63 / EXECUTED 63 / PASS 63 / FAIL 0 / SKIP 0 / PENDING 0 / ERROR 0
+====================================================================================
+[Pass] system.coverage.unique_case_ids / system.coverage.unique_case_ids
+Module: verification.infrastructure / Requirement:  / Mode: StaticContract / Category: Coverage / Required: True / Time: 0ms
+Expected: 모든 CaseId가 전역에서 유일
+Actual: 79 unique cases
+------------------------------------------------------------------------------------
+[Pass] system.coverage.phase_a / system.coverage.phase_a
+Module: verification.infrastructure / Requirement:  / Mode: StaticContract / Category: Coverage / Required: True / Time: 0ms
+Expected: Phase A 모든 Requirement에 최소 1개 자동 검증 Case 연결
+Actual: 10/10 covered
+------------------------------------------------------------------------------------
+[Pass] system.coverage.phase_b / system.coverage.phase_b
+Module: verification.infrastructure / Requirement:  / Mode: StaticContract / Category: Coverage / Required: True / Time: 0ms
+Expected: Phase B 18개 Requirement에 검증 Case 연결
+Actual: Covered=18/18
+------------------------------------------------------------------------------------
+[Pass] system.coverage.phase_c / system.coverage.phase_c
+Module: verification.infrastructure / Requirement:  / Mode: StaticContract / Category: Coverage / Required: True / Time: 0ms
+Expected: Phase C 5개 Requirement에 검증 Case 연결
+Actual: Covered=5/5
+------------------------------------------------------------------------------------
+[Pass] system.coverage.phase_d_olaf / system.coverage.phase_d_olaf
+Module: verification.infrastructure / Requirement:  / Mode: StaticContract / Category: Coverage / Required: False / Time: 0ms
+Expected: Phase D Olaf 4개 Requirement에 검증 Case 연결
+Actual: Covered=4/4
+------------------------------------------------------------------------------------
+[Pass] system.coverage.phase_d_yujin / system.coverage.phase_d_yujin
+Module: verification.infrastructure / Requirement:  / Mode: StaticContract / Category: Coverage / Required: False / Time: 0ms
+Expected: Phase D Yujin 5개 Requirement에 검증 Case 연결
+Actual: Covered=5/5
+------------------------------------------------------------------------------------
+[Pass] system.coverage.phase_d_hifumi / system.coverage.phase_d_hifumi
+Module: verification.infrastructure / Requirement:  / Mode: StaticContract / Category: Coverage / Required: True / Time: 0ms
+Expected: Phase D Hifumi 8개 Requirement에 검증 Case 연결
+Actual: Covered=8/8
+------------------------------------------------------------------------------------
+[Pass] system.coverage.phase_e / system.coverage.phase_e
+Module: verification.infrastructure / Requirement:  / Mode: StaticContract / Category: Coverage / Required: False / Time: 0ms
+Expected: Phase E 9개 Requirement에 검증 Case 연결
+Actual: Covered=9/9
+------------------------------------------------------------------------------------
+[Pass] system.contract.timing.authoring_five / Skill Timing Authoring 5종
+Module: canonical.contracts / Requirement: C-42 / Mode: StaticContract / Category: Contract / Required: True / Time: 0ms
+Expected: OnExecute / OnDuelMatched / OnExchangeWin / OnExchangeLose / OnClashEnd
+Actual: OnExecute, OnDuelMatched, OnExchangeWin, OnExchangeLose, OnClashEnd
+------------------------------------------------------------------------------------
+[Pass] system.contract.condition.canonical_layer / Canonical Condition Layer
+Module: canonical.contracts / Requirement: C-47 / Mode: StaticContract / Category: Contract / Required: True / Time: 0ms
+Expected: 현재/직전 기세, stack range, stagger ratio, negative-status count, resource range
+Actual: CurrentMomentumState, PreviousTurnMomentumState, CurrentMomentumRange, StatusStackRange, StaggerRatioRange, NegativeStatusCountRange, ResourceRange
+------------------------------------------------------------------------------------
+[Pass] system.contract.loadout.3331 / Loadout 3|3|3|1
+Module: canonical.contracts / Requirement: C-45 / Mode: StaticContract / Category: Contract / Required: True / Time: 0ms
+Expected: 평타3 / 결투3 / 도사림3 / 위세1
+Actual: 3|3|3|1
+------------------------------------------------------------------------------------
+[Pass] system.contract.power.curve / 기본위력 Canonical Curve
+Module: canonical.contracts / Requirement: C-05 / Mode: StaticContract / Category: Contract / Required: True / Time: 0ms
+Expected: 1:20, 2:12, 3:11, 4:9, 5:8 / 빛 1당 +2
+Actual: Curve + EnergyPower PASS
+------------------------------------------------------------------------------------
+[Pass] system.contract.skill_color.whole_skill / RED/BLUE 스킬 전체 색 계약
+Module: canonical.contracts / Requirement: C-10 / Mode: StaticContract / Category: Contract / Required: True / Time: 0ms
+Expected: SkillDefinition.Color가 roll legacy Type보다 우선
+Actual: ExplicitRed=Red, ExplicitBlue=Blue
+------------------------------------------------------------------------------------
+[Pass] system.contract.bodypart.skill_access / 부위별 행동 접근 + 위세 슬롯리스 계약
+Module: canonical.contracts / Requirement: C-02 / Mode: StaticContract / Category: Contract / Required: True / Time: 0ms
+Expected: HEAD=평타·결투·도사림 / HAND=평타·결투 / LEGS=도사림 / Prestige=부위슬롯 불가
+Actual: 16/16 PASS
+------------------------------------------------------------------------------------
+[Pass] system.contract.momentum.bands / 기세 Band 고정값
+Module: canonical.contracts / Requirement: C-46 / Mode: StaticContract / Category: Momentum / Required: True / Time: 0ms
+Expected: -100..100 / -70,-30,+30,+70 / Hit20 / Duel40
+Actual: Range=-100..100, Bands=-70/-30/30/70, Shift=20/40
+------------------------------------------------------------------------------------
+[Pass] system.contract.fervor.thresholds / 고조·열광 고정값
+Module: canonical.contracts / Requirement: C-46 / Mode: StaticContract / Category: Fervor / Required: True / Time: 0ms
+Expected: 10/5/2/0/0, 문턱 4/8/10, 최대3
+Actual: Gain=10/5/2/0/0, Cost=4/8/10, Max=3
+------------------------------------------------------------------------------------
+[Pass] system.contract.energy.baseline / 빛 기본 계약
+Module: canonical.contracts / Requirement: C-04 / Mode: StaticContract / Category: Resource / Required: True / Time: 0ms
+Expected: 전투 시작 max3/full, 턴 시작 +1
+Actual: Max=3, Turn+=1, StartFull=True
+------------------------------------------------------------------------------------
+[Pass] system.contract.planning.command_shape / 계획 단계 즉시행동 Command 계약
+Module: canonical.contracts / Requirement: C-03 / Mode: StaticContract / Category: Contract / Required: True / Time: 0ms
+Expected: 도사림과 위세가 Resolution 재실행 없이 계획 단계에서 commit 가능한 command service 존재
+Actual: BattleActionPlanCommandService / PlanningEffectCommitted / SkipResolution
+------------------------------------------------------------------------------------
+[Pass] system.runtime.production_factory_graph / Production BattleRuntimeFactory graph 사용
+Module: phase_a.runtime / Requirement: C-03 / Mode: IsolatedRuntime / Category: Lifecycle / Required: True / Time: 2ms
+Expected: Verification sandbox가 Production service graph를 사용
+Actual: Graph=True, SharedServices=True
+------------------------------------------------------------------------------------
+[Pass] system.runtime.momentum.time_axis_separation / 현재 Band와 직전 턴 Final Band 분리
+Module: phase_a.runtime / Requirement: C-46 / Mode: IsolatedRuntime / Category: Momentum / Required: True / Time: 2ms
+Expected: 직전 LastStand snapshot + 현재 Overwhelm 동시 표현
+Actual: Current=Overwhelm, PreviousFinal=LastStand
+------------------------------------------------------------------------------------
+[Pass] system.runtime.speed.boundaries / 속도 보정 경계 0/1/5/6
+Module: phase_a.runtime / Requirement: C-06 / Mode: IsolatedRuntime / Category: Speed / Required: True / Time: 2ms
+Expected: 0→0, 1~5→+1, 6+→+2 / 느린 쪽 0
+Actual: 0→0, 1→1, 5→1, 6→2 / slower=0
+------------------------------------------------------------------------------------
+[Pass] system.runtime.pairing.exact_target_ignores_speed / 합 성립과 속도 분리
+Module: phase_a.runtime / Requirement: C-06 / Mode: IsolatedRuntime / Category: Pairing / Required: True / Time: 1ms
+Expected: 정확한 TargetSlot 조준이면 더 느려도 CanChallenge=true
+Actual: PlayerSpeed=1 / EnemySpeed=10 / CanChallenge=True
+------------------------------------------------------------------------------------
+[Pass] system.runtime.planning.preparation_immediate_commit / 도사림 계획 즉시 Commit
+Module: phase_a.runtime / Requirement: C-03 / Mode: IsolatedRuntime / Category: Planning / Required: False / Time: 3ms
+Expected: 성공 즉시 ResourceCostCommitted + PlanningEffectCommitted + SkipResolution
+Actual: Success=True, Cost=True, Effect=True, Skip=True, Energy=3->2
+------------------------------------------------------------------------------------
+[Pass] system.runtime.planning.attack_cost_no_refund / 공격 비용 계획 차감·취소 환불 없음
+Module: phase_a.runtime / Requirement: C-04 / Mode: IsolatedRuntime / Category: Resource / Required: False / Time: 2ms
+Expected: 공격 계획 시 비용 차감, Remove 후에도 환불 없음
+Actual: Removed=True, Energy=3->2->2, Cost=1
+------------------------------------------------------------------------------------
+[Pass] system.runtime.planning.prestige_slotless / 위세 슬롯리스 실행
+Module: phase_a.runtime / Requirement: C-02 / Mode: IsolatedRuntime / Category: Prestige / Required: False / Time: 1ms
+Expected: 위세 실행 전후 ActionManager owner slot 수 불변
+Actual: Success=True, Slots=0->0, OwnerPart=
+------------------------------------------------------------------------------------
+[Pass] planning.cancel.explicit_energy_refund / 명시적 Planning 취소는 commit Energy 환불
+Module: planning.cancellation / Requirement: C-04 / Mode: IsolatedRuntime / Category: Planning / Required: True / Time: 2ms
+Expected: UI Cancel: 슬롯 제거 + 해당 슬롯 Energy 환불 / runtime Remove: 환불 없음
+Actual: Cancelled=True, Removed=True, Energy=3->2->3, Cost=1
+------------------------------------------------------------------------------------
+[Pass] planning.cancel.preparation_reselectable / 도사림 즉시 실행 후 취소·재선택 가능
+Module: planning.cancellation / Requirement: C-03 / Mode: IsolatedRuntime / Category: Planning / Required: True / Time: 3ms
+Expected: Preparation commit -> Cancel -> Energy/Usage 복원 -> 동일 도사림 재선택 가능
+Actual: Skill=포커페이스, Cancelled=True, Reselect=True, Energy=3->2->3, Usage=0->1->0
+------------------------------------------------------------------------------------
+[Pass] phaseb.c09.continuation / 파괴·처치 후 남은 굴림 소멸
+Module: phase_b.damage_resource / Requirement: C-09 / Mode: IsolatedRuntime / Category: Pairing / Required: True / Time: 1ms
+Expected: 이번 Action이 primary target을 파괴/처치하면 남은 굴림=0; 시작부터 파괴된 부위 조준은 허용
+Actual: PreBrokenStart=True, AfterOwnBreak=False
+------------------------------------------------------------------------------------
+[Pass] phaseb.c12.whole_hp_full_request / 부위 clamp와 Whole HP 분리
+Module: phase_b.damage_resource / Requirement: C-12 / Mode: IsolatedRuntime / Category: Damage / Required: True / Time: 2ms
+Expected: Part 적용량과 무관하게 Whole HP에는 요청 피해 전량
+Actual: Whole=-5, Part=2->1
+------------------------------------------------------------------------------------
+[Pass] phaseb.c13.weakened_rehit / 약화 부위 재타격 Whole HP
+Module: phase_b.damage_resource / Requirement: C-13 / Mode: IsolatedRuntime / Category: Damage / Required: True / Time: 1ms
+Expected: Weakened PartHP=1 유지 + Whole HP 감소
+Actual: Whole=-5, Part=1
+------------------------------------------------------------------------------------
+[Pass] phaseb.c15.status_anchor / Single HP 상태 Anchor
+Module: phase_b.damage_resource / Requirement: C-15 / Mode: IsolatedRuntime / Category: Status / Required: True / Time: 2ms
+Expected: 부위 없는 대상은 Character anchor / weaken·break=false
+Actual: Anchor=Character, Route=Direct, Applied=True, Stack=2->1, Tick=2
+------------------------------------------------------------------------------------
+[Pass] phaseb.c17.broken_head_energy / 머리 파괴 최대 빛 -1
+Module: phase_b.damage_resource / Requirement: C-17 / Mode: IsolatedRuntime / Category: Resource / Required: True / Time: 2ms
+Expected: BrokenHead 적용 -1 / 제거 +1 복원
+Actual: MaxEnergy=3->2->3
+------------------------------------------------------------------------------------
+[Pass] phaseb.c18.kill_weaken_energy_reward / 약화·처치 빛 보상
+Module: phase_b.damage_resource / Requirement: C-18 / Mode: IsolatedRuntime / Category: Resource / Required: True / Time: 4ms
+Expected: 플레이어가 적 부위 약화 +1, 적 처치 +1
+Actual: Energy=1->2->3
+------------------------------------------------------------------------------------
+[Pass] phaseb.c19.turn_end_reward / 짓누름/짓눌림 다음 턴 보상
+Module: phase_b.damage_resource / Requirement: C-19 / Mode: IsolatedRuntime / Category: Momentum / Required: True / Time: 2ms
+Expected: Overwhelm→next Light+1 / LastStand→next Judgment+1
+Actual: Light=2->3->3, Judgment=True
+------------------------------------------------------------------------------------
+[Pass] phaseb.c20.no_laststand_multiplier / 구 발악 배수·히후미 반감 제거
+Module: phase_b.damage_resource / Requirement: C-20 / Mode: IsolatedRuntime / Category: Momentum / Required: True / Time: 2ms
+Expected: LastStand에서도 HitShift=20 / Hifumi damage·bone=1:1
+Actual: Shift=20, Damage=10, Bone=10
+------------------------------------------------------------------------------------
+[Pass] phaseb.c21.hifumi_fervor / 히후미 열세·짓눌림 고조 +3
+Module: phase_b.damage_resource / Requirement: C-21 / Mode: StaticContract / Category: Fervor / Required: True / Time: 0ms
+Expected: Disadvantage/LastStand gain=3
+Actual: Disadvantage=3, LastStand=3
+------------------------------------------------------------------------------------
+[Pass] phaseb.c22.prestige_events / 위세 사건별 +1/+1/+2/+5
+Module: phase_b.damage_resource / Requirement: C-22 / Mode: IsolatedRuntime / Category: Prestige / Required: True / Time: 3ms
+Expected: ClashStart1 + Exchange1 + ClashWin2 + Kill5
+Actual: 1+1+2+5=9
+------------------------------------------------------------------------------------
+[Pass] phaseb.c23.armor_lifetime / 방어도 전투 지속 누적
+Module: phase_b.damage_resource / Requirement: C-23 / Mode: IsolatedRuntime / Category: Resource / Required: True / Time: 2ms
+Expected: TurnEnd 유지 / BattleEnd 0
+Actual: Block=10->10->0
+------------------------------------------------------------------------------------
+[Pass] phaseb.c24.crouch_additive / 웅크리기 방어도 +12 가산
+Module: phase_b.damage_resource / Requirement: C-24 / Mode: IsolatedRuntime / Category: Resource / Required: True / Time: 2ms
+Expected: 10 + 12 = 22
+Actual: 10+12=22
+------------------------------------------------------------------------------------
+[Pass] phaseb.c25.damage_min_before_armor / 최종 피해 min1 후 armor
+Module: phase_b.damage_resource / Requirement: C-25 / Mode: IsolatedRuntime / Category: Damage / Required: True / Time: 2ms
+Expected: flat으로 0 이하가 되어도 armor 전 1, armor가 그 1을 흡수 가능
+Actual: NoArmor=1, PreArmor=1, Absorb=1, Final=0
+------------------------------------------------------------------------------------
+[Pass] phaseb.c27.common_status_syntax / 공용 상태 0915 문법
+Module: phase_b.damage_resource / Requirement: C-27 / Mode: StaticContract / Category: Status / Required: True / Time: 0ms
+Expected: Strength/Weakness 전 굴림 적용, Sturdy/Disarm 신규 효과 비활성
+Actual: Strength=2, Weakness=-2, TBDDisabled=True
+------------------------------------------------------------------------------------
+[Pass] phaseb.c49.opposite_status_algebra / 반대 상태 대수 상쇄
+Module: phase_b.damage_resource / Requirement: C-49 / Mode: IsolatedRuntime / Category: Status / Required: True / Time: 1ms
+Expected: Strength3 + Weakness2 => Strength1
+Actual: Strength=1, Weakness=0
+------------------------------------------------------------------------------------
+[Pass] phaseb.c48.regeneration_dimensions / 재생 duration/heal/channel 분리
+Module: phase_b.damage_resource / Requirement: C-48 / Mode: StaticContract / Category: Status / Required: True / Time: 0ms
+Expected: 3턴 HP+8 / 3턴 Stagger+5를 독립 표현
+Actual: HP:3x8 / Stagger:3x5
+------------------------------------------------------------------------------------
+[Pass] phaseb.c41.elite_stagger_unset / Elite Stagger 미정=Unset
+Module: phase_b.damage_resource / Requirement: C-41 / Mode: StaticContract / Category: Data / Required: True / Time: 0ms
+Expected: Elite default maximum=0(Unset), 임의 100 금지
+Actual: EliteEnemyMaximum=0(Unset)
+------------------------------------------------------------------------------------
+[Pass] phaseb.c43.normal_enemy_d8 / 일반 몹 D8 fallback
+Module: phase_b.damage_resource / Requirement: C-43 / Mode: StaticContract / Category: Data / Required: True / Time: 0ms
+Expected: 미지정 dice=1..8
+Actual: Fallback=1..8
+------------------------------------------------------------------------------------
+[Pass] phasec.c34.fixed_emotion_offer / 감정 증강 고정 3장
+Module: phase_c.progression_run / Requirement: C-34 / Mode: StaticContract / Category: Emotion / Required: True / Time: 0ms
+Expected: 같은 감정/티어는 Catalog 순서의 정확히 3장을 항상 동일하게 제안
+Actual: Fixed order=0,1,2 / count=3 / OfferWeight ignored
+------------------------------------------------------------------------------------
+[Pass] phasec.c35.rulebreaker_runtime / 감정 룰브레이커 공통 런타임
+Module: phase_c.progression_run / Requirement: C-35 / Mode: IsolatedRuntime / Category: Emotion / Required: True / Time: 7ms
+Expected: 슬롯 보존/추가·봉쇄, 부위 재생, 내성/죽음의 저항 덮어쓰기, 흐트러짐 제거, 부활 훅이 battle-scoped service로 동작
+Actual: Slots=1->2->0, PreservedBroken=2, Regen=Weakened, Resist=1, Ascension=DeathResOff+HPx2, RevivedHP=150
+------------------------------------------------------------------------------------
+[Pass] phasec.c35.rulebreaker_flow_hooks / 기세 이월·해결 반복 공통 훅
+Module: phase_c.progression_run / Requirement: C-35 / Mode: StaticContract / Category: Emotion / Required: True / Time: 0ms
+Expected: 양/음 기세 이월과 player resolution repeat 요청을 데이터 효과가 공통 service로 예약/소비 가능
+Actual: Carry=+55/0/-45, Repeat=True, PayAgain=True
+------------------------------------------------------------------------------------
+[Pass] phasec.c36.second_upgrade_unset / 2회차 강화 비용 Unset
+Module: phase_c.progression_run / Requirement: C-36 / Mode: StaticContract / Category: Upgrade / Required: True / Time: 1ms
+Expected: 1회 비용은 50/100/125/150, 2회 비용은 명시 CostOverride 없이는 quote 불가
+Actual: L1=125, L2Unset=0, L2Explicit=222
+------------------------------------------------------------------------------------
+[Pass] phasec.c37.upgrade_payload / 강화 payload 확장
+Module: phase_c.progression_run / Requirement: C-37 / Mode: StaticContract / Category: Upgrade / Required: True / Time: 1ms
+Expected: Power + 비용 + UpgradeKey 효과 수치를 2단계 누적 데이터로 표현
+Actual: BaseDelta=3, Energy=1, Effect=7/3, Roll=13-21
+------------------------------------------------------------------------------------
+[Pass] phasec.c39.run_economy_contract / 런 경제 수식/상점 계약
+Module: phase_c.progression_run / Requirement: C-39 / Mode: StaticContract / Category: Economy / Required: True / Time: 0ms
+Expected: n=75+25*(stage-1), 1.5n/2.5n, reroll x1.5, HP→Gold 미정=Unset
+Actual: n=75/100/125, Elite=150, GoldNode=250, Shop=1000->600->732->582, Reroll=150, HpGold=Unset
+------------------------------------------------------------------------------------
+[Pass] phasec.c39.run_maintenance_stage / 정비·스테이지 회복 런타임
+Module: phase_c.progression_run / Requirement: C-39 / Mode: IsolatedRuntime / Category: Economy / Required: True / Time: 2ms
+Expected: 정비 비용이 실제 Gold를 소비하고 부위/HP를 복구하며 Stage clear가 HP full + stage advance
+Actual: Maintenance Gold=300->225, HP=250->375, HealthShop MaxHP=500->502(-6 HP), Stage=3, Full=502
+------------------------------------------------------------------------------------
+[Pass] phased.hifumi.h01.bone_scale / 히후미 뼈 500·5구간·만개
+Module: phase_d.hifumi / Requirement: H-01 / Mode: IsolatedRuntime / Category: Resource / Required: True / Time: 2ms
+Expected: 뼈 0..500, 100당 구간 0..5, 만개=500, UI/조건이 같은 기준 사용
+Actual: Bone 99/100/499/500 => tier 0/1/4/5; bloom/cap=500
+------------------------------------------------------------------------------------
+[Pass] phased.hifumi.h02.goldan_reverse_scale / 골단 본체 위력 역스케일
+Module: phase_d.hifumi / Requirement: H-02 / Mode: IsolatedRuntime / Category: Damage / Required: True / Time: 1ms
+Expected: 골단 Base20-(뼈구간×4); 반격은 반대로 구간 보너스
+Actual: Goldan base 20/8/0 at tier 0/3/5; pair unmatched die applied
+------------------------------------------------------------------------------------
+[Pass] phased.hifumi.h03.final_hp_damage_bone / 뼈 적립 FinalHpDamage 1:1
+Module: phase_d.hifumi / Requirement: H-03 / Mode: IsolatedRuntime / Category: Damage / Required: True / Time: 1ms
+Expected: 방어도/감소 적용 뒤 실제 HP 피해만큼 뼈; 구 짓눌림 반감/역보정 없음
+Actual: Normal/Crushed FinalHP=21; Poker=17 then +4 bone buyback =>21
+------------------------------------------------------------------------------------
+[Pass] phased.hifumi.h05.counter_gate_split / 반격 태그와 Duel 게이트 분리
+Module: phase_d.hifumi / Requirement: H-05 / Mode: IsolatedRuntime / Category: Contract / Required: True / Time: 2ms
+Expected: 푼돈 걸기 평타 반격은 Duel 게이트 없음; 육참/골단만 Duel×Duel 패배 적립
+Actual: SmallChange normal-counter; Yukcham/Goldan duel-counter; Reckless untagged
+------------------------------------------------------------------------------------
+[Pass] phased.hifumi.h06.counter_resolver / 반격 Resolver 최신 계약
+Module: phase_d.hifumi / Requirement: H-06 / Mode: IsolatedRuntime / Category: Damage / Required: True / Time: 2ms
+Expected: 결투 8+구간+1+친치로, 평타4+1+친치로; 육참 뼈보상, 골단 만개350/약화/파괴권한/바25/전량소모
+Actual: Counter bases/rewards + canonical Chinchiro pair/456 PASS
+------------------------------------------------------------------------------------
+[Pass] phased.hifumi.h07.catastrophe / 친치로 1·2·3 대실패
+Module: phase_d.hifumi / Requirement: H-07 / Mode: IsolatedRuntime / Category: Contract / Required: True / Time: 2ms
+Expected: 1·2·3은 강제패배 + 자기피해60 + 반격굴림+1; paired/one-sided 공통 hook
+Actual: 1·2·3 catastrophe=forced failure/self60; Clash paired+one-sided hooks wired
+------------------------------------------------------------------------------------
+[Pass] phased.hifumi.h09.bold_judgment / 과감한 판단 사용시 + 합종료시
+Module: phase_d.hifumi / Requirement: H-09 / Mode: IsolatedRuntime / Category: Lifecycle / Required: True / Time: 1ms
+Expected: 사용시 뼈40 소비(부족시+20)+다음턴 속도-1; 합 종료 lost=0일 때만 뼈+50
+Actual: OnUse cost/fallback + speed queue; OnClashEnd perfect block +50 exactly
+------------------------------------------------------------------------------------
+[Pass] phased.hifumi.h10.duel_governor / 히후미 다음 턴 Duel 자기 거버너
+Module: phase_d.hifumi / Requirement: H-10 / Mode: IsolatedRuntime / Category: Lifecycle / Required: True / Time: 2ms
+Expected: 결투 승리 교환은 다음 턴 1턴·비누적 위력감소 상태 예약; 감소량 0=Unset 데이터
+Actual: Governor amount Unset in authoring; verification 3 applies once/nonstack next-turn Duel only
+------------------------------------------------------------------------------------
+[Pass] phasef.regression.pairing.last_challenger / P0 D-05 마지막 조준자가 합 획득
+Module: phase_f.regression / Requirement: C-06 / Mode: IsolatedRuntime / Category: Pairing / Required: True / Time: 1ms
+Expected: 같은 상대 공격 슬롯을 둘이 조준하면 ActionId가 큰 마지막 조준자만 합을 가져감
+Actual: Early=ONE-SIDED, Late=CLASH
+------------------------------------------------------------------------------------
+[Pass] phasef.regression.heal.dual_pool / P0 D-07 회복 Whole + 최저 부위 동시 적용
+Module: phase_f.regression / Requirement:  / Mode: IsolatedRuntime / Category: Damage / Required: True / Time: 1ms
+Expected: RestoreCurrentHP(N)은 Whole HP +N과 최저 비파괴 부위 +N을 동시에 적용하고 Weakened 상태를 풀지 않음
+Actual: Whole=490->495, Part=1->6, Weakened=True->True
+------------------------------------------------------------------------------------
+[Pass] system.live.manager_initialized / BattleManager Production Scene 초기화
+Module: live.scene / Requirement:  / Mode: LiveScene / Category: LiveState / Required: True / Time: 0ms
+Expected: Initialized BattleManager + Player + Enemy + production services
+Actual: Manager=True, Initialized=True, Player=True, Enemies=3, Services=True
+------------------------------------------------------------------------------------
