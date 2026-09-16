@@ -1,0 +1,77 @@
+CaseId,RequirementId,ModuleId,DisplayName,Category,ExecutionMode,Status,Required,ElapsedMilliseconds,Expected,Actual,Details
+"phasef.evidence.olaf","F-EVIDENCE","phase_f.completion","Phase D Olaf + 공통 A/B/C Runtime 증거","Coverage","StaticContract","Pending",True,0,"Play Mode / Olaf Player에서 Phase D Olaf Gate 실행; report >= 2026-09-16T15:53:17.7720344Z; Result=PASSED","STALE report 2026-09-16T10:33:27.9948879Z","Project verification source cutoff=2026-09-16T15:53:17.7720344Z
+Play Mode / Olaf Player에서 Phase D Olaf Gate 실행
+Report=F:\GitCorp\Project-Abyss\GameSystemVerification\20260916_193327_786_Battle_Test_Scene\report.json"
+"phasef.evidence.yujin","F-EVIDENCE","phase_f.completion","Phase D Yujin + 공통 A/B/C Runtime 증거","Coverage","StaticContract","Pending",True,0,"Play Mode / Yujin Player에서 Phase D Yujin Gate 실행; report >= 2026-09-16T15:53:17.7720344Z; Result=PASSED","STALE report 2026-09-16T10:33:44.4910901Z","Project verification source cutoff=2026-09-16T15:53:17.7720344Z
+Play Mode / Yujin Player에서 Phase D Yujin Gate 실행
+Report=F:\GitCorp\Project-Abyss\GameSystemVerification\20260916_193344_384_Battle_Test_Scene\report.json"
+"phasef.evidence.hifumi","F-EVIDENCE","phase_f.completion","Phase D Hifumi + 공통 A/B/C Runtime 증거","Coverage","StaticContract","Pending",True,0,"Play Mode / Hifumi Player에서 Phase D Hifumi Gate 실행; report >= 2026-09-16T15:53:17.7720344Z; Result=PASSED","STALE report 2026-09-16T10:33:59.5027357Z","Project verification source cutoff=2026-09-16T15:53:17.7720344Z
+Play Mode / Hifumi Player에서 Phase D Hifumi Gate 실행
+Report=F:\GitCorp\Project-Abyss\GameSystemVerification\20260916_193359_402_Battle_Test_Scene\report.json"
+"phasef.evidence.phase_e","F-EVIDENCE","phase_f.completion","Phase E Content/Core Data 증거","Coverage","StaticContract","Pass",True,0,"Edit Mode에서 Phase E Data Gate 실행; report >= 2026-09-16T15:53:17.7720344Z; Result=PASSED","PASS 41 / 2026-09-16T15:53:45.9400874Z","Report=F:\GitCorp\Project-Abyss\GameSystemVerification\20260917_005345_866_Run_Flow_Test\report.json
+Player=NONE
+SignaturePass=True, LivePass=True"
+"phasef.trace.01","TRACE-01","phase_f.traceability","§1 전투 구조 · 부위","Coverage","StaticContract","Pending",True,0,"§1의 연결 Requirement/Regression evidence 전부 PASS","Fresh evidence required: olaf","- Play Mode / Olaf Player에서 Phase D Olaf Gate 실행: STALE report 2026-09-16T10:33:27.9948879Z"
+"phasef.trace.02","TRACE-02","phase_f.traceability","§2 턴 진행","Coverage","StaticContract","Pending",True,0,"§2의 연결 Requirement/Regression evidence 전부 PASS","Fresh evidence required: olaf","- Play Mode / Olaf Player에서 Phase D Olaf Gate 실행: STALE report 2026-09-16T10:33:27.9948879Z"
+"phasef.trace.03","TRACE-03","phase_f.traceability","§3 합 — 굴림 소모전","Coverage","StaticContract","Pending",True,0,"§3의 연결 Requirement/Regression evidence 전부 PASS","Fresh evidence required: olaf","- Play Mode / Olaf Player에서 Phase D Olaf Gate 실행: STALE report 2026-09-16T10:33:27.9948879Z"
+"phasef.trace.04","TRACE-04","phase_f.traceability","§4 굴림","Coverage","StaticContract","Pending",True,0,"§4의 연결 Requirement/Regression evidence 전부 PASS","Fresh evidence required: olaf, yujin, hifumi","- Play Mode / Olaf Player에서 Phase D Olaf Gate 실행: STALE report 2026-09-16T10:33:27.9948879Z
+- Play Mode / Yujin Player에서 Phase D Yujin Gate 실행: STALE report 2026-09-16T10:33:44.4910901Z
+- Play Mode / Hifumi Player에서 Phase D Hifumi Gate 실행: STALE report 2026-09-16T10:33:59.5027357Z"
+"phasef.trace.05","TRACE-05","phase_f.traceability","§5 기세 · 고조 · 열광","Coverage","StaticContract","Pending",True,0,"§5의 연결 Requirement/Regression evidence 전부 PASS","Fresh evidence required: olaf, yujin, hifumi","- Play Mode / Olaf Player에서 Phase D Olaf Gate 실행: STALE report 2026-09-16T10:33:27.9948879Z
+- Play Mode / Yujin Player에서 Phase D Yujin Gate 실행: STALE report 2026-09-16T10:33:44.4910901Z
+- Play Mode / Hifumi Player에서 Phase D Hifumi Gate 실행: STALE report 2026-09-16T10:33:59.5027357Z"
+"phasef.trace.06","TRACE-06","phase_f.traceability","§6 타격 타입 · 내성 · 흐트러짐","Coverage","StaticContract","Pending",True,0,"§6의 연결 Requirement/Regression evidence 전부 PASS","Fresh evidence required: olaf, yujin","- Play Mode / Olaf Player에서 Phase D Olaf Gate 실행: STALE report 2026-09-16T10:33:27.9948879Z
+- Play Mode / Yujin Player에서 Phase D Yujin Gate 실행: STALE report 2026-09-16T10:33:44.4910901Z"
+"phasef.trace.07","TRACE-07","phase_f.traceability","§7 빛(에너지)","Coverage","StaticContract","Pending",True,0,"§7의 연결 Requirement/Regression evidence 전부 PASS","Fresh evidence required: olaf","- Play Mode / Olaf Player에서 Phase D Olaf Gate 실행: STALE report 2026-09-16T10:33:27.9948879Z"
+"phasef.trace.08","TRACE-08","phase_f.traceability","§8 도사림","Coverage","StaticContract","Pending",True,0,"§8의 연결 Requirement/Regression evidence 전부 PASS","Fresh evidence required: olaf","- Play Mode / Olaf Player에서 Phase D Olaf Gate 실행: STALE report 2026-09-16T10:33:27.9948879Z"
+"phasef.trace.09","TRACE-09","phase_f.traceability","§9 위세","Coverage","StaticContract","Pending",True,0,"§9의 연결 Requirement/Regression evidence 전부 PASS","Fresh evidence required: olaf","- Play Mode / Olaf Player에서 Phase D Olaf Gate 실행: STALE report 2026-09-16T10:33:27.9948879Z"
+"phasef.trace.10","TRACE-10","phase_f.traceability","§10 데미지 · 방어도","Coverage","StaticContract","Pending",True,0,"§10의 연결 Requirement/Regression evidence 전부 PASS","Fresh evidence required: olaf","- Play Mode / Olaf Player에서 Phase D Olaf Gate 실행: STALE report 2026-09-16T10:33:27.9948879Z"
+"phasef.trace.11","TRACE-11","phase_f.traceability","§11 공용 상태이상","Coverage","StaticContract","Pending",True,0,"§11의 연결 Requirement/Regression evidence 전부 PASS","Fresh evidence required: olaf","- Play Mode / Olaf Player에서 Phase D Olaf Gate 실행: STALE report 2026-09-16T10:33:27.9948879Z"
+"phasef.trace.12","TRACE-12","phase_f.traceability","§12 적 설계","Coverage","StaticContract","Pending",True,0,"§12의 연결 Requirement/Regression evidence 전부 PASS","Fresh evidence required: olaf","- Play Mode / Olaf Player에서 Phase D Olaf Gate 실행: STALE report 2026-09-16T10:33:27.9948879Z"
+"phasef.trace.13","TRACE-13","phase_f.traceability","§13 스킬 구성 · 키워드 · 설계 원칙","Coverage","StaticContract","Pending",True,0,"§13의 연결 Requirement/Regression evidence 전부 PASS","Fresh evidence required: olaf, yujin, hifumi","- Play Mode / Olaf Player에서 Phase D Olaf Gate 실행: STALE report 2026-09-16T10:33:27.9948879Z
+- Play Mode / Yujin Player에서 Phase D Yujin Gate 실행: STALE report 2026-09-16T10:33:44.4910901Z
+- Play Mode / Hifumi Player에서 Phase D Hifumi Gate 실행: STALE report 2026-09-16T10:33:59.5027357Z"
+"phasef.trace.14","TRACE-14","phase_f.traceability","§14 감정 증강","Coverage","StaticContract","Pending",True,0,"§14의 연결 Requirement/Regression evidence 전부 PASS","Fresh evidence required: olaf","- Play Mode / Olaf Player에서 Phase D Olaf Gate 실행: STALE report 2026-09-16T10:33:27.9948879Z"
+"phasef.trace.15","TRACE-15","phase_f.traceability","§15 스킬 강화","Coverage","StaticContract","Pending",True,0,"§15의 연결 Requirement/Regression evidence 전부 PASS","Fresh evidence required: olaf","- Play Mode / Olaf Player에서 Phase D Olaf Gate 실행: STALE report 2026-09-16T10:33:27.9948879Z"
+"phasef.trace.16","TRACE-16","phase_f.traceability","§16 아이템 · 런 경제","Coverage","StaticContract","Pending",True,0,"§16의 연결 Requirement/Regression evidence 전부 PASS","Fresh evidence required: olaf","- Play Mode / Olaf Player에서 Phase D Olaf Gate 실행: STALE report 2026-09-16T10:33:27.9948879Z"
+"phasef.trace.17","TRACE-17","phase_f.traceability","§17 올라프","Coverage","StaticContract","Pending",True,0,"§17의 연결 Requirement/Regression evidence 전부 PASS","Fresh evidence required: olaf","- Play Mode / Olaf Player에서 Phase D Olaf Gate 실행: STALE report 2026-09-16T10:33:27.9948879Z"
+"phasef.trace.18","TRACE-18","phase_f.traceability","§18 유진","Coverage","StaticContract","Pending",True,0,"§18의 연결 Requirement/Regression evidence 전부 PASS","Fresh evidence required: yujin","- Play Mode / Yujin Player에서 Phase D Yujin Gate 실행: STALE report 2026-09-16T10:33:44.4910901Z"
+"phasef.trace.19","TRACE-19","phase_f.traceability","§19 히후미","Coverage","StaticContract","Pending",True,0,"§19의 연결 Requirement/Regression evidence 전부 PASS","Fresh evidence required: hifumi","- Play Mode / Hifumi Player에서 Phase D Hifumi Gate 실행: STALE report 2026-09-16T10:33:59.5027357Z"
+"phasef.g01.compile_serialization","G-01","phase_f.completion","Compile / Serialization","Phase","StaticContract","Pass",True,0,"현재 Editor domain compile 성공 + SkillEffectTiming serialized ID 0~34 보존","Editor domain loaded; serialized timings 35/35 stable",""
+"phasef.g02.timing_contract","G-02","phase_f.completion","Timing Contract","Phase","StaticContract","Pending",True,0,"신규 Skill Authoring 5종 + Condition layer","Fresh evidence required: olaf","- Play Mode / Olaf Player에서 Phase D Olaf Gate 실행: STALE report 2026-09-16T10:33:27.9948879Z"
+"phasef.g03.planning_economy","G-03","phase_f.completion","Planning Economy","Phase","StaticContract","Pending",True,0,"도사림/위세 즉시, 공격 비용 계획 차감, 무환불, 위세 슬롯리스","Fresh evidence required: olaf","- Play Mode / Olaf Player에서 Phase D Olaf Gate 실행: STALE report 2026-09-16T10:33:27.9948879Z"
+"phasef.g04.clash___speed","G-04","phase_f.completion","Clash / Speed","Phase","StaticContract","Pending",True,0,"정확 TargetSlot 합, 속도 1~5/+1·6+/+2, 파괴/처치 후 남은 굴림 소멸","Fresh evidence required: olaf","- Play Mode / Olaf Player에서 Phase D Olaf Gate 실행: STALE report 2026-09-16T10:33:27.9948879Z"
+"phasef.g05.damage___part","G-05","phase_f.completion","Damage / Part","Phase","StaticContract","Pending",True,0,"RED/BLUE, 최소1→방어도, Whole 이중차감, 약화 재타격, 명시적 파괴권한","Fresh evidence required: olaf, yujin, hifumi","- Play Mode / Olaf Player에서 Phase D Olaf Gate 실행: STALE report 2026-09-16T10:33:27.9948879Z
+- Play Mode / Yujin Player에서 Phase D Yujin Gate 실행: STALE report 2026-09-16T10:33:44.4910901Z
+- Play Mode / Hifumi Player에서 Phase D Hifumi Gate 실행: STALE report 2026-09-16T10:33:59.5027357Z"
+"phasef.g06.momentum___fervor","G-06","phase_f.completion","Momentum / Fervor","Phase","StaticContract","Pending",True,0,"B reset/20·40 이동/시간축 분리/짓누름·짓눌림 보상/4·8·10","Fresh evidence required: olaf, hifumi","- Play Mode / Olaf Player에서 Phase D Olaf Gate 실행: STALE report 2026-09-16T10:33:27.9948879Z
+- Play Mode / Hifumi Player에서 Phase D Hifumi Gate 실행: STALE report 2026-09-16T10:33:59.5027357Z"
+"phasef.g07.prestige","G-07","phase_f.completion","Prestige","Phase","StaticContract","Pending",True,0,"합 시작+1/교환+1/합승리+2/처치+5, 슬롯리스 계획 발동","Fresh evidence required: olaf","- Play Mode / Olaf Player에서 Phase D Olaf Gate 실행: STALE report 2026-09-16T10:33:27.9948879Z"
+"phasef.g08.status","G-08","phase_f.completion","Status","Phase","StaticContract","Pending",True,0,"힘/쇠약 전 굴림, 반대 스택 상쇄, 재생 dimensions, 미정 키워드 안전성","Fresh evidence required: olaf","- Play Mode / Olaf Player에서 Phase D Olaf Gate 실행: STALE report 2026-09-16T10:33:27.9948879Z"
+"phasef.g09.emotion","G-09","phase_f.completion","Emotion","Phase","StaticContract","Pending",True,0,"고정 3장 + 63장 + runtime/rulebreaker 연결","Fresh evidence required: olaf","- Play Mode / Olaf Player에서 Phase D Olaf Gate 실행: STALE report 2026-09-16T10:33:27.9948879Z"
+"phasef.g10.upgrade","G-10","phase_f.completion","Upgrade","Phase","StaticContract","Pending",True,0,"2회 강화 schema + Level2가 0916 XLSX 만렙 결과에 도달","Fresh evidence required: olaf","- Play Mode / Olaf Player에서 Phase D Olaf Gate 실행: STALE report 2026-09-16T10:33:27.9948879Z"
+"phasef.g11.run_economy","G-11","phase_f.completion","Run Economy","Phase","StaticContract","Pending",True,0,"아이템/상점/판매/획득 + n식/정비/스테이지 회복","Fresh evidence required: olaf","- Play Mode / Olaf Player에서 Phase D Olaf Gate 실행: STALE report 2026-09-16T10:33:27.9948879Z"
+"phasef.g12.enemy_baseline","G-12","phase_f.completion","Enemy Baseline","Phase","StaticContract","Pending",True,0,"일반몹 D8·1x3·HP135/101·내성 + 기준 보스 A/B","Fresh evidence required: olaf","- Play Mode / Olaf Player에서 Phase D Olaf Gate 실행: STALE report 2026-09-16T10:33:27.9948879Z"
+"phasef.g13.olaf","G-13","phase_f.completion","Olaf","Phase","StaticContract","Pending",True,0,"광기/출혈/공포/파괴/블로토/룰브레이커 + 0916 전체 풀","Fresh evidence required: olaf","- Play Mode / Olaf Player에서 Phase D Olaf Gate 실행: STALE report 2026-09-16T10:33:27.9948879Z"
+"phasef.g14.yujin","G-14","phase_f.completion","Yujin","Phase","StaticContract","Pending",True,0,"무기/표식/환형/살수의 감/지연 K·L + 0916 전체 풀","Fresh evidence required: yujin","- Play Mode / Yujin Player에서 Phase D Yujin Gate 실행: STALE report 2026-09-16T10:33:44.4910901Z"
+"phasef.g15.hifumi","G-15","phase_f.completion","Hifumi","Phase","StaticContract","Pending",True,0,"친치로/뼈/반격/골단/과감한 판단/거버너/포커페이스","Fresh evidence required: hifumi","- Play Mode / Hifumi Player에서 Phase D Hifumi Gate 실행: STALE report 2026-09-16T10:33:59.5027357Z"
+"phasef.g16.tbd_safety","G-16","phase_f.completion","미정 안전성 / TEMP profile 추적","Phase","StaticContract","Pass",True,0,"미정값은 Unset이거나 TEMP_BALANCE_V1로 명시 추적되고 정식 canonical 값으로 위장되지 않음","Profile=TEMP_BALANCE_V1; TEMP assets tracked; PendingReasons=0",""
+"phasef.g17.traceability","G-17","phase_f.completion","Traceability","Phase","StaticContract","Pending",True,0,"§1~§19 각 행이 PASS이며 UNKNOWN/미해결 0","PASS 0/19","phasef.trace.01: Pending / Fresh evidence required: olaf
+phasef.trace.02: Pending / Fresh evidence required: olaf
+phasef.trace.03: Pending / Fresh evidence required: olaf
+phasef.trace.04: Pending / Fresh evidence required: olaf, yujin, hifumi
+phasef.trace.05: Pending / Fresh evidence required: olaf, yujin, hifumi
+phasef.trace.06: Pending / Fresh evidence required: olaf, yujin
+phasef.trace.07: Pending / Fresh evidence required: olaf
+phasef.trace.08: Pending / Fresh evidence required: olaf
+phasef.trace.09: Pending / Fresh evidence required: olaf
+phasef.trace.10: Pending / Fresh evidence required: olaf
+phasef.trace.11: Pending / Fresh evidence required: olaf
+phasef.trace.12: Pending / Fresh evidence required: olaf
+phasef.trace.13: Pending / Fresh evidence required: olaf, yujin, hifumi
+phasef.trace.14: Pending / Fresh evidence required: olaf
+phasef.trace.15: Pending / Fresh evidence required: olaf
+phasef.trace.16: Pending / Fresh evidence required: olaf
+phasef.trace.17: Pending / Fresh evidence required: olaf
+phasef.trace.18: Pending / Fresh evidence required: yujin
+phasef.trace.19: Pending / Fresh evidence required: hifumi"

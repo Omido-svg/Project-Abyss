@@ -45,9 +45,9 @@ MonoBehaviour:
     SecondaryPartMode: 0
     SecondaryDamageMultiplier: 1
     AllowBrokenSecondaryParts: 1
-  Description: "[TEMP_BALANCE_V1] \uD45C\uC2DD20 \uC18C\uBE44\u2192\uBE5B \uD6A8\uACFC\uB294
-    \uC815\uC2DD hook \uC804 \uAC10 proxy \u2014 \uBB34\uB8CC \uBE5B \uC0DD\uC131
-    \uAE08\uC9C0"
+  Description: "[CANONICAL_0916_CLOSURE_V1] 0916(3) canonical metadata synced.\n[TEMP_BALANCE_V1]
+    \uD45C\uC2DD20 \uC18C\uBE44\u2192\uBE5B \uD6A8\uACFC\uB294 \uC815\uC2DD hook
+    \uC804 \uAC10 proxy \u2014 \uBB34\uB8CC \uBE5B \uC0DD\uC131 \uAE08\uC9C0"
   Keywords: []
   Rolls: []
   ExchangeRollCount: 1
@@ -76,7 +76,7 @@ MonoBehaviour:
   ChinchiroHifumiPenalty: 1
   ChinchiroHifumiSelfDamage: 1
   EffectEntries:
-  - Definition: {fileID: 11400000, guid: be09de4dd1d77fd41802792bda289d96, type: 2}
+  - Definition: {fileID: 11400000, guid: d6582f47602f7614c90eebf2c87887c5, type: 2}
     Overrides:
       OverrideStack: 0
       Stack: 1
@@ -98,9 +98,9 @@ MonoBehaviour:
       ForceCharacterStatus: 0
       OverrideGiveToSelectedTarget: 0
       GiveToSelectedTarget: 0
-    UpgradeKey: temp_proxy
+    UpgradeKey: 
     OverrideTiming: 1
-    Timing: 7
+    Timing: 0
     Conditions: []
     RestrictToRoll: 0
     RollNumber: 1
@@ -117,4 +117,4 @@ MonoBehaviour:
   ConsumeAllCustomResource: 0
   OverridePrestigeUsePolicy: 0
   PrestigeUsePolicy: 1
-  presentationAsset: {fileID: 0}
+  presentationAsset: {fileID: 11400000, guid: 691f5ccafa5ad5345bc91512c1c883d7, type: 2}

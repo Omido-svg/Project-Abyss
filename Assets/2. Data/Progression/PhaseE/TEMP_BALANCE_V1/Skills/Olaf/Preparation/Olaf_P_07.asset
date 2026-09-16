@@ -45,7 +45,8 @@ MonoBehaviour:
     SecondaryPartMode: 0
     SecondaryDamageMultiplier: 1
     AllowBrokenSecondaryParts: 1
-  Description: "[TEMP_BALANCE_V1] \uC704\uAE30\uD615 TEMP rider"
+  Description: "[CANONICAL_0916_CLOSURE_V1] 0916(3) canonical metadata synced.\n[TEMP_BALANCE_V1]
+    \uC704\uAE30\uD615 TEMP rider"
   Keywords: []
   Rolls: []
   ExchangeRollCount: 1
@@ -104,7 +105,7 @@ MonoBehaviour:
     RollNumber: 1
   Effects: []
   OverrideEnergyCost: 1
-  EnergyCost: 2
+  EnergyCost: 1
   UpgradeProfile: {fileID: 11400000, guid: b5366232a90b9fb428b99dd190607658, type: 2}
   OverrideResourceRules: 0
   RequireFullPrestige: 0
@@ -115,4 +116,4 @@ MonoBehaviour:
   ConsumeAllCustomResource: 0
   OverridePrestigeUsePolicy: 0
   PrestigeUsePolicy: 1
-  presentationAsset: {fileID: 0}
+  presentationAsset: {fileID: 11400000, guid: 5dfbc24590a7bad4fa6c8042b67602da, type: 2}

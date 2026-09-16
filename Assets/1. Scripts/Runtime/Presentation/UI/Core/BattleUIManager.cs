@@ -840,21 +840,61 @@ public partial class BattleUIManager : MonoBehaviour
 
             if (choices != null && choices.Count > 0)
             {
-                planningChoiceOverlay ??= gameObject.AddComponent<BattlePlanningChoiceOverlay>();
+                planningChoiceOverlay ??=
+                    gameObject.GetComponent<BattlePlanningChoiceOverlay>() ??
+                    gameObject.AddComponent<BattlePlanningChoiceOverlay>();
+
                 Character capturedOwner = selectedOwner;
                 BodyPart capturedPart = selectedOwnerPart;
                 int capturedIndex = selectedActionIndex;
+                int capturedMaxSlots = selectedMaxActionSlots;
+
+                BattleDebugLog.UIInput(
+                    $"[Planning Choice Open] Skill={skill.SkillName}, " +
+                    $"Part={capturedPart?.Type}, Index={capturedIndex}, " +
+                    $"Choices={choices.Count}");
 
                 planningChoiceOverlay.Show(
-                    $"{skill.SkillName} — 대상 선택",
+                    $"{skill.SkillName} — 교체할 무기 선택",
                     choices,
                     choiceId =>
                     {
+                        // modal 클릭 과정에서 다른 UI가 입력 상태를 건드려도
+                        // 카드 클릭 당시의 정확한 행동 슬롯으로 복구한 뒤 배치한다.
                         selectedOwner = capturedOwner;
                         selectedOwnerPart = capturedPart;
                         selectedActionIndex = capturedIndex;
+                        selectedMaxActionSlots = capturedMaxSlots;
+                        inputMode = BattleInputMode.SelectSkill;
+                        SyncSelectionViewModel();
+                        selection.SelectSkill(skill);
+
+                        BattleDebugLog.UIInput(
+                            $"[Planning Choice Selected] Skill={skill.SkillName}, " +
+                            $"Choice={choiceId}, Part={capturedPart?.Type}, " +
+                            $"Index={capturedIndex}");
+
                         if (!CreateSlot(skill, null, choiceId))
+                        {
+                            Debug.LogWarning(
+                                $"[Planning Choice] 슬롯 배치 실패 / " +
+                                $"Skill={skill.SkillName}, Choice={choiceId}, " +
+                                $"Part={capturedPart?.Type}, Index={capturedIndex}");
                             return;
+                        }
+
+                        ActionSlot created =
+                            battleManager?.ActionManager?.FindSlot(
+                                capturedOwner,
+                                capturedPart,
+                                capturedIndex);
+
+                        BattleDebugLog.UIInput(
+                            $"[Preparation Planned With Choice] " +
+                            $"Skill={skill.SkillName}, Choice={choiceId}, " +
+                            $"ActionId={created?.ActionId}, " +
+                            $"PlanningChoiceId={created?.PlanningChoiceId}");
+
                         skillSelectPanel?.Hide();
                         ClearSelection();
                         RefreshAllBodyPartButtons();

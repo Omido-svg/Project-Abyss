@@ -144,6 +144,8 @@ public static class RunFlowLiveHandoff
         int equippedCombatItems,
         int expectedTempBalanceMechanics,
         int tempBalanceMechanics,
+        int expectedPartSnapshots,
+        int appliedPartSnapshots,
         string details)
     {
         TransferAudit ??= new RunFlowLiveTransferAudit();
@@ -153,6 +155,8 @@ public static class RunFlowLiveHandoff
         TransferAudit.EquippedCombatItems = equippedCombatItems;
         TransferAudit.ExpectedTempBalanceMechanics = expectedTempBalanceMechanics;
         TransferAudit.TempBalanceMechanics = tempBalanceMechanics;
+        TransferAudit.ExpectedPartSnapshots = Mathf.Max(0, expectedPartSnapshots);
+        TransferAudit.AppliedPartSnapshots = Mathf.Max(0, appliedPartSnapshots);
         TransferAudit.Details = details ?? string.Empty;
     }
 
@@ -256,13 +260,16 @@ public sealed class RunFlowLiveTransferAudit
     public int EquippedCombatItems;
     public int ExpectedTempBalanceMechanics;
     public int TempBalanceMechanics;
+    public int ExpectedPartSnapshots;
+    public int AppliedPartSnapshots;
     public string Details;
 
     public bool Passed =>
         SameRunProgression &&
         SameSkillUpgrades &&
         EquippedCombatItems == ExpectedCombatItems &&
-        TempBalanceMechanics == ExpectedTempBalanceMechanics;
+        TempBalanceMechanics == ExpectedTempBalanceMechanics &&
+        AppliedPartSnapshots == ExpectedPartSnapshots;
 }
 
 [Serializable]

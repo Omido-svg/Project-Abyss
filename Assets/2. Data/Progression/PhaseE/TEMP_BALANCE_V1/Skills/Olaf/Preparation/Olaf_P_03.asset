@@ -45,8 +45,9 @@ MonoBehaviour:
     SecondaryPartMode: 0
     SecondaryDamageMultiplier: 1
     AllowBrokenSecondaryParts: 1
-  Description: "[TEMP_BALANCE_V1] \uBE5B \uD658\uC728 \uC815\uC2DD hook \uC804 \uC704\uC138
-    proxy \u2014 \uBB34\uB8CC \uBE5B \uC0DD\uC131 \uAE08\uC9C0"
+  Description: "[CANONICAL_0916_CLOSURE_V1] 0916(3) canonical metadata synced.\n[TEMP_BALANCE_V1]
+    \uBE5B \uD658\uC728 \uC815\uC2DD hook \uC804 \uC704\uC138 proxy \u2014 \uBB34\uB8CC
+    \uBE5B \uC0DD\uC131 \uAE08\uC9C0"
   Keywords: []
   Rolls: []
   ExchangeRollCount: 1
@@ -61,7 +62,7 @@ MonoBehaviour:
   ResolvePrestigeInCombat: 0
   OverrideCanClash: 0
   CanClashValue: 0
-  PreparationTier: 1
+  PreparationTier: 0
   ResolverType: 0
   DiceMin: 1
   DiceMax: 8
@@ -105,7 +106,7 @@ MonoBehaviour:
     RollNumber: 1
   Effects: []
   OverrideEnergyCost: 1
-  EnergyCost: 1
+  EnergyCost: 0
   UpgradeProfile: {fileID: 11400000, guid: df7d98c203532fd45bbb678cce989f97, type: 2}
   OverrideResourceRules: 0
   RequireFullPrestige: 0
@@ -116,4 +117,4 @@ MonoBehaviour:
   ConsumeAllCustomResource: 0
   OverridePrestigeUsePolicy: 0
   PrestigeUsePolicy: 1
-  presentationAsset: {fileID: 0}
+  presentationAsset: {fileID: 11400000, guid: 5dfbc24590a7bad4fa6c8042b67602da, type: 2}

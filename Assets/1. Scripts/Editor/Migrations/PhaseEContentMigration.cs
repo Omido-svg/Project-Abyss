@@ -192,6 +192,10 @@ public static class PhaseEContentMigration
         // 프로필로 격리한다. 이 단계가 C-32/C-33/C-38/O-02/Y-06을 임시 폐쇄한다.
         PhaseETempBalanceMigration.Apply(emotionCatalog, itemCatalog, manifest);
 
+        // TEMP 데이터가 생성된 직후 0916(3)에서 확정된 캐릭터 metadata/rider를 닫는다.
+        // 정본 (미정) 값은 Closure에서도 채우지 않는다.
+        Canonical0916ClosureMigration.Apply();
+
         AuditRollTextures(manifest);
 
         EditorUtility.SetDirty(manifest);

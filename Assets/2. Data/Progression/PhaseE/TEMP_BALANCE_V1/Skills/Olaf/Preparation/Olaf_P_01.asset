@@ -45,8 +45,9 @@ MonoBehaviour:
     SecondaryPartMode: 0
     SecondaryDamageMultiplier: 1
     AllowBrokenSecondaryParts: 1
-  Description: "[TEMP_BALANCE_V1] Phase D native hook \uC0AC\uC6A9. TEMP proxy \uC5C6\uC74C.
-    Cost=1; Madness/Fear/Weaken\uC740 OlafMadnessMechanic \uB2E8\uC77C \uC18C\uC2A4."
+  Description: "[CANONICAL_0916_CLOSURE_V1] 0916(3) canonical metadata synced.\n[TEMP_BALANCE_V1]
+    Phase D native hook \uC0AC\uC6A9. TEMP proxy \uC5C6\uC74C. Cost=1; Madness/Fear/Weaken\uC740
+    OlafMadnessMechanic \uB2E8\uC77C \uC18C\uC2A4."
   Keywords: []
   Rolls: []
   ExchangeRollCount: 1
@@ -88,4 +89,4 @@ MonoBehaviour:
   ConsumeAllCustomResource: 0
   OverridePrestigeUsePolicy: 0
   PrestigeUsePolicy: 1
-  presentationAsset: {fileID: 0}
+  presentationAsset: {fileID: 11400000, guid: 5dfbc24590a7bad4fa6c8042b67602da, type: 2}

@@ -45,8 +45,8 @@ MonoBehaviour:
     SecondaryPartMode: 0
     SecondaryDamageMultiplier: 1
     AllowBrokenSecondaryParts: 1
-  Description: "[TEMP_BALANCE_V1] \uD750\uD2B8\uB7EC\uC9D0 \uAD50\uD658 \uC815\uC2DD
-    hook \uC804 \uC704\uC138 proxy"
+  Description: "[CANONICAL_0916_CLOSURE_V1] 0916(3) canonical metadata synced.\n[TEMP_BALANCE_V1]
+    \uD750\uD2B8\uB7EC\uC9D0 \uAD50\uD658 \uC815\uC2DD hook \uC804 \uC704\uC138 proxy"
   Keywords: []
   Rolls: []
   ExchangeRollCount: 1
@@ -116,4 +116,4 @@ MonoBehaviour:
   ConsumeAllCustomResource: 0
   OverridePrestigeUsePolicy: 0
   PrestigeUsePolicy: 1
-  presentationAsset: {fileID: 0}
+  presentationAsset: {fileID: 11400000, guid: 5dfbc24590a7bad4fa6c8042b67602da, type: 2}

@@ -66,16 +66,18 @@ public static class RunFlowLiveIntegrationInstaller
         bool battleBuild = IsSceneInBuild(BattleScenePath);
         bool runBridge = SceneContainsComponent<RunFlowLiveIntegrationOverlay>(RunScenePath);
         bool battleBridge = SceneContainsComponent<RunFlowLiveBattleBridge>(BattleScenePath);
+        bool exactPartHpModel = ValidateExactPartHpModel();
 
         string report =
             "[RunFlowLiveInstaller] VALIDATION\n" +
             $"Registry={(registryOk ? "PASS" : "FAIL")}\n" +
             $"RunItems={items}, CombatLinked={linked}\n" +
             $"RunScene Build={(runBuild ? "PASS" : "FAIL")}, Overlay={(runBridge ? "PASS" : "FAIL")}\n" +
-            $"BattleScene Build={(battleBuild ? "PASS" : "FAIL")}, Bridge={(battleBridge ? "PASS" : "FAIL")}";
+            $"BattleScene Build={(battleBuild ? "PASS" : "FAIL")}, Bridge={(battleBridge ? "PASS" : "FAIL")}\n" +
+            $"ExactPartHP Model={(exactPartHpModel ? "PASS" : "FAIL")}";
 
         if (registryOk && items > 0 && linked == items &&
-            runBuild && battleBuild && runBridge && battleBridge)
+            runBuild && battleBuild && runBridge && battleBridge && exactPartHpModel)
         {
             Debug.Log(report + "\nRESULT=PASS");
         }
@@ -83,6 +85,28 @@ public static class RunFlowLiveIntegrationInstaller
         {
             Debug.LogWarning(report + "\nRESULT=NOT READY");
         }
+    }
+
+
+    private static bool ValidateExactPartHpModel()
+    {
+        RunProgressionState progression = new RunProgressionState();
+        progression.Reset(0, 1);
+        RunFlowTestAvatarState avatar = new RunFlowTestAvatarState(progression);
+
+        avatar.SetPartSnapshot(PartType.HEAD, RunFlowTestPartState.Normal, 91f, 100f);
+        avatar.SetPartSnapshot(PartType.LEFT_HAND, RunFlowTestPartState.Weakened, 37f, 100f);
+        avatar.SetPartSnapshot(PartType.RIGHT_HAND, RunFlowTestPartState.Normal, 64f, 100f);
+        avatar.SetPartSnapshot(PartType.LEGS, RunFlowTestPartState.Broken, 0f, 100f);
+
+        return avatar.Parts != null &&
+               avatar.Parts.Count == 4 &&
+               avatar.GetPart(PartType.HEAD)?.HasExactHp == true &&
+               avatar.GetPart(PartType.LEFT_HAND)?.State == RunFlowTestPartState.Weakened &&
+               Mathf.Approximately(avatar.GetPart(PartType.LEFT_HAND)?.CurrentHp ?? -1f, 37f) &&
+               avatar.GetPart(PartType.RIGHT_HAND)?.HasExactHp == true &&
+               avatar.GetPart(PartType.LEGS)?.State == RunFlowTestPartState.Broken &&
+               Mathf.Approximately(avatar.GetPart(PartType.LEGS)?.CurrentHp ?? -1f, 0f);
     }
 
     private static void InstallSilently()

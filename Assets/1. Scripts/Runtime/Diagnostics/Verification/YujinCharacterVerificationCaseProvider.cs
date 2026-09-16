@@ -41,19 +41,12 @@ public sealed class YujinCharacterVerificationCaseProvider :
         "yujin.duel.nakil_remove_remaining_rolls";
 
     private static readonly string[] RequiredSkillIds =
-    {
-        YujinSkillIds.Inspection,
-        YujinSkillIds.Breakfast,
-        YujinSkillIds.Inscription,
-        YujinSkillIds.Pursuit,
-        YujinSkillIds.Capture,
-        YujinSkillIds.Sentencing,
-        YujinSkillIds.Brand,
-        YujinSkillIds.JointLiability,
-        YujinSkillIds.Retrial,
-        YujinSkillIds.HwanhyeongAttack,
-        YujinSkillIds.HwanhyeongDefense
-    };
+        YujinSkillIds.CanonicalNormal
+            .Concat(YujinSkillIds.CanonicalDuel)
+            .Concat(YujinSkillIds.CanonicalPreparation)
+            .Concat(YujinSkillIds.CanonicalPrestige)
+            .Distinct(StringComparer.Ordinal)
+            .ToArray();
 
     public bool Supports(
         CharacterAuthoringBundle bundle,
@@ -72,14 +65,14 @@ public sealed class YujinCharacterVerificationCaseProvider :
             "유진 스킬 ID 전체 등록",
             CharacterVerificationCategory.Data,
             CharacterVerificationExecutionMode.DataOnly,
-            "P0 확정 환형(공격)/(수비) 2종을 포함한 유진 고유 SkillId가 데이터 그래프에 존재하는지 검사합니다.");
+            "0916(3) canonical 전체 풀(N9/D14/P9/R3, 총 35)의 SkillId가 데이터 그래프에 빠짐없이 존재하는지 검사합니다.");
 
         yield return CharacterVerificationCaseDefinition.Create(
             HwanhyeongLoadoutContract,
             "환형 모드 1종 장착 + 2종 후보",
             CharacterVerificationCategory.Preparation,
             CharacterVerificationExecutionMode.DataOnly,
-            "환형(공격)/(수비) 중 하나만 장착되고 둘 다 후보이며 포획·선고가 함께 유지되는지 검사합니다.");
+            "환형(공격)/(수비) 중 하나만 장착되고 둘 다 후보이며 노림수·선금 받기가 함께 유지되는지 검사합니다.");
 
         yield return CharacterVerificationCaseDefinition.Create(
             MechanicRegistration,
@@ -209,11 +202,11 @@ public sealed class YujinCharacterVerificationCaseProvider :
 
         return missing.Count == 0
             ? context.Pass(
-                "유진 고유 스킬 ID 12개 존재",
-                "12/12 등록")
+                "유진 0916 canonical 스킬 ID 35개 존재",
+                $"{RequiredSkillIds.Length}/{RequiredSkillIds.Length} 등록")
             : context.Fail(
-                "유진 고유 스킬 ID 12개 존재",
-                $"{12 - missing.Count}/12 등록",
+                "유진 0916 canonical 스킬 ID 35개 존재",
+                $"{RequiredSkillIds.Length - missing.Count}/{RequiredSkillIds.Length} 등록",
                 "누락:\n" + string.Join("\n", missing));
     }
 
@@ -248,8 +241,8 @@ public sealed class YujinCharacterVerificationCaseProvider :
         bool equippedExactly =
             equipped.Count == 3 &&
             equippedHwanhyeongCount == 1 &&
-            equipped.Contains(YujinSkillIds.Capture) &&
-            equipped.Contains(YujinSkillIds.Sentencing);
+            equipped.Contains(YujinSkillIds.Read) &&
+            equipped.Contains(YujinSkillIds.AdvancePay);
 
         HashSet<string> candidates =
             new HashSet<string>(
@@ -258,9 +251,11 @@ public sealed class YujinCharacterVerificationCaseProvider :
                     .Select(skill => skill.SkillId),
                 StringComparer.Ordinal);
 
-        bool oldPreparationPreserved =
-            candidates.Contains(YujinSkillIds.Capture) &&
-            candidates.Contains(YujinSkillIds.Sentencing);
+        bool canonicalPreparationPreserved =
+            candidates.Contains(YujinSkillIds.Read) &&
+            candidates.Contains(YujinSkillIds.AdvancePay) &&
+            candidates.Contains(YujinSkillIds.HwanhyeongAttack) &&
+            candidates.Contains(YujinSkillIds.HwanhyeongDefense);
 
         Dictionary<string, SkillDefinition> definitions =
             context.Bundle
@@ -284,21 +279,23 @@ public sealed class YujinCharacterVerificationCaseProvider :
 
         bool valid =
             equippedExactly &&
-            oldPreparationPreserved &&
+            canonicalPreparationPreserved &&
             contracts;
 
         string detail =
             $"Equipped=[{string.Join(", ", equipped)}], " +
-            $"CaptureCandidate={candidates.Contains(YujinSkillIds.Capture)}, " +
-            $"SentencingCandidate={candidates.Contains(YujinSkillIds.Sentencing)}, " +
+            $"ReadCandidate={candidates.Contains(YujinSkillIds.Read)}, " +
+            $"AdvancePayCandidate={candidates.Contains(YujinSkillIds.AdvancePay)}, " +
+            $"HwanhyeongAttackCandidate={candidates.Contains(YujinSkillIds.HwanhyeongAttack)}, " +
+            $"HwanhyeongDefenseCandidate={candidates.Contains(YujinSkillIds.HwanhyeongDefense)}, " +
             $"Contracts={contracts}";
 
         return valid
             ? context.Pass(
-                "환형 모드 1종 장착 + 공격/수비 2종 후보 + 기존 도사림 보존",
+                "환형 모드 1종 장착 + 공격/수비 2종 후보 + 노림수/선금 보존",
                 detail)
             : context.Fail(
-                "환형 모드 1종 장착 + 공격/수비 2종 후보 + 기존 도사림 보존",
+                "환형 모드 1종 장착 + 공격/수비 2종 후보 + 노림수/선금 보존",
                 detail);
     }
 

@@ -28,6 +28,10 @@ public sealed class PhaseEContentVerificationModule : IGameSystemVerificationMod
             "최신 0916 풀 + 기본/강화1/강화2 데이터 및 Runtime 연결", VerifyO02);
         yield return Static("phasee.y06.yujin_pool", "Y-06", "유진 전체 스킬 Core Data", GameSystemVerificationCategory.Data,
             "최신 0916 평타9/결투14/도사림/위세3 + Runtime 연결", VerifyY06);
+        yield return Static("phasee.presentation.canonical", "PRESENTATION", "0916 canonical Timeline presentation closure", GameSystemVerificationCategory.Contract,
+            "Olaf/Yujin 모든 canonical SkillDefinition이 complete SkillVisualDefinition을 가져 Hit Event 기반 HP presentation을 재생", VerifyCanonicalPresentation);
+        yield return Static("phasee.run.exact_part_hp", "RUN-HP", "Run ↔ Battle exact part HP snapshot", GameSystemVerificationCategory.LiveState,
+            "머리/왼팔/오른팔/다리의 state/currentHP/maxHP가 Run 상태에 정확히 저장되고 재사용 가능한지 검사", VerifyExactPartHp);
         yield return Static("phasee.h08.poker_face", "H-08", "히후미 포커페이스 데이터", GameSystemVerificationCategory.Data,
             "강한 도사림/빛1, 받는 피해 교환당 -4 · 피격당 뼈+4", VerifyH08);
     }
@@ -105,13 +109,53 @@ public sealed class PhaseEContentVerificationModule : IGameSystemVerificationMod
 
     private static GameSystemVerificationProbeResult VerifyC38(GameSystemVerificationContext _)
     {
-        var m=Manifest();
-        if(m?.UpgradeDecompositionComplete!=true)
-            return GameSystemVerificationProbeResult.Pending("Base/Upgrade1 decomposition unset", "0916 XLSX 강화2 목표의 임시 역산이 적용되지 않았습니다.");
-        if(!m.TempBalanceActive || m.ActiveBalanceProfile!=PhaseETempBalanceMigration.ProfileId)
-            return GameSystemVerificationProbeResult.Fail("Upgrade decomposition complete flag without TEMP_BALANCE_V1 provenance");
+        PhaseEContentManifest manifest = Manifest();
+        if (manifest?.UpgradeDecompositionComplete != true)
+        {
+            return GameSystemVerificationProbeResult.Pending(
+                "Base/Upgrade1/Upgrade2 decomposition unset",
+                "Phase E 강화 분해 migration을 먼저 적용하세요.");
+        }
+
+        CharacterCombatLoadout olaf = AssetDatabase.LoadAssetAtPath<CharacterCombatLoadout>(
+            "Assets/2. Data/Characters/Design2026/Olaf/Olaf_TODO_Loadout.asset");
+        CharacterCombatLoadout yujin = AssetDatabase.LoadAssetAtPath<CharacterCombatLoadout>(
+            "Assets/2. Data/Characters/Design2026/Yujin/Yujin_TODO_Loadout.asset");
+
+        if (olaf == null || yujin == null)
+            return GameSystemVerificationProbeResult.Fail("Olaf/Yujin loadout missing");
+
+        List<SkillDefinition> all = olaf.EnumerateAllDefinitions()
+            .Concat(yujin.EnumerateAllDefinitions())
+            .Where(x => x != null)
+            .Distinct()
+            .ToList();
+
+        int profiles = all.Count(x => x.UpgradeProfile != null);
+        List<string> secondCostViolations = all
+            .Where(x => x.UpgradeProfile?.Upgrade2 != null &&
+                        x.UpgradeProfile.Upgrade2.CostOverride != 0)
+            .Select(x => $"{x.SkillName}:{x.UpgradeProfile.Upgrade2.CostOverride}")
+            .ToList();
+
+        if (profiles != all.Count)
+        {
+            return GameSystemVerificationProbeResult.Fail(
+                $"UpgradeProfile={profiles}/{all.Count}",
+                "모든 canonical 스킬에 강화 profile이 필요합니다.");
+        }
+
+        if (secondCostViolations.Count > 0)
+        {
+            return GameSystemVerificationProbeResult.Fail(
+                $"Upgrade2 CostOverride violations={secondCostViolations.Count}",
+                "0916 정본에서 2회차 가격은 (미정)이므로 0(Unset)이어야 합니다.\n" +
+                string.Join("\n", secondCostViolations.Take(40)));
+        }
+
         return GameSystemVerificationProbeResult.Pass(
-            $"{m.ActiveBalanceProfile}: Base=max-2 -> U1+1 -> U2+1 (Dice); second costs N75/P150/D200/R225; Yujin weapon formula preserved");
+            $"UpgradeProfile={profiles}/{all.Count}; Upgrade2 CostOverride=Unset(0) 전부 PASS",
+            "문서 수치는 강화 2회 완료 만렙 목표로 유지하되, 2회차 가격은 정본 (미정)이므로 canonical 숫자를 만들지 않습니다.");
     }
 
     private static GameSystemVerificationProbeResult VerifyC40(GameSystemVerificationContext _)
@@ -144,32 +188,263 @@ public sealed class PhaseEContentVerificationModule : IGameSystemVerificationMod
 
     private static GameSystemVerificationProbeResult VerifyO02(GameSystemVerificationContext _)
     {
-        var m=Manifest();
-        const string path="Assets/2. Data/Characters/Design2026/Olaf/Olaf_TODO_Loadout.asset";
-        var l=AssetDatabase.LoadAssetAtPath<CharacterCombatLoadout>(path);
-        int n=l?.NormalSkillPool?.Count ?? 0, d=l?.DuelSkillPool?.Count ?? 0;
-        int p=(l?.CommonPreparationPool?.Count ?? 0)+(l?.CharacterPreparationPool?.Count ?? 0);
-        int r=l?.PrestigeSkillPool?.Count ?? 0;
-        bool profiles=l!=null && l.EnumerateAllDefinitions().All(x=>x!=null && x.UpgradeProfile!=null);
-        bool ok=m?.OlafSkillPoolComplete==true && n==16 && d==21 && p==9 && r==3 && profiles;
-        return ok
-            ? GameSystemVerificationProbeResult.Pass($"Olaf 0916 pool 16/21/9/3 + upgrades / {m.ActiveBalanceProfile}")
-            : GameSystemVerificationProbeResult.Pending($"Olaf pool N={n}/16 D={d}/21 P={p}/9 R={r}/3 profiles={profiles}", "TEMP pool migration incomplete");
+        PhaseEContentManifest manifest = Manifest();
+        const string path = "Assets/2. Data/Characters/Design2026/Olaf/Olaf_TODO_Loadout.asset";
+        CharacterCombatLoadout loadout = AssetDatabase.LoadAssetAtPath<CharacterCombatLoadout>(path);
+        if (loadout == null)
+            return GameSystemVerificationProbeResult.Fail("Olaf loadout missing");
+
+        int normal = loadout.NormalSkillPool?.Count ?? 0;
+        int duel = loadout.DuelSkillPool?.Count ?? 0;
+        int preparation = (loadout.CommonPreparationPool?.Count ?? 0) +
+                          (loadout.CharacterPreparationPool?.Count ?? 0);
+        int prestige = loadout.PrestigeSkillPool?.Count ?? 0;
+
+        string[] canonical = OlafSkillIds.CanonicalNormal
+            .Concat(OlafSkillIds.CanonicalDuel)
+            .Concat(OlafSkillIds.CanonicalPreparation)
+            .Concat(OlafSkillIds.CanonicalPrestige)
+            .Distinct(StringComparer.Ordinal)
+            .ToArray();
+
+        HashSet<string> actual = SkillIdSet(loadout);
+        List<string> missing = canonical.Where(id => !actual.Contains(id)).ToList();
+        List<string> extra = actual.Where(id => !canonical.Contains(id, StringComparer.Ordinal)).ToList();
+        bool exactIds = missing.Count == 0 && extra.Count == 0 && actual.Count == canonical.Length;
+        bool profiles = loadout.EnumerateAllDefinitions().All(x => x != null && x.UpgradeProfile != null);
+        bool secondCostsUnset = SecondUpgradeCostsUnset(loadout);
+
+        bool ok = manifest?.OlafSkillPoolComplete == true &&
+                  normal == 16 && duel == 21 && preparation == 9 && prestige == 3 &&
+                  exactIds && profiles && secondCostsUnset;
+
+        string details =
+            $"N={normal}/16 D={duel}/21 P={preparation}/9 R={prestige}/3 IDs={actual.Count}/{canonical.Length} " +
+            $"profiles={profiles} upgrade2Unset={secondCostsUnset}";
+
+        if (ok)
+            return GameSystemVerificationProbeResult.Pass($"Olaf 0916 canonical closure PASS / {details}");
+
+        if (missing.Count > 0)
+            details += "\nMissing IDs:\n" + string.Join("\n", missing);
+        if (extra.Count > 0)
+            details += "\nExtra IDs:\n" + string.Join("\n", extra);
+
+        return GameSystemVerificationProbeResult.Fail("Olaf 0916 canonical closure mismatch", details);
     }
 
     private static GameSystemVerificationProbeResult VerifyY06(GameSystemVerificationContext _)
     {
-        var m=Manifest();
-        const string path="Assets/2. Data/Characters/Design2026/Yujin/Yujin_TODO_Loadout.asset";
-        var l=AssetDatabase.LoadAssetAtPath<CharacterCombatLoadout>(path);
-        int n=l?.NormalSkillPool?.Count ?? 0, d=l?.DuelSkillPool?.Count ?? 0;
-        int p=(l?.CommonPreparationPool?.Count ?? 0)+(l?.CharacterPreparationPool?.Count ?? 0);
-        int r=l?.PrestigeSkillPool?.Count ?? 0;
-        bool profiles=l!=null && l.EnumerateAllDefinitions().All(x=>x!=null && x.UpgradeProfile!=null);
-        bool ok=m?.YujinSkillPoolComplete==true && n==9 && d==14 && p==9 && r==3 && profiles;
-        return ok
-            ? GameSystemVerificationProbeResult.Pass($"Yujin 0916 pool 9/14/9/3 + upgrades / {m.ActiveBalanceProfile}")
-            : GameSystemVerificationProbeResult.Pending($"Yujin pool N={n}/9 D={d}/14 P={p}/9 R={r}/3 profiles={profiles}", "TEMP pool migration incomplete");
+        PhaseEContentManifest manifest = Manifest();
+        const string path = "Assets/2. Data/Characters/Design2026/Yujin/Yujin_TODO_Loadout.asset";
+        CharacterCombatLoadout loadout = AssetDatabase.LoadAssetAtPath<CharacterCombatLoadout>(path);
+        if (loadout == null)
+            return GameSystemVerificationProbeResult.Fail("Yujin loadout missing");
+
+        int normal = loadout.NormalSkillPool?.Count ?? 0;
+        int duel = loadout.DuelSkillPool?.Count ?? 0;
+        int preparation = (loadout.CommonPreparationPool?.Count ?? 0) +
+                          (loadout.CharacterPreparationPool?.Count ?? 0);
+        int prestige = loadout.PrestigeSkillPool?.Count ?? 0;
+
+        string[] canonical = YujinSkillIds.CanonicalNormal
+            .Concat(YujinSkillIds.CanonicalDuel)
+            .Concat(YujinSkillIds.CanonicalPreparation)
+            .Concat(YujinSkillIds.CanonicalPrestige)
+            .Distinct(StringComparer.Ordinal)
+            .ToArray();
+
+        HashSet<string> actual = SkillIdSet(loadout);
+        List<string> missing = canonical.Where(id => !actual.Contains(id)).ToList();
+        List<string> extra = actual.Where(id => !canonical.Contains(id, StringComparer.Ordinal)).ToList();
+        bool exactIds = missing.Count == 0 && extra.Count == 0 && actual.Count == canonical.Length;
+        bool profiles = loadout.EnumerateAllDefinitions().All(x => x != null && x.UpgradeProfile != null);
+        bool secondCostsUnset = SecondUpgradeCostsUnset(loadout);
+
+        var requiredEffects = new (string id, Yujin0916EffectOperation operation)[]
+        {
+            (YujinSkillIds.LedgerCleanup, Yujin0916EffectOperation.LedgerCleanup),
+            (YujinSkillIds.Aim, Yujin0916EffectOperation.AimCriticalRider),
+            (YujinSkillIds.ConfirmKill, Yujin0916EffectOperation.ConfirmKillMomentum),
+            (YujinSkillIds.FamiliarHand, Yujin0916EffectOperation.FamiliarHand),
+            (YujinSkillIds.AceInTheHole, Yujin0916EffectOperation.AceInTheHole),
+            (YujinSkillIds.Wanted, Yujin0916EffectOperation.Wanted),
+            (YujinSkillIds.Trap, Yujin0916EffectOperation.Trap),
+            (YujinSkillIds.Deadline, Yujin0916EffectOperation.Deadline),
+            (YujinSkillIds.AllTargets, Yujin0916EffectOperation.DesignateAll),
+            (YujinSkillIds.Period, Yujin0916EffectOperation.Period),
+            (YujinSkillIds.HoldBreath, Yujin0916EffectOperation.HoldBreath),
+            (YujinSkillIds.Sharpen, Yujin0916EffectOperation.Sharpen)
+        };
+
+        List<string> effectMissing = requiredEffects
+            .Where(pair => !HasCanonicalEffect(loadout, pair.id, pair.operation))
+            .Select(pair => $"{pair.id} -> {pair.operation}")
+            .ToList();
+
+        bool effects = effectMissing.Count == 0;
+        bool ok = manifest?.YujinSkillPoolComplete == true &&
+                  normal == 9 && duel == 14 && preparation == 9 && prestige == 3 &&
+                  exactIds && profiles && secondCostsUnset && effects;
+
+        string details =
+            $"N={normal}/9 D={duel}/14 P={preparation}/9 R={prestige}/3 IDs={actual.Count}/{canonical.Length} " +
+            $"profiles={profiles} upgrade2Unset={secondCostsUnset} explicitRiders={requiredEffects.Length - effectMissing.Count}/{requiredEffects.Length}";
+
+        if (ok)
+            return GameSystemVerificationProbeResult.Pass($"Yujin 0916 canonical closure PASS / {details}");
+
+        if (missing.Count > 0)
+            details += "\nMissing IDs:\n" + string.Join("\n", missing);
+        if (extra.Count > 0)
+            details += "\nExtra IDs:\n" + string.Join("\n", extra);
+        if (effectMissing.Count > 0)
+            details += "\nMissing explicit runtime riders:\n" + string.Join("\n", effectMissing);
+
+        return GameSystemVerificationProbeResult.Fail("Yujin 0916 canonical closure mismatch", details);
+    }
+
+    private static GameSystemVerificationProbeResult VerifyCanonicalPresentation(GameSystemVerificationContext _)
+    {
+        CharacterCombatLoadout olaf = AssetDatabase.LoadAssetAtPath<CharacterCombatLoadout>(
+            "Assets/2. Data/Characters/Design2026/Olaf/Olaf_TODO_Loadout.asset");
+        CharacterCombatLoadout yujin = AssetDatabase.LoadAssetAtPath<CharacterCombatLoadout>(
+            "Assets/2. Data/Characters/Design2026/Yujin/Yujin_TODO_Loadout.asset");
+
+        if (olaf == null || yujin == null)
+            return GameSystemVerificationProbeResult.Fail("Olaf/Yujin loadout missing");
+
+        List<string> missing = new List<string>();
+        int total = 0;
+        int complete = 0;
+
+        foreach (var pair in new[]
+        {
+            new { Owner = "Olaf", Loadout = olaf },
+            new { Owner = "Yujin", Loadout = yujin }
+        })
+        {
+            foreach (SkillDefinition skill in pair.Loadout.EnumerateAllDefinitions()
+                         .Where(x => x != null)
+                         .Distinct())
+            {
+                total++;
+                if (skill.PresentationAsset is SkillVisualDefinition visual &&
+                    visual.HasCompleteTimelineSet)
+                {
+                    complete++;
+                    continue;
+                }
+
+                string presentation = skill.PresentationAsset == null
+                    ? "NULL"
+                    : skill.PresentationAsset.GetType().Name;
+                missing.Add(
+                    $"{pair.Owner}/{skill.SkillName} ({skill.SkillId}) -> {presentation}");
+            }
+        }
+
+        if (missing.Count == 0)
+        {
+            return GameSystemVerificationProbeResult.Pass(
+                $"canonical presentation complete={complete}/{total}",
+                "Gameplay HP는 Resolve에서 선계산되고, 표시 HP는 Timeline Hit Event에서 commit되는 계약을 유지합니다.");
+        }
+
+        return GameSystemVerificationProbeResult.Fail(
+            $"canonical presentation incomplete={missing.Count}, complete={complete}/{total}",
+            string.Join("\n", missing.Take(80)));
+    }
+
+    private static GameSystemVerificationProbeResult VerifyExactPartHp(GameSystemVerificationContext _)
+    {
+        RunProgressionState progression = new RunProgressionState();
+        progression.Reset(0, 1);
+        RunFlowTestAvatarState avatar = new RunFlowTestAvatarState(progression);
+
+        avatar.SetCurrentHpFromBattle(437);
+        avatar.SetPartSnapshot(PartType.HEAD, RunFlowTestPartState.Normal, 88f, 100f);
+        avatar.SetPartSnapshot(PartType.LEFT_HAND, RunFlowTestPartState.Weakened, 37f, 100f);
+        avatar.SetPartSnapshot(PartType.RIGHT_HAND, RunFlowTestPartState.Normal, 64f, 100f);
+        avatar.SetPartSnapshot(PartType.LEGS, RunFlowTestPartState.Broken, 0f, 100f);
+
+        bool shape = avatar.Parts != null && avatar.Parts.Count == 4;
+        bool uniqueTypes = shape &&
+                           avatar.Parts.Select(x => x.Type).Distinct().Count() == 4 &&
+                           avatar.GetPart(PartType.HEAD) != null &&
+                           avatar.GetPart(PartType.LEFT_HAND) != null &&
+                           avatar.GetPart(PartType.RIGHT_HAND) != null &&
+                           avatar.GetPart(PartType.LEGS) != null;
+        bool exactFlags = shape && avatar.Parts.All(x => x != null && x.HasExactHp);
+        RunFlowTestPart head = avatar.GetPart(PartType.HEAD);
+        RunFlowTestPart left = avatar.GetPart(PartType.LEFT_HAND);
+        RunFlowTestPart right = avatar.GetPart(PartType.RIGHT_HAND);
+        RunFlowTestPart legs = avatar.GetPart(PartType.LEGS);
+        bool values = shape && uniqueTypes &&
+                      avatar.CurrentHp == 437 &&
+                      Mathf.Approximately(head.CurrentHp, 88f) &&
+                      Mathf.Approximately(left.CurrentHp, 37f) &&
+                      Mathf.Approximately(right.CurrentHp, 64f) &&
+                      Mathf.Approximately(legs.CurrentHp, 0f) &&
+                      left.State == RunFlowTestPartState.Weakened &&
+                      legs.State == RunFlowTestPartState.Broken &&
+                      avatar.Parts.All(x => Mathf.Approximately(x.MaximumHp, 100f));
+
+        RunFlowLiveTransferAudit audit = new RunFlowLiveTransferAudit
+        {
+            SameRunProgression = true,
+            SameSkillUpgrades = true,
+            ExpectedCombatItems = 0,
+            EquippedCombatItems = 0,
+            ExpectedTempBalanceMechanics = 0,
+            TempBalanceMechanics = 0,
+            ExpectedPartSnapshots = 4,
+            AppliedPartSnapshots = 4
+        };
+
+        bool contract = audit.Passed;
+        if (shape && uniqueTypes && exactFlags && values && contract)
+        {
+            return GameSystemVerificationProbeResult.Pass(
+                "Exact part HP snapshot model 4/4 + transfer audit contract PASS",
+                "실제 Scene 왕복은 RunFlow Live Transfer Audit의 ExactPartHP=4/4 로그로 추가 실행 검증하세요.");
+        }
+
+        return GameSystemVerificationProbeResult.Fail(
+            $"shape={shape}, uniqueTypes={uniqueTypes}, exactFlags={exactFlags}, values={values}, audit={contract}",
+            "Run-scoped part state/currentHP/maxHP 저장 계약이 깨졌습니다.");
+    }
+
+    private static HashSet<string> SkillIdSet(CharacterCombatLoadout loadout)
+    {
+        return new HashSet<string>(
+            loadout?.EnumerateAllDefinitions()
+                .Where(x => x != null && !string.IsNullOrWhiteSpace(x.SkillId))
+                .Select(x => x.SkillId) ?? Enumerable.Empty<string>(),
+            StringComparer.Ordinal);
+    }
+
+    private static bool SecondUpgradeCostsUnset(CharacterCombatLoadout loadout)
+    {
+        return loadout != null && loadout.EnumerateAllDefinitions()
+            .Where(x => x?.UpgradeProfile?.Upgrade2 != null)
+            .All(x => x.UpgradeProfile.Upgrade2.CostOverride == 0);
+    }
+
+    private static bool HasCanonicalEffect(
+        CharacterCombatLoadout loadout,
+        string skillId,
+        Yujin0916EffectOperation operation)
+    {
+        SkillDefinition skill = loadout?.EnumerateAllDefinitions()
+            .FirstOrDefault(x => x != null &&
+                                 string.Equals(x.SkillId, skillId, StringComparison.Ordinal));
+        if (skill?.EffectEntries == null)
+            return false;
+
+        return skill.EffectEntries.Any(entry =>
+            entry?.Definition is Yujin0916SkillEffectDefinition effect &&
+            effect.Operation == operation);
     }
 
     private static GameSystemVerificationProbeResult VerifyH08(GameSystemVerificationContext _)

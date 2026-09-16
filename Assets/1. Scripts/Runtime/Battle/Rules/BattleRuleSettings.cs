@@ -208,10 +208,10 @@ public sealed class EnergyRuleSettings
 [Serializable]
 public sealed class PrestigeRuleSettings
 {
-    [Header("0915 event-based charge")]
+    [Header("0916 event-based charge")]
     [Min(0)] public int ClashStartCharge = 1;
     [Min(0)] public int ExchangeCharge = 1;
-    [Min(0)] public int ClashWinCharge = 2;
+    [Min(0)] public int ClashWinCharge = 0;
     [Min(0)] public int KillCharge = 5;
 
     // 구 데이터 직렬화 호환용. Runtime에서는 사용하지 않는다.
@@ -224,7 +224,7 @@ public sealed class PrestigeRuleSettings
     [FormerlySerializedAs("PreparationDoesNotCharge")]
     public bool ExcludePreparationActions = true;
 
-    // Diagnostics/구 API source compatibility. 실제 값은 0915 ExchangeCharge(1).
+    // Diagnostics/구 API source compatibility. 실제 값은 0916 ExchangeCharge(1).
     public int ExchangeParticipantCharge => ExchangeCharge;
     public int OneSidedParticipantCharge => ExchangeCharge;
 
@@ -232,7 +232,8 @@ public sealed class PrestigeRuleSettings
     {
         ClashStartCharge = 1;
         ExchangeCharge = 1;
-        ClashWinCharge = 2;
+        // 0916 정본에는 합 다수결 승리 보너스가 없다.
+        ClashWinCharge = 0;
         KillCharge = 5;
         ExcludePreparationActions = true;
         LegacyExchangeParticipantCharge = 0;

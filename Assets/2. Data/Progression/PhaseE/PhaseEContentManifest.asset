@@ -34,8 +34,6 @@ MonoBehaviour:
   TempBalanceNotes:
   - "C-38 TEMP: \uACF5\uACA9 Dice\uB294 XLSX \uAC15\uD6542 \uAC12\uC744 \uBCF4\uC874\uD558\uACE0
     Base=max-2, U1 +1, U2 +1\uB85C \uC5ED\uC0B0."
-  - "C-38 TEMP: 2\uD68C\uCC28 \uAC15\uD654\uBE44 Normal 75 / Preparation 150 / Duel
-    200 / Prestige 225."
   - "Yujin TEMP: \uBB34\uAE30 \uCF54\uC778 \uACF5\uC2DD\uC740 Phase D canonical runtime\uC744
     \uC720\uC9C0\uD558\uACE0 \uCE74\uB4DC rider\uB9CC \uB2E8\uACC4 \uAC15\uD654."
   - "C-32/C-33: \uC815\uC2DD \uC124\uACC4\uAC00 \uC5C6\uB294 \uD6A8\uACFC/\uC544\uC774\uD15C\uC740
@@ -47,6 +45,19 @@ MonoBehaviour:
   - "Phase F v2 hotfix: \uBE14\uB85C\uD1A0\uB294 Phase D native hook\uB9CC \uC0AC\uC6A9\uD558\uBA70
     \uBE44\uC6A9 1, \uAD11\uAE30 +1 \uB2E8\uC77C \uC801\uC6A9. TEMP proxy \uC911\uBCF5
     \uC81C\uAC70."
+  - "0916 Closure: 2\uD68C\uCC28 \uAC15\uD654 \uAC00\uACA9\uC740 \uC815\uBCF8 (\uBBF8\uC815)\uC774\uBBC0\uB85C
+    CostOverride=0(Unset) \uC720\uC9C0."
+  - "0916 Closure: Yujin \uBA85\uC2DC \uBBF8\uAD6C\uD604 rider\uB97C data-driven
+    runtime effect\uB85C \uC5F0\uACB0."
+  - "0916 Closure: Yujin starter \uB3C4\uC0AC\uB9BC = \uB178\uB9BC\uC218/\uC120\uAE08
+    \uBC1B\uAE30/\uD658\uD615(\uACF5\uACA9 TEMP). \uACF5\uACA9/\uC218\uBE44 \uBAA8\uB450
+    \uD6C4\uBCF4 pool \uBCF4\uC874, \uB458 \uC911 1\uC7A5 \uC7A5\uCC29 \uACC4\uC57D."
+  - "0916 Closure Presentation: missing/incomplete canonical PresentationAsset only
+    -> character fallback Timeline wired. Olaf=0, Yujin=0. Hit Event\uAC00 HP \uD45C\uC2DC
+    \uC2DC\uC810\uC744 \uC18C\uC720\uD558\uBA70 authored visual\uC740 \uBCF4\uC874."
+  - "0916 Closure VFX: Stage1 canonical boss legacy duel visual\uC5D0\uC11C Prefab
+    \uC5C6\uB294 Olaf_Duel_BloodSplash_VFX \uCC38\uC870 0\uAC1C \uC81C\uAC70. VFX
+    Definition \uC790\uCCB4\uB294 \uD5A5\uD6C4 authoring\uC744 \uC704\uD574 \uC720\uC9C0."
   RollTextureScanned: 42
   RollTexturePassed: 42
   RollTexturePending: 0

@@ -49,6 +49,7 @@ public sealed class YujinMechanic : CombatMechanic,
     private int forcedFrontCharges;
     private int jointLiabilityGranted;
     private bool weaponSwitchUsedThisTurn;
+    private bool weaponChangedThisTurn;
     private int hwanhyeongAttackBonus;
     private int hwanhyeongDefenseBonus;
 
@@ -70,6 +71,9 @@ public sealed class YujinMechanic : CombatMechanic,
 
     public bool HasUsedWeaponSwitchThisTurn =>
         weaponSwitchUsedThisTurn;
+
+    /// <summary>0916 손에 익히다 조건: 지난 턴 예약된 환형이 이번 TurnStart에 실제 적용됐는지.</summary>
+    public bool WeaponChangedThisTurn => weaponChangedThisTurn;
 
     public bool IsWeaponSwitchLocked =>
         battleContext?.Services?.TurnManager?.IsResolving == true;
@@ -153,6 +157,7 @@ public sealed class YujinMechanic : CombatMechanic,
         weaponSwitchUsedThisTurn = false;
         hasPendingWeapon = false;
         pendingWeaponEnergyPaid = 0;
+        weaponChangedThisTurn = false;
         ClearTurnBuffs();
     }
 
@@ -462,8 +467,25 @@ public sealed class YujinMechanic : CombatMechanic,
     string IActionPlanningRule.GetSkillSelectionBlockReason(
         ActionPlanningSkillContext context)
     {
-        if (context.Skill == null || context.Owner != owner ||
-            !IsHwanhyeongSkill(context.Skill.Definition?.SkillId))
+        if (context.Skill == null || context.Owner != owner)
+            return string.Empty;
+
+        string selectedSkillId = context.Skill.Definition?.SkillId;
+
+        if (selectedSkillId == YujinSkillIds.FamiliarHand && !weaponChangedThisTurn)
+            return "지난 턴 환형이 완료되어 이번 턴 새 무기가 활성화된 상태에서만 사용할 수 있습니다.";
+
+        if (selectedSkillId == YujinSkillIds.AceInTheHole && sense < GetAceInTheHoleSenseCost())
+            return $"살수의 감이 부족합니다. 필요 {GetAceInTheHoleSenseCost()}, 현재 {sense}.";
+
+        if (selectedSkillId == YujinSkillIds.LedgerCleanup && !HasAnyMarkAtLeast(20))
+            return "사용 조건: 표식 20 이상인 대상이 필요합니다.";
+
+        if ((selectedSkillId == YujinSkillIds.HoldBreath || selectedSkillId == YujinSkillIds.Sharpen) &&
+            !HasAnyMarkAtLeast(10))
+            return "소모할 표식 10이 없습니다.";
+
+        if (!IsHwanhyeongSkill(selectedSkillId))
             return string.Empty;
 
         ActionSlot existing =
@@ -779,6 +801,18 @@ public sealed class YujinMechanic : CombatMechanic,
         if (!front && sentencingActive)
             power += 2;
 
+        // 0916 잔혹한 마무리: 강화 성장 대상은 무기별로 다르다.
+        // 백우 U1/U2 = 위력 +1/+1, 적설 U1 = 위력 +1, 낙일 = 추가타 상한만 성장.
+        if (skill.Definition != null &&
+            string.Equals(skill.Definition.SkillId, YujinSkillIds.BrutalFinish, StringComparison.OrdinalIgnoreCase))
+        {
+            int level = battleContext?.SkillUpgrades?.GetLevel(skill.Definition) ?? 0;
+            if (currentWeapon == YujinWeaponType.Baeku)
+                power += Mathf.Clamp(level, 0, 2);
+            else if (currentWeapon == YujinWeaponType.Jeokseol && level >= 1)
+                power += 1;
+        }
+
         power += hwanhyeongAttackBonus;
         return power;
     }
@@ -953,6 +987,8 @@ public sealed class YujinMechanic : CombatMechanic,
         capturePlanningActions.Clear();
         sentencingPlanningActions.Clear();
 
+        weaponChangedThisTurn = false;
+
         if (hasPendingWeapon)
         {
             YujinWeaponType previous = currentWeapon;
@@ -960,6 +996,7 @@ public sealed class YujinMechanic : CombatMechanic,
             hasPendingWeapon = false;
             pendingWeaponEnergyPaid = 0;
             SetWeapon(next);
+            weaponChangedThisTurn = previous != currentWeapon;
 
             Debug.Log(
                 $"[유진][환형] {previous} -> {currentWeapon} 전환 완료 / " +
@@ -972,6 +1009,7 @@ public sealed class YujinMechanic : CombatMechanic,
 
     private void OnTurnEnd(int turn)
     {
+        weaponChangedThisTurn = false;
         ClearTurnBuffs();
         freeRetrialRerolls.Clear();
         delayedTriggers.AdvanceTurn();
@@ -1146,6 +1184,9 @@ public sealed class YujinMechanic : CombatMechanic,
             return;
         }
 
+        if (HasDesignation(anchor))
+            amount += 2;
+
         int value =
             GetMark(anchor.Character, anchor.Part) +
             amount;
@@ -1164,6 +1205,98 @@ public sealed class YujinMechanic : CombatMechanic,
             sourceAction);
 
         TriggerJointLiability();
+    }
+
+    public bool HasAnyMarkAtLeast(int amount)
+    {
+        int required = Mathf.Max(0, amount);
+        foreach (KeyValuePair<CombatStatusAnchor, int> pair in marks)
+        {
+            if (pair.Key.IsValid && !pair.Key.IsBroken && pair.Value >= required)
+                return true;
+        }
+        return false;
+    }
+
+    public bool TryConsumeMark(Character target, BodyPart part, int amount)
+    {
+        int required = Mathf.Max(0, amount);
+        if (required == 0)
+            return true;
+
+        CombatStatusAnchor anchor = CombatStatusAnchor.Resolve(target, part);
+        if (!anchor.IsValid || !marks.TryGetValue(anchor, out int current) || current < required)
+            return false;
+
+        int remaining = current - required;
+        if (remaining <= 0) marks.Remove(anchor);
+        else marks[anchor] = remaining;
+        return true;
+    }
+
+    /// <summary>
+    /// 준비행동은 적을 조준하지 않는 정본 제약이 있어, 표식 소모 준비행동은
+    /// 현재 가장 많이 쌓인 유효 anchor에서 소모한다. 동률은 Dictionary 순서로 고정된다.
+    /// TEMP_BALANCE_V1 해석이며 향후 표식 소모 대상 UI가 확정되면 교체한다.
+    /// </summary>
+    public bool TryConsumeAnyMarkForPreparation(int amount)
+    {
+        int required = Mathf.Max(0, amount);
+        CombatStatusAnchor selected = default;
+        int best = -1;
+        foreach (KeyValuePair<CombatStatusAnchor, int> pair in marks)
+        {
+            if (!pair.Key.IsValid || pair.Key.IsBroken || pair.Value < required)
+                continue;
+            if (pair.Value > best)
+            {
+                selected = pair.Key;
+                best = pair.Value;
+            }
+        }
+        return best >= required && TryConsumeMark(selected.Character, selected.Part, required);
+    }
+
+    public bool TrySpendSense(int amount)
+    {
+        int cost = Mathf.Max(0, amount);
+        if (sense < cost)
+            return false;
+        sense -= cost;
+        return true;
+    }
+
+    public void GrantForcedFrontCharges(int amount)
+    {
+        forcedFrontCharges += Mathf.Max(0, amount);
+    }
+
+    public int GetAceInTheHoleSenseCost() => currentWeapon switch
+    {
+        YujinWeaponType.Baeku => 3,
+        YujinWeaponType.Jeokseol => 2,
+        YujinWeaponType.Nakil => 2,
+        _ => 2
+    };
+
+    private static bool HasDesignation(CombatStatusAnchor anchor)
+    {
+        if (!anchor.IsValid)
+            return false;
+
+        if (anchor.Part?.StatusEffects != null)
+        {
+            foreach (StatusEffect effect in anchor.Part.StatusEffects)
+                if (effect is YujinDesignationStatus) return true;
+        }
+
+        if (anchor.Character?.StatusEffects != null)
+        {
+            foreach (StatusEffect effect in anchor.Character.StatusEffects)
+                if (effect is YujinDesignationStatus) return true;
+        }
+
+        return false;
     }
 
     public long RegisterMarkTrap(
@@ -1448,9 +1581,19 @@ public sealed class YujinMechanic : CombatMechanic,
             return 0;
         }
 
-        // 0916 만렙 데이터 이관 전 Phase D 기본 계약: 모든 무기 기본 추가타 상한 1.
-        // 강화 1/2의 무기별 상한 증가는 Phase E Upgrade payload에서 덮는다.
-        int limit = 1;
+        int upgradeLevel =
+            action.Skill?.Definition != null
+                ? battleContext?.SkillUpgrades?.GetLevel(action.Skill.Definition) ?? 0
+                : 0;
+
+        // 0916 잔혹한 마무리 추가타 상한:
+        // 백우 1/1/1, 적설 1/1/2, 낙일 1/3/5 (기본/U1/U2).
+        int limit = currentWeapon switch
+        {
+            YujinWeaponType.Jeokseol => upgradeLevel >= 2 ? 2 : 1,
+            YujinWeaponType.Nakil => upgradeLevel >= 2 ? 5 : upgradeLevel >= 1 ? 3 : 1,
+            _ => 1
+        };
 
         int appliedHits = 0;
 

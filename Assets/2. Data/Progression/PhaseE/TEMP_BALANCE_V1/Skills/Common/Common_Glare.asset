@@ -45,8 +45,9 @@ MonoBehaviour:
     SecondaryPartMode: 0
     SecondaryDamageMultiplier: 1
     AllowBrokenSecondaryParts: 1
-  Description: "[TEMP_BALANCE_V1] canonical max: \uADF8 \uD134 \uD569 \uD310\uC815\uAC12
-    +1; \uAC15\uD654 rider\uB294 \uAC12 \uC720\uC9C0"
+  Description: "[CANONICAL_0916_CLOSURE_V1] 0916(3) canonical metadata synced.\n[TEMP_BALANCE_V1]
+    canonical max: \uADF8 \uD134 \uD569 \uD310\uC815\uAC12 +1; \uAC15\uD654 rider\uB294
+    \uAC12 \uC720\uC9C0"
   Keywords: []
   Rolls: []
   ExchangeRollCount: 1
@@ -116,4 +117,4 @@ MonoBehaviour:
   ConsumeAllCustomResource: 0
   OverridePrestigeUsePolicy: 0
   PrestigeUsePolicy: 1
-  presentationAsset: {fileID: 0}
+  presentationAsset: {fileID: 11400000, guid: 5dfbc24590a7bad4fa6c8042b67602da, type: 2}

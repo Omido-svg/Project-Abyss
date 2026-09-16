@@ -25,8 +25,11 @@ public interface IPrestigeChargeModifier
 }
 
 /// <summary>
-/// 0915 C-22 사건 기반 위세 충전 서비스.
-/// 합 시작 +1 / 교환(일방 포함) +1 / 합 다수결 승리 +2 / 적 처치 +5.
+/// 0916 정본 사건 기반 위세 충전 서비스.
+/// 합 시작 +1 / 교환(일방 포함) +1 / 적 처치 +5.
+/// 합 다수결 승리는 별도 위세 충전 사건이 아니다.
+/// ChargeClashWinner API는 구 호출부/source compatibility를 위해 유지하되
+/// PrestigeRuleSettings.ClashWinCharge=0이라 canonical runtime에서는 no-op이다.
 /// </summary>
 public sealed class PrestigeChargeService
 {

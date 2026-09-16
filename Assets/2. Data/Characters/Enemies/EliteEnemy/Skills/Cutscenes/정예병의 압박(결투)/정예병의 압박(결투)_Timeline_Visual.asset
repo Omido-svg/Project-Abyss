@@ -75,31 +75,7 @@ MonoBehaviour:
       m_PreInfinity: 2
       m_PostInfinity: 2
       m_RotationOrder: 4
-  VfxCues:
-  - CueKey: Impact.BloodSplash
-    Timing: 3
-    Vfx: {fileID: 11400000, guid: 2c4e00942f01fb74293f88c097c7e6a1, type: 2}
-    AnchorType: 3
-    RepeatMode: 1
-    UseHitIndexFilter: 0
-    HitIndex: 0
-    RequiredAttackerData: {fileID: 0}
-    RequiredSkillNameContains: 
-    RequirePositiveDamage: 0
-    RequirePositiveResolvedDamage: 1
-    Delay: 0
-  - CueKey: Impact.BloodSplash
-    Timing: 3
-    Vfx: {fileID: 11400000, guid: 2c4e00942f01fb74293f88c097c7e6a1, type: 2}
-    AnchorType: 3
-    RepeatMode: 1
-    UseHitIndexFilter: 0
-    HitIndex: 0
-    RequiredAttackerData: {fileID: 0}
-    RequiredSkillNameContains: 
-    RequirePositiveDamage: 0
-    RequirePositiveResolvedDamage: 1
-    Delay: 0
+  VfxCues: []
   MoveSettings:
     UseMove: 1
     StartPositionMode: 3

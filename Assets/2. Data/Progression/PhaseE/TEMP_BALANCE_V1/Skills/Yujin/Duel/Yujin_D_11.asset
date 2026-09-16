@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: Yujin_D_11
   m_EditorClassIdentifier: 
   phaseASchemaVersion: 1
-  skillId: yujin.duel.k.trap
+  skillId: yujin.duel.trap
   SkillName: "\uB36B\uC744 \uB193\uB2E4"
   ActionType: 1
   Color: 1
@@ -45,7 +45,8 @@ MonoBehaviour:
     SecondaryPartMode: 0
     SecondaryDamageMultiplier: 1
     AllowBrokenSecondaryParts: 1
-  Description: "[TEMP_BALANCE_V1] MarkTrap \uAE30\uC874 \uB7F0\uD0C0\uC784 API"
+  Description: "[CANONICAL_0916_CLOSURE_V1] 0916(3) canonical metadata synced.\n[TEMP_BALANCE_V1]
+    MarkTrap \uAE30\uC874 \uB7F0\uD0C0\uC784 API"
   Keywords: []
   Rolls: []
   ExchangeRollCount: 1
@@ -74,7 +75,7 @@ MonoBehaviour:
   ChinchiroHifumiPenalty: 1
   ChinchiroHifumiSelfDamage: 1
   EffectEntries:
-  - Definition: {fileID: 11400000, guid: 30bbf0a0cf2eb6b49894a59af7fc12e4, type: 2}
+  - Definition: {fileID: 11400000, guid: dbd887d99e196d441ab0ef692a752150, type: 2}
     Overrides:
       OverrideStack: 0
       Stack: 1
@@ -96,7 +97,7 @@ MonoBehaviour:
       ForceCharacterStatus: 0
       OverrideGiveToSelectedTarget: 0
       GiveToSelectedTarget: 0
-    UpgradeKey: temp_proxy
+    UpgradeKey: 
     OverrideTiming: 1
     Timing: 7
     Conditions: []
@@ -104,7 +105,7 @@ MonoBehaviour:
     RollNumber: 1
   Effects: []
   OverrideEnergyCost: 1
-  EnergyCost: 2
+  EnergyCost: 1
   UpgradeProfile: {fileID: 11400000, guid: fb685902e3d0d954b8ec6ed99073755a, type: 2}
   OverrideResourceRules: 0
   RequireFullPrestige: 0
@@ -115,4 +116,4 @@ MonoBehaviour:
   ConsumeAllCustomResource: 0
   OverridePrestigeUsePolicy: 0
   PrestigeUsePolicy: 1
-  presentationAsset: {fileID: 0}
+  presentationAsset: {fileID: 11400000, guid: f32eaf5a7aad57d42b1bf7f20c0f281c, type: 2}

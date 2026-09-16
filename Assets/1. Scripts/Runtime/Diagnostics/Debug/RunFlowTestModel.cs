@@ -35,13 +35,42 @@ public enum RunFlowTestPartState
 [Serializable]
 public sealed class RunFlowTestPart
 {
+    public PartType Type;
     public string Name;
     public RunFlowTestPartState State;
 
-    public RunFlowTestPart(string name)
+    // Live Battle에서 왕복한 정확한 부위 HP 스냅샷.
+    // 첫 전투 전에는 HasExactHp=false로 두어 기존 상태 기반 fixture와 호환한다.
+    public float CurrentHp;
+    public float MaximumHp;
+    public bool HasExactHp;
+
+    public RunFlowTestPart(PartType type, string name)
     {
+        Type = type;
         Name = name;
         State = RunFlowTestPartState.Normal;
+        CurrentHp = 0f;
+        MaximumHp = 0f;
+        HasExactHp = false;
+    }
+
+    public void SetSnapshot(
+        RunFlowTestPartState state,
+        float currentHp,
+        float maximumHp)
+    {
+        State = state;
+        MaximumHp = Mathf.Max(1f, maximumHp);
+        CurrentHp = Mathf.Clamp(currentHp, 0f, MaximumHp);
+        HasExactHp = true;
+    }
+
+    public void ClearExactHp()
+    {
+        CurrentHp = 0f;
+        MaximumHp = 0f;
+        HasExactHp = false;
     }
 }
 
@@ -62,10 +91,10 @@ public sealed class RunFlowTestAvatarState
 
     private readonly List<RunFlowTestPart> parts = new()
     {
-        new RunFlowTestPart("머리"),
-        new RunFlowTestPart("왼팔"),
-        new RunFlowTestPart("오른팔"),
-        new RunFlowTestPart("다리")
+        new RunFlowTestPart(PartType.HEAD, "머리"),
+        new RunFlowTestPart(PartType.LEFT_HAND, "왼팔"),
+        new RunFlowTestPart(PartType.RIGHT_HAND, "오른팔"),
+        new RunFlowTestPart(PartType.LEGS, "다리")
     };
 
     public RunFlowTestAvatarState(RunProgressionState progression)
@@ -78,12 +107,34 @@ public sealed class RunFlowTestAvatarState
     {
         CurrentHp = MaximumHp;
         for (int i = 0; i < parts.Count; i++)
+        {
             parts[i].State = RunFlowTestPartState.Normal;
+            parts[i].ClearExactHp();
+        }
     }
 
     public void FullHeal()
     {
         CurrentHp = MaximumHp;
+
+        // 스테이지 전회복은 HP만 회복한다. 약화/파괴 상태는 별도 규칙이다.
+        // 파괴 부위는 회복 대상이 아니므로 0을 유지한다.
+        for (int i = 0; i < parts.Count; i++)
+        {
+            RunFlowTestPart part = parts[i];
+            if (!part.HasExactHp)
+                continue;
+
+            if (part.State == RunFlowTestPartState.Broken)
+                part.CurrentHp = 0f;
+            else
+                part.CurrentHp = Mathf.Max(1f, part.MaximumHp);
+        }
+    }
+
+    public void SetCurrentHpFromBattle(int currentHp)
+    {
+        CurrentHp = Mathf.Clamp(currentHp, 1, MaximumHp);
     }
 
     public void Damage(int amount)
@@ -101,6 +152,38 @@ public sealed class RunFlowTestAvatarState
         if (index < 0 || index >= parts.Count)
             return;
         parts[index].State = state;
+    }
+
+    public void SetPartSnapshot(
+        int index,
+        RunFlowTestPartState state,
+        float currentHp,
+        float maximumHp)
+    {
+        if (index < 0 || index >= parts.Count)
+            return;
+
+        parts[index].SetSnapshot(state, currentHp, maximumHp);
+    }
+
+    public void SetPartSnapshot(
+        PartType type,
+        RunFlowTestPartState state,
+        float currentHp,
+        float maximumHp)
+    {
+        RunFlowTestPart part = GetPart(type);
+        part?.SetSnapshot(state, currentHp, maximumHp);
+    }
+
+    public RunFlowTestPart GetPart(PartType type)
+    {
+        for (int i = 0; i < parts.Count; i++)
+        {
+            if (parts[i] != null && parts[i].Type == type)
+                return parts[i];
+        }
+        return null;
     }
 
     public bool TryMaintenanceRestore(
@@ -137,6 +220,9 @@ public sealed class RunFlowTestAvatarState
         }
 
         part.State = RunFlowTestPartState.Normal;
+        // 정비는 구조 상태 자체를 복구하므로 이전 전투의 exact-part HP 스냅샷을
+        // 그대로 재사용하지 않는다. 다음 Battle 진입은 정상 부위 기본 HP 규칙을 사용한다.
+        part.ClearExactHp();
         int heal = Mathf.Max(1, Mathf.FloorToInt(MaximumHp * settings.MaintenanceHealMaxHpRatio));
         Heal(heal);
         message = $"정비 완료: {part.Name} 상태 회복 + HP {heal} 회복 / -{cost}G";

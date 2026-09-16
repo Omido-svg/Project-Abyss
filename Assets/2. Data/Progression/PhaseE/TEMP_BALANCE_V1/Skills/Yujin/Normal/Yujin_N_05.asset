@@ -45,7 +45,8 @@ MonoBehaviour:
     SecondaryPartMode: 0
     SecondaryDamageMultiplier: 1
     AllowBrokenSecondaryParts: 1
-  Description: "[TEMP_BALANCE_V1] \uBB34\uAE30\uBCC4 \uD06C\uB9AC rider TEMP"
+  Description: "[CANONICAL_0916_CLOSURE_V1] 0916(3) canonical metadata synced.\n[TEMP_BALANCE_V1]
+    \uBB34\uAE30\uBCC4 \uD06C\uB9AC rider TEMP"
   Keywords: []
   Rolls: []
   ExchangeRollCount: 1
@@ -74,7 +75,7 @@ MonoBehaviour:
   ChinchiroHifumiPenalty: 1
   ChinchiroHifumiSelfDamage: 1
   EffectEntries:
-  - Definition: {fileID: 11400000, guid: 21e8bdcd01093dd44b3ad4b2d2bfce6b, type: 2}
+  - Definition: {fileID: 11400000, guid: ec8c75c84af06c143ae3a7f6e28fa16b, type: 2}
     Overrides:
       OverrideStack: 0
       Stack: 1
@@ -96,7 +97,7 @@ MonoBehaviour:
       ForceCharacterStatus: 0
       OverrideGiveToSelectedTarget: 0
       GiveToSelectedTarget: 0
-    UpgradeKey: temp_proxy
+    UpgradeKey: 
     OverrideTiming: 1
     Timing: 7
     Conditions: []
@@ -115,4 +116,4 @@ MonoBehaviour:
   ConsumeAllCustomResource: 0
   OverridePrestigeUsePolicy: 0
   PrestigeUsePolicy: 1
-  presentationAsset: {fileID: 0}
+  presentationAsset: {fileID: 11400000, guid: 691f5ccafa5ad5345bc91512c1c883d7, type: 2}

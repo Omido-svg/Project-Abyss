@@ -39,19 +39,12 @@ public sealed class OlafCharacterVerificationCaseProvider :
         "olaf.duel.one_sided_unique_effects_disabled";
 
     private static readonly string[] RequiredSkillIds =
-    {
-        OlafSkillIds.EnduringSlash,
-        OlafSkillIds.OverheadSmash,
-        OlafSkillIds.WildHack,
-        OlafSkillIds.Standard,
-        OlafSkillIds.Rend,
-        OlafSkillIds.Crouch,
-        OlafSkillIds.Glare,
-        OlafSkillIds.Bloto,
-        OlafSkillIds.BloomingWound,
-        OlafSkillIds.BurstingMadness,
-        OlafSkillIds.BacksToWall
-    };
+        OlafSkillIds.CanonicalNormal
+            .Concat(OlafSkillIds.CanonicalDuel)
+            .Concat(OlafSkillIds.CanonicalPreparation)
+            .Concat(OlafSkillIds.CanonicalPrestige)
+            .Distinct(StringComparer.Ordinal)
+            .ToArray();
 
     public bool Supports(
         CharacterAuthoringBundle bundle,
@@ -70,7 +63,7 @@ public sealed class OlafCharacterVerificationCaseProvider :
             "올라프 스킬 ID 전체 등록",
             CharacterVerificationCategory.Data,
             CharacterVerificationExecutionMode.DataOnly,
-            "일반 3, 결투 2, 도사림 3, 위세 3의 고유 SkillId가 데이터 그래프에 모두 존재하는지 검사합니다.");
+            "0916(3) canonical 전체 풀(N16/D21/P9/R3, 총 49)의 SkillId가 데이터 그래프에 빠짐없이 존재하는지 검사합니다.");
 
         yield return CharacterVerificationCaseDefinition.Create(
             DiceRuntimeResolution,
@@ -88,10 +81,10 @@ public sealed class OlafCharacterVerificationCaseProvider :
 
         yield return CharacterVerificationCaseDefinition.Create(
             MechanicRegistration,
-            "광기·룰브레이커·배수진 메커닉 등록",
+            "광기·룰브레이커·라그나로크 메커닉 등록",
             CharacterVerificationCategory.Passive,
             CharacterVerificationExecutionMode.IsolatedRuntime,
-            "OlafMadnessMechanic / OlafRulebreakerMechanic / OlafImmortalFuryMechanic의 생성 및 BattleEvent 구독을 검사합니다.");
+            "OlafMadnessMechanic / OlafRulebreakerMechanic / OlafImmortalFuryMechanic(라그나로크)의 생성 및 BattleEvent 구독을 검사합니다.");
 
         yield return CharacterVerificationCaseDefinition.Create(
             MadnessBoundary,
@@ -116,10 +109,10 @@ public sealed class OlafCharacterVerificationCaseProvider :
 
         yield return CharacterVerificationCaseDefinition.Create(
             OneSidedUniqueEffects,
-            "표준·난도질 일방 고유효과 차단",
+            "표준·끈질기게 일방 고유효과 차단",
             CharacterVerificationCategory.Duel,
             CharacterVerificationExecutionMode.IsolatedRuntime,
-            "일방 공격에서는 표준과 난도질의 결투 전용 혈상·광기 효과가 발동하지 않는지 검사합니다.");
+            "일방 공격에서는 표준과 끈질기게의 결투 전용 출혈·광기 효과가 발동하지 않는지 검사합니다.");
 
         yield return CharacterVerificationCaseDefinition.Create(
             MadnessConsume,
@@ -130,10 +123,10 @@ public sealed class OlafCharacterVerificationCaseProvider :
 
         yield return CharacterVerificationCaseDefinition.Create(
             ImmortalFuryLifecycle,
-            "배수진 생존·턴 종료",
+            "라그나로크 생존·턴 종료",
             CharacterVerificationCategory.Prestige,
             CharacterVerificationExecutionMode.IsolatedRuntime,
-            "배수진 중 사망·부위 파괴 차단과 TurnEnd 해제를 검사합니다.");
+            "라그나로크 중 사망·부위 파괴 차단과 TurnEnd 해제를 검사합니다.");
     }
 
     public bool TryExecute(
@@ -197,11 +190,11 @@ public sealed class OlafCharacterVerificationCaseProvider :
 
         return missing.Count == 0
             ? context.Pass(
-                "올라프 고유 스킬 ID 11개 존재",
-                "11/11 등록")
+                "올라프 0916 canonical 스킬 ID 49개 존재",
+                $"{RequiredSkillIds.Length}/{RequiredSkillIds.Length} 등록")
             : context.Fail(
-                "올라프 고유 스킬 ID 11개 존재",
-                $"{11 - missing.Count}/11 등록",
+                "올라프 0916 canonical 스킬 ID 49개 존재",
+                $"{RequiredSkillIds.Length - missing.Count}/{RequiredSkillIds.Length} 등록",
                 "누락:\n" + string.Join("\n", missing));
     }
 
@@ -215,7 +208,7 @@ public sealed class OlafCharacterVerificationCaseProvider :
         SkillDefinition definition =
             CharacterVerificationScenarioTools.FindDefinition(
                 context.Bundle,
-                OlafSkillIds.EnduringSlash);
+                OlafSkillIds.Bite);
 
         Skill skill =
             CharacterVerificationScenarioTools.FindRuntimeSkill(
@@ -226,7 +219,7 @@ public sealed class OlafCharacterVerificationCaseProvider :
         {
             return context.Fail(
                 "공용 Dice Resolver 검증용 올라프 스킬 존재",
-                "버티며 베기 RuntimeSkill 없음");
+                "물어뜯기 RuntimeSkill 없음");
         }
 
         SkillRollData lowProbe =
@@ -541,10 +534,10 @@ public sealed class OlafCharacterVerificationCaseProvider :
 
         return valid
             ? context.Pass(
-                "광기·룰브레이커·배수진 메커닉 생성 및 등록",
+                "광기·룰브레이커·라그나로크 메커닉 생성 및 등록",
                 "Madness=Registered, Rulebreaker=Registered, ImmortalFury=Registered")
             : context.Fail(
-                "광기·룰브레이커·배수진 메커닉 생성 및 등록",
+                "광기·룰브레이커·라그나로크 메커닉 생성 및 등록",
                 $"Madness={Describe(madness)}, " +
                 $"Rulebreaker={Describe(rulebreaker)}, " +
                 $"ImmortalFury={Describe(immortal)}");
@@ -799,7 +792,7 @@ public sealed class OlafCharacterVerificationCaseProvider :
         string[] ids =
         {
             OlafSkillIds.Standard,
-            OlafSkillIds.Rend
+            OlafSkillIds.Tenacious
         };
 
         List<string> details =
@@ -900,10 +893,10 @@ public sealed class OlafCharacterVerificationCaseProvider :
 
         return allValid
             ? context.Pass(
-                "표준·난도질 일방 공격에서 고유 혈상·광기 0",
+                "표준·끈질기게 일방 공격에서 고유 출혈·광기 0",
                 detail)
             : context.Fail(
-                "표준·난도질 일방 공격에서 고유 혈상·광기 0",
+                "표준·끈질기게 일방 공격에서 고유 출혈·광기 0",
                 detail);
     }
 
@@ -1014,10 +1007,10 @@ public sealed class OlafCharacterVerificationCaseProvider :
 
         return active && released
             ? context.Pass(
-                "배수진 중 생존·파괴 차단, TurnEnd 해제",
+                "라그나로크 중 생존·파괴 차단, TurnEnd 해제",
                 "Active policy PASS / TurnEnd release PASS")
             : context.Fail(
-                "배수진 중 생존·파괴 차단, TurnEnd 해제",
+                "라그나로크 중 생존·파괴 차단, TurnEnd 해제",
                 $"Active={active}, Released={released}");
     }
 

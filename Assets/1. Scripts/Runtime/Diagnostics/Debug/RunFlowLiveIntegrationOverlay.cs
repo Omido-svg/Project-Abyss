@@ -22,11 +22,6 @@ public sealed class RunFlowLiveIntegrationOverlay : MonoBehaviour
             "itemOfferService",
             BindingFlags.Instance | BindingFlags.NonPublic);
 
-    private static readonly FieldInfo AvatarCurrentHpField =
-        typeof(RunFlowTestAvatarState).GetField(
-            "<CurrentHp>k__BackingField",
-            BindingFlags.Instance | BindingFlags.NonPublic);
-
     private RunFlowTestHarness harness;
     private RunFlowTestSession session;
     private RunFlowLiveContentRegistry registry;
@@ -198,6 +193,7 @@ public sealed class RunFlowLiveIntegrationOverlay : MonoBehaviour
               $"UpgradeRef={result.Audit.SameSkillUpgrades}, " +
               $"Items={result.Audit.EquippedCombatItems}/{result.Audit.ExpectedCombatItems}, " +
               $"TempMechanics={result.Audit.TempBalanceMechanics}/{result.Audit.ExpectedTempBalanceMechanics}, " +
+              $"ExactPartHP={result.Audit.AppliedPartSnapshots}/{result.Audit.ExpectedPartSnapshots}, " +
               $"AuditPass={result.Audit.Passed}";
 
         session.Log(
@@ -262,14 +258,7 @@ public sealed class RunFlowLiveIntegrationOverlay : MonoBehaviour
         if (avatar == null)
             return;
 
-        if (AvatarCurrentHpField != null)
-        {
-            int hp = Mathf.Clamp(
-                result.PlayerCurrentHp,
-                1,
-                Mathf.Max(1, avatar.MaximumHp));
-            AvatarCurrentHpField.SetValue(avatar, hp);
-        }
+        avatar.SetCurrentHpFromBattle(result.PlayerCurrentHp);
 
         if (result.Parts == null)
             return;
@@ -280,18 +269,16 @@ public sealed class RunFlowLiveIntegrationOverlay : MonoBehaviour
             if (snapshot == null)
                 continue;
 
-            int index = PartIndex(snapshot.Type);
-            if (index < 0 || index >= avatar.Parts.Count)
-                continue;
-
-            avatar.SetPartState(
-                index,
+            avatar.SetPartSnapshot(
+                snapshot.Type,
                 snapshot.State switch
                 {
                     BodyPartState.Broken => RunFlowTestPartState.Broken,
                     BodyPartState.Weakened => RunFlowTestPartState.Weakened,
                     _ => RunFlowTestPartState.Normal
-                });
+                },
+                snapshot.CurrentHp,
+                snapshot.MaximumHp);
         }
     }
 

@@ -45,7 +45,8 @@ MonoBehaviour:
     SecondaryPartMode: 0
     SecondaryDamageMultiplier: 1
     AllowBrokenSecondaryParts: 1
-  Description: "[TEMP_BALANCE_V1] canonical max \uBC29\uC5B4\uB3C4 +10"
+  Description: "[CANONICAL_0916_CLOSURE_V1] 0916(3) canonical metadata synced.\n[TEMP_BALANCE_V1]
+    canonical max \uBC29\uC5B4\uB3C4 +10"
   Keywords: []
   Rolls: []
   ExchangeRollCount: 1
@@ -74,7 +75,7 @@ MonoBehaviour:
   ChinchiroHifumiPenalty: 1
   ChinchiroHifumiSelfDamage: 1
   EffectEntries:
-  - Definition: {fileID: 11400000, guid: dd4988b7b01f701458bb85586571c8d8, type: 2}
+  - Definition: {fileID: 11400000, guid: b4ae8a5937f3f5740b25bd9fd612fefc, type: 2}
     Overrides:
       OverrideStack: 0
       Stack: 1
@@ -96,9 +97,9 @@ MonoBehaviour:
       ForceCharacterStatus: 0
       OverrideGiveToSelectedTarget: 0
       GiveToSelectedTarget: 0
-    UpgradeKey: temp_proxy
+    UpgradeKey: 
     OverrideTiming: 1
-    Timing: 7
+    Timing: 0
     Conditions: []
     RestrictToRoll: 0
     RollNumber: 1
@@ -115,4 +116,4 @@ MonoBehaviour:
   ConsumeAllCustomResource: 0
   OverridePrestigeUsePolicy: 0
   PrestigeUsePolicy: 1
-  presentationAsset: {fileID: 0}
+  presentationAsset: {fileID: 11400000, guid: 691f5ccafa5ad5345bc91512c1c883d7, type: 2}

@@ -49,7 +49,7 @@ MonoBehaviour:
   Upgrade2:
     DesignNote: "[TEMP_BALANCE_V1] max-level 0916 target \uB3C4\uB2EC. \uC815\uC2DD
       \uBD84\uD574 \uADDC\uCE59 \uD655\uC815 \uC2DC \uAD50\uCCB4."
-    CostOverride: 200
+    CostOverride: 0
     BasePowerDelta: 1
     AllRollMinPowerDelta: 1
     AllRollMaxPowerDelta: 1

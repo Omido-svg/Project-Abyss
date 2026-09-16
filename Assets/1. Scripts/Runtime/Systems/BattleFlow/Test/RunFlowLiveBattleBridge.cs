@@ -114,12 +114,16 @@ public sealed class RunFlowLiveBattleBridge : MonoBehaviour
             return;
         }
 
-        ApplyRunAvatarStateToPlayer(
-            context.Player,
-            RunFlowLiveHandoff.RetainedSession);
+        int appliedPartSnapshots =
+            ApplyRunAvatarStateToPlayer(
+                context.Player,
+                RunFlowLiveHandoff.RetainedSession);
 
         RunFlowTestSession session =
             RunFlowLiveHandoff.RetainedSession;
+
+        int expectedPartSnapshots =
+            CountExactPartSnapshots(session?.Avatar);
 
         int expectedItems =
             CountExpectedCombatItems(
@@ -153,7 +157,8 @@ public sealed class RunFlowLiveBattleBridge : MonoBehaviour
         string details =
             $"PlayerHP={context.Player.CurrentHP}/{context.Player.MaxCombatHP}, " +
             $"ExpectedItems={expectedItems}, Equipped={equippedItems}, " +
-            $"TempItemMechanics={tempMechanics}/{expectedTempMechanics}";
+            $"TempItemMechanics={tempMechanics}/{expectedTempMechanics}, " +
+            $"ExactPartHP={appliedPartSnapshots}/{expectedPartSnapshots}";
 
         RunFlowLiveHandoff.MarkTransferAudit(
             sameRun,
@@ -162,6 +167,8 @@ public sealed class RunFlowLiveBattleBridge : MonoBehaviour
             equippedItems,
             expectedTempMechanics,
             tempMechanics,
+            expectedPartSnapshots,
+            appliedPartSnapshots,
             details);
 
         Debug.Log(
@@ -362,22 +369,23 @@ public sealed class RunFlowLiveBattleBridge : MonoBehaviour
         return scenarioSwitcher.YujinPrefab;
     }
 
-    private static void ApplyRunAvatarStateToPlayer(
+    private static int ApplyRunAvatarStateToPlayer(
         Character player,
         RunFlowTestSession session)
     {
         if (player == null || session?.Avatar == null)
-            return;
+            return 0;
 
+        int exactApplied = 0;
         IReadOnlyList<RunFlowTestPart> sourceParts =
             session.Avatar.Parts;
 
         if (sourceParts != null)
         {
-            ApplyPartState(player, PartType.HEAD, sourceParts, 0);
-            ApplyPartState(player, PartType.LEFT_HAND, sourceParts, 1);
-            ApplyPartState(player, PartType.RIGHT_HAND, sourceParts, 2);
-            ApplyPartState(player, PartType.LEGS, sourceParts, 3);
+            if (ApplyPartState(player, PartType.HEAD, sourceParts)) exactApplied++;
+            if (ApplyPartState(player, PartType.LEFT_HAND, sourceParts)) exactApplied++;
+            if (ApplyPartState(player, PartType.RIGHT_HAND, sourceParts)) exactApplied++;
+            if (ApplyPartState(player, PartType.LEGS, sourceParts)) exactApplied++;
         }
 
         if (player.RuntimeStatus != null)
@@ -388,23 +396,31 @@ public sealed class RunFlowLiveBattleBridge : MonoBehaviour
                     1,
                     Mathf.Max(1, player.MaxCombatHP));
         }
+
+        return exactApplied;
     }
 
-    private static void ApplyPartState(
+    private static bool ApplyPartState(
         Character player,
         PartType type,
-        IReadOnlyList<RunFlowTestPart> sourceParts,
-        int sourceIndex)
+        IReadOnlyList<RunFlowTestPart> sourceParts)
     {
-        if (sourceIndex < 0 || sourceIndex >= sourceParts.Count)
-            return;
-
         BodyPart part = player.GetBodyPart(type);
         if (part == null)
-            return;
+            return false;
 
-        RunFlowTestPartState state =
-            sourceParts[sourceIndex].State;
+        RunFlowTestPart source = null;
+        for (int i = 0; i < sourceParts.Count; i++)
+        {
+            if (sourceParts[i] != null && sourceParts[i].Type == type)
+            {
+                source = sourceParts[i];
+                break;
+            }
+        }
+        if (source == null)
+            return false;
+        RunFlowTestPartState state = source.State;
 
         BodyPartState battleState =
             state switch
@@ -414,20 +430,46 @@ public sealed class RunFlowLiveBattleBridge : MonoBehaviour
                 _ => BodyPartState.Normal
             };
 
-        float hp =
-            battleState switch
+        bool useExact =
+            source.HasExactHp &&
+            source.MaximumHp > 0f;
+
+        float maximumHp = useExact
+            ? Mathf.Max(1f, source.MaximumHp)
+            : Mathf.Max(1f, part.MaxPartHP);
+
+        float hp = useExact
+            ? Mathf.Clamp(source.CurrentHp, 0f, maximumHp)
+            : battleState switch
             {
                 BodyPartState.Broken => 0f,
                 BodyPartState.Weakened => 1f,
-                _ => part.MaxPartHP
+                _ => maximumHp
             };
+
+        if (battleState == BodyPartState.Broken)
+            hp = 0f;
 
         player.SetBodyPartStateForDebug(
             part,
             hp,
-            part.MaxPartHP,
+            maximumHp,
             battleState,
             clearNonStructuralStatuses: true);
+
+        return useExact;
+    }
+
+    private static int CountExactPartSnapshots(RunFlowTestAvatarState avatar)
+    {
+        IReadOnlyList<RunFlowTestPart> parts = avatar?.Parts;
+        if (parts == null)
+            return 0;
+
+        int count = 0;
+        for (int i = 0; i < parts.Count; i++)
+            if (parts[i]?.HasExactHp == true) count++;
+        return count;
     }
 
     private static int CountExpectedCombatItems(RunInventory inventory)

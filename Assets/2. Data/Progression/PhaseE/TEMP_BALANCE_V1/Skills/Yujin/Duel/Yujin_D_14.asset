@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: Yujin_D_14
   m_EditorClassIdentifier: 
   phaseASchemaVersion: 1
-  skillId: yujin.duel.n.period
+  skillId: yujin.duel.period
   SkillName: "\uB9C8\uCE68\uD45C\uB97C \uCC0D\uB2E4"
   ActionType: 1
   Color: 1
@@ -45,7 +45,8 @@ MonoBehaviour:
     SecondaryPartMode: 0
     SecondaryDamageMultiplier: 1
     AllowBrokenSecondaryParts: 1
-  Description: "[TEMP_BALANCE_V1] \uC885\uACB0 rider TEMP"
+  Description: "[CANONICAL_0916_CLOSURE_V1] 0916(3) canonical metadata synced.\n[TEMP_BALANCE_V1]
+    \uC885\uACB0 rider TEMP"
   Keywords: []
   Rolls: []
   ExchangeRollCount: 1
@@ -74,7 +75,7 @@ MonoBehaviour:
   ChinchiroHifumiPenalty: 1
   ChinchiroHifumiSelfDamage: 1
   EffectEntries:
-  - Definition: {fileID: 11400000, guid: 7135bd9f7efd2804b825b4d0dd0e65c4, type: 2}
+  - Definition: {fileID: 11400000, guid: 94d7a523a26f3744f81ca9b3a59b674a, type: 2}
     Overrides:
       OverrideStack: 0
       Stack: 1
@@ -96,15 +97,75 @@ MonoBehaviour:
       ForceCharacterStatus: 0
       OverrideGiveToSelectedTarget: 0
       GiveToSelectedTarget: 0
-    UpgradeKey: temp_proxy
+    UpgradeKey: 
     OverrideTiming: 1
     Timing: 7
-    Conditions: []
+    Conditions:
+    - Type: 14
+      Invert: 0
+      Subject: 1
+      StatusEffectId: 0
+      CheckCharacterStatus: 1
+      CheckPartStatus: 1
+      AnyOwnerPart: 1
+      OwnerPartType: 0
+      Threshold: 1
+      Minimum: 0
+      Maximum: 2147483647
+      Ratio: 0.5
+      MinimumRatio: 0
+      MaximumRatio: 1
+      ResourceKey: 
+      MomentumState: 2
+    RestrictToRoll: 0
+    RollNumber: 1
+  - Definition: {fileID: 11400000, guid: ecf67b1c45a46d54fbfa638b2de35856, type: 2}
+    Overrides:
+      OverrideStack: 0
+      Stack: 1
+      OverrideDuration: 0
+      Duration: 3
+      OverrideAmount: 0
+      Amount: 1
+      OverrideMinimum: 0
+      Minimum: 0
+      OverrideMaximum: 0
+      Maximum: 999
+      OverrideFlatValue: 0
+      FlatValue: 0
+      OverrideMultiplier: 0
+      Multiplier: 1
+      OverrideResourceKey: 0
+      ResourceKey: 
+      OverrideForceCharacterStatus: 0
+      ForceCharacterStatus: 0
+      OverrideGiveToSelectedTarget: 0
+      GiveToSelectedTarget: 0
+    UpgradeKey: 
+    OverrideTiming: 1
+    Timing: 7
+    Conditions:
+    - Type: 28
+      Invert: 0
+      Subject: 1
+      StatusEffectId: 0
+      CheckCharacterStatus: 1
+      CheckPartStatus: 1
+      AnyOwnerPart: 1
+      OwnerPartType: 0
+      Threshold: 1
+      Minimum: 0
+      Maximum: 2147483647
+      Ratio: 0.5
+      MinimumRatio: 0
+      MaximumRatio: 1
+      ResourceKey: 
+      MomentumState: 2
     RestrictToRoll: 0
     RollNumber: 1
   Effects: []
   OverrideEnergyCost: 1
-  EnergyCost: 2
+  EnergyCost: 1
   UpgradeProfile: {fileID: 11400000, guid: 45f41fd702312554f9d25780cf50f89b, type: 2}
   OverrideResourceRules: 0
   RequireFullPrestige: 0
@@ -115,4 +176,4 @@ MonoBehaviour:
   ConsumeAllCustomResource: 0
   OverridePrestigeUsePolicy: 0
   PrestigeUsePolicy: 1
-  presentationAsset: {fileID: 0}
+  presentationAsset: {fileID: 11400000, guid: f32eaf5a7aad57d42b1bf7f20c0f281c, type: 2}

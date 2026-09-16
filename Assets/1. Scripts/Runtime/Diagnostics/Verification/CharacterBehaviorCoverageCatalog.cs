@@ -51,10 +51,18 @@ public static class CharacterBehaviorCoverageCatalog
                 break;
 
             case CharacterAuthoringKind.EliteEnemy:
-                required.Add(nameof(EliteEnemyMechanic));
+            {
+                // 0916 정본: BossPhaseData를 가진 보스는 legacy EliteEnemyMechanic을
+                // 요구하지 않는다. 순수 엘리트만 해당 mechanic을 유지한다.
+                bool isBossProfile =
+                    bundle.CharacterData?.BossPhases != null &&
+                    bundle.CharacterData.BossPhases.Count > 0;
+                if (!isBossProfile)
+                    required.Add(nameof(EliteEnemyMechanic));
                 if (bundle.UseElitePostureRotation)
                     required.Add(nameof(EnemyPostureMechanic));
                 break;
+            }
 
             case CharacterAuthoringKind.NormalEnemy:
                 required.Add(nameof(NormalEnemyBloodScentMechanic));

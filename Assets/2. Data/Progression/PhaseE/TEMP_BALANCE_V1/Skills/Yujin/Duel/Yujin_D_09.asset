@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: Yujin_D_09
   m_EditorClassIdentifier: 
   phaseASchemaVersion: 1
-  skillId: yujin.duel.i.block_escape
+  skillId: yujin.duel.block_retreat
   SkillName: "\uD1F4\uB85C \uCC28\uB2E8"
   ActionType: 1
   Color: 1
@@ -45,8 +45,9 @@ MonoBehaviour:
     SecondaryPartMode: 0
     SecondaryDamageMultiplier: 1
     AllowBrokenSecondaryParts: 1
-  Description: "[TEMP_BALANCE_V1] \uC870\uAC74\uBD80 \uBE5B\uC740 \uC815\uC2DD \uB300\uAC00
-    hook \uC804 \uC704\uC138 proxy"
+  Description: "[CANONICAL_0916_CLOSURE_V1] 0916(3) canonical metadata synced.\n[TEMP_BALANCE_V1]
+    \uC870\uAC74\uBD80 \uBE5B\uC740 \uC815\uC2DD \uB300\uAC00 hook \uC804 \uC704\uC138
+    proxy"
   Keywords: []
   Rolls: []
   ExchangeRollCount: 1
@@ -116,4 +117,4 @@ MonoBehaviour:
   ConsumeAllCustomResource: 0
   OverridePrestigeUsePolicy: 0
   PrestigeUsePolicy: 1
-  presentationAsset: {fileID: 0}
+  presentationAsset: {fileID: 11400000, guid: f32eaf5a7aad57d42b1bf7f20c0f281c, type: 2}

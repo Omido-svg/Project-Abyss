@@ -110,8 +110,19 @@ public class EliteEnemy : Enemy, ICharacterAuthoringTarget
     {
         base.BuildMechanics();
 
-        AddMechanic(
-            new EliteEnemyMechanic());
+        // 0916 정본: Stage 1 Canonical Boss에는 구형 "엘리트 본능"
+        // (합 승리 +10/혈상, 자기 부위 약화 +15, 파괴 +25) 규칙이 없다.
+        // BossPhaseData를 가진 EliteEnemy는 보스 프로필로 보고 legacy mechanic을
+        // 자동 장착하지 않는다. 순수 EliteEnemy에는 기존 동작을 유지한다.
+        bool isBossProfile =
+            Data?.BossPhases != null &&
+            Data.BossPhases.Count > 0;
+
+        if (!isBossProfile)
+        {
+            AddMechanic(
+                new EliteEnemyMechanic());
+        }
 
         if (usePostureRotation)
         {

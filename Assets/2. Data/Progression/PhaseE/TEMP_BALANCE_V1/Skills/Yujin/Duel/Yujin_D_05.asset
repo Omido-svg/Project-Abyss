@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: Yujin_D_05
   m_EditorClassIdentifier: 
   phaseASchemaVersion: 1
-  skillId: yujin.duel.e.shake
+  skillId: yujin.duel.shake_up
   SkillName: "\uD754\uB4E4\uC5B4\uB193\uB2E4"
   ActionType: 1
   Color: 2
@@ -45,7 +45,8 @@ MonoBehaviour:
     SecondaryPartMode: 0
     SecondaryDamageMultiplier: 1
     AllowBrokenSecondaryParts: 1
-  Description: "[TEMP_BALANCE_V1] \uAC10 proxy"
+  Description: "[CANONICAL_0916_CLOSURE_V1] 0916(3) canonical metadata synced.\n[TEMP_BALANCE_V1]
+    \uAC10 proxy"
   Keywords: []
   Rolls: []
   ExchangeRollCount: 1
@@ -74,7 +75,7 @@ MonoBehaviour:
   ChinchiroHifumiPenalty: 1
   ChinchiroHifumiSelfDamage: 1
   EffectEntries:
-  - Definition: {fileID: 11400000, guid: d86299aa89b1e2344938d92d9779e9ba, type: 2}
+  - Definition: {fileID: 11400000, guid: e57057c43501e6e44ba176eafb2d1ffd, type: 2}
     Overrides:
       OverrideStack: 0
       Stack: 1
@@ -96,7 +97,7 @@ MonoBehaviour:
       ForceCharacterStatus: 0
       OverrideGiveToSelectedTarget: 0
       GiveToSelectedTarget: 0
-    UpgradeKey: temp_proxy
+    UpgradeKey: 
     OverrideTiming: 1
     Timing: 7
     Conditions: []
@@ -115,4 +116,4 @@ MonoBehaviour:
   ConsumeAllCustomResource: 0
   OverridePrestigeUsePolicy: 0
   PrestigeUsePolicy: 1
-  presentationAsset: {fileID: 0}
+  presentationAsset: {fileID: 11400000, guid: f32eaf5a7aad57d42b1bf7f20c0f281c, type: 2}

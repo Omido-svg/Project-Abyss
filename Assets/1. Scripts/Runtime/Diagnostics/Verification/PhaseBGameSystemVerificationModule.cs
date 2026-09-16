@@ -4,7 +4,7 @@ using System.Linq;
 using UnityEngine;
 
 /// <summary>
-/// 0915 Phase B — Damage / Resource 18개 Requirement gate.
+/// Phase B — Damage / Resource 18개 Requirement gate. 0916 정본 수치로 회귀 검증한다.
 /// 각 IsolatedRuntime case는 Runner가 새 Fixture로 실행한다.
 /// </summary>
 public sealed class PhaseBGameSystemVerificationModule : IGameSystemVerificationModule
@@ -32,8 +32,8 @@ public sealed class PhaseBGameSystemVerificationModule : IGameSystemVerification
             "LastStand에서도 HitShift=20 / Hifumi damage·bone=1:1", VerifyNoLegacyLastStandMultiplier);
         yield return Static("phaseb.c21.hifumi_fervor", "C-21", "히후미 열세·짓눌림 고조 +3", GameSystemVerificationCategory.Fervor,
             "Disadvantage/LastStand gain=3", VerifyHifumiFervor);
-        yield return Runtime("phaseb.c22.prestige_events", "C-22", "위세 사건별 +1/+1/+2/+5", GameSystemVerificationCategory.Prestige,
-            "ClashStart1 + Exchange1 + ClashWin2 + Kill5", VerifyPrestigeEvents);
+        yield return Runtime("phaseb.c22.prestige_events", "C-22", "위세 사건별 +1/+1/+0/+5", GameSystemVerificationCategory.Prestige,
+            "ClashStart1 + Exchange1 + ClashWin0 + Kill5", VerifyPrestigeEvents);
         yield return Runtime("phaseb.c23.armor_lifetime", "C-23", "방어도 전투 지속 누적", GameSystemVerificationCategory.Resource,
             "TurnEnd 유지 / BattleEnd 0", VerifyArmorLifetime);
         yield return Runtime("phaseb.c24.crouch_additive", "C-24", "웅크리기 방어도 +12 가산", GameSystemVerificationCategory.Resource,
@@ -332,7 +332,7 @@ public sealed class PhaseBGameSystemVerificationModule : IGameSystemVerification
         int b = p.ChargeExchangeParticipant(f.Player, f.Enemy, null);
         int c = p.ChargeClashWinner(f.Player, f.Enemy, null);
         int d = p.ChargeKill(f.Player, f.Enemy, null);
-        bool ok = a == 1 && b == 1 && c == 2 && d == 5 && f.Player.RuntimeStatus.currentPrestige == 9;
+        bool ok = a == 1 && b == 1 && c == 0 && d == 5 && f.Player.RuntimeStatus.currentPrestige == 7;
         return ok ? GameSystemVerificationProbeResult.Pass($"{a}+{b}+{c}+{d}={f.Player.RuntimeStatus.currentPrestige}")
                   : GameSystemVerificationProbeResult.Fail($"{a}+{b}+{c}+{d}, total={f.Player.RuntimeStatus.currentPrestige}");
     }

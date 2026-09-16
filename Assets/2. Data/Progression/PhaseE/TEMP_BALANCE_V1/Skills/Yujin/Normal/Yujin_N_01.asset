@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: Yujin_N_01
   m_EditorClassIdentifier: 
   phaseASchemaVersion: 1
-  skillId: yujin.normal.inspection
+  skillId: yujin.normal.background_check
   SkillName: "\uB4B7\uC870\uC0AC"
   ActionType: 0
   Color: 1
@@ -45,8 +45,8 @@ MonoBehaviour:
     SecondaryPartMode: 0
     SecondaryDamageMultiplier: 1
     AllowBrokenSecondaryParts: 1
-  Description: "[TEMP_BALANCE_V1] \uAE30\uC874 Inspection \uBB34\uAE30\uBCC4 \uD45C\uC2DD
-    hook \uC7AC\uC0AC\uC6A9"
+  Description: "[CANONICAL_0916_CLOSURE_V1] 0916(3) canonical metadata synced.\n[TEMP_BALANCE_V1]
+    \uAE30\uC874 Inspection \uBB34\uAE30\uBCC4 \uD45C\uC2DD hook \uC7AC\uC0AC\uC6A9"
   Keywords: []
   Rolls: []
   ExchangeRollCount: 1
@@ -74,35 +74,7 @@ MonoBehaviour:
   ChinchiroShigoroBonus: 6
   ChinchiroHifumiPenalty: 1
   ChinchiroHifumiSelfDamage: 1
-  EffectEntries:
-  - Definition: {fileID: 11400000, guid: c724080a407e91d4cac0f1b6aca683e5, type: 2}
-    Overrides:
-      OverrideStack: 0
-      Stack: 1
-      OverrideDuration: 0
-      Duration: 3
-      OverrideAmount: 0
-      Amount: 1
-      OverrideMinimum: 0
-      Minimum: 0
-      OverrideMaximum: 0
-      Maximum: 999
-      OverrideFlatValue: 0
-      FlatValue: 0
-      OverrideMultiplier: 0
-      Multiplier: 1
-      OverrideResourceKey: 0
-      ResourceKey: 
-      OverrideForceCharacterStatus: 0
-      ForceCharacterStatus: 0
-      OverrideGiveToSelectedTarget: 0
-      GiveToSelectedTarget: 0
-    UpgradeKey: temp_proxy
-    OverrideTiming: 1
-    Timing: 7
-    Conditions: []
-    RestrictToRoll: 0
-    RollNumber: 1
+  EffectEntries: []
   Effects: []
   OverrideEnergyCost: 1
   EnergyCost: 0
@@ -116,4 +88,4 @@ MonoBehaviour:
   ConsumeAllCustomResource: 0
   OverridePrestigeUsePolicy: 0
   PrestigeUsePolicy: 1
-  presentationAsset: {fileID: 0}
+  presentationAsset: {fileID: 11400000, guid: 691f5ccafa5ad5345bc91512c1c883d7, type: 2}

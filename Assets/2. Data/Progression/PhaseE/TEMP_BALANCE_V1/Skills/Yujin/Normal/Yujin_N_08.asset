@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: Yujin_N_08
   m_EditorClassIdentifier: 
   phaseASchemaVersion: 1
-  skillId: yujin.normal.ace_in_hole
+  skillId: yujin.normal.ace_in_the_hole
   SkillName: "\uBBFF\uB294 \uAD6C\uC11D"
   ActionType: 0
   Color: 1
@@ -45,8 +45,8 @@ MonoBehaviour:
     SecondaryPartMode: 0
     SecondaryDamageMultiplier: 1
     AllowBrokenSecondaryParts: 1
-  Description: "[TEMP_BALANCE_V1] \uAC10 \uC18C\uBE44 \uAC15\uC81C\uD06C\uB9AC \uC815\uC2DD
-    hook \uC804 TEMP"
+  Description: "[CANONICAL_0916_CLOSURE_V1] 0916(3) canonical metadata synced.\n[TEMP_BALANCE_V1]
+    \uAC10 \uC18C\uBE44 \uAC15\uC81C\uD06C\uB9AC \uC815\uC2DD hook \uC804 TEMP"
   Keywords: []
   Rolls: []
   ExchangeRollCount: 1
@@ -75,7 +75,7 @@ MonoBehaviour:
   ChinchiroHifumiPenalty: 1
   ChinchiroHifumiSelfDamage: 1
   EffectEntries:
-  - Definition: {fileID: 11400000, guid: e9db033ec13770e42adf781c3ceec5b0, type: 2}
+  - Definition: {fileID: 11400000, guid: 6a02ad83b3dd06b418818955ea58c3de, type: 2}
     Overrides:
       OverrideStack: 0
       Stack: 1
@@ -97,9 +97,9 @@ MonoBehaviour:
       ForceCharacterStatus: 0
       OverrideGiveToSelectedTarget: 0
       GiveToSelectedTarget: 0
-    UpgradeKey: temp_proxy
+    UpgradeKey: 
     OverrideTiming: 1
-    Timing: 7
+    Timing: 0
     Conditions: []
     RestrictToRoll: 0
     RollNumber: 1
@@ -116,4 +116,4 @@ MonoBehaviour:
   ConsumeAllCustomResource: 0
   OverridePrestigeUsePolicy: 0
   PrestigeUsePolicy: 1
-  presentationAsset: {fileID: 0}
+  presentationAsset: {fileID: 11400000, guid: 691f5ccafa5ad5345bc91512c1c883d7, type: 2}

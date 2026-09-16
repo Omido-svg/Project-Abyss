@@ -574,6 +574,7 @@ public static class PhaseETempBalanceMigration
             return false;
 
         ApplyLoadout(loadout, normals, duels, commonPreparations, preps.Skip(2).ToList(), prestiges);
+        ApplyYujinStarterPreparationLoadout(loadout, preps);
         manifest.YujinPoolCount = normals.Count + duels.Count + preps.Count + prestiges.Count;
         return normals.Count == 9 && duels.Count == 14 && preps.Count == 9 && prestiges.Count == 3 &&
                ValidateTempUpgradeProfiles(normals.Concat(duels).Concat(preps).Concat(prestiges));
@@ -889,6 +890,48 @@ public static class PhaseETempBalanceMigration
         loadout.DuelSkills = duels.Take(3).ToList();
         loadout.PreparationSkills = commonPreps.Concat(uniquePreps).Take(3).ToList();
         loadout.PrestigeSkills = prestiges.Take(1).ToList();
+        EditorUtility.SetDirty(loadout);
+    }
+
+    /// <summary>
+    /// 0916 정본은 환형(공격)/(수비) 중 하나를 도사림 3칸에 장착하도록 요구한다.
+    /// starter의 공격/수비 선택 자체는 정본 미정이므로 TEMP_BALANCE_V1에서는 공격형을 기본으로만 둔다.
+    /// 두 환형 모두 후보 pool에는 그대로 남아 런 중 교체할 수 있다.
+    /// </summary>
+    private static void ApplyYujinStarterPreparationLoadout(
+        CharacterCombatLoadout loadout,
+        IEnumerable<SkillDefinition> allPreparations)
+    {
+        if (loadout == null)
+            return;
+
+        Dictionary<string, SkillDefinition> byId =
+            (allPreparations ?? Enumerable.Empty<SkillDefinition>())
+                .Where(skill => skill != null && !string.IsNullOrWhiteSpace(skill.SkillId))
+                .GroupBy(skill => skill.SkillId, StringComparer.Ordinal)
+                .ToDictionary(group => group.Key, group => group.First(), StringComparer.Ordinal);
+
+        string[] starterIds =
+        {
+            YujinSkillIds.Read,
+            YujinSkillIds.AdvancePay,
+            YujinSkillIds.HwanhyeongAttack
+        };
+
+        List<SkillDefinition> starter = starterIds
+            .Where(byId.ContainsKey)
+            .Select(id => byId[id])
+            .ToList();
+
+        if (starter.Count != starterIds.Length)
+        {
+            Debug.LogWarning(
+                "[Phase E TEMP_BALANCE_V1] Yujin starter preparation 구성 실패: " +
+                string.Join(", ", starterIds.Where(id => !byId.ContainsKey(id))));
+            return;
+        }
+
+        loadout.PreparationSkills = starter;
         EditorUtility.SetDirty(loadout);
     }
 

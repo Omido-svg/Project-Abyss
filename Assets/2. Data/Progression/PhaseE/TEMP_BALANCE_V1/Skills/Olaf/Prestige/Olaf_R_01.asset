@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: Olaf_R_01
   m_EditorClassIdentifier: 
   phaseASchemaVersion: 1
-  skillId: olaf.prestige.blooming_wound
+  skillId: olaf.prestige.rune_carving
   SkillName: "\uB8EC \uC0C8\uAE30\uAE30"
   ActionType: 3
   Color: 1
@@ -45,7 +45,8 @@ MonoBehaviour:
     SecondaryPartMode: 0
     SecondaryDamageMultiplier: 1
     AllowBrokenSecondaryParts: 1
-  Description: "[TEMP_BALANCE_V1] \uAE30\uC874 BloomingWound ID/hook \uC7AC\uC0AC\uC6A9"
+  Description: "[CANONICAL_0916_CLOSURE_V1] 0916(3) canonical metadata synced.\n[TEMP_BALANCE_V1]
+    \uAE30\uC874 BloomingWound ID/hook \uC7AC\uC0AC\uC6A9"
   Keywords: []
   Rolls: []
   ExchangeRollCount: 1
@@ -106,13 +107,13 @@ MonoBehaviour:
   OverrideEnergyCost: 1
   EnergyCost: 0
   UpgradeProfile: {fileID: 11400000, guid: 3c9ee2b055eb5774d9052099e36e0f77, type: 2}
-  OverrideResourceRules: 0
+  OverrideResourceRules: 1
   RequireFullPrestige: 0
-  PrestigeCost: 0
+  PrestigeCost: 60
   ConsumeAllPrestige: 0
   CustomResourceKey: 
   CustomResourceCost: 0
   ConsumeAllCustomResource: 0
   OverridePrestigeUsePolicy: 0
   PrestigeUsePolicy: 1
-  presentationAsset: {fileID: 0}
+  presentationAsset: {fileID: 11400000, guid: b870be71ac7a7e0478be8c91d768de6c, type: 2}

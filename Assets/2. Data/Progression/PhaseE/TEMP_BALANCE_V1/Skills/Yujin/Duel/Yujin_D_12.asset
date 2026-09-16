@@ -13,10 +13,10 @@ MonoBehaviour:
   m_Name: Yujin_D_12
   m_EditorClassIdentifier: 
   phaseASchemaVersion: 1
-  skillId: yujin.duel.l.deadline
+  skillId: yujin.duel.deadline
   SkillName: "\uC2DC\uD55C\uC744 \uC815\uD558\uB2E4"
   ActionType: 1
-  Color: 1
+  Color: 2
   BasePowerRule: 1
   BasePower: 11
   BasePowerFlatAdjustment: 0
@@ -45,7 +45,8 @@ MonoBehaviour:
     SecondaryPartMode: 0
     SecondaryDamageMultiplier: 1
     AllowBrokenSecondaryParts: 1
-  Description: "[TEMP_BALANCE_V1] 3\uD134/2\uBC30 deadline \uAE30\uC874 API"
+  Description: "[CANONICAL_0916_CLOSURE_V1] 0916(3) canonical metadata synced.\n[TEMP_BALANCE_V1]
+    3\uD134/2\uBC30 deadline \uAE30\uC874 API"
   Keywords: []
   Rolls: []
   ExchangeRollCount: 1
@@ -74,7 +75,7 @@ MonoBehaviour:
   ChinchiroHifumiPenalty: 1
   ChinchiroHifumiSelfDamage: 1
   EffectEntries:
-  - Definition: {fileID: 11400000, guid: c4c960cdc515e51479aeadf7d2da2f05, type: 2}
+  - Definition: {fileID: 11400000, guid: 0c70217a867bb1649afeabb2b26c5422, type: 2}
     Overrides:
       OverrideStack: 0
       Stack: 1
@@ -96,7 +97,7 @@ MonoBehaviour:
       ForceCharacterStatus: 0
       OverrideGiveToSelectedTarget: 0
       GiveToSelectedTarget: 0
-    UpgradeKey: temp_proxy
+    UpgradeKey: 
     OverrideTiming: 1
     Timing: 7
     Conditions: []
@@ -104,7 +105,7 @@ MonoBehaviour:
     RollNumber: 1
   Effects: []
   OverrideEnergyCost: 1
-  EnergyCost: 2
+  EnergyCost: 1
   UpgradeProfile: {fileID: 11400000, guid: 9a0d015f4b55ad44f968a9016aff7550, type: 2}
   OverrideResourceRules: 0
   RequireFullPrestige: 0
@@ -115,4 +116,4 @@ MonoBehaviour:
   ConsumeAllCustomResource: 0
   OverridePrestigeUsePolicy: 0
   PrestigeUsePolicy: 1
-  presentationAsset: {fileID: 0}
+  presentationAsset: {fileID: 11400000, guid: f32eaf5a7aad57d42b1bf7f20c0f281c, type: 2}

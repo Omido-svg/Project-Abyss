@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: Olaf_R_02
   m_EditorClassIdentifier: 
   phaseASchemaVersion: 1
-  skillId: olaf.prestige.bursting_madness
+  skillId: olaf.prestige.berserk
   SkillName: "\uBCA0\uB974\uC138\uB974\uD06C"
   ActionType: 3
   Color: 1
@@ -45,7 +45,8 @@ MonoBehaviour:
     SecondaryPartMode: 0
     SecondaryDamageMultiplier: 1
     AllowBrokenSecondaryParts: 1
-  Description: "[TEMP_BALANCE_V1] \uAE30\uC874 BurstingMadness ID/hook \uC7AC\uC0AC\uC6A9"
+  Description: "[CANONICAL_0916_CLOSURE_V1] 0916(3) canonical metadata synced.\n[TEMP_BALANCE_V1]
+    \uAE30\uC874 BurstingMadness ID/hook \uC7AC\uC0AC\uC6A9"
   Keywords: []
   Rolls: []
   ExchangeRollCount: 1
@@ -106,13 +107,13 @@ MonoBehaviour:
   OverrideEnergyCost: 1
   EnergyCost: 0
   UpgradeProfile: {fileID: 11400000, guid: 19f76bde51d0aa344b5c048875268e78, type: 2}
-  OverrideResourceRules: 0
+  OverrideResourceRules: 1
   RequireFullPrestige: 0
-  PrestigeCost: 0
+  PrestigeCost: 65
   ConsumeAllPrestige: 0
   CustomResourceKey: 
   CustomResourceCost: 0
   ConsumeAllCustomResource: 0
   OverridePrestigeUsePolicy: 0
   PrestigeUsePolicy: 1
-  presentationAsset: {fileID: 0}
+  presentationAsset: {fileID: 11400000, guid: b870be71ac7a7e0478be8c91d768de6c, type: 2}

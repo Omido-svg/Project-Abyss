@@ -45,7 +45,8 @@ MonoBehaviour:
     SecondaryPartMode: 0
     SecondaryDamageMultiplier: 1
     AllowBrokenSecondaryParts: 1
-  Description: "[TEMP_BALANCE_V1] \uAE30\uC874 \uD658\uD615 \uACF5\uACA9 hook"
+  Description: "[CANONICAL_0916_CLOSURE_V1] 0916(3) canonical metadata synced.\n[TEMP_BALANCE_V1]
+    \uAE30\uC874 \uD658\uD615 \uACF5\uACA9 hook"
   Keywords: []
   Rolls: []
   ExchangeRollCount: 1
@@ -73,35 +74,7 @@ MonoBehaviour:
   ChinchiroShigoroBonus: 6
   ChinchiroHifumiPenalty: 1
   ChinchiroHifumiSelfDamage: 1
-  EffectEntries:
-  - Definition: {fileID: 11400000, guid: f401c409b876b7e4d8668cc3838fb5b1, type: 2}
-    Overrides:
-      OverrideStack: 0
-      Stack: 1
-      OverrideDuration: 0
-      Duration: 3
-      OverrideAmount: 0
-      Amount: 1
-      OverrideMinimum: 0
-      Minimum: 0
-      OverrideMaximum: 0
-      Maximum: 999
-      OverrideFlatValue: 0
-      FlatValue: 0
-      OverrideMultiplier: 0
-      Multiplier: 1
-      OverrideResourceKey: 0
-      ResourceKey: 
-      OverrideForceCharacterStatus: 0
-      ForceCharacterStatus: 0
-      OverrideGiveToSelectedTarget: 0
-      GiveToSelectedTarget: 0
-    UpgradeKey: temp_proxy
-    OverrideTiming: 1
-    Timing: 0
-    Conditions: []
-    RestrictToRoll: 0
-    RollNumber: 1
+  EffectEntries: []
   Effects: []
   OverrideEnergyCost: 1
   EnergyCost: 1
@@ -115,4 +88,4 @@ MonoBehaviour:
   ConsumeAllCustomResource: 0
   OverridePrestigeUsePolicy: 0
   PrestigeUsePolicy: 1
-  presentationAsset: {fileID: 0}
+  presentationAsset: {fileID: 11400000, guid: 424b75073da07a6409b10e806d2e743f, type: 2}
