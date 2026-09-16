@@ -1,7 +1,7 @@
 using UnityEngine;
 
 /// <summary>
-/// 올라프 전용 고유 키워드 「혈상」.
+/// 올라프 전용 고유 키워드 「출혈」.
 /// 기존 Bleeding 타입/직렬화 참조는 마이그레이션 호환을 위해 보존한다.
 /// 턴 종료 시 피해 = 현재 스택 × DamagePerStack, 처리 후 스택 -1.
 /// </summary>
@@ -28,7 +28,7 @@ public sealed class Bleeding : StatusEffect, IUniqueKeywordStatus
         int duration = -1,
         int damagePerStack = 1)
     {
-        Name = "혈상";
+        Name = "출혈";
         Stack = Mathf.Max(0, stack);
         Duration = -1;
         DamagePerStack = Mathf.Max(0, damagePerStack);

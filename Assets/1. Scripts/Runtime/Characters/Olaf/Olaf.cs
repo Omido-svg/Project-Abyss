@@ -19,6 +19,9 @@ public class Olaf : Character, ICharacterAuthoringTarget
     public OlafImmortalFuryMechanic ImmortalFuryMechanic =>
         GetMechanic<OlafImmortalFuryMechanic>();
 
+    public OlafRulebreakerMechanic RulebreakerMechanic =>
+        GetMechanic<OlafRulebreakerMechanic>();
+
     public bool ApplyCharacterAuthoring(
         CharacterAuthoringBundle bundle)
     {
@@ -68,6 +71,9 @@ public class Olaf : Character, ICharacterAuthoringTarget
     {
         AddMechanic(
             new OlafMadnessMechanic());
+
+        AddMechanic(
+            new OlafRulebreakerMechanic());
 
         AddMechanic(
             new OlafImmortalFuryMechanic());
@@ -132,6 +138,74 @@ public sealed class OlafDuelRuntimeSkill : DataDuelSkill
     {
     }
 
+    public override int EnergyCost
+    {
+        get
+        {
+            int baseCost = base.EnergyCost;
+            return owner?.GetMechanic<OlafRulebreakerMechanic>()
+                       ?.ResolveEnergyCost(Definition, baseCost) ?? baseCost;
+        }
+    }
+
+    public override bool CanUseByResource(Character character)
+    {
+        OlafRulebreakerMechanic rulebreaker =
+            character?.GetMechanic<OlafRulebreakerMechanic>();
+
+        return (rulebreaker?.CanUse(Definition) ?? true) &&
+               base.CanUseByResource(character);
+    }
+
+    public override bool TryConsumeResource(
+        Character character,
+        BattleAction sourceAction = null)
+    {
+        if (!base.TryConsumeResource(character, sourceAction))
+            return false;
+
+        character?.GetMechanic<OlafRulebreakerMechanic>()
+            ?.RecordCommittedUse(Definition);
+        return true;
+    }
+
+    protected override void OnPlanningUseRolledBack()
+    {
+        owner?.GetMechanic<OlafRulebreakerMechanic>()
+            ?.RollbackCommittedUse(Definition);
+    }
+
+    public override PartBreakMode ResolvePartBreakMode(
+        BattleAction action,
+        BodyPart targetPart)
+    {
+        if (action?.PartBreakModeOverride != PartBreakMode.None)
+            return action.PartBreakModeOverride;
+
+        return base.ResolvePartBreakMode(action, targetPart);
+    }
+
+    public override void NotifyDuelMatched(
+        BattleAction action,
+        BattleAction opponentAction,
+        int rollIndex,
+        bool isOneSided)
+    {
+        base.NotifyDuelMatched(action, opponentAction, rollIndex, isOneSided);
+
+        if (!isOneSided)
+        {
+            owner?.GetMechanic<OlafRulebreakerMechanic>()
+                ?.NotifyDuelMatched(action, opponentAction);
+        }
+    }
+
+    public override void Execute(BattleAction action)
+    {
+        base.Execute(action);
+        action?.Owner?.GetMechanic<OlafRulebreakerMechanic>()?.Execute(action);
+    }
+
     public override int GetMomentumPushBonus(BattleAction action) => 0;
 }
 
@@ -142,10 +216,20 @@ public sealed class OlafPreparationRuntimeSkill : DataPreparationSkill
     {
     }
 
+    public override bool CanUseByResource(Character character)
+    {
+        OlafRulebreakerMechanic rulebreaker =
+            character?.GetMechanic<OlafRulebreakerMechanic>();
+
+        return (rulebreaker?.CanUse(Definition) ?? true) &&
+               base.CanUseByResource(character);
+    }
+
     public override void Execute(BattleAction action)
     {
         base.Execute(action);
         action?.Owner?.GetMechanic<OlafMadnessMechanic>()?.ExecuteSkill(action);
+        action?.Owner?.GetMechanic<OlafRulebreakerMechanic>()?.Execute(action);
     }
 }
 

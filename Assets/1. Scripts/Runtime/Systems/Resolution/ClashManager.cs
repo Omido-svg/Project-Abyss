@@ -893,6 +893,22 @@ public class ClashManager
     {
         int momentumBefore = momentumManager.CurrentMomentum;
 
+        // O-05 「일기토」: 같은 상대 슬롯을 향한 다른 아군 행동은
+        // 합을 빼앗긴 뒤 생기는 일방타격만 포기한다. 비용은 Planning에서 이미 지불됐다.
+        if (action?.Slot?.SuppressOneSidedResolution == true)
+        {
+            return new ClashExchangeResult
+            {
+                ExchangeIndex = exchangeIndex,
+                FirstAction = action,
+                SecondAction = exhaustedOpponent,
+                IsOneSided = true,
+                WasCancelled = true,
+                MomentumBefore = momentumBefore,
+                MomentumAfter = momentumBefore
+            };
+        }
+
         bool executed = ExecuteSkillOnce(
             action,
             exhaustedOpponent,

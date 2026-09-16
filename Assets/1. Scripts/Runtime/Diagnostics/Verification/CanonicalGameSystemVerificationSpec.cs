@@ -7,7 +7,7 @@ using System.Collections.Generic;
 /// </summary>
 public static class CanonicalGameSystemVerificationSpec
 {
-    public const string SpecId = "0915-AB__0916-C";
+    public const string SpecId = "0915-AB__0916-CD-Olaf";
     public const string PhaseCTargetId = "0916";
 
     public const int NormalAttackLoadout = 3;
@@ -70,5 +70,11 @@ public static class CanonicalGameSystemVerificationSpec
         new[]
         {
             "C-34", "C-35", "C-36", "C-37", "C-39"
+        };
+
+    public static readonly IReadOnlyList<string> PhaseDOlafRequirements =
+        new[]
+        {
+            "O-01", "O-03", "O-04", "O-05"
         };
 }

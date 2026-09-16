@@ -10,11 +10,11 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: a85a262093fed2b45a6f05cb3a256be9, type: 3}
-  m_Name: Olaf_ShowOff
+  m_Name: Olaf_Bloto
   m_EditorClassIdentifier: 
   phaseASchemaVersion: 1
-  skillId: olaf.preparation.show_off
-  SkillName: "\uAC00\uC624\uC7A1\uAE30"
+  skillId: olaf.preparation.bloto
+  SkillName: "\uBE14\uB85C\uD1A0"
   ActionType: 2
   Color: 0
   BasePowerRule: 3
@@ -22,15 +22,33 @@ MonoBehaviour:
   BasePowerFlatAdjustment: 0
   PhysicalType: 0
   CanBreakPart: 0
+  BreakMode: 0
   GainPrestige: 1
+  Rulebreaker:
+    Enabled: 0
+    EnergyCostReductionPerCommittedUse: 0
+    MinimumEnergyCost: 0
+    MirrorThisSkillToOpponentOnDuelMatch: 0
+    IgnoreOwnerRollModifiers: 0
+    ExplodeBleedingOncePerAction: 0
+    BleedingExplosionMultiplier: 0
+    SuppressFriendlyOneSidedHitsOnSameTargetSlot: 0
+    ConsumeAllOwnerBleedingOnExecute: 0
+    BreakAuthorityBleedingThreshold: 0
+    IgnoreWeakenPrerequisiteBleedingThreshold: 0
+    RequirePreviousTurnLastStand: 0
+    ApplyCurrentLastStandPowerBonus: 0
+    CurrentLastStandPowerBonus: 0
+    GrantInfiniteAttackSlotSpeedThisTurn: 0
   AttackWeight:
     Weight: 1
     SecondaryPartMode: 0
     SecondaryDamageMultiplier: 1
     AllowBrokenSecondaryParts: 0
-  Description: "\uC815\uC0C1 \uC0C1\uD0DC\uC778 \uC790\uC2E0\uC758 \uBD80\uC704 \uC911
-    \uCCB4\uB825\uC774 \uAC00\uC7A5 \uB0AE\uC740 \uBD80\uC704 \uD558\uB098\uB97C
-    \uC57D\uD654\uC2DC\uD0A4\uACE0 \uAD11\uAE30 2\uB97C \uC5BB\uB294\uB2E4."
+  Description: "bl\xF3t \u2014 \uC790\uAE30 \uCD5C\uC800 \uCCB4\uB825 \uBD80\uC704
+    1\uAC1C\uB97C \uC57D\uD654\uD558\uACE0 \uAD11\uAE30 +1. \uC801\uC5D0\uAC8C \uACF5\uD3EC(\uC704\uB825
+    -1, 3\uD134, \uBE44\uB204\uC801/\uC7AC\uBD80\uC5EC \uC2DC \uAC31\uC2E0)\uB97C
+    \uBD80\uC5EC\uD55C\uB2E4."
   Keywords: []
   Rolls: []
   ExchangeRollCount: 1
@@ -45,7 +63,7 @@ MonoBehaviour:
   ResolvePrestigeInCombat: 0
   OverrideCanClash: 0
   CanClashValue: 0
-  PreparationTier: 0
+  PreparationTier: 1
   ResolverType: 0
   DiceMin: 0
   DiceMax: 0

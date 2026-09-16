@@ -20,6 +20,7 @@ public class EffectRequest
     public int Value;
 
     public bool CanBreakPart;
+    public PartBreakMode BreakMode;
     public DamageType DamageType;
 
     public StatusEffect StatusEffect;
@@ -226,6 +227,7 @@ public class EffectRequest
 
             Value = context.FinalDamage,
             CanBreakPart = context.CanBreakPart,
+            BreakMode = context.BreakMode,
             DamageType = context.DamageType
         };
     }

@@ -38,8 +38,8 @@ public sealed class GameSystemVerificationWindow : EditorWindow
     {
         EditorGUILayout.LabelField("Project Abyss · Game System Verification", EditorStyles.boldLabel);
         EditorGUILayout.HelpBox(
-            "Phase A/B는 기존 0915 검증을 회귀로 유지하고, Phase C는 0916 Progression/Run 정본(C-34/35/36/37/39)을 검증합니다. " +
-            "Runtime 설정값을 기대값으로 재사용하지 않으며 Isolated Runtime은 Production BattleRuntimeFactory를 그대로 사용합니다.",
+            "Phase A/B 회귀 + Phase C Progression/Run + Phase D Olaf(O-01/O-03/O-04/O-05)를 검증합니다. " +
+            "Phase D Olaf Gate는 Player가 Olaf인 초기화된 전투에서 실행하세요. Runtime 설정값을 기대값으로 재사용하지 않습니다.",
             MessageType.Info);
 
         using (new EditorGUILayout.HorizontalScope())
@@ -59,12 +59,14 @@ public sealed class GameSystemVerificationWindow : EditorWindow
         int phaseACovered = CanonicalGameSystemVerificationSpec.PhaseARequirements.Count(id => coverage.ContainsKey(id));
         int phaseBCovered = CanonicalGameSystemVerificationSpec.PhaseBRequirements.Count(id => coverage.ContainsKey(id));
         int phaseCCovered = CanonicalGameSystemVerificationSpec.PhaseCRequirements.Count(id => coverage.ContainsKey(id));
+        int phaseDOlafCovered = CanonicalGameSystemVerificationSpec.PhaseDOlafRequirements.Count(id => coverage.ContainsKey(id));
 
         EditorGUILayout.LabelField("Requirement Coverage", EditorStyles.boldLabel);
         EditorGUILayout.LabelField(
             $"Phase A: {phaseACovered}/{CanonicalGameSystemVerificationSpec.PhaseARequirements.Count}   " +
             $"Phase B: {phaseBCovered}/{CanonicalGameSystemVerificationSpec.PhaseBRequirements.Count}   " +
-            $"Phase C: {phaseCCovered}/{CanonicalGameSystemVerificationSpec.PhaseCRequirements.Count}");
+            $"Phase C: {phaseCCovered}/{CanonicalGameSystemVerificationSpec.PhaseCRequirements.Count}   " +
+            $"Phase D Olaf: {phaseDOlafCovered}/{CanonicalGameSystemVerificationSpec.PhaseDOlafRequirements.Count}");
 
         List<string> missingB = CanonicalGameSystemVerificationSpec.PhaseBRequirements
             .Where(id => !coverage.ContainsKey(id)).ToList();
@@ -75,6 +77,11 @@ public sealed class GameSystemVerificationWindow : EditorWindow
             .Where(id => !coverage.ContainsKey(id)).ToList();
         if (missingC.Count > 0)
             EditorGUILayout.HelpBox("Phase C verification missing: " + string.Join(", ", missingC), MessageType.Warning);
+
+        List<string> missingDOlaf = CanonicalGameSystemVerificationSpec.PhaseDOlafRequirements
+            .Where(id => !coverage.ContainsKey(id)).ToList();
+        if (missingDOlaf.Count > 0)
+            EditorGUILayout.HelpBox("Phase D Olaf verification missing: " + string.Join(", ", missingDOlaf), MessageType.Warning);
     }
 
     private void DrawControls()
@@ -94,6 +101,8 @@ public sealed class GameSystemVerificationWindow : EditorWindow
                     Run(GameSystemVerificationRunner.RunPhaseB(battleManager));
                 if (GUILayout.Button("Phase C Gate", GUILayout.Height(30f)))
                     Run(GameSystemVerificationRunner.RunPhaseC(battleManager));
+                if (GUILayout.Button("Phase D Olaf Gate", GUILayout.Height(30f)))
+                    Run(GameSystemVerificationRunner.RunPhaseDOlaf(battleManager));
                 if (GUILayout.Button("Live Audit", GUILayout.Height(30f)))
                     Run(GameSystemVerificationRunner.RunLivePlanAudit(battleManager));
             }

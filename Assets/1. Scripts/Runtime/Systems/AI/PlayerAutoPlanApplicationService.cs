@@ -77,6 +77,7 @@ public sealed class PlayerAutoPlanApplicationService
             }
 
             BattleAction action = new BattleAction { Slot = slot };
+            int committedEnergyCost = System.Math.Max(0, slot.Skill.EnergyCost);
             if (!slot.ResourceCostCommitted &&
                 !slot.Skill.TryConsumeResource(owner, action))
             {
@@ -87,10 +88,7 @@ public sealed class PlayerAutoPlanApplicationService
             }
 
             slot.ResourceCostCommitted = true;
-            slot.CommittedEnergyCost =
-                System.Math.Max(
-                    0,
-                    slot.Skill.EnergyCost);
+            slot.CommittedEnergyCost = committedEnergyCost;
             committed.Add(slot);
         }
 

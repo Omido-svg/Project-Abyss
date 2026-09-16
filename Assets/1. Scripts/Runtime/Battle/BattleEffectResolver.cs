@@ -52,6 +52,11 @@ public class BattleEffectResolver
                 ? damageContext.CanBreakPart
                 : request.CanBreakPart;
 
+        PartBreakMode breakMode =
+            damageContext != null
+                ? damageContext.BreakMode
+                : request.BreakMode;
+
         switch (damageType)
         {
             case DamageType.True:
@@ -85,7 +90,8 @@ public class BattleEffectResolver
             target.TakeDamage(
                 targetPart,
                 damage,
-                canBreakPart);
+                canBreakPart,
+                breakMode);
             return true;
         }
 
@@ -118,7 +124,8 @@ public class BattleEffectResolver
         request.TargetCharacter.TakeDamage(
             request.TargetPart,
             request.Value,
-            request.CanBreakPart);
+            request.CanBreakPart,
+            request.BreakMode);
         return true;
     }
 

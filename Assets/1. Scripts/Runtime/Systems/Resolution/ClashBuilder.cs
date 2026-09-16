@@ -60,6 +60,11 @@ public sealed class ClashBuilder
             queue.PreparationQueue,
             preparationSlots);
 
+        // O-05 「일기토」는 속도순 해결보다 먼저 계획 전체를 보고
+        // 같은 상대 슬롯을 노린 다른 아군 슬롯의 '일방타격'을 포기시켜야 한다.
+        // ApplyTargetLinks가 계획 TargetSlot 링크를 지우기 전에 표식을 확정한다.
+        ApplyPlannedOneSidedSuppression(combatSlots);
+
         ActionPairingResult pairingResult =
             BuildPairingResult(
                 combatSlots);
@@ -160,6 +165,47 @@ public sealed class ClashBuilder
         }
 
         return result;
+    }
+
+
+    private static void ApplyPlannedOneSidedSuppression(
+        IReadOnlyList<ActionSlot> combatSlots)
+    {
+        if (combatSlots == null)
+            return;
+
+        foreach (ActionSlot slot in combatSlots)
+        {
+            if (slot != null)
+                slot.SuppressOneSidedResolution = false;
+        }
+
+        foreach (ActionSlot source in combatSlots)
+        {
+            SkillRulebreakerSettings rule = source?.Skill?.Definition?.Rulebreaker;
+            ActionSlot plannedTargetSlot = source?.TargetSlot;
+
+            if (rule?.Enabled != true ||
+                !rule.SuppressFriendlyOneSidedHitsOnSameTargetSlot ||
+                source?.Owner == null ||
+                plannedTargetSlot == null)
+            {
+                continue;
+            }
+
+            foreach (ActionSlot other in combatSlots)
+            {
+                if (other == null ||
+                    other == source ||
+                    other.Owner != source.Owner)
+                {
+                    continue;
+                }
+
+                if (other.TargetSlot == plannedTargetSlot)
+                    other.SuppressOneSidedResolution = true;
+            }
+        }
     }
 
     private void EnqueueSlots(

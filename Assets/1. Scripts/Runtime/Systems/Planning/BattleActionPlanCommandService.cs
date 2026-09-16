@@ -132,6 +132,7 @@ public sealed class BattleActionPlanCommandService
         // C-04: 공격/도사림 비용은 계획 확정 시 실제 차감한다.
         // 이미 낸 비용은 이후 슬롯 상실/취소에도 환불하지 않는다.
         BattleAction planningAction = new BattleAction { Slot = slot };
+        int committedEnergyCost = System.Math.Max(0, slot.Skill.EnergyCost);
         if (!slot.ResourceCostCommitted &&
             !slot.Skill.TryConsumeResource(request.Owner, planningAction))
         {
@@ -140,10 +141,7 @@ public sealed class BattleActionPlanCommandService
             return Fail(result, "계획 확정 시 자원 비용을 지불할 수 없습니다.");
         }
         slot.ResourceCostCommitted = true;
-        slot.CommittedEnergyCost =
-            System.Math.Max(
-                0,
-                slot.Skill.EnergyCost);
+        slot.CommittedEnergyCost = committedEnergyCost;
 
         // C-03: 도사림은 누르는 순간 사용시 효과까지 실행하고 Resolution에서 다시 실행하지 않는다.
         if (slot.Skill.ActionType == ActionType.Preparation)

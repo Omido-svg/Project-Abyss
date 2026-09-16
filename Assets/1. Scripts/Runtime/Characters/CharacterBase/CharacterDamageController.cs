@@ -16,13 +16,22 @@ public sealed class CharacterDamageController
     public void TakeDamage(
         BodyPart targetPart,
         int damage,
-        bool canBreakPart)
+        bool canBreakPart,
+        PartBreakMode breakMode = PartBreakMode.None)
     {
-        ApplyDamage(
+        DamageRequest request =
             DamageRequest.SkillPart(
                 targetPart,
                 damage,
-                canBreakPart));
+                canBreakPart);
+
+        request.BreakMode = breakMode != PartBreakMode.None
+            ? breakMode
+            : canBreakPart
+                ? PartBreakMode.WeakenedOnly
+                : PartBreakMode.None;
+
+        ApplyDamage(request);
     }
 
     public void TakeStatusPartDamage(
@@ -162,7 +171,9 @@ public sealed class CharacterDamageController
 
         ApplyNormalPartDamage(
             targetPart,
-            request.Damage);
+            request.Damage,
+            request.CanBreakPart,
+            request.BreakMode);
 
         owner.CheckDead();
     }
@@ -283,7 +294,9 @@ public sealed class CharacterDamageController
 
     private void ApplyNormalPartDamage(
         BodyPart targetPart,
-        int damage)
+        int damage,
+        bool canBreakPart,
+        PartBreakMode breakMode)
     {
         if (targetPart == null || damage <= 0)
             return;
@@ -296,8 +309,12 @@ public sealed class CharacterDamageController
             owner.BattleContext?.Services?.EmotionRulebreakerService?
                 .IsDeathResistanceDisabled(owner) == true;
 
-        // C-12 기본은 1 clamp. C-35 왕귀가 활성화된 대상만 0까지 허용한다.
-        int actualDamage = deathResistanceDisabled
+        bool ignoreWeakenPrerequisite =
+            canBreakPart &&
+            breakMode == PartBreakMode.IgnoreWeakenedPrerequisite;
+
+        // C-12 기본은 1 clamp. C-35 왕귀 또는 카드가 명시한 O-05 예외만 0까지 허용한다.
+        int actualDamage = deathResistanceDisabled || ignoreWeakenPrerequisite
             ? targetPart.ApplyDamageWithoutDeathResistance(damage)
             : targetPart.ApplyDamage(damage);
         owner.ReduceCurrentHP(damage);
@@ -306,7 +323,14 @@ public sealed class CharacterDamageController
             $"{OwnerName()}의 {targetPart.Type} 부위에 {actualDamage} 피해 " +
             $"HP : {beforePartHP} -> {targetPart.PartHP:0}");
 
-        if (deathResistanceDisabled && targetPart.PartHP <= 0f)
+        if (targetPart.PartHP <= 0f && ignoreWeakenPrerequisite)
+        {
+            bodyPartController?.TryBreakPartIgnoringWeakenPrerequisite(
+                targetPart,
+                owner.ActiveDamageContext?.Attacker,
+                owner.ActiveDamageContext?.Action);
+        }
+        else if (deathResistanceDisabled && targetPart.PartHP <= 0f)
         {
             bodyPartController?.BreakPartIgnoringDeathResistance(
                 targetPart,

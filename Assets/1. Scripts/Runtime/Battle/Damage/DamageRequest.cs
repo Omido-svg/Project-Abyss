@@ -22,6 +22,7 @@ public struct DamageRequest
     public float DamageCoefficient;
 
     public bool CanBreakPart;
+    public PartBreakMode BreakMode;
     public bool WasCritical;
 
     public bool IsClashDamage;
@@ -62,6 +63,7 @@ public struct DamageRequest
             DamageCoefficient = 1f,
 
             CanBreakPart = canBreakPart,
+            BreakMode = canBreakPart ? PartBreakMode.WeakenedOnly : PartBreakMode.None,
             WasCritical = action?.Critical == true,
 
             IsClashDamage = isClashDamage,
@@ -280,6 +282,7 @@ public struct DamageRequest
                     damageCoefficient),
 
             CanBreakPart = canBreakPart,
+            BreakMode = canBreakPart ? PartBreakMode.WeakenedOnly : PartBreakMode.None,
             WasCritical =
                 sourceAction?.Critical == true,
 
@@ -322,6 +325,7 @@ public struct DamageRequest
             DamageCoefficient = 1f,
 
             CanBreakPart = canBreakPart,
+            BreakMode = canBreakPart ? PartBreakMode.WeakenedOnly : PartBreakMode.None,
             WasCritical = false,
 
             IsClashDamage = false,

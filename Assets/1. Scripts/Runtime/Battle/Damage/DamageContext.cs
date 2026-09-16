@@ -90,6 +90,7 @@ public class DamageContext
     public bool BrokePart => WasBroken;
 
     public bool CanBreakPart;
+    public PartBreakMode BreakMode;
     public bool IsClashDamage;
     public bool TargetLostClash;
     public bool IsPrestigeClash;
@@ -129,6 +130,7 @@ public class DamageContext
 
         WasCritical = request.WasCritical;
         CanBreakPart = request.CanBreakPart;
+        BreakMode = request.BreakMode;
         IsClashDamage = request.IsClashDamage;
         TargetLostClash = request.TargetLostClash;
         IsPrestigeClash = request.IsPrestigeClash;

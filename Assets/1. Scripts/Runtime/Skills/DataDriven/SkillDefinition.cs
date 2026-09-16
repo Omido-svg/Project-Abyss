@@ -37,8 +37,13 @@ public class SkillDefinition : ScriptableObject
     public int BasePowerFlatAdjustment;
     [Tooltip("공격 스킬의 물리 속성: 절단 / 둔격 / 관통. 유진은 현재 무기가 이 값을 덮어씁니다.")]
     public PhysicalDamageType PhysicalType = PhysicalDamageType.Cut;
+    [Tooltip("Legacy boolean. 신규 authoring은 BreakMode를 사용하고 기존 true는 WeakenedOnly로 해석합니다.")]
     public bool CanBreakPart;
+    public PartBreakMode BreakMode = PartBreakMode.None;
     public bool GainPrestige = true;
+
+    [Header("Rulebreaker Authoring")]
+    public SkillRulebreakerSettings Rulebreaker = new SkillRulebreakerSettings();
 
     [Header("Attack Weight — total character targets including main target")]
     public AttackWeightSettings AttackWeight =
@@ -215,6 +220,8 @@ public class SkillDefinition : ScriptableObject
         MultiRollPenalty.Sanitize();
         AttackWeight ??= new AttackWeightSettings();
         AttackWeight.Sanitize();
+        Rulebreaker ??= new SkillRulebreakerSettings();
+        Rulebreaker.Sanitize();
         while (Rolls.Count > 8) Rolls.RemoveAt(Rolls.Count - 1);
         for (int i = 0; i < Rolls.Count; i++) Rolls[i]?.Sanitize(i);
         if (ResolvePrestigeInCombat && ActionType != ActionType.Prestige) ResolvePrestigeInCombat = false;

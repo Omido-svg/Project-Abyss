@@ -47,7 +47,7 @@ public sealed class OlafCharacterVerificationCaseProvider :
         OlafSkillIds.Rend,
         OlafSkillIds.Crouch,
         OlafSkillIds.Glare,
-        OlafSkillIds.ShowOff,
+        OlafSkillIds.Bloto,
         OlafSkillIds.BloomingWound,
         OlafSkillIds.BurstingMadness,
         OlafSkillIds.BacksToWall
@@ -88,31 +88,31 @@ public sealed class OlafCharacterVerificationCaseProvider :
 
         yield return CharacterVerificationCaseDefinition.Create(
             MechanicRegistration,
-            "광기·배수진 메커닉 등록",
+            "광기·룰브레이커·배수진 메커닉 등록",
             CharacterVerificationCategory.Passive,
             CharacterVerificationExecutionMode.IsolatedRuntime,
-            "OlafMadnessMechanic과 OlafImmortalFuryMechanic의 생성 및 BattleEvent 구독을 검사합니다.");
+            "OlafMadnessMechanic / OlafRulebreakerMechanic / OlafImmortalFuryMechanic의 생성 및 BattleEvent 구독을 검사합니다.");
 
         yield return CharacterVerificationCaseDefinition.Create(
             MadnessBoundary,
             "광기 경계값·만개",
             CharacterVerificationCategory.Boundary,
             CharacterVerificationExecutionMode.IsolatedRuntime,
-            "광기 0~10 Clamp와 10에서 만개 상태가 되는지 검사합니다.");
+            "광기 0~8 Clamp와 8에서 만개 상태가 되는지 검사합니다.");
 
         yield return CharacterVerificationCaseDefinition.Create(
             MadnessRollModifier,
             "광기 판정 보정",
             CharacterVerificationCategory.Passive,
             CharacterVerificationExecutionMode.IsolatedRuntime,
-            "광기 5당 판정 +1 규칙이 실제 Character.ModifyRoll 파이프라인에 적용되는지 검사합니다.");
+            "광기 4당 판정 +1 규칙이 실제 Character.ModifyRoll 파이프라인에 적용되는지 검사합니다.");
 
         yield return CharacterVerificationCaseDefinition.Create(
             StandardExplosionLimit,
-            "표준 혈상 폭발 행동당 1회",
+            "표준 출혈 폭발 미정값 안전성",
             CharacterVerificationCategory.Duel,
             CharacterVerificationExecutionMode.IsolatedRuntime,
-            "같은 표준 BattleAction에서는 혈상 폭발이 한 번만 발생하고 ActionEnd 이후 다시 허용되는지 검사합니다.");
+            "표준은 출혈 폭발 특전을 갖되 0916의 (미정) 계수가 0/Unset이면 임의 폭발 피해를 만들지 않는지 검사합니다.");
 
         yield return CharacterVerificationCaseDefinition.Create(
             OneSidedUniqueEffects,
@@ -525,22 +525,28 @@ public sealed class OlafCharacterVerificationCaseProvider :
         OlafMadnessMechanic madness =
             olaf.MadnessMechanic;
 
+        OlafRulebreakerMechanic rulebreaker =
+            olaf.RulebreakerMechanic;
+
         OlafImmortalFuryMechanic immortal =
             olaf.ImmortalFuryMechanic;
 
         bool valid =
             madness != null &&
+            rulebreaker != null &&
             immortal != null &&
             madness.IsRegistered &&
+            rulebreaker.IsRegistered &&
             immortal.IsRegistered;
 
         return valid
             ? context.Pass(
-                "광기·배수진 메커닉 생성 및 등록",
-                "Madness=Registered, ImmortalFury=Registered")
+                "광기·룰브레이커·배수진 메커닉 생성 및 등록",
+                "Madness=Registered, Rulebreaker=Registered, ImmortalFury=Registered")
             : context.Fail(
-                "광기·배수진 메커닉 생성 및 등록",
+                "광기·룰브레이커·배수진 메커닉 생성 및 등록",
                 $"Madness={Describe(madness)}, " +
+                $"Rulebreaker={Describe(rulebreaker)}, " +
                 $"ImmortalFury={Describe(immortal)}");
     }
 
@@ -584,11 +590,11 @@ public sealed class OlafCharacterVerificationCaseProvider :
 
         return valid
             ? context.Pass(
-                "광기 0~10 Clamp, 10에서 만개",
+                "광기 0~8 Clamp, 8에서 만개",
                 $"Madness={mechanic.CurrentMadness}, " +
                 $"Bloom={mechanic.IsBlooming}")
             : context.Fail(
-                "광기 0~10 Clamp, 10에서 만개",
+                "광기 0~8 Clamp, 8에서 만개",
                 $"Lower={lower}, Upper={upper}, Clamp={clamped}");
     }
 
@@ -642,234 +648,119 @@ public sealed class OlafCharacterVerificationCaseProvider :
                 action,
                 10);
 
-        mechanic.SetMadnessForDebug(5);
-        int atFive =
+        mechanic.SetMadnessForDebug(4);
+        int atFour =
             olaf.ModifyRoll(
                 action,
                 10);
 
-        mechanic.SetMadnessForDebug(10);
-        int atTen =
+        mechanic.SetMadnessForDebug(8);
+        int atEight =
             olaf.ModifyRoll(
                 action,
                 10);
 
         bool valid =
-            atFive == baseValue + 1 &&
-            atTen == baseValue + 2;
+            atFour == baseValue + 1 &&
+            atEight == baseValue + 2;
 
         return valid
             ? context.Pass(
-                "광기 5당 판정 +1",
-                $"{baseValue}→{atFive}→{atTen}")
+                "광기 4당 판정 +1",
+                $"{baseValue}→{atFour}→{atEight}")
             : context.Fail(
-                "광기 5당 판정 +1",
-                $"{baseValue}→{atFive}→{atTen}");
+                "광기 4당 판정 +1",
+                $"{baseValue}→{atFour}→{atEight}");
     }
 
     private static CharacterVerificationCaseResult
         VerifyStandardExplosionLimit(
             CharacterVerificationContext context)
     {
-        Olaf olaf =
-            context.Character as Olaf;
+        Olaf olaf = context.Character as Olaf;
+        Character target = context.OpponentCharacter;
 
-        Character target =
-            context.OpponentCharacter;
-
-        OlafMadnessMechanic mechanic =
-            olaf?.MadnessMechanic;
+        SkillDefinition definition =
+            CharacterVerificationScenarioTools.FindDefinition(
+                context.Bundle,
+                OlafSkillIds.Standard);
 
         Skill standard =
             CharacterVerificationScenarioTools.FindRuntimeSkill(
                 olaf,
-                CharacterVerificationScenarioTools.FindDefinition(
-                    context.Bundle,
-                    OlafSkillIds.Standard));
+                definition);
 
         Skill opponentSkill =
             target?.RuntimeSkills?
-                .FirstOrDefault(
-                    item => item?.ActionType == ActionType.Duel);
+                .FirstOrDefault(item => item?.ActionType == ActionType.Duel);
 
         BodyPart ownerPart =
             CharacterVerificationScenarioTools.GetUsablePart(olaf);
-
         BodyPart targetPart =
             CharacterVerificationScenarioTools.GetUsablePart(target);
 
-        if (mechanic == null ||
+        if (olaf?.MadnessMechanic == null ||
+            definition == null ||
             standard == null ||
             opponentSkill == null ||
             targetPart == null)
         {
             return context.Fail(
-                "표준 폭발 검증 Fixture 존재",
-                $"Mechanic={mechanic != null}, Standard={standard != null}, " +
+                "표준 출혈 폭발 검증 Fixture 존재",
+                $"Definition={definition != null}, Standard={standard != null}, " +
                 $"OpponentDuel={opponentSkill != null}, Part={targetPart != null}");
         }
 
+        SkillRulebreakerSettings rule = definition.Rulebreaker;
+        bool authoring =
+            definition.CanBreakPart &&
+            definition.BreakMode == PartBreakMode.WeakenedOnly &&
+            rule?.Enabled == true &&
+            rule.ExplodeBleedingOncePerAction &&
+            rule.BleedingExplosionMultiplier == 0;
+
         CharacterVerificationScenarioTools.ResetCombatState(target);
-        mechanic.SetMadnessForDebug(0);
-
-        // 혈상 10 이상은 폭발 피해가 크므로 동일 행동의 두 번째 교환까지
-        // 살아 있는 정상 부위에서 검증할 수 있도록 HP를 충분히 확장한다.
         if (target.RuntimeStatus != null)
-            target.RuntimeStatus.currentHP = 1000;
-
-        targetPart.State =
-            BodyPartState.Normal;
-
-        targetPart.PartHP = 1000f;
+            target.RuntimeStatus.currentHP = Mathf.Max(target.RuntimeStatus.currentHP, 1000);
+        targetPart.State = BodyPartState.Normal;
+        targetPart.PartHP = Mathf.Max(targetPart.PartHP, 1000f);
 
         BattleAction mine =
             CharacterVerificationScenarioTools.CreateAction(
-                olaf,
-                ownerPart,
-                standard,
-                target,
-                targetPart,
-                940001);
-
+                olaf, ownerPart, standard, target, targetPart, 940001);
         BattleAction theirs =
             CharacterVerificationScenarioTools.CreateAction(
-                target,
-                targetPart,
-                opponentSkill,
-                olaf,
-                ownerPart,
-                940002);
+                target, targetPart, opponentSkill, olaf, ownerPart, 940002);
 
-        mine.CurrentRollType =
-            CombatRollType.Attack;
+        target.AddPartStatus(targetPart, new Bleeding(3), olaf);
+        int beforeHp = target.CurrentHP;
+        int beforePart = Mathf.CeilToInt(targetPart.PartHP);
 
-        DamageContext hit =
-            new DamageContext(
-                DamageRequest.SkillPart(
-                    mine,
-                    1,
-                    false))
-            {
-                AppliedDamage = 1,
-                AppliedPartDamage = 1,
-                WasApplied = true
-            };
-
-        ClashExchangeResult exchange =
+        context.BattleContext?._battleEvent?.RaiseExchangeResolved(
             new ClashExchangeResult
             {
                 FirstAction = mine,
                 SecondAction = theirs,
                 WinnerAction = mine,
                 LoserAction = theirs,
-                DamageContext = hit,
-                IsDuelExchange = true
-            };
+                IsDuelExchange = true,
+                IsOneSided = false
+            });
 
-        target.AddPartStatus(
-            targetPart,
-            new Bleeding(Bleeding.ExplosionThreshold),
-            olaf);
+        Bleeding retained = target.GetPartStatus<Bleeding>(targetPart);
+        bool unsetSafe =
+            retained?.Stack == 3 &&
+            target.CurrentHP == beforeHp &&
+            Mathf.CeilToInt(targetPart.PartHP) == beforePart;
 
-        int startHp =
-            target.CurrentHP;
-
-        int startPartHp =
-            Mathf.CeilToInt(targetPart.PartHP);
-
-        context.BattleContext
-            ?._battleEvent
-            ?.RaiseExchangeResolved(exchange);
-
-        int afterFirstHp =
-            target.CurrentHP;
-
-        int afterFirstPartHp =
-            Mathf.CeilToInt(targetPart.PartHP);
-
-        Bleeding afterFirst =
-            target.GetPartStatus<Bleeding>(targetPart);
-
-        target.AddPartStatus(
-            targetPart,
-            new Bleeding(Bleeding.ExplosionThreshold),
-            olaf);
-
-        context.BattleContext
-            ?._battleEvent
-            ?.RaiseExchangeResolved(exchange);
-
-        int afterSecondHp =
-            target.CurrentHP;
-
-        int afterSecondPartHp =
-            Mathf.CeilToInt(targetPart.PartHP);
-
-        Bleeding afterSecond =
-            target.GetPartStatus<Bleeding>(targetPart);
-
-        int retainedStack =
-            afterSecond?.Stack ?? 0;
-
-        if (afterSecond != null)
-        {
-            target.RemovePartStatus(
-                targetPart,
-                afterSecond,
-                StatusEffectRemoveReason.Manual);
-        }
-
-        context.BattleContext
-            ?._battleEvent
-            ?.RaiseActionEnd(mine);
-
-        target.AddPartStatus(
-            targetPart,
-            new Bleeding(Bleeding.ExplosionThreshold),
-            olaf);
-
-        context.BattleContext
-            ?._battleEvent
-            ?.RaiseExchangeResolved(exchange);
-
-        int afterResetHp =
-            target.CurrentHP;
-
-        int afterResetPartHp =
-            Mathf.CeilToInt(targetPart.PartHP);
-
-        Bleeding afterReset =
-            target.GetPartStatus<Bleeding>(targetPart);
-
-        bool firstExploded =
-            afterFirst == null &&
-            afterFirstHp < startHp &&
-            afterFirstPartHp < startPartHp;
-
-        bool secondSuppressed =
-            retainedStack >=
-                Bleeding.ExplosionThreshold &&
-            afterSecondHp == afterFirstHp &&
-            afterSecondPartHp == afterFirstPartHp;
-
-        bool resetWorked =
-            afterReset == null &&
-            afterResetHp < afterSecondHp &&
-            afterResetPartHp < afterSecondPartHp;
-
-        string detail =
-            $"HP={startHp}→{afterFirstHp}→{afterSecondHp}→{afterResetHp}, " +
-            $"Part={startPartHp}→{afterFirstPartHp}→{afterSecondPartHp}→{afterResetPartHp}, " +
-            $"SecondBleed={retainedStack}";
-
-        return firstExploded && secondSuppressed && resetWorked
+        return authoring && unsetSafe
             ? context.Pass(
-                "첫 교환 폭발·동일 행동 추가 폭발 차단·ActionEnd 후 재허용",
-                detail)
+                "표준=파괴형+폭발특전, 폭발계수 (미정)=0/Unset이면 피해 없음",
+                $"BreakMode={definition.BreakMode}, Multiplier={rule.BleedingExplosionMultiplier}, Bleed={retained?.Stack ?? 0}")
             : context.Fail(
-                "첫 교환 폭발·동일 행동 추가 폭발 차단·ActionEnd 후 재허용",
-                detail,
-                $"First={firstExploded}, SecondBlocked={secondSuppressed}, Reset={resetWorked}");
+                "표준=파괴형+폭발특전, 폭발계수 (미정)=0/Unset이면 피해 없음",
+                $"Authoring={authoring}, Safe={unsetSafe}, BreakMode={definition.BreakMode}, " +
+                $"Multiplier={rule?.BleedingExplosionMultiplier ?? -1}, Bleed={retained?.Stack ?? 0}");
     }
 
     private static CharacterVerificationCaseResult

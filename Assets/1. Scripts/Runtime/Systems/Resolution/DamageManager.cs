@@ -39,13 +39,17 @@ public class DamageManager
         DamageType damageType =
             ResolveActionDamageType(action);
 
+        PartBreakMode breakMode =
+            ResolvePartBreakMode(action, action.TargetPart);
+
         DamageRequest request =
             DamageRequest.FromAction(
                 action,
                 damageType,
-                ShouldBreakPart(action),
+                ShouldBreakPart(action, action.TargetPart, breakMode),
                 isClashDamage,
                 targetLostClash);
+        request.BreakMode = breakMode;
 
         return ApplyDamageContext(request);
     }
@@ -60,12 +64,16 @@ public class DamageManager
         if (!IsValidAction(action))
             return null;
 
+        PartBreakMode breakMode =
+            ResolvePartBreakMode(action, action.TargetPart);
+
         DamageRequest request = DamageRequest.FromAction(
             action,
             ResolveActionDamageType(action),
-            ShouldBreakPart(action),
+            ShouldBreakPart(action, action.TargetPart, breakMode),
             isClashDamage,
             targetLostClash);
+        request.BreakMode = breakMode;
 
         // 판정 보정은 피해 기준 위력에 섞지 않습니다.
         // 유효한 공격의 시작 위력은 최소 1입니다.
@@ -121,6 +129,9 @@ public class DamageManager
                 1,
                 rawPower);
 
+        PartBreakMode breakMode =
+            ResolvePartBreakMode(action, targetPart);
+
         DamageRequest request =
             DamageRequest.FromAction(
                 action,
@@ -129,9 +140,11 @@ public class DamageManager
                     targetPart),
                 ShouldBreakPart(
                     action,
-                    targetPart),
+                    targetPart,
+                    breakMode),
                 isClashDamage: false,
                 targetLostClash: false);
+        request.BreakMode = breakMode;
 
         request.DamageCoefficient =
             damageCoefficient;
@@ -323,7 +336,8 @@ public class DamageManager
             context.Target.TakeDamage(
                 context.TargetPart,
                 context.FinalDamage,
-                context.CanBreakPart);
+                context.CanBreakPart,
+                context.BreakMode);
 
             return true;
         }
@@ -589,29 +603,47 @@ public class DamageManager
             : DamageType.SkillPart;
     }
 
+    private PartBreakMode ResolvePartBreakMode(
+        BattleAction action,
+        BodyPart targetPart)
+    {
+        if (action?.Skill == null || targetPart == null)
+            return PartBreakMode.None;
+
+        if (action.PartBreakModeOverride != PartBreakMode.None)
+            return action.PartBreakModeOverride;
+
+        return action.Skill.ResolvePartBreakMode(action, targetPart);
+    }
+
     private bool ShouldBreakPart(
         BattleAction action)
     {
-        return ShouldBreakPart(
-            action,
-            action?.TargetPart);
+        BodyPart targetPart = action?.TargetPart;
+        PartBreakMode mode = ResolvePartBreakMode(action, targetPart);
+        return ShouldBreakPart(action, targetPart, mode);
     }
 
     private bool ShouldBreakPart(
         BattleAction action,
         BodyPart targetPart)
     {
-        if (targetPart == null ||
-            !targetPart.IsWeakened)
-        {
-            return false;
-        }
-
-        // P0 D-01 확정 규칙:
-        // 파괴 권한은 기세/등급에서 자동으로 생기지 않는다.
-        // 플레이어/적 모두 "이 행동이 실제로 파괴 권한을 가진 스킬인가"만 본다.
-        // 히후미 만개 반격처럼 별도 예외 권한은 전용 메커닉이 ForceBreakPart 등
-        // 명시적 경로로 처리하므로 표준 피해 파이프라인에 전역 권한을 섞지 않는다.
-        return action?.Skill?.CanBreakPart == true;
+        PartBreakMode mode = ResolvePartBreakMode(action, targetPart);
+        return ShouldBreakPart(action, targetPart, mode);
     }
+
+    private static bool ShouldBreakPart(
+        BattleAction action,
+        BodyPart targetPart,
+        PartBreakMode mode)
+    {
+        if (action?.Skill == null || targetPart == null || mode == PartBreakMode.None)
+            return false;
+
+        if (mode == PartBreakMode.IgnoreWeakenedPrerequisite)
+            return true;
+
+        return targetPart.IsWeakened;
+    }
+
 }

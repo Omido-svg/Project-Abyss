@@ -1055,7 +1055,8 @@ public abstract class Character : MonoBehaviour
     public void TakeDamage(
         BodyPart targetPart,
         int damage,
-        bool canBreakPart)
+        bool canBreakPart,
+        PartBreakMode breakMode = PartBreakMode.None)
     {
         if (damageController == null)
             return;
@@ -1063,7 +1064,8 @@ public abstract class Character : MonoBehaviour
         damageController.TakeDamage(
             targetPart,
             damage,
-            canBreakPart);
+            canBreakPart,
+            breakMode);
     }
 
     //------------------------------------------------
@@ -1805,7 +1807,16 @@ public abstract class Character : MonoBehaviour
         BattleAction action,
         int roll)
     {
-        int value = roll;
+        int rulebreakerBonus = action?.RulebreakerFlatPowerBonus ?? 0;
+
+        // 0915 O-05에서 요구한 공통 훅. 현재 0916 올라프 확정 카드에는
+        // modifier 면역을 사용하는 카드가 없으므로 SO에서 명시적으로 켠 경우에만 동작한다.
+        if (action?.Skill?.IgnoresOwnerRollModifiers(action) == true)
+        {
+            return Mathf.Max(1, roll + rulebreakerBonus);
+        }
+
+        int value = roll + rulebreakerBonus;
         int commonShift = 0;
         int commonMaxReduction = 0;
 

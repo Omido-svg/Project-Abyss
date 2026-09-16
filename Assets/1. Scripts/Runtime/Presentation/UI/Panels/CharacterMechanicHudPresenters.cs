@@ -103,7 +103,7 @@ internal sealed class OlafMechanicHudPresenter :
         builder.Append("<color=#F2B35F><b>광기</b></color>  ");
         builder.Append(mechanic?.CurrentMadness ?? 0);
         builder.Append('/');
-        builder.Append(mechanic?.MaxMadness ?? 10);
+        builder.Append(mechanic?.MaxMadness ?? OlafMadnessMechanic.MaxMadnessValue);
 
         if (mechanic?.IsBlooming == true)
         {

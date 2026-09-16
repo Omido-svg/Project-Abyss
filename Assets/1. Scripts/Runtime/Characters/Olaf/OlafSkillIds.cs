@@ -9,7 +9,7 @@ public static class OlafSkillIds
 
     public const string Crouch = "olaf.preparation.crouch";
     public const string Glare = "olaf.preparation.glare";
-    public const string ShowOff = "olaf.preparation.show_off";
+    public const string Bloto = "olaf.preparation.bloto";
 
     public const string BloomingWound = "olaf.prestige.blooming_wound";
     public const string BurstingMadness = "olaf.prestige.bursting_madness";

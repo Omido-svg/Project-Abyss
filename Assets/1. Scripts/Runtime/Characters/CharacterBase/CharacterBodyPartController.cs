@@ -102,6 +102,30 @@ public class CharacterBodyPartController
     }
 
     /// <summary>
+    /// O-05 카드 고유 예외. 파괴 권한 자체는 owner.CanBreakPart를 통과해야 하지만
+    /// "이미 약화" 선행 조건만 면제한다.
+    /// </summary>
+    public bool TryBreakPartIgnoringWeakenPrerequisite(
+        BodyPart part,
+        Character source,
+        BattleAction sourceAction = null)
+    {
+        if (owner == null ||
+            part == null ||
+            (part.Owner != null && part.Owner != owner) ||
+            part.IsBroken)
+        {
+            return false;
+        }
+
+        if (!owner.CanBreakPart(part, sourceAction))
+            return false;
+
+        BreakPartInternal(part, source, sourceAction);
+        return true;
+    }
+
+    /// <summary>
     /// C-35 왕귀(짓누름) 전용. 죽음의 저항 해제 상태에서 0에 도달한 부위를
     /// Skill.CanBreakPart / 선행 약화 게이트 없이 파괴한다.
     /// </summary>

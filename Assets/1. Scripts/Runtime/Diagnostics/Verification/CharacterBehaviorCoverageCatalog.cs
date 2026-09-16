@@ -312,11 +312,11 @@ public static class CharacterBehaviorCoverageCatalog
                 10,
                 probe));
 
-        int[] values = { 0, 5, 10 };
+        int[] values = { 0, 4, 8 };
         foreach (int value in values)
         {
             mechanic.SetMadnessForDebug(value);
-            int expectedBonus = value / 5;
+            int expectedBonus = value / OlafMadnessMechanic.MadnessPerStage;
             int roll = mechanic.ModifyRoll(probe, 10);
             int taken = mechanic.ModifyDamageTaken(damage, 10);
 
@@ -330,7 +330,7 @@ public static class CharacterBehaviorCoverageCatalog
         }
 
         mechanic.SetMadnessForDebug(0);
-        observations.Add("OlafMadness: 0/5/10 판정·피해 보정 PASS");
+        observations.Add("OlafMadness: 0/4/8 판정·피해 보정 PASS");
 
         VerifyOlafDiceContracts(
             context,
@@ -362,13 +362,13 @@ public static class CharacterBehaviorCoverageCatalog
             targetPart);
 
         if (mechanic.CurrentMadness !=
-            Mathf.Min(OlafMadnessMechanic.MaxMadnessValue, beforeBreak + 2))
+            Mathf.Min(OlafMadnessMechanic.MaxMadnessValue, beforeBreak + OlafMadnessMechanic.PartBreakMadnessGain))
         {
-            failures.Add("Olaf 부위 파괴 이벤트가 광기 +2를 주지 않았습니다.");
+            failures.Add($"Olaf 부위 파괴 이벤트가 광기 +{OlafMadnessMechanic.PartBreakMadnessGain}을 주지 않았습니다.");
         }
         else
         {
-            observations.Add("Olaf 부위 파괴 광기 +2 PASS");
+            observations.Add($"Olaf 부위 파괴 광기 +{OlafMadnessMechanic.PartBreakMadnessGain} PASS");
         }
     }
 
@@ -1029,32 +1029,32 @@ public static class CharacterBehaviorCoverageCatalog
                 observations.Add("올라프 노려보기 이번 턴 합 위력 +1 PASS");
         }
 
-        BattleAction showOff = CreateNamedAction(
+        BattleAction bloto = CreateNamedAction(
             context,
-            OlafSkillIds.ShowOff,
+            OlafSkillIds.Bloto,
             936003);
-        if (showOff == null)
+        if (bloto == null)
         {
-            failures.Add("올라프 가오잡기 RuntimeSkill이 없습니다.");
+            failures.Add("올라프 블로토 RuntimeSkill이 없습니다.");
         }
         else
         {
             CharacterVerificationScenarioTools.ResetCombatState(owner);
             madness.SetMadnessForDebug(0);
             int beforeWeak = CountWeakenedParts(owner);
-            showOff.Skill.Execute(showOff);
+            bloto.Skill.Execute(bloto);
             int afterWeak = CountWeakenedParts(owner);
 
-            if (madness.CurrentMadness != 2 ||
+            if (madness.CurrentMadness != 1 ||
                 afterWeak != beforeWeak + 1)
             {
                 failures.Add(
-                    $"올라프 가오잡기 불일치: Madness={madness.CurrentMadness}, " +
+                    $"올라프 블로토 불일치: Madness={madness.CurrentMadness}, " +
                     $"Weakened={beforeWeak}->{afterWeak}");
             }
             else
             {
-                observations.Add("올라프 가오잡기 자가 부위 약화 1개·광기 +2 PASS");
+                observations.Add("올라프 블로토 자가 부위 약화 1개·광기 +1 PASS");
             }
         }
 
@@ -1075,15 +1075,15 @@ public static class CharacterBehaviorCoverageCatalog
                 target.GetPartStatus<Bleeding>(targetPart)?.Stack ?? 0;
 
             CharacterVerificationScenarioTools.ResetCombatState(target);
-            madness.SetMadnessForDebug(10);
+            madness.SetMadnessForDebug(8);
             blooming.Skill.Execute(blooming);
-            int atTen =
+            int atEight =
                 target.GetPartStatus<Bleeding>(targetPart)?.Stack ?? 0;
 
-            if (atZero != 3 || atTen != 5)
-                failures.Add($"올라프 만개하는 상처 혈상 불일치: {atZero}/{atTen}");
+            if (atZero != 3 || atEight != 5)
+                failures.Add($"올라프 만개하는 상처 출혈 불일치: {atZero}/{atEight}");
             else
-                observations.Add("올라프 만개하는 상처 광기 0=혈상3, 광기10=혈상5 PASS");
+                observations.Add("올라프 만개하는 상처 광기 0=출혈3, 광기8=출혈5 PASS");
         }
 
         BattleAction bursting = CreateNamedAction(

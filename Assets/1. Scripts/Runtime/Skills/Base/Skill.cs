@@ -56,6 +56,28 @@ public abstract class Skill
 
     public virtual bool CanBreakPart => false;
 
+    public virtual PartBreakMode ResolvePartBreakMode(
+        BattleAction action,
+        BodyPart targetPart)
+    {
+        SkillDefinition definition = RuntimeDefinition;
+
+        if (definition != null &&
+            definition.BreakMode != PartBreakMode.None)
+        {
+            return definition.BreakMode;
+        }
+
+        return CanBreakPart
+            ? PartBreakMode.WeakenedOnly
+            : PartBreakMode.None;
+    }
+
+    public virtual bool IgnoresOwnerRollModifiers(
+        BattleAction action) =>
+        RuntimeDefinition?.Rulebreaker?.Enabled == true &&
+        RuntimeDefinition.Rulebreaker.IgnoreOwnerRollModifiers;
+
     public virtual int AttackWeight =>
         RuntimeDefinition?.AttackWeight
             ?.EffectiveWeight ?? 1;
@@ -221,6 +243,12 @@ public abstract class Skill
         SkillUsageLedger.Decrement(
             owner,
             GetUsageIdentity());
+
+        OnPlanningUseRolledBack();
+    }
+
+    protected virtual void OnPlanningUseRolledBack()
+    {
     }
 
     public virtual bool CanUseByResource(Character character)
@@ -398,7 +426,7 @@ public abstract class Skill
     /// 상대 굴림이 먼저 소진되어 현재 위치가 일방타격으로 처리되더라도
     /// 원래 결투 대 결투 게이트가 성립한 행동 쌍이면 매칭은 유지한다.
     /// </summary>
-    public void NotifyDuelMatched(
+    public virtual void NotifyDuelMatched(
         BattleAction action,
         BattleAction opponentAction,
         int rollIndex,

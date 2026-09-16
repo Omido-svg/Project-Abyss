@@ -200,6 +200,15 @@ public class SpeedManager
         if (slot == null)
             return;
 
+        OlafRulebreakerMechanic olafRulebreaker =
+            slot.Owner?.GetMechanic<OlafRulebreakerMechanic>();
+
+        if (olafRulebreaker?.ShouldForceInfiniteAttackSpeed(slot.Skill) == true)
+        {
+            slot.Speed = OlafRulebreakerMechanic.InfiniteAttackSpeed;
+            return;
+        }
+
         slot.Speed =
             GetSpeed(
                 slot.Owner,

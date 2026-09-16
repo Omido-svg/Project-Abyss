@@ -86,6 +86,12 @@ public class BattleAction
     public int MomentumModifier;
     public int PreparationModifier;
     public int JudgmentModifier;
+
+    // Phase D Olaf rulebreaker runtime annotations. Action 단위로만 유지되어
+    // SO 데이터와 다음 행동에 상태가 새지 않는다.
+    public int RulebreakerFlatPowerBonus;
+    public PartBreakMode PartBreakModeOverride = PartBreakMode.None;
+
     public int CurrentRollIndex;
     public CombatRollType CurrentRollType = CombatRollType.Attack;
 
@@ -297,6 +303,8 @@ public class BattleAction
         LastDamageResult = null;
         LastDamageEventResult = null;
         primaryTargetTerminatedDuringResolution = false;
+        RulebreakerFlatPowerBonus = 0;
+        PartBreakModeOverride = PartBreakMode.None;
     }
 
     public int GetEffectiveExchangeRollCount()

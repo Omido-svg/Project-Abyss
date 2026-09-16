@@ -36,6 +36,10 @@ public class ActionSlot
     // 도사림/위세처럼 계획 단계에서 이미 실행한 행동은 Resolution queue에 다시 넣지 않는다.
     public bool SkipResolution;
 
+    // 「일기토」 같은 룰브레이커가 같은 TargetSlot을 향한 다른 슬롯의
+    // 일방타격만 포기시키기 위한 런타임 표식. 합 자체는 건드리지 않는다.
+    public bool SuppressOneSidedResolution;
+
     public bool HasActionId => ActionId > 0;
 
     public bool AllowsSkill(Skill skill)
