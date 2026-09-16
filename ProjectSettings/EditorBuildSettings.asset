@@ -11,6 +11,9 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/5. Scenes/Battle Test Scene.unity
     guid: 88bbbfefcd5098943a3acf5a22175360
+  - enabled: 1
+    path: Assets/5. Scenes/Run Flow Test.unity
+    guid: cdeadf176e7252d4f8f4849d15fad9ab
   m_configObjects:
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 052faaac586de48259a63d0c4782560b, type: 3}
   m_UseUCBPForAssetBundles: 0
