@@ -1,0 +1,25 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 0}
+  m_Name: Detachment_T3_02
+  m_EditorClassIdentifier: ProjectAbyss.Runtime::EmotionAugmentDefinition
+  AugmentId: emotion.detachment.t3.02
+  DisplayName: "\uC2E0\uC758 \uC721\uCCB4"
+  Emotion: 6
+  Tier: 3
+  OfferWeight: 1
+  Description: "\uB0B4 \uD750\uD2B8\uB7EC\uC9D0 \uAC8C\uC774\uC9C0\uAC00 \uC0AC\uB77C\uC9C4\uB2E4"
+  DesignStatus: "\uD655\uC815"
+  RuntimeReadiness: 0
+  RuntimeNote: "Phase C rulebreaker/prototype runtime hook\uC5D0 \uC5F0\uACB0\uB428."
+  Effects:
+  - {fileID: 11400000, guid: 65e072daffa27bb4eb09328d02254ae9, type: 2}

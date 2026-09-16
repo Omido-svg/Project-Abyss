@@ -14,15 +14,32 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   phaseASchemaVersion: 1
   skillId: STAGE1_BOSS_B_FALLBACK
-  SkillName: B
+  SkillName: "B (\uBE5B \uBD80\uC871 \uD3C9\uD0C0)"
   ActionType: 0
-  Color: 1
+  Color: 0
   BasePowerRule: 3
-  BasePower: 0
+  BasePower: 14
   BasePowerFlatAdjustment: 0
   PhysicalType: 0
-  CanBreakPart: 1
+  CanBreakPart: 0
+  BreakMode: 0
   GainPrestige: 1
+  Rulebreaker:
+    Enabled: 0
+    EnergyCostReductionPerCommittedUse: 0
+    MinimumEnergyCost: 0
+    MirrorThisSkillToOpponentOnDuelMatch: 0
+    IgnoreOwnerRollModifiers: 0
+    ExplodeBleedingOncePerAction: 0
+    BleedingExplosionMultiplier: 0
+    SuppressFriendlyOneSidedHitsOnSameTargetSlot: 0
+    ConsumeAllOwnerBleedingOnExecute: 0
+    BreakAuthorityBleedingThreshold: 0
+    IgnoreWeakenPrerequisiteBleedingThreshold: 0
+    RequirePreviousTurnLastStand: 0
+    ApplyCurrentLastStandPowerBonus: 0
+    CurrentLastStandPowerBonus: 0
+    GrantInfiniteAttackSlotSpeedThisTurn: 0
   AttackWeight:
     Weight: 1
     SecondaryPartMode: 0
@@ -83,7 +100,7 @@ MonoBehaviour:
     OnLoseEffectEntries: []
     OnWinEffects: []
     OnLoseEffects: []
-  ExchangeRollCount: 3
+  ExchangeRollCount: 2
   RollReusePolicy: 0
   MultiRollPenalty:
     Enabled: 0
@@ -97,8 +114,8 @@ MonoBehaviour:
   CanClashValue: 1
   PreparationTier: 0
   ResolverType: 0
-  DiceMin: 0
-  DiceMax: 0
+  DiceMin: 1
+  DiceMax: 8
   CoinCount: 1
   CoinFrontChance: 0.5
   CoinFrontValue: 1

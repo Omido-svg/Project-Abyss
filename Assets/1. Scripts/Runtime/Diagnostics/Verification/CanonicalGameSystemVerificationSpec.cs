@@ -90,4 +90,11 @@ public static class CanonicalGameSystemVerificationSpec
             "H-01", "H-02", "H-03", "H-05",
             "H-06", "H-07", "H-09", "H-10"
         };
+
+    public static readonly IReadOnlyList<string> PhaseERequirements =
+        new[]
+        {
+            "C-31", "C-32", "C-33", "C-38", "C-40", "C-44",
+            "O-02", "Y-06", "H-08"
+        };
 }

@@ -1,0 +1,27 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 0}
+  m_Name: Detachment_T2_02
+  m_EditorClassIdentifier: ProjectAbyss.Runtime::EmotionAugmentDefinition
+  AugmentId: emotion.detachment.t2.02
+  DisplayName: "\uB098\uB220 \uBC1B\uAE30"
+  Emotion: 6
+  Tier: 2
+  OfferWeight: 1
+  Description: "\uC774\uBC88 \uD134 \uD53C\uD574\uC758 \uC808\uBC18\uC744 \uB2E4\uC74C
+    \uD134 \uCCB4\uB825\uC774 \uAC00\uC7A5 \uB9CE\uC740 \uBD80\uC704\uB85C \uBBF8\uB8F8
+    (\uC804\uD22C \uB05D\uB098\uBA74 \uC18C\uBA78)"
+  DesignStatus: "\uD655\uC815"
+  RuntimeReadiness: 1
+  RuntimeNote: "Phase E-1 \uC815\uC758 \uC774\uAD00 \uC644\uB8CC. \uACF5\uD1B5 runtime
+    hook \uC5F0\uACB0 \uB300\uAE30."
+  Effects: []

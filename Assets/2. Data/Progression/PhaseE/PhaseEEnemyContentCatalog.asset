@@ -1,0 +1,89 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 0}
+  m_Name: PhaseEEnemyContentCatalog
+  m_EditorClassIdentifier: ProjectAbyss.Runtime::PhaseEEnemyContentCatalog
+  NormalEncounters:
+  - Stage: 1
+    EnemyCount: 3
+    HpPerEnemy: 135
+    StaggerMax: 100
+    ActionSlotsPerEnemy: 1
+    RollsPerAction: 3
+    WeakTypeCount: 1
+    NeutralTypeCount: 2
+    ResistantTypeCount: 0
+  - Stage: 1
+    EnemyCount: 4
+    HpPerEnemy: 101
+    StaggerMax: 100
+    ActionSlotsPerEnemy: 1
+    RollsPerAction: 3
+    WeakTypeCount: 1
+    NeutralTypeCount: 2
+    ResistantTypeCount: 0
+  - Stage: 2
+    EnemyCount: 3
+    HpPerEnemy: 135
+    StaggerMax: 100
+    ActionSlotsPerEnemy: 1
+    RollsPerAction: 3
+    WeakTypeCount: 1
+    NeutralTypeCount: 1
+    ResistantTypeCount: 1
+  - Stage: 2
+    EnemyCount: 4
+    HpPerEnemy: 101
+    StaggerMax: 100
+    ActionSlotsPerEnemy: 1
+    RollsPerAction: 3
+    WeakTypeCount: 1
+    NeutralTypeCount: 1
+    ResistantTypeCount: 1
+  - Stage: 3
+    EnemyCount: 3
+    HpPerEnemy: 135
+    StaggerMax: 100
+    ActionSlotsPerEnemy: 1
+    RollsPerAction: 3
+    WeakTypeCount: 0
+    NeutralTypeCount: 2
+    ResistantTypeCount: 1
+  - Stage: 3
+    EnemyCount: 4
+    HpPerEnemy: 101
+    StaggerMax: 100
+    ActionSlotsPerEnemy: 1
+    RollsPerAction: 3
+    WeakTypeCount: 0
+    NeutralTypeCount: 2
+    ResistantTypeCount: 1
+  BossPartCount: 5
+  BossPartHp: 150
+  BossWholeHp: 1500
+  BossStaggerMax: 400
+  BossStartingEnergy: 2
+  NormalPostureSequence: A,A,B
+  RandomTarget: 1
+  FallbackBToNormalWhenEnergyInsufficient: 1
+  SkillA:
+    SkillKey: A
+    RollCount: 3
+    BasePower: 13
+    Duel: 1
+    CanBreakPart: 0
+  SkillB:
+    SkillKey: B
+    RollCount: 2
+    BasePower: 14
+    Duel: 1
+    CanBreakPart: 0

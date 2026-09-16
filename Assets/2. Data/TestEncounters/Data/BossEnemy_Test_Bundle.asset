@@ -40,7 +40,7 @@ MonoBehaviour:
   - PartId: head
     DisplayName: Head
     LegacyType: 0
-    MaxPartHP: 50
+    MaxPartHP: 150
     SlotRole: 2
     RollCountPenalty: 0
     SpeedMaxPenalty: 0
@@ -54,7 +54,7 @@ MonoBehaviour:
   - PartId: left_arm
     DisplayName: Left Arm
     LegacyType: 1
-    MaxPartHP: 50
+    MaxPartHP: 150
     SlotRole: 0
     RollCountPenalty: 1
     SpeedMaxPenalty: 0
@@ -68,7 +68,7 @@ MonoBehaviour:
   - PartId: right_arm
     DisplayName: Right Arm
     LegacyType: 2
-    MaxPartHP: 50
+    MaxPartHP: 150
     SlotRole: 0
     RollCountPenalty: 1
     SpeedMaxPenalty: 0
@@ -82,7 +82,7 @@ MonoBehaviour:
   - PartId: legs
     DisplayName: Legs
     LegacyType: 3
-    MaxPartHP: 50
+    MaxPartHP: 150
     SlotRole: 1
     RollCountPenalty: 0
     SpeedMaxPenalty: 1
@@ -96,7 +96,7 @@ MonoBehaviour:
   - PartId: extra
     DisplayName: Extra
     LegacyType: 4
-    MaxPartHP: 50
+    MaxPartHP: 150
     SlotRole: 2
     RollCountPenalty: 0
     SpeedMaxPenalty: 0

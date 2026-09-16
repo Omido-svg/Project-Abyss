@@ -1,0 +1,27 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 0}
+  m_Name: Compassion_T3_01
+  m_EditorClassIdentifier: ProjectAbyss.Runtime::EmotionAugmentDefinition
+  AugmentId: emotion.compassion.t3.01
+  DisplayName: "\uC804\uD658"
+  Emotion: 4
+  Tier: 3
+  OfferWeight: 1
+  Description: "\uC774\uD6C4 \uD68C\uBCF5\uD558\uC9C0 \uC54A\uACE0 \uD68C\uBCF5\uD588\uC744
+    \uC591\uB9CC\uD07C \uBB34\uC791\uC704 \uC801 \uBD80\uC704\uC5D0 \uC989\uC2DC
+    \uD53C\uD574"
+  DesignStatus: "\uD655\uC815"
+  RuntimeReadiness: 1
+  RuntimeNote: "Phase E-1 \uC815\uC758 \uC774\uAD00 \uC644\uB8CC. \uACF5\uD1B5 runtime
+    hook \uC5F0\uACB0 \uB300\uAE30."
+  Effects: []

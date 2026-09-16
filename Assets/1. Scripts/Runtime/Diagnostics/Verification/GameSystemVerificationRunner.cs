@@ -27,7 +27,8 @@ public static class GameSystemVerificationRunner
             includePhaseC: true,
             includePhaseDOlaf: true,
             includePhaseDYujin: true,
-            includePhaseDHifumi: true);
+            includePhaseDHifumi: true,
+            includePhaseE: false);
 
     public static GameSystemVerificationReport RunContracts() =>
         RunDataChecks();
@@ -43,7 +44,8 @@ public static class GameSystemVerificationRunner
             includePhaseC: true,
             includePhaseDOlaf: true,
             includePhaseDYujin: true,
-            includePhaseDHifumi: true);
+            includePhaseDHifumi: true,
+            includePhaseE: false);
 
     public static GameSystemVerificationReport RunPhaseA(
         BattleManager manager) =>
@@ -56,7 +58,8 @@ public static class GameSystemVerificationRunner
             includePhaseC: false,
             includePhaseDOlaf: false,
             includePhaseDYujin: false,
-            includePhaseDHifumi: false);
+            includePhaseDHifumi: false,
+            includePhaseE: false);
 
     public static GameSystemVerificationReport RunPhaseB(
         BattleManager manager) =>
@@ -69,7 +72,8 @@ public static class GameSystemVerificationRunner
             includePhaseC: false,
             includePhaseDOlaf: false,
             includePhaseDYujin: false,
-            includePhaseDHifumi: false);
+            includePhaseDHifumi: false,
+            includePhaseE: false);
 
     public static GameSystemVerificationReport RunPhaseC(
         BattleManager manager) =>
@@ -82,7 +86,8 @@ public static class GameSystemVerificationRunner
             includePhaseC: true,
             includePhaseDOlaf: false,
             includePhaseDYujin: false,
-            includePhaseDHifumi: false);
+            includePhaseDHifumi: false,
+            includePhaseE: false);
 
     public static GameSystemVerificationReport RunPhaseDOlaf(
         BattleManager manager) =>
@@ -95,7 +100,8 @@ public static class GameSystemVerificationRunner
             includePhaseC: true,
             includePhaseDOlaf: true,
             includePhaseDYujin: false,
-            includePhaseDHifumi: false);
+            includePhaseDHifumi: false,
+            includePhaseE: false);
 
     public static GameSystemVerificationReport RunPhaseDYujin(
         BattleManager manager) =>
@@ -108,7 +114,8 @@ public static class GameSystemVerificationRunner
             includePhaseC: true,
             includePhaseDOlaf: false,
             includePhaseDYujin: true,
-            includePhaseDHifumi: false);
+            includePhaseDHifumi: false,
+            includePhaseE: false);
 
     public static GameSystemVerificationReport RunPhaseDHifumi(
         BattleManager manager) =>
@@ -121,7 +128,21 @@ public static class GameSystemVerificationRunner
             includePhaseC: true,
             includePhaseDOlaf: false,
             includePhaseDYujin: false,
-            includePhaseDHifumi: true);
+            includePhaseDHifumi: true,
+            includePhaseE: false);
+
+    public static GameSystemVerificationReport RunPhaseEData() =>
+        RunInternal(
+            null,
+            true,
+            false,
+            false,
+            includePhaseB: true,
+            includePhaseC: true,
+            includePhaseDOlaf: true,
+            includePhaseDYujin: true,
+            includePhaseDHifumi: true,
+            includePhaseE: true);
 
     public static GameSystemVerificationReport RunFull(
         BattleManager manager) =>
@@ -145,7 +166,8 @@ public static class GameSystemVerificationRunner
         bool includePhaseC,
         bool includePhaseDOlaf,
         bool includePhaseDYujin,
-        bool includePhaseDHifumi)
+        bool includePhaseDHifumi,
+        bool includePhaseE)
     {
         DateTime started = DateTime.Now;
         GameSystemVerificationReport report = CreateReport(started, manager);
@@ -161,7 +183,8 @@ public static class GameSystemVerificationRunner
             includePhaseC,
             includePhaseDOlaf,
             includePhaseDYujin,
-            includePhaseDHifumi);
+            includePhaseDHifumi,
+            includePhaseE);
 
         foreach (RegisteredCase registeredCase in registered)
         {
@@ -198,6 +221,13 @@ public static class GameSystemVerificationRunner
 
             if (!includePhaseDHifumi &&
                 CanonicalGameSystemVerificationSpec.PhaseDHifumiRequirements.Contains(
+                    registeredCase.Case.RequirementId))
+            {
+                continue;
+            }
+
+            if (!includePhaseE &&
+                CanonicalGameSystemVerificationSpec.PhaseERequirements.Contains(
                     registeredCase.Case.RequirementId))
             {
                 continue;
@@ -316,7 +346,8 @@ public static class GameSystemVerificationRunner
         bool includePhaseC,
         bool includePhaseDOlaf,
         bool includePhaseDYujin,
-        bool includePhaseDHifumi)
+        bool includePhaseDHifumi,
+        bool includePhaseE)
     {
         IEnumerable<GameSystemVerificationCase> cases =
             registered?.Select(item => item.Case) ??
@@ -442,6 +473,27 @@ public static class GameSystemVerificationRunner
                 ? null
                 : "Missing=" + string.Join(", ", missingDHifumi),
             includePhaseDHifumi);
+
+
+        List<string> missingE = CanonicalGameSystemVerificationSpec.PhaseERequirements
+            .Where(id => !coverage.ContainsKey(id))
+            .ToList();
+
+        AddInfrastructureResult(
+            report,
+            "system.coverage.phase_e",
+            missingE.Count == 0
+                ? GameSystemVerificationStatus.Pass
+                : (includePhaseE
+                    ? GameSystemVerificationStatus.Fail
+                    : GameSystemVerificationStatus.Pending),
+            "Phase E 9개 Requirement에 검증 Case 연결",
+            $"Covered={CanonicalGameSystemVerificationSpec.PhaseERequirements.Count - missingE.Count}/" +
+            $"{CanonicalGameSystemVerificationSpec.PhaseERequirements.Count}",
+            missingE.Count == 0
+                ? null
+                : "Missing=" + string.Join(", ", missingE),
+            includePhaseE);
     }
 
     private static bool ShouldRun(

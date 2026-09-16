@@ -1,0 +1,42 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 0}
+  m_Name: PhaseEContentManifest
+  m_EditorClassIdentifier: ProjectAbyss.Runtime::PhaseEContentManifest
+  SchemaVersion: 3
+  EnemyContent: {fileID: 11400000, guid: 556082802e3843a4591092104cb20ae6, type: 2}
+  EmotionCatalog: {fileID: 11400000, guid: a808475bc5d32b9489f9beb1df63d8a7, type: 2}
+  RunItemCatalog: {fileID: 11400000, guid: d7eb3d72f503e234295e4ab538557fc3, type: 2}
+  ExpectedEmotionCount: 63
+  ExpectedCommonItemCount: 30
+  ExpectedClassItemCountPerCharacter: 10
+  ExpectedPlayableCharacterCount: 3
+  HifumiPokerFaceSynced: 1
+  UpgradeDecompositionComplete: 0
+  OlafSkillPoolComplete: 0
+  YujinSkillPoolComplete: 0
+  RollTextureScanned: 5
+  RollTexturePassed: 5
+  RollTexturePending: 0
+  RollTextureViolationCount: 0
+  RollTextureIssues: []
+  PendingReasons:
+  - "C-38: 0916 XLSX\uB294 \uAC15\uD654 2\uD68C \uC644\uB8CC \uB9CC\uB819\uAC12\uC774\uBA70
+    \uAE30\uBCF8/\uAC15\uD6541 \uC5ED\uC0B0 \uADDC\uCE59\uC774 \uBBF8\uC815."
+  - "C-33: \uC815\uBCF8\uC740 \uC544\uC774\uD15C \uC218/\uD2F0\uC5B4/\uAC00\uACA9/\uD655\uB960\uB9CC
+    \uD655\uC815. 60\uAC1C \uC2E4\uC81C \uC544\uC774\uD15C \uBA85\uCE6D/\uD6A8\uACFC\uAC12
+    \uBAA9\uB85D\uC740 \uC81C\uACF5\uB418\uC9C0 \uC54A\uC74C."
+  - "O-02/Y-06: \uC2E4\uC81C SkillDefinition \uAE30\uBCF8/\uAC15\uD654 \uB370\uC774\uD130\uB294
+    C-38 \uACB0\uC815 \uC774\uD6C4 \uC548\uC804\uD558\uAC8C \uC774\uAD00."
+  - "C-32: 63\uAC1C \uC815\uC758\uB294 \uC774\uAD00\uD558\uC9C0\uB9CC \uD604\uC7AC
+    \uACF5\uD1B5 runtime hook\uC73C\uB85C \uD45C\uD604\uB418\uC9C0 \uC54A\uB294 \uC99D\uAC15\uC740
+    DataOnlyPendingRuntime\uC73C\uB85C \uD45C\uC2DC."

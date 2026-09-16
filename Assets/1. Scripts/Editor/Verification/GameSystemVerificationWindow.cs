@@ -38,7 +38,7 @@ public sealed class GameSystemVerificationWindow : EditorWindow
     {
         EditorGUILayout.LabelField("Project Abyss · Game System Verification", EditorStyles.boldLabel);
         EditorGUILayout.HelpBox(
-            "Phase A/B 회귀 + Phase C Progression/Run + Phase D Character Runtime을 검증합니다. " +
+            "Phase A/B 회귀 + Phase C Progression/Run + Phase D Character Runtime + Phase E Content Data를 검증합니다. " +
             "Olaf/Yujin/Hifumi Gate는 각각 해당 캐릭터가 Player인 초기화된 전투에서 실행하세요. 캐릭터별 Gate는 서로 다른 Player fixture를 요구하므로 독립 실행합니다.",
             MessageType.Info);
 
@@ -62,6 +62,7 @@ public sealed class GameSystemVerificationWindow : EditorWindow
         int phaseDOlafCovered = CanonicalGameSystemVerificationSpec.PhaseDOlafRequirements.Count(id => coverage.ContainsKey(id));
         int phaseDYujinCovered = CanonicalGameSystemVerificationSpec.PhaseDYujinRequirements.Count(id => coverage.ContainsKey(id));
         int phaseDHifumiCovered = CanonicalGameSystemVerificationSpec.PhaseDHifumiRequirements.Count(id => coverage.ContainsKey(id));
+        int phaseECovered = CanonicalGameSystemVerificationSpec.PhaseERequirements.Count(id => coverage.ContainsKey(id));
 
         EditorGUILayout.LabelField("Requirement Coverage", EditorStyles.boldLabel);
         EditorGUILayout.LabelField(
@@ -70,7 +71,8 @@ public sealed class GameSystemVerificationWindow : EditorWindow
             $"Phase C: {phaseCCovered}/{CanonicalGameSystemVerificationSpec.PhaseCRequirements.Count}   " +
             $"Phase D Olaf: {phaseDOlafCovered}/{CanonicalGameSystemVerificationSpec.PhaseDOlafRequirements.Count}   " +
             $"Phase D Yujin: {phaseDYujinCovered}/{CanonicalGameSystemVerificationSpec.PhaseDYujinRequirements.Count}   " +
-            $"Phase D Hifumi: {phaseDHifumiCovered}/{CanonicalGameSystemVerificationSpec.PhaseDHifumiRequirements.Count}");
+            $"Phase D Hifumi: {phaseDHifumiCovered}/{CanonicalGameSystemVerificationSpec.PhaseDHifumiRequirements.Count}   " +
+            $"Phase E: {phaseECovered}/{CanonicalGameSystemVerificationSpec.PhaseERequirements.Count}");
 
         List<string> missingB = CanonicalGameSystemVerificationSpec.PhaseBRequirements
             .Where(id => !coverage.ContainsKey(id)).ToList();
@@ -96,6 +98,11 @@ public sealed class GameSystemVerificationWindow : EditorWindow
             .Where(id => !coverage.ContainsKey(id)).ToList();
         if (missingDHifumi.Count > 0)
             EditorGUILayout.HelpBox("Phase D Hifumi verification missing: " + string.Join(", ", missingDHifumi), MessageType.Warning);
+
+        List<string> missingE = CanonicalGameSystemVerificationSpec.PhaseERequirements
+            .Where(id => !coverage.ContainsKey(id)).ToList();
+        if (missingE.Count > 0)
+            EditorGUILayout.HelpBox("Phase E verification missing: " + string.Join(", ", missingE), MessageType.Warning);
     }
 
     private void DrawControls()
@@ -124,6 +131,9 @@ public sealed class GameSystemVerificationWindow : EditorWindow
                 if (GUILayout.Button("Live Audit", GUILayout.Height(30f)))
                     Run(GameSystemVerificationRunner.RunLivePlanAudit(battleManager));
             }
+
+            if (GUILayout.Button("Phase E Data Gate", GUILayout.Height(30f)))
+                Run(GameSystemVerificationRunner.RunPhaseEData());
 
             if (GUILayout.Button("Find Manager", GUILayout.Height(30f), GUILayout.Width(110f)))
                 ResolveBattleManager();

@@ -1,0 +1,27 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 0}
+  m_Name: Admiration_T3_03
+  m_EditorClassIdentifier: ProjectAbyss.Runtime::EmotionAugmentDefinition
+  AugmentId: emotion.admiration.t3.03
+  DisplayName: "\uC804\uD658"
+  Emotion: 2
+  Tier: 3
+  OfferWeight: 1
+  Description: "\uC704\uC138\uB97C \uBABB \uC4F0\uACE0 \uB3D9\uACBD 1 \xB7 2\uD2F0\uC5B4\uB3C4
+    \uC5C6\uB294 \uAC83\uC73C\uB85C \uCDE8\uAE09 \xB7 \uB300\uC2E0 \uD798 +1 \xB7
+    \uC2E0\uC18D +1 \uC804\uD22C \uB3D9\uC548 \uC601\uAD6C"
+  DesignStatus: "\uD655\uC815"
+  RuntimeReadiness: 1
+  RuntimeNote: "Phase E-1 \uC815\uC758 \uC774\uAD00 \uC644\uB8CC. \uACF5\uD1B5 runtime
+    hook \uC5F0\uACB0 \uB300\uAE30."
+  Effects: []

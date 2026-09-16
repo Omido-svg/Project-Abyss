@@ -1,0 +1,28 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 0}
+  m_Name: Longing_T3_03
+  m_EditorClassIdentifier: ProjectAbyss.Runtime::EmotionAugmentDefinition
+  AugmentId: emotion.longing.t3.03
+  DisplayName: "\uC655\uADC0(\uC911\uB9BD)"
+  Emotion: 5
+  Tier: 3
+  OfferWeight: 1
+  Description: "\uC911\uB9BD 3\uD134 \u2192 \uB418\uD480\uC774\uD558\uB294 \uD134
+    ([\uD574\uACB0] \uB2E8\uACC4\uB9CC \uB0B4 \uC2AC\uB86F \uD55C \uBC88 \uB354 \xB7
+    \uD134 \uD6A8\uACFC\uB294 \uD55C \uBC88\uC529 \xB7 \uBE5B\uC740 \uB2E4\uC2DC
+    \uB0C4)"
+  DesignStatus: "\uD655\uC815"
+  RuntimeReadiness: 0
+  RuntimeNote: "Phase C rulebreaker/prototype runtime hook\uC5D0 \uC5F0\uACB0\uB428."
+  Effects:
+  - {fileID: 11400000, guid: 63861897280cd4f4b9aa6008af274007, type: 2}

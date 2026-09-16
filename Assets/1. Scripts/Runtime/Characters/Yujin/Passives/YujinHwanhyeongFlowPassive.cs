@@ -12,11 +12,8 @@ using UnityEngine;
 public sealed class YujinHwanhyeongFlowPassive :
     CharacterAugment
 {
-    [SerializeField, Min(0)]
-    private int senseGainOnWeaponSwitch = 0;
-
     // 0916: 환형 완료 자체는 살수의 감 획득 원인이 아니다.
-    // 필드는 구 asset 직렬화 호환용으로만 보존한다.
+    // 구 직렬화 값은 더 이상 런타임 계약이 아니므로 코드 필드도 제거한다.
     public int SenseGainOnWeaponSwitch => 0;
 
     public override bool CanApplyTo(

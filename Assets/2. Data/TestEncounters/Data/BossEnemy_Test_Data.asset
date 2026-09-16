@@ -31,6 +31,7 @@ MonoBehaviour:
     Enabled: 1
     HasLinkedPart: 1
     LinkedPartType: 0
+    LinkedPartId: 
     OverrideSpeedRange: 0
     MinSpeed: 3
     MaxSpeed: 8
@@ -43,6 +44,7 @@ MonoBehaviour:
     Enabled: 1
     HasLinkedPart: 1
     LinkedPartType: 1
+    LinkedPartId: 
     OverrideSpeedRange: 0
     MinSpeed: 3
     MaxSpeed: 8
@@ -55,6 +57,7 @@ MonoBehaviour:
     Enabled: 1
     HasLinkedPart: 1
     LinkedPartType: 2
+    LinkedPartId: 
     OverrideSpeedRange: 0
     MinSpeed: 3
     MaxSpeed: 8
@@ -67,6 +70,7 @@ MonoBehaviour:
     Enabled: 1
     HasLinkedPart: 1
     LinkedPartType: 3
+    LinkedPartId: 
     OverrideSpeedRange: 0
     MinSpeed: 3
     MaxSpeed: 8
@@ -77,7 +81,6 @@ MonoBehaviour:
   CombatLoadout: {fileID: 11400000, guid: 2dbf693936d873742afef74044506075, type: 2}
   BossPhases:
   - {fileID: 11400000, guid: f65e7f883bdcfdc4ea9edf893548744f, type: 2}
-  - {fileID: 11400000, guid: 285c5a69b7cd55543bc0d6b15e3dc391, type: 2}
   PhysicalResistances:
     CutMultiplier: 1
     BluntMultiplier: 1
@@ -87,8 +90,8 @@ MonoBehaviour:
     BluntMultiplier: 1
     PierceMultiplier: 1
   EnableStaggerGauge: 1
-  OverrideMaxStaggerGauge: 0
-  MaxStaggerGauge: 100
+  OverrideMaxStaggerGauge: 1
+  MaxStaggerGauge: 400
   StaggerDamageRatio: 1
   minSpeed: 2
   maxSpeed: 6
