@@ -1,0 +1,22 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5f905486a10aa7340ae7a61809e1ff45, type: 3}
+  m_Name: common_t1_01
+  m_EditorClassIdentifier: 
+  ItemId: temp_balance_v1.common.t1.01
+  DisplayName: "TEMP \uACF5\uC6A9 T1-01"
+  Tier: 1
+  CharacterKey: 
+  Description: "[TEMP_BALANCE_V1] \uC815\uC2DD 60\uC885 \uC544\uC774\uD15C \uC124\uACC4
+    \uD655\uC815 \uC804 \uC784\uC2DC flat \uC804\uD22C \uD6A8\uACFC. \uAC00\uACA9/\uB4F1\uC7A5\uD655\uB960/\uD310\uB9E4\uC728\uC740
+    canonical ItemEconomySettings \uC0AC\uC6A9."
+  CombatItem: {fileID: 11400000, guid: ddf437cdac2565f40bf574b4c5fb666a, type: 2}

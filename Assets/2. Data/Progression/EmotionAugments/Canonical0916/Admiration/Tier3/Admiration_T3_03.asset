@@ -21,7 +21,9 @@ MonoBehaviour:
     \uC5C6\uB294 \uAC83\uC73C\uB85C \uCDE8\uAE09 \xB7 \uB300\uC2E0 \uD798 +1 \xB7
     \uC2E0\uC18D +1 \uC804\uD22C \uB3D9\uC548 \uC601\uAD6C"
   DesignStatus: "\uD655\uC815"
-  RuntimeReadiness: 1
-  RuntimeNote: "Phase E-1 \uC815\uC758 \uC774\uAD00 \uC644\uB8CC. \uACF5\uD1B5 runtime
-    hook \uC5F0\uACB0 \uB300\uAE30."
-  Effects: []
+  RuntimeReadiness: 0
+  RuntimeNote: "[TEMP_BALANCE_V1] \uC815\uC2DD \uC804\uC6A9 hook \uD655\uC815 \uC804
+    flat proxy \uC5F0\uACB0. \uAE30\uC874 \uC774\uB984/\uC124\uBA85/DesignStatus\uB294
+    0916 \uC6D0\uBCF8 \uBCF4\uC874."
+  Effects:
+  - {fileID: 11400000, guid: a3471a2ba15cea34babdfc2bcdabc234, type: 2}

@@ -70,9 +70,17 @@ public sealed class PhaseEContentVerificationModule : IGameSystemVerificationMod
         foreach(EmotionType e in Enum.GetValues(typeof(EmotionType)))
             for(int tier=1;tier<=3;tier++) shape &= c.Entries.Count(x=>x!=null && x.Emotion==e && x.Tier==tier)==3;
         if(!shape) return GameSystemVerificationProbeResult.Fail($"total={total}, tier-shape invalid");
-        return dataOnly==0 && designPending==0
-            ? GameSystemVerificationProbeResult.Pass($"63/63 runtime connected")
-            : GameSystemVerificationProbeResult.Pending($"63 definitions; RuntimeConnected={connected}, DataOnly={dataOnly}, DesignPending={designPending}", "정본에 없는 값/공통 runtime hook을 임의로 만들지 않아 P2는 아직 닫히지 않습니다.");
+        if(dataOnly==0 && designPending==0 && connected==63)
+        {
+            var m=Manifest();
+            string suffix=m?.TempBalanceActive==true
+                ? $" / {m.ActiveBalanceProfile} proxies={m.TempEmotionProxyCount}"
+                : string.Empty;
+            return GameSystemVerificationProbeResult.Pass($"63/63 runtime connected{suffix}");
+        }
+        return GameSystemVerificationProbeResult.Pending(
+            $"63 definitions; RuntimeConnected={connected}, DataOnly={dataOnly}, DesignPending={designPending}",
+            "Runtime 연결이 남아 있습니다.");
     }
 
     private static GameSystemVerificationProbeResult VerifyC33(GameSystemVerificationContext _)
@@ -84,14 +92,26 @@ public sealed class PhaseEContentVerificationModule : IGameSystemVerificationMod
             && econ.Tier1Price==400&&econ.Tier2Price==550&&econ.Tier3Price==700&&econ.Tier4Price==850&&econ.Tier5Price==1000&&econ.ClassPrice==900&&Mathf.Approximately(econ.SellRate,.33f)&&econ.ShopSlotMinimum==5&&econ.ShopSlotMaximum==6&&Mathf.Approximately(econ.RerollCostMultiplier,1.5f);
         if(!economy) return GameSystemVerificationProbeResult.Fail("Item economy constants mismatch");
         int common=c.Items.Count(x=>x!=null && x.Tier!=RunItemTier.Class), cls=c.Items.Count(x=>x!=null && x.Tier==RunItemTier.Class);
-        bool complete=common==30 && cls==30;
-        return complete ? GameSystemVerificationProbeResult.Pass("60 item definitions + canonical economy") : GameSystemVerificationProbeResult.Pending($"economy PASS; actual item definitions common={common}/30 class={cls}/30", "0916 source에는 60개 실제 아이템 명칭/효과 목록이 없습니다.");
+        int executable=c.Items.Count(x=>x!=null && x.CombatItem!=null);
+        bool complete=common==30 && cls==30 && executable==60;
+        var manifest=Manifest();
+        return complete
+            ? GameSystemVerificationProbeResult.Pass(
+                $"60 item definitions + canonical economy / executable={executable}/60 / profile={manifest?.ActiveBalanceProfile}")
+            : GameSystemVerificationProbeResult.Pending(
+                $"economy PASS; actual item definitions common={common}/30 class={cls}/30 executable={executable}/60",
+                "실제 아이템 정의/runtime 연결이 남아 있습니다.");
     }
 
     private static GameSystemVerificationProbeResult VerifyC38(GameSystemVerificationContext _)
     {
         var m=Manifest();
-        return m?.UpgradeDecompositionComplete==true ? GameSystemVerificationProbeResult.Pass("upgrade decomposition marked complete") : GameSystemVerificationProbeResult.Pending("Base/Upgrade1 decomposition unset", "0916 XLSX는 강화2 완료 만렙값만 제공하며 역산 규칙이 미정입니다.");
+        if(m?.UpgradeDecompositionComplete!=true)
+            return GameSystemVerificationProbeResult.Pending("Base/Upgrade1 decomposition unset", "0916 XLSX 강화2 목표의 임시 역산이 적용되지 않았습니다.");
+        if(!m.TempBalanceActive || m.ActiveBalanceProfile!=PhaseETempBalanceMigration.ProfileId)
+            return GameSystemVerificationProbeResult.Fail("Upgrade decomposition complete flag without TEMP_BALANCE_V1 provenance");
+        return GameSystemVerificationProbeResult.Pass(
+            $"{m.ActiveBalanceProfile}: Base=max-2 -> U1+1 -> U2+1 (Dice); second costs N75/P150/D200/R225; Yujin weapon formula preserved");
     }
 
     private static GameSystemVerificationProbeResult VerifyC40(GameSystemVerificationContext _)
@@ -109,20 +129,47 @@ public sealed class PhaseEContentVerificationModule : IGameSystemVerificationMod
         var m=Manifest();
         if(m==null) return GameSystemVerificationProbeResult.Fail("manifest missing");
         PhaseEContentMigration.AuditRollTextures(m); EditorUtility.SetDirty(m); AssetDatabase.SaveAssets();
-        return GameSystemVerificationProbeResult.Pass($"Scanned={m.RollTextureScanned}, Passed={m.RollTexturePassed}, Pending={m.RollTexturePending}, Violations={m.RollTextureViolationCount}",
-            m.RollTextureViolationCount>0 ? string.Join("\n", m.RollTextureIssues.Take(20)) : null);
+        string details=m.RollTextureIssues!=null && m.RollTextureIssues.Count>0
+            ? string.Join("\n", m.RollTextureIssues.Take(40))
+            : null;
+        if(m.RollTextureViolationCount>0)
+            return GameSystemVerificationProbeResult.Fail(
+                $"Scanned={m.RollTextureScanned}, Passed={m.RollTexturePassed}, Pending={m.RollTexturePending}, Violations={m.RollTextureViolationCount}", details);
+        if(m.RollTexturePending>0)
+            return GameSystemVerificationProbeResult.Pending(
+                $"Scanned={m.RollTextureScanned}, Passed={m.RollTexturePassed}, Pending={m.RollTexturePending}, Violations=0", details);
+        return GameSystemVerificationProbeResult.Pass(
+            $"Scanned={m.RollTextureScanned}, Passed={m.RollTexturePassed}, Pending=0, Violations=0", details);
     }
 
     private static GameSystemVerificationProbeResult VerifyO02(GameSystemVerificationContext _)
     {
         var m=Manifest();
-        return m?.OlafSkillPoolComplete==true ? GameSystemVerificationProbeResult.Pass("Olaf skill pool marked complete") : GameSystemVerificationProbeResult.Pending("Olaf pool data waits for C-38", "만렙→기본/강화1/강화2 역산 규칙 확정 후 안전 이관합니다.");
+        const string path="Assets/2. Data/Characters/Design2026/Olaf/Olaf_TODO_Loadout.asset";
+        var l=AssetDatabase.LoadAssetAtPath<CharacterCombatLoadout>(path);
+        int n=l?.NormalSkillPool?.Count ?? 0, d=l?.DuelSkillPool?.Count ?? 0;
+        int p=(l?.CommonPreparationPool?.Count ?? 0)+(l?.CharacterPreparationPool?.Count ?? 0);
+        int r=l?.PrestigeSkillPool?.Count ?? 0;
+        bool profiles=l!=null && l.EnumerateAllDefinitions().All(x=>x!=null && x.UpgradeProfile!=null);
+        bool ok=m?.OlafSkillPoolComplete==true && n==16 && d==21 && p==9 && r==3 && profiles;
+        return ok
+            ? GameSystemVerificationProbeResult.Pass($"Olaf 0916 pool 16/21/9/3 + upgrades / {m.ActiveBalanceProfile}")
+            : GameSystemVerificationProbeResult.Pending($"Olaf pool N={n}/16 D={d}/21 P={p}/9 R={r}/3 profiles={profiles}", "TEMP pool migration incomplete");
     }
 
     private static GameSystemVerificationProbeResult VerifyY06(GameSystemVerificationContext _)
     {
         var m=Manifest();
-        return m?.YujinSkillPoolComplete==true ? GameSystemVerificationProbeResult.Pass("Yujin skill pool marked complete") : GameSystemVerificationProbeResult.Pending("Yujin latest pool waits for C-38", "0916 최신 풀은 평타9/결투A~N 14장이며 구 A~L/평타2 계약을 사용하지 않습니다.");
+        const string path="Assets/2. Data/Characters/Design2026/Yujin/Yujin_TODO_Loadout.asset";
+        var l=AssetDatabase.LoadAssetAtPath<CharacterCombatLoadout>(path);
+        int n=l?.NormalSkillPool?.Count ?? 0, d=l?.DuelSkillPool?.Count ?? 0;
+        int p=(l?.CommonPreparationPool?.Count ?? 0)+(l?.CharacterPreparationPool?.Count ?? 0);
+        int r=l?.PrestigeSkillPool?.Count ?? 0;
+        bool profiles=l!=null && l.EnumerateAllDefinitions().All(x=>x!=null && x.UpgradeProfile!=null);
+        bool ok=m?.YujinSkillPoolComplete==true && n==9 && d==14 && p==9 && r==3 && profiles;
+        return ok
+            ? GameSystemVerificationProbeResult.Pass($"Yujin 0916 pool 9/14/9/3 + upgrades / {m.ActiveBalanceProfile}")
+            : GameSystemVerificationProbeResult.Pending($"Yujin pool N={n}/9 D={d}/14 P={p}/9 R={r}/3 profiles={profiles}", "TEMP pool migration incomplete");
     }
 
     private static GameSystemVerificationProbeResult VerifyH08(GameSystemVerificationContext _)

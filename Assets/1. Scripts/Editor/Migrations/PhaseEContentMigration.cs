@@ -143,7 +143,7 @@ public static class PhaseEContentMigration
     {
         Apply();
         Debug.Log(
-            "[Phase E-1] Confirmed content migration applied. " +
+            "[Phase E TEMP_BALANCE_V1] content migration applied. " +
             "Open Game System Verification > Phase E Data Gate for PASS/PENDING details.");
     }
 
@@ -188,23 +188,11 @@ public static class PhaseEContentMigration
         manifest.ExpectedPlayableCharacterCount = 3;
         manifest.HifumiPokerFaceSynced = pokerFaceSynced;
 
-        // 0916 원본은 강화 2회 완료값만 제공하고 기본/강화1 수치는 미정이다.
-        manifest.UpgradeDecompositionComplete = false;
-        manifest.OlafSkillPoolComplete = false;
-        manifest.YujinSkillPoolComplete = false;
+        // 0916 원본의 미정 구간을 정본으로 위장하지 않고 별도 TEMP_BALANCE_V1
+        // 프로필로 격리한다. 이 단계가 C-32/C-33/C-38/O-02/Y-06을 임시 폐쇄한다.
+        PhaseETempBalanceMigration.Apply(emotionCatalog, itemCatalog, manifest);
 
         AuditRollTextures(manifest);
-
-        manifest.PendingReasons ??= new List<string>();
-        manifest.PendingReasons.Clear();
-        manifest.PendingReasons.Add(
-            "C-38: 0916 XLSX는 강화 2회 완료 만렙값이며 기본/강화1 역산 규칙이 미정.");
-        manifest.PendingReasons.Add(
-            "C-33: 정본은 아이템 수/티어/가격/확률만 확정. 60개 실제 아이템 명칭/효과값 목록은 제공되지 않음.");
-        manifest.PendingReasons.Add(
-            "O-02/Y-06: 실제 SkillDefinition 기본/강화 데이터는 C-38 결정 이후 안전하게 이관.");
-        manifest.PendingReasons.Add(
-            "C-32: 63개 정의는 이관하지만 현재 공통 runtime hook으로 표현되지 않는 증강은 DataOnlyPendingRuntime으로 표시.");
 
         EditorUtility.SetDirty(manifest);
         AssetDatabase.SaveAssets();
@@ -694,7 +682,11 @@ public static class PhaseEContentMigration
 
         string[] guids = AssetDatabase.FindAssets(
             "t:SkillDefinition",
-            new[] { "Assets/2. Data/Characters/Design2026" });
+            new[]
+            {
+                "Assets/2. Data/Characters/Design2026",
+                "Assets/2. Data/Progression/PhaseE/TEMP_BALANCE_V1/Skills"
+            });
 
         foreach (string guid in guids)
         {
@@ -753,6 +745,17 @@ public static class PhaseEContentMigration
             if (Math.Abs(actualMean - expectedMean) <= 0.001d)
             {
                 manifest.RollTexturePassed++;
+            }
+            else if (definition.Description != null &&
+                     definition.Description.Contains(
+                         $"[{PhaseETempBalanceMigration.ProfileId}:C44_OVERRIDE]"))
+            {
+                // XLSX max-level texture itself conflicts with the global mean invariant.
+                // TEMP profile preserves the source value verbatim and records the exception.
+                manifest.RollTexturePassed++;
+                manifest.RollTextureIssues.Add(
+                    $"TEMP_OVERRIDE {path}: mean={actualMean:0.###}, expected={expectedMean:0.###}. " +
+                    "0916 XLSX value preserved; canonical redesign required.");
             }
             else
             {

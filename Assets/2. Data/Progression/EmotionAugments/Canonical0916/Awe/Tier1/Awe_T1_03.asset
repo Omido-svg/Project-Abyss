@@ -19,7 +19,9 @@ MonoBehaviour:
   OfferWeight: 1
   Description: "\uD68D\uB4DD \uD6C4 3\uD134\uAC04 \uC2E0\uC18D +1"
   DesignStatus: "\uD655\uC815"
-  RuntimeReadiness: 1
-  RuntimeNote: "Phase E-1 \uC815\uC758 \uC774\uAD00 \uC644\uB8CC. \uACF5\uD1B5 runtime
-    hook \uC5F0\uACB0 \uB300\uAE30."
-  Effects: []
+  RuntimeReadiness: 0
+  RuntimeNote: "[TEMP_BALANCE_V1] \uC815\uC2DD \uC804\uC6A9 hook \uD655\uC815 \uC804
+    flat proxy \uC5F0\uACB0. \uAE30\uC874 \uC774\uB984/\uC124\uBA85/DesignStatus\uB294
+    0916 \uC6D0\uBCF8 \uBCF4\uC874."
+  Effects:
+  - {fileID: 11400000, guid: 4002cdc24d8f0f54098db753699898c3, type: 2}

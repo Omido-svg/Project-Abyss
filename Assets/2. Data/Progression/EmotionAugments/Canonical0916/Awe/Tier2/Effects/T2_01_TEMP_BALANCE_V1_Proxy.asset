@@ -1,0 +1,23 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7e94c2555414cbd4aa83c4ba19445641, type: 3}
+  m_Name: T2_01_TEMP_BALANCE_V1_Proxy
+  m_EditorClassIdentifier: 
+  GainEnergy: 0
+  GainPrestige: 0
+  GainBlock: 0
+  RecoverStaggerRatio: 0
+  RollBonus: 0
+  DamageDealtFlatBonus: 0
+  DamageTakenFlatReduction: 0
+  PositiveMomentumBonus: 4
+  PrestigeGainFlatBonus: 0

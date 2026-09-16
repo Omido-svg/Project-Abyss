@@ -13,33 +13,72 @@ MonoBehaviour:
   m_Name: Olaf_TODO_Loadout
   m_EditorClassIdentifier: 
   NormalSkills:
-  - {fileID: 11400000, guid: e70601f0335d00c47bd0d08fd718d968, type: 2}
-  - {fileID: 11400000, guid: 08327fbfacacf5c4e959f3b9b229c84c, type: 2}
-  - {fileID: 11400000, guid: b14cb4e5a33f73b41a9e7b1af4707767, type: 2}
+  - {fileID: 11400000, guid: 87b77b20013e7f54f9ed7113454ae450, type: 2}
+  - {fileID: 11400000, guid: 81f9a22a9097f324eb6a55014054e5ba, type: 2}
+  - {fileID: 11400000, guid: 01e6b2093e8a8224f96bd89a897e2a08, type: 2}
   DuelSkills:
-  - {fileID: 11400000, guid: d685378dcfe71d3418bf9cde7ff0542d, type: 2}
-  - {fileID: 11400000, guid: 89dac212b351004409724d78764b1d7f, type: 2}
+  - {fileID: 11400000, guid: cd90424506385934784ae6ead386e62b, type: 2}
+  - {fileID: 11400000, guid: bc09ab10e9afa2945a34d422441e647e, type: 2}
+  - {fileID: 11400000, guid: 8216d9b1279ffca448824112b9ed131f, type: 2}
   PreparationSkills:
-  - {fileID: 11400000, guid: 65c14acfdfd08ed419fc20225869874b, type: 2}
-  - {fileID: 11400000, guid: c43fe45e72577d544b2699d16a8e2055, type: 2}
-  - {fileID: 11400000, guid: 0cd53d9b56e64a24b82911598f800af9, type: 2}
+  - {fileID: 11400000, guid: 89874fcdf7b691748b5601ff040d175b, type: 2}
+  - {fileID: 11400000, guid: 1464d46d5b893494d8513272fbcc463d, type: 2}
+  - {fileID: 11400000, guid: 3b904fc8be62e1d4e9f69e195c2f1c9f, type: 2}
   PrestigeSkills:
-  - {fileID: 11400000, guid: a2179a7ca9707b24c83c4bf189ed7fbb, type: 2}
+  - {fileID: 11400000, guid: d944f90c5a346bd46896d80f70a22260, type: 2}
   Catalog: {fileID: 0}
   IncludeCatalogCandidates: 0
   NormalSkillPool:
-  - {fileID: 11400000, guid: e70601f0335d00c47bd0d08fd718d968, type: 2}
-  - {fileID: 11400000, guid: 08327fbfacacf5c4e959f3b9b229c84c, type: 2}
-  - {fileID: 11400000, guid: b14cb4e5a33f73b41a9e7b1af4707767, type: 2}
+  - {fileID: 11400000, guid: 87b77b20013e7f54f9ed7113454ae450, type: 2}
+  - {fileID: 11400000, guid: 81f9a22a9097f324eb6a55014054e5ba, type: 2}
+  - {fileID: 11400000, guid: 01e6b2093e8a8224f96bd89a897e2a08, type: 2}
+  - {fileID: 11400000, guid: 8058cfe6fb011f34294f3e3abd8d203c, type: 2}
+  - {fileID: 11400000, guid: 0ccd4e460d9ad4142a73432b46c320c0, type: 2}
+  - {fileID: 11400000, guid: a9f8ecac40d420541a48c599861e758f, type: 2}
+  - {fileID: 11400000, guid: c4c19befd70a20d4591d5000990287b2, type: 2}
+  - {fileID: 11400000, guid: a49339629c1382f41936cea19629fe41, type: 2}
+  - {fileID: 11400000, guid: f8b7e47d31402ae49b2c05ce019b7c94, type: 2}
+  - {fileID: 11400000, guid: 6b081b4a77b26e04a8d89ff2c4daeed9, type: 2}
+  - {fileID: 11400000, guid: 318da5529382900449c8dc37169b108f, type: 2}
+  - {fileID: 11400000, guid: 78ae264f7be5e81478fc11a8de548904, type: 2}
+  - {fileID: 11400000, guid: 25a5e287c9914aa48a25a674b8684384, type: 2}
+  - {fileID: 11400000, guid: 4b7777e1d031bed4d834c47ac2b47cd8, type: 2}
+  - {fileID: 11400000, guid: 148f3f1d401e1714f972f67064272da2, type: 2}
+  - {fileID: 11400000, guid: e9563d3d13d91be4bbda1bdadcc71a98, type: 2}
   DuelSkillPool:
-  - {fileID: 11400000, guid: d685378dcfe71d3418bf9cde7ff0542d, type: 2}
-  - {fileID: 11400000, guid: 89dac212b351004409724d78764b1d7f, type: 2}
+  - {fileID: 11400000, guid: cd90424506385934784ae6ead386e62b, type: 2}
+  - {fileID: 11400000, guid: bc09ab10e9afa2945a34d422441e647e, type: 2}
+  - {fileID: 11400000, guid: 8216d9b1279ffca448824112b9ed131f, type: 2}
+  - {fileID: 11400000, guid: 1ecdb0f93b9ad3e4a921d7534ba253c5, type: 2}
+  - {fileID: 11400000, guid: 9e93fab440e48294cb184588a4f2e9d1, type: 2}
+  - {fileID: 11400000, guid: b785616cbce19214b8ad54bbd1b879ae, type: 2}
+  - {fileID: 11400000, guid: c870a452bdc56294ab616730fb329c09, type: 2}
+  - {fileID: 11400000, guid: 6cbaebefc3fa7744b8a5e45d09de0c67, type: 2}
+  - {fileID: 11400000, guid: 5c77ec6740527e34db09f27c23038502, type: 2}
+  - {fileID: 11400000, guid: 27a64192190c2c54da239479ca669639, type: 2}
+  - {fileID: 11400000, guid: a8bb7b1ceb09d084395e7c7ea88b38d2, type: 2}
+  - {fileID: 11400000, guid: 0fb4c392cd50a4547adfc852c934c1f5, type: 2}
+  - {fileID: 11400000, guid: a8b375b34a241784aa37578f9daf28cd, type: 2}
+  - {fileID: 11400000, guid: 78d15429a8e99f6489a5c464de0c4d80, type: 2}
+  - {fileID: 11400000, guid: 47a2fe6af1581a94ebaa12be5b727898, type: 2}
+  - {fileID: 11400000, guid: b69cc12447cfd154995ce6525ab5fa65, type: 2}
+  - {fileID: 11400000, guid: 8d36ea252e9b77048a3f3782221187ce, type: 2}
+  - {fileID: 11400000, guid: 3a54688b66db5474a80b2b4e871b407e, type: 2}
+  - {fileID: 11400000, guid: 10e00c86a15bc59429d6c376fb80607d, type: 2}
+  - {fileID: 11400000, guid: e0b497706d40345489ed72603f09098c, type: 2}
+  - {fileID: 11400000, guid: ec186728b972c2f40a7c7ae15aaa18f9, type: 2}
   PrestigeSkillPool:
-  - {fileID: 11400000, guid: a2179a7ca9707b24c83c4bf189ed7fbb, type: 2}
-  - {fileID: 11400000, guid: cba7738ef39dc8a479e4080c3ffac687, type: 2}
-  - {fileID: 11400000, guid: 0a734c4202ffb29479c533fa9446c5fe, type: 2}
-  CommonPreparationPool: []
+  - {fileID: 11400000, guid: d944f90c5a346bd46896d80f70a22260, type: 2}
+  - {fileID: 11400000, guid: 5a8949af28612984f97b8167c040c398, type: 2}
+  - {fileID: 11400000, guid: dfedb4807e7b5b34da92332c574fe9b1, type: 2}
+  CommonPreparationPool:
+  - {fileID: 11400000, guid: 89874fcdf7b691748b5601ff040d175b, type: 2}
+  - {fileID: 11400000, guid: 1464d46d5b893494d8513272fbcc463d, type: 2}
   CharacterPreparationPool:
-  - {fileID: 11400000, guid: 65c14acfdfd08ed419fc20225869874b, type: 2}
-  - {fileID: 11400000, guid: c43fe45e72577d544b2699d16a8e2055, type: 2}
-  - {fileID: 11400000, guid: 0cd53d9b56e64a24b82911598f800af9, type: 2}
+  - {fileID: 11400000, guid: 3b904fc8be62e1d4e9f69e195c2f1c9f, type: 2}
+  - {fileID: 11400000, guid: df26a5c142a37e044aaafae9c21bde0b, type: 2}
+  - {fileID: 11400000, guid: 3d1ed9490a24613499ef57d2638343d2, type: 2}
+  - {fileID: 11400000, guid: b5db1d965d47c1f4194171f654a26d50, type: 2}
+  - {fileID: 11400000, guid: 0807b31f4b2fcda46bc9037e2b5af04f, type: 2}
+  - {fileID: 11400000, guid: 858496a7d4d0b7742b15c3f86703c801, type: 2}
+  - {fileID: 11400000, guid: 99837cafaea66dd4ea77de4b1a3e703a, type: 2}

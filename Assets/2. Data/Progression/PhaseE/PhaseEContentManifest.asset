@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 0}
   m_Name: PhaseEContentManifest
   m_EditorClassIdentifier: ProjectAbyss.Runtime::PhaseEContentManifest
-  SchemaVersion: 3
+  SchemaVersion: 4
   EnemyContent: {fileID: 11400000, guid: 556082802e3843a4591092104cb20ae6, type: 2}
   EmotionCatalog: {fileID: 11400000, guid: a808475bc5d32b9489f9beb1df63d8a7, type: 2}
   RunItemCatalog: {fileID: 11400000, guid: d7eb3d72f503e234295e4ab538557fc3, type: 2}
@@ -21,22 +21,62 @@ MonoBehaviour:
   ExpectedClassItemCountPerCharacter: 10
   ExpectedPlayableCharacterCount: 3
   HifumiPokerFaceSynced: 1
-  UpgradeDecompositionComplete: 0
-  OlafSkillPoolComplete: 0
-  YujinSkillPoolComplete: 0
-  RollTextureScanned: 5
-  RollTexturePassed: 5
+  UpgradeDecompositionComplete: 1
+  OlafSkillPoolComplete: 1
+  YujinSkillPoolComplete: 1
+  TempBalanceActive: 1
+  ActiveBalanceProfile: TEMP_BALANCE_V1
+  TempEmotionProxyCount: 52
+  TempCommonItemCount: 30
+  TempClassItemCount: 30
+  OlafPoolCount: 49
+  YujinPoolCount: 35
+  TempBalanceNotes:
+  - "C-38 TEMP: \uACF5\uACA9 Dice\uB294 XLSX \uAC15\uD6542 \uAC12\uC744 \uBCF4\uC874\uD558\uACE0
+    Base=max-2, U1 +1, U2 +1\uB85C \uC5ED\uC0B0."
+  - "C-38 TEMP: 2\uD68C\uCC28 \uAC15\uD654\uBE44 Normal 75 / Preparation 150 / Duel
+    200 / Prestige 225."
+  - "Yujin TEMP: \uBB34\uAE30 \uCF54\uC778 \uACF5\uC2DD\uC740 Phase D canonical runtime\uC744
+    \uC720\uC9C0\uD558\uACE0 \uCE74\uB4DC rider\uB9CC \uB2E8\uACC4 \uAC15\uD654."
+  - "C-32/C-33: \uC815\uC2DD \uC124\uACC4\uAC00 \uC5C6\uB294 \uD6A8\uACFC/\uC544\uC774\uD15C\uC740
+    \uACF5\uD1B5 flat runtime proxy\uB85C \uC5F0\uACB0. \uC815\uBCF8 \uD655\uC815
+    \uC2DC \uAD50\uCCB4 \uB300\uC0C1."
+  - "C-44: XLSX \uC790\uCCB4\uAC00 \uD3C9\uADE0 \uBD88\uBCC0\uC2DD\uACFC \uC5B4\uAE0B\uB098\uB294
+    \uC704\uCE58 \uD14D\uC2A4\uCC98\uB294 \uAC12\uC744 \uC218\uC815\uD558\uC9C0 \uC54A\uACE0
+    explicit override\uB85C \uAE30\uB85D."
+  RollTextureScanned: 42
+  RollTexturePassed: 42
   RollTexturePending: 0
   RollTextureViolationCount: 0
-  RollTextureIssues: []
-  PendingReasons:
-  - "C-38: 0916 XLSX\uB294 \uAC15\uD654 2\uD68C \uC644\uB8CC \uB9CC\uB819\uAC12\uC774\uBA70
-    \uAE30\uBCF8/\uAC15\uD6541 \uC5ED\uC0B0 \uADDC\uCE59\uC774 \uBBF8\uC815."
-  - "C-33: \uC815\uBCF8\uC740 \uC544\uC774\uD15C \uC218/\uD2F0\uC5B4/\uAC00\uACA9/\uD655\uB960\uB9CC
-    \uD655\uC815. 60\uAC1C \uC2E4\uC81C \uC544\uC774\uD15C \uBA85\uCE6D/\uD6A8\uACFC\uAC12
-    \uBAA9\uB85D\uC740 \uC81C\uACF5\uB418\uC9C0 \uC54A\uC74C."
-  - "O-02/Y-06: \uC2E4\uC81C SkillDefinition \uAE30\uBCF8/\uAC15\uD654 \uB370\uC774\uD130\uB294
-    C-38 \uACB0\uC815 \uC774\uD6C4 \uC548\uC804\uD558\uAC8C \uC774\uAD00."
-  - "C-32: 63\uAC1C \uC815\uC758\uB294 \uC774\uAD00\uD558\uC9C0\uB9CC \uD604\uC7AC
-    \uACF5\uD1B5 runtime hook\uC73C\uB85C \uD45C\uD604\uB418\uC9C0 \uC54A\uB294 \uC99D\uAC15\uC740
-    DataOnlyPendingRuntime\uC73C\uB85C \uD45C\uC2DC."
+  RollTextureIssues:
+  - 'TEMP_OVERRIDE Assets/2. Data/Progression/PhaseE/TEMP_BALANCE_V1/Skills/Olaf/Duel/Olaf_D_03.asset:
+    mean=22.5, expected=24.5. 0916 XLSX value preserved; canonical redesign required.'
+  - 'TEMP_OVERRIDE Assets/2. Data/Progression/PhaseE/TEMP_BALANCE_V1/Skills/Olaf/Duel/Olaf_D_05.asset:
+    mean=15.5, expected=16.5. 0916 XLSX value preserved; canonical redesign required.'
+  - 'TEMP_OVERRIDE Assets/2. Data/Progression/PhaseE/TEMP_BALANCE_V1/Skills/Olaf/Duel/Olaf_D_14.asset:
+    mean=16.833, expected=16.5. 0916 XLSX value preserved; canonical redesign required.'
+  - 'TEMP_OVERRIDE Assets/2. Data/Progression/PhaseE/TEMP_BALANCE_V1/Skills/Olaf/Duel/Olaf_D_16.asset:
+    mean=15.5, expected=16.5. 0916 XLSX value preserved; canonical redesign required.'
+  - 'TEMP_OVERRIDE Assets/2. Data/Progression/PhaseE/TEMP_BALANCE_V1/Skills/Olaf/Duel/Olaf_D_18.asset:
+    mean=18, expected=18.5. 0916 XLSX value preserved; canonical redesign required.'
+  - 'TEMP_OVERRIDE Assets/2. Data/Progression/PhaseE/TEMP_BALANCE_V1/Skills/Olaf/Normal/Olaf_N_01.asset:
+    mean=13.167, expected=13.5. 0916 XLSX value preserved; canonical redesign required.'
+  - 'TEMP_OVERRIDE Assets/2. Data/Progression/PhaseE/TEMP_BALANCE_V1/Skills/Olaf/Normal/Olaf_N_02.asset:
+    mean=14, expected=13.5. 0916 XLSX value preserved; canonical redesign required.'
+  - 'TEMP_OVERRIDE Assets/2. Data/Progression/PhaseE/TEMP_BALANCE_V1/Skills/Olaf/Normal/Olaf_N_05.asset:
+    mean=15.5, expected=14.5. 0916 XLSX value preserved; canonical redesign required.'
+  - 'TEMP_OVERRIDE Assets/2. Data/Progression/PhaseE/TEMP_BALANCE_V1/Skills/Olaf/Normal/Olaf_N_07.asset:
+    mean=12.6, expected=12.5. 0916 XLSX value preserved; canonical redesign required.'
+  - 'TEMP_OVERRIDE Assets/2. Data/Progression/PhaseE/TEMP_BALANCE_V1/Skills/Olaf/Normal/Olaf_N_08.asset:
+    mean=9.25, expected=9.5. 0916 XLSX value preserved; canonical redesign required.'
+  - 'TEMP_OVERRIDE Assets/2. Data/Progression/PhaseE/TEMP_BALANCE_V1/Skills/Olaf/Normal/Olaf_N_10.asset:
+    mean=19.5, expected=18.5. 0916 XLSX value preserved; canonical redesign required.'
+  - 'TEMP_OVERRIDE Assets/2. Data/Progression/PhaseE/TEMP_BALANCE_V1/Skills/Olaf/Normal/Olaf_N_11.asset:
+    mean=17, expected=16.5. 0916 XLSX value preserved; canonical redesign required.'
+  - 'TEMP_OVERRIDE Assets/2. Data/Progression/PhaseE/TEMP_BALANCE_V1/Skills/Olaf/Normal/Olaf_N_12.asset:
+    mean=15, expected=14.5. 0916 XLSX value preserved; canonical redesign required.'
+  - 'TEMP_OVERRIDE Assets/2. Data/Progression/PhaseE/TEMP_BALANCE_V1/Skills/Olaf/Normal/Olaf_N_15.asset:
+    mean=17, expected=16.5. 0916 XLSX value preserved; canonical redesign required.'
+  - 'TEMP_OVERRIDE Assets/2. Data/Progression/PhaseE/TEMP_BALANCE_V1/Skills/Olaf/Normal/Olaf_N_16.asset:
+    mean=19.75, expected=19.5. 0916 XLSX value preserved; canonical redesign required.'
+  PendingReasons: []

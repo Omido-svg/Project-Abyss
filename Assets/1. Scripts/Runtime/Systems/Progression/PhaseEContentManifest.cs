@@ -6,7 +6,8 @@ using UnityEngine;
     fileName = "PhaseEContentManifest")]
 public sealed class PhaseEContentManifest : ScriptableObject
 {
-    public const int CurrentSchemaVersion = 3;
+    public const int CurrentSchemaVersion = 4;
+    public const string TempBalanceProfileId = "TEMP_BALANCE_V1";
 
     public int SchemaVersion = CurrentSchemaVersion;
     public PhaseEEnemyContentCatalog EnemyContent;
@@ -24,6 +25,16 @@ public sealed class PhaseEContentManifest : ScriptableObject
     public bool UpgradeDecompositionComplete;
     public bool OlafSkillPoolComplete;
     public bool YujinSkillPoolComplete;
+
+    [Header("Temporary Phase E closure profile")]
+    public bool TempBalanceActive;
+    public string ActiveBalanceProfile;
+    public int TempEmotionProxyCount;
+    public int TempCommonItemCount;
+    public int TempClassItemCount;
+    public int OlafPoolCount;
+    public int YujinPoolCount;
+    public List<string> TempBalanceNotes = new();
 
     [Header("C-44 Roll Texture Audit")]
     public int RollTextureScanned;

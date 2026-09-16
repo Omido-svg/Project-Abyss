@@ -20,7 +20,9 @@ MonoBehaviour:
   Description: "\uC704\uC138 \uBC1C\uB3D9 \uC2DC \uC801\uC5D0\uAC8C \uADE0\uC5F4
     +3 (\uC804\uD22C \uB3D9\uC548 \uC720\uC9C0)"
   DesignStatus: "\uD655\uC815"
-  RuntimeReadiness: 1
-  RuntimeNote: "Phase E-1 \uC815\uC758 \uC774\uAD00 \uC644\uB8CC. \uACF5\uD1B5 runtime
-    hook \uC5F0\uACB0 \uB300\uAE30."
-  Effects: []
+  RuntimeReadiness: 0
+  RuntimeNote: "[TEMP_BALANCE_V1] \uC815\uC2DD \uC804\uC6A9 hook \uD655\uC815 \uC804
+    flat proxy \uC5F0\uACB0. \uAE30\uC874 \uC774\uB984/\uC124\uBA85/DesignStatus\uB294
+    0916 \uC6D0\uBCF8 \uBCF4\uC874."
+  Effects:
+  - {fileID: 11400000, guid: 7e9dd653e9bd75e479819c0c961255d8, type: 2}

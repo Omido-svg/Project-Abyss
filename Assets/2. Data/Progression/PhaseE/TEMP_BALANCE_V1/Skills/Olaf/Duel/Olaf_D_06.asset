@@ -1,0 +1,197 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a85a262093fed2b45a6f05cb3a256be9, type: 3}
+  m_Name: Olaf_D_06
+  m_EditorClassIdentifier: 
+  phaseASchemaVersion: 1
+  skillId: olaf.duel.hold_on
+  SkillName: "\uBB3C\uACE0 \uB298\uC5B4\uC9C0\uAE30"
+  ActionType: 1
+  Color: 2
+  BasePowerRule: 3
+  BasePower: 11
+  BasePowerFlatAdjustment: 0
+  PhysicalType: 2
+  CanBreakPart: 0
+  BreakMode: 0
+  GainPrestige: 1
+  Rulebreaker:
+    Enabled: 0
+    EnergyCostReductionPerCommittedUse: 0
+    MinimumEnergyCost: 0
+    MirrorThisSkillToOpponentOnDuelMatch: 0
+    IgnoreOwnerRollModifiers: 0
+    ExplodeBleedingOncePerAction: 0
+    BleedingExplosionMultiplier: 0
+    SuppressFriendlyOneSidedHitsOnSameTargetSlot: 0
+    ConsumeAllOwnerBleedingOnExecute: 0
+    BreakAuthorityBleedingThreshold: 0
+    IgnoreWeakenPrerequisiteBleedingThreshold: 0
+    RequirePreviousTurnLastStand: 0
+    ApplyCurrentLastStandPowerBonus: 0
+    CurrentLastStandPowerBonus: 0
+    GrantInfiniteAttackSlotSpeedThisTurn: 0
+  AttackWeight:
+    Weight: 1
+    SecondaryPartMode: 0
+    SecondaryDamageMultiplier: 1
+    AllowBrokenSecondaryParts: 1
+  Description: "[TEMP_BALANCE_V1] 0916 \uAC15\uD6542 \uBAA9\uD45C \uBCF4\uC874. Base
+    \uBC94\uC704/\uAE30\uBCF8\uC704\uB825\uC740 max-2, U1 +1, U2 +1."
+  Keywords: []
+  Rolls:
+  - Index: 0
+    Type: 1
+    OverridePhysicalType: 1
+    PhysicalType: 2
+    DiceMode: 0
+    MinPower: 10
+    MaxPower: 17
+    RngSource: 0
+    CoinFrontChance: 0.5
+    CoinBackPower: 4
+    CoinFrontPower: 12
+    CoinFrontIsCritical: 0
+    SlotMinimum: 1
+    SlotMaximum: 9
+    ChinchiroHifumiPower: -4
+    ChinchiroBlankPower: 3
+    ChinchiroMokuPower: 7
+    ChinchiroShigoroPower: 20
+    ChinchiroArashiPower: 24
+    JudgmentModifier: 0
+    ReuseValueAcrossAction: 0
+    EffectEntries: []
+    OnWinEffectEntries: []
+    OnLoseEffectEntries: []
+    OnWinEffects: []
+    OnLoseEffects: []
+  - Index: 1
+    Type: 1
+    OverridePhysicalType: 1
+    PhysicalType: 2
+    DiceMode: 0
+    MinPower: 12
+    MaxPower: 19
+    RngSource: 0
+    CoinFrontChance: 0.5
+    CoinBackPower: 4
+    CoinFrontPower: 12
+    CoinFrontIsCritical: 0
+    SlotMinimum: 1
+    SlotMaximum: 9
+    ChinchiroHifumiPower: -4
+    ChinchiroBlankPower: 3
+    ChinchiroMokuPower: 7
+    ChinchiroShigoroPower: 20
+    ChinchiroArashiPower: 24
+    JudgmentModifier: 0
+    ReuseValueAcrossAction: 0
+    EffectEntries: []
+    OnWinEffectEntries: []
+    OnLoseEffectEntries: []
+    OnWinEffects: []
+    OnLoseEffects: []
+  - Index: 2
+    Type: 1
+    OverridePhysicalType: 1
+    PhysicalType: 2
+    DiceMode: 0
+    MinPower: 14
+    MaxPower: 21
+    RngSource: 0
+    CoinFrontChance: 0.5
+    CoinBackPower: 4
+    CoinFrontPower: 12
+    CoinFrontIsCritical: 0
+    SlotMinimum: 1
+    SlotMaximum: 9
+    ChinchiroHifumiPower: -4
+    ChinchiroBlankPower: 3
+    ChinchiroMokuPower: 7
+    ChinchiroShigoroPower: 20
+    ChinchiroArashiPower: 24
+    JudgmentModifier: 0
+    ReuseValueAcrossAction: 0
+    EffectEntries: []
+    OnWinEffectEntries: []
+    OnLoseEffectEntries: []
+    OnWinEffects: []
+    OnLoseEffects: []
+  ExchangeRollCount: 3
+  RollReusePolicy: 0
+  MultiRollPenalty:
+    Enabled: 0
+    PreviewText: 
+    Timing: 2
+    TriggerAfterRollIndex: 0
+    EffectEntries: []
+    Effects: []
+  ResolvePrestigeInCombat: 0
+  OverrideCanClash: 0
+  CanClashValue: 0
+  PreparationTier: 0
+  ResolverType: 0
+  DiceMin: 1
+  DiceMax: 8
+  CoinCount: 1
+  CoinFrontChance: 0.5
+  CoinFrontValue: 1
+  CoinBackValue: 0
+  CoinFrontIsCritical: 0
+  ChinchiroArashiBonus: 6
+  ChinchiroShigoroBonus: 6
+  ChinchiroHifumiPenalty: 1
+  ChinchiroHifumiSelfDamage: 1
+  EffectEntries:
+  - Definition: {fileID: 11400000, guid: a22e778c89af21141a532ad063106977, type: 2}
+    Overrides:
+      OverrideStack: 0
+      Stack: 1
+      OverrideDuration: 0
+      Duration: 3
+      OverrideAmount: 0
+      Amount: 1
+      OverrideMinimum: 0
+      Minimum: 0
+      OverrideMaximum: 0
+      Maximum: 999
+      OverrideFlatValue: 0
+      FlatValue: 0
+      OverrideMultiplier: 0
+      Multiplier: 1
+      OverrideResourceKey: 0
+      ResourceKey: 
+      OverrideForceCharacterStatus: 0
+      ForceCharacterStatus: 0
+      OverrideGiveToSelectedTarget: 0
+      GiveToSelectedTarget: 0
+    UpgradeKey: temp_proxy
+    OverrideTiming: 1
+    Timing: 7
+    Conditions: []
+    RestrictToRoll: 0
+    RollNumber: 1
+  Effects: []
+  OverrideEnergyCost: 1
+  EnergyCost: 1
+  UpgradeProfile: {fileID: 11400000, guid: 666e34a74365c2d46a0e6fcdcaa31135, type: 2}
+  OverrideResourceRules: 0
+  RequireFullPrestige: 0
+  PrestigeCost: 0
+  ConsumeAllPrestige: 0
+  CustomResourceKey: 
+  CustomResourceCost: 0
+  ConsumeAllCustomResource: 0
+  OverridePrestigeUsePolicy: 0
+  PrestigeUsePolicy: 1
+  presentationAsset: {fileID: 0}

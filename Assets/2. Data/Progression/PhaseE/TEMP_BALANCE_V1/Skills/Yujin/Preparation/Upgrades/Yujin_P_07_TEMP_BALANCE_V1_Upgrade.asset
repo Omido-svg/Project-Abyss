@@ -1,0 +1,81 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 0}
+  m_Name: Yujin_P_07_TEMP_BALANCE_V1_Upgrade
+  m_EditorClassIdentifier: ProjectAbyss.Runtime::SkillUpgradeProfile
+  BaseCostOverride: 0
+  Upgrade1:
+    DesignNote: "[TEMP_BALANCE_V1] max-level 0916 target\uB97C \uBCF4\uC874\uD558\uAE30
+      \uC704\uD55C 1\uB2E8\uACC4 \uC784\uC2DC \uC5ED\uC0B0."
+    CostOverride: 0
+    BasePowerDelta: 0
+    AllRollMinPowerDelta: 0
+    AllRollMaxPowerDelta: 0
+    PerRollPowerDelta: 
+    EnergyCostDelta: 0
+    PrestigeCostDelta: 0
+    CustomResourceCostDelta: 0
+    EffectPayloads:
+    - TargetEffectKey: temp_proxy
+      OverrideStack: 0
+      Stack: 1
+      OverrideDuration: 0
+      Duration: 1
+      OverrideAmount: 1
+      Amount: 4
+      OverrideMinimum: 0
+      Minimum: 0
+      OverrideMaximum: 0
+      Maximum: 0
+      OverrideFlatValue: 0
+      FlatValue: 0
+      OverrideMultiplier: 0
+      Multiplier: 1
+      OverrideResourceKey: 0
+      ResourceKey: 
+      OverrideForceCharacterStatus: 0
+      ForceCharacterStatus: 0
+      OverrideGiveToSelectedTarget: 0
+      GiveToSelectedTarget: 0
+  Upgrade2:
+    DesignNote: "[TEMP_BALANCE_V1] max-level 0916 target \uB3C4\uB2EC. \uC815\uC2DD
+      \uBD84\uD574 \uADDC\uCE59 \uD655\uC815 \uC2DC \uAD50\uCCB4."
+    CostOverride: 150
+    BasePowerDelta: 0
+    AllRollMinPowerDelta: 0
+    AllRollMaxPowerDelta: 0
+    PerRollPowerDelta: 
+    EnergyCostDelta: 0
+    PrestigeCostDelta: 0
+    CustomResourceCostDelta: 0
+    EffectPayloads:
+    - TargetEffectKey: temp_proxy
+      OverrideStack: 0
+      Stack: 1
+      OverrideDuration: 0
+      Duration: 1
+      OverrideAmount: 1
+      Amount: 5
+      OverrideMinimum: 0
+      Minimum: 0
+      OverrideMaximum: 0
+      Maximum: 0
+      OverrideFlatValue: 0
+      FlatValue: 0
+      OverrideMultiplier: 0
+      Multiplier: 1
+      OverrideResourceKey: 0
+      ResourceKey: 
+      OverrideForceCharacterStatus: 0
+      ForceCharacterStatus: 0
+      OverrideGiveToSelectedTarget: 0
+      GiveToSelectedTarget: 0

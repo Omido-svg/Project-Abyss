@@ -20,7 +20,9 @@ MonoBehaviour:
   Description: "\uB9DE\uC744 \uB54C\uB9C8\uB2E4 \uACE8\uB4DC\uB97C \uB0B4\uACE0 \uBC29\uC5B4\uB3C4
     +N"
   DesignStatus: "\uAC12 \uBBF8\uC815"
-  RuntimeReadiness: 2
-  RuntimeNote: "0916 \uC6D0\uBCF8 \uAC12\uC774 \uBBF8\uC815/\uC784\uC2DC\uC774\uBBC0\uB85C
-    \uC784\uC758 \uD558\uB4DC\uCF54\uB529\uD558\uC9C0 \uC54A\uC74C."
-  Effects: []
+  RuntimeReadiness: 0
+  RuntimeNote: "[TEMP_BALANCE_V1] \uC815\uC2DD \uC804\uC6A9 hook \uD655\uC815 \uC804
+    flat proxy \uC5F0\uACB0. \uAE30\uC874 \uC774\uB984/\uC124\uBA85/DesignStatus\uB294
+    0916 \uC6D0\uBCF8 \uBCF4\uC874."
+  Effects:
+  - {fileID: 11400000, guid: b9ddfe836ee6a6c49adb7c12f44a238a, type: 2}
