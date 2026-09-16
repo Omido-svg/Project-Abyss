@@ -840,9 +840,17 @@ public partial class BattleUIManager : MonoBehaviour
 
             if (choices != null && choices.Count > 0)
             {
+                // 환형 선택 modal은 반드시 실제 Battle UI Canvas 계층에서 생성되어야 한다.
+                // BattleUIManager GameObject는 Scene에서 Canvas의 형제이므로 여기에 Component를
+                // 붙이면 GetComponentInParent<Canvas>()가 null이 되어 modal이 화면에 렌더링되지 않는다.
+                GameObject overlayHost =
+                    skillSelectPanel != null
+                        ? skillSelectPanel.gameObject
+                        : gameObject;
+
                 planningChoiceOverlay ??=
-                    gameObject.GetComponent<BattlePlanningChoiceOverlay>() ??
-                    gameObject.AddComponent<BattlePlanningChoiceOverlay>();
+                    overlayHost.GetComponent<BattlePlanningChoiceOverlay>() ??
+                    overlayHost.AddComponent<BattlePlanningChoiceOverlay>();
 
                 Character capturedOwner = selectedOwner;
                 BodyPart capturedPart = selectedOwnerPart;

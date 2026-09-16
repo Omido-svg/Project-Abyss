@@ -7,9 +7,10 @@ using UnityEngine.UI;
 /// Prefab 의존 없이 Planning 단계의 소수 선택지를 보여주는 공용 modal.
 /// P0 D-02 유진 환형의 "현재 무기가 아닌 2개 중 하나" 선택에 사용한다.
 ///
-/// 0916 v1.5:
-/// SkillSelectionLayer가 별도/중첩 Canvas 정렬을 사용하는 Scene에서도
-/// 선택창이 뒤에 가려지지 않도록 전용 override-sorting Canvas를 만든다.
+/// 0916 v1.6:
+/// 환형 선택 UI는 실제 Battle UI Canvas 아래에서 생성한다.
+/// BattleUIManager처럼 Canvas 밖에 Component가 붙어 있더라도 안전한 Canvas를 찾아
+/// 전용 override-sorting Canvas를 최상단에 만든다.
 /// </summary>
 public sealed class BattlePlanningChoiceOverlay : MonoBehaviour
 {
@@ -37,10 +38,17 @@ public sealed class BattlePlanningChoiceOverlay : MonoBehaviour
 
         onChosen = chosen;
 
-        Canvas rootCanvas = GetComponentInParent<Canvas>();
-        Transform parent = rootCanvas != null
-            ? rootCanvas.rootCanvas.transform
-            : transform;
+        Canvas rootCanvas = ResolveRootCanvas();
+        if (rootCanvas == null)
+        {
+            Debug.LogError(
+                "[PlanningChoice] Battle UI Canvas를 찾지 못해 modal을 열 수 없습니다. " +
+                $"Host={name}, Title={title ?? "NULL"}");
+            onChosen = null;
+            return;
+        }
+
+        Transform parent = rootCanvas.rootCanvas.transform;
 
         panel = new GameObject(
             "PlanningChoiceOverlay",
@@ -63,18 +71,11 @@ public sealed class BattlePlanningChoiceOverlay : MonoBehaviour
         Canvas modalCanvas = panel.GetComponent<Canvas>();
         modalCanvas.overrideSorting = true;
 
-        if (rootCanvas != null)
-        {
-            modalCanvas.sortingLayerID = rootCanvas.sortingLayerID;
-            modalCanvas.sortingOrder = Mathf.Clamp(
-                rootCanvas.sortingOrder + SortingOrderOffset,
-                -MaximumSafeSortingOrder,
-                MaximumSafeSortingOrder);
-        }
-        else
-        {
-            modalCanvas.sortingOrder = SortingOrderOffset;
-        }
+        modalCanvas.sortingLayerID = rootCanvas.sortingLayerID;
+        modalCanvas.sortingOrder = Mathf.Clamp(
+            rootCanvas.sortingOrder + SortingOrderOffset,
+            -MaximumSafeSortingOrder,
+            MaximumSafeSortingOrder);
 
         CanvasGroup group = panel.GetComponent<CanvasGroup>();
         group.alpha = 1f;
@@ -236,6 +237,47 @@ public sealed class BattlePlanningChoiceOverlay : MonoBehaviour
         rt.offsetMax = Vector2.zero;
 
         return go.GetComponent<Button>();
+    }
+
+    private Canvas ResolveRootCanvas()
+    {
+        Canvas parentCanvas = GetComponentInParent<Canvas>();
+        if (parentCanvas != null)
+            return parentCanvas.rootCanvas;
+
+        // Battle Test Scene의 BattleUIManager는 Battle UI Canvas와 형제다.
+        // 잘못된 host에 Component가 남아 있어도 BattleScreenModeController를 통해
+        // canonical Battle UI Canvas를 복구한다.
+        BattleScreenModeController modeController =
+            FindFirstObjectByType<BattleScreenModeController>(
+                FindObjectsInactive.Include);
+
+        Canvas modeCanvas =
+            modeController != null
+                ? modeController.GetComponentInParent<Canvas>()
+                : null;
+
+        if (modeCanvas != null)
+            return modeCanvas.rootCanvas;
+
+        // 마지막 안전망. 여러 Canvas가 있으면 ScreenSpace 계층의 활성 Canvas를 우선한다.
+        Canvas[] canvases = FindObjectsByType<Canvas>(
+            FindObjectsInactive.Include,
+            FindObjectsSortMode.None);
+
+        foreach (Canvas canvas in canvases)
+        {
+            if (canvas != null &&
+                canvas.isRootCanvas &&
+                canvas.renderMode != RenderMode.WorldSpace)
+            {
+                return canvas;
+            }
+        }
+
+        return canvases != null && canvases.Length > 0
+            ? canvases[0]?.rootCanvas
+            : null;
     }
 
     private void OnDestroy()
