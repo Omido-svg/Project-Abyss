@@ -9,10 +9,10 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 0}
+  m_Script: {fileID: 11500000, guid: 98caa880563c5784dad77ec0e6827795, type: 3}
   m_Name: PhaseEContentManifest
-  m_EditorClassIdentifier: ProjectAbyss.Runtime::PhaseEContentManifest
-  SchemaVersion: 4
+  m_EditorClassIdentifier: 
+  SchemaVersion: 5
   EnemyContent: {fileID: 11400000, guid: 556082802e3843a4591092104cb20ae6, type: 2}
   EmotionCatalog: {fileID: 11400000, guid: a808475bc5d32b9489f9beb1df63d8a7, type: 2}
   RunItemCatalog: {fileID: 11400000, guid: d7eb3d72f503e234295e4ab538557fc3, type: 2}
@@ -44,6 +44,9 @@ MonoBehaviour:
   - "C-44: XLSX \uC790\uCCB4\uAC00 \uD3C9\uADE0 \uBD88\uBCC0\uC2DD\uACFC \uC5B4\uAE0B\uB098\uB294
     \uC704\uCE58 \uD14D\uC2A4\uCC98\uB294 \uAC12\uC744 \uC218\uC815\uD558\uC9C0 \uC54A\uACE0
     explicit override\uB85C \uAE30\uB85D."
+  - "Phase F v2 hotfix: \uBE14\uB85C\uD1A0\uB294 Phase D native hook\uB9CC \uC0AC\uC6A9\uD558\uBA70
+    \uBE44\uC6A9 1, \uAD11\uAE30 +1 \uB2E8\uC77C \uC801\uC6A9. TEMP proxy \uC911\uBCF5
+    \uC81C\uAC70."
   RollTextureScanned: 42
   RollTexturePassed: 42
   RollTexturePending: 0

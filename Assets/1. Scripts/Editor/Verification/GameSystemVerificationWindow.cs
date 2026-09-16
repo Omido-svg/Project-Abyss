@@ -38,8 +38,9 @@ public sealed class GameSystemVerificationWindow : EditorWindow
     {
         EditorGUILayout.LabelField("Project Abyss · Game System Verification", EditorStyles.boldLabel);
         EditorGUILayout.HelpBox(
-            "Phase A/B 회귀 + Phase C Progression/Run + Phase D Character Runtime + Phase E Content Data를 검증합니다. " +
-            "Olaf/Yujin/Hifumi Gate는 각각 해당 캐릭터가 Player인 초기화된 전투에서 실행하세요. 캐릭터별 Gate는 서로 다른 Player fixture를 요구하므로 독립 실행합니다.",
+            "Phase A/B 회귀 + Phase C Progression/Run + Phase D Character Runtime + Phase E Content Data + Phase F Completion을 검증합니다. " +
+            "Olaf/Yujin/Hifumi Gate는 각각 해당 캐릭터가 Player인 초기화된 전투에서 실행하세요. " +
+            "Phase F는 최신 Olaf/Yujin/Hifumi Gate + Phase E Data Gate 보고서를 모아 §1~§19 Traceability와 G-01~G-17을 최종 폐쇄합니다. Phase F Completion Gate 자체는 Play Mode를 종료한 EDIT MODE에서 실행하세요.",
             MessageType.Info);
 
         using (new EditorGUILayout.HorizontalScope())
@@ -134,6 +135,12 @@ public sealed class GameSystemVerificationWindow : EditorWindow
 
             if (GUILayout.Button("Phase E Data Gate", GUILayout.Height(30f)))
                 Run(GameSystemVerificationRunner.RunPhaseEData());
+
+            using (new EditorGUI.DisabledScope(Application.isPlaying))
+            {
+                if (GUILayout.Button("Phase F Completion Gate", GUILayout.Height(30f), GUILayout.Width(170f)))
+                    Run(PhaseFCompletionGate.Run());
+            }
 
             if (GUILayout.Button("Find Manager", GUILayout.Height(30f), GUILayout.Width(110f)))
                 ResolveBattleManager();

@@ -89,6 +89,8 @@ public static class PhaseETempBalanceMigration
             "C-32/C-33: 정식 설계가 없는 효과/아이템은 공통 flat runtime proxy로 연결. 정본 확정 시 교체 대상.");
         manifest.TempBalanceNotes.Add(
             "C-44: XLSX 자체가 평균 불변식과 어긋나는 위치 텍스처는 값을 수정하지 않고 explicit override로 기록.");
+        manifest.TempBalanceNotes.Add(
+            "Phase F v2 hotfix: 블로토는 Phase D native hook만 사용하며 비용 1, 광기 +1 단일 적용. TEMP proxy 중복 제거.");
 
         EditorUtility.SetDirty(manifest);
     }
@@ -413,7 +415,7 @@ public static class PhaseETempBalanceMigration
 
         SimpleSkillRow[] prepRows =
         {
-            S(OlafSkillIds.Bloto, "블로토", ActionType.Preparation, SkillColor.Blue, 0, PreparationTier.Strong, TempBalanceSkillProxyOperation.OlafMadness, 1, 3, "강한 도사림 proxy"),
+            S(OlafSkillIds.Bloto, "블로토", ActionType.Preparation, SkillColor.Blue, 1, PreparationTier.Strong, TempBalanceSkillProxyOperation.OlafMadness, 1, 1, "Phase D native hook 전용 — TEMP proxy 중복 적용 금지"),
             S("olaf.preparation.blood_oath", "피의 서약", ActionType.Preparation, SkillColor.Red, 1, PreparationTier.Strong, TempBalanceSkillProxyOperation.TargetBleeding, 1, 3, "출혈 계열"),
             S("olaf.preparation.breath_bought_with_blood", "피로 사는 숨", ActionType.Preparation, SkillColor.Blue, 1, PreparationTier.Strong, TempBalanceSkillProxyOperation.GainPrestige, 2, 4, "빛 환율 정식 hook 전 위세 proxy — 무료 빛 생성 금지"),
             S("olaf.preparation.calm_madness", "광기를 가라앉히다", ActionType.Preparation, SkillColor.Blue, 1, PreparationTier.Strong, TempBalanceSkillProxyOperation.GainBlock, 8, 12, "광기 소비 정식 hook 전 방어 proxy"),
@@ -675,12 +677,28 @@ public static class PhaseETempBalanceMigration
         skill.BreakMode = PartBreakMode.None;
         skill.Description = $"[{ProfileId}] {row.Note}";
 
-        AttachSingleProxy(
-            skill, folder, assetName, row.Proxy, row.Timing,
-            Mathf.Max(0, row.BaseProxyAmount), Mathf.Max(0, row.MaxProxyAmount));
-        skill.UpgradeProfile = ConfigureUpgradeProfile(
-            folder, assetName, row.ActionType, false,
-            Mathf.Max(0, row.BaseProxyAmount), Mathf.Max(0, row.MaxProxyAmount), secondUpgradeCost);
+        bool nativeHookOnly = string.Equals(row.Id, OlafSkillIds.Bloto, StringComparison.Ordinal);
+        if (nativeHookOnly)
+        {
+            // 블로토는 OlafMadnessMechanic이 Strong Preparation의 광기 +1과
+            // 최저 정상 부위 약화 + 적 공포를 이미 canonical하게 처리한다.
+            // TEMP proxy를 함께 붙이면 광기가 +2가 되는 중복 실행이 발생한다.
+            RemoveTempProxy(skill, folder, assetName);
+            skill.Description =
+                $"[{ProfileId}] Phase D native hook 사용. TEMP proxy 없음. Cost=1; Madness/Fear/Weaken은 OlafMadnessMechanic 단일 소스.";
+            skill.UpgradeProfile = ConfigureUpgradeProfile(
+                folder, assetName, row.ActionType, false,
+                0, 0, secondUpgradeCost, includeEffectPayload: false);
+        }
+        else
+        {
+            AttachSingleProxy(
+                skill, folder, assetName, row.Proxy, row.Timing,
+                Mathf.Max(0, row.BaseProxyAmount), Mathf.Max(0, row.MaxProxyAmount));
+            skill.UpgradeProfile = ConfigureUpgradeProfile(
+                folder, assetName, row.ActionType, false,
+                Mathf.Max(0, row.BaseProxyAmount), Mathf.Max(0, row.MaxProxyAmount), secondUpgradeCost);
+        }
         EditorUtility.SetDirty(skill);
         return skill;
     }
@@ -706,6 +724,24 @@ public static class PhaseETempBalanceMigration
 
         EditorUtility.SetDirty(skill);
         return skill;
+    }
+
+    private static void RemoveTempProxy(
+        SkillDefinition skill,
+        string folder,
+        string assetName)
+    {
+        if (skill == null)
+            return;
+
+        skill.EffectEntries ??= new List<SkillEffectEntry>();
+        skill.EffectEntries.Clear();
+        skill.Effects ??= new List<SkillEffectDefinition>();
+        skill.Effects.Clear();
+
+        string effectPath = $"{folder}/Effects/{assetName}_{ProfileId}_Effect.asset";
+        if (AssetDatabase.LoadMainAssetAtPath(effectPath) != null)
+            AssetDatabase.DeleteAsset(effectPath);
     }
 
     private static void AttachSingleProxy(
@@ -748,7 +784,8 @@ public static class PhaseETempBalanceMigration
         bool shiftDicePower,
         int baseProxyAmount,
         int maxProxyAmount,
-        int explicitSecondCost = 0)
+        int explicitSecondCost = 0,
+        bool includeEffectPayload = true)
     {
         EnsureFolder(folder + "/Upgrades");
         SkillUpgradeProfile profile = EnsureAsset<SkillUpgradeProfile>(
@@ -779,10 +816,13 @@ public static class PhaseETempBalanceMigration
             ? explicitSecondCost
             : SecondUpgradeCost(actionType);
 
-        int u1Amount = InterpolateUpgradeAmount(baseProxyAmount, maxProxyAmount, 1);
-        int u2Amount = Mathf.Max(baseProxyAmount, maxProxyAmount);
-        profile.Upgrade1.EffectPayloads.Add(MakeAmountPayload("temp_proxy", u1Amount));
-        profile.Upgrade2.EffectPayloads.Add(MakeAmountPayload("temp_proxy", u2Amount));
+        if (includeEffectPayload)
+        {
+            int u1Amount = InterpolateUpgradeAmount(baseProxyAmount, maxProxyAmount, 1);
+            int u2Amount = Mathf.Max(baseProxyAmount, maxProxyAmount);
+            profile.Upgrade1.EffectPayloads.Add(MakeAmountPayload("temp_proxy", u1Amount));
+            profile.Upgrade2.EffectPayloads.Add(MakeAmountPayload("temp_proxy", u2Amount));
+        }
         EditorUtility.SetDirty(profile);
         return profile;
     }

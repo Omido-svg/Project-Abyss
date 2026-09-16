@@ -6,7 +6,7 @@ using UnityEngine;
     fileName = "PhaseEContentManifest")]
 public sealed class PhaseEContentManifest : ScriptableObject
 {
-    public const int CurrentSchemaVersion = 4;
+    public const int CurrentSchemaVersion = 5;
     public const string TempBalanceProfileId = "TEMP_BALANCE_V1";
 
     public int SchemaVersion = CurrentSchemaVersion;

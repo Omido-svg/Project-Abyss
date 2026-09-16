@@ -1,5 +1,0 @@
-CaseId,RequirementId,ModuleId,DisplayName,Category,ExecutionMode,Status,Required,ElapsedMilliseconds,Expected,Actual,Details
-"system.coverage.unique_case_ids","","verification.infrastructure","system.coverage.unique_case_ids","Coverage","StaticContract","Pass",True,0,"모든 CaseId가 전역에서 유일","18 unique cases",""
-"system.coverage.phase_a","","verification.infrastructure","system.coverage.phase_a","Coverage","StaticContract","Pass",True,0,"Phase A 모든 Requirement에 최소 1개 자동 검증 Case 연결","10/10 covered",""
-"system.coverage.phase_b","","verification.infrastructure","system.coverage.phase_b","Coverage","StaticContract","Pending",False,0,"Phase B 18개 Requirement에 검증 Case 연결","Covered=0/18","Pending=C-09, C-12, C-13, C-15, C-17, C-18, C-19, C-20, C-21, C-22, C-23, C-24, C-25, C-27, C-48, C-49, C-41, C-43"
-"system.live.manager_initialized","","live.scene","BattleManager Production Scene 초기화","LiveState","LiveScene","Pass",True,0,"Initialized BattleManager + Player + Enemy + production services","Manager=True, Initialized=True, Player=True, Enemies=3, Services=True",""

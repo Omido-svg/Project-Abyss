@@ -9,9 +9,9 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 0}
+  m_Script: {fileID: 11500000, guid: ffcd5f748a291df48857a434eaafae82, type: 3}
   m_Name: RunItemCatalog
-  m_EditorClassIdentifier: ProjectAbyss.Runtime::RunItemCatalog
+  m_EditorClassIdentifier: 
   Items:
   - {fileID: 11400000, guid: 543b9804d3df4b3489b0d308eefd410f, type: 2}
   - {fileID: 11400000, guid: 06eacc61d0a539e4f816ef9ac6166d7f, type: 2}
