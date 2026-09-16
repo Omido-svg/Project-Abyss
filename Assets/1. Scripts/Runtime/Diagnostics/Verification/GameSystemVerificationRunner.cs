@@ -25,7 +25,8 @@ public static class GameSystemVerificationRunner
             false,
             includePhaseB: true,
             includePhaseC: true,
-            includePhaseDOlaf: true);
+            includePhaseDOlaf: true,
+            includePhaseDYujin: true);
 
     public static GameSystemVerificationReport RunContracts() =>
         RunDataChecks();
@@ -39,7 +40,8 @@ public static class GameSystemVerificationRunner
             true,
             includePhaseB: true,
             includePhaseC: true,
-            includePhaseDOlaf: true);
+            includePhaseDOlaf: true,
+            includePhaseDYujin: true);
 
     public static GameSystemVerificationReport RunPhaseA(
         BattleManager manager) =>
@@ -50,7 +52,8 @@ public static class GameSystemVerificationRunner
             true,
             includePhaseB: false,
             includePhaseC: false,
-            includePhaseDOlaf: false);
+            includePhaseDOlaf: false,
+            includePhaseDYujin: false);
 
     public static GameSystemVerificationReport RunPhaseB(
         BattleManager manager) =>
@@ -61,7 +64,8 @@ public static class GameSystemVerificationRunner
             true,
             includePhaseB: true,
             includePhaseC: false,
-            includePhaseDOlaf: false);
+            includePhaseDOlaf: false,
+            includePhaseDYujin: false);
 
     public static GameSystemVerificationReport RunPhaseC(
         BattleManager manager) =>
@@ -72,7 +76,8 @@ public static class GameSystemVerificationRunner
             true,
             includePhaseB: true,
             includePhaseC: true,
-            includePhaseDOlaf: false);
+            includePhaseDOlaf: false,
+            includePhaseDYujin: false);
 
     public static GameSystemVerificationReport RunPhaseDOlaf(
         BattleManager manager) =>
@@ -83,11 +88,24 @@ public static class GameSystemVerificationRunner
             true,
             includePhaseB: true,
             includePhaseC: true,
-            includePhaseDOlaf: true);
+            includePhaseDOlaf: true,
+            includePhaseDYujin: false);
+
+    public static GameSystemVerificationReport RunPhaseDYujin(
+        BattleManager manager) =>
+        RunInternal(
+            manager,
+            true,
+            true,
+            true,
+            includePhaseB: true,
+            includePhaseC: true,
+            includePhaseDOlaf: false,
+            includePhaseDYujin: true);
 
     public static GameSystemVerificationReport RunFull(
         BattleManager manager) =>
-        RunPhaseDOlaf(manager);
+        RunPhaseDYujin(manager);
 
     public static IReadOnlyList<IGameSystemVerificationModule> DiscoverModules() =>
         GameSystemVerificationModuleRegistry.DiscoverModules();
@@ -105,7 +123,8 @@ public static class GameSystemVerificationRunner
         bool includeLive,
         bool includePhaseB,
         bool includePhaseC,
-        bool includePhaseDOlaf)
+        bool includePhaseDOlaf,
+        bool includePhaseDYujin)
     {
         DateTime started = DateTime.Now;
         GameSystemVerificationReport report = CreateReport(started, manager);
@@ -119,7 +138,8 @@ public static class GameSystemVerificationRunner
             registered,
             includePhaseB,
             includePhaseC,
-            includePhaseDOlaf);
+            includePhaseDOlaf,
+            includePhaseDYujin);
 
         foreach (RegisteredCase registeredCase in registered)
         {
@@ -142,6 +162,13 @@ public static class GameSystemVerificationRunner
 
             if (!includePhaseDOlaf &&
                 CanonicalGameSystemVerificationSpec.PhaseDOlafRequirements.Contains(
+                    registeredCase.Case.RequirementId))
+            {
+                continue;
+            }
+
+            if (!includePhaseDYujin &&
+                CanonicalGameSystemVerificationSpec.PhaseDYujinRequirements.Contains(
                     registeredCase.Case.RequirementId))
             {
                 continue;
@@ -258,7 +285,8 @@ public static class GameSystemVerificationRunner
         IReadOnlyList<RegisteredCase> registered,
         bool includePhaseB,
         bool includePhaseC,
-        bool includePhaseDOlaf)
+        bool includePhaseDOlaf,
+        bool includePhaseDYujin)
     {
         IEnumerable<GameSystemVerificationCase> cases =
             registered?.Select(item => item.Case) ??
@@ -344,6 +372,26 @@ public static class GameSystemVerificationRunner
                 ? null
                 : "Missing=" + string.Join(", ", missingDOlaf),
             includePhaseDOlaf);
+
+        List<string> missingDYujin = CanonicalGameSystemVerificationSpec.PhaseDYujinRequirements
+            .Where(id => !coverage.ContainsKey(id))
+            .ToList();
+
+        AddInfrastructureResult(
+            report,
+            "system.coverage.phase_d_yujin",
+            missingDYujin.Count == 0
+                ? GameSystemVerificationStatus.Pass
+                : (includePhaseDYujin
+                    ? GameSystemVerificationStatus.Fail
+                    : GameSystemVerificationStatus.Pending),
+            "Phase D Yujin 5개 Requirement에 검증 Case 연결",
+            $"Covered={CanonicalGameSystemVerificationSpec.PhaseDYujinRequirements.Count - missingDYujin.Count}/" +
+            $"{CanonicalGameSystemVerificationSpec.PhaseDYujinRequirements.Count}",
+            missingDYujin.Count == 0
+                ? null
+                : "Missing=" + string.Join(", ", missingDYujin),
+            includePhaseDYujin);
     }
 
     private static bool ShouldRun(

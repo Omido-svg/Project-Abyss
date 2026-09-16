@@ -93,7 +93,7 @@ public sealed class YujinCharacterVerificationCaseProvider :
             "패시브 · 환형의 흐름",
             CharacterVerificationCategory.Passive,
             CharacterVerificationExecutionMode.IsolatedRuntime,
-            "환형으로 예약한 무기 변경이 다음 턴 실제 완료될 때 살수의 감 +1을 추가로 얻는지 검사합니다.");
+            "환형으로 예약한 무기 변경은 다음 턴 적용되며, 완료 자체는 살수의 감을 추가 지급하지 않고 TurnStart +1만 적용되는지 검사합니다.");
 
         yield return CharacterVerificationCaseDefinition.Create(
             UnlimitedWeaponSwitch,
@@ -128,14 +128,14 @@ public sealed class YujinCharacterVerificationCaseProvider :
             "살수의 감 자동 재굴림",
             CharacterVerificationCategory.Duel,
             CharacterVerificationExecutionMode.IsolatedRuntime,
-            "각인·추격의 행동 슬롯에서 사용을 선택한 경우에만 감을 소비해 재굴림하는지 검사합니다.");
+            "평타·결투의 임의 행동 슬롯에서 사용을 예약한 경우에만 감을 소비해 자동 재굴림하는지 검사합니다.");
 
         yield return CharacterVerificationCaseDefinition.Create(
             NakilRemainingRollRemoval,
-            "낙일 합 승리 시 패자 잔여 굴림 제거",
+            "낙일 교환 승리 시 상대 잔여 굴림 제거",
             CharacterVerificationCategory.Duel,
             CharacterVerificationExecutionMode.IsolatedRuntime,
-            "낙일 상태의 유진이 실제 맞붙은 교환 다수결로 합을 이기면 행동 위치와 무관하게 패자의 남은 굴림만 0이 되는지 검사합니다.");
+            "낙일 상태의 유진이 실제 교환 하나를 이기면 즉시 상대 행동의 남은 굴림이 0이 되고, 다른 무기·패배 교환에는 적용되지 않는지 검사합니다.");
 
         yield return CharacterVerificationCaseDefinition.Create(
             MarkIgnition,
@@ -316,29 +316,28 @@ public sealed class YujinCharacterVerificationCaseProvider :
             yujin?.GetMechanic<
                 YujinHwanhyeongFlowPassiveMechanic>();
 
-        bool bundleHasPassive =
-            context?.Bundle?.EquippedAugments != null &&
-            context.Bundle.EquippedAugments.Any(
-                augment =>
-                    augment is YujinHwanhyeongFlowPassive);
+        YujinHwanhyeongFlowPassive passiveAsset =
+            context?.Bundle?.EquippedAugments?
+                .OfType<YujinHwanhyeongFlowPassive>()
+                .FirstOrDefault();
+
+        bool serializedContractSafe =
+            passiveAsset == null ||
+            passiveAsset.SenseGainOnWeaponSwitch == 0;
 
         if (yujin == null ||
             mechanic == null ||
-            passiveMechanic == null ||
-            !bundleHasPassive ||
             context?.BattleContext?._battleEvent == null)
         {
             return context.Fail(
-                "환형의 흐름 패시브 등록",
+                "환형 완료 보상 0 + TurnStart 살수의 감 +1",
                 $"Yujin={yujin != null}, Core={mechanic != null}, " +
-                $"PassiveMechanic={passiveMechanic != null}, " +
-                $"BundlePassive={bundleHasPassive}");
+                $"Event={context?.BattleContext?._battleEvent != null}");
         }
 
         mechanic.SetWeaponForVerification(
             YujinWeaponType.Baeku);
 
-        // 턴 상태를 정상화하고 기본 TurnStart +1은 기준값에 포함시킨다.
         context.BattleContext._battleEvent
             .RaiseTurnStart(410);
 
@@ -377,21 +376,24 @@ public sealed class YujinCharacterVerificationCaseProvider :
             queued &&
             stayedCurrentTurn &&
             appliedNextTurn &&
-            passiveMechanic.SenseGain == 1 &&
-            switchTurnGain == 2 &&
+            passiveMechanic == null &&
+            serializedContractSafe &&
+            switchTurnGain == 1 &&
             normalTurnGain == 1;
 
         string detail =
             $"Queued={queued}, Stayed={stayedCurrentTurn}, " +
             $"Applied={appliedNextTurn}, SwitchTurnGain={switchTurnGain}, " +
-            $"NormalTurnGain={normalTurnGain}, PassiveGain={passiveMechanic.SenseGain}";
+            $"NormalTurnGain={normalTurnGain}, " +
+            $"LegacyMechanicAbsent={passiveMechanic == null}, " +
+            $"SerializedSwitchGain0={serializedContractSafe}";
 
         return valid
             ? context.Pass(
-                "환형 완료 턴 기본 +1 + 패시브 +1",
+                "환형 완료 추가 감 없음·매 턴 TurnStart +1",
                 detail)
             : context.Fail(
-                "환형 완료 턴 기본 +1 + 패시브 +1",
+                "환형 완료 추가 감 없음·매 턴 TurnStart +1",
                 detail);
     }
 
@@ -729,31 +731,48 @@ public sealed class YujinCharacterVerificationCaseProvider :
         bool valid =
             baeku.CoinCount == 3 &&
             Math.Abs(
-                baeku.FrontChance - 0.40f) <
+                baeku.FrontChance - 0.50f) <
             0.0001f &&
-            baeku.CriticalValue == 12 &&
-            baeku.BaseMarkAmount == 4 &&
+            baeku.CriticalValue == 7 &&
+            baeku.PhysicalType == PhysicalDamageType.Pierce &&
+            !baeku.CanExecute &&
+            baeku.NormalMarkAmount == 6 &&
+            baeku.DuelMarkAmount == 12 &&
+            baeku.MarkIgnition == YujinMarkIgnitionType.MomentumPush &&
+            baeku.AdditionalStaggerDamagePerHit == 20 &&
 
             jeokseol.CoinCount == 2 &&
             Math.Abs(
-                jeokseol.FrontChance - 0.30f) <
+                jeokseol.FrontChance - 0.50f) <
             0.0001f &&
-            jeokseol.CriticalValue == 15 &&
-            jeokseol.BaseMarkAmount == 6 &&
+            jeokseol.CriticalValue == 8 &&
+            jeokseol.PhysicalType == PhysicalDamageType.Blunt &&
+            !jeokseol.CanExecute &&
+            jeokseol.NormalMarkAmount == 12 &&
+            jeokseol.DuelMarkAmount == 24 &&
+            jeokseol.MarkIgnition == YujinMarkIgnitionType.Seal &&
 
             nakil.CoinCount == 1 &&
             Math.Abs(
-                nakil.FrontChance - 0.25f) <
+                nakil.FrontChance - 0.20f) <
             0.0001f &&
-            nakil.CriticalValue == 19 &&
-            nakil.BaseMarkAmount == 8;
+            nakil.CriticalValue == 24 &&
+            nakil.PhysicalType == PhysicalDamageType.Cut &&
+            nakil.CanExecute &&
+            nakil.NormalMarkAmount == 8 &&
+            nakil.DuelMarkAmount == 16 &&
+            nakil.MarkIgnition == YujinMarkIgnitionType.Weaken;
+
+        const string expected =
+            "백우 3/50%/crit7/표식6·12, 적설 2/50%/crit8/12·24, " +
+            "낙일 1/20%/crit24/8·16";
 
         return valid
             ? context.Pass(
-                "백우 3/40%/12/4, 적설 2/30%/15/6, 낙일 1/25%/19/8",
-                "무기 프로필 일치")
+                expected,
+                "0916 무기 프로필 일치")
             : context.Fail(
-                "백우 3/40%/12/4, 적설 2/30%/15/6, 낙일 1/25%/19/8",
+                expected,
                 $"Baeku={Describe(baeku)}, " +
                 $"Jeokseol={Describe(jeokseol)}, " +
                 $"Nakil={Describe(nakil)}");
@@ -852,24 +871,22 @@ public sealed class YujinCharacterVerificationCaseProvider :
         YujinMechanic mechanic =
             yujin?.YujinMechanic;
 
-        Skill duelSkill =
+        Skill rerollSkill =
             yujin?.RuntimeSkills?
                 .FirstOrDefault(
                     skill =>
-                        skill?.Definition != null &&
-                        (skill.Definition.SkillId ==
-                         YujinSkillIds.Inscription ||
-                         skill.Definition.SkillId ==
-                         YujinSkillIds.Pursuit));
+                        skill != null &&
+                        (skill.ActionType == ActionType.NormalAttack ||
+                         skill.ActionType == ActionType.Duel));
 
         if (mechanic == null ||
-            duelSkill == null)
+            rerollSkill == null)
         {
             return context.Fail(
                 "살수의 감 재굴림 실행 조건",
                 mechanic == null
                     ? "Mechanic 없음"
-                    : "각인·추격 RuntimeSkill 없음");
+                    : "평타·결투 RuntimeSkill 없음");
         }
 
         if (!CharacterVerificationReflection.TrySetField(
@@ -894,7 +911,7 @@ public sealed class YujinCharacterVerificationCaseProvider :
                 Part =
                     yujin.BodyParts?
                         .FirstOrDefault(),
-                Skill = duelSkill,
+                Skill = rerollSkill,
                 Speed = 5,
                 UseCharacterRerollResource = false
             };
@@ -921,7 +938,7 @@ public sealed class YujinCharacterVerificationCaseProvider :
                     {
                         ActionId = 202,
                         Owner = yujin,
-                        Skill = duelSkill,
+                        Skill = rerollSkill,
                         Speed = 6
                     },
                 ClashPower = 10,
@@ -961,7 +978,12 @@ public sealed class YujinCharacterVerificationCaseProvider :
             mechanic.TryRequestExchangeReroll(
                 reroll);
 
+        bool categoryEligible =
+            YujinMechanic.IsSenseEligibleAction(
+                rerollSkill);
+
         bool valid =
+            categoryEligible &&
             !withoutSelection &&
             beforeSelectedRequest == 1 &&
             requested &&
@@ -969,17 +991,17 @@ public sealed class YujinCharacterVerificationCaseProvider :
             !secondRequest;
 
         string detail =
-            $"OffRequest={withoutSelection}, " +
+            $"Eligible={categoryEligible}, OffRequest={withoutSelection}, " +
             $"BeforeOn={beforeSelectedRequest}, " +
             $"OnRequest={requested}, Sense={remain}, " +
             $"Second={secondRequest}";
 
         return valid
             ? context.Pass(
-                "행동별 감 사용 OFF/ON 선택",
+                "평타·결투 임의 슬롯별 감 사용 OFF/ON 선택",
                 detail)
             : context.Fail(
-                "행동별 감 사용 OFF/ON 선택",
+                "평타·결투 임의 슬롯별 감 사용 OFF/ON 선택",
                 detail);
     }
 
@@ -1013,21 +1035,21 @@ public sealed class YujinCharacterVerificationCaseProvider :
         BodyPart targetPart =
             CharacterVerificationScenarioTools.GetUsablePart(target);
 
-        MethodInfo method =
+        MethodInfo exchangeHook =
             typeof(ClashManager).GetMethod(
-                "ApplyClashWinnerContinuationRules",
+                "ApplyExchangeContinuationRules",
                 BindingFlags.Static |
                 BindingFlags.NonPublic);
 
         if (mechanic == null ||
             yujinSkill == null ||
             opponentSkill == null ||
-            method == null)
+            exchangeHook == null)
         {
             return context.Fail(
-                "낙일 합 승리 잔여 굴림 제거 Fixture와 실제 처리 메서드 존재",
+                "낙일 교환 승리 잔여 굴림 제거 Fixture와 실제 처리 hook 존재",
                 $"Mechanic={mechanic != null}, YujinSkill={yujinSkill != null}, " +
-                $"OpponentSkill={opponentSkill != null}, Method={method != null}");
+                $"OpponentSkill={opponentSkill != null}, Hook={exchangeHook != null}");
         }
 
         BattleAction mine =
@@ -1048,129 +1070,48 @@ public sealed class YujinCharacterVerificationCaseProvider :
                 ownerPart,
                 970002);
 
+        IExchangeContinuationRule continuation =
+            mechanic;
+
         mechanic.SetWeaponForVerification(
             YujinWeaponType.Nakil);
 
-        ClashResultContext yujinFirstWin =
-            new ClashResultContext
-            {
-                IsClash = true,
-                FirstAction = mine,
-                SecondAction = theirs,
-                FirstExchangeWins = 2,
-                SecondExchangeWins = 1,
-                WinnerAction = mine,
-                LoserAction = theirs,
-                IsDraw = false
-            };
+        int nakilWin =
+            continuation.ModifyOpponentRemainingRollCount(
+                mine,
+                theirs,
+                4);
 
-        object[] firstArgs =
-        {
-            yujinFirstWin,
-            2,
-            4
-        };
-
-        method.Invoke(null, firstArgs);
-
-        int firstRemainAfter =
-            (int)firstArgs[1];
-        int secondRemainAfter =
-            (int)firstArgs[2];
-
-        ClashResultContext yujinSecondWin =
-            new ClashResultContext
-            {
-                IsClash = true,
-                FirstAction = theirs,
-                SecondAction = mine,
-                FirstExchangeWins = 1,
-                SecondExchangeWins = 2,
-                WinnerAction = mine,
-                LoserAction = theirs,
-                IsDraw = false
-            };
-
-        object[] secondArgs =
-        {
-            yujinSecondWin,
-            5,
-            3
-        };
-
-        method.Invoke(null, secondArgs);
-
-        int opponentFirstAfter =
-            (int)secondArgs[1];
-        int yujinSecondAfter =
-            (int)secondArgs[2];
-
-        ClashResultContext draw =
-            new ClashResultContext
-            {
-                IsClash = true,
-                FirstAction = mine,
-                SecondAction = theirs,
-                FirstExchangeWins = 1,
-                SecondExchangeWins = 1,
-                WinnerAction = null,
-                LoserAction = null,
-                IsDraw = true
-            };
-
-        object[] drawArgs =
-        {
-            draw,
-            2,
-            4
-        };
-
-        method.Invoke(null, drawArgs);
-
-        int drawFirst =
-            (int)drawArgs[1];
-        int drawSecond =
-            (int)drawArgs[2];
+        int nakilLose =
+            continuation.ModifyOpponentRemainingRollCount(
+                theirs,
+                mine,
+                4);
 
         mechanic.SetWeaponForVerification(
             YujinWeaponType.Baeku);
 
-        object[] nonNakilArgs =
-        {
-            yujinFirstWin,
-            2,
-            4
-        };
-
-        method.Invoke(null, nonNakilArgs);
-
-        int nonNakilFirst =
-            (int)nonNakilArgs[1];
-        int nonNakilSecond =
-            (int)nonNakilArgs[2];
+        int baekuWin =
+            continuation.ModifyOpponentRemainingRollCount(
+                mine,
+                theirs,
+                4);
 
         bool valid =
-            firstRemainAfter == 2 &&
-            secondRemainAfter == 0 &&
-            opponentFirstAfter == 0 &&
-            yujinSecondAfter == 3 &&
-            drawFirst == 2 &&
-            drawSecond == 4 &&
-            nonNakilFirst == 2 &&
-            nonNakilSecond == 4;
+            nakilWin == 0 &&
+            nakilLose == 4 &&
+            baekuWin == 4;
 
         string detail =
-            $"YujinFirst=2/{secondRemainAfter}, " +
-            $"YujinSecond={opponentFirstAfter}/3, " +
-            $"Draw={drawFirst}/{drawSecond}, " +
-            $"Baeku={nonNakilFirst}/{nonNakilSecond}";
+            $"NakilWin={nakilWin}, NakilLose={nakilLose}, " +
+            $"BaekuWin={baekuWin}, Hook={exchangeHook != null}";
 
         return valid
             ? context.Pass(
-                "낙일 합 다수결 승리 시 패자 잔여 굴림만 0·무승부/다른 무기 미적용",
+                "낙일 교환 승리 즉시 상대 잔여 굴림 0·패배/다른 무기 미적용",
                 detail)
             : context.Fail(
-                "낙일 합 다수결 승리 시 패자 잔여 굴림만 0·무승부/다른 무기 미적용",
+                "낙일 교환 승리 즉시 상대 잔여 굴림 0·패배/다른 무기 미적용",
                 detail);
     }
 
@@ -1181,80 +1122,65 @@ public sealed class YujinCharacterVerificationCaseProvider :
         Yujin yujin =
             context.Character as Yujin;
 
+        Character target =
+            context.OpponentCharacter;
+
         YujinMechanic mechanic =
             yujin?.YujinMechanic;
 
         BodyPart targetPart =
-            yujin?.BodyParts?
+            target?.BodyParts?
                 .FirstOrDefault(
                     part =>
                         part != null &&
                         !part.IsBroken);
 
         if (mechanic == null ||
+            target == null ||
             targetPart == null)
         {
             return context.Fail(
                 "표식 발화 실행 조건",
                 mechanic == null
                     ? "Mechanic 없음"
-                    : "대상 부위 없음");
+                    : "적 대상 부위 없음");
         }
 
-        if (mechanic.CurrentWeapon !=
-            YujinWeaponType.Nakil)
-        {
-            mechanic.SetWeaponForVerification(
-                YujinWeaponType.Nakil);
-        }
+        mechanic.SetWeaponForVerification(
+            YujinWeaponType.Nakil);
 
-        bool firstInvoke =
-            CharacterVerificationReflection.TryInvoke(
-                mechanic,
-                "AddMark",
-                new object[]
-                {
-                    targetPart,
-                    43,
-                    null
-                },
-                out _);
+        mechanic.GrantMark(
+            target,
+            targetPart,
+            43,
+            null);
 
         int beforeIgnition =
             mechanic.GetMark(
                 targetPart);
 
-        bool secondInvoke =
-            CharacterVerificationReflection.TryInvoke(
-                mechanic,
-                "AddMark",
-                new object[]
-                {
-                    targetPart,
-                    1,
-                    null
-                },
-                out _);
+        mechanic.GrantMark(
+            target,
+            targetPart,
+            1,
+            null);
 
         int afterIgnition =
             mechanic.GetMark(
                 targetPart);
 
         bool valid =
-            firstInvoke &&
-            secondInvoke &&
             beforeIgnition == 43 &&
             afterIgnition == 0 &&
             targetPart.IsWeakened;
 
         return valid
             ? context.Pass(
-                "표식 43→44 발화, 표식 0, 낙일 약화",
+                "표식 43→44 발화, 표식 0, 낙일 즉시 약화",
                 $"Mark={beforeIgnition}→{afterIgnition}, " +
                 $"State={targetPart.State}")
             : context.Fail(
-                "표식 43→44 발화, 표식 0, 낙일 약화",
-                $"Invoke={firstInvoke}/{secondInvoke}, " +
+                "표식 43→44 발화, 표식 0, 낙일 즉시 약화",
                 $"Mark={beforeIgnition}→{afterIgnition}, " +
                 $"State={targetPart.State}");
     }

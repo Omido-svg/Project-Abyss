@@ -2,12 +2,9 @@ using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>
-/// 유진 고유 패시브 — 환형의 흐름.
-/// 환형으로 예약한 무기 변경이 다음 턴 시작에 실제 완료되었을 때
-/// 살수의 감을 획득한다.
-///
-/// TODO2에서 정확한 보상 수치가 확정되지 않았기 때문에 기본값은 +1이며,
-/// 데이터 에셋에서 교체할 수 있도록 직렬화한다.
+/// Legacy 환형 보조 Augment asset.
+/// 0916 정본에서는 환형 완료 자체가 살수의 감 획득 원인이 아니므로
+/// 런타임 메커닉을 생성하지 않는다. 직렬화 필드와 타입은 기존 asset 호환용으로 유지한다.
 /// </summary>
 [CreateAssetMenu(
     menuName = "Battle/Augment/Yujin/Hwanhyeong Flow",
@@ -16,10 +13,11 @@ public sealed class YujinHwanhyeongFlowPassive :
     CharacterAugment
 {
     [SerializeField, Min(0)]
-    private int senseGainOnWeaponSwitch = 1;
+    private int senseGainOnWeaponSwitch = 0;
 
-    public int SenseGainOnWeaponSwitch =>
-        Mathf.Max(0, senseGainOnWeaponSwitch);
+    // 0916: 환형 완료 자체는 살수의 감 획득 원인이 아니다.
+    // 필드는 구 asset 직렬화 호환용으로만 보존한다.
+    public int SenseGainOnWeaponSwitch => 0;
 
     public override bool CanApplyTo(
         Character owner)
@@ -31,20 +29,10 @@ public sealed class YujinHwanhyeongFlowPassive :
         CharacterBuildMechanicContext context,
         List<CombatMechanic> output)
     {
-        if (output == null ||
-            !context.IsValid ||
-            !CanApplyTo(context.Owner) ||
-            SenseGainOnWeaponSwitch <= 0)
-        {
-            return;
-        }
-
-        output.Add(
-            new YujinHwanhyeongFlowPassiveMechanic(
-                SenseGainOnWeaponSwitch));
+        // 0916 Source of Truth: 살수의 감은 TurnStart/카드/파괴/처치로 획득한다.
+        // 환형 완료 +1은 legacy rule이므로 더 이상 runtime mechanic을 생성하지 않는다.
     }
 }
-
 /// <summary>
 /// ScriptableObject에는 런타임 상태를 두지 않고,
 /// 실제 WeaponChanged 반응은 전투 메커닉 인스턴스가 소유한다.
@@ -109,7 +97,6 @@ public sealed class YujinHwanhyeongFlowPassiveMechanic :
             return;
         }
 
-        yujinMechanic.GrantSense(
-            senseGain);
+        // 0916 legacy compatibility: weapon switch no longer grants Sense.
     }
 }

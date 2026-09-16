@@ -664,19 +664,19 @@ public static class CharacterBehaviorCoverageCatalog
 
             int expectedInspectionFront = weapon switch
             {
-                YujinWeaponType.Baeku => 22,
-                YujinWeaponType.Jeokseol => 28,
-                _ => 43
+                YujinWeaponType.Baeku => 18,
+                YujinWeaponType.Jeokseol => 20,
+                _ => 44
             };
             int expectedDuelFront = weapon switch
             {
-                YujinWeaponType.Baeku => 23,
-                YujinWeaponType.Jeokseol => 29,
-                _ => 44
+                YujinWeaponType.Baeku => 20,
+                YujinWeaponType.Jeokseol => 22,
+                _ => 46
             };
 
             if (inspectionFront != expectedInspectionFront ||
-                inspectionBack != 14 ||
+                inspectionBack != 13 ||
                 duelFront != expectedDuelFront ||
                 duelBack != 15)
             {
@@ -699,7 +699,7 @@ public static class CharacterBehaviorCoverageCatalog
             failures,
             observations);
 
-        observations.Add("유진 3무기 앞/뒷면 위력표 및 TurnStart 감 PASS");
+        observations.Add("유진 0916 무기 프로필 기반 앞/뒷면 위력 및 TurnStart 감 PASS");
     }
 
     private static void VerifyYujinMarkIgnitions(
@@ -805,7 +805,7 @@ public static class CharacterBehaviorCoverageCatalog
             {
                 YujinWeaponType.Baeku =>
                     (context.BattleContext.ResolveMomentumManager()?.CurrentMomentum ?? 0) >=
-                    momentumBefore + 10,
+                    momentumBefore + 50,
                 YujinWeaponType.Jeokseol =>
                     target.GetPartStatus<SealedPartStatus>(part) != null,
                 _ => part.IsWeakened || part.IsBroken

@@ -13,13 +13,14 @@ internal static class YujinSkillRollUtility
 
     public static RollResult Roll(
         Character owner,
-        SkillDefinition definition)
+        Skill skill)
     {
         YujinMechanic mechanic =
             owner?.GetMechanic<YujinMechanic>();
 
         if (mechanic == null ||
-            definition == null)
+            skill == null ||
+            skill.Definition == null)
         {
             return new RollResult
             {
@@ -44,7 +45,7 @@ internal static class YujinSkillRollUtility
 
         int power =
             mechanic.GetSkillPower(
-                definition.SkillId,
+                skill,
                 front);
 
         RollResult result =
@@ -78,29 +79,11 @@ public sealed class YujinNormalRuntimeSkill :
     public override int ExchangeRollCount =>
         YujinSkillRollUtility.GetExchangeCount(owner);
 
-
-    public override int AttackWeight =>
-        owner?.GetMechanic<YujinMechanic>()
-            ?.CurrentWeapon == YujinWeaponType.Jeokseol
-            ? 2
-            : 1;
-
-    public override float SecondaryTargetDamageMultiplier =>
-        0.5f;
-
-    public override AttackWeightSecondaryPartMode
-        SecondaryAttackWeightPartMode =>
-            AttackWeightSecondaryPartMode
-                .AnotherPartOnPrimaryCharacter;
-
-    public override bool AllowBrokenAttackWeightParts =>
-        false;
-
     public override RollResult RollPowerResultForExchange(
         int exchangeIndex) =>
         YujinSkillRollUtility.Roll(
             owner,
-            Definition);
+            this);
 }
 
 public sealed class YujinDuelRuntimeSkill :
@@ -115,29 +98,11 @@ public sealed class YujinDuelRuntimeSkill :
     public override int ExchangeRollCount =>
         YujinSkillRollUtility.GetExchangeCount(owner);
 
-
-    public override int AttackWeight =>
-        owner?.GetMechanic<YujinMechanic>()
-            ?.CurrentWeapon == YujinWeaponType.Jeokseol
-            ? 2
-            : 1;
-
-    public override float SecondaryTargetDamageMultiplier =>
-        0.5f;
-
-    public override AttackWeightSecondaryPartMode
-        SecondaryAttackWeightPartMode =>
-            AttackWeightSecondaryPartMode
-                .AnotherPartOnPrimaryCharacter;
-
-    public override bool AllowBrokenAttackWeightParts =>
-        false;
-
     public override RollResult RollPowerResultForExchange(
         int exchangeIndex) =>
         YujinSkillRollUtility.Roll(
             owner,
-            Definition);
+            this);
 
     public override int GetMomentumPushBonus(
         BattleAction action) => 0;

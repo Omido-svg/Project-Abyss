@@ -38,8 +38,8 @@ public sealed class GameSystemVerificationWindow : EditorWindow
     {
         EditorGUILayout.LabelField("Project Abyss · Game System Verification", EditorStyles.boldLabel);
         EditorGUILayout.HelpBox(
-            "Phase A/B 회귀 + Phase C Progression/Run + Phase D Olaf(O-01/O-03/O-04/O-05)를 검증합니다. " +
-            "Phase D Olaf Gate는 Player가 Olaf인 초기화된 전투에서 실행하세요. Runtime 설정값을 기대값으로 재사용하지 않습니다.",
+            "Phase A/B 회귀 + Phase C Progression/Run + Phase D Character Runtime을 검증합니다. " +
+            "Olaf Gate는 Olaf, Yujin Gate는 Yujin이 Player인 초기화된 전투에서 실행하세요. 캐릭터별 Gate는 서로 다른 Player fixture를 요구하므로 독립 실행합니다.",
             MessageType.Info);
 
         using (new EditorGUILayout.HorizontalScope())
@@ -60,13 +60,15 @@ public sealed class GameSystemVerificationWindow : EditorWindow
         int phaseBCovered = CanonicalGameSystemVerificationSpec.PhaseBRequirements.Count(id => coverage.ContainsKey(id));
         int phaseCCovered = CanonicalGameSystemVerificationSpec.PhaseCRequirements.Count(id => coverage.ContainsKey(id));
         int phaseDOlafCovered = CanonicalGameSystemVerificationSpec.PhaseDOlafRequirements.Count(id => coverage.ContainsKey(id));
+        int phaseDYujinCovered = CanonicalGameSystemVerificationSpec.PhaseDYujinRequirements.Count(id => coverage.ContainsKey(id));
 
         EditorGUILayout.LabelField("Requirement Coverage", EditorStyles.boldLabel);
         EditorGUILayout.LabelField(
             $"Phase A: {phaseACovered}/{CanonicalGameSystemVerificationSpec.PhaseARequirements.Count}   " +
             $"Phase B: {phaseBCovered}/{CanonicalGameSystemVerificationSpec.PhaseBRequirements.Count}   " +
             $"Phase C: {phaseCCovered}/{CanonicalGameSystemVerificationSpec.PhaseCRequirements.Count}   " +
-            $"Phase D Olaf: {phaseDOlafCovered}/{CanonicalGameSystemVerificationSpec.PhaseDOlafRequirements.Count}");
+            $"Phase D Olaf: {phaseDOlafCovered}/{CanonicalGameSystemVerificationSpec.PhaseDOlafRequirements.Count}   " +
+            $"Phase D Yujin: {phaseDYujinCovered}/{CanonicalGameSystemVerificationSpec.PhaseDYujinRequirements.Count}");
 
         List<string> missingB = CanonicalGameSystemVerificationSpec.PhaseBRequirements
             .Where(id => !coverage.ContainsKey(id)).ToList();
@@ -82,6 +84,11 @@ public sealed class GameSystemVerificationWindow : EditorWindow
             .Where(id => !coverage.ContainsKey(id)).ToList();
         if (missingDOlaf.Count > 0)
             EditorGUILayout.HelpBox("Phase D Olaf verification missing: " + string.Join(", ", missingDOlaf), MessageType.Warning);
+
+        List<string> missingDYujin = CanonicalGameSystemVerificationSpec.PhaseDYujinRequirements
+            .Where(id => !coverage.ContainsKey(id)).ToList();
+        if (missingDYujin.Count > 0)
+            EditorGUILayout.HelpBox("Phase D Yujin verification missing: " + string.Join(", ", missingDYujin), MessageType.Warning);
     }
 
     private void DrawControls()
@@ -103,6 +110,8 @@ public sealed class GameSystemVerificationWindow : EditorWindow
                     Run(GameSystemVerificationRunner.RunPhaseC(battleManager));
                 if (GUILayout.Button("Phase D Olaf Gate", GUILayout.Height(30f)))
                     Run(GameSystemVerificationRunner.RunPhaseDOlaf(battleManager));
+                if (GUILayout.Button("Phase D Yujin Gate", GUILayout.Height(30f)))
+                    Run(GameSystemVerificationRunner.RunPhaseDYujin(battleManager));
                 if (GUILayout.Button("Live Audit", GUILayout.Height(30f)))
                     Run(GameSystemVerificationRunner.RunLivePlanAudit(battleManager));
             }

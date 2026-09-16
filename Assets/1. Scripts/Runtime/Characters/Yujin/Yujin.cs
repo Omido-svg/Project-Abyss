@@ -11,11 +11,6 @@ public sealed class Yujin : Character, ICharacterAuthoringTarget, IPhysicalDamag
     private YujinWeaponType startingWeapon =
         YujinWeaponType.Baeku;
 
-    [Header("Weapon Physical Types — provisional, inspector-overridable")]
-    [SerializeField] private PhysicalDamageType baekuPhysicalType = PhysicalDamageType.Cut;
-    [SerializeField] private PhysicalDamageType jeokseolPhysicalType = PhysicalDamageType.Pierce;
-    [SerializeField] private PhysicalDamageType nakilPhysicalType = PhysicalDamageType.Cut;
-
     private readonly List<BodyPart> bodyParts = new();
 
     public override IReadOnlyList<BodyPart> BodyParts =>
@@ -31,13 +26,7 @@ public sealed class Yujin : Character, ICharacterAuthoringTarget, IPhysicalDamag
         ResolveWeaponPhysicalType(YujinMechanic?.CurrentWeapon ?? startingWeapon);
 
     public PhysicalDamageType ResolveWeaponPhysicalType(YujinWeaponType weapon) =>
-        weapon switch
-        {
-            YujinWeaponType.Baeku => baekuPhysicalType,
-            YujinWeaponType.Jeokseol => jeokseolPhysicalType,
-            YujinWeaponType.Nakil => nakilPhysicalType,
-            _ => PhysicalDamageType.Cut
-        };
+        YujinWeapons.Get(weapon).PhysicalType;
 
     public bool TryResolvePhysicalDamageType(
         Skill skill,

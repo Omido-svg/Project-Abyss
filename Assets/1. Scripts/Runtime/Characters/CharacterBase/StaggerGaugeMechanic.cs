@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>
@@ -74,7 +75,9 @@ public sealed class StaggerGaugeMechanic : ReactiveCombatMechanic,
             return;
         }
 
-        int raw = Mathf.Max(0, rawRollPower);
+        int raw = Mathf.Max(
+            0,
+            rawRollPower + ResolveAdditionalStaggerDamage(action, owner));
         if (raw <= 0)
             return;
 
@@ -200,13 +203,37 @@ public sealed class StaggerGaugeMechanic : ReactiveCombatMechanic,
 
     private int CalculateStaggerDamage(BattleAction action, Character target)
     {
-        int raw = Mathf.Max(0, action.GetDamagePower());
+        int raw = Mathf.Max(
+            0,
+            action.GetDamagePower() + ResolveAdditionalStaggerDamage(action, target));
         if (raw <= 0)
             return 0;
 
         PhysicalDamageType type = PhysicalDamageResolver.Resolve(action);
         float multiplier = target.Data?.StaggerResistances?.GetMultiplier(type) ?? 1f;
         return Mathf.Max(0, Mathf.FloorToInt(raw * multiplier));
+    }
+
+    private static int ResolveAdditionalStaggerDamage(
+        BattleAction action,
+        Character target)
+    {
+        IReadOnlyList<CombatMechanic> mechanics = action?.Owner?.Mechanics;
+        if (mechanics == null)
+            return 0;
+
+        int total = 0;
+        foreach (CombatMechanic mechanic in mechanics)
+        {
+            if (mechanic is IAdditionalStaggerDamageProvider provider)
+            {
+                total += Mathf.Max(
+                    0,
+                    provider.GetAdditionalStaggerDamage(action, target));
+            }
+        }
+
+        return Mathf.Max(0, total);
     }
 
     private void ClearPendingAttackSnapshot()

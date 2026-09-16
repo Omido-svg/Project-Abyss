@@ -283,12 +283,17 @@ public class ClashManager
             else if (exchange?.WinnerAction == second)
                 result.SecondExchangeWins++;
 
+            ApplyExchangeContinuationRules(
+                exchange,
+                ref firstRemaining,
+                ref secondRemaining);
+
             exchangeIndex++;
         }
 
         // -----------------------------------------------------------------
         // 2) 맞붙는 교환이 끝난 즉시 합 다수결을 확정한다.
-        // OnClashWin과 낙일의 남은 굴림 삭제는 반드시 일방타격보다 먼저 처리한다.
+        // 합 다수결 전용 continuation은 일방타격보다 먼저 처리한다. 낙일은 개별 교환 continuation에서 이미 처리된다.
         // -----------------------------------------------------------------
         FinalizeClashSummary(result);
 
@@ -429,6 +434,64 @@ public class ClashManager
             .RaiseClashResolved(result);
 
         return result;
+    }
+
+    private static void ApplyExchangeContinuationRules(
+        ClashExchangeResult exchange,
+        ref int firstRemaining,
+        ref int secondRemaining)
+    {
+        if (exchange == null ||
+            exchange.WasCancelled ||
+            exchange.IsTie ||
+            exchange.WinnerAction == null ||
+            exchange.LoserAction == null)
+        {
+            return;
+        }
+
+        BattleAction winner = exchange.WinnerAction;
+        BattleAction loser = exchange.LoserAction;
+
+        int before;
+        if (loser == exchange.FirstAction)
+            before = Mathf.Max(0, firstRemaining);
+        else if (loser == exchange.SecondAction)
+            before = Mathf.Max(0, secondRemaining);
+        else
+            return;
+
+        int remaining = before;
+        IReadOnlyList<CombatMechanic> mechanics = winner.Owner?.Mechanics;
+
+        if (mechanics != null)
+        {
+            foreach (CombatMechanic mechanic in mechanics)
+            {
+                if (mechanic is not IExchangeContinuationRule rule)
+                    continue;
+
+                remaining = Mathf.Max(
+                    0,
+                    rule.ModifyOpponentRemainingRollCount(
+                        winner,
+                        loser,
+                        remaining));
+            }
+        }
+
+        if (loser == exchange.FirstAction)
+            firstRemaining = remaining;
+        else
+            secondRemaining = remaining;
+
+        int removed = Mathf.Max(0, before - remaining);
+        if (removed > 0)
+        {
+            Debug.Log(
+                $"[ExchangeContinuation] {winner.Owner.name} 교환 승리 / " +
+                $"상대 남은 굴림 {removed}개 제거");
+        }
     }
 
     private static void ApplyClashWinnerContinuationRules(
@@ -662,6 +725,23 @@ public class ClashManager
         BattleAction loser =
             finalJudgment.Loser;
 
+        if (TryCancelPairedExchangeByRule(
+                first,
+                second,
+                exchangeIndex,
+                momentumBefore,
+                rerolls,
+                out ClashExchangeResult folded))
+        {
+            first.Skill?.NotifyRollEnd(
+                first, second, exchangeIndex, false, folded,
+                isClash: true, isOneSided: false);
+            second.Skill?.NotifyRollEnd(
+                second, first, exchangeIndex, false, folded,
+                isClash: true, isOneSided: false);
+            return folded;
+        }
+
         // 개별 교환 승패는 실제 피해 적용보다 먼저 확정된다.
         // 굴림 성공/실패 효과가 이후 피해 계산에 영향을 줄 수 있도록 이 지점에서 발행한다.
         winner.Skill?.NotifyRollOutcome(
@@ -823,6 +903,111 @@ public class ClashManager
             isClash: true, isOneSided: false);
 
         return exchange;
+    }
+
+    private static bool TryCancelPairedExchangeByRule(
+        BattleAction first,
+        BattleAction second,
+        int exchangeIndex,
+        int momentumBefore,
+        int rerolls,
+        out ClashExchangeResult cancelled)
+    {
+        cancelled = null;
+
+        if (TryCancelByOwnerRule(
+                first,
+                second,
+                exchangeIndex,
+                out string firstReason))
+        {
+            cancelled = BuildCancelledPairedExchange(
+                first,
+                second,
+                exchangeIndex,
+                momentumBefore,
+                rerolls);
+
+            Debug.Log(
+                $"[ExchangeCancel] {first.Owner.name} / {firstReason}");
+            return true;
+        }
+
+        if (TryCancelByOwnerRule(
+                second,
+                first,
+                exchangeIndex,
+                out string secondReason))
+        {
+            cancelled = BuildCancelledPairedExchange(
+                first,
+                second,
+                exchangeIndex,
+                momentumBefore,
+                rerolls);
+
+            Debug.Log(
+                $"[ExchangeCancel] {second.Owner.name} / {secondReason}");
+            return true;
+        }
+
+        return false;
+    }
+
+    private static bool TryCancelByOwnerRule(
+        BattleAction own,
+        BattleAction opponent,
+        int exchangeIndex,
+        out string reason)
+    {
+        reason = string.Empty;
+        IReadOnlyList<CombatMechanic> mechanics = own?.Owner?.Mechanics;
+        if (mechanics == null)
+            return false;
+
+        foreach (CombatMechanic mechanic in mechanics)
+        {
+            if (mechanic is IExchangePreResolutionRule rule &&
+                rule.TryCancelPairedExchange(
+                    own,
+                    opponent,
+                    exchangeIndex,
+                    opponent?.LastRollResult,
+                    out reason))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static ClashExchangeResult BuildCancelledPairedExchange(
+        BattleAction first,
+        BattleAction second,
+        int exchangeIndex,
+        int momentumBefore,
+        int rerolls)
+    {
+        return new ClashExchangeResult
+        {
+            ExchangeIndex = exchangeIndex,
+            FirstAction = first,
+            SecondAction = second,
+            WasCancelled = true,
+            IsDuelExchange =
+                first?.ActionType == ActionType.Duel &&
+                second?.ActionType == ActionType.Duel,
+            FirstClashPower = first?.ClashPower ?? 0,
+            SecondClashPower = second?.ClashPower ?? 0,
+            FirstRollResult = first?.LastRollResult?.Clone(),
+            SecondRollResult = second?.LastRollResult?.Clone(),
+            FirstRollType = first?.CurrentRollType ?? CombatRollType.Attack,
+            SecondRollType = second?.CurrentRollType ?? CombatRollType.Attack,
+            TieRerollCount = rerolls,
+            MomentumBefore = momentumBefore,
+            MomentumAfter = momentumBefore
+        };
     }
 
     private ClashResultContext ResolveOneSide(
