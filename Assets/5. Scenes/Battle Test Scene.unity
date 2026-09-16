@@ -19180,7 +19180,7 @@ MonoBehaviour:
       ExcludePreparationActions: 1
     Progression:
       MaximumSkillUpgradeLevel: 2
-      SecondUpgradeCostMultiplier: 1.5
+      LegacySecondUpgradeCostMultiplier: 1.5
       NormalAttackLoadoutLimit: 3
       DuelLoadoutLimit: 2
       PreparationLoadoutLimit: 3
