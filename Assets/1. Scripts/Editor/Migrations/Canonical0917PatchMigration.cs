@@ -8,13 +8,14 @@ using UnityEngine;
 
 /// <summary>
 /// Project Abyss 0917 overlay patch.
-/// Base target: Default-Battle-Test @ 88609ec6.
+/// Base target: Default-Battle-Test (0917 overlay; emotion hotfix rechecked on c8d3a02a).
 /// - Yujin O/P assets + loadout
 /// - Olaf 0917 card textures as data, repay-all B<=-30 +4
 /// - Hifumi Goldan Bloom counter x2 source patch
 /// - legacy 0916 C44 hardcode re-application disabled
 /// - Phase E Yujin count contract 14->16
 /// - RunFlow registry EmotionAugmentCatalog repair
+/// - canonical 7-emotion × 3-tier × 3-card roster normalization
 ///
 /// 미정값은 플레이 가능한 SkillDefinition으로 발명하지 않는다.
 /// </summary>
@@ -65,6 +66,9 @@ public static class Canonical0917PatchMigration
         int sourcePatches = ApplySourcePatches();
         int olafPatched = ApplyOlafData();
         int yujinPatched = ApplyYujinOP();
+        bool emotionRosterOk =
+            Canonical0917EmotionAugmentMigration.ApplyCanonicalRoster(
+                out string emotionRosterReport);
         bool registryFixed = RepairRunFlowRegistry();
 
         UpdateManifest();
@@ -75,7 +79,9 @@ public static class Canonical0917PatchMigration
         Debug.Log(
             "[0917 Spec Patch] APPLY complete. " +
             $"SourcePatches={sourcePatches}, OlafData={olafPatched}, " +
-            $"YujinAssets={yujinPatched}, RegistryFixed={registryFixed}. " +
+            $"YujinAssets={yujinPatched}, EmotionRosterOk={emotionRosterOk}, " +
+            $"RegistryFixed={registryFixed}. " +
+            (emotionRosterOk ? string.Empty : "EmotionRoster: " + emotionRosterReport + ". ") +
             "Source patch가 있었다면 Unity 재컴파일 완료 후 " +
             "'Game System Verification > 0917 Spec Patch > Verify 0917 Patch'를 실행하세요.");
     }

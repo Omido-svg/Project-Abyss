@@ -276,10 +276,50 @@ public static class Canonical0917PatchVerification
             AssetDatabase.LoadAssetAtPath<RunFlowLiveContentRegistry>(
                 "Assets/Resources/ProjectAbyss/RunFlowLiveContentRegistry.asset");
 
-        if (registry?.EmotionAugmentCatalog != null)
-            pass.Add("RunFlowLiveContentRegistry EmotionAugmentCatalog linked");
-        else
+        EmotionAugmentCatalog catalog = registry?.EmotionAugmentCatalog;
+        if (catalog == null)
+        {
             fail.Add("RunFlowLiveContentRegistry EmotionAugmentCatalog is null");
+            return;
+        }
+
+        if (catalog.Entries == null)
+        {
+            fail.Add("EmotionAugmentCatalog Entries is null");
+            return;
+        }
+
+        int total = catalog.Entries.Count(x => x != null);
+        bool shape = total == 63;
+        foreach (EmotionType emotion in Enum.GetValues(typeof(EmotionType)))
+        {
+            for (int tier = 1; tier <= 3; tier++)
+            {
+                shape &= catalog.Entries.Count(x =>
+                    x != null &&
+                    x.Emotion == emotion &&
+                    x.Tier == tier) == 3;
+                shape &= catalog.GetCandidateCount(emotion, tier) == 3;
+            }
+        }
+
+        bool canonicalOwnership =
+            catalog.Entries != null &&
+            catalog.Entries
+                .Where(x => x != null)
+                .All(x =>
+                    AssetDatabase.GetAssetPath(x).StartsWith(
+                        Canonical0917EmotionAugmentMigration.CanonicalRoot + "/",
+                        StringComparison.Ordinal));
+
+        if (shape && canonicalOwnership)
+            pass.Add(
+                "RunFlowLiveContentRegistry EmotionAugmentCatalog linked + " +
+                "7 emotions/T1-3/3 cards runtime reachable (63)");
+        else
+            fail.Add(
+                $"EmotionAugmentCatalog roster mismatch: total={total}, " +
+                $"shape={shape}, canonicalOwnership={canonicalOwnership}");
     }
 }
 #endif
