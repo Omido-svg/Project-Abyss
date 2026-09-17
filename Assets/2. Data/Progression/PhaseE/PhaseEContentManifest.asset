@@ -52,6 +52,9 @@ MonoBehaviour:
   - "0916 Closure: Yujin starter \uB3C4\uC0AC\uB9BC = \uB178\uB9BC\uC218/\uC120\uAE08
     \uBC1B\uAE30/\uD658\uD615(\uACF5\uACA9 TEMP). \uACF5\uACA9/\uC218\uBE44 \uBAA8\uB450
     \uD6C4\uBCF4 pool \uBCF4\uC874, \uB458 \uC911 1\uC7A5 \uC7A5\uCC29 \uACC4\uC57D."
+  - "0916 Closure C44: Olaf 15\uAC1C TEMP_OVERRIDE\uB97C 0916(3) \xA74.3 \uD3C9\uADE0
+    \uBD88\uBCC0\uC2DD\uC73C\uB85C \uC815\uADDC\uD654. \uC774\uBC88 \uC801\uC6A9\uC5D0\uC11C
+    \uBCC0\uACBD\uB41C SkillDefinition=15. TEMP bypass \uC81C\uAC70."
   - "0916 Closure Presentation: missing/incomplete canonical PresentationAsset only
     -> character fallback Timeline wired. Olaf=0, Yujin=0. Hit Event\uAC00 HP \uD45C\uC2DC
     \uC2DC\uC810\uC744 \uC18C\uC720\uD558\uBA70 authored visual\uC740 \uBCF4\uC874."

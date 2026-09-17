@@ -57,6 +57,43 @@ public static class Canonical0916ClosureMigration
     private const string LegacyOlafBloodSplashVfxPath =
         "Assets/2. Data/BattleVisual/VFXDefinitions/Skills/Olaf/Olaf_Duel_BloodSplash_VFX.asset";
 
+    private sealed class OlafC44TextureSpec
+    {
+        public string SkillId;
+        public int[] Min;
+        public int[] Max;
+
+        public OlafC44TextureSpec(string skillId, int[] min, int[] max)
+        {
+            SkillId = skillId;
+            Min = min;
+            Max = max;
+        }
+    }
+
+    // 0916(3) §4.3 우선순위: 위치별 평균의 평균 = 기본위력 + 4.5.
+    // TEMP_BALANCE_V1의 15개 XLSX 보존 예외를 최소 정수 보정으로 canonical range로 닫는다.
+    // 값은 SkillDefinition의 base 단계 기준이며 Upgrade1/2가 base/range를 각각 +1 하므로
+    // 두 강화 단계에서도 동일한 평균 불변식이 그대로 유지된다.
+    private static readonly OlafC44TextureSpec[] OlafC44Textures =
+    {
+        C44(OlafSkillIds.Bite,          new[]{7, 8, 9},       new[]{18, 19, 20}),
+        C44(OlafSkillIds.ShieldWall,    new[]{10, 10, 7},     new[]{13, 17, 24}),
+        C44(OlafSkillIds.Smash,         new[]{10, 13},        new[]{15, 20}),
+        C44(OlafSkillIds.Flurry,        new[]{13, 11, 10, 8, 6}, new[]{19, 17, 15, 14, 12}),
+        C44(OlafSkillIds.RiseAgain,     new[]{11, 2, 10, 2},  new[]{16, 9, 17, 9}),
+        C44(OlafSkillIds.Cover,         new[]{19, 11},        new[]{26, 18}),
+        C44(OlafSkillIds.ExploitGap,    new[]{11, 13, 14},    new[]{16, 20, 25}),
+        C44(OlafSkillIds.FirstStrike,   new[]{14, 10},        new[]{19, 15}),
+        C44(OlafSkillIds.BlockWay,      new[]{15, 11},        new[]{22, 18}),
+        C44(OlafSkillIds.SliceThin,     new[]{14, 18},        new[]{17, 29}),
+        C44(OlafSkillIds.SingleCut,     new[]{22},            new[]{27}),
+        C44(OlafSkillIds.BloodCharge,   new[]{15, 11},        new[]{22, 18}),
+        C44(OlafSkillIds.AllIn,         new[]{10, 13, 16},    new[]{17, 20, 23}),
+        C44(OlafSkillIds.AbsorbBlood,   new[]{13, 14},        new[]{20, 19}),
+        C44(OlafSkillIds.HonorableFight,new[]{15},            new[]{22})
+    };
+
     private sealed class SkillMeta
     {
         public string Name;
@@ -234,6 +271,7 @@ public static class Canonical0916ClosureMigration
 
         ApplyMetadata(olaf, Olaf);
         ApplyMetadata(yujin, Yujin);
+        int olafC44TexturesNormalized = ApplyOlafC44CanonicalTextures(olaf);
         EnsureYujinStarterPreparationLoadout(yujin);
         WireYujinCanonicalEffects(yujin);
 
@@ -279,6 +317,14 @@ public static class Canonical0916ClosureMigration
                 manifest.TempBalanceNotes.Add(
                     "0916 Closure: Yujin 명시 미구현 rider를 data-driven runtime effect로 연결.");
             }
+
+            const string c44NotePrefix = "0916 Closure C44:";
+            manifest.TempBalanceNotes.RemoveAll(note =>
+                !string.IsNullOrWhiteSpace(note) &&
+                note.StartsWith(c44NotePrefix, StringComparison.Ordinal));
+            manifest.TempBalanceNotes.Add(
+                $"{c44NotePrefix} Olaf 15개 TEMP_OVERRIDE를 0916(3) §4.3 평균 불변식으로 정규화. " +
+                $"이번 적용에서 변경된 SkillDefinition={olafC44TexturesNormalized}. TEMP bypass 제거.");
 
             const string hwanhyeongStarterNote =
                 "0916 Closure: Yujin starter 도사림 = 노림수/선금 받기/환형(공격 TEMP). 공격/수비 모두 후보 pool 보존, 둘 중 1장 장착 계약.";
@@ -770,6 +816,141 @@ public static class Canonical0916ClosureMigration
         }
     }
 
+    private static int ApplyOlafC44CanonicalTextures(CharacterCombatLoadout loadout)
+    {
+        if (loadout == null)
+            return 0;
+
+        Dictionary<string, SkillDefinition> byId =
+            loadout.EnumerateAllDefinitions()
+                .Where(skill => skill != null && !string.IsNullOrWhiteSpace(skill.SkillId))
+                .GroupBy(skill => skill.SkillId, StringComparer.Ordinal)
+                .ToDictionary(group => group.Key, group => group.First(), StringComparer.Ordinal);
+
+        int changedCount = 0;
+        string legacyMarker = $"[{PhaseETempBalanceMigration.ProfileId}:C44_OVERRIDE]";
+        const string canonicalMarker = "[CANONICAL_0916_C44]";
+
+        foreach (OlafC44TextureSpec spec in OlafC44Textures)
+        {
+            if (!byId.TryGetValue(spec.SkillId, out SkillDefinition skill) || skill == null)
+            {
+                Debug.LogWarning($"[0916 Closure C44] Olaf skill missing: {spec.SkillId}");
+                continue;
+            }
+
+            if (skill.Rolls == null ||
+                spec.Min == null || spec.Max == null ||
+                spec.Min.Length != spec.Max.Length ||
+                skill.Rolls.Count != spec.Min.Length)
+            {
+                Debug.LogWarning(
+                    $"[0916 Closure C44] roll shape mismatch / Skill={skill.SkillName} ({spec.SkillId}) " +
+                    $"Actual={skill.Rolls?.Count ?? 0}, Expected={spec.Min?.Length ?? 0}");
+                continue;
+            }
+
+            bool changed = false;
+            for (int i = 0; i < spec.Min.Length; i++)
+            {
+                SkillRollData roll = skill.Rolls[i];
+                if (roll == null)
+                {
+                    Debug.LogWarning(
+                        $"[0916 Closure C44] null roll / Skill={skill.SkillName} ({spec.SkillId}) Index={i}");
+                    continue;
+                }
+
+                int min = Mathf.Max(1, spec.Min[i]);
+                int max = Mathf.Max(min, spec.Max[i]);
+                if (roll.MinPower != min || roll.MaxPower != max)
+                {
+                    roll.MinPower = min;
+                    roll.MaxPower = max;
+                    changed = true;
+                }
+            }
+
+            string description = skill.Description ?? string.Empty;
+            if (description.IndexOf(legacyMarker, StringComparison.Ordinal) >= 0)
+            {
+                description = description.Replace(legacyMarker, string.Empty).Trim();
+                changed = true;
+            }
+
+            if (description.IndexOf(canonicalMarker, StringComparison.Ordinal) < 0)
+            {
+                skill.Description =
+                    $"{canonicalMarker} 0916(3) §4.3: 위치별 평균의 평균 = 기본위력 + 4.5.\n" +
+                    description;
+                changed = true;
+            }
+            else
+            {
+                skill.Description = description;
+            }
+
+            if (changed)
+            {
+                changedCount++;
+                EditorUtility.SetDirty(skill);
+            }
+        }
+
+        if (changedCount > 0)
+        {
+            Debug.Log(
+                $"[0916 Closure C44] Olaf roll textures normalized: {changedCount}/{OlafC44Textures.Length}");
+        }
+
+        return changedCount;
+    }
+
+    private static bool HasOlafC44Mismatch(CharacterCombatLoadout loadout)
+    {
+        if (loadout == null)
+            return true;
+
+        Dictionary<string, SkillDefinition> byId =
+            loadout.EnumerateAllDefinitions()
+                .Where(skill => skill != null && !string.IsNullOrWhiteSpace(skill.SkillId))
+                .GroupBy(skill => skill.SkillId, StringComparer.Ordinal)
+                .ToDictionary(group => group.Key, group => group.First(), StringComparer.Ordinal);
+
+        string legacyMarker = $"[{PhaseETempBalanceMigration.ProfileId}:C44_OVERRIDE]";
+
+        foreach (OlafC44TextureSpec spec in OlafC44Textures)
+        {
+            if (!byId.TryGetValue(spec.SkillId, out SkillDefinition skill) ||
+                skill?.Rolls == null ||
+                spec.Min == null || spec.Max == null ||
+                spec.Min.Length != spec.Max.Length ||
+                skill.Rolls.Count != spec.Min.Length)
+            {
+                return true;
+            }
+
+            if (!string.IsNullOrEmpty(skill.Description) &&
+                skill.Description.IndexOf(legacyMarker, StringComparison.Ordinal) >= 0)
+            {
+                return true;
+            }
+
+            for (int i = 0; i < spec.Min.Length; i++)
+            {
+                SkillRollData roll = skill.Rolls[i];
+                if (roll == null ||
+                    roll.MinPower != spec.Min[i] ||
+                    roll.MaxPower != spec.Max[i])
+                {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
     private static void ClearSecondUpgradeCosts(CharacterCombatLoadout loadout)
     {
         if (loadout == null)
@@ -879,6 +1060,9 @@ public static class Canonical0916ClosureMigration
         if (!olafClosed || !yujinClosed)
             return true;
 
+        if (HasOlafC44Mismatch(olaf))
+            return true;
+
         if (!HasCanonicalYujinStarterPreparationLoadout(yujin))
             return true;
 
@@ -913,6 +1097,9 @@ public static class Canonical0916ClosureMigration
     private static bool HasSkillNamed(CharacterCombatLoadout loadout, string name) =>
         loadout?.EnumerateAllDefinitions()
             .Any(x => x != null && string.Equals(x.SkillName, name, StringComparison.Ordinal)) == true;
+
+    private static OlafC44TextureSpec C44(string skillId, int[] min, int[] max) =>
+        new OlafC44TextureSpec(skillId, min, max);
 
     private static SkillMeta M(
         string name,

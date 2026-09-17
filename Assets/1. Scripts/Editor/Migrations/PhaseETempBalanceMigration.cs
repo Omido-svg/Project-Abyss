@@ -450,22 +450,22 @@ public static class PhaseETempBalanceMigration
     {
         return new[]
         {
-            D(OlafSkillIds.EnduringSlash,"물어뜯기",ActionType.NormalAttack,SkillColor.Red,0,11,new[]{9,10,10},new[]{20,21,21},false,true,TempBalanceSkillProxyOperation.TargetBleeding),
-            D(OlafSkillIds.OverheadSmash,"방패벽",ActionType.NormalAttack,SkillColor.Blue,0,11,new[]{12,12,10},new[]{15,19,28},false,true,TempBalanceSkillProxyOperation.GainBlock),
+            D(OlafSkillIds.EnduringSlash,"물어뜯기",ActionType.NormalAttack,SkillColor.Red,0,11,new[]{9,10,11},new[]{20,21,22},false,false,TempBalanceSkillProxyOperation.TargetBleeding),
+            D(OlafSkillIds.OverheadSmash,"방패벽",ActionType.NormalAttack,SkillColor.Blue,0,11,new[]{12,12,9},new[]{15,19,26},false,false,TempBalanceSkillProxyOperation.GainBlock),
             D(OlafSkillIds.WildHack,"쪼개기",ActionType.NormalAttack,SkillColor.Red,1,16,new[]{17,17},new[]{22,26},false,false,TempBalanceSkillProxyOperation.TargetBleeding),
             D("olaf.normal.endure","버텨내기",ActionType.NormalAttack,SkillColor.Blue,1,14,new[]{22,7},new[]{27,18},false,false,TempBalanceSkillProxyOperation.GainBlock),
-            D("olaf.normal.smash","후려치기",ActionType.NormalAttack,SkillColor.Red,0,12,new[]{13,16},new[]{18,23},false,true,TempBalanceSkillProxyOperation.TargetBleeding),
+            D("olaf.normal.smash","후려치기",ActionType.NormalAttack,SkillColor.Red,0,12,new[]{12,15},new[]{17,22},false,false,TempBalanceSkillProxyOperation.TargetBleeding),
             D("olaf.normal.parry","받아넘기기",ActionType.NormalAttack,SkillColor.Blue,0,14,new[]{15,16},new[]{22,21},false,false,TempBalanceSkillProxyOperation.GainBlock),
-            D("olaf.normal.flurry","몰아치기",ActionType.NormalAttack,SkillColor.Red,1,10,new[]{15,13,12,10,8},new[]{22,19,17,16,14},false,true,TempBalanceSkillProxyOperation.TargetBleeding),
-            D("olaf.normal.rise_again","다시 일어서다",ActionType.NormalAttack,SkillColor.Blue,1,7,new[]{13,3,12,4},new[]{18,10,19,11},false,true,TempBalanceSkillProxyOperation.GainBlock),
+            D("olaf.normal.flurry","몰아치기",ActionType.NormalAttack,SkillColor.Red,1,10,new[]{15,13,12,10,8},new[]{21,19,17,16,14},false,false,TempBalanceSkillProxyOperation.TargetBleeding),
+            D("olaf.normal.rise_again","다시 일어서다",ActionType.NormalAttack,SkillColor.Blue,1,7,new[]{13,4,12,4},new[]{18,11,19,11},false,false,TempBalanceSkillProxyOperation.GainBlock),
             D("olaf.normal.desperate_blow","필사의 일격",ActionType.NormalAttack,SkillColor.Red,2,24,new[]{26},new[]{31},false,false,TempBalanceSkillProxyOperation.TargetBleeding),
-            D("olaf.normal.cover","감싸기",ActionType.NormalAttack,SkillColor.Blue,2,16,new[]{22,14},new[]{29,21},false,true,TempBalanceSkillProxyOperation.GainBlock),
-            D("olaf.normal.exploit_gap","틈을 파고들다",ActionType.NormalAttack,SkillColor.Red,1,14,new[]{13,15,17},new[]{18,22,29},false,true,TempBalanceSkillProxyOperation.TargetBleeding),
-            D("olaf.normal.first_strike","선수치기",ActionType.NormalAttack,SkillColor.Red,0,12,new[]{17,12},new[]{22,17},false,true,TempBalanceSkillProxyOperation.GainPrestige),
+            D("olaf.normal.cover","감싸기",ActionType.NormalAttack,SkillColor.Blue,2,16,new[]{21,13},new[]{28,20},false,false,TempBalanceSkillProxyOperation.GainBlock),
+            D("olaf.normal.exploit_gap","틈을 파고들다",ActionType.NormalAttack,SkillColor.Red,1,14,new[]{13,15,16},new[]{18,22,27},false,false,TempBalanceSkillProxyOperation.TargetBleeding),
+            D("olaf.normal.first_strike","선수치기",ActionType.NormalAttack,SkillColor.Red,0,12,new[]{16,12},new[]{21,17},false,false,TempBalanceSkillProxyOperation.GainPrestige),
             D("olaf.normal.aim_weakness","약점을 노리다",ActionType.NormalAttack,SkillColor.Red,1,13,new[]{12,18,13},new[]{17,25,20},false,false,TempBalanceSkillProxyOperation.TargetBleeding),
             D("olaf.normal.choke","숨통을 조이다",ActionType.NormalAttack,SkillColor.Red,1,16,new[]{17,18},new[]{24,23},false,false,TempBalanceSkillProxyOperation.TargetBleeding),
-            D("olaf.normal.block_way","막아서기",ActionType.NormalAttack,SkillColor.Blue,1,14,new[]{18,13},new[]{25,20},false,true,TempBalanceSkillProxyOperation.GainBlock),
-            D("olaf.normal.slice_thin","저며내기",ActionType.NormalAttack,SkillColor.Red,1,17,new[]{16,20},new[]{19,32},false,true,TempBalanceSkillProxyOperation.TargetBleeding)
+            D("olaf.normal.block_way","막아서기",ActionType.NormalAttack,SkillColor.Blue,1,14,new[]{17,13},new[]{24,20},false,false,TempBalanceSkillProxyOperation.GainBlock),
+            D("olaf.normal.slice_thin","저며내기",ActionType.NormalAttack,SkillColor.Red,1,17,new[]{16,20},new[]{19,31},false,false,TempBalanceSkillProxyOperation.TargetBleeding)
         };
     }
 
@@ -475,9 +475,9 @@ public static class PhaseETempBalanceMigration
         {
             D(OlafSkillIds.Standard,"표준",ActionType.Duel,SkillColor.Red,2,12,new[]{13,14},new[]{20,19},true,false,TempBalanceSkillProxyOperation.TargetBleeding),
             D(OlafSkillIds.Rend,"끈질기게",ActionType.Duel,SkillColor.Blue,2,14,new[]{15,16,15},new[]{22,21,22},false,false,TempBalanceSkillProxyOperation.OlafMadness),
-            D("olaf.duel.single_cut","단칼",ActionType.Duel,SkillColor.Red,1,22,new[]{22},new[]{27},true,true,TempBalanceSkillProxyOperation.TargetBleeding),
+            D("olaf.duel.single_cut","단칼",ActionType.Duel,SkillColor.Red,1,22,new[]{24},new[]{29},true,false,TempBalanceSkillProxyOperation.TargetBleeding),
             D("olaf.duel.mad_bite","미쳐물어뜯기",ActionType.Duel,SkillColor.Blue,1,13,new[]{14,14,14},new[]{21,21,21},false,false,TempBalanceSkillProxyOperation.OlafMadness),
-            D("olaf.duel.blood_charge","피의돌진",ActionType.Duel,SkillColor.Red,1,14,new[]{16,12},new[]{23,19},false,true,TempBalanceSkillProxyOperation.TargetBleeding),
+            D("olaf.duel.blood_charge","피의돌진",ActionType.Duel,SkillColor.Red,1,14,new[]{17,13},new[]{24,20},false,false,TempBalanceSkillProxyOperation.TargetBleeding),
             D("olaf.duel.hold_on","물고 늘어지기",ActionType.Duel,SkillColor.Blue,1,13,new[]{12,14,16},new[]{19,21,23},false,false,TempBalanceSkillProxyOperation.OlafMadness),
             D("olaf.duel.self_cut","제살깎기",ActionType.Duel,SkillColor.Blue,2,16,new[]{17,18},new[]{24,23},false,false,TempBalanceSkillProxyOperation.OlafMadness),
             D("olaf.duel.no_retreat","물러서지않기",ActionType.Duel,SkillColor.Red,1,14,new[]{12,13},new[]{25,24},true,false,TempBalanceSkillProxyOperation.TargetBleeding),
@@ -486,11 +486,11 @@ public static class PhaseETempBalanceMigration
             D("olaf.duel.fortify","굳히기",ActionType.Duel,SkillColor.Blue,2,15,new[]{16,17,16},new[]{23,22,23},false,false,TempBalanceSkillProxyOperation.GainBlock),
             D("olaf.duel.protect_self","몸을 사리다",ActionType.Duel,SkillColor.Blue,2,16,new[]{17,18},new[]{24,23},false,false,TempBalanceSkillProxyOperation.GainBlock),
             D("olaf.duel.catch_off_guard","허를 찌르다",ActionType.Duel,SkillColor.Red,0,12,new[]{13,14},new[]{20,19},true,false,TempBalanceSkillProxyOperation.TargetBleeding),
-            D("olaf.duel.all_in","전부 걸다",ActionType.Duel,SkillColor.Red,2,14,new[]{12,15,19},new[]{19,22,26},false,true,TempBalanceSkillProxyOperation.TargetBleeding),
+            D("olaf.duel.all_in","전부 걸다",ActionType.Duel,SkillColor.Red,2,14,new[]{12,15,18},new[]{19,22,25},false,false,TempBalanceSkillProxyOperation.TargetBleeding),
             D("olaf.duel.blood_price","피의 대가",ActionType.Duel,SkillColor.Blue,2,16,new[]{14,21},new[]{19,28},false,false,TempBalanceSkillProxyOperation.OlafMadness),
-            D("olaf.duel.absorb_blood","피를 흡수하다",ActionType.Duel,SkillColor.Blue,1,14,new[]{14,15},new[]{21,20},false,true,TempBalanceSkillProxyOperation.GainBlock),
+            D("olaf.duel.absorb_blood","피를 흡수하다",ActionType.Duel,SkillColor.Blue,1,14,new[]{15,16},new[]{22,21},false,false,TempBalanceSkillProxyOperation.GainBlock),
             D("olaf.duel.rampage","닥치는 대로",ActionType.Duel,SkillColor.Red,4,16,new[]{17,18,17,18,17},new[]{24,23,24,23,24},true,false,TempBalanceSkillProxyOperation.TargetBleeding),
-            D("olaf.duel.honorable_combat","명예로운 전투",ActionType.Duel,SkillColor.Red,3,16,new[]{17},new[]{23},true,true,TempBalanceSkillProxyOperation.GainPrestige),
+            D("olaf.duel.honorable_combat","명예로운 전투",ActionType.Duel,SkillColor.Red,3,16,new[]{17},new[]{24},true,false,TempBalanceSkillProxyOperation.GainPrestige),
             D("olaf.duel.blood_vow","피의 맹세",ActionType.Duel,SkillColor.Red,1,12,new[]{13,14},new[]{20,19},true,false,TempBalanceSkillProxyOperation.TargetBleeding),
             D("olaf.duel.repay_all","전부 되갚다",ActionType.Duel,SkillColor.Red,1,14,new[]{15,16},new[]{22,21},false,false,TempBalanceSkillProxyOperation.GainPrestige),
             D("olaf.duel.single_combat","일기토",ActionType.Duel,SkillColor.Red,1,13,new[]{14,15,14},new[]{21,20,21},true,false,TempBalanceSkillProxyOperation.TargetBleeding)

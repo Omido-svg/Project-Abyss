@@ -750,19 +750,10 @@ public static class PhaseEContentMigration
             {
                 manifest.RollTexturePassed++;
             }
-            else if (definition.Description != null &&
-                     definition.Description.Contains(
-                         $"[{PhaseETempBalanceMigration.ProfileId}:C44_OVERRIDE]"))
-            {
-                // XLSX max-level texture itself conflicts with the global mean invariant.
-                // TEMP profile preserves the source value verbatim and records the exception.
-                manifest.RollTexturePassed++;
-                manifest.RollTextureIssues.Add(
-                    $"TEMP_OVERRIDE {path}: mean={actualMean:0.###}, expected={expectedMean:0.###}. " +
-                    "0916 XLSX value preserved; canonical redesign required.");
-            }
             else
             {
+                // 0916(3) §4.3은 위치별 평균의 평균 = 기본위력 + 4.5를 정본 불변식으로 둔다.
+                // TEMP_BALANCE_V1 표식으로 canonical 위반을 PASS 처리하지 않는다.
                 manifest.RollTextureViolationCount++;
                 manifest.RollTextureIssues.Add(
                     $"VIOLATION {path}: mean={actualMean:0.###}, expected={expectedMean:0.###}.");
