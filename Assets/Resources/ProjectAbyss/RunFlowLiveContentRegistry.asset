@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: RunFlowLiveContentRegistry
   m_EditorClassIdentifier: 
   RunItemCatalog: {fileID: 11400000, guid: d7eb3d72f503e234295e4ab538557fc3, type: 2}
-  EmotionAugmentCatalog: {fileID: 0}
+  EmotionAugmentCatalog: {fileID: 11400000, guid: a808475bc5d32b9489f9beb1df63d8a7, type: 2}
   OlafPrefab: {fileID: 8201016950708553361, guid: 118c7124273a79d40b501f3dd44f7ec1, type: 3}
   YujinPrefab: {fileID: 258767931383796853, guid: ea11df0417bea274eac13fc3866cbb31, type: 3}
   HifumiPrefab: {fileID: 7880117517003933912, guid: 12e08e754595419458f634cfb606665e, type: 3}

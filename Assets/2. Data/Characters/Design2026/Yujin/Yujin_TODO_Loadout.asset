@@ -53,6 +53,8 @@ MonoBehaviour:
   - {fileID: 11400000, guid: ed55d93417fc65e4baef1f5acc9dfb14, type: 2}
   - {fileID: 11400000, guid: 3bec2bffd53c6e145b9cbf995b5f9427, type: 2}
   - {fileID: 11400000, guid: 4096bba85a30e334e913b6a0e6437586, type: 2}
+  - {fileID: 11400000, guid: 2d8a948bf0d57d34781e8fcc5830a492, type: 2}
+  - {fileID: 11400000, guid: edd71e9c9fb9d974f9356fa7e9deb8bf, type: 2}
   PrestigeSkillPool:
   - {fileID: 11400000, guid: 4befdc4edb540cb4b947677982a3da45, type: 2}
   - {fileID: 11400000, guid: ed344549c8d585a43804b85ac5030c10, type: 2}

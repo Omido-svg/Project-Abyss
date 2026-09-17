@@ -1,0 +1,39 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 0}
+  m_Name: Yujin_D_15_Upgrade
+  m_EditorClassIdentifier: ProjectAbyss.Runtime::SkillUpgradeProfile
+  BaseCostOverride: 0
+  Upgrade1:
+    DesignNote: "[0917] \uC2E0\uADDC \uCE74\uB4DC \uAC15\uD654 \uC218\uCE58\uAC00
+      \uBCC4\uB3C4 \uD655\uC815\uB418\uC9C0 \uC54A\uC544 delta=0."
+    CostOverride: 0
+    BasePowerDelta: 0
+    AllRollMinPowerDelta: 0
+    AllRollMaxPowerDelta: 0
+    PerRollPowerDelta: 
+    EnergyCostDelta: 0
+    PrestigeCostDelta: 0
+    CustomResourceCostDelta: 0
+    EffectPayloads: []
+  Upgrade2:
+    DesignNote: "[0917] 2\uD68C\uCC28 \uAC15\uD654 \uAC00\uACA9/\uC0C1\uC138 delta\uB294
+      Unset."
+    CostOverride: 0
+    BasePowerDelta: 0
+    AllRollMinPowerDelta: 0
+    AllRollMaxPowerDelta: 0
+    PerRollPowerDelta: 
+    EnergyCostDelta: 0
+    PrestigeCostDelta: 0
+    CustomResourceCostDelta: 0
+    EffectPayloads: []

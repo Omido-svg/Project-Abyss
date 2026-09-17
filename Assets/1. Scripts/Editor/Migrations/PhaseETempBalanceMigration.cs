@@ -498,7 +498,7 @@ public static class PhaseETempBalanceMigration
     }
 
     // ---------------------------------------------------------------------
-    // Y-06 Yujin 9 / 14 / 9 / 3
+    // Y-06 Yujin 9 / 16 / 9 / 3 (0917 O/P appended from Canonical0917 assets)
     // ---------------------------------------------------------------------
 
     private static bool GenerateYujin(
@@ -573,10 +573,24 @@ public static class PhaseETempBalanceMigration
         if (loadout == null)
             return false;
 
+        // 0917 O/P are canonical assets owned by Canonical0917PatchMigration.
+        // Re-running Phase E must not shrink the Yujin duel pool back to 14.
+        SkillDefinition yujinO0917 =
+            AssetDatabase.LoadAssetAtPath<SkillDefinition>(
+                "Assets/2. Data/Progression/Canonical0917/Yujin/Skills/Yujin_D_15.asset");
+        SkillDefinition yujinP0917 =
+            AssetDatabase.LoadAssetAtPath<SkillDefinition>(
+                "Assets/2. Data/Progression/Canonical0917/Yujin/Skills/Yujin_D_16.asset");
+
+        if (yujinO0917 != null)
+            duels.Add(yujinO0917);
+        if (yujinP0917 != null)
+            duels.Add(yujinP0917);
+
         ApplyLoadout(loadout, normals, duels, commonPreparations, preps.Skip(2).ToList(), prestiges);
         ApplyYujinStarterPreparationLoadout(loadout, preps);
         manifest.YujinPoolCount = normals.Count + duels.Count + preps.Count + prestiges.Count;
-        return normals.Count == 9 && duels.Count == 14 && preps.Count == 9 && prestiges.Count == 3 &&
+        return normals.Count == 9 && duels.Count == 16 && preps.Count == 9 && prestiges.Count == 3 &&
                ValidateTempUpgradeProfiles(normals.Concat(duels).Concat(preps).Concat(prestiges));
     }
 

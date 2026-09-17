@@ -42,10 +42,15 @@ public sealed class SkillRulebreakerSettings
     [Min(0)] public int BreakAuthorityBleedingThreshold;
     [Min(0)] public int IgnoreWeakenPrerequisiteBleedingThreshold;
 
-    [Header("Momentum Conditions")]
+    [Header("Momentum Conditions — legacy 0916")]
     public bool RequirePreviousTurnLastStand;
     public bool ApplyCurrentLastStandPowerBonus;
     public int CurrentLastStandPowerBonus;
+
+    [Header("Momentum Conditions — 0917")]
+    [Tooltip("현재 기세가 열세(B<=-30) 또는 짓눌림(B<=-70)이면 보너스를 적용합니다.")]
+    public bool ApplyCurrentDisadvantageOrWorsePowerBonus;
+    public int CurrentDisadvantageOrWorsePowerBonus;
 
     [Header("Speed")]
     public bool GrantInfiniteAttackSlotSpeedThisTurn;

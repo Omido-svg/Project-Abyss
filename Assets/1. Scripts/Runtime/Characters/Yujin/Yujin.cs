@@ -19,6 +19,9 @@ public sealed class Yujin : Character, ICharacterAuthoringTarget, IPhysicalDamag
     public YujinMechanic YujinMechanic =>
         GetMechanic<YujinMechanic>();
 
+    public Yujin0917Mechanic Yujin0917Mechanic =>
+        GetMechanic<Yujin0917Mechanic>();
+
     public YujinWeaponType StartingWeapon =>
         startingWeapon;
 
@@ -96,6 +99,10 @@ public sealed class Yujin : Character, ICharacterAuthoringTarget, IPhysicalDamag
         AddMechanic(
             new YujinMechanic(
                 startingWeapon));
+
+        // 0917 O/P 전투 단위 상태.
+        AddMechanic(
+            new Yujin0917Mechanic());
     }
 
     protected override StatusEffect CreateDisabledDebuff(

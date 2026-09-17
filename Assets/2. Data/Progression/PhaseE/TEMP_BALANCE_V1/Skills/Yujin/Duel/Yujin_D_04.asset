@@ -39,6 +39,8 @@ MonoBehaviour:
     RequirePreviousTurnLastStand: 0
     ApplyCurrentLastStandPowerBonus: 0
     CurrentLastStandPowerBonus: 0
+    ApplyCurrentDisadvantageOrWorsePowerBonus: 0
+    CurrentDisadvantageOrWorsePowerBonus: 0
     GrantInfiniteAttackSlotSpeedThisTurn: 0
   AttackWeight:
     Weight: 1

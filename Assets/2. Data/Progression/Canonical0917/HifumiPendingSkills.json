@@ -1,0 +1,100 @@
+{
+  "revision": "0917",
+  "policy": "0/null means Unset. These entries declare confirmed structure only and are NOT auto-added to the playable loadout until required numeric fields are decided.",
+  "pendingSkills": [
+    {
+      "skillId": "hifumi.normal.mutual_destruction",
+      "name": "동귀어진",
+      "kind": "Normal",
+      "confirmed": "OnUse self fixed damage N; same N fixed damage to target; self damage grants Bone",
+      "unset": [
+        "N",
+        "rollCount",
+        "energy",
+        "basePower",
+        "physicalType",
+        "color"
+      ]
+    },
+    {
+      "skillId": "hifumi.duel.d.risk_life",
+      "name": "명줄을 걸다",
+      "kind": "Duel",
+      "confirmed": "3 rolls; no Counter tag; requires Bone>=100; spends clash counter pool; any Shigoro/Arashi triggers full Goldan Bloom counter; pool consumed on success/failure",
+      "unset": [
+        "boneCost",
+        "basePower",
+        "energy",
+        "physicalType"
+      ]
+    },
+    {
+      "skillId": "hifumi.duel.e.raise_stake",
+      "name": "판돈을 올리다",
+      "kind": "Duel",
+      "confirmed": "Each exchange win: this card power +1 for battle. Each loss: this card energy cost +1. Cost reaching 4 blocks further use.",
+      "unset": [
+        "rollCount",
+        "basePower",
+        "initialEnergy",
+        "physicalType"
+      ]
+    },
+    {
+      "skillId": "hifumi.duel.f.recover_principal",
+      "name": "본전을 챙기다",
+      "kind": "Duel",
+      "confirmed": "OnUse current judgment forced loss; next turn this card gets deterministic large power increase.",
+      "unset": [
+        "rollCount",
+        "energy",
+        "basePower",
+        "nextTurnPowerIncrease",
+        "physicalType"
+      ]
+    },
+    {
+      "skillId": "hifumi.duel.g.double_or_nothing",
+      "name": "곱절을 노리다",
+      "kind": "Duel",
+      "temporaryName": true,
+      "confirmed": "Bet Bone K per roll; win returns 2K; loss loses K; settle independently per roll.",
+      "unset": [
+        "K",
+        "rollCount",
+        "energy",
+        "basePower",
+        "physicalType"
+      ]
+    },
+    {
+      "skillId": "hifumi.duel.h.shake_fate",
+      "name": "운명을 흔들다",
+      "kind": "Duel",
+      "temporaryName": true,
+      "confirmed": "1 roll; replace power comparison with N Chinchiro attempts; any Shigoro/Arashi forces win; win deletes opponent remaining rolls.",
+      "unset": [
+        "chinchiroCount",
+        "energy",
+        "basePower",
+        "gate",
+        "physicalType"
+      ]
+    },
+    {
+      "skillId": "hifumi.duel.i.engrave_body",
+      "name": "몸에 새기다",
+      "kind": "Duel",
+      "temporaryName": true,
+      "confirmed": "Run-persistent growth; use->chance training; threshold adds roll and resets power; final evolution at 4~5 rolls.",
+      "unset": [
+        "probability",
+        "threshold",
+        "stageCount",
+        "baseValues",
+        "finalEffect",
+        "physicalType"
+      ]
+    }
+  ]
+}

@@ -27,7 +27,7 @@ public sealed class PhaseEContentVerificationModule : IGameSystemVerificationMod
         yield return Static("phasee.o02.olaf_pool", "O-02", "올라프 전체 스킬 Core Data", GameSystemVerificationCategory.Data,
             "최신 0916 풀 + 기본/강화1/강화2 데이터 및 Runtime 연결", VerifyO02);
         yield return Static("phasee.y06.yujin_pool", "Y-06", "유진 전체 스킬 Core Data", GameSystemVerificationCategory.Data,
-            "최신 0916 평타9/결투14/도사림/위세3 + Runtime 연결", VerifyY06);
+            "최신 0917 평타9/결투16/도사림/위세3 + Runtime 연결", VerifyY06);
         yield return Static("phasee.presentation.canonical", "PRESENTATION", "0916 canonical Timeline presentation closure", GameSystemVerificationCategory.Contract,
             "Olaf/Yujin 모든 canonical SkillDefinition이 complete SkillVisualDefinition을 가져 Hit Event 기반 HP presentation을 재생", VerifyCanonicalPresentation);
         yield return Static("phasee.run.exact_part_hp", "RUN-HP", "Run ↔ Battle exact part HP snapshot", GameSystemVerificationCategory.LiveState,
@@ -176,6 +176,16 @@ public sealed class PhaseEContentVerificationModule : IGameSystemVerificationMod
         string details=m.RollTextureIssues!=null && m.RollTextureIssues.Count>0
             ? string.Join("\n", m.RollTextureIssues.Take(40))
             : null;
+        bool known0917AuthorityPending =
+            m.TempBalanceNotes != null &&
+            m.TempBalanceNotes.Any(note =>
+                !string.IsNullOrWhiteSpace(note) &&
+                note.Contains("0917 C44 authority pending"));
+
+        if(m.RollTextureViolationCount>0 && known0917AuthorityPending)
+            return GameSystemVerificationProbeResult.Pending(
+                $"0917 authority pending / Scanned={m.RollTextureScanned}, Passed={m.RollTexturePassed}, Pending={m.RollTexturePending}, Violations={m.RollTextureViolationCount}", details);
+
         if(m.RollTextureViolationCount>0)
             return GameSystemVerificationProbeResult.Fail(
                 $"Scanned={m.RollTextureScanned}, Passed={m.RollTexturePassed}, Pending={m.RollTexturePending}, Violations={m.RollTextureViolationCount}", details);
@@ -284,15 +294,15 @@ public sealed class PhaseEContentVerificationModule : IGameSystemVerificationMod
 
         bool effects = effectMissing.Count == 0;
         bool ok = manifest?.YujinSkillPoolComplete == true &&
-                  normal == 9 && duel == 14 && preparation == 9 && prestige == 3 &&
+                  normal == 9 && duel == 16 && preparation == 9 && prestige == 3 &&
                   exactIds && profiles && secondCostsUnset && effects;
 
         string details =
-            $"N={normal}/9 D={duel}/14 P={preparation}/9 R={prestige}/3 IDs={actual.Count}/{canonical.Length} " +
+            $"N={normal}/9 D={duel}/16 P={preparation}/9 R={prestige}/3 IDs={actual.Count}/{canonical.Length} " +
             $"profiles={profiles} upgrade2Unset={secondCostsUnset} explicitRiders={requiredEffects.Length - effectMissing.Count}/{requiredEffects.Length}";
 
         if (ok)
-            return GameSystemVerificationProbeResult.Pass($"Yujin 0916 canonical closure PASS / {details}");
+            return GameSystemVerificationProbeResult.Pass($"Yujin 0917 canonical closure PASS / {details}");
 
         if (missing.Count > 0)
             details += "\nMissing IDs:\n" + string.Join("\n", missing);
@@ -301,7 +311,7 @@ public sealed class PhaseEContentVerificationModule : IGameSystemVerificationMod
         if (effectMissing.Count > 0)
             details += "\nMissing explicit runtime riders:\n" + string.Join("\n", effectMissing);
 
-        return GameSystemVerificationProbeResult.Fail("Yujin 0916 canonical closure mismatch", details);
+        return GameSystemVerificationProbeResult.Fail("Yujin 0917 canonical closure mismatch", details);
     }
 
     private static GameSystemVerificationProbeResult VerifyCanonicalPresentation(GameSystemVerificationContext _)

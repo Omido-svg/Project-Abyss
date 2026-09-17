@@ -1,0 +1,215 @@
+{
+  "revision": "0917",
+  "authorityPolicy": "Specific confirmed card value > legacy 0916 C44 hardcoded migration; unresolved/provisional ranges stay data-owned and marked TEMP.",
+  "skills": [
+    {
+      "skillId": "olaf.normal.bite",
+      "name": "물어뜯기",
+      "state": "confirmed-card / known C44 conflict",
+      "min": [
+        9,
+        10,
+        10
+      ],
+      "max": [
+        20,
+        21,
+        21
+      ]
+    },
+    {
+      "skillId": "olaf.normal.shield_wall",
+      "name": "방패벽",
+      "state": "0917 ordered texture",
+      "min": [
+        10,
+        12,
+        12
+      ],
+      "max": [
+        28,
+        19,
+        15
+      ]
+    },
+    {
+      "skillId": "olaf.normal.smash",
+      "name": "후려치기",
+      "state": "provisional-data",
+      "min": [
+        13,
+        16
+      ],
+      "max": [
+        18,
+        23
+      ]
+    },
+    {
+      "skillId": "olaf.normal.flurry",
+      "name": "몰아치기",
+      "state": "provisional-data",
+      "min": [
+        15,
+        13,
+        12,
+        10,
+        8
+      ],
+      "max": [
+        22,
+        19,
+        17,
+        16,
+        14
+      ]
+    },
+    {
+      "skillId": "olaf.normal.rise_again",
+      "name": "다시 일어서다",
+      "state": "provisional-data",
+      "min": [
+        13,
+        3,
+        12,
+        4
+      ],
+      "max": [
+        18,
+        10,
+        19,
+        11
+      ]
+    },
+    {
+      "skillId": "olaf.normal.cover",
+      "name": "감싸기",
+      "state": "provisional-data",
+      "min": [
+        22,
+        14
+      ],
+      "max": [
+        29,
+        21
+      ]
+    },
+    {
+      "skillId": "olaf.normal.exploit_gap",
+      "name": "틈을 파고들다",
+      "state": "provisional-data",
+      "min": [
+        13,
+        15,
+        17
+      ],
+      "max": [
+        18,
+        22,
+        29
+      ]
+    },
+    {
+      "skillId": "olaf.normal.first_strike",
+      "name": "선수치기",
+      "state": "provisional-data",
+      "min": [
+        17,
+        12
+      ],
+      "max": [
+        22,
+        17
+      ]
+    },
+    {
+      "skillId": "olaf.normal.block_way",
+      "name": "막아서기",
+      "state": "provisional-data",
+      "min": [
+        18,
+        13
+      ],
+      "max": [
+        25,
+        20
+      ]
+    },
+    {
+      "skillId": "olaf.normal.slice_thin",
+      "name": "저며내기",
+      "state": "provisional-data",
+      "min": [
+        16,
+        20
+      ],
+      "max": [
+        19,
+        32
+      ]
+    },
+    {
+      "skillId": "olaf.duel.single_cut",
+      "name": "단칼",
+      "state": "provisional-unset-power",
+      "min": [
+        22
+      ],
+      "max": [
+        27
+      ]
+    },
+    {
+      "skillId": "olaf.duel.blood_charge",
+      "name": "피의돌진",
+      "state": "provisional-data",
+      "min": [
+        16,
+        12
+      ],
+      "max": [
+        23,
+        19
+      ]
+    },
+    {
+      "skillId": "olaf.duel.all_in",
+      "name": "전부 걸다",
+      "state": "provisional-data",
+      "min": [
+        12,
+        15,
+        19
+      ],
+      "max": [
+        19,
+        22,
+        26
+      ]
+    },
+    {
+      "skillId": "olaf.duel.absorb_blood",
+      "name": "피를 흡수하다",
+      "state": "provisional-data",
+      "min": [
+        14,
+        15
+      ],
+      "max": [
+        21,
+        20
+      ]
+    },
+    {
+      "skillId": "olaf.duel.honorable_fight",
+      "name": "명예로운 전투",
+      "state": "intentional-formula-deviation",
+      "min": [
+        17
+      ],
+      "max": [
+        23
+      ]
+    }
+  ]
+}

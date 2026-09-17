@@ -490,9 +490,14 @@ public sealed class HifumiMechanic :
             ? NormalCounterBasePower + HifumiBasePowerBonus
             : DuelCounterBasePower + tier + HifumiBasePowerBonus;
 
+        int previewCounterCount =
+            goldan && bloom
+                ? lostExchanges * 2
+                : lostExchanges;
+
         return new HifumiCounterPreview(
             true,
-            lostExchanges,
+            previewCounterCount,
             baseCounterPower,
             yukcham ? (tier + 1) * 20 : 0,
             goldan && bloom ? 350 : 0,
@@ -748,6 +753,14 @@ public sealed class HifumiMechanic :
         int counterCount =
             Mathf.Max(0, taggedLosses) +
             Mathf.Max(0, catastropheBonus);
+
+        // 0917 §19 Goldan: Bloom(뼈 500) 상태의 골단 반격 풀은 x2.
+        // tagged loss + catastrophe bonus로 완성된 '이번 합의 반격 풀'을 두 배로 만든다.
+        if (myAction.Skill?.Definition?.SkillId == HifumiSkillIds.Goldan &&
+            IsBloom)
+        {
+            counterCount *= 2;
+        }
 
         if (counterCount <= 0)
             return;

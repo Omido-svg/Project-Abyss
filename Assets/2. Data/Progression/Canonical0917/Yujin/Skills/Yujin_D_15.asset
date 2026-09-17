@@ -1,0 +1,123 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a85a262093fed2b45a6f05cb3a256be9, type: 3}
+  m_Name: Yujin_D_15
+  m_EditorClassIdentifier: 
+  phaseASchemaVersion: 1
+  skillId: yujin.duel.o.advance_timing
+  SkillName: "\uB54C\uB97C \uC55E\uB2F9\uAE30\uB2E4"
+  ActionType: 1
+  Color: 1
+  BasePowerRule: 1
+  BasePower: 11
+  BasePowerFlatAdjustment: 0
+  PhysicalType: 0
+  CanBreakPart: 0
+  BreakMode: 0
+  GainPrestige: 1
+  Rulebreaker:
+    Enabled: 0
+    EnergyCostReductionPerCommittedUse: 0
+    MinimumEnergyCost: 0
+    MirrorThisSkillToOpponentOnDuelMatch: 0
+    IgnoreOwnerRollModifiers: 0
+    ExplodeBleedingOncePerAction: 0
+    BleedingExplosionMultiplier: 0
+    SuppressFriendlyOneSidedHitsOnSameTargetSlot: 0
+    ConsumeAllOwnerBleedingOnExecute: 0
+    BreakAuthorityBleedingThreshold: 0
+    IgnoreWeakenPrerequisiteBleedingThreshold: 0
+    RequirePreviousTurnLastStand: 0
+    ApplyCurrentLastStandPowerBonus: 0
+    CurrentLastStandPowerBonus: 0
+    ApplyCurrentDisadvantageOrWorsePowerBonus: 0
+    CurrentDisadvantageOrWorsePowerBonus: 0
+    GrantInfiniteAttackSlotSpeedThisTurn: 0
+  AttackWeight:
+    Weight: 1
+    SecondaryPartMode: 0
+    SecondaryDamageMultiplier: 1
+    AllowBrokenSecondaryParts: 1
+  Description: "0917 \uD655\uC815: RED/1\uAD74\uB9BC/\uBE5B2. \uACC4\uD68D commit\uC5D0\uC11C
+    \uC0B4\uC218\uC758 \uAC104 \uC18C\uBE44. \uC0AC\uC6A9\uC2DC \uC870\uC900 \uBD80\uC704
+    \uD45C\uC2DD\uC744 44 \uC784\uACC4\uAE4C\uC9C0 \uBC00\uC5B4 \uC989\uC2DC \uBC1C\uD654;
+    K/L rider \uD3EC\uD568."
+  Keywords: []
+  Rolls: []
+  ExchangeRollCount: 1
+  RollReusePolicy: 0
+  MultiRollPenalty:
+    Enabled: 0
+    PreviewText: 
+    Timing: 2
+    TriggerAfterRollIndex: 0
+    EffectEntries: []
+    Effects: []
+  ResolvePrestigeInCombat: 0
+  OverrideCanClash: 0
+  CanClashValue: 0
+  PreparationTier: 0
+  ResolverType: 1
+  DiceMin: 0
+  DiceMax: 0
+  CoinCount: 1
+  CoinFrontChance: 0.5
+  CoinFrontValue: 1
+  CoinBackValue: 0
+  CoinFrontIsCritical: 0
+  ChinchiroArashiBonus: 6
+  ChinchiroShigoroBonus: 6
+  ChinchiroHifumiPenalty: 1
+  ChinchiroHifumiSelfDamage: 1
+  EffectEntries:
+  - Definition: {fileID: 11400000, guid: 789abb34778fa2547846cfc8220885a5, type: 2}
+    Overrides:
+      OverrideStack: 0
+      Stack: 1
+      OverrideDuration: 0
+      Duration: 3
+      OverrideAmount: 0
+      Amount: 1
+      OverrideMinimum: 0
+      Minimum: 0
+      OverrideMaximum: 0
+      Maximum: 999
+      OverrideFlatValue: 0
+      FlatValue: 0
+      OverrideMultiplier: 0
+      Multiplier: 1
+      OverrideResourceKey: 0
+      ResourceKey: 
+      OverrideForceCharacterStatus: 0
+      ForceCharacterStatus: 0
+      OverrideGiveToSelectedTarget: 0
+      GiveToSelectedTarget: 0
+    UpgradeKey: 0917_core
+    OverrideTiming: 1
+    Timing: 0
+    Conditions: []
+    RestrictToRoll: 0
+    RollNumber: 1
+  Effects: []
+  OverrideEnergyCost: 1
+  EnergyCost: 2
+  UpgradeProfile: {fileID: 11400000, guid: cd73485167918bf44b9b52d28b4f5d2b, type: 2}
+  OverrideResourceRules: 0
+  RequireFullPrestige: 0
+  PrestigeCost: 0
+  ConsumeAllPrestige: 0
+  CustomResourceKey: 
+  CustomResourceCost: 0
+  ConsumeAllCustomResource: 0
+  OverridePrestigeUsePolicy: 0
+  PrestigeUsePolicy: 1
+  presentationAsset: {fileID: 11400000, guid: f32eaf5a7aad57d42b1bf7f20c0f281c, type: 2}

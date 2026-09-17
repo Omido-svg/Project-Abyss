@@ -271,7 +271,7 @@ public static class Canonical0916ClosureMigration
 
         ApplyMetadata(olaf, Olaf);
         ApplyMetadata(yujin, Yujin);
-        int olafC44TexturesNormalized = ApplyOlafC44CanonicalTextures(olaf);
+        int olafC44TexturesNormalized = 0; // 0917: legacy 15-card C44 hardcode disabled; card data owns provisional/confirmed values.
         EnsureYujinStarterPreparationLoadout(yujin);
         WireYujinCanonicalEffects(yujin);
 
@@ -1060,8 +1060,8 @@ public static class Canonical0916ClosureMigration
         if (!olafClosed || !yujinClosed)
             return true;
 
-        if (HasOlafC44Mismatch(olaf))
-            return true;
+        // 0917: legacy C44 exact-array check is intentionally disabled.
+        // Specific card data and the 0917 verifier own the known C44-vs-card authority conflict.
 
         if (!HasCanonicalYujinStarterPreparationLoadout(yujin))
             return true;

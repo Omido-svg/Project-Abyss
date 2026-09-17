@@ -1,6 +1,6 @@
 /// <summary>
-/// 0916(3) canonical Yujin skill ids.
-/// Phase-D constant names remain as aliases so existing weapon/mark runtime code keeps working.
+/// 0917 canonical Yujin skill ids.
+/// Phase-D/0916 constant names remain as aliases so existing weapon/mark runtime code keeps working.
 /// </summary>
 public static class YujinSkillIds
 {
@@ -15,7 +15,7 @@ public static class YujinSkillIds
     public const string AceInTheHole = "yujin.normal.ace_in_the_hole";
     public const string Wanted = "yujin.normal.wanted";
 
-    // Duel 14
+    // Duel 16 (A~P)
     public const string ContractTarget = "yujin.duel.contract_target";
     public const string BrutalFinish = "yujin.duel.brutal_finish";
     public const string DesignateTarget = "yujin.duel.designate_target";
@@ -30,6 +30,10 @@ public static class YujinSkillIds
     public const string Deadline = "yujin.duel.deadline";
     public const string AllTargets = "yujin.duel.all_targets";
     public const string Period = "yujin.duel.period";
+
+    // 0917 신규 O / P
+    public const string AdvanceTiming = "yujin.duel.o.advance_timing"; // 때를 앞당기다
+    public const string FinishIt = "yujin.duel.p.finish_it";           // 끝장을 보다
 
     // Preparation 2 common + 7 Yujin
     public const string Crouch = "common.preparation.crouch";
@@ -73,7 +77,7 @@ public static class YujinSkillIds
     {
         ContractTarget, BrutalFinish, DesignateTarget, IntoShadows, ShakeUp,
         CutThroat, SpreadRumor, ProbeWeakness, BlockRetreat, BorrowWeapon,
-        Trap, Deadline, AllTargets, Period
+        Trap, Deadline, AllTargets, Period, AdvanceTiming, FinishIt
     };
 
     public static readonly string[] CanonicalPreparation =

@@ -25,7 +25,7 @@ MonoBehaviour:
   BreakMode: 0
   GainPrestige: 1
   Rulebreaker:
-    Enabled: 0
+    Enabled: 1
     EnergyCostReductionPerCommittedUse: 0
     MinimumEnergyCost: 0
     MirrorThisSkillToOpponentOnDuelMatch: 0
@@ -39,6 +39,8 @@ MonoBehaviour:
     RequirePreviousTurnLastStand: 0
     ApplyCurrentLastStandPowerBonus: 0
     CurrentLastStandPowerBonus: 0
+    ApplyCurrentDisadvantageOrWorsePowerBonus: 1
+    CurrentDisadvantageOrWorsePowerBonus: 4
     GrantInfiniteAttackSlotSpeedThisTurn: 0
   AttackWeight:
     Weight: 1

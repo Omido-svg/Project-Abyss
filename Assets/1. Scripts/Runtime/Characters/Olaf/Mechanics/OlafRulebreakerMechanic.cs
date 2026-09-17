@@ -3,8 +3,9 @@ using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>
-/// Phase D O-05. 올라프 특수 카드가 전용 하드코딩 분기를 늘리지 않고
+/// 올라프 특수 카드가 전용 하드코딩 분기를 늘리지 않고
 /// 공통 전투 계약 위에서 동작하도록 하는 런타임 해석기.
+/// 0917: "전부 되갚다"의 열세 이하(B<=-30) +4를 데이터 훅으로 추가.
 /// </summary>
 public sealed class OlafRulebreakerMechanic : CombatMechanic
 {
@@ -114,12 +115,26 @@ public sealed class OlafRulebreakerMechanic : CombatMechanic
             }
         }
 
+        MomentumState? currentBand =
+            battleContext?.Services?.MomentumManager
+                ?.GetCurrentBand(owner);
+
         if (rule.ApplyCurrentLastStandPowerBonus &&
-            battleContext?.Services?.MomentumManager?.GetCurrentBand(owner) == MomentumState.LastStand)
+            currentBand == MomentumState.LastStand)
         {
-            action.RulebreakerFlatPowerBonus += rule.CurrentLastStandPowerBonus;
+            action.RulebreakerFlatPowerBonus +=
+                rule.CurrentLastStandPowerBonus;
         }
 
+        // 0917 "전부 되갚다":
+        // B<=-30 = 열세(Disadvantage) 또는 짓눌림(LastStand), 전 굴림 +4.
+        if (rule.ApplyCurrentDisadvantageOrWorsePowerBonus &&
+            (currentBand == MomentumState.Disadvantage ||
+             currentBand == MomentumState.LastStand))
+        {
+            action.RulebreakerFlatPowerBonus +=
+                rule.CurrentDisadvantageOrWorsePowerBonus;
+        }
 
         if (rule.GrantInfiniteAttackSlotSpeedThisTurn)
             ActivateInfiniteAttackSpeed();
@@ -166,8 +181,6 @@ public sealed class OlafRulebreakerMechanic : CombatMechanic
             if (slot?.Owner != owner)
                 continue;
 
-            // 도사림이 속도 굴림 뒤, 공격 스킬 배치 전에 실행되어도
-            // 팔/머리의 공격 슬롯은 즉시 무한속도가 되어야 한다.
             bool attackCapableSlot =
                 slot.Part == null
                     ? ShouldForceInfiniteAttackSpeed(slot.Skill)
