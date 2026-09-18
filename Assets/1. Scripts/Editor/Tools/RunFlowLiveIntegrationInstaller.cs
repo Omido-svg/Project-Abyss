@@ -1,4 +1,4 @@
-#if UNITY_EDITOR
+﻿#if UNITY_EDITOR
 using System;
 using System.Collections.Generic;
 using UnityEditor;
@@ -114,6 +114,17 @@ public static class RunFlowLiveIntegrationInstaller
         if (EditorApplication.isPlayingOrWillChangePlaymode)
             return;
 
+        // [CATALOG_WIRING_RETRY_V2]
+        // InitializeOnLoad can fire while ProjectAbyss.Runtime is still recompiling
+        // or while AssetDatabase is importing. Typed ScriptableObject loads can
+        // transiently return null in that window, so retry after the editor settles.
+        if (EditorApplication.isCompiling ||
+            EditorApplication.isUpdating)
+        {
+            EditorApplication.delayCall += InstallSilently;
+            return;
+        }
+
         ApplyInstallation(logResult: false, saveLoadedDirtyScenes: false);
     }
 
@@ -134,14 +145,76 @@ public static class RunFlowLiveIntegrationInstaller
             AssetDatabase.CreateAsset(registry, RegistryAssetPath);
         }
 
-        registry.RunItemCatalog =
+        // [CATALOG_WIRING_FORCE_REIMPORT_V2]
+        RunItemCatalog loadedRunItemCatalog =
             AssetDatabase.LoadAssetAtPath<RunItemCatalog>(
                 RunItemCatalogPath);
 
-        registry.EmotionAugmentCatalog =
+        if (loadedRunItemCatalog == null &&
+            !EditorApplication.isCompiling &&
+            !EditorApplication.isUpdating)
+        {
+            AssetDatabase.ImportAsset(
+                RunItemCatalogPath,
+                ImportAssetOptions.ForceUpdate);
+
+            loadedRunItemCatalog =
+                AssetDatabase.LoadAssetAtPath<RunItemCatalog>(
+                    RunItemCatalogPath);
+        }
+
+        if (loadedRunItemCatalog != null)
+        {
+            registry.RunItemCatalog = loadedRunItemCatalog;
+        }
+        else
+        {
+            string message =
+                "[RunFlowLiveInstaller][CATALOG_WIRING] " +
+                "Failed to load RunItemCatalog after ForceUpdate. " +
+                "Existing registry reference is preserved: " +
+                RunItemCatalogPath;
+
+            if (logResult)
+                Debug.LogError(message);
+            else
+                Debug.LogWarning(message);
+        }
+
+        EmotionAugmentCatalog loadedEmotionCatalog =
             AssetDatabase.LoadAssetAtPath<EmotionAugmentCatalog>(
                 EmotionCatalogPath);
 
+        if (loadedEmotionCatalog == null &&
+            !EditorApplication.isCompiling &&
+            !EditorApplication.isUpdating)
+        {
+            AssetDatabase.ImportAsset(
+                EmotionCatalogPath,
+                ImportAssetOptions.ForceUpdate);
+
+            loadedEmotionCatalog =
+                AssetDatabase.LoadAssetAtPath<EmotionAugmentCatalog>(
+                    EmotionCatalogPath);
+        }
+
+        if (loadedEmotionCatalog != null)
+        {
+            registry.EmotionAugmentCatalog = loadedEmotionCatalog;
+        }
+        else
+        {
+            string message =
+                "[RunFlowLiveInstaller][CATALOG_WIRING] " +
+                "Failed to load EmotionAugmentCatalog after ForceUpdate. " +
+                "Existing registry reference is preserved: " +
+                EmotionCatalogPath;
+
+            if (logResult)
+                Debug.LogError(message);
+            else
+                Debug.LogWarning(message);
+        }
         EnsureRunSceneOverlay(saveLoadedDirtyScenes);
         EnsureBattleSceneBridgeAndRegistry(
             registry,

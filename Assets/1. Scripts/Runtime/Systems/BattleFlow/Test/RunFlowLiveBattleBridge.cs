@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -52,10 +52,41 @@ public sealed class RunFlowLiveBattleBridge : MonoBehaviour
             battleManager.ConfigureRunProgression(
                 session.Progression);
 
+        EmotionAugmentCatalog registryEmotionCatalog =
+            registry?.EmotionAugmentCatalog;
+
+        EmotionAugmentCatalog resolvedEmotionCatalog =
+            registryEmotionCatalog != null
+                ? registryEmotionCatalog
+                : battleManager.EmotionAugmentCatalog;
+
+        if (registryEmotionCatalog == null &&
+            resolvedEmotionCatalog != null)
+        {
+            Debug.LogWarning(
+                "[RunFlowLive][EMOTION_CATALOG_WIRING] Registry의 EmotionAugmentCatalog가 null이라 " +
+                "BattleManager에 이미 구성된 Catalog를 fallback으로 사용합니다.",
+                this);
+        }
+
         bool emotionConfigured =
             battleManager.ConfigureEmotionProgression(
                 session.SelectedEmotion,
-                registry?.EmotionAugmentCatalog);
+                resolvedEmotionCatalog);
+
+        if (!emotionConfigured)
+        {
+            FailAndReturn(
+                "감정 Progression을 구성하지 못했습니다. " +
+                "RunFlowLiveContentRegistry의 EmotionAugmentCatalog 연결을 확인하세요.");
+            return;
+        }
+
+        Debug.Log(
+            "[RunFlowLive][EMOTION_CATALOG_WIRING] " +
+            $"Catalog={resolvedEmotionCatalog?.name ?? "NULL"}, " +
+            $"Source={(registryEmotionCatalog != null ? "Registry" : "BattleManagerFallback")}",
+            this);
 
         Character sourcePrefab =
             ResolveSelectedPlayerPrefab(

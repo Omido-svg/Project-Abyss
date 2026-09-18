@@ -365,6 +365,31 @@ public class BattleManager : MonoBehaviour
             return false;
         }
 
+        // 감정이 선택된 전투는 열광 레벨업 시 반드시 증강 Catalog가 필요하다.
+        // null 주입이 들어왔더라도 이미 Scene/Composition Root가 유효한 Catalog를
+        // 구성해 둔 상태라면 그 참조를 보존한다.
+        if (emotion.HasValue && catalog == null)
+        {
+            if (emotionAugmentCatalog != null)
+            {
+                Debug.LogWarning(
+                    "[BattleManager][EMOTION_CATALOG_WIRING] null Catalog 주입을 거부하고 " +
+                    "기존 EmotionAugmentCatalog 참조를 보존합니다.",
+                    this);
+
+                catalog = emotionAugmentCatalog;
+            }
+            else
+            {
+                Debug.LogError(
+                    "[BattleManager][EMOTION_CATALOG_WIRING] 감정이 선택되었지만 " +
+                    "EmotionAugmentCatalog가 없습니다. 열광 증강 제안을 만들 수 없어 " +
+                    "감정 Progression 구성을 거부합니다.",
+                    this);
+                return false;
+            }
+        }
+
         hasConfiguredEmotion = emotion.HasValue;
 
         if (emotion.HasValue)

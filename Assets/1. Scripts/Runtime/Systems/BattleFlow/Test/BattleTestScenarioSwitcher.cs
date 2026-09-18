@@ -266,12 +266,41 @@ public sealed class BattleTestScenarioSwitcher : MonoBehaviour
 
         EnsureEnemySpawnCapacity(enemies.Count);
 
-        battleManager.ConfigureEmotionProgression(
-            configureEmotionForTest
-                ? selectedEmotion
-                : (EmotionType?)null,
-            emotionAugmentCatalog);
+        EmotionAugmentCatalog resolvedEmotionCatalog =
+            emotionAugmentCatalog;
 
+        if (configureEmotionForTest &&
+            resolvedEmotionCatalog == null)
+        {
+            resolvedEmotionCatalog =
+                RunFlowLiveContentRegistry.Load()?.EmotionAugmentCatalog;
+
+            if (resolvedEmotionCatalog != null)
+            {
+                emotionAugmentCatalog = resolvedEmotionCatalog;
+                Debug.LogWarning(
+                    "[BattleTestScenarioSwitcher][EMOTION_CATALOG_WIRING] Scene catalog was null; using RunFlowLiveContentRegistry fallback.",
+                    this);
+            }
+        }
+
+        bool emotionConfigured =
+            battleManager.ConfigureEmotionProgression(
+                configureEmotionForTest
+                    ? selectedEmotion
+                    : (EmotionType?)null,
+                resolvedEmotionCatalog);
+
+        if (configureEmotionForTest && !emotionConfigured)
+        {
+            lastApplyMessage =
+                "Emotion progression configuration failed: missing EmotionAugmentCatalog";
+            Debug.LogError(
+                "[BattleTestScenarioSwitcher][EMOTION_CATALOG_WIRING] " +
+                lastApplyMessage,
+                this);
+            return false;
+        }
         rosterController.ConfigurePrefabRoster(
             playerPrefab,
             enemies,
