@@ -69,6 +69,13 @@ public sealed class HifumiMechanic :
     private bool pokerFaceActive;
     private bool engraveBoneActive;
     private bool nextTurnSpeedPenalty;
+
+    // [0917_CONFIRMED_GAP:HIFUMI_C_FIELDS]
+    // 무모한 베팅(C): 뼈<70 사용 1회당 다음 턴 받는 HP 피해 +3.
+    // 같은 턴 여러 번 발동하면 공통 상태 문법처럼 합산한다.
+    private int recklessBetIncomingDamagePenaltyQueued;
+    private int recklessBetIncomingDamagePenaltyActive;
+
     private bool trickActive;
     private bool forceTrickFailure;
 
@@ -140,7 +147,9 @@ public sealed class HifumiMechanic :
         pokerFaceActive = false;
         engraveBoneActive = false;
         nextTurnSpeedPenalty = false;
-        trickActive = false;
+        recklessBetIncomingDamagePenaltyQueued = 0;
+        recklessBetIncomingDamagePenaltyActive = 0;
+        trickActive = false; // [0917_CONFIRMED_GAP:HIFUMI_C_RESET]
         forceTrickFailure = false;
         governorQueued = false;
         governorActivePenalty = 0;
@@ -180,13 +189,20 @@ public sealed class HifumiMechanic :
             return damage;
         }
 
-        int result = damage;
+        // [0917_CONFIRMED_GAP:HIFUMI_C_DAMAGE]
+        // 두 효과는 같은 flat HP damage 축이므로 먼저 대수합한 뒤 한 번만 clamp한다.
+        // 무모한 베팅의 +3은 '교환당' 규칙이므로 Action 기반 피해에만 적용한다.
+        int flatModifier = 0;
+        if (context.Action != null)
+        {
+            if (pokerFaceActive)
+                flatModifier -= 4;
 
-        // 0916 Poker Face: incoming HP damage -4 per hit/exchange.
-        if (pokerFaceActive && context.Action != null)
-            result = Mathf.Max(0, result - 4);
+            flatModifier +=
+                Mathf.Max(0, recklessBetIncomingDamagePenaltyActive);
+        }
 
-        return result;
+        return Mathf.Max(0, damage + flatModifier);
     }
 
     public int ModifyTurnEndFervorGain(
@@ -524,6 +540,11 @@ public sealed class HifumiMechanic :
         catastropheCounterBonusByAction.Clear();
         processedCatastrophes.Clear();
 
+        // [0917_CONFIRMED_GAP:HIFUMI_C_TURN_START]
+        recklessBetIncomingDamagePenaltyActive =
+            Mathf.Max(0, recklessBetIncomingDamagePenaltyQueued);
+        recklessBetIncomingDamagePenaltyQueued = 0;
+
         ActivateQueuedGovernor();
 
         if (nextTurnSpeedPenalty)
@@ -550,6 +571,7 @@ public sealed class HifumiMechanic :
         engraveBoneActive = false;
         trickActive = false;
         forceTrickFailure = false;
+        recklessBetIncomingDamagePenaltyActive = 0; // [0917_CONFIRMED_GAP:HIFUMI_C_TURN_END]
         governorActivePenalty = 0;
         catastropheCounterBonusByAction.Clear();
         processedCatastrophes.Clear();
@@ -583,7 +605,10 @@ public sealed class HifumiMechanic :
             else
             {
                 AddBone(100);
-                QueueNextTurnRupture();
+
+                // [0917_CONFIRMED_GAP:HIFUMI_C_QUEUE]
+                // 0917 확정: 다음 턴 받는 피해 +3/교환.
+                recklessBetIncomingDamagePenaltyQueued += 3;
             }
         }
     }

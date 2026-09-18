@@ -83,6 +83,15 @@ public sealed class StaggerGaugeMechanic : ReactiveCombatMechanic,
 
         float multiplier = owner.Data?.StaggerResistances?.GetMultiplier(physicalType) ?? 1f;
         int staggerDamage = Mathf.Max(0, Mathf.FloorToInt(raw * multiplier));
+
+        // [0917_CONFIRMED_GAP:STAGGER_RED_PATH]
+        // 내성 적용 후 견고/무장해제 flat 보정을 적용한다.
+        staggerDamage = ApplyTargetStaggerDamageFlatModifiers(
+            action,
+            owner,
+            action.TargetPart,
+            staggerDamage);
+
         if (staggerDamage <= 0)
             return;
 
@@ -211,7 +220,55 @@ public sealed class StaggerGaugeMechanic : ReactiveCombatMechanic,
 
         PhysicalDamageType type = PhysicalDamageResolver.Resolve(action);
         float multiplier = target.Data?.StaggerResistances?.GetMultiplier(type) ?? 1f;
-        return Mathf.Max(0, Mathf.FloorToInt(raw * multiplier));
+        int staggerDamage = Mathf.Max(0, Mathf.FloorToInt(raw * multiplier));
+
+        // [0917_CONFIRMED_GAP:STAGGER_BLUE_PATH]
+        return ApplyTargetStaggerDamageFlatModifiers(
+            action,
+            target,
+            action.TargetPart,
+            staggerDamage);
+    }
+
+    // [0917_CONFIRMED_GAP:STAGGER_FLAT_HELPER]
+    private static int ApplyTargetStaggerDamageFlatModifiers(
+        BattleAction action,
+        Character target,
+        BodyPart targetPart,
+        int damage)
+    {
+        if (target == null || damage <= 0)
+            return Mathf.Max(0, damage);
+
+        int flatModifier = 0;
+
+        if (target.StatusEffects != null)
+        {
+            foreach (StatusEffect effect in target.StatusEffects)
+            {
+                if (effect != null)
+                {
+                    flatModifier +=
+                        effect.GetStaggerDamageTakenFlatModifier(action);
+                }
+            }
+        }
+
+        if (targetPart != null &&
+            targetPart.Owner == target &&
+            targetPart.StatusEffects != null)
+        {
+            foreach (StatusEffect effect in targetPart.StatusEffects)
+            {
+                if (effect != null)
+                {
+                    flatModifier +=
+                        effect.GetStaggerDamageTakenFlatModifier(action);
+                }
+            }
+        }
+
+        return Mathf.Max(0, damage + flatModifier);
     }
 
     private static int ResolveAdditionalStaggerDamage(

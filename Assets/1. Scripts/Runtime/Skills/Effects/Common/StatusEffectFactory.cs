@@ -73,9 +73,11 @@ public static class StatusEffectFactory
                 new StrengthStatus(safeStack),
             StatusEffectId.Weakness =>
                 new WeaknessStatus(safeStack),
-            // 0915 C-27: (미정) 키워드는 신규 Runtime 효과를 만들지 않는다.
-            StatusEffectId.Sturdy => null,
-            StatusEffectId.Disarm => null,
+            // [0917_CONFIRMED_GAP:STURDY_DISARM_FACTORY]
+            StatusEffectId.Sturdy =>
+                new SturdyStatus(safeStack),
+            StatusEffectId.Disarm =>
+                new DisarmStatus(safeStack),
             StatusEffectId.Fracture =>
                 new FractureStatus(safeStack),
             StatusEffectId.Protection =>

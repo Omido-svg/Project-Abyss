@@ -232,6 +232,13 @@ public abstract class StatusEffect
         return damage;
     }
 
+    // [0917_CONFIRMED_GAP:STAGGER_STATUS_API]
+    // 흐트러짐 내성 적용 뒤 더해지는 flat 보정. 반대 효과는 합산 후 상쇄한다.
+    public virtual int GetStaggerDamageTakenFlatModifier(BattleAction action)
+    {
+        return 0;
+    }
+
     public virtual int ModifyHealing(int amount)
     {
         return amount;

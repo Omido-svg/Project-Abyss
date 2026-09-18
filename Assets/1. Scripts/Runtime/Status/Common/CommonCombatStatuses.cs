@@ -86,18 +86,22 @@ public sealed class WeaknessStatus : OneTurnCommonStatus, ICommonRollShiftStatus
         action != null ? -Stack : 0;
 }
 
-// 0915 C-27: 견고/무장해제의 실제 효과는 (미정). 타입은 구 에셋 호환용으로만 남기며
-// 신규 Factory authoring에서는 생성하지 않는다.
-public sealed class SturdyStatus : OneTurnCommonStatus, ICommonRollShiftStatus
+// [0917_CONFIRMED_GAP:STURDY_DISARM]
+// 0917 확정: 견고/무장해제는 굴림 위력이 아니라 '받는 흐트러짐 피해' flat 축이다.
+public sealed class SturdyStatus : OneTurnCommonStatus
 {
     public SturdyStatus(int stack = 1) : base("견고", stack, 3) { }
-    public int GetRollShift(BattleAction action) => 0;
+
+    public override int GetStaggerDamageTakenFlatModifier(BattleAction action) =>
+        -Stack;
 }
 
-public sealed class DisarmStatus : OneTurnCommonStatus, ICommonRollShiftStatus
+public sealed class DisarmStatus : OneTurnCommonStatus
 {
     public DisarmStatus(int stack = 1) : base("무장해제", stack, 4) { }
-    public int GetRollShift(BattleAction action) => 0;
+
+    public override int GetStaggerDamageTakenFlatModifier(BattleAction action) =>
+        Stack;
 }
 
 public sealed class FractureStatus : OneTurnCommonStatus, ICommonRollMaxReductionStatus
