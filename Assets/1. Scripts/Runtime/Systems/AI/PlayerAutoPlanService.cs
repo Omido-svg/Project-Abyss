@@ -253,11 +253,35 @@ public sealed class PlayerAutoPlanService
                 context,
                 actionManager);
 
-        if (enemySlots.Count == 0)
+        // [0918_NORMAL_AUTOPLAN_HOTFIX:ALLOW_ZERO_ENEMY_SLOTS]
+        // 자동 지정의 필수 조건은 '적 ActionSlot 존재'가 아니라 '살아 있는 적 존재'다.
+        // 일반전투의 단일 HP 적은 TargetPart == null인 Character target으로도 정상 공격 대상이며,
+        // 아래 Fill 단계가 enemySlots==0에서도 일방 공격 계획을 만들 수 있다.
+        bool hasLivingEnemy = false;
+        if (context?.Enemies != null)
+        {
+            foreach (Character enemy in context.Enemies)
+            {
+                if (enemy != null && !enemy.IsDead)
+                {
+                    hasLivingEnemy = true;
+                    break;
+                }
+            }
+        }
+
+        if (!hasLivingEnemy)
         {
             result.Message =
-                "현재 턴에 계획된 적 행동이 없습니다.";
+                "자동 지정 가능한 살아 있는 적이 없습니다.";
             return result;
+        }
+
+        if (enemySlots.Count == 0)
+        {
+            Debug.Log(
+                "[PlayerAutoPlan] 적 ActionSlot이 0개이므로 합 매칭 없이 " +
+                "살아 있는 적을 대상으로 일방 공격 Fill 계획을 계산합니다.");
         }
 
         List<ActionSlot> enemyThreats =

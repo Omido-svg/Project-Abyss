@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -409,23 +410,19 @@ public sealed class BattleAutoPlanButtonPanel :
         if (actionManager?.IsDisposed != false)
             return false;
 
-        foreach (ActionSlot slot
-                 in actionManager.Slots)
+        // [0918_NORMAL_AUTOPLAN_HOTFIX:LIVING_ENEMY_GATE]
+        // 버튼 활성 조건을 enemy ActionSlot 존재 여부에 묶지 않는다.
+        // 일반전투의 단일 HP 적은 살아 있기만 하면 자동 지정의 유효한 공격 대상이다.
+        IReadOnlyList<Character> enemies =
+            battleManager.BattleContext.Enemies;
+
+        if (enemies == null)
+            return false;
+
+        foreach (Character enemy in enemies)
         {
-            Character owner =
-                slot?.Owner;
-
-            if (owner == null ||
-                slot.Skill == null)
-            {
-                continue;
-            }
-
-            if (battleManager.BattleContext
-                    .Enemies.Contains(owner))
-            {
+            if (enemy != null && !enemy.IsDead)
                 return true;
-            }
         }
 
         return false;
