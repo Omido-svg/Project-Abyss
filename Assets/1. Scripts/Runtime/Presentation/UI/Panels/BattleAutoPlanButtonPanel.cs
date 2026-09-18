@@ -1,6 +1,8 @@
 using System.Collections.Generic;
+using System.Text;
 using TMPro;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
 [DisallowMultipleComponent]
@@ -39,6 +41,7 @@ public sealed class BattleAutoPlanButtonPanel :
 
     private bool capturedBaseColors;
     private float nextStateRefresh;
+    private bool? lastDiagnosticInteractableState;
 
     private PlayerAutoPlanMode? activeMode;
 
@@ -254,6 +257,18 @@ public sealed class BattleAutoPlanButtonPanel :
 
         damageButton?.onClick.AddListener(
             ApplyDamagePlan);
+
+        // [0918_AUTOPLAN_DIAG:POINTER_PROBE]
+        // Unity Button은 interactable=false일 때 onClick 자체를 호출하지 않는다.
+        // 진단 중에는 별도 EventSystem probe로 PointerDown/PointerClick을 받아
+        // 비활성 버튼을 눌러도 CanApplyPlan 탈락 원인을 Console에 남긴다.
+        EnsureDiagnosticProbe(
+            winRateButton,
+            PlayerAutoPlanMode.WinRate);
+
+        EnsureDiagnosticProbe(
+            damageButton,
+            PlayerAutoPlanMode.Damage);
     }
 
     private void UnbindButtons()
@@ -267,12 +282,24 @@ public sealed class BattleAutoPlanButtonPanel :
 
     private void ApplyWinRatePlan()
     {
+        Debug.Log(
+            BuildDiagnosticSnapshot(
+                PlayerAutoPlanMode.WinRate,
+                "ONCLICK"),
+            this);
+
         TogglePlan(
             PlayerAutoPlanMode.WinRate);
     }
 
     private void ApplyDamagePlan()
     {
+        Debug.Log(
+            BuildDiagnosticSnapshot(
+                PlayerAutoPlanMode.Damage,
+                "ONCLICK"),
+            this);
+
         TogglePlan(
             PlayerAutoPlanMode.Damage);
     }
@@ -392,40 +419,312 @@ public sealed class BattleAutoPlanButtonPanel :
 
     private bool CanApplyPlan()
     {
-        if (battleManager == null ||
-            !battleManager.IsInitialized ||
-            battleManager.IsEndingOrEnded ||
-            battleManager.BattleContext?.Player == null ||
-            battleManager.BattleContext.Player.IsDead ||
-            battleManager.TurnManager == null ||
-            !battleManager.TurnManager.IsBattleRunning ||
-            battleManager.TurnManager.IsResolving)
+        return EvaluateCanApplyPlan(
+            out _);
+    }
+
+    private bool EvaluateCanApplyPlan(
+        out string reason)
+    {
+        if (battleManager == null)
         {
+            reason = "BATTLE_MANAGER_NULL";
+            return false;
+        }
+
+        if (!battleManager.IsInitialized)
+        {
+            reason = "BATTLE_MANAGER_NOT_INITIALIZED";
+            return false;
+        }
+
+        if (battleManager.IsEndingOrEnded)
+        {
+            reason = "BATTLE_ENDING_OR_ENDED";
+            return false;
+        }
+
+        BattleContext context =
+            battleManager.BattleContext;
+
+        if (context?.Player == null)
+        {
+            reason = "PLAYER_NULL";
+            return false;
+        }
+
+        if (context.Player.IsDead)
+        {
+            reason = "PLAYER_DEAD";
+            return false;
+        }
+
+        if (battleManager.TurnManager == null)
+        {
+            reason = "TURN_MANAGER_NULL";
+            return false;
+        }
+
+        if (!battleManager.TurnManager.IsBattleRunning)
+        {
+            reason = "BATTLE_NOT_RUNNING";
+            return false;
+        }
+
+        if (battleManager.TurnManager.IsResolving)
+        {
+            reason = "TURN_IS_RESOLVING";
             return false;
         }
 
         ActionManager actionManager =
             battleManager.ActionManager;
 
-        if (actionManager?.IsDisposed != false)
+        if (actionManager == null)
+        {
+            reason = "ACTION_MANAGER_NULL";
             return false;
+        }
+
+        if (actionManager.IsDisposed)
+        {
+            reason = "ACTION_MANAGER_DISPOSED";
+            return false;
+        }
 
         // [0918_NORMAL_AUTOPLAN_HOTFIX:LIVING_ENEMY_GATE]
-        // 버튼 활성 조건을 enemy ActionSlot 존재 여부에 묶지 않는다.
-        // 일반전투의 단일 HP 적은 살아 있기만 하면 자동 지정의 유효한 공격 대상이다.
+        // [0918_NORMAL_AUTOPLAN_HOTFIX_V2:CANONICAL_TARGET_GATE]
         IReadOnlyList<Character> enemies =
-            battleManager.BattleContext.Enemies;
+            context.Enemies;
 
         if (enemies == null)
+        {
+            reason = "ENEMY_LIST_NULL";
             return false;
+        }
+
+        bool hasLivingEnemy = false;
 
         foreach (Character enemy in enemies)
         {
             if (enemy != null && !enemy.IsDead)
-                return true;
+            {
+                hasLivingEnemy = true;
+                break;
+            }
         }
 
-        return false;
+        if (!hasLivingEnemy)
+        {
+            reason = "NO_LIVING_ENEMY";
+            return false;
+        }
+
+        if (!PlayerAutoPlanService.HasAnyAutoPlanTarget(
+                context))
+        {
+            reason = "NO_CANONICAL_AUTOPLAN_TARGET";
+            return false;
+        }
+
+        reason = "PASS";
+        return true;
+    }
+
+    internal void LogAutoPlanDiagnosticPointer(
+        PlayerAutoPlanMode mode,
+        string pointerPhase,
+        PointerEventData eventData)
+    {
+        ResolveReferences();
+
+        string pointer =
+            eventData == null
+                ? pointerPhase
+                : $"{pointerPhase} button={eventData.button} pos={eventData.position}";
+
+        Debug.Log(
+            BuildDiagnosticSnapshot(
+                mode,
+                pointer),
+            this);
+    }
+
+    private void EnsureDiagnosticProbe(
+        Button button,
+        PlayerAutoPlanMode mode)
+    {
+        if (button == null)
+            return;
+
+        BattleAutoPlanDiagnosticClickProbe probe =
+            button.GetComponent<BattleAutoPlanDiagnosticClickProbe>();
+
+        if (probe == null)
+        {
+            probe = button.gameObject.AddComponent<
+                BattleAutoPlanDiagnosticClickProbe>();
+        }
+
+        probe.Configure(
+            this,
+            mode);
+    }
+
+    private string BuildDiagnosticSnapshot(
+        PlayerAutoPlanMode mode,
+        string origin)
+    {
+        ResolveReferences();
+
+        bool canApply =
+            EvaluateCanApplyPlan(
+                out string gateReason);
+
+        StringBuilder sb =
+            new StringBuilder(2048);
+
+        sb.AppendLine(
+            $"[AUTO_PLAN_DIAG][{origin}][{mode}] CanApply={canApply} Gate={gateReason}");
+
+        sb.AppendLine(
+            $"Panel activeSelf={gameObject.activeSelf} activeInHierarchy={gameObject.activeInHierarchy} enabled={enabled}");
+
+        AppendButtonDiagnostic(
+            sb,
+            "WinRateButton",
+            winRateButton);
+
+        AppendButtonDiagnostic(
+            sb,
+            "DamageButton",
+            damageButton);
+
+        if (EventSystem.current == null)
+        {
+            sb.AppendLine(
+                "EventSystem=NULL");
+        }
+        else
+        {
+            sb.AppendLine(
+                $"EventSystem={EventSystem.current.name} active={EventSystem.current.isActiveAndEnabled}");
+        }
+
+        if (battleManager == null)
+        {
+            sb.AppendLine(
+                "BattleManager=NULL");
+            return sb.ToString();
+        }
+
+        sb.AppendLine(
+            $"BattleManager init={battleManager.IsInitialized} ending={battleManager.IsEndingOrEnded}");
+
+        sb.AppendLine(
+            $"TurnManager null={battleManager.TurnManager == null} running={battleManager.TurnManager?.IsBattleRunning ?? false} resolving={battleManager.TurnManager?.IsResolving ?? false}");
+
+        sb.AppendLine(
+            $"SpeedManager null={battleManager.SpeedManager == null}");
+
+        ActionManager actionManager =
+            battleManager.ActionManager;
+
+        sb.AppendLine(
+            $"ActionManager null={actionManager == null} disposed={actionManager?.IsDisposed ?? true} slotCount={actionManager?.Slots?.Count ?? -1}");
+
+        BattleContext context =
+            battleManager.BattleContext;
+
+        Character player =
+            context?.Player;
+
+        sb.AppendLine(
+            $"Context null={context == null} Player={(player == null ? "NULL" : player.name)} dead={player?.IsDead ?? true} energy={(player == null ? "-" : $"{player.CurrentEnergy}/{player.MaxEnergy}")}");
+
+        IReadOnlyList<Character> enemies =
+            context?.Enemies;
+
+        sb.AppendLine(
+            $"Enemies null={enemies == null} count={enemies?.Count ?? -1} HasAnyAutoPlanTarget={PlayerAutoPlanService.HasAnyAutoPlanTarget(context)}");
+
+        if (enemies != null)
+        {
+            TargetSelectionRule rule =
+                TargetSelectionRule.StandardAttack;
+
+            for (int i = 0; i < enemies.Count; i++)
+            {
+                Character enemy = enemies[i];
+
+                if (enemy == null)
+                {
+                    sb.AppendLine(
+                        $"Enemy[{i}]=NULL");
+                    continue;
+                }
+
+                IReadOnlyList<TargetPoint> points =
+                    BattleTargetValidator.GetTargetPoints(
+                        enemy,
+                        rule);
+
+                sb.AppendLine(
+                    $"Enemy[{i}] name={enemy.name} dead={enemy.IsDead} usesBodyParts={enemy.UsesBodyParts} targetPoints={points?.Count ?? -1}");
+
+                if (points != null)
+                {
+                    for (int p = 0; p < points.Count; p++)
+                    {
+                        TargetPoint point = points[p];
+                        bool validByRule =
+                            point.Character != null &&
+                            BattleTargetValidator.IsValid(
+                                point.Character,
+                                point.Part,
+                                rule);
+
+                        sb.AppendLine(
+                            $"  Target[{p}] isValid={point.IsValid} char={(point.Character == null ? "NULL" : point.Character.name)} part={(point.Part == null ? "NULL" : point.Part.Type.ToString())} ruleValid={validByRule}");
+                    }
+                }
+            }
+        }
+
+        if (actionManager?.Slots != null)
+        {
+            for (int i = 0; i < actionManager.Slots.Count; i++)
+            {
+                ActionSlot slot =
+                    actionManager.Slots[i];
+
+                sb.AppendLine(
+                    slot == null
+                        ? $"Slot[{i}]=NULL"
+                        : $"Slot[{i}] owner={(slot.Owner == null ? "NULL" : slot.Owner.name)} skill={(slot.Skill == null ? "NULL" : slot.Skill.SkillName)} phase={slot.Phase} targetChar={(slot.TargetCharacter == null ? "NULL" : slot.TargetCharacter.name)} targetPart={(slot.TargetPart == null ? "NULL" : slot.TargetPart.Type.ToString())} targetSlotNull={slot.TargetSlot == null}");
+            }
+        }
+
+        return sb.ToString();
+    }
+
+    private static void AppendButtonDiagnostic(
+        StringBuilder sb,
+        string label,
+        Button button)
+    {
+        if (button == null)
+        {
+            sb.AppendLine(
+                $"{label}=NULL");
+            return;
+        }
+
+        Graphic graphic =
+            button.targetGraphic;
+
+        sb.AppendLine(
+            $"{label} name={button.name} activeSelf={button.gameObject.activeSelf} activeInHierarchy={button.gameObject.activeInHierarchy} enabled={button.enabled} interactable={button.interactable} targetGraphic={(graphic == null ? "NULL" : graphic.name)} raycastTarget={graphic?.raycastTarget ?? false}");
     }
 
     private void SynchronizeModeWithCurrentSlots()
@@ -592,7 +891,18 @@ public sealed class BattleAutoPlanButtonPanel :
                 stateRefreshInterval);
 
         bool interactable =
-            CanApplyPlan();
+            EvaluateCanApplyPlan(
+                out string gateReason);
+
+        if (!lastDiagnosticInteractableState.HasValue ||
+            lastDiagnosticInteractableState.Value != interactable)
+        {
+            lastDiagnosticInteractableState = interactable;
+
+            Debug.Log(
+                $"[AUTO_PLAN_DIAG][INTERACTABLE_CHANGED] value={interactable} gate={gateReason}",
+                this);
+        }
 
         if (winRateButton != null)
         {

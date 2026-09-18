@@ -44,7 +44,13 @@ public sealed class PlayerAutoPlanApplicationService
                 plannedSlots);
 
         if (!validation.Success)
+        {
+            UnityEngine.Debug.LogWarning(
+                $"[AUTO_PLAN_DIAG][VALIDATION_BLOCK] " +
+                $"Owner={owner.Data?.CharacterName ?? owner.name}, " +
+                $"Code={validation.Code}, Reason={validation.Reason}");
             return 0;
+        }
 
         int applied =
             actionManager.TryReplaceOwnerPlan(
@@ -52,7 +58,13 @@ public sealed class PlayerAutoPlanApplicationService
                 plannedSlots);
 
         if (applied <= 0)
+        {
+            UnityEngine.Debug.LogWarning(
+                $"[AUTO_PLAN_DIAG][REPLACE_BLOCK] " +
+                $"Owner={owner.Data?.CharacterName ?? owner.name}, " +
+                $"Planned={plannedSlots.Count}, LiveOwnerSlots={actionManager.CountSlots(owner)}");
             return 0;
+        }
 
         // TryReplaceOwnerPlan 이후 실제 live slot을 대상으로 planning hook과 비용을 commit한다.
         // 정본 C-04에 따라 이미 지불한 비용은 이후 계획 소실 시 환불하지 않는다.
@@ -66,8 +78,13 @@ public sealed class PlayerAutoPlanApplicationService
             if (!ActionPlanningMechanicPolicy.TryCommitPlannedSlot(
                     owner,
                     slot,
-                    out _))
+                    out string mechanicCommitFailure))
             {
+                UnityEngine.Debug.LogWarning(
+                    $"[AUTO_PLAN_DIAG][COMMIT_BLOCK] " +
+                    $"Owner={owner.Data?.CharacterName ?? owner.name}, " +
+                    $"Skill={slot.Skill?.SkillName ?? "NULL"}, " +
+                    $"Reason={mechanicCommitFailure}");
                 // 자동 계획은 원자적으로 계산되지만 비용/캐릭터 고유 hook이 런타임 상태 변화로
                 // 실패할 수 있다. 이미 commit된 비용/효과는 정본상 환불하지 않고 계획만 제거한다.
                 cancellation.CancelOwner(
@@ -81,6 +98,11 @@ public sealed class PlayerAutoPlanApplicationService
             if (!slot.ResourceCostCommitted &&
                 !slot.Skill.TryConsumeResource(owner, action))
             {
+                UnityEngine.Debug.LogWarning(
+                    $"[AUTO_PLAN_DIAG][RESOURCE_COMMIT_BLOCK] " +
+                    $"Owner={owner.Data?.CharacterName ?? owner.name}, " +
+                    $"Skill={slot.Skill.SkillName}, Cost={committedEnergyCost}, " +
+                    $"Energy={owner.CurrentEnergy}/{owner.MaxEnergy}");
                 cancellation.CancelOwner(
                     owner,
                     out _);
