@@ -904,6 +904,20 @@ public sealed class BattleBatchSimulationRunner : MonoBehaviour
         yield return null;
 
         EnsurePersistentControlOverlay();
+
+        // [0918_ANALYSIS_BUTTON_HOTFIX:NO_PERSISTENT_LOCAL_BIND]
+        // v4는 persistent Game View overlay를 더 이상 만들지 않는다.
+        // 이 상태에서 scene-local UI까지 끄면 승률/피해량 버튼 자체가 사라지거나 클릭 불능이 된다.
+        // Persistent overlay가 실제로 없으면 Scene의 분석 패널을 유지하고 Runner에 다시 등록한다.
+        if (persistentOverlayRoot == null &&
+            persistentPanel == null &&
+            persistentPanelToggle == null)
+        {
+            BindSceneLocalAnalysisControls();
+            yield break;
+        }
+
+        // Persistent overlay가 있는 구/호환 구성에서만 중복 Scene UI를 끈다.
         DisableSceneLocalAnalysisControls();
 
         if (persistentPanel == null &&
@@ -932,8 +946,55 @@ public sealed class BattleBatchSimulationRunner : MonoBehaviour
         panel = null;
     }
 
+    // [0918_ANALYSIS_BUTTON_HOTFIX:SCENE_LOCAL_BIND]
+    private void BindSceneLocalAnalysisControls()
+    {
+        BattleAnalysisDebugPanel[] scenePanels =
+            FindObjectsByType<BattleAnalysisDebugPanel>(
+                FindObjectsInactive.Include,
+                FindObjectsSortMode.None);
+
+        BattleAnalysisDebugPanel candidate = null;
+
+        foreach (BattleAnalysisDebugPanel debugPanel in scenePanels)
+        {
+            if (debugPanel == null ||
+                debugPanel == persistentPanel)
+            {
+                continue;
+            }
+
+            GameObject panelObject = debugPanel.gameObject;
+            if (panelObject == null ||
+                !panelObject.scene.IsValid())
+            {
+                continue;
+            }
+
+            candidate = debugPanel;
+
+            // 숨김은 CanvasGroup으로 처리되므로 activeInHierarchy인 패널을 우선한다.
+            if (panelObject.activeInHierarchy)
+                break;
+        }
+
+        if (candidate == null)
+            return;
+
+        panel = candidate;
+        RegisterPanel(candidate);
+    }
+
     private void DisableSceneLocalAnalysisControls()
     {
+        // [0918_ANALYSIS_BUTTON_HOTFIX:GUARD_DISABLE]
+        // Persistent overlay가 없으면 Scene UI가 유일한 조작 수단이므로 절대 끄지 않는다.
+        if (persistentOverlayRoot == null &&
+            persistentPanelToggle == null)
+        {
+            return;
+        }
+
         BattleAnalysisPanelToggle[] toggles =
             FindObjectsByType<BattleAnalysisPanelToggle>(
                 FindObjectsInactive.Include,
