@@ -47,7 +47,9 @@ MonoBehaviour:
     SecondaryPartMode: 0
     SecondaryDamageMultiplier: 1
     AllowBrokenSecondaryParts: 1
-  Description: "[0917_TEMP_DATA] 0917 source=provisional-data. \uBBF8\uC815/\uC7A0\uC815
+  Description: "[CANONICAL_0922_PHASE7] 0922 \uD655\uC815: R1 \uCD9C\uD608+2 / R2
+    \uC1E0\uC57D1\xB71 / R3 \uB9E4\uCE6D\uC2DC \uC0C1\uB300 \uBC29\uC5B4\uB3C4 \uC804\uBD80
+    \uC81C\uAC70.\n[0917_TEMP_DATA] 0917 source=provisional-data. \uBBF8\uC815/\uC7A0\uC815
     \uBC94\uC704\uB294 Runtime \uC0C1\uC218\uAC00 \uC544\uB2C8\uB77C SkillDefinition
     \uB370\uC774\uD130\uAC00 \uC18C\uC720\uD55C\uB2E4.\n0916(3) \xA74.3: \uC704\uCE58\uBCC4
     \uD3C9\uADE0\uC758 \uD3C9\uADE0 = \uAE30\uBCF8\uC704\uB825 + 4.5.\n[CANONICAL_0916_CLOSURE_V1]
@@ -160,12 +162,14 @@ MonoBehaviour:
   ChinchiroHifumiPenalty: 1
   ChinchiroHifumiSelfDamage: 1
   EffectEntries:
-  - Definition: {fileID: 11400000, guid: acc1714c3b02ef74f9332c435345670b, type: 2}
+  - Definition: {fileID: 11400000, guid: 78049627987db674f8899c87273a98d2, type: 2}
     Overrides:
       OverrideStack: 0
       Stack: 1
       OverrideDuration: 0
       Duration: 3
+      OverrideInfiniteDuration: 0
+      InfiniteDuration: 0
       OverrideAmount: 0
       Amount: 1
       OverrideMinimum: 0
@@ -182,12 +186,72 @@ MonoBehaviour:
       ForceCharacterStatus: 0
       OverrideGiveToSelectedTarget: 0
       GiveToSelectedTarget: 0
-    UpgradeKey: temp_proxy
+    UpgradeKey: 
     OverrideTiming: 1
     Timing: 7
     Conditions: []
-    RestrictToRoll: 0
+    RestrictToRoll: 1
     RollNumber: 1
+  - Definition: {fileID: 11400000, guid: a066620bc9b99654c8c7240a94e0592b, type: 2}
+    Overrides:
+      OverrideStack: 0
+      Stack: 1
+      OverrideDuration: 0
+      Duration: 3
+      OverrideInfiniteDuration: 0
+      InfiniteDuration: 0
+      OverrideAmount: 0
+      Amount: 1
+      OverrideMinimum: 0
+      Minimum: 0
+      OverrideMaximum: 0
+      Maximum: 999
+      OverrideFlatValue: 0
+      FlatValue: 0
+      OverrideMultiplier: 0
+      Multiplier: 1
+      OverrideResourceKey: 0
+      ResourceKey: 
+      OverrideForceCharacterStatus: 0
+      ForceCharacterStatus: 0
+      OverrideGiveToSelectedTarget: 0
+      GiveToSelectedTarget: 0
+    UpgradeKey: 
+    OverrideTiming: 1
+    Timing: 7
+    Conditions: []
+    RestrictToRoll: 1
+    RollNumber: 2
+  - Definition: {fileID: 11400000, guid: dd5d08c4d93621445b51d17ef1960e4b, type: 2}
+    Overrides:
+      OverrideStack: 0
+      Stack: 1
+      OverrideDuration: 0
+      Duration: 3
+      OverrideInfiniteDuration: 0
+      InfiniteDuration: 0
+      OverrideAmount: 0
+      Amount: 1
+      OverrideMinimum: 0
+      Minimum: 0
+      OverrideMaximum: 0
+      Maximum: 999
+      OverrideFlatValue: 0
+      FlatValue: 0
+      OverrideMultiplier: 0
+      Multiplier: 1
+      OverrideResourceKey: 0
+      ResourceKey: 
+      OverrideForceCharacterStatus: 0
+      ForceCharacterStatus: 0
+      OverrideGiveToSelectedTarget: 0
+      GiveToSelectedTarget: 0
+    UpgradeKey: 
+    OverrideTiming: 1
+    Timing: 31
+    Conditions: []
+    RestrictToRoll: 1
+    RollNumber: 3
   Effects: []
   OverrideEnergyCost: 1
   EnergyCost: 2

@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
 
 public enum Yujin0916EffectOperation
@@ -92,7 +92,7 @@ public sealed class Yujin0916SkillEffectDefinition : SkillEffectDefinition
                 break;
 
             case Yujin0916EffectOperation.DesignateCurrent:
-                ApplyDesignation(context.Owner, context.Target, context.TargetPart, 3);
+                ApplyDesignation(context.Owner, context.Target, context.TargetPart, 2, 3);
                 break;
 
             case Yujin0916EffectOperation.IntoShadowsBlock:
@@ -125,7 +125,7 @@ public sealed class Yujin0916SkillEffectDefinition : SkillEffectDefinition
 
             case Yujin0916EffectOperation.DesignateAll:
                 foreach (Character enemy in EnumerateEnemies(context))
-                    ApplyDesignation(context.Owner, enemy, null, 3);
+                    ApplyDesignation(context.Owner, enemy, null, 2, 3);
                 break;
 
             case Yujin0916EffectOperation.Period:
@@ -225,13 +225,18 @@ public sealed class Yujin0916SkillEffectDefinition : SkillEffectDefinition
         Character source,
         Character target,
         BodyPart part,
+        int value,
         int turns)
     {
         if (target == null)
             return;
 
         YujinDesignationStatus designation =
-            new YujinDesignationStatus(Mathf.Max(1, turns));
+            new YujinDesignationStatus(
+                Mathf.Max(1, value),
+                turns < 0
+                    ? StatusEffect.InfiniteDuration
+                    : Mathf.Max(1, turns));
 
         if (part != null)
             target.AddPartStatus(part, designation, source);

@@ -47,10 +47,13 @@ MonoBehaviour:
     SecondaryPartMode: 0
     SecondaryDamageMultiplier: 1
     AllowBrokenSecondaryParts: 1
-  Description: "0917 \uD655\uC815: RED/1\uAD74\uB9BC. \uC2E4\uC81C \uBE44\uC6A9 4\u21923\u21922\u21921(\uC804\uD22C
-    \uB204\uC801), \uC0AC\uC6A9\uC2DC \uAC10 \uC804\uB7C9 \uC18C\uBE44\u2192\uAC101\uB2F9
-    \uC704\uB825+2. \uCF54\uC778 \uC704\uB825\uC758 \uBE5B \uACC4\uC218\uB294 \uC2E4\uC81C
-    \uBE44\uC6A9\uACFC \uBB34\uAD00\uD558\uAC8C \uBE5B2 \uACE0\uC815."
+  Description: "[CANONICAL_0922_PHASE7] 0922 \uD655\uC815: \uC2E4\uC81C \uBE44\uC6A94\u21923\u21922\u21921,
+    \uC0AC\uC6A9\uC2DC \uAC10 \uC804\uB7C9\u21921\uB2F9 \uC704\uB825+2, \uAE30\uBCF8\uC704\uB825\uC740
+    \uBE5B2 \uAE30\uC900 \uACE0\uC815.\n0917 \uD655\uC815: RED/1\uAD74\uB9BC. \uC2E4\uC81C
+    \uBE44\uC6A9 4\u21923\u21922\u21921(\uC804\uD22C \uB204\uC801), \uC0AC\uC6A9\uC2DC
+    \uAC10 \uC804\uB7C9 \uC18C\uBE44\u2192\uAC101\uB2F9 \uC704\uB825+2. \uCF54\uC778
+    \uC704\uB825\uC758 \uBE5B \uACC4\uC218\uB294 \uC2E4\uC81C \uBE44\uC6A9\uACFC
+    \uBB34\uAD00\uD558\uAC8C \uBE5B2 \uACE0\uC815."
   Keywords: []
   Rolls: []
   ExchangeRollCount: 1
@@ -85,6 +88,8 @@ MonoBehaviour:
       Stack: 1
       OverrideDuration: 0
       Duration: 3
+      OverrideInfiniteDuration: 0
+      InfiniteDuration: 0
       OverrideAmount: 0
       Amount: 1
       OverrideMinimum: 0

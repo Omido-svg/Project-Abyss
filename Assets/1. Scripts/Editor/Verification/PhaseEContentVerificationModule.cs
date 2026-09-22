@@ -1,4 +1,4 @@
-#if UNITY_EDITOR
+﻿#if UNITY_EDITOR
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -225,22 +225,22 @@ public sealed class PhaseEContentVerificationModule : IGameSystemVerificationMod
         bool secondCostsUnset = SecondUpgradeCostsUnset(loadout);
 
         bool ok = manifest?.OlafSkillPoolComplete == true &&
-                  normal == 16 && duel == 21 && preparation == 9 && prestige == 3 &&
+                  normal == 16 && duel == 20 && preparation == 10 && prestige == 3 &&
                   exactIds && profiles && secondCostsUnset;
 
         string details =
-            $"N={normal}/16 D={duel}/21 P={preparation}/9 R={prestige}/3 IDs={actual.Count}/{canonical.Length} " +
+            $"N={normal}/16 D={duel}/20 P={preparation}/10 R={prestige}/3 IDs={actual.Count}/{canonical.Length} " +
             $"profiles={profiles} upgrade2Unset={secondCostsUnset}";
 
         if (ok)
-            return GameSystemVerificationProbeResult.Pass($"Olaf 0916 canonical closure PASS / {details}");
+            return GameSystemVerificationProbeResult.Pass($"Olaf 0922 Phase7 pool-shape PASS / {details}");
 
         if (missing.Count > 0)
             details += "\nMissing IDs:\n" + string.Join("\n", missing);
         if (extra.Count > 0)
             details += "\nExtra IDs:\n" + string.Join("\n", extra);
 
-        return GameSystemVerificationProbeResult.Fail("Olaf 0916 canonical closure mismatch", details);
+        return GameSystemVerificationProbeResult.Fail("Olaf 0922 Phase7 pool-shape mismatch", details);
     }
 
     private static GameSystemVerificationProbeResult VerifyY06(GameSystemVerificationContext _)

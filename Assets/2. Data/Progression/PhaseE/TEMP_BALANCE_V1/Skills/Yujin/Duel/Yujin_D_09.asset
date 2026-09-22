@@ -84,6 +84,8 @@ MonoBehaviour:
       Stack: 1
       OverrideDuration: 0
       Duration: 3
+      OverrideInfiniteDuration: 0
+      InfiniteDuration: 0
       OverrideAmount: 0
       Amount: 1
       OverrideMinimum: 0

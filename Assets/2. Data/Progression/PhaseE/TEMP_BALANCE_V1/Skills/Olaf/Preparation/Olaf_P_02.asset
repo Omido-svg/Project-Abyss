@@ -47,8 +47,9 @@ MonoBehaviour:
     SecondaryPartMode: 0
     SecondaryDamageMultiplier: 1
     AllowBrokenSecondaryParts: 1
-  Description: "[CANONICAL_0916_CLOSURE_V1] 0916(3) canonical metadata synced.\n[TEMP_BALANCE_V1]
-    \uCD9C\uD608 \uACC4\uC5F4"
+  Description: "[CANONICAL_0922_PHASE7] 0922 \uD655\uC815: \uC790\uAE30 \uCD9C\uD608+3
+    + \uC7AC\uC0DD4\xB73.\n[CANONICAL_0916_CLOSURE_V1] 0916(3) canonical metadata
+    synced.\n[TEMP_BALANCE_V1] \uCD9C\uD608 \uACC4\uC5F4"
   Keywords: []
   Rolls: []
   ExchangeRollCount: 1
@@ -77,12 +78,14 @@ MonoBehaviour:
   ChinchiroHifumiPenalty: 1
   ChinchiroHifumiSelfDamage: 1
   EffectEntries:
-  - Definition: {fileID: 11400000, guid: fbceded5730457f4b819602c896b6fbd, type: 2}
+  - Definition: {fileID: 11400000, guid: becda717823a86641a41ddc9bf6ef74b, type: 2}
     Overrides:
       OverrideStack: 0
       Stack: 1
       OverrideDuration: 0
       Duration: 3
+      OverrideInfiniteDuration: 0
+      InfiniteDuration: 0
       OverrideAmount: 0
       Amount: 1
       OverrideMinimum: 0
@@ -99,7 +102,37 @@ MonoBehaviour:
       ForceCharacterStatus: 0
       OverrideGiveToSelectedTarget: 0
       GiveToSelectedTarget: 0
-    UpgradeKey: temp_proxy
+    UpgradeKey: 
+    OverrideTiming: 1
+    Timing: 0
+    Conditions: []
+    RestrictToRoll: 0
+    RollNumber: 1
+  - Definition: {fileID: 11400000, guid: 2cc20f0fd03414540925c2ea0fe90f4b, type: 2}
+    Overrides:
+      OverrideStack: 0
+      Stack: 1
+      OverrideDuration: 0
+      Duration: 3
+      OverrideInfiniteDuration: 0
+      InfiniteDuration: 0
+      OverrideAmount: 0
+      Amount: 1
+      OverrideMinimum: 0
+      Minimum: 0
+      OverrideMaximum: 0
+      Maximum: 999
+      OverrideFlatValue: 0
+      FlatValue: 0
+      OverrideMultiplier: 0
+      Multiplier: 1
+      OverrideResourceKey: 0
+      ResourceKey: 
+      OverrideForceCharacterStatus: 0
+      ForceCharacterStatus: 0
+      OverrideGiveToSelectedTarget: 0
+      GiveToSelectedTarget: 0
+    UpgradeKey: 
     OverrideTiming: 1
     Timing: 0
     Conditions: []

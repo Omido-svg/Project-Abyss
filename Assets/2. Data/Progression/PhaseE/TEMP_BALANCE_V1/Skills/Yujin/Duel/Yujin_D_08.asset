@@ -47,8 +47,10 @@ MonoBehaviour:
     SecondaryPartMode: 0
     SecondaryDamageMultiplier: 1
     AllowBrokenSecondaryParts: 1
-  Description: "[CANONICAL_0916_CLOSURE_V1] 0916(3) canonical metadata synced.\n[TEMP_BALANCE_V1]
-    \uBB34\uAE30 debuff TEMP"
+  Description: "[CANONICAL_0922_PHASE7] 0922 \uD655\uC815: \uC2B9\uB9AC\uC2DC \uB2E4\uC74C
+    \uD134 \uC0C1\uB300 \u2014 \uBC31\uC6B0 \uC1E0\uC57D1\xB71 / \uC801\uC124 \uACE8\uC8081\xB71
+    / \uB099\uC77C \uADE0\uC5F41\xB71.\n[CANONICAL_0916_CLOSURE_V1] 0916(3) canonical
+    metadata synced.\n[TEMP_BALANCE_V1] \uBB34\uAE30 debuff TEMP"
   Keywords: []
   Rolls: []
   ExchangeRollCount: 1
@@ -77,12 +79,14 @@ MonoBehaviour:
   ChinchiroHifumiPenalty: 1
   ChinchiroHifumiSelfDamage: 1
   EffectEntries:
-  - Definition: {fileID: 11400000, guid: a4d42a8d03cfe054893a69e8402fc5ee, type: 2}
+  - Definition: {fileID: 11400000, guid: 4a598517f6a3c8f44b1894e837ec37a8, type: 2}
     Overrides:
       OverrideStack: 0
       Stack: 1
       OverrideDuration: 0
       Duration: 3
+      OverrideInfiniteDuration: 0
+      InfiniteDuration: 0
       OverrideAmount: 0
       Amount: 1
       OverrideMinimum: 0

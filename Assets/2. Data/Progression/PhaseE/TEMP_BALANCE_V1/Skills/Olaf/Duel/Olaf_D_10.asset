@@ -13,10 +13,10 @@ MonoBehaviour:
   m_Name: Olaf_D_10
   m_EditorClassIdentifier: 
   phaseASchemaVersion: 1
-  skillId: olaf.duel.stoke_prestige
+  skillId: olaf.preparation.stoke_prestige
   SkillName: "\uC704\uC138\uB97C \uC9C0\uD53C\uB2E4"
-  ActionType: 1
-  Color: 2
+  ActionType: 2
+  Color: 0
   BasePowerRule: 3
   BasePower: 12
   BasePowerFlatAdjustment: 0
@@ -47,9 +47,13 @@ MonoBehaviour:
     SecondaryPartMode: 0
     SecondaryDamageMultiplier: 1
     AllowBrokenSecondaryParts: 1
-  Description: "[CANONICAL_0916_CLOSURE_V1] 0916(3) canonical metadata synced.\n[TEMP_BALANCE_V1]
-    0916 \uAC15\uD6542 \uBAA9\uD45C \uBCF4\uC874. Base \uBC94\uC704/\uAE30\uBCF8\uC704\uB825\uC740
-    max-2, U1 +1, U2 +1."
+  Description: "[PENDING_CANONICAL][0922_PHASE7] 0922 \uBCC0\uACBD: \uACB0\uD22C\u2192\uAC15\uD55C
+    \uB3C4\uC0AC\uB9BC. \uADF8 \uD134 \uC774\uAE34 \uAD50\uD658\uB9C8\uB2E4 \uC0C1\uB300
+    \uCD9C\uD608 \uAD6C\uAC04\uC73C\uB85C \uC704\uC138 \uCDA9\uC804. PENDING_CANONICAL:
+    \uAD6C\uAC04\uBCC4 \uCDA9\uC804\uB7C9 \uBBF8\uC815\uC774\uBBC0\uB85C runtime
+    \uD6A8\uACFC \uBE44\uD65C\uC131.\n[CANONICAL_0916_CLOSURE_V1] 0916(3) canonical
+    metadata synced.\n[TEMP_BALANCE_V1] 0916 \uAC15\uD6542 \uBAA9\uD45C \uBCF4\uC874.
+    Base \uBC94\uC704/\uAE30\uBCF8\uC704\uB825\uC740 max-2, U1 +1, U2 +1."
   Keywords: []
   Rolls:
   - Index: 0
@@ -116,7 +120,7 @@ MonoBehaviour:
   ResolvePrestigeInCombat: 0
   OverrideCanClash: 0
   CanClashValue: 0
-  PreparationTier: 0
+  PreparationTier: 1
   ResolverType: 0
   DiceMin: 1
   DiceMax: 8
@@ -129,35 +133,7 @@ MonoBehaviour:
   ChinchiroShigoroBonus: 6
   ChinchiroHifumiPenalty: 1
   ChinchiroHifumiSelfDamage: 1
-  EffectEntries:
-  - Definition: {fileID: 11400000, guid: 86c6838c205cc354580f28fa25233d4c, type: 2}
-    Overrides:
-      OverrideStack: 0
-      Stack: 1
-      OverrideDuration: 0
-      Duration: 3
-      OverrideAmount: 0
-      Amount: 1
-      OverrideMinimum: 0
-      Minimum: 0
-      OverrideMaximum: 0
-      Maximum: 999
-      OverrideFlatValue: 0
-      FlatValue: 0
-      OverrideMultiplier: 0
-      Multiplier: 1
-      OverrideResourceKey: 0
-      ResourceKey: 
-      OverrideForceCharacterStatus: 0
-      ForceCharacterStatus: 0
-      OverrideGiveToSelectedTarget: 0
-      GiveToSelectedTarget: 0
-    UpgradeKey: temp_proxy
-    OverrideTiming: 1
-    Timing: 7
-    Conditions: []
-    RestrictToRoll: 0
-    RollNumber: 1
+  EffectEntries: []
   Effects: []
   OverrideEnergyCost: 1
   EnergyCost: 1

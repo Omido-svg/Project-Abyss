@@ -47,8 +47,9 @@ MonoBehaviour:
     SecondaryPartMode: 0
     SecondaryDamageMultiplier: 1
     AllowBrokenSecondaryParts: 1
-  Description: "[CANONICAL_0916_CLOSURE_V1] 0916(3) canonical metadata synced.\n[TEMP_BALANCE_V1]
-    \uC9C0\uC815 proxy"
+  Description: "[CANONICAL_0922_PHASE7] 0922 \uD655\uC815: \uC0AC\uC6A9\uC2DC \uC0C1\uB300
+    \uBD80\uC704 \uC9C0\uC8152\xB73.\n[CANONICAL_0916_CLOSURE_V1] 0916(3) canonical
+    metadata synced.\n[TEMP_BALANCE_V1] \uC9C0\uC815 proxy"
   Keywords: []
   Rolls: []
   ExchangeRollCount: 1
@@ -77,12 +78,14 @@ MonoBehaviour:
   ChinchiroHifumiPenalty: 1
   ChinchiroHifumiSelfDamage: 1
   EffectEntries:
-  - Definition: {fileID: 11400000, guid: 29eb5aceecd4a4944b172b251a384cd0, type: 2}
+  - Definition: {fileID: 11400000, guid: d311837eab656ac40bc0575deb6e0ddd, type: 2}
     Overrides:
       OverrideStack: 0
       Stack: 1
       OverrideDuration: 0
       Duration: 3
+      OverrideInfiniteDuration: 0
+      InfiniteDuration: 0
       OverrideAmount: 0
       Amount: 1
       OverrideMinimum: 0

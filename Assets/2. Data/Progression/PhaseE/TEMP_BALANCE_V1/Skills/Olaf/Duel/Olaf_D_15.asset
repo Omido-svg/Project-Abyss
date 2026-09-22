@@ -47,9 +47,12 @@ MonoBehaviour:
     SecondaryPartMode: 0
     SecondaryDamageMultiplier: 1
     AllowBrokenSecondaryParts: 1
-  Description: "[CANONICAL_0916_CLOSURE_V1] 0916(3) canonical metadata synced.\n[TEMP_BALANCE_V1]
-    0916 \uAC15\uD6542 \uBAA9\uD45C \uBCF4\uC874. Base \uBC94\uC704/\uAE30\uBCF8\uC704\uB825\uC740
-    max-2, U1 +1, U2 +1."
+  Description: "[CANONICAL_0922_PHASE7] 0922 \uBCC0\uACBD: \uC0C1\uB300 \uADE0\uC5F4\uC774
+    \uC544\uB2C8\uB77C \uC790\uAE30 \uCD9C\uD608+4 \u2192 R2 \uB9E4\uCE6D\uC2DC \uC790\uAE30
+    \uCD9C\uD608 \uAD6C\uAC04\uC73C\uB85C \uB2E4\uC74C \uD134 \uC790\uAE30 \uD7981/2/3\xB73.\n[CANONICAL_0916_CLOSURE_V1]
+    0916(3) canonical metadata synced.\n[TEMP_BALANCE_V1] 0916 \uAC15\uD6542 \uBAA9\uD45C
+    \uBCF4\uC874. Base \uBC94\uC704/\uAE30\uBCF8\uC704\uB825\uC740 max-2, U1 +1,
+    U2 +1."
   Keywords: []
   Rolls:
   - Index: 0
@@ -130,12 +133,14 @@ MonoBehaviour:
   ChinchiroHifumiPenalty: 1
   ChinchiroHifumiSelfDamage: 1
   EffectEntries:
-  - Definition: {fileID: 11400000, guid: 8a00dc2820594c74fa875c99466dea95, type: 2}
+  - Definition: {fileID: 11400000, guid: 01f8c73ada125f44dab770b6be432c50, type: 2}
     Overrides:
       OverrideStack: 0
       Stack: 1
       OverrideDuration: 0
       Duration: 3
+      OverrideInfiniteDuration: 0
+      InfiniteDuration: 0
       OverrideAmount: 0
       Amount: 1
       OverrideMinimum: 0
@@ -152,12 +157,42 @@ MonoBehaviour:
       ForceCharacterStatus: 0
       OverrideGiveToSelectedTarget: 0
       GiveToSelectedTarget: 0
-    UpgradeKey: temp_proxy
+    UpgradeKey: 
     OverrideTiming: 1
-    Timing: 7
+    Timing: 0
     Conditions: []
     RestrictToRoll: 0
     RollNumber: 1
+  - Definition: {fileID: 11400000, guid: 3bcf723a79ce64147ab0b6ed76c4ebe1, type: 2}
+    Overrides:
+      OverrideStack: 0
+      Stack: 1
+      OverrideDuration: 0
+      Duration: 3
+      OverrideInfiniteDuration: 0
+      InfiniteDuration: 0
+      OverrideAmount: 0
+      Amount: 1
+      OverrideMinimum: 0
+      Minimum: 0
+      OverrideMaximum: 0
+      Maximum: 999
+      OverrideFlatValue: 0
+      FlatValue: 0
+      OverrideMultiplier: 0
+      Multiplier: 1
+      OverrideResourceKey: 0
+      ResourceKey: 
+      OverrideForceCharacterStatus: 0
+      ForceCharacterStatus: 0
+      OverrideGiveToSelectedTarget: 0
+      GiveToSelectedTarget: 0
+    UpgradeKey: 
+    OverrideTiming: 1
+    Timing: 31
+    Conditions: []
+    RestrictToRoll: 1
+    RollNumber: 2
   Effects: []
   OverrideEnergyCost: 1
   EnergyCost: 2

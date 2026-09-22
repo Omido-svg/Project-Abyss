@@ -47,7 +47,8 @@ MonoBehaviour:
     SecondaryPartMode: 0
     SecondaryDamageMultiplier: 1
     AllowBrokenSecondaryParts: 1
-  Description: "[0917_TEMP_DATA] 0917 source=provisional-data. \uBBF8\uC815/\uC7A0\uC815
+  Description: "[CANONICAL_0922_PHASE7] 0922 \uD655\uC815: \uC0AC\uC6A9\uC2DC \uBC29\uC5B4\uB3C4
+    +10.\n[0917_TEMP_DATA] 0917 source=provisional-data. \uBBF8\uC815/\uC7A0\uC815
     \uBC94\uC704\uB294 Runtime \uC0C1\uC218\uAC00 \uC544\uB2C8\uB77C SkillDefinition
     \uB370\uC774\uD130\uAC00 \uC18C\uC720\uD55C\uB2E4.\n0916(3) \xA74.3: \uC704\uCE58\uBCC4
     \uD3C9\uADE0\uC758 \uD3C9\uADE0 = \uAE30\uBCF8\uC704\uB825 + 4.5.\n[CANONICAL_0916_CLOSURE_V1]
@@ -134,12 +135,14 @@ MonoBehaviour:
   ChinchiroHifumiPenalty: 1
   ChinchiroHifumiSelfDamage: 1
   EffectEntries:
-  - Definition: {fileID: 11400000, guid: 09109d3ed151c6648b490ec3cc3d4f4b, type: 2}
+  - Definition: {fileID: 11400000, guid: 3317d3bd875a5c14fa920742740a0118, type: 2}
     Overrides:
       OverrideStack: 0
       Stack: 1
       OverrideDuration: 0
       Duration: 3
+      OverrideInfiniteDuration: 0
+      InfiniteDuration: 0
       OverrideAmount: 0
       Amount: 1
       OverrideMinimum: 0
@@ -156,9 +159,9 @@ MonoBehaviour:
       ForceCharacterStatus: 0
       OverrideGiveToSelectedTarget: 0
       GiveToSelectedTarget: 0
-    UpgradeKey: temp_proxy
+    UpgradeKey: 
     OverrideTiming: 1
-    Timing: 7
+    Timing: 0
     Conditions: []
     RestrictToRoll: 0
     RollNumber: 1

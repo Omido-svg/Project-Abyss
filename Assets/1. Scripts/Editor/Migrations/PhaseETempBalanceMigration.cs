@@ -1,4 +1,4 @@
-#if UNITY_EDITOR
+﻿#if UNITY_EDITOR
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -392,7 +392,7 @@ public static class PhaseETempBalanceMigration
     }
 
     // ---------------------------------------------------------------------
-    // O-02 Olaf 16 / 21 / 9 / 3
+    // O-02 Olaf 16 / 20 / 10 / 3 (0922 Phase7 StokePrestige moved to Preparation)
     // ---------------------------------------------------------------------
 
     private static bool GenerateOlaf(
@@ -421,6 +421,7 @@ public static class PhaseETempBalanceMigration
             S("olaf.preparation.calm_madness", "광기를 가라앉히다", ActionType.Preparation, SkillColor.Blue, 1, PreparationTier.Strong, TempBalanceSkillProxyOperation.GainBlock, 8, 12, "광기 소비 정식 hook 전 방어 proxy"),
             S("olaf.preparation.erase_wound", "상처를 지우다", ActionType.Preparation, SkillColor.Blue, 1, PreparationTier.Strong, TempBalanceSkillProxyOperation.GainBlock, 8, 12, "회복 정식 hook 전 방어 proxy"),
             S("olaf.preparation.devour_stagger", "흐트러짐을 삼키다", ActionType.Preparation, SkillColor.Blue, 1, PreparationTier.Strong, TempBalanceSkillProxyOperation.GainPrestige, 2, 4, "흐트러짐 교환 정식 hook 전 위세 proxy"),
+            S(OlafSkillIds.StokePrestige, "위세를 지피다", ActionType.Preparation, SkillColor.Unset, 1, PreparationTier.Strong, TempBalanceSkillProxyOperation.GainBlock, 0, 0, "0922 Phase7: 도사림으로 이동. 구간별 위세 충전량은 PENDING_CANONICAL"),
             S("olaf.preparation.last_resistance", "최후의 저항", ActionType.Preparation, SkillColor.Red, 2, PreparationTier.Strong, TempBalanceSkillProxyOperation.OlafMadness, 1, 3, "위기형 TEMP rider")
         };
         for (int i = 0; i < prepRows.Length; i++)
@@ -482,7 +483,6 @@ public static class PhaseETempBalanceMigration
             D("olaf.duel.self_cut","제살깎기",ActionType.Duel,SkillColor.Blue,2,16,new[]{17,18},new[]{24,23},false,false,TempBalanceSkillProxyOperation.OlafMadness),
             D("olaf.duel.no_retreat","물러서지않기",ActionType.Duel,SkillColor.Red,1,14,new[]{12,13},new[]{25,24},true,false,TempBalanceSkillProxyOperation.TargetBleeding),
             D("olaf.duel.head_on","정면승부",ActionType.Duel,SkillColor.Red,0,15,new[]{16,17},new[]{23,22},true,false,TempBalanceSkillProxyOperation.TargetBleeding),
-            D("olaf.duel.stoke_prestige","위세를 지피다",ActionType.Duel,SkillColor.Blue,1,14,new[]{15,16},new[]{22,21},false,false,TempBalanceSkillProxyOperation.GainPrestige),
             D("olaf.duel.fortify","굳히기",ActionType.Duel,SkillColor.Blue,2,15,new[]{16,17,16},new[]{23,22,23},false,false,TempBalanceSkillProxyOperation.GainBlock),
             D("olaf.duel.protect_self","몸을 사리다",ActionType.Duel,SkillColor.Blue,2,16,new[]{17,18},new[]{24,23},false,false,TempBalanceSkillProxyOperation.GainBlock),
             D("olaf.duel.catch_off_guard","허를 찌르다",ActionType.Duel,SkillColor.Red,0,12,new[]{13,14},new[]{20,19},true,false,TempBalanceSkillProxyOperation.TargetBleeding),

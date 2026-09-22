@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
 
 public class ClashManager
@@ -288,6 +288,11 @@ public class ClashManager
                 ref firstRemaining,
                 ref secondRemaining);
 
+            ApplyExchangeRepeatRules(
+                exchange,
+                ref firstRemaining,
+                ref secondRemaining);
+
             exchangeIndex++;
         }
 
@@ -434,6 +439,49 @@ public class ClashManager
             .RaiseClashResolved(result);
 
         return result;
+    }
+
+    private static void ApplyExchangeRepeatRules(
+        ClashExchangeResult exchange,
+        ref int firstRemaining,
+        ref int secondRemaining)
+    {
+        if (exchange == null || exchange.WasCancelled)
+            return;
+
+        BattleAction[] actions =
+        {
+            exchange.FirstAction,
+            exchange.SecondAction
+        };
+
+        HashSet<IExchangeRepeatRule> visited = new();
+
+        foreach (BattleAction action in actions)
+        {
+            IReadOnlyList<CombatMechanic> mechanics =
+                action?.Owner?.Mechanics;
+
+            if (mechanics == null)
+                continue;
+
+            foreach (CombatMechanic mechanic in mechanics)
+            {
+                if (mechanic is not IExchangeRepeatRule rule ||
+                    !visited.Add(rule))
+                {
+                    continue;
+                }
+
+                rule.ModifyRemainingRollCountsAfterExchange(
+                    exchange,
+                    ref firstRemaining,
+                    ref secondRemaining);
+            }
+        }
+
+        firstRemaining = Mathf.Max(0, firstRemaining);
+        secondRemaining = Mathf.Max(0, secondRemaining);
     }
 
     private static void ApplyExchangeContinuationRules(

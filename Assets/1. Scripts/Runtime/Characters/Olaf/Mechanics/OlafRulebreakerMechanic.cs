@@ -3,18 +3,23 @@ using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>
-/// 올라프 특수 카드가 전용 하드코딩 분기를 늘리지 않고
-/// 공통 전투 계약 위에서 동작하도록 하는 런타임 해석기.
-/// 0917: "전부 되갚다"의 열세 이하(B<=-30) +4를 데이터 훅으로 추가.
+/// 올라프 특수 카드가 공통 전투 계약 위에서 동작하도록 하는 런타임 해석기.
+/// 0922 Phase 7: 정면승부 10% 자해, 피의 맹세 3구간, 명예로운 전투 반복을 포함한다.
 /// </summary>
-public sealed class OlafRulebreakerMechanic : CombatMechanic
+public sealed class OlafRulebreakerMechanic :
+    CombatMechanic,
+    IExchangeRepeatRule
 {
     public const int InfiniteAttackSpeed = 1_000_000;
 
     private readonly Dictionary<string, int> committedUses =
         new Dictionary<string, int>(StringComparer.Ordinal);
 
+    private readonly Dictionary<long, int> bloodOathTierByAction =
+        new Dictionary<long, int>();
+
     private bool infiniteAttackSpeedThisTurn;
+    private bool honorableFightPartlessPendingLogged;
 
     public override string MechanicName => "Olaf Rulebreakers";
     public bool HasInfiniteAttackSpeedThisTurn => infiniteAttackSpeedThisTurn;
@@ -25,12 +30,24 @@ public sealed class OlafRulebreakerMechanic : CombatMechanic
             () => battleEvent.OnTurnEnd += OnTurnEnd,
             () => battleEvent.OnTurnEnd -= OnTurnEnd,
             "OnTurnEnd");
+
+        SubscribeToBattleEvent(
+            () => battleEvent.OnExchangeResolved += OnExchangeResolved,
+            () => battleEvent.OnExchangeResolved -= OnExchangeResolved,
+            "OnExchangeResolved");
+
+        SubscribeToBattleEvent(
+            () => battleEvent.OnActionEnd += OnActionEnd,
+            () => battleEvent.OnActionEnd -= OnActionEnd,
+            "OnActionEnd");
     }
 
     public override void OnUnregister()
     {
         committedUses.Clear();
+        bloodOathTierByAction.Clear();
         infiniteAttackSpeedThisTurn = false;
+        honorableFightPartlessPendingLogged = false;
         ClearSuppressedSlots();
     }
 
@@ -126,8 +143,6 @@ public sealed class OlafRulebreakerMechanic : CombatMechanic
                 rule.CurrentLastStandPowerBonus;
         }
 
-        // 0917 "전부 되갚다":
-        // B<=-30 = 열세(Disadvantage) 또는 짓눌림(LastStand), 전 굴림 +4.
         if (rule.ApplyCurrentDisadvantageOrWorsePowerBonus &&
             (currentBand == MomentumState.Disadvantage ||
              currentBand == MomentumState.LastStand))
@@ -166,6 +181,293 @@ public sealed class OlafRulebreakerMechanic : CombatMechanic
                skill != null &&
                (skill.ActionType == ActionType.NormalAttack ||
                 skill.ActionType == ActionType.Duel);
+    }
+
+    /// <summary>
+    /// 0922 「피의 맹세」 사용시 자기 출혈을 전량 소비하고 그 직전 수치로 3구간을 확정한다.
+    /// 0=0~4, 1=5~9, 2=10+.
+    /// </summary>
+    public int PrepareBloodOathDuel(BattleAction action)
+    {
+        if (action?.Owner != owner)
+            return 0;
+
+        int consumed = ConsumeAllOwnerBleeding();
+        int tier = consumed >= 10 ? 2 : consumed >= 5 ? 1 : 0;
+
+        if (action.ActionId > 0)
+            bloodOathTierByAction[action.ActionId] = tier;
+
+        switch (tier)
+        {
+            case 2:
+                action.RulebreakerFlatPowerBonus += 8;
+                action.PartBreakModeOverride = PartBreakMode.IgnoreWeakenedPrerequisite;
+                break;
+
+            case 1:
+                action.RulebreakerFlatPowerBonus += 4;
+                action.PartBreakModeOverride = PartBreakMode.WeakenedOnly;
+                ApplyOwnerNumericStatus(StatusEffectId.Regeneration, 4, 3, action);
+                break;
+
+            default:
+                action.PartBreakModeOverride = PartBreakMode.None;
+                break;
+        }
+
+        return tier;
+    }
+
+    public void ResolveBloodOathDuelWin(
+        BattleAction action,
+        int rollNumber)
+    {
+        if (action?.Owner != owner || action.ActionId <= 0 || rollNumber <= 0)
+            return;
+
+        if (!bloodOathTierByAction.TryGetValue(action.ActionId, out int tier) || tier <= 0)
+            return;
+
+        if (rollNumber == 1)
+            AddBleeding(action.Target, action.TargetPart, 3, action);
+
+        if (tier >= 2 && rollNumber == 2)
+        {
+            AddBleeding(action.Target, action.TargetPart, 3, action);
+            owner.AddEnergy(1, CombatResourceChangeReason.SkillEffect, action, action.Skill);
+        }
+    }
+
+    public int GetOwnerBleedingTotal()
+    {
+        if (owner == null)
+            return 0;
+
+        int total = owner.GetStatus<Bleeding>()?.Stack ?? 0;
+        if (owner.BodyParts == null)
+            return Mathf.Max(0, total);
+
+        foreach (BodyPart part in owner.BodyParts)
+        {
+            if (part == null)
+                continue;
+
+            total += owner.GetPartStatus<Bleeding>(part)?.Stack ?? 0;
+        }
+
+        return Mathf.Max(0, total);
+    }
+
+    public int GetBleeding(Character target, BodyPart part)
+    {
+        if (target == null)
+            return 0;
+
+        CombatStatusAnchor anchor = CombatStatusAnchor.Resolve(target, part);
+        if (!anchor.IsValid)
+            return 0;
+
+        Bleeding bleeding = anchor.IsPartAnchor
+            ? target.GetPartStatus<Bleeding>(anchor.Part)
+            : target.GetStatus<Bleeding>();
+
+        return Mathf.Max(0, bleeding?.Stack ?? 0);
+    }
+
+    public bool TryConsumeBleeding(
+        Character target,
+        BodyPart part,
+        int amount)
+    {
+        int safe = Mathf.Max(0, amount);
+        if (safe <= 0 || target == null)
+            return false;
+
+        CombatStatusAnchor anchor = CombatStatusAnchor.Resolve(target, part);
+        if (!anchor.IsValid)
+            return false;
+
+        Bleeding bleeding = anchor.IsPartAnchor
+            ? target.GetPartStatus<Bleeding>(anchor.Part)
+            : target.GetStatus<Bleeding>();
+
+        if (bleeding == null || bleeding.Stack < safe)
+            return false;
+
+        int consumed = bleeding.ConsumeStacks(safe);
+        if (consumed != safe)
+            return false;
+
+        if (bleeding.Stack <= 0)
+        {
+            if (anchor.IsPartAnchor)
+                target.RemovePartStatus(anchor.Part, bleeding, StatusEffectRemoveReason.Manual);
+            else
+                target.RemoveStatus(bleeding, StatusEffectRemoveReason.Manual);
+        }
+
+        return true;
+    }
+
+    public void AddBleeding(
+        Character target,
+        BodyPart part,
+        int amount,
+        BattleAction sourceAction = null)
+    {
+        int safe = Mathf.Max(0, amount);
+        if (target == null || safe <= 0)
+            return;
+
+        CombatStatusAnchor anchor = CombatStatusAnchor.Resolve(target, part);
+        if (!anchor.IsValid)
+            return;
+
+        EffectRequest request = anchor.IsPartAnchor
+            ? EffectRequest.BodyPartStatus(
+                owner,
+                target,
+                anchor.Part,
+                new Bleeding(safe),
+                sourceAction,
+                sourceAction?.CurrentRollIndex ?? -1)
+            : EffectRequest.CharacterStatus(
+                owner,
+                target,
+                new Bleeding(safe),
+                sourceAction,
+                sourceAction?.CurrentRollIndex ?? -1);
+
+        if (anchor.IsPartAnchor)
+            battleContext?.EffectResolver?.ApplyBodyPartStatus(request);
+        else
+            battleContext?.EffectResolver?.ApplyCharacterStatus(request);
+    }
+
+    public static int CalculateHeadOnSelfDamage(int dealtDamage)
+    {
+        return Mathf.Max(0, dealtDamage) / 10;
+    }
+
+    void IExchangeRepeatRule.ModifyRemainingRollCountsAfterExchange(
+        ClashExchangeResult exchange,
+        ref int firstRemaining,
+        ref int secondRemaining)
+    {
+        if (exchange == null ||
+            exchange.WasCancelled ||
+            exchange.FirstAction == null ||
+            exchange.SecondAction == null)
+        {
+            return;
+        }
+
+        BattleAction myAction =
+            exchange.FirstAction.Owner == owner
+                ? exchange.FirstAction
+                : exchange.SecondAction.Owner == owner
+                    ? exchange.SecondAction
+                    : null;
+
+        if (myAction?.Skill?.Definition?.SkillId != OlafSkillIds.HonorableFight)
+            return;
+
+        BattleAction opponent =
+            myAction == exchange.FirstAction
+                ? exchange.SecondAction
+                : exchange.FirstAction;
+
+        if (opponent?.Skill?.Definition?.SkillId != OlafSkillIds.HonorableFight)
+            return;
+
+        // 부위 없는 일반몹 종료조건은 0922 정본에서 미정이다. 임의 반복 규칙을 발명하지 않는다.
+        if (myAction.TargetPart == null || opponent.TargetPart == null)
+        {
+            if (!honorableFightPartlessPendingLogged)
+            {
+                honorableFightPartlessPendingLogged = true;
+                Debug.LogWarning(
+                    "[PENDING_CANONICAL][0922][Olaf/HonorableFight] " +
+                    "부위 없는 대상의 반복 종료조건이 미정이므로 일반 1교환으로 종료합니다.");
+            }
+            return;
+        }
+
+        bool eitherWeakened =
+            myAction.TargetPart.IsWeakened ||
+            myAction.TargetPart.IsBroken ||
+            opponent.TargetPart.IsWeakened ||
+            opponent.TargetPart.IsBroken;
+
+        if (eitherWeakened)
+            return;
+
+        // 기술적 무한루프 안전망. gameplay 종료조건을 대체하지 않는다.
+        if (exchange.ExchangeIndex >= 255)
+        {
+            Debug.LogError("[Olaf][HonorableFight] 256교환 안전망으로 반복을 중단합니다.");
+            return;
+        }
+
+        firstRemaining = Mathf.Max(1, firstRemaining);
+        secondRemaining = Mathf.Max(1, secondRemaining);
+    }
+
+    private void OnExchangeResolved(ClashExchangeResult exchange)
+    {
+        if (exchange == null || exchange.WasCancelled || exchange.IsTie)
+            return;
+
+        BattleAction myAction =
+            exchange.FirstAction?.Owner == owner
+                ? exchange.FirstAction
+                : exchange.SecondAction?.Owner == owner
+                    ? exchange.SecondAction
+                    : null;
+
+        if (myAction == null || exchange.WinnerAction != myAction)
+            return;
+
+        if (!exchange.IsOneSided &&
+            exchange.IsDuelExchange &&
+            myAction.Skill?.Definition?.SkillId == OlafSkillIds.HeadOn)
+        {
+            int selfDamage = CalculateHeadOnSelfDamage(exchange.TotalDamage);
+            if (selfDamage > 0)
+            {
+                DamageRequest request = DamageRequest.SelfCost(owner, selfDamage);
+                request.SourceAction = myAction;
+                battleContext?.ResolveDamageManager()?.ApplyDamageContext(request);
+            }
+        }
+    }
+
+    private void OnActionEnd(BattleAction action)
+    {
+        if (action?.ActionId > 0)
+            bloodOathTierByAction.Remove(action.ActionId);
+    }
+
+    private void ApplyOwnerNumericStatus(
+        StatusEffectId id,
+        int value,
+        int duration,
+        BattleAction sourceAction)
+    {
+        StatusEffect status =
+            StatusEffectFactory.CreateCanonical0922(id, value, duration);
+
+        if (status == null || owner == null)
+            return;
+
+        battleContext?.EffectResolver?.ApplyCharacterStatus(
+            EffectRequest.CharacterStatus(
+                owner,
+                owner,
+                status,
+                sourceAction,
+                sourceAction?.CurrentRollIndex ?? -1));
     }
 
     private void ActivateInfiniteAttackSpeed()

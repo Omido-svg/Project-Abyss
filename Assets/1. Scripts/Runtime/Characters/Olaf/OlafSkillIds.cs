@@ -1,4 +1,4 @@
-/// <summary>
+﻿/// <summary>
 /// 0916(3) canonical Olaf skill ids.
 /// Legacy constant names are retained as aliases so Phase-D mechanics/tests keep compiling,
 /// but all aliases resolve to the current canonical ids.
@@ -33,7 +33,6 @@ public static class OlafSkillIds
     public const string SelfCut = "olaf.duel.self_cut";
     public const string NoRetreat = "olaf.duel.no_retreat";
     public const string HeadOn = "olaf.duel.head_on";
-    public const string StokePrestige = "olaf.duel.stoke_prestige";
     public const string Fortify = "olaf.duel.fortify";
     public const string ProtectSelf = "olaf.duel.protect_self";
     public const string CatchOffGuard = "olaf.duel.catch_off_guard";
@@ -55,6 +54,7 @@ public static class OlafSkillIds
     public const string CalmMadness = "olaf.preparation.calm_madness";
     public const string EraseWound = "olaf.preparation.erase_wound";
     public const string DevourStagger = "olaf.preparation.devour_stagger";
+    public const string StokePrestige = "olaf.preparation.stoke_prestige";
     public const string LastResistance = "olaf.preparation.last_resistance";
 
     // Prestige 3
@@ -81,7 +81,7 @@ public static class OlafSkillIds
     public static readonly string[] CanonicalDuel =
     {
         Standard, Tenacious, SingleCut, MadBite, BloodCharge, HoldOn,
-        SelfCut, NoRetreat, HeadOn, StokePrestige, Fortify, ProtectSelf,
+        SelfCut, NoRetreat, HeadOn, Fortify, ProtectSelf,
         CatchOffGuard, AllIn, BloodPrice, AbsorbBlood, WhateverComes,
         HonorableFight, BloodOathDuel, PaybackAll, SingleCombat
     };
@@ -89,7 +89,7 @@ public static class OlafSkillIds
     public static readonly string[] CanonicalPreparation =
     {
         Crouch, Glare, Bloto, BloodOathPreparation, BreathBoughtWithBlood,
-        CalmMadness, EraseWound, DevourStagger, LastResistance
+        CalmMadness, EraseWound, DevourStagger, StokePrestige, LastResistance
     };
 
     public static readonly string[] CanonicalPrestige =

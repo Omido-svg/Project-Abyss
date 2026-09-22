@@ -25,14 +25,14 @@ MonoBehaviour:
   BreakMode: 1
   GainPrestige: 1
   Rulebreaker:
-    Enabled: 0
+    Enabled: 1
     EnergyCostReductionPerCommittedUse: 0
     MinimumEnergyCost: 0
     MirrorThisSkillToOpponentOnDuelMatch: 0
     IgnoreOwnerRollModifiers: 0
     ExplodeBleedingOncePerAction: 0
     BleedingExplosionMultiplier: 0
-    SuppressFriendlyOneSidedHitsOnSameTargetSlot: 0
+    SuppressFriendlyOneSidedHitsOnSameTargetSlot: 1
     ConsumeAllOwnerBleedingOnExecute: 0
     BreakAuthorityBleedingThreshold: 0
     IgnoreWeakenPrerequisiteBleedingThreshold: 0
@@ -47,9 +47,12 @@ MonoBehaviour:
     SecondaryPartMode: 0
     SecondaryDamageMultiplier: 1
     AllowBrokenSecondaryParts: 1
-  Description: "[CANONICAL_0916_CLOSURE_V1] 0916(3) canonical metadata synced.\n[TEMP_BALANCE_V1]
-    0916 \uAC15\uD6542 \uBAA9\uD45C \uBCF4\uC874. Base \uBC94\uC704/\uAE30\uBCF8\uC704\uB825\uC740
-    max-2, U1 +1, U2 +1."
+  Description: "[CANONICAL_0922_PHASE7] 0922 \uD655\uC815: \uAC19\uC740 \uC0C1\uB300
+    \uC2AC\uB86F\uC744 \uB178\uB9B0 \uB2E4\uB978 \uB0B4 \uC2AC\uB86F \uC77C\uBC29\uD0C0\uACA9
+    \uD3EC\uAE30 + \uC2B9\uB9AC\uC2DC \uCD9C\uD6081(\uAE30\uC874 \uD6A8\uACFC \uC720\uC9C0).\n[CANONICAL_0916_CLOSURE_V1]
+    0916(3) canonical metadata synced.\n[TEMP_BALANCE_V1] 0916 \uAC15\uD6542 \uBAA9\uD45C
+    \uBCF4\uC874. Base \uBC94\uC704/\uAE30\uBCF8\uC704\uB825\uC740 max-2, U1 +1,
+    U2 +1."
   Keywords: []
   Rolls:
   - Index: 0
@@ -162,6 +165,8 @@ MonoBehaviour:
       Stack: 1
       OverrideDuration: 0
       Duration: 3
+      OverrideInfiniteDuration: 0
+      InfiniteDuration: 0
       OverrideAmount: 0
       Amount: 1
       OverrideMinimum: 0

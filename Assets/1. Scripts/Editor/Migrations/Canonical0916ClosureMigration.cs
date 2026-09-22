@@ -1,4 +1,4 @@
-#if UNITY_EDITOR
+﻿#if UNITY_EDITOR
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -153,7 +153,7 @@ public static class Canonical0916ClosureMigration
         M("제살깎기", OlafSkillIds.SelfCut, ActionType.Duel, SkillColor.Blue, 2),
         M("물러서지않기", OlafSkillIds.NoRetreat, ActionType.Duel, SkillColor.Red, 1),
         M("정면승부", OlafSkillIds.HeadOn, ActionType.Duel, SkillColor.Red, 0),
-        M("위세를 지피다", OlafSkillIds.StokePrestige, ActionType.Duel, SkillColor.Blue, 1),
+        M("위세를 지피다", OlafSkillIds.StokePrestige, ActionType.Preparation, SkillColor.Unset, 1),
         M("굳히기", OlafSkillIds.Fortify, ActionType.Duel, SkillColor.Blue, 2),
         M("몸을 사리다", OlafSkillIds.ProtectSelf, ActionType.Duel, SkillColor.Blue, 2),
         M("허를 찌르다", OlafSkillIds.CatchOffGuard, ActionType.Duel, SkillColor.Red, 0),
