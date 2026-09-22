@@ -17,11 +17,12 @@ MonoBehaviour:
   Emotion: 3
   Tier: 3
   OfferWeight: 1
-  Description: "\uBCF4\uC720 \uACE8\uB4DC 500\uB2F9 \uD798 +1 (\uC0C1\uD55C 1)"
+  Description: "\uBCF4\uC720 \uACE8\uB4DC\uAC00 500 \uC774\uC0C1\uC778 \uB3D9\uC548
+    \uACF3\uAC04 \uCD9C\uCC98\uC758 \uD798 1\xB7\u221E. 500 \uBBF8\uB9CC\uC774\uBA74
+    \uADF8 Entry\uB9CC \uC81C\uAC70\uD558\uBA70 \uB2E4\uB978 \uD798\uC740 \uAC74\uB4DC\uB9AC\uC9C0
+    \uC54A\uB294\uB2E4."
   DesignStatus: "\uD655\uC815"
   RuntimeReadiness: 0
-  RuntimeNote: "[TEMP_BALANCE_V1] \uC815\uC2DD \uC804\uC6A9 hook \uD655\uC815 \uC804
-    flat proxy \uC5F0\uACB0. \uAE30\uC874 \uC774\uB984/\uC124\uBA85/DesignStatus\uB294
-    0916 \uC6D0\uBCF8 \uBCF4\uC874."
+  RuntimeNote: '[0922 Phase10] Canonical runtime effect connected.'
   Effects:
-  - {fileID: 11400000, guid: 0160ca765435ed94eab0c4aa603b9217, type: 2}
+  - {fileID: 11400000, guid: ff29740174dfb9e4f9578ae1dd3cdfdf, type: 2}

@@ -17,13 +17,12 @@ MonoBehaviour:
   Emotion: 2
   Tier: 3
   OfferWeight: 1
-  Description: "\uC704\uC138\uB97C \uBABB \uC4F0\uACE0 \uB3D9\uACBD 1 \xB7 2\uD2F0\uC5B4\uB3C4
-    \uC5C6\uB294 \uAC83\uC73C\uB85C \uCDE8\uAE09 \xB7 \uB300\uC2E0 \uD798 +1 \xB7
-    \uC2E0\uC18D +1 \uC804\uD22C \uB3D9\uC548 \uC601\uAD6C"
+  Description: "\uC704\uC138\uB97C \uB354 \uC774\uC0C1 \uC0AC\uC6A9\uD558\uC9C0 \uBABB\uD558\uACE0
+    \uD798 1\xB7\u221E \xB7 \uC2E0\uC18D 1\xB7\u221E\uB97C \uC2E4\uC81C \uACF5\uC6A9
+    \uC0C1\uD0DC Entry\uB85C \uC5BB\uB294\uB2E4. \uC790\uC5F0 \uAC10\uC1E0\uD558\uC9C0
+    \uC54A\uB294\uB2E4."
   DesignStatus: "\uD655\uC815"
   RuntimeReadiness: 0
-  RuntimeNote: "[TEMP_BALANCE_V1] \uC815\uC2DD \uC804\uC6A9 hook \uD655\uC815 \uC804
-    flat proxy \uC5F0\uACB0. \uAE30\uC874 \uC774\uB984/\uC124\uBA85/DesignStatus\uB294
-    0916 \uC6D0\uBCF8 \uBCF4\uC874."
+  RuntimeNote: '[0922 Phase10] Canonical runtime effect connected.'
   Effects:
-  - {fileID: 11400000, guid: a3471a2ba15cea34babdfc2bcdabc234, type: 2}
+  - {fileID: 11400000, guid: 490e896db427b1c4db7f0bd555a71f72, type: 2}

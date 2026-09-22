@@ -17,12 +17,11 @@ MonoBehaviour:
   Emotion: 0
   Tier: 3
   OfferWeight: 1
-  Description: "\uD798 +3 \u2190 3\uD134 \uB4A4\uBD80\uD130 \uB9E4 \uD134 \uC57D\uD654\uB418\uC9C0
-    \uC54A\uC740 \uBD80\uC704 \uC804\uBD80 \uC57D\uD654"
-  DesignStatus: "\uC784\uC2DC(+3)"
-  RuntimeReadiness: 0
-  RuntimeNote: "[TEMP_BALANCE_V1] \uC815\uC2DD \uC804\uC6A9 hook \uD655\uC815 \uC804
-    flat proxy \uC5F0\uACB0. \uAE30\uC874 \uC774\uB984/\uC124\uBA85/DesignStatus\uB294
-    0916 \uC6D0\uBCF8 \uBCF4\uC874."
-  Effects:
-  - {fileID: 11400000, guid: 3d2357396c8c5b54eb95c67aab766927, type: 2}
+  Description: "\uD798 N\xB7\u221E (N \uBBF8\uC815). 3\uD134 \uB4A4\uBD80\uD130 \uB9E4
+    \uD134 \uC57D\uD654\uB418\uC9C0 \uC54A\uC740 \uBD80\uC704 \uC804\uBD80 \uC57D\uD654.
+    \uBBF8\uC815 \uC218\uCE58\uB294 \uB7F0\uD0C0\uC784 \uC0DD\uC131\uD558\uC9C0 \uC54A\uC74C."
+  DesignStatus: "(\uBBF8\uC815 \uD3EC\uD568)"
+  RuntimeReadiness: 2
+  RuntimeNote: "[0922 Phase10] Strength N \uBBF8\uC815. TEMP proxy \uC81C\uAC70 /
+    PENDING_CANONICAL."
+  Effects: []
