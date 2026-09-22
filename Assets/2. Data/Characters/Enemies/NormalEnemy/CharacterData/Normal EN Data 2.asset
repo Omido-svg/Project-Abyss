@@ -22,6 +22,8 @@ MonoBehaviour:
   SingleHpMax: 1
   maxPrestige: 100
   maxEnergy: 3
+  TurnStartEnergyPolicy: 0
+  TurnStartEnergyAmount: 1
   ActionSlots: []
   CombatLoadout: {fileID: 11400000, guid: 6f7e0af57f2b4b18a80b9a8f6f36d9e1, type: 2}
   BossPhases: []
@@ -29,7 +31,12 @@ MonoBehaviour:
     CutMultiplier: 1
     BluntMultiplier: 1
     PierceMultiplier: 1
+  StaggerResistances:
+    CutMultiplier: 1
+    BluntMultiplier: 1
+    PierceMultiplier: 1
   EnableStaggerGauge: 1
+  OverrideMaxStaggerGauge: 1
   MaxStaggerGauge: 100
   StaggerDamageRatio: 1
   minSpeed: 3

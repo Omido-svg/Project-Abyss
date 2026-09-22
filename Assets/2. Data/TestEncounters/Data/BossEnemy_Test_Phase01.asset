@@ -12,8 +12,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: df35dd2545060294fb3cd4a249d36769, type: 3}
   m_Name: BossEnemy_Test_Phase01
   m_EditorClassIdentifier: 
-  PhaseId: STAGE1_CANONICAL
-  DisplayName: Stage 1 Canonical
+  PhaseId: STAGE1_CANONICAL_0922
+  DisplayName: Stage 1 Canonical 0922
   EnterAtOrBelowHpRate: 1
   MinimumTurn: 1
   RequireMomentumAtOrBelow: 0
@@ -31,7 +31,7 @@ MonoBehaviour:
     FixedSkill: {fileID: 11400000, guid: 3c50dff3eae2d2d449dbd6ca881c5a31, type: 2}
     InsufficientEnergyFallbackSkill: {fileID: 0}
     TargetingPolicy: 1
-    AllowedActionTypes: 0100000000000000
+    AllowedActionTypes: 01000000
   - SlotId: A_02
     DisplayName: A
     Enabled: 1
@@ -44,7 +44,7 @@ MonoBehaviour:
     FixedSkill: {fileID: 11400000, guid: 3c50dff3eae2d2d449dbd6ca881c5a31, type: 2}
     InsufficientEnergyFallbackSkill: {fileID: 0}
     TargetingPolicy: 1
-    AllowedActionTypes: 0100000000000000
+    AllowedActionTypes: 01000000
   - SlotId: B_01
     DisplayName: B
     Enabled: 1

@@ -22,7 +22,26 @@ MonoBehaviour:
   BasePowerFlatAdjustment: 0
   PhysicalType: 0
   CanBreakPart: 0
+  BreakMode: 0
   GainPrestige: 1
+  Rulebreaker:
+    Enabled: 0
+    EnergyCostReductionPerCommittedUse: 0
+    MinimumEnergyCost: 0
+    MirrorThisSkillToOpponentOnDuelMatch: 0
+    IgnoreOwnerRollModifiers: 0
+    ExplodeBleedingOncePerAction: 0
+    BleedingExplosionMultiplier: 0
+    SuppressFriendlyOneSidedHitsOnSameTargetSlot: 0
+    ConsumeAllOwnerBleedingOnExecute: 0
+    BreakAuthorityBleedingThreshold: 0
+    IgnoreWeakenPrerequisiteBleedingThreshold: 0
+    RequirePreviousTurnLastStand: 0
+    ApplyCurrentLastStandPowerBonus: 0
+    CurrentLastStandPowerBonus: 0
+    ApplyCurrentDisadvantageOrWorsePowerBonus: 0
+    CurrentDisadvantageOrWorsePowerBonus: 0
+    GrantInfiniteAttackSlotSpeedThisTurn: 0
   AttackWeight:
     Weight: 1
     SecondaryPartMode: 0
@@ -36,8 +55,8 @@ MonoBehaviour:
     OverridePhysicalType: 0
     PhysicalType: 0
     DiceMode: 0
-    MinPower: 3
-    MaxPower: 5
+    MinPower: 1
+    MaxPower: 8
     RngSource: 1
     CoinFrontChance: 0.5
     CoinBackPower: 2
@@ -62,8 +81,8 @@ MonoBehaviour:
     OverridePhysicalType: 0
     PhysicalType: 0
     DiceMode: 0
-    MinPower: 3
-    MaxPower: 5
+    MinPower: 1
+    MaxPower: 8
     RngSource: 1
     CoinFrontChance: 0.5
     CoinBackPower: 2
@@ -88,8 +107,8 @@ MonoBehaviour:
     OverridePhysicalType: 0
     PhysicalType: 0
     DiceMode: 0
-    MinPower: 3
-    MaxPower: 5
+    MinPower: 1
+    MaxPower: 8
     RngSource: 1
     CoinFrontChance: 0.5
     CoinBackPower: 2
@@ -124,7 +143,7 @@ MonoBehaviour:
   PreparationTier: 0
   ResolverType: 0
   DiceMin: 1
-  DiceMax: 3
+  DiceMax: 8
   CoinCount: 1
   CoinFrontChance: 0.5
   CoinFrontValue: 1
@@ -141,6 +160,8 @@ MonoBehaviour:
       Stack: 1
       OverrideDuration: 1
       Duration: 3
+      OverrideInfiniteDuration: 0
+      InfiniteDuration: 0
       OverrideAmount: 0
       Amount: 1
       OverrideMinimum: 0
@@ -157,6 +178,7 @@ MonoBehaviour:
       ForceCharacterStatus: 0
       OverrideGiveToSelectedTarget: 0
       GiveToSelectedTarget: 0
+    UpgradeKey: 
     OverrideTiming: 0
     Timing: 0
     Conditions: []

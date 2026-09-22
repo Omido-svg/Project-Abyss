@@ -1,0 +1,105 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7bb2d0f1a8d44b7fa7a4b55c8bb78922, type: 3}
+  m_Name: EnemyEncounterCatalog
+  m_EditorClassIdentifier: 
+  ThreeEnemyProbability: 0.25
+  FourEnemyProbability: 0.75
+  OneDuelProbability: 0.25
+  TwoDuelProbability: 0.5
+  ThreeDuelProbability: 0.25
+  AttackerSpeciesCount: 3
+  DuelistSpeciesCount: 3
+  BufferSpeciesCount: 2
+  TankSpeciesCount: 2
+  DebufferSpeciesCount: 2
+  NormalEncounters:
+  - Id: 4-01
+    EnemyCount: 4
+    OverallProbability: 0.075
+    Roles: 00000000000000000300000003000000
+  - Id: 4-02
+    EnemyCount: 4
+    OverallProbability: 0.075
+    Roles: 00000000000000000400000004000000
+  - Id: 4-03
+    EnemyCount: 4
+    OverallProbability: 0.075
+    Roles: 05000000000000000300000004000000
+  - Id: 4-04
+    EnemyCount: 4
+    OverallProbability: 0.075
+    Roles: 05000000050000000300000004000000
+  - Id: 4-05
+    EnemyCount: 4
+    OverallProbability: 0.075
+    Roles: 00000000000000000000000000000000
+  - Id: 4-06
+    EnemyCount: 4
+    OverallProbability: 0.075
+    Roles: 00000000000000000000000004000000
+  - Id: 4-07
+    EnemyCount: 4
+    OverallProbability: 0.075
+    Roles: 05000000000000000000000004000000
+  - Id: 4-08
+    EnemyCount: 4
+    OverallProbability: 0.075
+    Roles: 05000000000000000000000003000000
+  - Id: 4-09
+    EnemyCount: 4
+    OverallProbability: 0.075
+    Roles: 05000000050000000000000000000000
+  - Id: 4-10
+    EnemyCount: 4
+    OverallProbability: 0.075
+    Roles: 05000000050000000000000004000000
+  - Id: 3-01
+    EnemyCount: 3
+    OverallProbability: 0.025
+    Roles: 000000000000000000000000
+  - Id: 3-02
+    EnemyCount: 3
+    OverallProbability: 0.025
+    Roles: 050000000000000004000000
+  - Id: 3-03
+    EnemyCount: 3
+    OverallProbability: 0.025
+    Roles: 050000000500000004000000
+  - Id: 3-04
+    EnemyCount: 3
+    OverallProbability: 0.025
+    Roles: 050000000000000003000000
+  - Id: 3-05
+    EnemyCount: 3
+    OverallProbability: 0.025
+    Roles: 000000000000000003000000
+  - Id: 3-06
+    EnemyCount: 3
+    OverallProbability: 0.025
+    Roles: 000000000000000004000000
+  - Id: 3-07
+    EnemyCount: 3
+    OverallProbability: 0.025
+    Roles: 050000000500000003000000
+  - Id: 3-08
+    EnemyCount: 3
+    OverallProbability: 0.025
+    Roles: 000000000300000003000000
+  - Id: 3-09
+    EnemyCount: 3
+    OverallProbability: 0.025
+    Roles: 050000000300000003000000
+  - Id: 3-10
+    EnemyCount: 3
+    OverallProbability: 0.025
+    Roles: 050000000500000000000000

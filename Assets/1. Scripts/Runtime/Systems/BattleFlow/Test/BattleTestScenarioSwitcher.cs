@@ -596,7 +596,13 @@ public sealed class BattleTestScenarioSwitcher : MonoBehaviour
         switch (selectedEncounter)
         {
             case BattleTestEncounterMode.NormalBattle:
-                AddRepeated(result, normalEnemyPrefab, 3);
+                // 0922 §12.3: normal encounter size is rolled encounter-wide,
+                // 3 enemies 25% / 4 enemies 75%. The role composition itself
+                // is assigned later by Canonical0922EnemyTurnCoordinator.
+                int normalCount =
+                    Canonical0922EnemyEncounterRules.RollEnemyCount(
+                        Random.value);
+                AddRepeated(result, normalEnemyPrefab, normalCount);
                 break;
 
             case BattleTestEncounterMode.MixedBattle:
@@ -727,7 +733,7 @@ public sealed class BattleTestScenarioSwitcher : MonoBehaviour
         GUILayout.Label(
             "전투: " + GetEncounterLabel(selectedEncounter));
 
-        if (GUILayout.Button("일반전투 · 일반몹 3"))
+        if (GUILayout.Button("일반전투 · 일반몹 3/4 (25/75)"))
             SelectNormalBattle();
 
         if (GUILayout.Button("혼합전투 · 정예 1 + 일반 2"))

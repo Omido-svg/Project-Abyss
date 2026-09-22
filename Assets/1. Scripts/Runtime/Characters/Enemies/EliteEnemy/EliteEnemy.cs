@@ -68,6 +68,21 @@ public class EliteEnemy : Enemy, ICharacterAuthoringTarget
         }
     }
 
+    protected override ICombatTargetModel CreateCombatTargetModel()
+    {
+        // 0922 §12.2: Part HP and Whole HP are independent price axes.
+        // Elite uses 1.5x whole HP and Boss uses 2.0x while the individual
+        // five part HP values remain untouched.
+        float multiplier = Data?.CombatantTier switch
+        {
+            CombatantTier.Boss => 2.0f,
+            CombatantTier.EliteEnemy => 1.5f,
+            _ => 1.0f
+        };
+
+        return new ScaledBodyPartTargetModel(multiplier);
+    }
+
     private IReadOnlyList<EnemyBodyPartDefinition> GetEffectiveBodyPartDefinitions()
     {
         if (bodyPartDefinitions != null && bodyPartDefinitions.Count == 5)

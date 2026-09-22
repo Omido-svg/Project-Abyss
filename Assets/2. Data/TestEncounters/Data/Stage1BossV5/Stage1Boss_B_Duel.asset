@@ -39,13 +39,17 @@ MonoBehaviour:
     RequirePreviousTurnLastStand: 0
     ApplyCurrentLastStandPowerBonus: 0
     CurrentLastStandPowerBonus: 0
+    ApplyCurrentDisadvantageOrWorsePowerBonus: 0
+    CurrentDisadvantageOrWorsePowerBonus: 0
     GrantInfiniteAttackSlotSpeedThisTurn: 0
   AttackWeight:
     Weight: 1
     SecondaryPartMode: 0
     SecondaryDamageMultiplier: 1
     AllowBrokenSecondaryParts: 1
-  Description: 
+  Description: "[CANONICAL_0922_PHASE9] Stage1 Boss B: 2\uAD74\uB9BC \xB7 \uC704\uB82514
+    \xB7 \uACB0\uD22C \xB7 \uBE44\uC6A91 \xB7 \uD30C\uAD34\uAD8C\uD55C \uC5C6\uC74C.
+    \uC0C9\uC740 PENDING_CANONICAL."
   Keywords: []
   Rolls:
   - Index: 0

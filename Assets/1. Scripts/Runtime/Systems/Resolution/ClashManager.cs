@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using UnityEngine;
 
 public class ClashManager
@@ -1238,6 +1238,16 @@ public class ClashManager
                 isClash: cameFromClash, isOneSided: true);
 
             return forcedFailure;
+        }
+
+        // [0922_PHASE9_ONE_SIDED_COVER_REDIRECT]
+        // Tank cover only intercepts a direct one-sided attack. Leftover rolls
+        // from an already-established clash keep their original clash target.
+        if (!cameFromClash)
+        {
+            EnemyCover0922Resolver.TryRedirectOneSided(
+                action,
+                battleContext);
         }
 
         DamagePowerResolution damagePower =
