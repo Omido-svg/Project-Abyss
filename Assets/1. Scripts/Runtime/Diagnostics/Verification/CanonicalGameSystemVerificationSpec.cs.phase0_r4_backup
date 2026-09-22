@@ -1,10 +1,9 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 
 /// <summary>
-/// [LEGACY_PRE0922_ORACLE]
-/// 0915~0917 시기의 기존 Phase A~F 회귀 검증 Oracle.
-/// 현재 정본은 Canonical0922BaselineSpec이며, 이 타입의 값은 과거 회귀 추적을 위해 보존한다.
-/// 0922 신규 규칙의 기대값을 이 Spec에서 만들지 않는다.
+/// 0915 Source-of-Truth의 검증 Oracle.
+/// 런타임 BattleRuleSettings를 읽어서 기대값을 만들지 않는다.
+/// 기획이 바뀌면 Runtime과 이 Spec을 각각 의도적으로 수정해야 한다.
 /// </summary>
 public static class CanonicalGameSystemVerificationSpec
 {

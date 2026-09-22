@@ -1,0 +1,385 @@
+﻿#if UNITY_EDITOR
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using UnityEditor;
+using UnityEngine;
+
+/// <summary>
+/// [0922_PHASE0_BASELINE_LOCK]
+/// 0922 Canonical Baseline Lock 검증.
+/// Gameplay 구현의 0922 일치 여부가 아니라,
+/// "현재 정본이 무엇인지 / 상태 분류가 무엇인지 / legacy가 격리되었는지"를 검사한다.
+/// </summary>
+public static class Canonical0922Phase0BaselineVerification
+{
+    private const string VerificationWindowPath =
+        "Assets/1. Scripts/Editor/Verification/GameSystemVerificationWindow.cs";
+
+    private const string LegacyOraclePath =
+        "Assets/1. Scripts/Runtime/Diagnostics/Verification/CanonicalGameSystemVerificationSpec.cs";
+
+    private const string Legacy0917DocPath =
+        "Docs/0917_구현_현황.md";
+
+    private const string Baseline0922DocPath =
+        "Docs/0922_정본_기준선.md";
+
+    private static readonly string[] LegacyVerifierPaths =
+    {
+        "Assets/1. Scripts/Editor/Verification/Canonical0917PatchVerification.cs",
+        "Assets/1. Scripts/Editor/Verification/Canonical0917ConfirmedGapVerification.cs",
+        "Assets/1. Scripts/Editor/Verification/Canonical0917EmotionAugmentVerification.cs"
+    };
+
+    [MenuItem("Game System Verification/0922 Canonical/Phase 0 - Verify Baseline Lock")]
+    public static void VerifyFromMenu()
+    {
+        List<string> pass = new();
+        List<string> fail = new();
+        List<string> details = new();
+
+        VerifyCanonicalIdentity(pass, fail);
+        VerifyStatusClassification(pass, fail, details);
+        VerifyPhase0Rules(pass, fail);
+        VerifyLegacyIsolation(pass, fail);
+        VerifyDocuments(pass, fail);
+        EmitCanonicalInventory(details);
+
+        string summary =
+            "[0922 Phase 0 · Canonical Baseline Lock]\n" +
+            $"CANONICAL={Canonical0922BaselineSpec.CanonicalVersion}\n" +
+            $"PASS={pass.Count} FAIL={fail.Count}\n\n" +
+            "PASS\n- " +
+            string.Join("\n- ", pass) +
+            "\n\nDETAILS\n- " +
+            string.Join("\n- ", details) +
+            "\n\nFAIL\n- " +
+            (fail.Count == 0
+                ? "NONE"
+                : string.Join("\n- ", fail));
+
+        if (fail.Count > 0)
+            Debug.LogError(summary);
+        else
+            Debug.Log(summary);
+    }
+
+    private static void VerifyCanonicalIdentity(
+        List<string> pass,
+        List<string> fail)
+    {
+        if (Canonical0922BaselineSpec.CanonicalVersion == "0922")
+            pass.Add("Current canonical version = 0922");
+        else
+            fail.Add(
+                "Current canonical version mismatch: " +
+                Canonical0922BaselineSpec.CanonicalVersion);
+
+        if (Canonical0922BaselineSpec.RulesDocumentName ==
+            "전투 시스템 규칙 (0922)(1).md")
+        {
+            pass.Add("Rules document identity locked to 0922");
+        }
+        else
+        {
+            fail.Add(
+                "Rules document identity mismatch: " +
+                Canonical0922BaselineSpec.RulesDocumentName);
+        }
+    }
+
+    private static void VerifyStatusClassification(
+        List<string> pass,
+        List<string> fail,
+        List<string> details)
+    {
+        string[] expectedNumeric =
+        {
+            "힘", "쇠약", "골절", "보호", "균열", "열기",
+            "침체", "신속", "견고", "무장해제", "재생", "지정"
+        };
+
+        string[] expectedPresence =
+        {
+            "고통", "공포"
+        };
+
+        string[] expectedBespoke =
+        {
+            "출혈", "표식"
+        };
+
+        string[] expectedNonCommon =
+        {
+            "봉인"
+        };
+
+        VerifyExactSet(
+            "NumericTimed",
+            expectedNumeric,
+            Canonical0922BaselineSpec.NumericTimedStatuses,
+            pass,
+            fail);
+
+        VerifyExactSet(
+            "PresenceTimed",
+            expectedPresence,
+            Canonical0922BaselineSpec.PresenceTimedStatuses,
+            pass,
+            fail);
+
+        VerifyExactSet(
+            "BespokeAccumulating",
+            expectedBespoke,
+            Canonical0922BaselineSpec.BespokeAccumulatingStatuses,
+            pass,
+            fail);
+
+        VerifyExactSet(
+            "NonCommonKeyword",
+            expectedNonCommon,
+            Canonical0922BaselineSpec.NonCommonStatusKeywords,
+            pass,
+            fail);
+
+        string[] all =
+            Canonical0922BaselineSpec.NumericTimedStatuses
+                .Concat(Canonical0922BaselineSpec.PresenceTimedStatuses)
+                .Concat(Canonical0922BaselineSpec.BespokeAccumulatingStatuses)
+                .Concat(Canonical0922BaselineSpec.NonCommonStatusKeywords)
+                .ToArray();
+
+        string[] duplicates =
+            all.GroupBy(x => x, StringComparer.Ordinal)
+                .Where(group => group.Count() > 1)
+                .Select(group => group.Key)
+                .ToArray();
+
+        if (duplicates.Length == 0)
+            pass.Add("Status classification has no duplicate ownership");
+        else
+            fail.Add(
+                "Status classification duplicates: " +
+                string.Join(", ", duplicates));
+
+        details.Add(
+            "NumericTimed=" +
+            string.Join(", ",
+                Canonical0922BaselineSpec.NumericTimedStatuses));
+
+        details.Add(
+            "PresenceTimed=" +
+            string.Join(", ",
+                Canonical0922BaselineSpec.PresenceTimedStatuses));
+
+        details.Add(
+            "Bespoke=" +
+            string.Join(", ",
+                Canonical0922BaselineSpec.BespokeAccumulatingStatuses));
+    }
+
+    private static void VerifyPhase0Rules(
+        List<string> pass,
+        List<string> fail)
+    {
+        if (Canonical0922BaselineSpec.NumericStatusesUseIndependentEntries)
+            pass.Add("Numeric status independent-entry rule locked");
+        else
+            fail.Add("Numeric independent-entry rule is not locked");
+
+        if (Canonical0922BaselineSpec.NumericStatusesAllowInfiniteDuration)
+            pass.Add("Infinite duration canonical rule locked");
+        else
+            fail.Add("Infinite duration canonical rule is not locked");
+
+        if (Canonical0922BaselineSpec.PresenceStatusesUseMaxDurationRefresh)
+            pass.Add("Presence max-duration refresh rule locked");
+        else
+            fail.Add("Presence max-duration refresh rule is not locked");
+
+        if (!Canonical0922BaselineSpec.CommonStatusCapsEnabled)
+            pass.Add("No common Value/Duration/entry-count cap");
+        else
+            fail.Add("Common cap must be disabled by 0922 canonical");
+
+        if (!Canonical0922BaselineSpec.SealIsCommonStatus)
+            pass.Add("Seal classified as non-common keyword");
+        else
+            fail.Add("Seal must not be classified as a common status");
+
+        if (Canonical0922BaselineSpec.ConfirmedPhase0Rules.Count >= 10)
+            pass.Add(
+                $"Phase 0 confirmed-rule inventory registered ({Canonical0922BaselineSpec.ConfirmedPhase0Rules.Count})");
+        else
+            fail.Add("Phase 0 confirmed-rule inventory is incomplete");
+
+        if (Canonical0922BaselineSpec.PendingCanonicalDomains.Count > 0)
+            pass.Add(
+                $"Pending canonical domains explicitly registered ({Canonical0922BaselineSpec.PendingCanonicalDomains.Count})");
+        else
+            fail.Add(
+                "Pending canonical inventory is empty; do not silently treat unresolved rules as confirmed");
+    }
+
+    private static void VerifyLegacyIsolation(
+        List<string> pass,
+        List<string> fail)
+    {
+        string window = Read(VerificationWindowPath);
+        string legacyOracle = Read(LegacyOraclePath);
+
+        if (window.Contains(
+                "Canonical0922BaselineSpec.CanonicalVersion",
+                StringComparison.Ordinal) &&
+            window.Contains(
+                "Legacy Oracle",
+                StringComparison.Ordinal))
+        {
+            pass.Add("Verification window shows 0922 as current and old spec as legacy");
+        }
+        else
+        {
+            fail.Add("Verification window canonical/legacy labels are incomplete");
+        }
+
+        if (legacyOracle.Contains(
+                "[LEGACY_PRE0922_ORACLE]",
+                StringComparison.Ordinal))
+        {
+            pass.Add("Pre-0922 GameSystemVerificationSpec marked legacy");
+        }
+        else
+        {
+            fail.Add("Pre-0922 GameSystemVerificationSpec legacy marker missing");
+        }
+
+        foreach (string path in LegacyVerifierPaths)
+        {
+            string source = Read(path);
+
+            if (source.Contains(
+                    "Game System Verification/Legacy/0917/",
+                    StringComparison.Ordinal))
+            {
+                continue;
+            }
+
+            fail.Add(
+                "0917 verifier not isolated under Legacy menu: " +
+                path);
+        }
+
+        if (fail.All(x =>
+                !x.StartsWith(
+                    "0917 verifier not isolated",
+                    StringComparison.Ordinal)))
+        {
+            pass.Add("All 0917 verifier menus isolated under Legacy/0917");
+        }
+    }
+
+    private static void VerifyDocuments(
+        List<string> pass,
+        List<string> fail)
+    {
+        string legacyDoc = Read(Legacy0917DocPath);
+        string baselineDoc = Read(Baseline0922DocPath);
+
+        if (legacyDoc.Contains(
+                "[LEGACY_CANONICAL_0917]",
+                StringComparison.Ordinal))
+        {
+            pass.Add("0917 implementation audit explicitly marked historical");
+        }
+        else
+        {
+            fail.Add("Docs/0917_구현_현황.md lacks historical warning");
+        }
+
+        if (baselineDoc.Contains(
+                "[0922_CANONICAL_BASELINE]",
+                StringComparison.Ordinal) &&
+            baselineDoc.Contains(
+                "Phase 0 Status: CLOSED",
+                StringComparison.Ordinal))
+        {
+            pass.Add("Docs/0922_정본_기준선.md installed and closed");
+        }
+        else
+        {
+            fail.Add("0922 baseline document missing or incomplete");
+        }
+    }
+
+    private static void EmitCanonicalInventory(
+        List<string> details)
+    {
+        details.Add(
+            "CONFIRMED_PHASE0=" +
+            Canonical0922BaselineSpec.ConfirmedPhase0Rules.Count);
+
+        details.Add(
+            "PENDING_CANONICAL_DOMAINS=" +
+            Canonical0922BaselineSpec.PendingCanonicalDomains.Count);
+
+        for (int i = 0;
+             i < Canonical0922BaselineSpec.PendingCanonicalDomains.Count;
+             i++)
+        {
+            details.Add(
+                "PENDING_CANONICAL: " +
+                Canonical0922BaselineSpec.PendingCanonicalDomains[i]);
+        }
+    }
+
+    private static void VerifyExactSet(
+        string label,
+        IReadOnlyList<string> expected,
+        IReadOnlyList<string> actual,
+        List<string> pass,
+        List<string> fail)
+    {
+        HashSet<string> expectedSet =
+            new HashSet<string>(
+                expected ?? Array.Empty<string>(),
+                StringComparer.Ordinal);
+
+        HashSet<string> actualSet =
+            new HashSet<string>(
+                actual ?? Array.Empty<string>(),
+                StringComparer.Ordinal);
+
+        if (expectedSet.SetEquals(actualSet) &&
+            expectedSet.Count == actualSet.Count)
+        {
+            pass.Add(
+                $"{label} classification = {actualSet.Count}");
+            return;
+        }
+
+        string missing =
+            string.Join(
+                ", ",
+                expectedSet.Except(actualSet));
+
+        string unexpected =
+            string.Join(
+                ", ",
+                actualSet.Except(expectedSet));
+
+        fail.Add(
+            $"{label} classification mismatch. " +
+            $"missing=[{missing}] unexpected=[{unexpected}]");
+    }
+
+    private static string Read(
+        string path)
+    {
+        return File.Exists(path)
+            ? File.ReadAllText(path)
+            : string.Empty;
+    }
+}
+#endif

@@ -1,4 +1,4 @@
-﻿#if UNITY_EDITOR
+#if UNITY_EDITOR
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -32,7 +32,7 @@ public static class Canonical0917ConfirmedGapVerification
     private const string OlafLoadoutPath =
         "Assets/2. Data/Characters/Design2026/Olaf/Olaf_TODO_Loadout.asset";
 
-    [MenuItem("Game System Verification/Legacy/0917/Verify Confirmed Missing Rules")]
+    [MenuItem("Game System Verification/0917 Spec Patch/Verify Confirmed Missing Rules")]
     public static void VerifyFromMenu()
     {
         List<string> pass = new();
