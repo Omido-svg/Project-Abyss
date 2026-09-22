@@ -453,11 +453,6 @@ public class CharacterStatusController
 
     public void OnTurnEnd()
     {
-        // [0922_PHASE3_TURN_END_AGGREGATE]
-        // 살아 있는 Numeric N을 먼저 합산해 효과를 한 번 적용하고,
-        // 그 뒤 각 Entry의 Duration을 독립 감소시킨다.
-        ApplyCanonicalTurnEndAggregates();
-
         TickCharacterStatuses(
             StatusEffectTickTiming.TurnEnd);
 
@@ -466,64 +461,6 @@ public class CharacterStatusController
             TickPartStatuses(
                 StatusEffectTickTiming.TurnEnd);
         }
-    }
-
-    private void ApplyCanonicalTurnEndAggregates()
-    {
-        if (owner == null || owner.IsDead)
-            return;
-
-        int heat =
-            GetActiveNumericTotal<HeatStatus>();
-
-        int stagnation =
-            GetActiveNumericTotal<StagnationStatus>();
-
-        int prestigeDelta =
-            heat - stagnation;
-
-        if (prestigeDelta != 0)
-        {
-            owner.AdjustPrestige(
-                prestigeDelta);
-        }
-
-        int regeneration =
-            GetActiveNumericTotal<RegenerationStatus>();
-
-        if (regeneration <= 0)
-            return;
-
-        // 0922 Regeneration: aggregate N을 만든 뒤
-        // HP +N과 Stagger +N을 각각 한 번만 적용한다.
-        owner.RestoreCurrentHP(
-            regeneration);
-
-        owner.GetMechanic<StaggerGaugeMechanic>()?
-            .Recover(regeneration);
-    }
-
-    private int GetActiveNumericTotal<TStatus>()
-        where TStatus : NumericTimedStatus
-    {
-        int total =
-            CommonStatusAlgebra.GetNumericTotal<TStatus>(
-                characterStatuses);
-
-        if (owner?.BodyParts == null)
-            return total;
-
-        foreach (BodyPart part in owner.BodyParts)
-        {
-            if (part == null || part.IsBroken)
-                continue;
-
-            total +=
-                CommonStatusAlgebra.GetNumericTotal<TStatus>(
-                    part.StatusEffects);
-        }
-
-        return Mathf.Max(0, total);
     }
 
     private void TickCharacterStatuses(

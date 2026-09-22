@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>
@@ -201,18 +201,7 @@ public sealed class StaggerGaugeMechanic : ReactiveCombatMechanic,
     {
         if (IsSuppressed || amount <= 0 || vulnerabilityWindowOpen)
             return;
-
-        int modified =
-            owner?.ModifyHealingAmount(amount) ?? amount;
-
-        if (modified <= 0)
-            return;
-
-        currentGauge =
-            Mathf.Clamp(
-                currentGauge + modified,
-                0,
-                maxGauge);
+        currentGauge = Mathf.Clamp(currentGauge + amount, 0, maxGauge);
     }
 
     private float GetVulnerabilityMultiplier()
@@ -241,7 +230,7 @@ public sealed class StaggerGaugeMechanic : ReactiveCombatMechanic,
             staggerDamage);
     }
 
-    // [0922_PHASE3_STAGGER_FLAT_AXIS]
+    // [0917_CONFIRMED_GAP:STAGGER_FLAT_HELPER]
     private static int ApplyTargetStaggerDamageFlatModifiers(
         BattleAction action,
         Character target,
@@ -251,25 +240,17 @@ public sealed class StaggerGaugeMechanic : ReactiveCombatMechanic,
         if (target == null || damage <= 0)
             return Mathf.Max(0, damage);
 
-        int flatModifier =
-            CommonStatusAlgebra.GetStaggerDamageFlatModifier(
-                target,
-                targetPart);
+        int flatModifier = 0;
 
         if (target.StatusEffects != null)
         {
             foreach (StatusEffect effect in target.StatusEffects)
             {
-                if (effect == null ||
-                    effect is SturdyStatus ||
-                    effect is DisarmStatus)
+                if (effect != null)
                 {
-                    continue;
+                    flatModifier +=
+                        effect.GetStaggerDamageTakenFlatModifier(action);
                 }
-
-                flatModifier +=
-                    effect.GetStaggerDamageTakenFlatModifier(
-                        action);
             }
         }
 
@@ -279,22 +260,15 @@ public sealed class StaggerGaugeMechanic : ReactiveCombatMechanic,
         {
             foreach (StatusEffect effect in targetPart.StatusEffects)
             {
-                if (effect == null ||
-                    effect is SturdyStatus ||
-                    effect is DisarmStatus)
+                if (effect != null)
                 {
-                    continue;
+                    flatModifier +=
+                        effect.GetStaggerDamageTakenFlatModifier(action);
                 }
-
-                flatModifier +=
-                    effect.GetStaggerDamageTakenFlatModifier(
-                        action);
             }
         }
 
-        return Mathf.Max(
-            0,
-            damage + flatModifier);
+        return Mathf.Max(0, damage + flatModifier);
     }
 
     private static int ResolveAdditionalStaggerDamage(

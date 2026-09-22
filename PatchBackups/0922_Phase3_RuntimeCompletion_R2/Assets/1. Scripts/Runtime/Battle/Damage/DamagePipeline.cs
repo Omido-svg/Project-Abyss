@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 
 /// <summary>
 /// 0915 C-25 표준 HP Damage Pipeline.
@@ -87,71 +87,36 @@ public sealed class DamagePipeline
     /// </summary>
     private static void ApplyFlatTargetModifiers(DamageContext context)
     {
-        int damage =
-            context.TargetModifiedDamage;
+        int damage = context.TargetModifiedDamage;
 
-        if (context.Request.ApplyTargetModifiers &&
-            context.Target != null)
+        if (context.Request.ApplyTargetModifiers && context.Target != null)
         {
-            int commonFlat =
-                CommonStatusAlgebra.GetHpDamageFlatModifier(
-                    context.Target,
-                    context.TargetPart);
-
-            // 0922: RuptureTotal - ProtectionTotal을 먼저 합산한 뒤
-            // 내성 결과에 한 번 적용하고 clamp도 한 번만 수행한다.
-            damage =
-                Mathf.Max(
-                    0,
-                    damage + commonFlat);
-
-            // 공용 HP flat 축 이외의 상태 고유 damage modifier는 보존한다.
             foreach (StatusEffect effect in context.Target.StatusEffects)
             {
-                if (effect == null ||
-                    effect is ProtectionStatus ||
-                    effect is RuptureStatus)
-                {
+                if (effect == null)
                     continue;
-                }
 
-                damage =
-                    Mathf.Max(
-                        0,
-                        Mathf.FloorToInt(
-                            effect.ModifyDamageTaken(
-                                context.Action,
-                                damage)));
+                damage = Mathf.Max(
+                    0,
+                    Mathf.FloorToInt(effect.ModifyDamageTaken(context.Action, damage)));
             }
 
             if (context.TargetPart != null)
             {
                 foreach (StatusEffect effect in context.TargetPart.StatusEffects)
                 {
-                    if (effect == null ||
-                        effect is ProtectionStatus ||
-                        effect is RuptureStatus)
-                    {
+                    if (effect == null)
                         continue;
-                    }
 
-                    damage =
-                        Mathf.Max(
-                            0,
-                            Mathf.FloorToInt(
-                                effect.ModifyDamageTaken(
-                                    context.Action,
-                                    damage)));
+                    damage = Mathf.Max(
+                        0,
+                        Mathf.FloorToInt(effect.ModifyDamageTaken(context.Action, damage)));
                 }
             }
         }
 
-        context.TargetModifiedDamage =
-            damage;
-
-        context.RecordStage(
-            DamageStage.TargetModifiers,
-            damage);
+        context.TargetModifiedDamage = damage;
+        context.RecordStage(DamageStage.TargetModifiers, damage);
     }
 
     /// <summary>

@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using UnityEngine;
 
 public abstract class Character : MonoBehaviour
@@ -1081,21 +1081,19 @@ public abstract class Character : MonoBehaviour
                 0);
     }
 
-    public int ModifyHealingAmount(int amount)
-    {
-        return CommonStatusAlgebra.ApplyHealingModifiers(
-            StatusEffects,
-            amount);
-    }
-
     public void RestoreCurrentHP(int amount)
     {
         if (RuntimeStatus == null || amount <= 0)
             return;
 
-        int modified =
-            ModifyHealingAmount(amount);
+        int modified = amount;
+        foreach (StatusEffect effect in StatusEffects)
+        {
+            if (effect != null)
+                modified = effect.ModifyHealing(modified);
+        }
 
+        modified = Mathf.Max(0, modified);
         if (modified <= 0)
             return;
 
@@ -1711,15 +1709,6 @@ public abstract class Character : MonoBehaviour
 
     //------------------------------------------------
 
-    public int AdjustPrestige(int delta)
-    {
-        if (resourceController == null)
-            return 0;
-
-        return resourceController.AdjustPrestige(
-            delta);
-    }
-
     public void AddPrestige(int amount)
     {
         if (resourceController == null)
@@ -1831,19 +1820,6 @@ public abstract class Character : MonoBehaviour
         int commonShift = 0;
         int commonMaxReduction = 0;
 
-        int fearPenalty =
-            CommonStatusAlgebra.GetFearRollPenalty(
-                StatusEffects);
-
-        if (action?.OwnerPart != null)
-        {
-            fearPenalty =
-                Mathf.Max(
-                    fearPenalty,
-                    CommonStatusAlgebra.GetFearRollPenalty(
-                        action.OwnerPart.StatusEffects));
-        }
-
         ApplyRollStatusList(
             StatusEffects,
             action,
@@ -1880,10 +1856,7 @@ public abstract class Character : MonoBehaviour
         // 공용 상태이상은 "범위 전체 이동"과 "최댓값 절단"을 별도 누산한다.
         // 따라서 힘 +1 & 골절 1은 상쇄되지 않고 바닥 +1 / 천장 유지가 된다.
         int nonCommonDelta = value - roll;
-
-        // 0922: Strength/Weakness는 Numeric 합산축,
-        // Fear는 presence 여부에 따른 fixed -1 추가축이다.
-        value += commonShift - fearPenalty;
+        value += commonShift;
 
         if (commonMaxReduction > 0 && action?.Skill != null)
         {
@@ -1892,7 +1865,6 @@ public abstract class Character : MonoBehaviour
                 action.Skill.MaxPower +
                 nonCommonDelta +
                 commonShift -
-                fearPenalty -
                 commonMaxReduction);
 
             value = Mathf.Min(value, shiftedMaximum);
@@ -1914,10 +1886,6 @@ public abstract class Character : MonoBehaviour
         foreach (StatusEffect effect in statuses)
         {
             if (effect == null)
-                continue;
-
-            // Fear는 아래 fixed presence axis에서 한 번만 처리한다.
-            if (effect is OlafFearStatus)
                 continue;
 
             if (effect is ICommonRollShiftStatus shiftStatus)

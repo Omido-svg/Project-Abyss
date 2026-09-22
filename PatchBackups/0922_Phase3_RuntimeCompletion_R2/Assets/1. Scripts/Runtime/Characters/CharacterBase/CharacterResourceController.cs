@@ -1,4 +1,4 @@
-﻿
+
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -272,38 +272,6 @@ public sealed class CharacterResourceController
             $"+{finalAmount} " +
             $"({owner.RuntimeStatus.currentPrestige}/" +
             $"{owner.CurrentStatus.maxPrestige})");
-    }
-
-    public int AdjustPrestige(int delta)
-    {
-        if (owner?.RuntimeStatus == null ||
-            owner.CurrentStatus == null ||
-            delta == 0)
-        {
-            return 0;
-        }
-
-        int before =
-            owner.RuntimeStatus.currentPrestige;
-
-        int after =
-            Mathf.Clamp(
-                before + delta,
-                0,
-                owner.CurrentStatus.maxPrestige);
-
-        owner.RuntimeStatus.currentPrestige =
-            after;
-
-        int actualDelta =
-            after - before;
-
-        Debug.Log(
-            $"{owner.Data?.CharacterName ?? owner.name} 위세 변화 : " +
-            $"{(actualDelta >= 0 ? "+" : string.Empty)}{actualDelta} " +
-            $"({after}/{owner.CurrentStatus.maxPrestige})");
-
-        return actualDelta;
     }
 
     public bool TryConsumePrestige(int amount)

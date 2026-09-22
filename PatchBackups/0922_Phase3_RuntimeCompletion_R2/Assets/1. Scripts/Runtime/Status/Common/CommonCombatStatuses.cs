@@ -120,14 +120,20 @@ public sealed class RuptureStatus : NumericTimedStatus
 }
 
 /// <summary>
-/// 0922 열기 N·T.
-/// 개별 Entry는 gameplay 효과를 직접 실행하지 않는다.
-/// TurnEnd에서 살아 있는 Heat/Stagnation N을 합산해 한 번 적용한다.
+/// 0922 저장 모델에서는 Heat도 일반 NumericTimed N/T Entry다.
+/// 위세 적용 시점(OnApply -> TurnEnd) 변경은 Phase 3에서 처리한다.
 /// </summary>
 public sealed class HeatStatus : NumericTimedStatus
 {
     public HeatStatus(int stack = 1, int duration = 1)
         : base("열기", stack, duration) { }
+
+    public override void OnApply()
+    {
+        // Phase 2는 저장 모델만 변경한다. 기존 gameplay timing은 Phase 3까지 보존한다.
+        if (Owner != null && Stack > 0)
+            Owner.AddPrestige(Stack);
+    }
 }
 
 /// <summary>
@@ -149,10 +155,8 @@ public enum RegenerationRecoveryChannel
 }
 
 /// <summary>
-/// 0922 재생 N·T.
-/// Channel은 구 asset/생성자 호환용 metadata로만 보존한다.
-/// 실제 gameplay는 TurnEnd에서 모든 살아 있는 Regeneration N을 합산한 뒤
-/// HP와 Stagger를 각각 한 번 회복한다.
+/// 0922 저장 모델: 재생의 N은 Stack, T는 Duration으로 독립 보관한다.
+/// HP+Stagger 동시 aggregate 효과는 Phase 3에서 정본화한다.
 /// </summary>
 public sealed class RegenerationStatus : NumericTimedStatus
 {
@@ -166,6 +170,19 @@ public sealed class RegenerationStatus : NumericTimedStatus
         : base("재생", healAmount, turns)
     {
         Channel = channel;
+    }
+
+    public override void OnTurnEnd(StatusEffectTickContext context)
+    {
+        if (Owner == null || HealAmount <= 0)
+            return;
+
+        // Phase 2는 N/T 저장만 정본화한다.
+        // 두 회복 채널을 하나의 aggregate N으로 처리하는 것은 Phase 3 소유다.
+        if (Channel == RegenerationRecoveryChannel.Stagger)
+            Owner.GetMechanic<StaggerGaugeMechanic>()?.Recover(HealAmount);
+        else
+            Owner.RestoreCurrentHP(HealAmount);
     }
 }
 
