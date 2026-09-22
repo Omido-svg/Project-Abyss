@@ -1,8 +1,10 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
 
 public abstract class StatusEffect
 {
+    public const int InfiniteDuration = -1;
+
     public string Name { get; protected set; }
     public int Stack { get; protected set; }
     public int Duration { get; protected set; }
@@ -22,6 +24,22 @@ public abstract class StatusEffect
     public bool IsPartEffect => ownerPart != null;
     public bool IsCharacterEffect => ownerPart == null;
 
+    /// <summary>
+    /// 0922 상태 저장 분류. 기본값은 Bespoke이며, 공용 수치형/값 없는 지속형만
+    /// 각 파생 상태가 명시적으로 override한다.
+    /// </summary>
+    public virtual StatusEffectStorageKind StorageKind =>
+        StatusEffectStorageKind.Bespoke;
+
+    /// <summary>
+    /// Generic N/T 수치형에서만 의미가 있는 N 값. Presence/Bespoke는 0을 반환한다.
+    /// 기존 Stack 필드는 직렬화/진단 호환을 위해 유지한다.
+    /// </summary>
+    public virtual int NumericValue =>
+        StorageKind == StatusEffectStorageKind.NumericTimed
+            ? Mathf.Max(0, Stack)
+            : 0;
+
     public virtual StatusEffectDurationPolicy DurationPolicy =>
         Duration < 0
             ? StatusEffectDurationPolicy.Permanent
@@ -37,6 +55,23 @@ public abstract class StatusEffect
     public bool IsPermanent =>
         DurationPolicy == StatusEffectDurationPolicy.Permanent ||
         Duration < 0;
+
+    /// <summary>
+    /// 0922의 ∞ 지속시간을 999 같은 임시 숫자 없이 표현하기 위한 공용 abstraction.
+    /// 내부 호환 표현은 InfiniteDuration(-1)을 사용한다.
+    /// </summary>
+    public StatusEffectDurationKind DurationKind =>
+        IsPermanent
+            ? StatusEffectDurationKind.Infinite
+            : StatusEffectDurationKind.Finite;
+
+    public bool IsInfiniteDuration =>
+        DurationKind == StatusEffectDurationKind.Infinite;
+
+    public int RemainingTurns =>
+        IsInfiniteDuration
+            ? InfiniteDuration
+            : Mathf.Max(0, Duration);
 
     public bool IsExpired =>
         !IsPermanent &&
@@ -310,6 +345,13 @@ public abstract class StatusEffect
 
         if (Duration > 0)
             Duration--;
+    }
+
+    protected static int NormalizeTimedDuration(int duration)
+    {
+        return duration < 0
+            ? InfiniteDuration
+            : Mathf.Max(1, duration);
     }
 
     protected void RefreshDurationFrom(StatusEffect other)

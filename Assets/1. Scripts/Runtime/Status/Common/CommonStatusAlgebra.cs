@@ -1,8 +1,9 @@
-using System;
+﻿using System;
 
 /// <summary>
-/// 0915 C-49 공용 반대 상태의 대수 상쇄 규칙.
-/// 미정 상태(Sturdy/Disarm)는 Runtime 신규 부여가 비활성이지만 구 에셋 호환을 위해 쌍 정의는 유지한다.
+/// 0922 공용 반대 상태의 계산 축 pair map.
+/// 이 타입은 더 이상 상태 저장/부여 단계에서 Stack을 소모하거나 Entry를 제거하지 않는다.
+/// 실제 aggregate 계산 적용은 Phase 3이 소유한다.
 /// </summary>
 public static class CommonStatusAlgebra
 {

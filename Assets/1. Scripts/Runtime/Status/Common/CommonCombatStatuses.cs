@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 
 public interface ICommonRollShiftStatus
 {
@@ -42,126 +42,112 @@ public static class CommonStatusSpeedRules
     }
 }
 
-public abstract class OneTurnCommonStatus : StatusEffect
+/// <summary>
+/// 구 0915~0917 소스/마이그레이션 문자열 호환용 alias.
+/// 신규 공용 상태는 NumericTimedStatus를 직접 사용한다.
+/// </summary>
+public abstract class OneTurnCommonStatus : NumericTimedStatus
 {
-    private readonly int maxStack;
-
-    public override StatusEffectDurationPolicy DurationPolicy =>
-        StatusEffectDurationPolicy.TurnEnd;
-
-    public override StatusEffectStackPolicy StackPolicy =>
-        StatusEffectStackPolicy.AddStacksAndRefreshDuration;
-
-    protected OneTurnCommonStatus(string name, int stack, int maxStack)
+    protected OneTurnCommonStatus(
+        string name,
+        int stack,
+        int legacyMaxStack)
+        : base(name, stack, 1)
     {
-        Name = name;
-        this.maxStack = Mathf.Max(1, maxStack);
-        Stack = Mathf.Clamp(stack, 0, this.maxStack);
-        Duration = 1;
-    }
-
-    public override void Merge(StatusEffect other)
-    {
-        if (other == null)
-            return;
-
-        Stack = Mathf.Clamp(Stack + Mathf.Max(0, other.Stack), 0, maxStack);
-        Duration = 1;
     }
 }
 
-public sealed class StrengthStatus : OneTurnCommonStatus, ICommonRollShiftStatus
+public sealed class StrengthStatus : NumericTimedStatus, ICommonRollShiftStatus
 {
-    public StrengthStatus(int stack = 1) : base("힘", stack, 4) { }
-    // 0915 C-27: 힘은 RED/BLUE 여부와 무관하게 모든 전투 굴림에 적용한다.
+    public StrengthStatus(int stack = 1, int duration = 1)
+        : base("힘", stack, duration) { }
+
     public int GetRollShift(BattleAction action) =>
         action != null ? Stack : 0;
 }
 
-public sealed class WeaknessStatus : OneTurnCommonStatus, ICommonRollShiftStatus
+public sealed class WeaknessStatus : NumericTimedStatus, ICommonRollShiftStatus
 {
-    public WeaknessStatus(int stack = 1) : base("쇠약", stack, 4) { }
-    // 0915 C-27: 쇠약은 RED/BLUE 여부와 무관하게 모든 전투 굴림에 적용한다.
+    public WeaknessStatus(int stack = 1, int duration = 1)
+        : base("쇠약", stack, duration) { }
+
     public int GetRollShift(BattleAction action) =>
         action != null ? -Stack : 0;
 }
 
-// [0917_CONFIRMED_GAP:STURDY_DISARM]
-// 0917 확정: 견고/무장해제는 굴림 위력이 아니라 '받는 흐트러짐 피해' flat 축이다.
-public sealed class SturdyStatus : OneTurnCommonStatus
+public sealed class SturdyStatus : NumericTimedStatus
 {
-    public SturdyStatus(int stack = 1) : base("견고", stack, 3) { }
+    public SturdyStatus(int stack = 1, int duration = 1)
+        : base("견고", stack, duration) { }
 
     public override int GetStaggerDamageTakenFlatModifier(BattleAction action) =>
         -Stack;
 }
 
-public sealed class DisarmStatus : OneTurnCommonStatus
+public sealed class DisarmStatus : NumericTimedStatus
 {
-    public DisarmStatus(int stack = 1) : base("무장해제", stack, 4) { }
+    public DisarmStatus(int stack = 1, int duration = 1)
+        : base("무장해제", stack, duration) { }
 
     public override int GetStaggerDamageTakenFlatModifier(BattleAction action) =>
         Stack;
 }
 
-public sealed class FractureStatus : OneTurnCommonStatus, ICommonRollMaxReductionStatus
+public sealed class FractureStatus : NumericTimedStatus, ICommonRollMaxReductionStatus
 {
-    public FractureStatus(int stack = 1) : base("골절", stack, 4) { }
+    public FractureStatus(int stack = 1, int duration = 1)
+        : base("골절", stack, duration) { }
+
     public int GetMaxReduction(BattleAction action) => Stack;
 }
 
-public sealed class ProtectionStatus : OneTurnCommonStatus
+public sealed class ProtectionStatus : NumericTimedStatus
 {
-    public ProtectionStatus(int stack = 1) : base("보호", stack, 4) { }
+    public ProtectionStatus(int stack = 1, int duration = 1)
+        : base("보호", stack, duration) { }
+
     public override float ModifyDamageTaken(BattleAction action, float damage) =>
         Mathf.Max(0f, damage - Stack);
 }
 
-public sealed class RuptureStatus : OneTurnCommonStatus
+public sealed class RuptureStatus : NumericTimedStatus
 {
-    public RuptureStatus(int stack = 1) : base("균열", stack, 4) { }
+    public RuptureStatus(int stack = 1, int duration = 1)
+        : base("균열", stack, duration) { }
+
     public override float ModifyDamageTaken(BattleAction action, float damage) =>
         Mathf.Max(0f, damage + Stack);
 }
 
 /// <summary>
-/// P0 D-08 확정 규칙: 열기는 1턴 크기형이며 적용되는 순간 위세 +N을 1회 지급한다.
-/// 다음 턴 예약은 DeferredStatusEffect가 TurnStart에 실제 HeatStatus를 생성하여 지급한다.
+/// 0922 저장 모델에서는 Heat도 일반 NumericTimed N/T Entry다.
+/// 위세 적용 시점(OnApply -> TurnEnd) 변경은 Phase 3에서 처리한다.
 /// </summary>
-public sealed class HeatStatus : OneTurnCommonStatus
+public sealed class HeatStatus : NumericTimedStatus
 {
-    public HeatStatus(int stack = 1) : base("열기", stack, 99) { }
+    public HeatStatus(int stack = 1, int duration = 1)
+        : base("열기", stack, duration) { }
 
     public override void OnApply()
     {
+        // Phase 2는 저장 모델만 변경한다. 기존 gameplay timing은 Phase 3까지 보존한다.
         if (Owner != null && Stack > 0)
             Owner.AddPrestige(Stack);
     }
-
-    public override void Merge(StatusEffect other)
-    {
-        int before = Stack;
-        base.Merge(other);
-        int gained = Mathf.Max(0, Stack - before);
-        if (Owner != null && gained > 0)
-            Owner.AddPrestige(gained);
-    }
 }
 
 /// <summary>
-/// P0 D-08 확정 규칙: 신속은 다음 턴 전용 크기형 상태이며 속도 굴림의 최댓값 +N.
-/// 카드에서 즉시 부여하지 말고 DeferredStatusEffect(StatusEffectId.Swift, ...)로 예약한다.
+/// 0922 저장 모델에서는 Swift도 일반 NumericTimed N/T Entry다.
+/// 즉시/예약 timing의 완전한 정리는 Phase 4에서 처리한다.
 /// </summary>
-public sealed class SwiftStatus : OneTurnCommonStatus, ICommonSpeedMaximumStatus
+public sealed class SwiftStatus : NumericTimedStatus, ICommonSpeedMaximumStatus
 {
-    public SwiftStatus(int stack = 1) : base("신속", stack, 99) { }
+    public SwiftStatus(int stack = 1, int duration = 1)
+        : base("신속", stack, duration) { }
+
     public int GetSpeedMaximumIncrease(BodyPart part) => Stack;
 }
 
-/// <summary>
-/// 0915 C-48: 재생은 지속형이며 Stack/Duration은 남은 턴 수를 나타낸다.
-/// 턴당 회복량과 회복 채널은 별도 데이터다.
-/// </summary>
 public enum RegenerationRecoveryChannel
 {
     HitPoints = 0,
@@ -169,49 +155,21 @@ public enum RegenerationRecoveryChannel
 }
 
 /// <summary>
-/// 0915 C-48: 지속시간, 턴당 회복량, 회복 채널을 서로 독립적으로 보관한다.
+/// 0922 저장 모델: 재생의 N은 Stack, T는 Duration으로 독립 보관한다.
+/// HP+Stagger 동시 aggregate 효과는 Phase 3에서 정본화한다.
 /// </summary>
-public sealed class RegenerationStatus : StatusEffect
+public sealed class RegenerationStatus : NumericTimedStatus
 {
-    public int HealAmount { get; private set; }
+    public int HealAmount => Stack;
     public RegenerationRecoveryChannel Channel { get; private set; }
-
-    public override StatusEffectDurationPolicy DurationPolicy =>
-        StatusEffectDurationPolicy.TurnEnd;
-
-    public override StatusEffectStackPolicy StackPolicy =>
-        StatusEffectStackPolicy.AddStacksAndRefreshDuration;
 
     public RegenerationStatus(
         int turns = 1,
         int healAmount = 1,
         RegenerationRecoveryChannel channel = RegenerationRecoveryChannel.HitPoints)
+        : base("재생", healAmount, turns)
     {
-        Name = "재생";
-        Duration = Mathf.Max(1, turns);
-        Stack = Duration;
-        HealAmount = Mathf.Max(0, healAmount);
         Channel = channel;
-    }
-
-    public override bool CanMergeWith(StatusEffect other) =>
-        other is RegenerationStatus regeneration &&
-        regeneration.Channel == Channel;
-
-    public override void Merge(StatusEffect other)
-    {
-        if (other is not RegenerationStatus regeneration ||
-            regeneration.Channel != Channel)
-            return;
-
-        // 기존 지속형 재생의 "재부여 시 남은 턴 추가" 동작은 보존하되,
-        // 회복량과 채널은 턴 수와 독립된 축으로 유지한다.
-        Duration = Mathf.Clamp(
-            Duration + Mathf.Max(1, regeneration.Duration),
-            1,
-            99);
-        HealAmount = Mathf.Max(HealAmount, regeneration.HealAmount);
-        Stack = Duration;
     }
 
     public override void OnTurnEnd(StatusEffectTickContext context)
@@ -219,48 +177,20 @@ public sealed class RegenerationStatus : StatusEffect
         if (Owner == null || HealAmount <= 0)
             return;
 
+        // Phase 2는 N/T 저장만 정본화한다.
+        // 두 회복 채널을 하나의 aggregate N으로 처리하는 것은 Phase 3 소유다.
         if (Channel == RegenerationRecoveryChannel.Stagger)
             Owner.GetMechanic<StaggerGaugeMechanic>()?.Recover(HealAmount);
         else
             Owner.RestoreCurrentHP(HealAmount);
-
-        // ProcessTurnEnd가 이 호출 뒤 Duration을 1 감소시킨다.
-        Stack = Mathf.Max(0, Duration - 1);
     }
 }
 
-/// <summary>
-/// P0 D-08: 고통은 지속형이며 비누적이다. 재부여하면 더하지 않고 더 긴 지속시간으로 갱신한다.
-/// 활성 중 모든 양수 회복량은 절반(버림), 최소 1을 보장한다.
-/// </summary>
-public sealed class PainStatus : StatusEffect
+public sealed class PainStatus : PresenceTimedStatus
 {
-    public override StatusEffectDurationPolicy DurationPolicy =>
-        StatusEffectDurationPolicy.TurnEnd;
-
-    public override StatusEffectStackPolicy StackPolicy =>
-        StatusEffectStackPolicy.RefreshDuration;
-
     public PainStatus(int turns = 1)
+        : base("고통", turns)
     {
-        Name = "고통";
-        int safeTurns = Mathf.Max(1, turns);
-        Stack = safeTurns;
-        Duration = safeTurns;
-    }
-
-    public override void Merge(StatusEffect other)
-    {
-        if (other is not PainStatus pain)
-            return;
-
-        Duration = Mathf.Max(Duration, Mathf.Max(1, pain.Duration));
-        Stack = Duration;
-    }
-
-    public override void OnTurnEnd(StatusEffectTickContext context)
-    {
-        Stack = Mathf.Max(0, Duration - 1);
     }
 
     public override int ModifyHealing(int amount)

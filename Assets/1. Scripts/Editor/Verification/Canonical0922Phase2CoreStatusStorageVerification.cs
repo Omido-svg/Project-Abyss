@@ -1,0 +1,472 @@
+﻿#if UNITY_EDITOR
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using UnityEditor;
+using UnityEngine;
+
+/// <summary>
+/// 0922 Phase 2 — Core Status Storage Model gate.
+/// Runtime 계산식(Phase 3), Deferred(Phase 4), Factory/Data(Phase 5)는 이 gate의 범위가 아니다.
+/// </summary>
+public static class Canonical0922Phase2CoreStatusStorageVerification
+{
+    private const string Phase1ReportPath =
+        "Logs/GameSystemVerification/0922_Phase1_Baseline.md";
+
+    private sealed class Check
+    {
+        public string Id;
+        public string Name;
+        public bool Passed;
+        public string Actual;
+    }
+
+    [MenuItem("Game System Verification/0922 Canonical/Phase 2 - Verify Core Status Storage")]
+    public static void VerifyFromMenu()
+    {
+        List<Check> checks = new();
+
+        AddPrerequisiteChecks(checks);
+        AddMetadataChecks(checks);
+        AddConstructorChecks(checks);
+        AddControllerBehaviorChecks(checks);
+        AddBespokeRegressionChecks(checks);
+
+        int pass = checks.Count(x => x.Passed);
+        int fail = checks.Count - pass;
+
+        string summary =
+            "[0922 Phase 2 · Core Status Storage Model]\n" +
+            $"PASS={pass} FAIL={fail}\n\n" +
+            "PASS\n- " +
+            string.Join(
+                "\n- ",
+                checks.Where(x => x.Passed)
+                    .Select(x => $"{x.Id} | {x.Name} | {x.Actual}")) +
+            "\n\nFAIL\n- " +
+            (fail == 0
+                ? "NONE"
+                : string.Join(
+                    "\n- ",
+                    checks.Where(x => !x.Passed)
+                        .Select(x => $"{x.Id} | {x.Name} | {x.Actual}"))) +
+            "\n\n" +
+            (fail == 0
+                ? "PHASE2_RESULT=PASS_CORE_STORAGE"
+                : "PHASE2_RESULT=FAIL");
+
+        WriteReport(checks, pass, fail);
+
+        if (fail > 0)
+            Debug.LogError(summary);
+        else
+            Debug.Log(summary);
+    }
+
+    private static void AddPrerequisiteChecks(List<Check> checks)
+    {
+        bool canonical =
+            Canonical0922BaselineSpec.CanonicalVersion == "0922";
+
+        Add(
+            checks,
+            "P2-H00",
+            "0922 canonical identity",
+            canonical,
+            $"Canonical={Canonical0922BaselineSpec.CanonicalVersion}");
+
+        string projectRoot =
+            Path.GetDirectoryName(Application.dataPath) ?? string.Empty;
+
+        string reportPath =
+            Path.Combine(projectRoot, Phase1ReportPath);
+
+        bool reportExists = File.Exists(reportPath);
+        string report =
+            reportExists
+                ? File.ReadAllText(reportPath)
+                : string.Empty;
+
+        bool phase1ResultPass =
+            report.Contains(
+                "PHASE1_RESULT=PASS_BASELINE_CAPTURED",
+                StringComparison.Ordinal) ||
+            report.Contains(
+                "PHASE1_RESULT = PASS_BASELINE_CAPTURED",
+                StringComparison.Ordinal);
+
+        bool phase1HarnessPass =
+            report.Contains(
+                "HARNESS_FAIL=0",
+                StringComparison.Ordinal);
+
+        bool phase1Closed =
+            reportExists &&
+            phase1ResultPass &&
+            phase1HarnessPass;
+
+        Add(
+            checks,
+            "P2-H01",
+            "Phase 1 baseline captured",
+            phase1Closed,
+            !reportExists
+                ? "Phase1 report missing"
+                : $"ReportPresent=True, ResultPass={phase1ResultPass}, HarnessPass={phase1HarnessPass}");
+    }
+
+    private static void AddMetadataChecks(List<Check> checks)
+    {
+        Add(
+            checks,
+            "P2-M01",
+            "Status storage classifications",
+            new StrengthStatus().StorageKind == StatusEffectStorageKind.NumericTimed &&
+            new PainStatus().StorageKind == StatusEffectStorageKind.PresenceTimed &&
+            new OlafFearStatus().StorageKind == StatusEffectStorageKind.PresenceTimed &&
+            new Bleeding().StorageKind == StatusEffectStorageKind.Bespoke &&
+            new YujinDesignationStatus().StorageKind == StatusEffectStorageKind.NumericTimed,
+            "Strength=Numeric, Pain/Fear=Presence, Bleeding=Bespoke, Designation=Numeric");
+
+        PainStatus pain = new PainStatus(3);
+        OlafFearStatus fear = new OlafFearStatus(3);
+
+        Add(
+            checks,
+            "P2-M02",
+            "Presence statuses expose no generic NumericValue",
+            pain.NumericValue == 0 && fear.NumericValue == 0,
+            $"PainN={pain.NumericValue}, FearN={fear.NumericValue}");
+    }
+
+    private static void AddConstructorChecks(List<Check> checks)
+    {
+        StrengthStatus uncapped =
+            new StrengthStatus(500, 25);
+
+        Add(
+            checks,
+            "P2-C01",
+            "Numeric N/T has no common hard cap",
+            uncapped.Stack == 500 &&
+            uncapped.Duration == 25,
+            $"N={uncapped.Stack}, T={uncapped.Duration}");
+
+        StrengthStatus infinite =
+            new StrengthStatus(
+                2,
+                StatusEffect.InfiniteDuration);
+
+        int before = infinite.Duration;
+        infinite.DecreaseDuration();
+
+        Add(
+            checks,
+            "P2-C02",
+            "Infinite duration does not naturally tick",
+            infinite.IsInfiniteDuration &&
+            infinite.DurationKind == StatusEffectDurationKind.Infinite &&
+            before == StatusEffect.InfiniteDuration &&
+            infinite.Duration == StatusEffect.InfiniteDuration,
+            $"Kind={infinite.DurationKind}, Duration={before}->{infinite.Duration}");
+
+        RegenerationStatus regen =
+            new RegenerationStatus(
+                3,
+                8,
+                RegenerationRecoveryChannel.HitPoints);
+
+        Add(
+            checks,
+            "P2-C03",
+            "Regeneration stores N separately from T",
+            regen.StorageKind == StatusEffectStorageKind.NumericTimed &&
+            regen.Stack == 8 &&
+            regen.NumericValue == 8 &&
+            regen.Duration == 3 &&
+            regen.HealAmount == 8,
+            $"N={regen.Stack}, T={regen.Duration}, HealAmount={regen.HealAmount}");
+
+        PainStatus longPain = new PainStatus(5);
+        longPain.Merge(new PainStatus(2));
+
+        Add(
+            checks,
+            "P2-C04",
+            "Presence max-duration refresh",
+            longPain.Duration == 5 &&
+            longPain.StorageKind == StatusEffectStorageKind.PresenceTimed,
+            $"Pain T={longPain.Duration}");
+    }
+
+    private static void AddControllerBehaviorChecks(List<Check> checks)
+    {
+        GameObject go = null;
+
+        try
+        {
+            go = new GameObject("__0922_PHASE2_STATUS_PROBE__");
+            NormalEnemy character =
+                go.AddComponent<NormalEnemy>();
+
+            CharacterStatusController controller =
+                new CharacterStatusController(character);
+
+            controller.AddStatus(
+                new StrengthStatus(5, 3),
+                character);
+
+            controller.AddStatus(
+                new StrengthStatus(2, 1),
+                character);
+
+            StrengthStatus[] strengths =
+                controller.CharacterStatuses
+                    .OfType<StrengthStatus>()
+                    .ToArray();
+
+            Add(
+                checks,
+                "P2-S01",
+                "Character Numeric same-type grants create independent entries",
+                strengths.Length == 2 &&
+                strengths.Any(x => x.Stack == 5 && x.Duration == 3) &&
+                strengths.Any(x => x.Stack == 2 && x.Duration == 1),
+                "StrengthEntries=" +
+                string.Join(
+                    ", ",
+                    strengths.Select(x => $"{x.Stack}·{x.Duration}")));
+
+            controller.AddStatus(
+                new WeaknessStatus(3, 2),
+                character);
+
+            WeaknessStatus[] weaknesses =
+                controller.CharacterStatuses
+                    .OfType<WeaknessStatus>()
+                    .ToArray();
+
+            Add(
+                checks,
+                "P2-S02",
+                "Opposite Numeric statuses remain stored",
+                controller.CharacterStatuses.OfType<StrengthStatus>().Count() == 2 &&
+                weaknesses.Length == 1 &&
+                weaknesses[0].Stack == 3 &&
+                weaknesses[0].Duration == 2,
+                $"StrengthCount={controller.CharacterStatuses.OfType<StrengthStatus>().Count()}, " +
+                $"WeaknessCount={weaknesses.Length}");
+
+            controller.AddStatus(
+                new PainStatus(5),
+                character);
+
+            controller.AddStatus(
+                new PainStatus(2),
+                character);
+
+            PainStatus[] pains =
+                controller.CharacterStatuses
+                    .OfType<PainStatus>()
+                    .ToArray();
+
+            Add(
+                checks,
+                "P2-S03",
+                "Presence status remains unique and refreshes by max duration",
+                pains.Length == 1 &&
+                pains[0].Duration == 5,
+                pains.Length == 0
+                    ? "Pain missing"
+                    : $"PainCount={pains.Length}, T={pains[0].Duration}");
+
+            controller.AddStatus(
+                new YujinDesignationStatus(3),
+                character);
+
+            controller.AddStatus(
+                new YujinDesignationStatus(2),
+                character);
+
+            YujinDesignationStatus[] designation =
+                controller.CharacterStatuses
+                    .OfType<YujinDesignationStatus>()
+                    .ToArray();
+
+            Add(
+                checks,
+                "P2-S04",
+                "Designation uses independent Numeric storage",
+                designation.Length == 2,
+                "DesignationCount=" + designation.Length);
+
+            BodyPart part =
+                new BodyPart(PartType.HEAD, 10);
+
+            part.Initialize(character);
+
+            controller.AddPartStatus(
+                part,
+                new ProtectionStatus(2, 3),
+                character);
+
+            controller.AddPartStatus(
+                part,
+                new ProtectionStatus(3, 1),
+                character);
+
+            ProtectionStatus[] protections =
+                part.StatusEffects
+                    .OfType<ProtectionStatus>()
+                    .ToArray();
+
+            Add(
+                checks,
+                "P2-S05",
+                "Part Numeric same-type grants create independent entries",
+                protections.Length == 2 &&
+                protections.Any(x => x.Stack == 2 && x.Duration == 3) &&
+                protections.Any(x => x.Stack == 3 && x.Duration == 1),
+                "ProtectionEntries=" +
+                string.Join(
+                    ", ",
+                    protections.Select(x => $"{x.Stack}·{x.Duration}")));
+        }
+        catch (Exception exception)
+        {
+            Add(
+                checks,
+                "P2-SXX",
+                "Runtime storage probe completed without exception",
+                false,
+                exception.GetType().Name + ": " + exception.Message);
+        }
+        finally
+        {
+            if (go != null)
+                UnityEngine.Object.DestroyImmediate(go);
+        }
+    }
+
+    private static void AddBespokeRegressionChecks(List<Check> checks)
+    {
+        GameObject go = null;
+
+        try
+        {
+            go = new GameObject("__0922_PHASE2_BESPOKE_PROBE__");
+            NormalEnemy character =
+                go.AddComponent<NormalEnemy>();
+
+            CharacterStatusController controller =
+                new CharacterStatusController(character);
+
+            controller.AddStatus(
+                new Bleeding(2),
+                character);
+
+            controller.AddStatus(
+                new Bleeding(3),
+                character);
+
+            Bleeding[] bleeding =
+                controller.CharacterStatuses
+                    .OfType<Bleeding>()
+                    .ToArray();
+
+            Add(
+                checks,
+                "P2-B01",
+                "Bleeding bespoke stack regression",
+                bleeding.Length == 1 &&
+                bleeding[0].Stack == 5 &&
+                bleeding[0].StorageKind == StatusEffectStorageKind.Bespoke,
+                bleeding.Length == 0
+                    ? "Bleeding missing"
+                    : $"Count={bleeding.Length}, Stack={bleeding[0].Stack}");
+        }
+        catch (Exception exception)
+        {
+            Add(
+                checks,
+                "P2-BXX",
+                "Bespoke regression probe completed without exception",
+                false,
+                exception.GetType().Name + ": " + exception.Message);
+        }
+        finally
+        {
+            if (go != null)
+                UnityEngine.Object.DestroyImmediate(go);
+        }
+    }
+
+    private static void Add(
+        List<Check> checks,
+        string id,
+        string name,
+        bool passed,
+        string actual)
+    {
+        checks.Add(
+            new Check
+            {
+                Id = id,
+                Name = name,
+                Passed = passed,
+                Actual = actual
+            });
+    }
+
+    private static void WriteReport(
+        IReadOnlyList<Check> checks,
+        int pass,
+        int fail)
+    {
+        string projectRoot =
+            Path.GetDirectoryName(Application.dataPath) ?? string.Empty;
+
+        string directory =
+            Path.Combine(
+                projectRoot,
+                "Logs",
+                "GameSystemVerification");
+
+        Directory.CreateDirectory(directory);
+
+        string path =
+            Path.Combine(
+                directory,
+                "0922_Phase2_CoreStatusStorage.md");
+
+        List<string> lines = new()
+        {
+            "# 0922 Phase 2 — Core Status Storage Model",
+            string.Empty,
+            $"- PASS: {pass}",
+            $"- FAIL: {fail}",
+            $"- RESULT: {(fail == 0 ? "PASS_CORE_STORAGE" : "FAIL")}",
+            string.Empty,
+            "## Checks",
+            string.Empty
+        };
+
+        foreach (Check check in checks)
+        {
+            lines.Add(
+                $"- [{(check.Passed ? "x" : " ")}] " +
+                $"`{check.Id}` {check.Name} — {check.Actual}");
+        }
+
+        File.WriteAllLines(path, lines);
+
+        Debug.Log(
+            "[0922 Phase 2] Report written: " + path);
+    }
+
+
+}
+
+#endif

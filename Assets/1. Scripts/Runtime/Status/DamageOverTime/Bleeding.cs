@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 
 /// <summary>
 /// 올라프 전용 고유 키워드 「출혈」.
@@ -12,6 +12,9 @@ public sealed class Bleeding : StatusEffect, IUniqueKeywordStatus
 
     public string UniqueKeywordId => KeywordId;
     public override string EffectName => KeywordId;
+
+    public override StatusEffectStorageKind StorageKind =>
+        StatusEffectStorageKind.Bespoke;
 
     public int DamagePerStack { get; private set; }
 

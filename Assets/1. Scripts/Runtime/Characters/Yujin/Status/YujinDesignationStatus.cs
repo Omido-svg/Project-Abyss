@@ -1,36 +1,17 @@
-using UnityEngine;
+﻿using UnityEngine;
 
 /// <summary>
-/// 0916 유진 전용 키워드 「지정」.
-/// 3턴 지속이며, 같은 anchor에 표식이 적립될 때 YujinMechanic이 +2를 가산한다.
+/// 0922 유진 전용 수치형 키워드 「지정」.
+/// Phase 2에서는 independent NumericTimed 저장만 적용하고, 실제 N authoring/표식 공식은 Phase 6에서 확정한다.
 /// </summary>
-public sealed class YujinDesignationStatus : StatusEffect, IUniqueKeywordStatus
+public sealed class YujinDesignationStatus : NumericTimedStatus, IUniqueKeywordStatus
 {
     public const string KeywordId = "yujin.designation";
     public string UniqueKeywordId => KeywordId;
 
-    public override StatusEffectDurationPolicy DurationPolicy =>
-        StatusEffectDurationPolicy.TurnEnd;
-
-    public override StatusEffectStackPolicy StackPolicy =>
-        StatusEffectStackPolicy.RefreshDuration;
-
+    // 기존 호출부는 단일 int를 duration으로 넘기므로 Phase 6 전까지 시그니처를 보존한다.
     public YujinDesignationStatus(int turns = 3)
+        : base("지정", 1, turns)
     {
-        Name = "지정";
-        Duration = Mathf.Max(1, turns);
-        Stack = 1;
-    }
-
-    public override bool CanMergeWith(StatusEffect other) =>
-        other is YujinDesignationStatus;
-
-    public override void Merge(StatusEffect other)
-    {
-        if (other is not YujinDesignationStatus designation)
-            return;
-
-        Duration = Mathf.Max(Duration, Mathf.Max(1, designation.Duration));
-        Stack = 1;
     }
 }
