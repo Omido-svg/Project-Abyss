@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 
 /// <summary>
 /// 0922 PresenceTimed 저장 모델의 공통 기반.
@@ -22,7 +22,7 @@ public abstract class PresenceTimedStatus : StatusEffect
     {
         Name = name;
         Stack = 1;
-        Duration = Mathf.Max(1, duration);
+        Duration = NormalizeTimedDuration(duration);
     }
 
     public override void Merge(StatusEffect other)
@@ -33,9 +33,17 @@ public abstract class PresenceTimedStatus : StatusEffect
             return;
         }
 
-        Duration = Mathf.Max(
-            Duration,
-            Mathf.Max(1, other.Duration));
+        if (Duration < 0 ||
+            other.Duration < 0)
+        {
+            Duration = InfiniteDuration;
+        }
+        else
+        {
+            Duration = Mathf.Max(
+                Duration,
+                Mathf.Max(1, other.Duration));
+        }
 
         Stack = 1;
     }

@@ -239,11 +239,12 @@ public sealed class SkillEffectEntryDrawer : PropertyDrawer
     private static List<OverrideRow> GetRows(
         UnityEngine.Object definition)
     {
-        if (definition is AddBodyPartStatusEffect)
+        if (definition is AddBodyPartStatusEffect status)
         {
-            return Rows(
-                ("OverrideStack", "Stack", "Stack"),
-                ("OverrideDuration", "Duration", "Duration"));
+            return GetStatusRows(
+                status.AuthoringSchema,
+                status.StatusEffectId,
+                includeForceCharacterStatus: false);
         }
 
         if (definition is OlafNormalBleedEffect)
@@ -253,12 +254,12 @@ public sealed class SkillEffectEntryDrawer : PropertyDrawer
                 ("OverrideDuration", "Duration", "Duration"));
         }
 
-        if (definition is ApplyStatusIfConditionEffect)
+        if (definition is ApplyStatusIfConditionEffect conditionalStatus)
         {
-            return Rows(
-                ("OverrideStack", "Stack", "Stack"),
-                ("OverrideDuration", "Duration", "Duration"),
-                ("OverrideForceCharacterStatus", "ForceCharacterStatus", "Force Character Status"));
+            return GetStatusRows(
+                conditionalStatus.AuthoringSchema,
+                conditionalStatus.StatusEffectId,
+                includeForceCharacterStatus: true);
         }
 
         if (definition is GainPrestigeEffect)
@@ -305,6 +306,63 @@ public sealed class SkillEffectEntryDrawer : PropertyDrawer
             ("OverrideResourceKey", "ResourceKey", "Resource Key"),
             ("OverrideForceCharacterStatus", "ForceCharacterStatus", "Force Character Status"),
             ("OverrideGiveToSelectedTarget", "GiveToSelectedTarget", "Give To Selected Target"));
+    }
+
+
+    private static List<OverrideRow> GetStatusRows(
+        StatusEffectAuthoringSchema schema,
+        StatusEffectId id,
+        bool includeForceCharacterStatus)
+    {
+        List<OverrideRow> result = new();
+
+        if (schema == StatusEffectAuthoringSchema.Legacy)
+        {
+            result.Add(new OverrideRow(
+                "OverrideStack",
+                "Stack",
+                "Stack"));
+            result.Add(new OverrideRow(
+                "OverrideDuration",
+                "Duration",
+                "Duration"));
+        }
+        else
+        {
+            StatusEffectStorageKind kind =
+                StatusEffectFactory.GetStorageKind(id);
+
+            if (kind == StatusEffectStorageKind.NumericTimed)
+            {
+                result.Add(new OverrideRow(
+                    "OverrideStack",
+                    "Stack",
+                    "Value (N)"));
+            }
+
+            if (kind == StatusEffectStorageKind.NumericTimed ||
+                kind == StatusEffectStorageKind.PresenceTimed)
+            {
+                result.Add(new OverrideRow(
+                    "OverrideDuration",
+                    "Duration",
+                    "Duration (T)"));
+                result.Add(new OverrideRow(
+                    "OverrideInfiniteDuration",
+                    "InfiniteDuration",
+                    "Infinite Duration (∞)"));
+            }
+        }
+
+        if (includeForceCharacterStatus)
+        {
+            result.Add(new OverrideRow(
+                "OverrideForceCharacterStatus",
+                "ForceCharacterStatus",
+                "Force Character Status"));
+        }
+
+        return result;
     }
 
     private static List<OverrideRow> Rows(

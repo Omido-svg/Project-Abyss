@@ -1,17 +1,32 @@
-﻿using UnityEngine;
+using UnityEngine;
 
 /// <summary>
 /// 0922 유진 전용 수치형 키워드 「지정」.
-/// Phase 2에서는 independent NumericTimed 저장만 적용하고, 실제 N authoring/표식 공식은 Phase 6에서 확정한다.
+/// NumericTimed N/T independent Entry이며, 실제 표식 보너스 계산은 YujinMechanic에서 수행한다.
 /// </summary>
 public sealed class YujinDesignationStatus : NumericTimedStatus, IUniqueKeywordStatus
 {
     public const string KeywordId = "yujin.designation";
     public string UniqueKeywordId => KeywordId;
 
-    // 기존 호출부는 단일 int를 duration으로 넘기므로 Phase 6 전까지 시그니처를 보존한다.
+    /// <summary>
+    /// 구 호출부 호환: 단일 int는 Duration으로 해석하고 N=1을 사용한다.
+    /// </summary>
     public YujinDesignationStatus(int turns = 3)
-        : base("지정", 1, turns)
+        : this(1, turns)
+    {
+    }
+
+    /// <summary>
+    /// 0922 canonical N/T 생성자.
+    /// </summary>
+    public YujinDesignationStatus(
+        int value,
+        int duration)
+        : base(
+            "지정",
+            Mathf.Max(0, value),
+            duration)
     {
     }
 }

@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Text;
+using UnityEngine;
 
 public static class BattleSkillUiText
 {
@@ -531,6 +532,42 @@ public static class BattleSkillUiText
         }
     }
 
+    private static string BuildStatusAuthoringDisplay(
+        StatusEffectId id,
+        StatusEffectAuthoringSchema schema,
+        int value,
+        int duration)
+    {
+        string statusName =
+            BattleKeywordGlossary
+                .GetStatusEffectDisplayName(id);
+
+        if (schema == StatusEffectAuthoringSchema.Legacy)
+        {
+            return
+                $"{statusName} " +
+                $"{Mathf.Max(1, value)}스택 / {Mathf.Max(1, duration)}턴";
+        }
+
+        StatusEffectStorageKind kind =
+            StatusEffectFactory.GetStorageKind(id);
+
+        string durationText =
+            duration < 0
+                ? "∞"
+                : Mathf.Max(1, duration).ToString();
+
+        return kind switch
+        {
+            StatusEffectStorageKind.NumericTimed =>
+                $"{statusName} {Mathf.Max(1, value)}·{durationText}",
+            StatusEffectStorageKind.PresenceTimed =>
+                $"{statusName} {durationText}턴",
+            _ =>
+                $"{statusName} (전용 규칙)"
+        };
+    }
+
     private static string BuildEffectDisplayName(
         SkillEffectEntry entry)
     {
@@ -545,40 +582,20 @@ public static class BattleSkillUiText
 
         if (effect is AddBodyPartStatusEffect status)
         {
-            int stack =
-                overrides?.ResolveStack(status.Stack) ??
-                status.Stack;
-            int duration =
-                overrides?.ResolveDuration(status.Duration) ??
-                status.Duration;
-
-            string statusName =
-                BattleKeywordGlossary
-                    .GetStatusEffectDisplayName(
-                        status.StatusEffectId);
-
-            return
-                $"{statusName} " +
-                $"{stack}스택 / {duration}턴";
+            return BuildStatusAuthoringDisplay(
+                status.StatusEffectId,
+                status.AuthoringSchema,
+                status.ResolveAuthoredValue(overrides),
+                status.ResolveAuthoredDuration(overrides));
         }
 
         if (effect is ApplyStatusIfConditionEffect conditionalStatus)
         {
-            int stack =
-                overrides?.ResolveStack(conditionalStatus.Stack) ??
-                conditionalStatus.Stack;
-            int duration =
-                overrides?.ResolveDuration(conditionalStatus.Duration) ??
-                conditionalStatus.Duration;
-
-            string statusName =
-                BattleKeywordGlossary
-                    .GetStatusEffectDisplayName(
-                        conditionalStatus.StatusEffectId);
-
-            return
-                $"{statusName} " +
-                $"{stack}스택 / {duration}턴";
+            return BuildStatusAuthoringDisplay(
+                conditionalStatus.StatusEffectId,
+                conditionalStatus.AuthoringSchema,
+                conditionalStatus.ResolveAuthoredValue(overrides),
+                conditionalStatus.ResolveAuthoredDuration(overrides));
         }
 
         if (effect is GainPrestigeEffect prestige)

@@ -35,7 +35,12 @@ public enum SkillEffectConditionType
     ResourceRange = 26,
     TargetWasWeakenedByThisDamage = 27,
     TargetWasBrokenByThisDamage = 28,
-    RuntimeAfterDamage = 29
+    RuntimeAfterDamage = 29,
+
+    // 0922 condition API: raw presence / numeric total / effective axis를 분리한다.
+    StatusPresent = 30,
+    StatusNumericTotalRange = 31,
+    StatusEffectiveAxisRange = 32
 }
 
 public enum SkillEffectConditionSubject
@@ -57,6 +62,8 @@ public class SkillEffectCondition
     public StatusEffectId StatusEffectId;
     public bool CheckCharacterStatus = true;
     public bool CheckPartStatus = true;
+    public StatusEffectEffectiveAxis EffectiveStatusAxis =
+        StatusEffectEffectiveAxis.RollShift;
 
     [Header("Part")]
     public bool AnyOwnerPart = true;
@@ -107,7 +114,13 @@ public class SkillEffectCondition
                 return context.DamageContext?.WasCritical == true;
 
             case SkillEffectConditionType.TargetHasStatus:
-                return GetStatusStack(context.Target, context.TargetPart) > 0;
+                // Legacy 이름은 유지하지만 판정 의미는 raw presence다.
+                return StatusEffectFactory.HasStatus(
+                    context.Target,
+                    context.TargetPart,
+                    StatusEffectId,
+                    CheckCharacterStatus,
+                    CheckPartStatus);
 
             case SkillEffectConditionType.OwnerHasBrokenPart:
                 return OwnerHasBrokenPart(context.Owner);
@@ -176,7 +189,34 @@ public class SkillEffectCondition
             }
 
             case SkillEffectConditionType.StatusStackRange:
+                // Legacy serialized condition. 기존 Stack 합산 의미를 보존한다.
                 return IsInRange(GetStatusStack(subject, subjectPart));
+
+            case SkillEffectConditionType.StatusPresent:
+                return StatusEffectFactory.HasStatus(
+                    subject,
+                    subjectPart,
+                    StatusEffectId,
+                    CheckCharacterStatus,
+                    CheckPartStatus);
+
+            case SkillEffectConditionType.StatusNumericTotalRange:
+                return IsInRange(
+                    StatusEffectFactory.GetNumericTotal(
+                        subject,
+                        subjectPart,
+                        StatusEffectId,
+                        CheckCharacterStatus,
+                        CheckPartStatus));
+
+            case SkillEffectConditionType.StatusEffectiveAxisRange:
+                return IsInRange(
+                    StatusEffectFactory.GetEffectiveAxis(
+                        subject,
+                        subjectPart,
+                        EffectiveStatusAxis,
+                        CheckCharacterStatus,
+                        CheckPartStatus));
 
             case SkillEffectConditionType.StaggerRatioRange:
             {
@@ -243,54 +283,19 @@ public class SkillEffectCondition
 
     private int GetStatusStack(Character target, BodyPart part)
     {
-        if (target == null)
-            return 0;
-
-        int total = 0;
-        if (CheckCharacterStatus && target.StatusEffects != null)
-        {
-            foreach (StatusEffect effect in target.StatusEffects)
-            {
-                if (MatchesStatus(effect))
-                    total += Mathf.Max(0, effect.Stack);
-            }
-        }
-
-        if (CheckPartStatus && part?.StatusEffects != null)
-        {
-            foreach (StatusEffect effect in part.StatusEffects)
-            {
-                if (MatchesStatus(effect))
-                    total += Mathf.Max(0, effect.Stack);
-            }
-        }
-
-        return total;
+        return StatusEffectFactory.GetLegacyStackTotal(
+            target,
+            part,
+            StatusEffectId,
+            CheckCharacterStatus,
+            CheckPartStatus);
     }
 
     private bool MatchesStatus(StatusEffect effect)
     {
-        if (effect == null)
-            return false;
-
-        return StatusEffectId switch
-        {
-            StatusEffectId.Bleeding or StatusEffectId.OlafBloodWound => effect is Bleeding,
-            StatusEffectId.Burn => effect is Burn,
-            StatusEffectId.Stun => effect is Stun,
-            StatusEffectId.Strength => effect is StrengthStatus,
-            StatusEffectId.Weakness => effect is WeaknessStatus,
-            StatusEffectId.Sturdy => effect is SturdyStatus,
-            StatusEffectId.Disarm => effect is DisarmStatus,
-            StatusEffectId.Fracture => effect is FractureStatus,
-            StatusEffectId.Protection => effect is ProtectionStatus,
-            StatusEffectId.Rupture => effect is RuptureStatus,
-            StatusEffectId.Heat => effect is HeatStatus,
-            StatusEffectId.Regeneration => effect is RegenerationStatus,
-            StatusEffectId.Pain => effect is PainStatus,
-            StatusEffectId.Swift => effect is SwiftStatus,
-            _ => false
-        };
+        return StatusEffectFactory.MatchesStatusId(
+            StatusEffectId,
+            effect);
     }
 
     private static int CountNegativeStatuses(Character target, BodyPart part)
@@ -324,7 +329,8 @@ public class SkillEffectCondition
         effect is Bleeding || effect is Burn || effect is Stun ||
         effect is WeaknessStatus || effect is DisarmStatus ||
         effect is FractureStatus || effect is RuptureStatus ||
-        effect is PainStatus || effect is BrokenPartStatus ||
+        effect is StagnationStatus || effect is PainStatus ||
+        effect is OlafFearStatus || effect is BrokenPartStatus ||
         effect is PartDisabledStatus;
 
     private bool OwnerHasBrokenPart(Character owner)

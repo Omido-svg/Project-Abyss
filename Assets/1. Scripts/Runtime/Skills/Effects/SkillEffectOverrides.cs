@@ -13,6 +13,8 @@ public sealed class SkillEffectOverrides
     [Min(1)] public int Stack = 1;
     public bool OverrideDuration;
     [Min(1)] public int Duration = 3;
+    public bool OverrideInfiniteDuration;
+    public bool InfiniteDuration;
 
     [Header("Numeric")]
     public bool OverrideAmount;
@@ -35,7 +37,7 @@ public sealed class SkillEffectOverrides
     public bool GiveToSelectedTarget;
 
     public bool HasAnyOverride =>
-        OverrideStack || OverrideDuration || OverrideAmount ||
+        OverrideStack || OverrideDuration || OverrideInfiniteDuration || OverrideAmount ||
         OverrideMinimum || OverrideMaximum || OverrideFlatValue ||
         OverrideMultiplier || OverrideResourceKey ||
         OverrideForceCharacterStatus || OverrideGiveToSelectedTarget;
@@ -45,6 +47,9 @@ public sealed class SkillEffectOverrides
 
     public int ResolveDuration(int fallback) =>
         OverrideDuration ? Mathf.Max(1, Duration) : Mathf.Max(1, fallback);
+
+    public bool ResolveInfiniteDuration(bool fallback) =>
+        OverrideInfiniteDuration ? InfiniteDuration : fallback;
 
     public int ResolveAmount(int fallback) =>
         OverrideAmount ? Amount : fallback;

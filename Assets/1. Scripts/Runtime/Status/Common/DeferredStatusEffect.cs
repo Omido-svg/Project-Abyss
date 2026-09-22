@@ -17,10 +17,12 @@ public sealed class DeferredStatusEffect : StatusEffect
         StatusEffectDurationPolicy.TurnStart;
 
     public bool IsNumericReservation =>
-        IsNumericStatusId(statusEffectId);
+        StatusEffectFactory.GetStorageKind(statusEffectId) ==
+        StatusEffectStorageKind.NumericTimed;
 
     public bool IsPresenceReservation =>
-        IsPresenceStatusId(statusEffectId);
+        StatusEffectFactory.GetStorageKind(statusEffectId) ==
+        StatusEffectStorageKind.PresenceTimed;
 
     public override StatusEffectStackPolicy StackPolicy =>
         IsNumericReservation
@@ -251,99 +253,32 @@ public sealed class DeferredStatusEffect : StatusEffect
     }
 
     /// <summary>
-    /// Phase 4 전용 materialization 경로.
-    /// Phase 5에서 Factory/Data Schema를 정리하기 전까지 예약 상태의 N/T를 손실 없이
-    /// 실제 runtime 상태로 옮긴다.
+    /// 0922 materialization 경로.
+    /// Phase 5부터 StatusEffectFactory의 canonical kind dispatch를 단일 진실 원천으로 사용한다.
+    /// Bespoke 예약은 legacy 전용 생성 경로로 fallback한다.
     /// </summary>
     private StatusEffect CreateMaterializedStatus()
     {
-        return statusEffectId switch
+        if (StatusEffectFactory.IsCanonicalGenericAuthorable(statusEffectId))
         {
-            StatusEffectId.Strength =>
-                new StrengthStatus(
-                    Stack,
-                    pendingDuration),
+            int canonicalValue =
+                statusEffectId == StatusEffectId.Regeneration &&
+                regenerationHealAmount > 0
+                    ? regenerationHealAmount
+                    : Stack;
 
-            StatusEffectId.Weakness =>
-                new WeaknessStatus(
-                    Stack,
-                    pendingDuration),
+            return StatusEffectFactory.CreateCanonical0922(
+                statusEffectId,
+                canonicalValue,
+                pendingDuration);
+        }
 
-            StatusEffectId.Sturdy =>
-                new SturdyStatus(
-                    Stack,
-                    pendingDuration),
-
-            StatusEffectId.Disarm =>
-                new DisarmStatus(
-                    Stack,
-                    pendingDuration),
-
-            StatusEffectId.Fracture =>
-                new FractureStatus(
-                    Stack,
-                    pendingDuration),
-
-            StatusEffectId.Protection =>
-                new ProtectionStatus(
-                    Stack,
-                    pendingDuration),
-
-            StatusEffectId.Rupture =>
-                new RuptureStatus(
-                    Stack,
-                    pendingDuration),
-
-            StatusEffectId.Heat =>
-                new HeatStatus(
-                    Stack,
-                    pendingDuration),
-
-            StatusEffectId.Swift =>
-                new SwiftStatus(
-                    Stack,
-                    pendingDuration),
-
-            StatusEffectId.Regeneration =>
-                new RegenerationStatus(
-                    pendingDuration,
-                    regenerationHealAmount > 0
-                        ? regenerationHealAmount
-                        : Stack,
-                    regenerationChannel),
-
-            StatusEffectId.Pain =>
-                new PainStatus(
-                    pendingDuration),
-
-            _ =>
-                StatusEffectFactory.Create(
-                    statusEffectId,
-                    Stack,
-                    pendingDuration,
-                    regenerationHealAmount,
-                    regenerationChannel)
-        };
+        return StatusEffectFactory.Create(
+            statusEffectId,
+            Stack,
+            pendingDuration,
+            regenerationHealAmount,
+            regenerationChannel);
     }
 
-    private static bool IsNumericStatusId(
-        StatusEffectId id)
-    {
-        return id == StatusEffectId.Strength ||
-               id == StatusEffectId.Weakness ||
-               id == StatusEffectId.Sturdy ||
-               id == StatusEffectId.Disarm ||
-               id == StatusEffectId.Fracture ||
-               id == StatusEffectId.Protection ||
-               id == StatusEffectId.Rupture ||
-               id == StatusEffectId.Heat ||
-               id == StatusEffectId.Regeneration ||
-               id == StatusEffectId.Swift;
-    }
-
-    private static bool IsPresenceStatusId(
-        StatusEffectId id)
-    {
-        return id == StatusEffectId.Pain;
-    }
 }
