@@ -229,8 +229,10 @@ internal sealed class YujinMechanicHudPresenter :
                 battleManagerProvider?.Invoke()
                     ?.BattleContext?.Enemies,
                 (enemy, part) =>
-                    mechanic?.GetMark(part) ?? 0,
-                "표식");
+                    mechanic?.GetMark(enemy, part) ?? 0,
+                "표식",
+                YujinMechanic.MarkIgnitionThreshold,
+                includeCharacterAnchorWhenNoParts: true);
 
         view?.SetSummary(builder.ToString());
         weaponView?.Refresh(mechanic);
@@ -295,7 +297,9 @@ internal static class CharacterMechanicHudTextFormatter
         StringBuilder builder,
         IReadOnlyList<Character> enemies,
         Func<Character, BodyPart, int> selector,
-        string label)
+        string label,
+        int maxValue = 0,
+        bool includeCharacterAnchorWhenNoParts = false)
     {
         if (builder == null)
             return;
@@ -310,7 +314,43 @@ internal static class CharacterMechanicHudTextFormatter
 
         foreach (Character enemy in enemies)
         {
-            if (enemy?.BodyParts == null)
+            if (enemy == null)
+                continue;
+
+            if ((enemy.BodyParts == null || enemy.BodyParts.Count == 0) &&
+                includeCharacterAnchorWhenNoParts)
+            {
+                int characterValue =
+                    Mathf.Max(
+                        0,
+                        selector(enemy, null));
+
+                if (characterValue > 0)
+                {
+                    if (wroteAnyValue)
+                        builder.AppendLine();
+
+                    builder.Append(
+                        enemy.Data?.CharacterName ??
+                        enemy.name);
+                    builder.Append("  ");
+                    builder.Append(label);
+                    builder.Append(' ');
+                    builder.Append(characterValue);
+
+                    if (maxValue > 0)
+                    {
+                        builder.Append('/');
+                        builder.Append(maxValue);
+                    }
+
+                    wroteAnyValue = true;
+                }
+
+                continue;
+            }
+
+            if (enemy.BodyParts == null)
                 continue;
 
             bool wroteEnemyName = false;
@@ -348,6 +388,12 @@ internal static class CharacterMechanicHudTextFormatter
                     GetPartDisplayName(part.Type));
                 builder.Append(' ');
                 builder.Append(value);
+
+                if (maxValue > 0)
+                {
+                    builder.Append('/');
+                    builder.Append(maxValue);
+                }
 
                 wrotePart = true;
                 wroteAnyValue = true;

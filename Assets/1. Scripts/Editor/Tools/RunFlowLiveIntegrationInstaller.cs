@@ -1,4 +1,4 @@
-﻿#if UNITY_EDITOR
+#if UNITY_EDITOR
 using System;
 using System.Collections.Generic;
 using UnityEditor;
@@ -23,6 +23,9 @@ public static class RunFlowLiveIntegrationInstaller
 
     private const string BattleScenePath =
         "Assets/5. Scenes/Battle Test Scene.unity";
+
+    private const int SilentCatalogResolveRetryLimit = 3;
+    private static int silentCatalogResolveRetryCount;
 
     static RunFlowLiveIntegrationInstaller()
     {
@@ -114,21 +117,49 @@ public static class RunFlowLiveIntegrationInstaller
         if (EditorApplication.isPlayingOrWillChangePlaymode)
             return;
 
-        // [CATALOG_WIRING_RETRY_V2]
-        // InitializeOnLoad can fire while ProjectAbyss.Runtime is still recompiling
-        // or while AssetDatabase is importing. Typed ScriptableObject loads can
-        // transiently return null in that window, so retry after the editor settles.
+        // [CATALOG_WIRING_RETRY_V3]
+        // InitializeOnLoad can run before the AssetDatabase has fully rebound typed
+        // ScriptableObject references after a domain reload / checkout / mass import.
+        // Do not emit a false-positive warning in that transient window.
         if (EditorApplication.isCompiling ||
             EditorApplication.isUpdating)
         {
-            EditorApplication.delayCall += InstallSilently;
+            QueueSilentInstallRetry();
             return;
         }
 
-        ApplyInstallation(logResult: false, saveLoadedDirtyScenes: false);
+        bool catalogsResolved =
+            ApplyInstallation(
+                logResult: false,
+                saveLoadedDirtyScenes: false);
+
+        if (catalogsResolved)
+        {
+            silentCatalogResolveRetryCount = 0;
+            return;
+        }
+
+        silentCatalogResolveRetryCount++;
+        if (silentCatalogResolveRetryCount <= SilentCatalogResolveRetryLimit)
+        {
+            QueueSilentInstallRetry();
+            return;
+        }
+
+        silentCatalogResolveRetryCount = 0;
+        Debug.LogWarning(
+            "[RunFlowLiveInstaller][CATALOG_WIRING] Catalog references are still unresolved " +
+            "after settled editor retries. Use Tools > Project Abyss > Run Flow Test > " +
+            "Install Live Integration for an explicit error report.");
     }
 
-    private static void ApplyInstallation(
+    private static void QueueSilentInstallRetry()
+    {
+        EditorApplication.delayCall -= InstallSilently;
+        EditorApplication.delayCall += InstallSilently;
+    }
+
+    private static bool ApplyInstallation(
         bool logResult,
         bool saveLoadedDirtyScenes)
     {
@@ -145,23 +176,16 @@ public static class RunFlowLiveIntegrationInstaller
             AssetDatabase.CreateAsset(registry, RegistryAssetPath);
         }
 
-        // [CATALOG_WIRING_FORCE_REIMPORT_V2]
+        // [CATALOG_WIRING_RESOLVE_V3]
+        // Prefer an already-valid registry reference. This survives the short window
+        // where LoadAssetAtPath<T>() may transiently return null after a domain reload.
+        // If no valid reference exists, use a synchronous force import before giving up.
+        bool catalogsResolved = true;
+
         RunItemCatalog loadedRunItemCatalog =
-            AssetDatabase.LoadAssetAtPath<RunItemCatalog>(
-                RunItemCatalogPath);
-
-        if (loadedRunItemCatalog == null &&
-            !EditorApplication.isCompiling &&
-            !EditorApplication.isUpdating)
-        {
-            AssetDatabase.ImportAsset(
+            ResolveCatalog(
                 RunItemCatalogPath,
-                ImportAssetOptions.ForceUpdate);
-
-            loadedRunItemCatalog =
-                AssetDatabase.LoadAssetAtPath<RunItemCatalog>(
-                    RunItemCatalogPath);
-        }
+                registry.RunItemCatalog);
 
         if (loadedRunItemCatalog != null)
         {
@@ -169,34 +193,20 @@ public static class RunFlowLiveIntegrationInstaller
         }
         else
         {
-            string message =
-                "[RunFlowLiveInstaller][CATALOG_WIRING] " +
-                "Failed to load RunItemCatalog after ForceUpdate. " +
-                "Existing registry reference is preserved: " +
-                RunItemCatalogPath;
-
+            catalogsResolved = false;
             if (logResult)
-                Debug.LogError(message);
-            else
-                Debug.LogWarning(message);
+            {
+                Debug.LogError(
+                    "[RunFlowLiveInstaller][CATALOG_WIRING] " +
+                    "Failed to resolve RunItemCatalog after synchronous import: " +
+                    RunItemCatalogPath);
+            }
         }
 
         EmotionAugmentCatalog loadedEmotionCatalog =
-            AssetDatabase.LoadAssetAtPath<EmotionAugmentCatalog>(
-                EmotionCatalogPath);
-
-        if (loadedEmotionCatalog == null &&
-            !EditorApplication.isCompiling &&
-            !EditorApplication.isUpdating)
-        {
-            AssetDatabase.ImportAsset(
+            ResolveCatalog(
                 EmotionCatalogPath,
-                ImportAssetOptions.ForceUpdate);
-
-            loadedEmotionCatalog =
-                AssetDatabase.LoadAssetAtPath<EmotionAugmentCatalog>(
-                    EmotionCatalogPath);
-        }
+                registry.EmotionAugmentCatalog);
 
         if (loadedEmotionCatalog != null)
         {
@@ -204,16 +214,14 @@ public static class RunFlowLiveIntegrationInstaller
         }
         else
         {
-            string message =
-                "[RunFlowLiveInstaller][CATALOG_WIRING] " +
-                "Failed to load EmotionAugmentCatalog after ForceUpdate. " +
-                "Existing registry reference is preserved: " +
-                EmotionCatalogPath;
-
+            catalogsResolved = false;
             if (logResult)
-                Debug.LogError(message);
-            else
-                Debug.LogWarning(message);
+            {
+                Debug.LogError(
+                    "[RunFlowLiveInstaller][CATALOG_WIRING] " +
+                    "Failed to resolve EmotionAugmentCatalog after synchronous import: " +
+                    EmotionCatalogPath);
+            }
         }
         EnsureRunSceneOverlay(saveLoadedDirtyScenes);
         EnsureBattleSceneBridgeAndRegistry(
@@ -230,6 +238,55 @@ public static class RunFlowLiveIntegrationInstaller
                 "[RunFlowLiveInstaller] 설치 완료. " +
                 "Run Flow Test에서 전투 노드 진입 후 우측 LIVE 패널의 ENTER LIVE 버튼을 사용하세요.");
         }
+
+        return catalogsResolved;
+    }
+
+    private static T ResolveCatalog<T>(
+        string assetPath,
+        T existingReference)
+        where T : UnityEngine.Object
+    {
+        T loaded = AssetDatabase.LoadAssetAtPath<T>(assetPath);
+        if (loaded != null)
+            return loaded;
+
+        if (IsExpectedAssetReference(existingReference, assetPath))
+            return existingReference;
+
+        if (EditorApplication.isCompiling ||
+            EditorApplication.isUpdating)
+        {
+            return null;
+        }
+
+        AssetDatabase.ImportAsset(
+            assetPath,
+            ImportAssetOptions.ForceUpdate |
+            ImportAssetOptions.ForceSynchronousImport);
+
+        loaded = AssetDatabase.LoadAssetAtPath<T>(assetPath);
+        if (loaded != null)
+            return loaded;
+
+        return IsExpectedAssetReference(existingReference, assetPath)
+            ? existingReference
+            : null;
+    }
+
+    private static bool IsExpectedAssetReference<T>(
+        T asset,
+        string expectedPath)
+        where T : UnityEngine.Object
+    {
+        if (asset == null)
+            return false;
+
+        string actualPath = AssetDatabase.GetAssetPath(asset);
+        return string.Equals(
+            actualPath,
+            expectedPath,
+            StringComparison.OrdinalIgnoreCase);
     }
 
     private static void EnsureRunSceneOverlay(bool saveLoadedDirtyScenes)

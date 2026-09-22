@@ -36,15 +36,27 @@ public static class BattleStatusUiText
         string category =
             GetCategoryRichText(effect);
 
-        string stack =
-            effect.Stack > 0 &&
-            !IsDurationStackStatus(effect)
-                ? $" ×{effect.Stack}"
-                : string.Empty;
+        string value =
+            effect.StorageKind switch
+            {
+                StatusEffectStorageKind.NumericTimed when effect.NumericValue > 0 =>
+                    $"  <b>{effect.NumericValue}</b>",
+                StatusEffectStorageKind.PresenceTimed =>
+                    string.Empty,
+                _ when effect.Stack > 0 =>
+                    $" ×{effect.Stack}",
+                _ =>
+                    string.Empty
+            };
+
+        string timing =
+            effect.StorageKind == StatusEffectStorageKind.Bespoke && effect.IsPermanent
+                ? "고유"
+                : FormatDuration(effect);
 
         return
-            $"{category} {ColorizeStatusName(effect, displayName)}{stack}\n" +
-            $"<size=78%>{source}  ·  {scope}  ·  {FormatDuration(effect)}</size>";
+            $"{category} {ColorizeStatusName(effect, displayName)}{value}\n" +
+            $"<size=78%>{source}  ·  {scope}  ·  {timing}</size>";
     }
 
     public static string BuildDescription(
@@ -77,13 +89,35 @@ public static class BattleStatusUiText
                 $"<color=#AEB8C8>발생 부위</color>  {BattleBodyPartUiText.GetDisplayName(effect.SourcePart)}");
         }
 
-        builder.AppendLine(
-            IsDurationStackStatus(effect)
-                ? $"<color=#AEB8C8>지속 스택(턴)</color>  {effect.Stack}"
-                : $"<color=#AEB8C8>현재 스택</color>  {effect.Stack}");
+        switch (effect.StorageKind)
+        {
+            case StatusEffectStorageKind.NumericTimed:
+                builder.AppendLine(
+                    $"<color=#AEB8C8>현재 값</color>  {effect.NumericValue}");
+                builder.AppendLine(
+                    $"<color=#AEB8C8>남은 지속</color>  {FormatDuration(effect)}");
+                break;
 
-        builder.AppendLine(
-            $"<color=#AEB8C8>남은 지속</color>  {FormatDuration(effect)}");
+            case StatusEffectStorageKind.PresenceTimed:
+                // 0922 PresenceTimed에는 gameplay N이 없다.
+                builder.AppendLine(
+                    $"<color=#AEB8C8>남은 지속</color>  {FormatDuration(effect)}");
+                break;
+
+            default:
+                if (effect.Stack > 0)
+                {
+                    builder.AppendLine(
+                        $"<color=#AEB8C8>현재 스택</color>  {effect.Stack}");
+                }
+
+                if (!effect.IsPermanent)
+                {
+                    builder.AppendLine(
+                        $"<color=#AEB8C8>남은 지속</color>  {FormatDuration(effect)}");
+                }
+                break;
+        }
 
         builder.AppendLine();
         builder.AppendLine("<b>현재 효과</b>");
@@ -100,6 +134,105 @@ public static class BattleStatusUiText
         return builder
             .ToString()
             .TrimEnd();
+    }
+
+
+    /// <summary>
+    /// 0922 Phase 11 chip renderer. Numeric / Presence / Bespoke를 서로 다른 문법으로 표시한다.
+    /// projected=true는 깜빡임의 다음 턴 프레임, reducedMotion=true는 두 값을 정적으로 함께 표시한다.
+    /// </summary>
+    public static string BuildChipLabel(
+        BattleStatusChipModel model,
+        bool projected,
+        bool reducedMotion)
+    {
+        if (model?.Representative == null)
+            return "상태 효과";
+
+        StatusEffect effect = model.Representative;
+        string displayName = GetDisplayName(effect);
+        string category = GetCategoryRichText(effect);
+        string scope = GetScopeLabel(effect);
+        string name = ColorizeStatusName(effect, displayName);
+
+        switch (model.PresentationKind)
+        {
+            case BattleStatusPresentationKind.NumericTimed:
+            {
+                string value;
+                if (reducedMotion && model.HasProjectionChange)
+                {
+                    value =
+                        $"<b>{model.CurrentTotalValue} → {model.NextTurnProjectedValue}</b>";
+                }
+                else
+                {
+                    int shown = projected
+                        ? model.NextTurnProjectedValue
+                        : model.CurrentTotalValue;
+                    value = $"<b>{shown}</b>";
+                }
+
+                string duration = FormatDuration(model.MaxRemainingDuration);
+                string frame = projected && model.HasProjectionChange
+                    ? "  ·  다음 턴"
+                    : string.Empty;
+
+                return
+                    $"{category} {name}  {value}\n" +
+                    $"<size=78%>{scope}  ·  {duration}{frame}</size>";
+            }
+
+            case BattleStatusPresentationKind.PresenceTimed:
+            {
+                string duration = FormatDuration(model.MaxRemainingDuration);
+
+                if (reducedMotion && model.HasProjectionChange)
+                {
+                    return
+                        $"{category} {name}\n" +
+                        $"<size=78%>{scope}  ·  {duration}  ·  다음 턴 해제</size>";
+                }
+
+                if (projected && !model.NextTurnActive)
+                {
+                    return
+                        $"{category} {name}\n" +
+                        $"<size=78%>{scope}  ·  다음 턴 해제</size>";
+                }
+
+                return
+                    $"{category} {name}\n" +
+                    $"<size=78%>{scope}  ·  {duration}</size>";
+            }
+
+            default:
+            {
+                if (effect is Bleeding)
+                {
+                    return
+                        $"{category} {name}  <b>{model.BespokeCurrentValue}</b>\n" +
+                        $"<size=78%>{scope}  ·  턴 종료 피해 {model.BespokeCurrentValue}</size>";
+                }
+
+                return BuildListLabel(effect, model.ViewedCharacter);
+            }
+        }
+    }
+
+    public static string BuildReducedMotionChipLabel(
+        BattleStatusChipModel model) =>
+        BuildChipLabel(
+            model,
+            projected: false,
+            reducedMotion: true);
+
+    public static string FormatDuration(int remainingTurns)
+    {
+        if (remainingTurns == StatusEffect.InfiniteDuration)
+            return "∞";
+
+        return $"{UnityEngine.Mathf.Max(0, remainingTurns)}턴";
     }
 
     public static BattleStatusDisposition GetDisposition(
@@ -122,7 +255,10 @@ public static class BattleStatusUiText
             effect is DisarmStatus ||
             effect is FractureStatus ||
             effect is RuptureStatus ||
+            effect is StagnationStatus ||
             effect is PainStatus ||
+            effect is OlafFearStatus ||
+            effect is YujinDesignationStatus ||
             effect is SealedPartStatus ||
             effect is Burn ||
             effect is Bleeding ||
@@ -269,8 +405,8 @@ public static class BattleStatusUiText
         if (effect == null)
             return "-";
 
-        if (effect.IsPermanent)
-            return "영구";
+        if (effect.IsInfiniteDuration)
+            return "∞";
 
         int duration =
             UnityEngine.Mathf.Max(
@@ -279,10 +415,6 @@ public static class BattleStatusUiText
 
         return $"{duration}턴";
     }
-
-    private static bool IsDurationStackStatus(StatusEffect effect) =>
-        effect is RegenerationStatus ||
-        effect is PainStatus;
 
     private static string GetScopeLabel(
         StatusEffect effect)

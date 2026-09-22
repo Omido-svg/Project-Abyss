@@ -8,6 +8,10 @@ public sealed class BattleStatusListUI : MonoBehaviour
     [SerializeField] private BattleStatusRowUI rowPrefab;
     [SerializeField, Min(0.05f)] private float refreshInterval = 0.2f;
 
+    [Header("0922 Status Presentation")]
+    [SerializeField] private bool reducedMotion;
+    [SerializeField, Min(0f)] private float phaseStaggerSeconds = 0.11f;
+
     private readonly List<BattleStatusRowUI> rows = new();
     private float nextRefresh;
 
@@ -23,6 +27,7 @@ public sealed class BattleStatusListUI : MonoBehaviour
     }
 
     public Character Owner => owner;
+    public bool ReducedMotion => reducedMotion;
 
     public void SetOwner(Character value)
     {
@@ -30,25 +35,34 @@ public sealed class BattleStatusListUI : MonoBehaviour
         Refresh();
     }
 
+    public void SetReducedMotion(bool value)
+    {
+        if (reducedMotion == value)
+            return;
+
+        reducedMotion = value;
+        Refresh();
+    }
+
     private void Update()
     {
-        if (Time.unscaledTime < nextRefresh) return;
+        if (Time.unscaledTime < nextRefresh)
+            return;
+
         nextRefresh = Time.unscaledTime + refreshInterval;
         Refresh();
     }
 
     public void Refresh()
     {
-        if (content == null || rowPrefab == null) return;
-        List<StatusEffect> effects = new();
-        if (owner?.StatusEffects != null) effects.AddRange(owner.StatusEffects);
-        if (owner?.BodyParts != null)
-        {
-            foreach (BodyPart part in owner.BodyParts)
-                if (part?.StatusEffects != null) effects.AddRange(part.StatusEffects);
-        }
+        if (content == null || rowPrefab == null)
+            return;
 
-        while (rows.Count < effects.Count)
+        // Phase 11: Runtime status는 읽기만 하고 projection model에서 aggregate한다.
+        List<BattleStatusChipModel> chips =
+            BattleStatusPresentationProjector.Build(owner);
+
+        while (rows.Count < chips.Count)
         {
             BattleStatusRowUI row = Instantiate(rowPrefab, content);
             row.gameObject.SetActive(true);
@@ -57,9 +71,16 @@ public sealed class BattleStatusListUI : MonoBehaviour
 
         for (int i = 0; i < rows.Count; i++)
         {
-            bool active = i < effects.Count;
+            bool active = i < chips.Count;
             rows[i].gameObject.SetActive(active);
-            if (active) rows[i].Bind(effects[i]);
+
+            if (!active)
+                continue;
+
+            rows[i].ConfigurePresentation(
+                reducedMotion,
+                i * phaseStaggerSeconds);
+            rows[i].Bind(chips[i]);
         }
     }
 }
