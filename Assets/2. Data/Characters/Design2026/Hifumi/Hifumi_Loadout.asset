@@ -34,6 +34,14 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 42d310614e662a145add939248651ade, type: 2}
   - {fileID: 11400000, guid: 93f76f7ee38b8c44c8e7825fdf0ca0a0, type: 2}
   - {fileID: 11400000, guid: d478d76fe844e2c45af9636e06ebf587, type: 2}
+  - {fileID: 11400000, guid: 78f13f44366f3354fbac8cfb961c6bb4, type: 2}
+  - {fileID: 11400000, guid: 65a889a0555985641ba2f02842b89e64, type: 2}
+  - {fileID: 11400000, guid: e53be61d1fef8404ba72456861088733, type: 2}
+  - {fileID: 11400000, guid: 1283c21ee0ccf584b8171039dfa32d12, type: 2}
+  - {fileID: 11400000, guid: 2373a60051d0c5b4fbada567b66270c6, type: 2}
+  - {fileID: 11400000, guid: bebe17ac2e80b7f448605fb85d6253ae, type: 2}
+  - {fileID: 11400000, guid: b49bc2bdc3c8c4d4b817f675e14c89c7, type: 2}
+  - {fileID: 11400000, guid: b4b000db77beb0547ad028f72218ed86, type: 2}
   PrestigeSkillPool:
   - {fileID: 11400000, guid: df86e02ab1756f54697dc8b899d334f4, type: 2}
   - {fileID: 11400000, guid: edc62875544c4684ea32e1cbdacf523e, type: 2}

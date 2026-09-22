@@ -10,15 +10,15 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: a85a262093fed2b45a6f05cb3a256be9, type: 3}
-  m_Name: "\uD47C\uB3C8 \uAC78\uAE30"
+  m_Name: M_CleanseAll
   m_EditorClassIdentifier: 
-  phaseASchemaVersion: 1
-  skillId: hifumi.normal.small_change
-  SkillName: "\uD47C\uB3C8 \uAC78\uAE30"
-  ActionType: 0
+  phaseASchemaVersion: 0
+  skillId: hifumi.duel.m.cleanse_all
+  SkillName: "\uC804\uCCB4 \uC815\uD654\uD615"
+  ActionType: 1
   Color: 0
-  BasePowerRule: 3
-  BasePower: 12
+  BasePowerRule: 1
+  BasePower: 0
   BasePowerFlatAdjustment: 0
   PhysicalType: 0
   CanBreakPart: 0
@@ -47,15 +47,39 @@ MonoBehaviour:
     SecondaryPartMode: 0
     SecondaryDamageMultiplier: 1
     AllowBrokenSecondaryParts: 1
-  Description: "[PENDING_CANONICAL][0922_PHASE8] \uD3C9\uD0C0\u2460 \uD47C\uB3C8
-    \uAC78\uAE30: 2\uAD74\uB9BC\xB7\uBE5B0\xB7(\uBC18\uACA9), \uBC18\uACA9\uC740
-    \uC77C\uBC18\uACF5\uACA9\uC2DD \uAE30\uBCF84+1+\uCE5C\uCE58\uB85C. \uAE30\uBCF8\uC704\uB825\uC740
-    (\uBBF8\uC815).\n\uCE5C\uCE58\uB85C \uD310\uC815. \uB300\uC2E4\uD328 1-2-3\uC740
-    \uD134\uB2F9 1\uD68C 60 \uC790\uD574 \uD6C4 \uAC19\uC740 \uD53C\uD574\uB97C \uBF08\uB85C
-    \uC751\uCD95\uD55C\uB2E4."
+  Description: "[PENDING_CANONICAL][0922_PHASE8] M \uC804\uCCB4 \uC815\uD654\uD615:
+    \uBF08 \uBE44\uC6A9 \uC9C0\uBD88 \uD6C4 \uCE90\uB9AD\uD130 \uC0C1\uD0DC \uC804\uBD80
+    \uC81C\uAC70(\uBD80\uC704 \uC0C1\uD0DC \uC81C\uC678). \uAD74\uB9BC\uC218/\uBE5B/\uAE30\uBCF8\uC704\uB825/\uBF08
+    \uBE44\uC6A9 (\uBBF8\uC815)\uC774\uB77C runtime \uC0AC\uC6A9 \uC7A0\uAE08."
   Keywords: []
-  Rolls: []
-  ExchangeRollCount: 2
+  Rolls:
+  - Index: 0
+    Type: 0
+    OverridePhysicalType: 0
+    PhysicalType: 0
+    DiceMode: 0
+    MinPower: 1
+    MaxPower: 1
+    RngSource: 0
+    CoinFrontChance: 0.5
+    CoinBackPower: 4
+    CoinFrontPower: 12
+    CoinFrontIsCritical: 0
+    SlotMinimum: 1
+    SlotMaximum: 9
+    ChinchiroHifumiPower: -4
+    ChinchiroBlankPower: 3
+    ChinchiroMokuPower: 7
+    ChinchiroShigoroPower: 20
+    ChinchiroArashiPower: 24
+    JudgmentModifier: 0
+    ReuseValueAcrossAction: 0
+    EffectEntries: []
+    OnWinEffectEntries: []
+    OnLoseEffectEntries: []
+    OnWinEffects: []
+    OnLoseEffects: []
+  ExchangeRollCount: 1
   RollReusePolicy: 0
   MultiRollPenalty:
     Enabled: 0
@@ -76,10 +100,10 @@ MonoBehaviour:
   CoinFrontValue: 1
   CoinBackValue: 0
   CoinFrontIsCritical: 0
-  ChinchiroArashiBonus: 18
-  ChinchiroShigoroBonus: 18
-  ChinchiroHifumiPenalty: 3
-  ChinchiroHifumiSelfDamage: 60
+  ChinchiroArashiBonus: 6
+  ChinchiroShigoroBonus: 6
+  ChinchiroHifumiPenalty: 1
+  ChinchiroHifumiSelfDamage: 1
   EffectEntries: []
   Effects: []
   OverrideEnergyCost: 1
@@ -94,4 +118,4 @@ MonoBehaviour:
   ConsumeAllCustomResource: 0
   OverridePrestigeUsePolicy: 0
   PrestigeUsePolicy: 1
-  presentationAsset: {fileID: 11400000, guid: 545daedfebfc045488c2f94b6d883ac3, type: 2}
+  presentationAsset: {fileID: 0}

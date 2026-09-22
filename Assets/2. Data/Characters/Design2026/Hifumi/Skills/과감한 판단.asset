@@ -22,14 +22,37 @@ MonoBehaviour:
   BasePowerFlatAdjustment: 1
   PhysicalType: 0
   CanBreakPart: 0
+  BreakMode: 0
   GainPrestige: 1
+  Rulebreaker:
+    Enabled: 0
+    EnergyCostReductionPerCommittedUse: 0
+    MinimumEnergyCost: 0
+    MirrorThisSkillToOpponentOnDuelMatch: 0
+    IgnoreOwnerRollModifiers: 0
+    ExplodeBleedingOncePerAction: 0
+    BleedingExplosionMultiplier: 0
+    SuppressFriendlyOneSidedHitsOnSameTargetSlot: 0
+    ConsumeAllOwnerBleedingOnExecute: 0
+    BreakAuthorityBleedingThreshold: 0
+    IgnoreWeakenPrerequisiteBleedingThreshold: 0
+    RequirePreviousTurnLastStand: 0
+    ApplyCurrentLastStandPowerBonus: 0
+    CurrentLastStandPowerBonus: 0
+    ApplyCurrentDisadvantageOrWorsePowerBonus: 0
+    CurrentDisadvantageOrWorsePowerBonus: 0
+    GrantInfiniteAttackSlotSpeedThisTurn: 0
   AttackWeight:
     Weight: 1
     SecondaryPartMode: 0
     SecondaryDamageMultiplier: 1
     AllowBrokenSecondaryParts: 1
-  Description: "\uCE5C\uCE58\uB85C \uD310\uC815. \uB300\uC2E4\uD328 1-2-3\uC740 \uD134\uB2F9
-    1\uD68C 60 \uC790\uD574 \uD6C4 \uAC19\uC740 \uD53C\uD574\uB97C \uBF08\uB85C \uC751\uCD95\uD55C\uB2E4."
+  Description: "[CANONICAL_0922_PHASE8] \uD3C9\uD0C0\u2461 \uACFC\uAC10\uD55C \uD310\uB2E8:
+    3\uAD74\uB9BC\xB7\uBE5B1\xB7\uAE30\uBCF814. \uC0AC\uC6A9\uC2DC \uBF0840(\uBD80\uC871\uC2DC
+    \uBF08+20), \uB2E4\uC74C\uD134 \uC18D\uB3C4-1. \uD569 \uB3D9\uC548 HP/\uD750\uD2B8\uB7EC\uC9D0
+    \uD53C\uD574\uB97C \uD55C \uBC88\uB3C4 \uBC1B\uC9C0 \uC54A\uC73C\uBA74 \uBF08+50.\n\uCE5C\uCE58\uB85C
+    \uD310\uC815. \uB300\uC2E4\uD328 1-2-3\uC740 \uD134\uB2F9 1\uD68C 60 \uC790\uD574
+    \uD6C4 \uAC19\uC740 \uD53C\uD574\uB97C \uBF08\uB85C \uC751\uCD95\uD55C\uB2E4."
   Keywords: []
   Rolls: []
   ExchangeRollCount: 3

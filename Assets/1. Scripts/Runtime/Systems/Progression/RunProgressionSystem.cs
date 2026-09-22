@@ -61,6 +61,107 @@ public sealed class RunEconomySettings
     }
 }
 
+
+public enum HifumiEngraveBranch
+{
+    None = 0,
+    Victory = 1,
+    Defeat = 2
+}
+
+/// <summary>
+/// 0922 §19.7 몸에 새기다의 런 영구 진행 상태.
+/// 단계 상승 임계치는 아직 (미정)이므로 여기서는 진행 축/branch lock/현재 단계를
+/// 저장하기만 하고, 임계치를 임의로 발명하지 않는다.
+/// </summary>
+[Serializable]
+public sealed class HifumiEngraveRunProgression
+{
+    public int Stage { get; private set; } = 1;
+    public HifumiEngraveBranch Branch { get; private set; } = HifumiEngraveBranch.None;
+    public int VictoryProgress { get; private set; }
+    public int DefeatProgress { get; private set; }
+
+    public void Reset()
+    {
+        Stage = 1;
+        Branch = HifumiEngraveBranch.None;
+        VictoryProgress = 0;
+        DefeatProgress = 0;
+    }
+
+    public void RecordExchangeOutcome(bool won)
+    {
+        if (Branch == HifumiEngraveBranch.Victory)
+        {
+            if (won) VictoryProgress++;
+            return;
+        }
+
+        if (Branch == HifumiEngraveBranch.Defeat)
+        {
+            if (!won) DefeatProgress++;
+            return;
+        }
+
+        if (won) VictoryProgress++;
+        else DefeatProgress++;
+    }
+
+    /// <summary>
+    /// 향후 canonical threshold data가 들어온 뒤 호출하는 승격 API.
+    /// threshold <= 0은 미정 sentinel이며 절대 자동 승격하지 않는다.
+    /// 첫 threshold 도달 축에서 branch가 lock된다.
+    /// </summary>
+    public bool TryAdvance(int victoryThreshold, int defeatThreshold)
+    {
+        if (Stage >= 4)
+            return false;
+
+        bool victoryReady = victoryThreshold > 0 && VictoryProgress >= victoryThreshold;
+        bool defeatReady = defeatThreshold > 0 && DefeatProgress >= defeatThreshold;
+
+        if (!victoryReady && !defeatReady)
+            return false;
+
+        if (Branch == HifumiEngraveBranch.None)
+        {
+            // 동시 도달은 기획상 발생 순서를 런타임이 추적해야 하지만 현재 threshold 자체가
+            // 미정이다. 호출자가 먼저 도달한 축만 ready로 넘기는 계약으로 둔다.
+            if (victoryReady == defeatReady)
+                return false;
+
+            Branch = victoryReady
+                ? HifumiEngraveBranch.Victory
+                : HifumiEngraveBranch.Defeat;
+        }
+
+        bool lockedAxisReady = Branch == HifumiEngraveBranch.Victory
+            ? victoryReady
+            : defeatReady;
+
+        if (!lockedAxisReady)
+            return false;
+
+        Stage = Mathf.Clamp(Stage + 1, 1, 4);
+        VictoryProgress = 0;
+        DefeatProgress = 0;
+        return true;
+    }
+
+    public void SetForVerification(
+        int stage,
+        HifumiEngraveBranch branch,
+        int victoryProgress = 0,
+        int defeatProgress = 0)
+    {
+        Stage = Mathf.Clamp(stage, 1, 4);
+        Branch = branch;
+        VictoryProgress = Mathf.Max(0, victoryProgress);
+        DefeatProgress = Mathf.Max(0, defeatProgress);
+    }
+}
+
 /// <summary>
 /// Run-scoped mutable progression. BattleContext receives the same SkillUpgradeState instance,
 /// so purchased upgrades affect runtime skills without copying max-level values into base assets.
@@ -78,6 +179,7 @@ public sealed class RunProgressionState
 
     public SkillUpgradeState SkillUpgrades { get; } = new();
     public RunInventory Inventory { get; } = new();
+    public HifumiEngraveRunProgression HifumiEngrave { get; } = new();
 
     public void Reset(int startingGold = 0, int startingStage = 1)
     {
@@ -86,6 +188,7 @@ public sealed class RunProgressionState
         MaximumHpBonus = 0;
         SkillUpgrades.Clear();
         Inventory.Clear();
+        HifumiEngrave.Reset();
     }
 
     public void SetStage(int stage) =>

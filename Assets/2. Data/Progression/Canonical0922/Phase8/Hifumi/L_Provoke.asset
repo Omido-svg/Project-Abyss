@@ -10,16 +10,16 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: a85a262093fed2b45a6f05cb3a256be9, type: 3}
-  m_Name: "\uBB34\uBAA8\uD55C \uBCA0\uD305"
+  m_Name: L_Provoke
   m_EditorClassIdentifier: 
-  phaseASchemaVersion: 1
-  skillId: hifumi.duel.reckless_bet
-  SkillName: "\uBB34\uBAA8\uD55C \uBCA0\uD305"
+  phaseASchemaVersion: 0
+  skillId: hifumi.duel.l.provoke
+  SkillName: "\uB3C4\uBC1C\uD615"
   ActionType: 1
-  Color: 0
+  Color: 2
   BasePowerRule: 1
-  BasePower: 13
-  BasePowerFlatAdjustment: 1
+  BasePower: 0
+  BasePowerFlatAdjustment: 0
   PhysicalType: 0
   CanBreakPart: 0
   BreakMode: 0
@@ -47,18 +47,17 @@ MonoBehaviour:
     SecondaryPartMode: 0
     SecondaryDamageMultiplier: 1
     AllowBrokenSecondaryParts: 1
-  Description: "[CANONICAL_0922_PHASE8] C \uBB34\uBAA8\uD55C \uBCA0\uD305: 5\uAD74\uB9BC\xB7\uBE5B2\xB7\uAE30\uBCF813.
-    \uC0AC\uC6A9\uC2DC \uBCF4\uC720(\uC2E4\uC81C+\uAC00\uBD88) 70 \uBBF8\uB9CC\uC774\uBA74
-    \uBF08+100+\uB2E4\uC74C\uD134 \uBC1B\uB294 HP\uD53C\uD574 +3/\uAD50\uD658, 70
-    \uC774\uC0C1\uC774\uBA74 \uBF0840 \uBE44\uC6A9.\n\uCE5C\uCE58\uB85C \uD310\uC815.
-    \uB300\uC2E4\uD328 1-2-3\uC740 \uD134\uB2F9 1\uD68C 60 \uC790\uD574 \uD6C4 \uAC19\uC740
-    \uD53C\uD574\uB97C \uBF08\uB85C \uC751\uCD95\uD55C\uB2E4."
+  Description: "[PENDING_CANONICAL][0922_PHASE8] L \uB3C4\uBC1C\uD615: BLUE 2\uAD74\uB9BC.
+    \uC0AC\uC6A9\uC2DC \uC790\uAE30 \uBD80\uC704 \uB3C4\uBC1C, \uC2B9\uB9AC\uC2DC
+    \uB2E4\uC74C\uD134 \uACAC\uACE0 + \uC784\uC2DC \uD0A4\uC6CC\uB4DC \uD54F\uAC12.
+    \uC9C0\uC18D/N/\uBE5B/\uAE30\uBCF8\uC704\uB825/\uD54F\uAC12 \uC815\uC758\uAC00
+    (\uBBF8\uC815)\uC774\uB77C runtime \uC0AC\uC6A9 \uC7A0\uAE08."
   Keywords: []
   Rolls:
   - Index: 0
     Type: 0
-    OverridePhysicalType: 1
-    PhysicalType: 2
+    OverridePhysicalType: 0
+    PhysicalType: 0
     DiceMode: 0
     MinPower: 1
     MaxPower: 1
@@ -83,8 +82,8 @@ MonoBehaviour:
     OnLoseEffects: []
   - Index: 1
     Type: 0
-    OverridePhysicalType: 1
-    PhysicalType: 2
+    OverridePhysicalType: 0
+    PhysicalType: 0
     DiceMode: 0
     MinPower: 1
     MaxPower: 1
@@ -107,85 +106,7 @@ MonoBehaviour:
     OnLoseEffectEntries: []
     OnWinEffects: []
     OnLoseEffects: []
-  - Index: 2
-    Type: 0
-    OverridePhysicalType: 1
-    PhysicalType: 2
-    DiceMode: 0
-    MinPower: 1
-    MaxPower: 1
-    RngSource: 0
-    CoinFrontChance: 0.5
-    CoinBackPower: 4
-    CoinFrontPower: 12
-    CoinFrontIsCritical: 0
-    SlotMinimum: 1
-    SlotMaximum: 9
-    ChinchiroHifumiPower: -4
-    ChinchiroBlankPower: 3
-    ChinchiroMokuPower: 7
-    ChinchiroShigoroPower: 20
-    ChinchiroArashiPower: 24
-    JudgmentModifier: 0
-    ReuseValueAcrossAction: 0
-    EffectEntries: []
-    OnWinEffectEntries: []
-    OnLoseEffectEntries: []
-    OnWinEffects: []
-    OnLoseEffects: []
-  - Index: 3
-    Type: 0
-    OverridePhysicalType: 1
-    PhysicalType: 2
-    DiceMode: 0
-    MinPower: 1
-    MaxPower: 1
-    RngSource: 0
-    CoinFrontChance: 0.5
-    CoinBackPower: 4
-    CoinFrontPower: 12
-    CoinFrontIsCritical: 0
-    SlotMinimum: 1
-    SlotMaximum: 9
-    ChinchiroHifumiPower: -4
-    ChinchiroBlankPower: 3
-    ChinchiroMokuPower: 7
-    ChinchiroShigoroPower: 20
-    ChinchiroArashiPower: 24
-    JudgmentModifier: 0
-    ReuseValueAcrossAction: 0
-    EffectEntries: []
-    OnWinEffectEntries: []
-    OnLoseEffectEntries: []
-    OnWinEffects: []
-    OnLoseEffects: []
-  - Index: 4
-    Type: 0
-    OverridePhysicalType: 1
-    PhysicalType: 2
-    DiceMode: 0
-    MinPower: 1
-    MaxPower: 1
-    RngSource: 0
-    CoinFrontChance: 0.5
-    CoinBackPower: 4
-    CoinFrontPower: 12
-    CoinFrontIsCritical: 0
-    SlotMinimum: 1
-    SlotMaximum: 9
-    ChinchiroHifumiPower: -4
-    ChinchiroBlankPower: 3
-    ChinchiroMokuPower: 7
-    ChinchiroShigoroPower: 20
-    ChinchiroArashiPower: 24
-    JudgmentModifier: 0
-    ReuseValueAcrossAction: 0
-    EffectEntries: []
-    OnWinEffectEntries: []
-    OnLoseEffectEntries: []
-    OnWinEffects: []
-    OnLoseEffects: []
-  ExchangeRollCount: 5
+  ExchangeRollCount: 2
   RollReusePolicy: 0
   MultiRollPenalty:
     Enabled: 0
@@ -206,14 +127,14 @@ MonoBehaviour:
   CoinFrontValue: 1
   CoinBackValue: 0
   CoinFrontIsCritical: 0
-  ChinchiroArashiBonus: 18
-  ChinchiroShigoroBonus: 18
-  ChinchiroHifumiPenalty: 3
-  ChinchiroHifumiSelfDamage: 60
+  ChinchiroArashiBonus: 6
+  ChinchiroShigoroBonus: 6
+  ChinchiroHifumiPenalty: 1
+  ChinchiroHifumiSelfDamage: 1
   EffectEntries: []
   Effects: []
   OverrideEnergyCost: 1
-  EnergyCost: 2
+  EnergyCost: 0
   UpgradeProfile: {fileID: 0}
   OverrideResourceRules: 0
   RequireFullPrestige: 0
@@ -224,4 +145,4 @@ MonoBehaviour:
   ConsumeAllCustomResource: 0
   OverridePrestigeUsePolicy: 0
   PrestigeUsePolicy: 1
-  presentationAsset: {fileID: 11400000, guid: ae955e731f6bcf147b1d771aa5d8f366, type: 2}
+  presentationAsset: {fileID: 0}

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using UnityEngine;
 
 /// <summary>
@@ -279,6 +279,54 @@ public sealed class HifumiDuelRuntimeSkill : DataDuelSkill
     public HifumiDuelRuntimeSkill(SkillDefinition definition) : base(definition) { }
     public override SkillRollReusePolicy RollReusePolicy => SkillRollReusePolicy.RollEachExchange;
 
+    public override int ExchangeRollCount
+    {
+        get
+        {
+            if (Definition?.SkillId == HifumiSkillIds.EngraveBody)
+            {
+                return Owner?.GetMechanic<HifumiMechanic>()?.EngraveRollCount ??
+                       base.ExchangeRollCount;
+            }
+
+            return base.ExchangeRollCount;
+        }
+    }
+
+    public override int EnergyCost
+    {
+        get
+        {
+            HifumiMechanic mechanic =
+                Owner?.GetMechanic<HifumiMechanic>();
+
+            if (Definition?.SkillId == HifumiSkillIds.EngraveBody)
+                return mechanic?.EngraveEnergyCost ?? base.EnergyCost;
+
+            if (Definition?.SkillId == HifumiSkillIds.RaiseStake)
+                return mechanic?.ResolveRaiseStakeEnergyCost(base.EnergyCost) ?? base.EnergyCost;
+
+            return base.EnergyCost;
+        }
+    }
+
+    public override bool CanUseByResource(Character character)
+    {
+        HifumiMechanic mechanic =
+            Owner?.GetMechanic<HifumiMechanic>();
+
+        if (Definition?.SkillId == HifumiSkillIds.RaiseStake &&
+            mechanic?.RaiseStakeLocked == true)
+        {
+            return false;
+        }
+
+        if (HifumiSkillIds.HasPendingCanonicalRuntimeNumbers(Definition?.SkillId))
+            return false;
+
+        return base.CanUseByResource(character);
+    }
+
     public override RollResult RollPowerResultForExchange(int exchangeIndex)
     {
         HifumiMechanic mechanic =
@@ -288,10 +336,25 @@ public sealed class HifumiDuelRuntimeSkill : DataDuelSkill
             mechanic?.ResolveDuelBasePowerAdjustment(
                 Definition?.SkillId) ?? 0;
 
-        return HifumiChinchiroRuntime.Roll(
+        RollResult result = HifumiChinchiroRuntime.Roll(
             this,
             exchangeIndex,
             adjustment);
+
+        // 0922 H 운명을 흔들다: 1·2·3은 공통 대실패가 아니라
+        // 최종 판정값 0으로 정상 비교한다.
+        if (Definition?.SkillId == HifumiSkillIds.ShakeFate &&
+            result?.ChinchiroCombination == ChinchiroCombination.Hifumi)
+        {
+            result.BasePower = 0;
+            result.RawValue = 0;
+            result.ModifiedValue = 0;
+            result.ExternalModifier = 0;
+            result.JudgmentModifier = 0;
+            result.RecalculateFinalPower();
+        }
+
+        return result;
     }
 }
 

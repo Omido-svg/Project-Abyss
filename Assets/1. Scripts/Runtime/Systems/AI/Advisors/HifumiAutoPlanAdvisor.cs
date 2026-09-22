@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 
 /// <summary>
 /// 히후미 자동계획 가중치.
@@ -28,6 +28,7 @@ public sealed class HifumiAutoPlanAdvisor : ICharacterAutoPlanAdvisor
 
         string id = context.SkillId;
         int bone = mechanic.Bone;
+        int spendableBone = mechanic.SpendableBone;
         int band = mechanic.BoneBand;
         float hpRatio =
             hifumi.MaxCombatHP > 0
@@ -84,7 +85,7 @@ public sealed class HifumiAutoPlanAdvisor : ICharacterAutoPlanAdvisor
         }
         else if (id == HifumiSkillIds.RecklessBet)
         {
-            score += bone < 70 ? 520f : 80f;
+            score += spendableBone < 70 ? 520f : 80f;
             if (hpRatio < 0.35f)
                 score -= 300f;
         }
@@ -114,7 +115,7 @@ public sealed class HifumiAutoPlanAdvisor : ICharacterAutoPlanAdvisor
         }
         else if (id == HifumiSkillIds.FoldHand)
         {
-            if (bone >= 100 && hpRatio <= 0.32f)
+            if (spendableBone >= 100 && hpRatio <= 0.32f)
                 score += 2600f;
             else
                 score -= 1600f;
@@ -154,6 +155,7 @@ public sealed class HifumiAutoPlanAdvisor : ICharacterAutoPlanAdvisor
         return mechanic == null
             ? string.Empty
             : $"뼈 {mechanic.Bone}/{HifumiMechanic.MaxBone}" +
+              (mechanic.AdvanceBone > 0 ? $" + 가불 {mechanic.AdvanceBone}" : string.Empty) +
               (mechanic.IsBloom ? " / 만개" : string.Empty) +
               $" / 구간 {mechanic.BoneBand}";
     }

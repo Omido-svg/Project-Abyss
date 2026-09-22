@@ -17,21 +17,147 @@ MonoBehaviour:
   SkillName: "\uC721\uCC38(\u8089\u65AC)"
   ActionType: 1
   Color: 0
-  BasePowerRule: 2
+  BasePowerRule: 1
   BasePower: 12
   BasePowerFlatAdjustment: 1
   PhysicalType: 0
   CanBreakPart: 0
+  BreakMode: 0
   GainPrestige: 1
+  Rulebreaker:
+    Enabled: 0
+    EnergyCostReductionPerCommittedUse: 0
+    MinimumEnergyCost: 0
+    MirrorThisSkillToOpponentOnDuelMatch: 0
+    IgnoreOwnerRollModifiers: 0
+    ExplodeBleedingOncePerAction: 0
+    BleedingExplosionMultiplier: 0
+    SuppressFriendlyOneSidedHitsOnSameTargetSlot: 0
+    ConsumeAllOwnerBleedingOnExecute: 0
+    BreakAuthorityBleedingThreshold: 0
+    IgnoreWeakenPrerequisiteBleedingThreshold: 0
+    RequirePreviousTurnLastStand: 0
+    ApplyCurrentLastStandPowerBonus: 0
+    CurrentLastStandPowerBonus: 0
+    ApplyCurrentDisadvantageOrWorsePowerBonus: 0
+    CurrentDisadvantageOrWorsePowerBonus: 0
+    GrantInfiniteAttackSlotSpeedThisTurn: 0
   AttackWeight:
     Weight: 1
     SecondaryPartMode: 0
     SecondaryDamageMultiplier: 1
     AllowBrokenSecondaryParts: 1
-  Description: "\uCE5C\uCE58\uB85C \uD310\uC815. \uB300\uC2E4\uD328 1-2-3\uC740 \uD134\uB2F9
-    1\uD68C 60 \uC790\uD574 \uD6C4 \uAC19\uC740 \uD53C\uD574\uB97C \uBF08\uB85C \uC751\uCD95\uD55C\uB2E4."
+  Description: "[CANONICAL_0922_PHASE8] A \uC721\uCC38: 4\uAD74\uB9BC\xB7\uBE5B1\xB7\uAE30\uBCF812,
+    (\uBC18\uACA9). \uBC18\uACA9 \uC131\uACF5 \uBCF4\uC0C1\uC740 \uD604\uC7AC \uBF08
+    \uAD6C\uAC04 \uAE30\uC900 +(\uAD6C\uAC04+1)*20.\n\uCE5C\uCE58\uB85C \uD310\uC815.
+    \uB300\uC2E4\uD328 1-2-3\uC740 \uD134\uB2F9 1\uD68C 60 \uC790\uD574 \uD6C4 \uAC19\uC740
+    \uD53C\uD574\uB97C \uBF08\uB85C \uC751\uCD95\uD55C\uB2E4."
   Keywords: []
-  Rolls: []
+  Rolls:
+  - Index: 0
+    Type: 0
+    OverridePhysicalType: 1
+    PhysicalType: 0
+    DiceMode: 0
+    MinPower: 1
+    MaxPower: 1
+    RngSource: 0
+    CoinFrontChance: 0.5
+    CoinBackPower: 4
+    CoinFrontPower: 12
+    CoinFrontIsCritical: 0
+    SlotMinimum: 1
+    SlotMaximum: 9
+    ChinchiroHifumiPower: -4
+    ChinchiroBlankPower: 3
+    ChinchiroMokuPower: 7
+    ChinchiroShigoroPower: 20
+    ChinchiroArashiPower: 24
+    JudgmentModifier: 0
+    ReuseValueAcrossAction: 0
+    EffectEntries: []
+    OnWinEffectEntries: []
+    OnLoseEffectEntries: []
+    OnWinEffects: []
+    OnLoseEffects: []
+  - Index: 1
+    Type: 0
+    OverridePhysicalType: 1
+    PhysicalType: 0
+    DiceMode: 0
+    MinPower: 1
+    MaxPower: 1
+    RngSource: 0
+    CoinFrontChance: 0.5
+    CoinBackPower: 4
+    CoinFrontPower: 12
+    CoinFrontIsCritical: 0
+    SlotMinimum: 1
+    SlotMaximum: 9
+    ChinchiroHifumiPower: -4
+    ChinchiroBlankPower: 3
+    ChinchiroMokuPower: 7
+    ChinchiroShigoroPower: 20
+    ChinchiroArashiPower: 24
+    JudgmentModifier: 0
+    ReuseValueAcrossAction: 0
+    EffectEntries: []
+    OnWinEffectEntries: []
+    OnLoseEffectEntries: []
+    OnWinEffects: []
+    OnLoseEffects: []
+  - Index: 2
+    Type: 0
+    OverridePhysicalType: 1
+    PhysicalType: 2
+    DiceMode: 0
+    MinPower: 1
+    MaxPower: 1
+    RngSource: 0
+    CoinFrontChance: 0.5
+    CoinBackPower: 4
+    CoinFrontPower: 12
+    CoinFrontIsCritical: 0
+    SlotMinimum: 1
+    SlotMaximum: 9
+    ChinchiroHifumiPower: -4
+    ChinchiroBlankPower: 3
+    ChinchiroMokuPower: 7
+    ChinchiroShigoroPower: 20
+    ChinchiroArashiPower: 24
+    JudgmentModifier: 0
+    ReuseValueAcrossAction: 0
+    EffectEntries: []
+    OnWinEffectEntries: []
+    OnLoseEffectEntries: []
+    OnWinEffects: []
+    OnLoseEffects: []
+  - Index: 3
+    Type: 0
+    OverridePhysicalType: 1
+    PhysicalType: 1
+    DiceMode: 0
+    MinPower: 1
+    MaxPower: 1
+    RngSource: 0
+    CoinFrontChance: 0.5
+    CoinBackPower: 4
+    CoinFrontPower: 12
+    CoinFrontIsCritical: 0
+    SlotMinimum: 1
+    SlotMaximum: 9
+    ChinchiroHifumiPower: -4
+    ChinchiroBlankPower: 3
+    ChinchiroMokuPower: 7
+    ChinchiroShigoroPower: 20
+    ChinchiroArashiPower: 24
+    JudgmentModifier: 0
+    ReuseValueAcrossAction: 0
+    EffectEntries: []
+    OnWinEffectEntries: []
+    OnLoseEffectEntries: []
+    OnWinEffects: []
+    OnLoseEffects: []
   ExchangeRollCount: 4
   RollReusePolicy: 0
   MultiRollPenalty:

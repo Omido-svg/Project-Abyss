@@ -1428,6 +1428,33 @@ public class ClashManager
         BattleAction second,
         out ClashJudgmentResult result)
     {
+        ForcedRollJudgmentDirective firstDirective =
+            GetForcedRollJudgment(first);
+        ForcedRollJudgmentDirective secondDirective =
+            GetForcedRollJudgment(second);
+
+        bool firstForcedWin =
+            firstDirective == ForcedRollJudgmentDirective.ForceWin ||
+            secondDirective == ForcedRollJudgmentDirective.ForceLoss;
+
+        bool secondForcedWin =
+            secondDirective == ForcedRollJudgmentDirective.ForceWin ||
+            firstDirective == ForcedRollJudgmentDirective.ForceLoss;
+
+        // Exactly one side owns a forced judgment. Conflicting directives fall
+        // through to the ordinary judgment instead of inventing precedence.
+        if (firstForcedWin != secondForcedWin)
+        {
+            bool firstWins = firstForcedWin;
+            result = new ClashJudgmentResult(
+                firstWins
+                    ? ClashJudgmentOutcome.FirstWins
+                    : ClashJudgmentOutcome.SecondWins,
+                firstWins ? first : second,
+                firstWins ? second : first);
+            return true;
+        }
+
         bool firstFailed = IsForcedRollFailure(first);
         bool secondFailed = IsForcedRollFailure(second);
 
@@ -1439,15 +1466,41 @@ public class ClashManager
             return false;
         }
 
-        bool firstWins = !firstFailed;
+        bool failureFirstWins = !firstFailed;
         result = new ClashJudgmentResult(
-            firstWins
+            failureFirstWins
                 ? ClashJudgmentOutcome.FirstWins
                 : ClashJudgmentOutcome.SecondWins,
-            firstWins ? first : second,
-            firstWins ? second : first);
+            failureFirstWins ? first : second,
+            failureFirstWins ? second : first);
 
         return true;
+    }
+
+    private static ForcedRollJudgmentDirective GetForcedRollJudgment(
+        BattleAction action)
+    {
+        if (action?.Owner?.Mechanics == null ||
+            action.LastRollResult == null)
+        {
+            return ForcedRollJudgmentDirective.None;
+        }
+
+        foreach (CombatMechanic mechanic in action.Owner.Mechanics)
+        {
+            if (mechanic is IForcedRollJudgmentRule rule &&
+                rule.TryGetForcedRollJudgment(
+                    action,
+                    action.LastRollResult,
+                    out ForcedRollJudgmentDirective directive,
+                    out _) &&
+                directive != ForcedRollJudgmentDirective.None)
+            {
+                return directive;
+            }
+        }
+
+        return ForcedRollJudgmentDirective.None;
     }
 
     private static bool IsForcedRollFailure(

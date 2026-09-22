@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -33,20 +33,11 @@ public sealed class HifumiCharacterVerificationCaseProvider :
         "hifumi.ui.bone_gauge";
 
     private static readonly string[] RequiredSkillIds =
-    {
-        HifumiSkillIds.SmallChange,
-        HifumiSkillIds.BoldJudgment,
-        HifumiSkillIds.Yukcham,
-        HifumiSkillIds.Goldan,
-        HifumiSkillIds.RecklessBet,
-        HifumiSkillIds.PokerFace,
-        HifumiSkillIds.EngraveBone,
-        HifumiSkillIds.GiveFlesh,
-        HifumiSkillIds.FoldHand,
-        HifumiSkillIds.GamblerMove,
-        HifumiSkillIds.AllIn,
-        HifumiSkillIds.Trick
-    };
+        HifumiSkillIds.CanonicalNormal
+            .Concat(HifumiSkillIds.CanonicalDuel)
+            .Concat(HifumiSkillIds.CanonicalPreparation)
+            .Concat(HifumiSkillIds.CanonicalPrestige)
+            .ToArray();
 
     public bool Supports(
         CharacterAuthoringBundle bundle,
@@ -62,10 +53,10 @@ public sealed class HifumiCharacterVerificationCaseProvider :
     {
         yield return CharacterVerificationCaseDefinition.Create(
             SkillCoverage,
-            "히후미 정의 스킬 12종 등록",
+            "히후미 0922 canonical 스킬 등록",
             CharacterVerificationCategory.Data,
             CharacterVerificationExecutionMode.DataOnly,
-            "TODO2/PPT에서 현재 정의된 일반 2·결투 3·도사림 4·위세 3 SkillId가 데이터 그래프에 모두 존재하는지 검사합니다.");
+            "0922 canonical 일반3·결투11·도사림4·위세3 SkillId가 데이터 그래프에 모두 존재하는지 검사합니다.");
 
         yield return CharacterVerificationCaseDefinition.Create(
             SkillContracts,
@@ -162,9 +153,9 @@ public sealed class HifumiCharacterVerificationCaseProvider :
                 .ToList();
 
         return missing.Count == 0
-            ? context.Pass("히후미 정의 SkillId 12/12", "12/12 등록")
+            ? context.Pass($"히후미 정의 SkillId {RequiredSkillIds.Length}/{RequiredSkillIds.Length}", $"{RequiredSkillIds.Length}/{RequiredSkillIds.Length} 등록")
             : context.Fail(
-                "히후미 정의 SkillId 12/12",
+                $"히후미 정의 SkillId {RequiredSkillIds.Length}/{RequiredSkillIds.Length}",
                 $"{RequiredSkillIds.Length - missing.Count}/{RequiredSkillIds.Length}",
                 "누락:\n" + string.Join("\n", missing));
     }
@@ -392,7 +383,7 @@ public sealed class HifumiCharacterVerificationCaseProvider :
             yukcham.Enabled && yukcham.CounterCount == 2 && yukcham.CounterPower == 11 &&
             yukcham.BoneGain == 60 && yukcham.Heal == 0 && !yukcham.ConsumeAllBone &&
             goldan.Enabled && goldan.CounterPower == 13 && goldan.ConsumeAllBone && goldan.Heal == 0 &&
-            bloom.CounterCount == 3 && bloom.CounterPower == 14 && bloom.Heal == 350 &&
+            bloom.CounterCount == 6 && bloom.CounterPower == 14 && bloom.Heal == 350 &&
             bloom.ConsumeAllBone && bloom.Weaken && bloom.BreakPart && bloom.MomentumPush == 25 &&
             small.Enabled && small.CounterPower == 5 && small.BoneGain == 0 && !small.ConsumeAllBone &&
             !disabled.Enabled;
@@ -456,7 +447,7 @@ public sealed class HifumiCharacterVerificationCaseProvider :
             ChinchiroCombination.Blank,
             ChinchiroCombination.Shigoro,
             ChinchiroCombination.Moku);
-        bool allInBest = mechanic.Bone == 200;
+        bool allInBest = mechanic.Bone == 500;
 
         mechanic.SetBoneForVerification(300);
         mechanic.ResolveAllInForVerification(
