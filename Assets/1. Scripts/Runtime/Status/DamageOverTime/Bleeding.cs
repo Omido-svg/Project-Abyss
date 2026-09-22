@@ -1,13 +1,17 @@
-﻿using UnityEngine;
+using UnityEngine;
 
 /// <summary>
 /// 올라프 전용 고유 키워드 「출혈」.
 /// 기존 Bleeding 타입/직렬화 참조는 마이그레이션 호환을 위해 보존한다.
-/// 턴 종료 시 피해 = 현재 스택 × DamagePerStack, 처리 후 스택 -1.
+/// 0922 canonical: N/T 상태가 아닌 bespoke stack.
+/// 턴 종료 시 피해 = 현재 스택, 처리 후 스택 -1, 0이면 제거한다.
+/// 폭발/카드 소비는 현재 스택을 참조하고 필요량 또는 전량을 직접 소비한다.
 /// </summary>
 public sealed class Bleeding : StatusEffect, IUniqueKeywordStatus
 {
-    public const int ExplosionThreshold = 10;
+    // 구 외부 호출 호환용 이름. 0922에는 별도 폭발 스택 문턱이 없으며 1 이상이면 소비 가능하다.
+    public const int ExplosionThreshold = 1;
+    public const int CanonicalDamagePerStack = 1;
     public const string KeywordId = "olaf.blood_wound";
 
     public string UniqueKeywordId => KeywordId;
@@ -16,9 +20,13 @@ public sealed class Bleeding : StatusEffect, IUniqueKeywordStatus
     public override StatusEffectStorageKind StorageKind =>
         StatusEffectStorageKind.Bespoke;
 
-    public int DamagePerStack { get; private set; }
+    public int DamagePerStack => CanonicalDamagePerStack;
 
-    public bool CanExplode => Stack >= ExplosionThreshold;
+    public int CurrentTurnEndDamage =>
+        Mathf.Max(0, Stack);
+
+    public bool CanExplode =>
+        Stack > 0;
 
     public override StatusEffectDurationPolicy DurationPolicy =>
         StatusEffectDurationPolicy.Permanent;
@@ -33,8 +41,12 @@ public sealed class Bleeding : StatusEffect, IUniqueKeywordStatus
     {
         Name = "출혈";
         Stack = Mathf.Max(0, stack);
-        Duration = -1;
-        DamagePerStack = Mathf.Max(0, damagePerStack);
+        Duration = InfiniteDuration;
+
+        // 0922 이후 출혈 피해 계수는 고정 1:1이다.
+        // 인자는 구 호출부의 named-argument 소스 호환을 위해서만 남긴다.
+        _ = duration;
+        _ = damagePerStack;
     }
 
     public void AddStacks(int amount)
@@ -55,7 +67,6 @@ public sealed class Bleeding : StatusEffect, IUniqueKeywordStatus
             return;
 
         AddStacks(bleeding.Stack);
-        DamagePerStack = Mathf.Max(DamagePerStack, bleeding.DamagePerStack);
     }
 
     public override void OnTurnEnd(StatusEffectTickContext context)
@@ -72,7 +83,7 @@ public sealed class Bleeding : StatusEffect, IUniqueKeywordStatus
                 context.TargetPart);
 
         int tickDamage =
-            Mathf.Max(0, Stack * DamagePerStack);
+            CurrentTurnEndDamage;
 
         if (tickDamage > 0)
         {

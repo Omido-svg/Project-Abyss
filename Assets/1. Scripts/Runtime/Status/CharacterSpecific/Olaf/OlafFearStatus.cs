@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 
 /// <summary>
 /// 올라프 전용 「공포」. 적 위력 -1, 비누적, 3턴. 재부여 시 지속만 max 갱신한다.
@@ -7,6 +7,7 @@ public sealed class OlafFearStatus : PresenceTimedStatus, IUniqueKeywordStatus
 {
     public const string KeywordId = "olaf.fear";
     public const int DefaultDuration = 3;
+    public const int RollPenalty = 1;
 
     public string UniqueKeywordId => KeywordId;
 
@@ -20,6 +21,6 @@ public sealed class OlafFearStatus : PresenceTimedStatus, IUniqueKeywordStatus
         if (action?.Owner != owner)
             return roll;
 
-        return Mathf.Max(1, roll - 1);
+        return Mathf.Max(1, roll - RollPenalty);
     }
 }

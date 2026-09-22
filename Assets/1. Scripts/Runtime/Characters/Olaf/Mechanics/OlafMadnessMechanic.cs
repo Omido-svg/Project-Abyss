@@ -428,13 +428,18 @@ public sealed class OlafMadnessMechanic : CombatMechanic, ICharacterUniqueGaugeP
                 continue;
 
             OlafFearStatus existing = enemy.GetStatus<OlafFearStatus>();
-            snapshots.Add(new FearRollbackSnapshot(enemy, existing?.Duration ?? 0));
+            snapshots.Add(
+                new FearRollbackSnapshot(
+                    enemy,
+                    existing != null,
+                    existing?.Duration ?? 0));
 
             battleContext.EffectResolver?.ApplyCharacterStatus(
                 EffectRequest.CharacterStatus(
                     owner,
                     enemy,
-                    new OlafFearStatus(),
+                    new OlafFearStatus(
+                        OlafFearStatus.DefaultDuration),
                     action));
         }
 
@@ -456,20 +461,35 @@ public sealed class OlafMadnessMechanic : CombatMechanic, ICharacterUniqueGaugeP
             if (current != null)
                 target.RemoveStatus(current, StatusEffectRemoveReason.Manual);
 
-            if (snapshot.PreviousDuration > 0)
-                target.AddStatus(new OlafFearStatus(snapshot.PreviousDuration), owner);
+            if (snapshot.HadFear)
+            {
+                target.AddStatus(
+                    new OlafFearStatus(
+                        snapshot.PreviousDuration),
+                    owner);
+            }
         }
     }
 
     private readonly struct FearRollbackSnapshot
     {
         public Character Target { get; }
+        public bool HadFear { get; }
         public int PreviousDuration { get; }
 
-        public FearRollbackSnapshot(Character target, int previousDuration)
+        public FearRollbackSnapshot(
+            Character target,
+            bool hadFear,
+            int previousDuration)
         {
             Target = target;
-            PreviousDuration = Mathf.Max(0, previousDuration);
+            HadFear = hadFear;
+            PreviousDuration =
+                previousDuration < 0
+                    ? StatusEffect.InfiniteDuration
+                    : Mathf.Max(
+                        0,
+                        previousDuration);
         }
     }
 }

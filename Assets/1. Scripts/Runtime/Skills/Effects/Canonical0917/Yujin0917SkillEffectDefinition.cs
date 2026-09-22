@@ -67,26 +67,12 @@ public sealed class Yujin0917SkillEffectDefinition :
         if (context.Target == null)
             return;
 
-        int current =
-            mechanic.GetMark(
-                context.Target,
-                context.TargetPart);
-
-        int add =
-            Mathf.Max(
-                0,
-                YujinMechanic.MarkIgnitionThreshold -
-                current);
-
-        if (add <= 0)
-            add = YujinMechanic.MarkIgnitionThreshold;
-
-        // GrantMark -> AddMark -> IgniteMark.
-        // 따라서 K 덫 / L 시한 delayed rider와 현재 무기별 발화가 동일 파이프라인으로 처리된다.
-        mechanic.GrantMark(
+        // 0922 Phase 6:
+        // O도 즉시/예약 표식과 동일한 ApplyMarkGain 원자 경로를 사용한다.
+        // 따라서 지정 총합, 44 발화, K/L rider, overflow 폐기가 한 곳에서 처리된다.
+        mechanic.ForceMarkIgnition(
             context.Target,
             context.TargetPart,
-            add,
             context.Action);
     }
 

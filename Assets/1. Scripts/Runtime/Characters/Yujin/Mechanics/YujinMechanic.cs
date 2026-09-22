@@ -1,6 +1,35 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using UnityEngine;
+
+public readonly struct YujinMarkGainResult
+{
+    public bool Applied { get; }
+    public bool Ignited { get; }
+    public int BaseAmount { get; }
+    public int DesignationBonus { get; }
+    public int ActualGain { get; }
+    public int PreviousMark { get; }
+    public int MarkAfter { get; }
+
+    public YujinMarkGainResult(
+        bool applied,
+        bool ignited,
+        int baseAmount,
+        int designationBonus,
+        int actualGain,
+        int previousMark,
+        int markAfter)
+    {
+        Applied = applied;
+        Ignited = ignited;
+        BaseAmount = Mathf.Max(0, baseAmount);
+        DesignationBonus = Mathf.Max(0, designationBonus);
+        ActualGain = Mathf.Max(0, actualGain);
+        PreviousMark = Mathf.Max(0, previousMark);
+        MarkAfter = Mathf.Max(0, markAfter);
+    }
+}
 
 /// <summary>
 /// 유진의 무기, 살수의 감, 표식, 봉인, 처형, 재굴림, 위세를 통합한다.
@@ -803,9 +832,57 @@ public sealed class YujinMechanic : CombatMechanic,
         int amount,
         BattleAction sourceAction = null)
     {
-        AddMark(
-            CombatStatusAnchor.Resolve(target, part),
+        ApplyMarkGain(
+            target,
+            part,
             amount,
+            sourceAction);
+    }
+
+    /// <summary>
+    /// 0922 표식의 단일 원자 진입점.
+    /// 기본 증가량 -> 현재 지정 N 총합 -> 실제 적립 -> 44 즉시 발화 -> 초과 폐기 순서를
+    /// 즉시/예약/O 강제 발화 모두 동일하게 사용한다.
+    /// </summary>
+    public YujinMarkGainResult ApplyMarkGain(
+        Character target,
+        BodyPart part,
+        int baseAmount,
+        BattleAction sourceAction = null)
+    {
+        return ApplyMarkGain(
+            CombatStatusAnchor.Resolve(
+                target,
+                part),
+            baseAmount,
+            sourceAction);
+    }
+
+    /// <summary>
+    /// O 「때를 앞당기다」용 canonical 진입점.
+    /// 현재 표식을 임계까지 채우는 기본 gain을 계산한 뒤 ApplyMarkGain을 그대로 통과시킨다.
+    /// 따라서 지정 보너스와 K/L rider도 다른 표식 증가와 동일하게 처리된다.
+    /// </summary>
+    public YujinMarkGainResult ForceMarkIgnition(
+        Character target,
+        BodyPart part,
+        BattleAction sourceAction = null)
+    {
+        int current =
+            GetMark(
+                target,
+                part);
+
+        int baseAmount =
+            Mathf.Max(
+                1,
+                MarkIgnitionThreshold -
+                current);
+
+        return ApplyMarkGain(
+            target,
+            part,
+            baseAmount,
             sourceAction);
     }
 
@@ -831,6 +908,7 @@ public sealed class YujinMechanic : CombatMechanic,
                 amount);
 
         if (!anchor.IsValid ||
+            anchor.Character.IsDead ||
             anchor.IsBroken ||
             safeAmount <= 0)
         {
@@ -851,7 +929,7 @@ public sealed class YujinMechanic : CombatMechanic,
         if (pendingMarks.Count == 0)
             return;
 
-        // AddMark 내부에서 발화/리더가 다시 예약을 만들더라도
+        // ApplyMarkGain 내부에서 발화/리더가 다시 예약을 만들더라도
         // 현재 TurnStart 배치에 섞이지 않도록 먼저 snapshot + clear 한다.
         List<PendingMarkGain> snapshot =
             new List<PendingMarkGain>(
@@ -864,7 +942,7 @@ public sealed class YujinMechanic : CombatMechanic,
             if (pending == null)
                 continue;
 
-            AddMark(
+            ApplyMarkGain(
                 pending.Anchor,
                 pending.Amount,
                 pending.SourceAction);
@@ -1261,35 +1339,108 @@ public sealed class YujinMechanic : CombatMechanic,
             return;
 
         foreach (CombatStatusAnchor anchor in anchors)
-            AddMark(anchor, amount, sourceAction);
+        {
+            ApplyMarkGain(
+                anchor,
+                amount,
+                sourceAction);
+        }
     }
 
-    private void AddMark(
-        CombatStatusAnchor anchor,
-        int amount,
-        BattleAction sourceAction)
+    public int GetDesignationTotal(
+        Character target,
+        BodyPart part = null)
+    {
+        return GetDesignationTotal(
+            CombatStatusAnchor.Resolve(
+                target,
+                part));
+    }
+
+    private static int GetDesignationTotal(
+        CombatStatusAnchor anchor)
     {
         if (!anchor.IsValid ||
+            anchor.Character.IsDead ||
+            anchor.IsBroken)
+        {
+            return 0;
+        }
+
+        return StatusEffectFactory.GetNumericTotal(
+            anchor.Character,
+            anchor.Part,
+            StatusEffectId.Designation,
+            checkCharacterStatus: true,
+            checkPartStatus: anchor.IsPartAnchor);
+    }
+
+    private YujinMarkGainResult ApplyMarkGain(
+        CombatStatusAnchor anchor,
+        int baseAmount,
+        BattleAction sourceAction)
+    {
+        int safeBaseAmount =
+            Mathf.Max(
+                0,
+                baseAmount);
+
+        if (!anchor.IsValid ||
+            anchor.Character.IsDead ||
             anchor.IsBroken ||
-            amount <= 0)
+            safeBaseAmount <= 0)
         {
-            return;
+            return default;
         }
 
-        if (HasDesignation(anchor))
-            amount += 2;
+        int designationBonus =
+            GetDesignationTotal(
+                anchor);
 
-        int value =
-            GetMark(anchor.Character, anchor.Part) +
-            amount;
+        long actualLong =
+            (long)safeBaseAmount +
+            designationBonus;
 
-        if (value < MarkIgnitionThreshold)
+        int actualGain =
+            actualLong >= int.MaxValue
+                ? int.MaxValue
+                : (int)actualLong;
+
+        int previous =
+            GetMark(
+                anchor.Character,
+                anchor.Part);
+
+        long combined =
+            (long)previous +
+            actualGain;
+
+        bool ignite =
+            combined >=
+            MarkIgnitionThreshold;
+
+        if (!ignite)
         {
-            marks[anchor] = value;
-            return;
+            int next =
+                combined >= int.MaxValue
+                    ? int.MaxValue
+                    : (int)combined;
+
+            marks[anchor] =
+                next;
+
+            return new YujinMarkGainResult(
+                applied: true,
+                ignited: false,
+                baseAmount: safeBaseAmount,
+                designationBonus: designationBonus,
+                actualGain: actualGain,
+                previousMark: previous,
+                markAfter: next);
         }
 
-        // 오버플로는 이월하지 않는다.
+        // 0922: 44 이상이 되는 즉시 발화하고 표식을 전량 소비한다.
+        // 초과분은 이월하지 않는다.
         marks[anchor] = 0;
 
         IgniteMark(
@@ -1297,6 +1448,15 @@ public sealed class YujinMechanic : CombatMechanic,
             sourceAction);
 
         TriggerJointLiability();
+
+        return new YujinMarkGainResult(
+            applied: true,
+            ignited: true,
+            baseAmount: safeBaseAmount,
+            designationBonus: designationBonus,
+            actualGain: actualGain,
+            previousMark: previous,
+            markAfter: 0);
     }
 
     public bool HasAnyMarkAtLeast(int amount)
@@ -1370,26 +1530,6 @@ public sealed class YujinMechanic : CombatMechanic,
         YujinWeaponType.Nakil => 2,
         _ => 2
     };
-
-    private static bool HasDesignation(CombatStatusAnchor anchor)
-    {
-        if (!anchor.IsValid)
-            return false;
-
-        if (anchor.Part?.StatusEffects != null)
-        {
-            foreach (StatusEffect effect in anchor.Part.StatusEffects)
-                if (effect is YujinDesignationStatus) return true;
-        }
-
-        if (anchor.Character?.StatusEffects != null)
-        {
-            foreach (StatusEffect effect in anchor.Character.StatusEffects)
-                if (effect is YujinDesignationStatus) return true;
-        }
-
-        return false;
-    }
 
     public long RegisterMarkTrap(
         Character target,
