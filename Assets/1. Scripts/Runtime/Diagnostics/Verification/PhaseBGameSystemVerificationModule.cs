@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
@@ -40,12 +40,15 @@ public sealed class PhaseBGameSystemVerificationModule : IGameSystemVerification
             "10 + 12 = 22", VerifyCrouchAdditive);
         yield return Runtime("phaseb.c25.damage_min_before_armor", "C-25", "최종 피해 min1 후 armor", GameSystemVerificationCategory.Damage,
             "flat으로 0 이하가 되어도 armor 전 1, armor가 그 1을 흡수 가능", VerifyDamageMinimumBeforeArmor);
-        yield return Static("phaseb.c27.common_status_syntax", "C-27", "공용 상태 0915 문법", GameSystemVerificationCategory.Status,
-            "Strength/Weakness 전 굴림 적용, Sturdy/Disarm 신규 효과 비활성", VerifyCommonStatusSyntax);
-        yield return Runtime("phaseb.c49.opposite_status_algebra", "C-49", "반대 상태 대수 상쇄", GameSystemVerificationCategory.Status,
-            "Strength3 + Weakness2 => Strength1", VerifyOppositeStatusAlgebra);
-        yield return Static("phaseb.c48.regeneration_dimensions", "C-48", "재생 duration/heal/channel 분리", GameSystemVerificationCategory.Status,
-            "3턴 HP+8 / 3턴 Stagger+5를 독립 표현", VerifyRegenerationDimensions);
+        // [0922_PHASE1_LEGACY_BASELINE]
+        // 0922 정본과 직접 충돌하는 pre-0922 기대값은 회귀 참고용으로만 유지한다.
+        // 새 0922 구현이 이 세 Case를 깨뜨리는 것이 정상일 수 있으므로 Required=false.
+        yield return Static("phaseb.c27.common_status_syntax", "C-27", "[LEGACY BASELINE] 공용 상태 0915 문법", GameSystemVerificationCategory.Status,
+            "LEGACY ONLY: 0915 Strength/Weakness + Sturdy/Disarm 비활성 기대", VerifyCommonStatusSyntax, required: false);
+        yield return Runtime("phaseb.c49.opposite_status_algebra", "C-49", "[LEGACY BASELINE] 반대 상태 destructive 상쇄", GameSystemVerificationCategory.Status,
+            "LEGACY ONLY: Strength3 + Weakness2 => Strength1 / Weakness 제거", VerifyOppositeStatusAlgebra, required: false);
+        yield return Static("phaseb.c48.regeneration_dimensions", "C-48", "[LEGACY BASELINE] 재생 channel 분리", GameSystemVerificationCategory.Status,
+            "LEGACY ONLY: HP/Stagger 재생을 별도 channel로 표현", VerifyRegenerationDimensions, required: false);
         yield return Static("phaseb.c41.elite_stagger_unset", "C-41", "Elite Stagger 미정=Unset", GameSystemVerificationCategory.Data,
             "Elite default maximum=0(Unset), 임의 100 금지", VerifyEliteStaggerUnset);
         yield return Static("phaseb.c43.normal_enemy_d8", "C-43", "일반 몹 D8 fallback", GameSystemVerificationCategory.Data,
@@ -54,13 +57,15 @@ public sealed class PhaseBGameSystemVerificationModule : IGameSystemVerification
 
     private static GameSystemVerificationCase Runtime(string id, string req, string name,
         GameSystemVerificationCategory category, string expected,
-        Func<GameSystemVerificationContext, GameSystemVerificationProbeResult> probe) =>
-        new(id, req, name, category, GameSystemVerificationExecutionMode.IsolatedRuntime, expected, probe, true);
+        Func<GameSystemVerificationContext, GameSystemVerificationProbeResult> probe,
+        bool required = true) =>
+        new(id, req, name, category, GameSystemVerificationExecutionMode.IsolatedRuntime, expected, probe, required);
 
     private static GameSystemVerificationCase Static(string id, string req, string name,
         GameSystemVerificationCategory category, string expected,
-        Func<GameSystemVerificationContext, GameSystemVerificationProbeResult> probe) =>
-        new(id, req, name, category, GameSystemVerificationExecutionMode.StaticContract, expected, probe, true);
+        Func<GameSystemVerificationContext, GameSystemVerificationProbeResult> probe,
+        bool required = true) =>
+        new(id, req, name, category, GameSystemVerificationExecutionMode.StaticContract, expected, probe, required);
 
     private static bool Fixture(GameSystemVerificationContext context,
         out GameSystemVerificationFixture fixture, out GameSystemVerificationProbeResult failure)
