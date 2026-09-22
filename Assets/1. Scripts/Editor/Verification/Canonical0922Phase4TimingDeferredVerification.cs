@@ -134,7 +134,7 @@ public static class Canonical0922Phase4TimingDeferredVerification
                 new DeferredStatusEffect(
                     StatusEffectId.Strength,
                     2,
-                    1),
+                    3),
                 owner);
 
             controller.AddStatus(
@@ -157,8 +157,12 @@ public static class Canonical0922Phase4TimingDeferredVerification
                 "P4-D01",
                 "Deferred Numeric reservations remain independent",
                 numericQueued.Length == 2 &&
-                numericQueued.Any(x => x.Stack == 2) &&
-                numericQueued.Any(x => x.Stack == 3),
+                numericQueued.Any(x =>
+                    x.Stack == 2 &&
+                    x.PendingDuration == 3) &&
+                numericQueued.Any(x =>
+                    x.Stack == 3 &&
+                    x.PendingDuration == 1),
                 "QueuedStrength=" +
                 string.Join(
                     ", ",
@@ -221,8 +225,30 @@ public static class Canonical0922Phase4TimingDeferredVerification
                 "P4-D03",
                 "Deferred Numeric entries materialize independently at TurnStart",
                 materializedStrength.Length == 2 &&
-                materializedStrength.Sum(x => x.Stack) == 5,
-                $"StrengthCount={materializedStrength.Length}, Total={materializedStrength.Sum(x => x.Stack)}");
+                materializedStrength.Any(x =>
+                    x.Stack == 2 &&
+                    x.Duration == 3) &&
+                materializedStrength.Any(x =>
+                    x.Stack == 3 &&
+                    x.Duration == 1),
+                "Strength=" +
+                string.Join(
+                    ", ",
+                    materializedStrength.Select(
+                        x => $"{x.Stack}·{x.Duration}")));
+
+            PainStatus pain =
+                controller.CharacterStatuses
+                    .OfType<PainStatus>()
+                    .FirstOrDefault();
+
+            Add(
+                checks,
+                "P4-D03B",
+                "Deferred Presence materializes with preserved duration",
+                pain != null &&
+                pain.Duration == 5,
+                $"PainDuration={(pain == null ? 0 : pain.Duration)}");
 
             int swiftBonus =
                 swift?.GetSpeedMaximumIncrease(
@@ -306,16 +332,43 @@ public static class Canonical0922Phase4TimingDeferredVerification
             ReadSource(
                 "Assets/1. Scripts/Runtime/Characters/Yujin/Mechanics/YujinMechanic.cs");
 
-        bool queuedMark =
-            yujin.Contains(
-                "QueueMarkForNextTurn",
-                StringComparison.Ordinal) &&
-            yujin.Contains(
-                "MaterializePendingMarks();",
-                StringComparison.Ordinal) &&
-            yujin.Contains(
-                "AddMark(",
+        int queueMarkMethod =
+            yujin.IndexOf(
+                "public bool QueueMarkForNextTurn(",
                 StringComparison.Ordinal);
+
+        int yujinTurnStart =
+            yujin.IndexOf(
+                "private void OnTurnStart(int turn)",
+                StringComparison.Ordinal);
+
+        int materializeCall =
+            yujinTurnStart >= 0
+                ? yujin.IndexOf(
+                    "MaterializePendingMarks();",
+                    yujinTurnStart,
+                    StringComparison.Ordinal)
+                : -1;
+
+        int materializeMethod =
+            yujin.IndexOf(
+                "private void MaterializePendingMarks()",
+                StringComparison.Ordinal);
+
+        int addMarkFromPending =
+            materializeMethod >= 0
+                ? yujin.IndexOf(
+                    "AddMark(",
+                    materializeMethod,
+                    StringComparison.Ordinal)
+                : -1;
+
+        bool queuedMark =
+            queueMarkMethod >= 0 &&
+            yujinTurnStart >= 0 &&
+            materializeCall > yujinTurnStart &&
+            materializeMethod >= 0 &&
+            addMarkFromPending > materializeMethod;
 
         Add(
             checks,
@@ -323,8 +376,36 @@ public static class Canonical0922Phase4TimingDeferredVerification
             "Delayed Mark has TurnStart materialization path",
             queuedMark,
             queuedMark
-                ? "Queue -> MaterializePendingMarks -> AddMark canonical path"
-                : "Delayed Mark path missing");
+                ? "Queue -> TurnStart MaterializePendingMarks -> AddMark"
+                : $"Queue={queueMarkMethod}, TurnStart={yujinTurnStart}, Call={materializeCall}, Method={materializeMethod}, AddMark={addMarkFromPending}");
+
+        int clearPendingBeforeApply =
+            materializeMethod >= 0
+                ? yujin.IndexOf(
+                    "pendingMarks.Clear();",
+                    materializeMethod,
+                    StringComparison.Ordinal)
+                : -1;
+
+        bool atomicIgnitionPath =
+            queuedMark &&
+            clearPendingBeforeApply > materializeMethod &&
+            clearPendingBeforeApply < addMarkFromPending &&
+            yujin.Contains(
+                "MarkIgnitionThreshold",
+                StringComparison.Ordinal) &&
+            yujin.Contains(
+                "IgniteMark(",
+                StringComparison.Ordinal);
+
+        Add(
+            checks,
+            "P4-T03",
+            "Delayed Mark reuses atomic designation / 44 ignition path",
+            atomicIgnitionPath,
+            atomicIgnitionPath
+                ? "Pending gains snapshot/clear then flow through AddMark -> IgniteMark"
+                : "Atomic delayed Mark ignition wiring missing");
     }
 
     private static void AddPlanningChecks(

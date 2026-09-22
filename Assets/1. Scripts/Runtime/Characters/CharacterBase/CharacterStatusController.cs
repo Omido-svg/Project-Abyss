@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 
@@ -175,6 +175,11 @@ public class CharacterStatusController
 
         effect.Initialize(owner, source, part);
 
+        if (effect is DeferredStatusEffect deferredPart)
+        {
+            deferredPart.BindMaterializationController(this);
+        }
+
         StatusEffect existing =
             FindSamePartStatus(part, effect);
 
@@ -238,6 +243,11 @@ public class CharacterStatusController
         }
 
         effect.Initialize(owner, source, null, sourcePart);
+
+        if (effect is DeferredStatusEffect deferredCharacter)
+        {
+            deferredCharacter.BindMaterializationController(this);
+        }
 
         StatusEffect existing =
             FindSameStatus(effect);

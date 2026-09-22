@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -26,6 +26,28 @@ public sealed class YujinMechanic : CombatMechanic,
 
     private readonly DelayedEffectTriggerQueue
         delayedTriggers = new();
+
+    // 0922: "다음 턴 표식 +N"은 발화 rider와 다른 예약 축이다.
+    // 각 gain을 독립 보존해야 실제 적립 시 지정 보너스와 44 발화가 gain마다 적용된다.
+    private readonly List<PendingMarkGain>
+        pendingMarks = new();
+
+    private sealed class PendingMarkGain
+    {
+        public CombatStatusAnchor Anchor;
+        public int Amount;
+        public BattleAction SourceAction;
+
+        public PendingMarkGain(
+            CombatStatusAnchor anchor,
+            int amount,
+            BattleAction sourceAction)
+        {
+            Anchor = anchor;
+            Amount = amount;
+            SourceAction = sourceAction;
+        }
+    }
 
     // Planning에서 즉시 적용되는 도사림을 ActionId 단위로 추적한다.
     // 우클릭/AutoPlan 재계획 시 특정 슬롯 하나만 취소해도 다른 동일 도사림은 유지된다.
@@ -68,6 +90,7 @@ public sealed class YujinMechanic : CombatMechanic,
     public IYujinPeekDecisionProvider PeekDecisionProvider { get; set; }
 
     public int PendingDelayedTriggerCount => delayedTriggers.Count;
+    public int PendingMarkCount => pendingMarks.Count;
 
     public bool HasUsedWeaponSwitchThisTurn =>
         weaponSwitchUsedThisTurn;
@@ -148,6 +171,7 @@ public sealed class YujinMechanic : CombatMechanic,
     public override void OnUnregister()
     {
         marks.Clear();
+        pendingMarks.Clear();
         freeRetrialRerolls.Clear();
         delayedTriggers.Clear();
         PeekDecisionProvider = null;
@@ -785,6 +809,68 @@ public sealed class YujinMechanic : CombatMechanic,
             sourceAction);
     }
 
+    /// <summary>
+    /// 0922 예약 표식 공용 진입점.
+    /// 지금 표식을 올리지 않고 다음 TurnStart의 OnTurnStart observer에서 실제 적립한다.
+    /// 예약 gain은 합치지 않는다. 실제 적립마다 지정 총합과 44 발화를 다시 판정해야 하기 때문이다.
+    /// </summary>
+    public bool QueueMarkForNextTurn(
+        Character target,
+        BodyPart part,
+        int amount,
+        BattleAction sourceAction = null)
+    {
+        CombatStatusAnchor anchor =
+            CombatStatusAnchor.Resolve(
+                target,
+                part);
+
+        int safeAmount =
+            Mathf.Max(
+                0,
+                amount);
+
+        if (!anchor.IsValid ||
+            anchor.IsBroken ||
+            safeAmount <= 0)
+        {
+            return false;
+        }
+
+        pendingMarks.Add(
+            new PendingMarkGain(
+                anchor,
+                safeAmount,
+                sourceAction));
+
+        return true;
+    }
+
+    private void MaterializePendingMarks()
+    {
+        if (pendingMarks.Count == 0)
+            return;
+
+        // AddMark 내부에서 발화/리더가 다시 예약을 만들더라도
+        // 현재 TurnStart 배치에 섞이지 않도록 먼저 snapshot + clear 한다.
+        List<PendingMarkGain> snapshot =
+            new List<PendingMarkGain>(
+                pendingMarks);
+
+        pendingMarks.Clear();
+
+        foreach (PendingMarkGain pending in snapshot)
+        {
+            if (pending == null)
+                continue;
+
+            AddMark(
+                pending.Anchor,
+                pending.Amount,
+                pending.SourceAction);
+        }
+    }
+
     public int GetSkillPower(
         Skill skill,
         bool front)
@@ -1003,6 +1089,11 @@ public sealed class YujinMechanic : CombatMechanic,
                 $"Turn={turn}");
         }
 
+        // TurnManager가 Character.TurnStart(예약 공용 상태) 뒤에 이 observer를 호출한다.
+        // 따라서 예약 표식도 speed roll 전에 여기서 실제 AddMark 경로로 확정된다.
+        // 환형은 "이번 턴부터 새 무기"이므로 새 무기 적용 뒤에 발화 판정을 수행한다.
+        MaterializePendingMarks();
+
         weaponSwitchUsedThisTurn = false;
         AddSense(1);
     }
@@ -1019,6 +1110,7 @@ public sealed class YujinMechanic : CombatMechanic,
     {
         sense = 0;
         marks.Clear();
+        pendingMarks.Clear();
         delayedTriggers.Clear();
         freeRetrialRerolls.Clear();
         hasPendingWeapon = false;
@@ -1743,6 +1835,32 @@ public sealed class YujinMechanic : CombatMechanic,
 
         foreach (CombatStatusAnchor anchor in toRemove)
             marks.Remove(anchor);
+
+        for (int index = pendingMarks.Count - 1;
+             index >= 0;
+             index--)
+        {
+            PendingMarkGain pending =
+                pendingMarks[index];
+
+            if (pending == null ||
+                !ReferenceEquals(
+                    pending.Anchor.Character,
+                    target))
+            {
+                continue;
+            }
+
+            if (part != null &&
+                !ReferenceEquals(
+                    pending.Anchor.Part,
+                    part))
+            {
+                continue;
+            }
+
+            pendingMarks.RemoveAt(index);
+        }
 
         if (part == null)
             delayedTriggers.RemoveForCharacter(target);

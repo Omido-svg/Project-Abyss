@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -144,13 +144,18 @@ public class TurnManager
         battleLogger?.Clear();
 
         // 페이즈 전환으로 활성 Skill 집합이 바뀌는 경우
-        // OnTurnStart Observer가 실행되기 전에 구독 수명을 먼저 갱신한다.
+        // Character TurnStart / OnTurnStart Observer가 실행되기 전에 구독 수명을 먼저 갱신한다.
         PrepareCharacterTurnStart();
+
+        // 0922 canonical TurnStart ordering:
+        // 1) 예약된 공용 상태를 실제 상태로 materialize
+        // 2) TurnStart observer에서 예약 표식/캐릭터 예약 효과 materialize
+        // 3) 그 뒤 속도 굴림
+        // 예약 신속과 예약 표식이 모두 그 턴의 speed phase보다 먼저 확정되어야 한다.
+        RunCharacterTurnStart();
 
         battleContext?._battleEvent?
             .RaiseTurnStart(CurrentTurn);
-
-        RunCharacterTurnStart();
 
         speedManager?.RollAllSpeed();
         speedManager?.PrintSpeeds();

@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using UnityEngine;
 
 public abstract class StatusEffect
@@ -243,6 +243,18 @@ public abstract class StatusEffect
     internal void PrepareRemoval(StatusEffectRemoveReason reason)
     {
         LastRemoveReason = reason;
+    }
+
+    /// <summary>
+    /// Planning 단계에서 상태 적용을 취소할 때 적용 직전의 정확한 runtime 상태로 되돌린다.
+    /// 기본 상태는 Stack/Duration만 복원하며, 별도 내부 상태를 가진 파생 클래스는 override한다.
+    /// </summary>
+    internal virtual void RestoreStateForPlanning(
+        int stack,
+        int duration)
+    {
+        Stack = stack;
+        Duration = duration;
     }
 
     public virtual int ModifyRoll(BattleAction action, int roll)

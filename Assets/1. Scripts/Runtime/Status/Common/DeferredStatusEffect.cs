@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 
 /// <summary>
 /// 0922 다음 턴 예약 상태.
@@ -206,12 +206,7 @@ public sealed class DeferredStatusEffect : StatusEffect
             return;
 
         StatusEffect actual =
-            StatusEffectFactory.Create(
-                statusEffectId,
-                Stack,
-                pendingDuration,
-                regenerationHealAmount,
-                regenerationChannel);
+            CreateMaterializedStatus();
 
         if (actual == null)
             return;
@@ -253,6 +248,82 @@ public sealed class DeferredStatusEffect : StatusEffect
                 source,
                 sourcePart);
         }
+    }
+
+    /// <summary>
+    /// Phase 4 전용 materialization 경로.
+    /// Phase 5에서 Factory/Data Schema를 정리하기 전까지 예약 상태의 N/T를 손실 없이
+    /// 실제 runtime 상태로 옮긴다.
+    /// </summary>
+    private StatusEffect CreateMaterializedStatus()
+    {
+        return statusEffectId switch
+        {
+            StatusEffectId.Strength =>
+                new StrengthStatus(
+                    Stack,
+                    pendingDuration),
+
+            StatusEffectId.Weakness =>
+                new WeaknessStatus(
+                    Stack,
+                    pendingDuration),
+
+            StatusEffectId.Sturdy =>
+                new SturdyStatus(
+                    Stack,
+                    pendingDuration),
+
+            StatusEffectId.Disarm =>
+                new DisarmStatus(
+                    Stack,
+                    pendingDuration),
+
+            StatusEffectId.Fracture =>
+                new FractureStatus(
+                    Stack,
+                    pendingDuration),
+
+            StatusEffectId.Protection =>
+                new ProtectionStatus(
+                    Stack,
+                    pendingDuration),
+
+            StatusEffectId.Rupture =>
+                new RuptureStatus(
+                    Stack,
+                    pendingDuration),
+
+            StatusEffectId.Heat =>
+                new HeatStatus(
+                    Stack,
+                    pendingDuration),
+
+            StatusEffectId.Swift =>
+                new SwiftStatus(
+                    Stack,
+                    pendingDuration),
+
+            StatusEffectId.Regeneration =>
+                new RegenerationStatus(
+                    pendingDuration,
+                    regenerationHealAmount > 0
+                        ? regenerationHealAmount
+                        : Stack,
+                    regenerationChannel),
+
+            StatusEffectId.Pain =>
+                new PainStatus(
+                    pendingDuration),
+
+            _ =>
+                StatusEffectFactory.Create(
+                    statusEffectId,
+                    Stack,
+                    pendingDuration,
+                    regenerationHealAmount,
+                    regenerationChannel)
+        };
     }
 
     private static bool IsNumericStatusId(
