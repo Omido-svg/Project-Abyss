@@ -17,12 +17,12 @@ MonoBehaviour:
   Emotion: 6
   Tier: 1
   OfferWeight: 1
-  Description: "\uC57D\uD654\uB41C \uBD80\uC704\uAC00 \uD558\uB098\uC77C \uB54C\uB294
-    \uD398\uB110\uD2F0 \uC5C6\uC74C"
+  Description: "\uC57D\uD654 \uBD80\uC704\uAC00 \uC815\uD655\uD788 \uD558\uB098\uC77C
+    \uB54C \uADF8 \uC57D\uD654 \uD398\uB110\uD2F0\uB97C \uC801\uC6A9\uD558\uC9C0
+    \uC54A\uB294\uB2E4."
   DesignStatus: "\uD655\uC815"
   RuntimeReadiness: 0
-  RuntimeNote: "[TEMP_BALANCE_V1] \uC815\uC2DD \uC804\uC6A9 hook \uD655\uC815 \uC804
-    flat proxy \uC5F0\uACB0. \uAE30\uC874 \uC774\uB984/\uC124\uBA85/DesignStatus\uB294
-    0916 \uC6D0\uBCF8 \uBCF4\uC874."
+  RuntimeNote: '[0923 Emotion33] 0922 canonical runtime effect connected; TEMP_BALANCE_V1
+    removed.'
   Effects:
-  - {fileID: 11400000, guid: d5220d454a0268143a631949e89dcc13, type: 2}
+  - {fileID: 11400000, guid: f0458458a6b7cfa45bc7f6541b99b49f, type: 2}

@@ -1,0 +1,21 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1b99d7ef87f4b6941a85171f56e80da5, type: 3}
+  m_Name: Faith_T3_02_BlockToHeal
+  m_EditorClassIdentifier: 
+  Kind: 15
+  Amount: 0
+  SecondaryAmount: 0
+  Duration: 1
+  MaximumTotal: 0
+  Ratio: 0
+  Multiplier: 1

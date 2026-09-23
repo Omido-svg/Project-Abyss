@@ -17,12 +17,12 @@ MonoBehaviour:
   Emotion: 2
   Tier: 3
   OfferWeight: 1
-  Description: "\uAC8C\uC774\uC9C0 \uCD5C\uB300\uCE58\uAC00 \uC784\uACC4\uC758 2\uBC30
-    \u2014 2\uD68C\uBD84 \uBE44\uCD95"
+  Description: "\uC704\uC138 \uAC8C\uC774\uC9C0 \uCD5C\uB300\uCE58\uB97C \uD604\uC7AC
+    \uBC1C\uB3D9 \uC784\uACC4\uC758 2\uBC30\uB85C \uD655\uC7A5\uD558\uBA70, \uBC1C\uB3D9
+    \uC2DC \uC784\uACC4\uB9CC\uD07C\uB9CC \uC18C\uBE44\uD55C\uB2E4."
   DesignStatus: "\uD655\uC815"
   RuntimeReadiness: 0
-  RuntimeNote: "[TEMP_BALANCE_V1] \uC815\uC2DD \uC804\uC6A9 hook \uD655\uC815 \uC804
-    flat proxy \uC5F0\uACB0. \uAE30\uC874 \uC774\uB984/\uC124\uBA85/DesignStatus\uB294
-    0916 \uC6D0\uBCF8 \uBCF4\uC874."
+  RuntimeNote: '[0923 Emotion33] 0922 canonical runtime effect connected; TEMP_BALANCE_V1
+    removed.'
   Effects:
-  - {fileID: 11400000, guid: ef6da6b36eaa1ac42b42952f360e67fa, type: 2}
+  - {fileID: 11400000, guid: 5440bdf902900284994d8337f6211574, type: 2}

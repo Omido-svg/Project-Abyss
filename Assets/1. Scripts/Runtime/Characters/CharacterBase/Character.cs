@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using UnityEngine;
 
 public abstract class Character : MonoBehaviour
@@ -1096,8 +1096,16 @@ public abstract class Character : MonoBehaviour
         int modified =
             ModifyHealingAmount(amount);
 
+        modified =
+            Canonical0922EmotionRuntimeHooks.ModifyHealing(
+                this,
+                modified);
+
         if (modified <= 0)
             return;
+
+        int wholeHpBefore =
+            RuntimeStatus.currentHP;
 
         // P0 D-07 확정 규칙:
         // 모든 체력 회복은 값을 나누지 않고 전체 HP +N 과 최저 비파괴 부위 +N에 동시에 들어간다.
@@ -1106,7 +1114,25 @@ public abstract class Character : MonoBehaviour
                 RuntimeStatus.currentHP + modified,
                 MaxCombatHP);
 
+        int appliedWholeHp =
+            Mathf.Max(
+                0,
+                RuntimeStatus.currentHP - wholeHpBefore);
+
         RestoreLowestBodyPartHpPreserveState(modified);
+
+        Canonical0922EmotionRuntimeHooks.NotifyHealingResolved(
+            this,
+            new Canonical0922HealingResult
+            {
+                RequestedAmount = amount,
+                ModifiedAmount = modified,
+                AppliedWholeHp = appliedWholeHp,
+                OverhealAmount =
+                    Mathf.Max(
+                        0,
+                        modified - appliedWholeHp)
+            });
     }
 
     private void RestoreLowestBodyPartHpPreserveState(int amount)
@@ -2118,10 +2144,23 @@ public abstract class Character : MonoBehaviour
 
     public void AddBlock(int amount)
     {
-        if (resourceController == null)
+        if (resourceController == null || amount <= 0)
             return;
 
-        resourceController.AddBlock(amount);
+        int modified =
+            Canonical0922EmotionRuntimeHooks.ModifyBlockGain(
+                this,
+                amount);
+
+        if (modified <= 0)
+            return;
+
+        resourceController.AddBlock(modified);
+
+        Canonical0922EmotionRuntimeHooks.NotifyBlockGainResolved(
+            this,
+            amount,
+            modified);
     }
 
     public void RemoveBlock(int amount)

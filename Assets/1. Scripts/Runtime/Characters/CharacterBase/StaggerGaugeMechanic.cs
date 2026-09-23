@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>
@@ -10,7 +10,7 @@ public sealed class StaggerGaugeMechanic : ReactiveCombatMechanic,
     ICharacterUniqueGaugeProvider,
     IRequiredExchangeReaction
 {
-    private readonly int maxGauge;
+    private int maxGauge;
     private int currentGauge;
     private bool vulnerabilityWindowOpen;
     private int recoverAfterTurn = -1;
@@ -205,6 +205,11 @@ public sealed class StaggerGaugeMechanic : ReactiveCombatMechanic,
         int modified =
             owner?.ModifyHealingAmount(amount) ?? amount;
 
+        modified =
+            Canonical0922EmotionRuntimeHooks.ModifyHealing(
+                owner,
+                modified);
+
         if (modified <= 0)
             return;
 
@@ -213,6 +218,64 @@ public sealed class StaggerGaugeMechanic : ReactiveCombatMechanic,
                 currentGauge + modified,
                 0,
                 maxGauge);
+    }
+
+    public void AdjustMaximum(
+        int delta,
+        bool fillByIncrease)
+    {
+        if (IsSuppressed || delta == 0)
+            return;
+
+        int beforeMaximum = maxGauge;
+
+        maxGauge =
+            Mathf.Max(
+                1,
+                maxGauge + delta);
+
+        if (delta > 0 && fillByIncrease)
+        {
+            currentGauge =
+                Mathf.Clamp(
+                    currentGauge +
+                    Mathf.Max(0, maxGauge - beforeMaximum),
+                    0,
+                    maxGauge);
+        }
+        else
+        {
+            currentGauge =
+                Mathf.Clamp(
+                    currentGauge,
+                    0,
+                    maxGauge);
+        }
+    }
+
+    public int SacrificeGauge(int amount)
+    {
+        if (IsSuppressed ||
+            amount <= 0 ||
+            vulnerabilityWindowOpen)
+        {
+            return 0;
+        }
+
+        int paid =
+            Mathf.Min(
+                currentGauge,
+                Mathf.Max(0, amount));
+
+        if (paid <= 0)
+            return 0;
+
+        currentGauge -= paid;
+
+        if (currentGauge <= 0)
+            OpenVulnerabilityWindow();
+
+        return paid;
     }
 
     private float GetVulnerabilityMultiplier()

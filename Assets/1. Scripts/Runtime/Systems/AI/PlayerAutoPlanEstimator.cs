@@ -453,15 +453,6 @@ public sealed class PlayerAutoPlanEstimator
         int judgment =
             rollData?.JudgmentModifier ?? 0;
 
-        int speedModifier =
-            ResolveCanonicalSpeedModifier(
-                selfSpeed,
-                opponentSpeed,
-                speedWeight);
-
-        int preparationModifier =
-            owner?.TurnClashPowerBonus ?? 0;
-
         BattleAction preview =
             CreatePreviewAction(
                 owner,
@@ -472,6 +463,23 @@ public sealed class PlayerAutoPlanEstimator
                 targetPart,
                 rollType,
                 rollIndex);
+
+        int speedModifier =
+            ResolveCanonicalSpeedModifier(
+                selfSpeed,
+                opponentSpeed,
+                speedWeight);
+
+        if (Canonical0922EmotionRuntimeHooks
+                .TryResolveClashSpeedModifierOverride(
+                    preview,
+                    out int canonicalSpeedOverride))
+        {
+            speedModifier = canonicalSpeedOverride;
+        }
+
+        int preparationModifier =
+            owner?.TurnClashPowerBonus ?? 0;
 
         foreach (RawOutcome outcome in raw)
         {

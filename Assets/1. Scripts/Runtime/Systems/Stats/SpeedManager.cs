@@ -105,16 +105,28 @@ public class SpeedManager
         }
 
         int weakenedSpeedMaxPenalty = 0;
-        BodyPart legs = character.GetBodyPart(PartType.LEGS);
-        if (legs?.IsWeakened == true && !legs.UsesDataDefinedRules)
-            weakenedSpeedMaxPenalty = 1;
+        bool suppressSingleWeakenedPenalty =
+            Canonical0922EmotionRuntimeHooks
+                .SuppressSingleWeakenedPenalty(character);
 
-        if (character.BodyParts != null)
+        if (!suppressSingleWeakenedPenalty)
         {
-            foreach (BodyPart bodyPart in character.BodyParts)
+            BodyPart legs = character.GetBodyPart(PartType.LEGS);
+            if (legs?.IsWeakened == true && !legs.UsesDataDefinedRules)
+                weakenedSpeedMaxPenalty = 1;
+
+            if (character.BodyParts != null)
             {
-                if (bodyPart?.IsWeakened == true && bodyPart.UsesDataDefinedRules)
-                    weakenedSpeedMaxPenalty = Mathf.Max(weakenedSpeedMaxPenalty, bodyPart.WeakenedSpeedMaxPenalty);
+                foreach (BodyPart bodyPart in character.BodyParts)
+                {
+                    if (bodyPart?.IsWeakened == true && bodyPart.UsesDataDefinedRules)
+                    {
+                        weakenedSpeedMaxPenalty =
+                            Mathf.Max(
+                                weakenedSpeedMaxPenalty,
+                                bodyPart.WeakenedSpeedMaxPenalty);
+                    }
+                }
             }
         }
 

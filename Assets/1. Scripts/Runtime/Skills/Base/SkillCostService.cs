@@ -44,10 +44,17 @@ internal static class SkillCostService
 
             if (definition.RequireFullPrestige)
             {
-                if (character.CurrentStatus == null ||
-                    character.CurrentStatus.maxPrestige <= 0 ||
+                int overrideRequiredPrestige =
+                    Canonical0922EmotionRuntimeHooks
+                        .TryGetPrestigeStockpileThreshold(
+                            character,
+                            out int overrideStockpileThreshold)
+                        ? overrideStockpileThreshold
+                        : character.CurrentStatus?.maxPrestige ?? 0;
+
+                if (overrideRequiredPrestige <= 0 ||
                     character.RuntimeStatus.currentPrestige <
-                    character.CurrentStatus.maxPrestige)
+                    overrideRequiredPrestige)
                 {
                     return false;
                 }
@@ -83,11 +90,19 @@ internal static class SkillCostService
             return false;
         }
 
-        if (character.CurrentStatus.maxPrestige <= 0)
+        int requiredPrestige =
+            Canonical0922EmotionRuntimeHooks
+                .TryGetPrestigeStockpileThreshold(
+                    character,
+                    out int stockpileThreshold)
+                ? stockpileThreshold
+                : character.CurrentStatus.maxPrestige;
+
+        if (requiredPrestige <= 0)
             return false;
 
         return character.RuntimeStatus.currentPrestige >=
-               character.CurrentStatus.maxPrestige;
+               requiredPrestige;
     }
 
     /// <summary>
@@ -137,7 +152,21 @@ internal static class SkillCostService
             {
                 if (definition.ConsumeAllPrestige)
                 {
-                    character.RuntimeStatus.currentPrestige = 0;
+                    if (Canonical0922EmotionRuntimeHooks
+                            .TryGetPrestigeStockpileThreshold(
+                                character,
+                                out int overrideStockpileThreshold))
+                    {
+                        character.RuntimeStatus.currentPrestige =
+                            Mathf.Max(
+                                0,
+                                character.RuntimeStatus.currentPrestige -
+                                overrideStockpileThreshold);
+                    }
+                    else
+                    {
+                        character.RuntimeStatus.currentPrestige = 0;
+                    }
                 }
                 else if (prestigeCost > 0)
                 {
@@ -176,11 +205,25 @@ internal static class SkillCostService
         if (skill.ActionType == ActionType.Prestige &&
             character.RuntimeStatus != null)
         {
-            character.RuntimeStatus.currentPrestige = 0;
+            if (Canonical0922EmotionRuntimeHooks
+                    .TryGetPrestigeStockpileThreshold(
+                        character,
+                        out int normalStockpileThreshold))
+            {
+                character.RuntimeStatus.currentPrestige =
+                    Mathf.Max(
+                        0,
+                        character.RuntimeStatus.currentPrestige -
+                        normalStockpileThreshold);
+            }
+            else
+            {
+                character.RuntimeStatus.currentPrestige = 0;
+            }
 
             Debug.Log(
                 $"{character.Data?.CharacterName ?? character.name} " +
-                "위세 게이지 소모 : 0");
+                $"위세 게이지 소모 : {character.RuntimeStatus.currentPrestige}");
         }
 
         return true;

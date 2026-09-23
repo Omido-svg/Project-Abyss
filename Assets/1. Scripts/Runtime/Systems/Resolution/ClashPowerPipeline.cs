@@ -66,6 +66,16 @@ public sealed class ClashPowerPipeline
                 action,
                 opponent);
 
+        if (Canonical0922EmotionRuntimeHooks
+                .TryResolveClashSpeedModifierOverride(
+                    action,
+                    out int canonicalSpeedOverride))
+        {
+            // 0922 경외 "속도 무한": 처리 순서를 바꾸지 않고
+            // 합 판정의 속도 보정만 상한(+2)으로 고정한다.
+            speedModifier = canonicalSpeedOverride;
+        }
+
         int preparationModifier =
             action.Owner?.TurnClashPowerBonus ?? 0;
 

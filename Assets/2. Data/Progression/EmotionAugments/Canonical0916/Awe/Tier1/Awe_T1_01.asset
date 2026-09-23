@@ -17,11 +17,11 @@ MonoBehaviour:
   Emotion: 0
   Tier: 1
   OfferWeight: 1
-  Description: "\uD68D\uB4DD \uD6C4 \uCCAB \uD134 \uD798 +2"
+  Description: "\uD68D\uB4DD \uD6C4 \uCC98\uC74C \uC2DC\uC791\uD558\uB294 \uD134\uC5D0
+    \uD798 2\xB71."
   DesignStatus: "\uD655\uC815"
   RuntimeReadiness: 0
-  RuntimeNote: "[TEMP_BALANCE_V1] \uC815\uC2DD \uC804\uC6A9 hook \uD655\uC815 \uC804
-    flat proxy \uC5F0\uACB0. \uAE30\uC874 \uC774\uB984/\uC124\uBA85/DesignStatus\uB294
-    0916 \uC6D0\uBCF8 \uBCF4\uC874."
+  RuntimeNote: '[0923 Emotion33] 0922 canonical runtime effect connected; TEMP_BALANCE_V1
+    removed.'
   Effects:
-  - {fileID: 11400000, guid: 7fcfe62776256de47899f194886a87c5, type: 2}
+  - {fileID: 11400000, guid: da208e2b697143b469c03fe16bd7f067, type: 2}

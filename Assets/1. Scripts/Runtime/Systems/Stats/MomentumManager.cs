@@ -123,7 +123,7 @@ public class MomentumManager
         battleContext?.Services?.EmotionRulebreakerService?
             .CaptureMomentumForNextTurn(CurrentMomentum);
 
-        playerPreviousFinalState = EvaluateBand(CurrentMomentum);
+        playerPreviousFinalState = EvaluateBand(CurrentMomentum, battleContext?.Player);
         enemyPreviousFinalState = EvaluateBand(-CurrentMomentum);
         playerLastStandJudgmentNextTurn = playerPreviousFinalState == MomentumState.LastStand;
         enemyLastStandJudgmentNextTurn = enemyPreviousFinalState == MomentumState.LastStand;
@@ -133,7 +133,7 @@ public class MomentumManager
 
     // 현재 B만 본다. 직전 턴 발악 예약은 이 API의 결과를 덮어쓰지 않는다.
     public MomentumState GetState(Character owner) =>
-        EvaluateBand(GetPerspectiveValue(owner));
+        EvaluateBand(GetPerspectiveValue(owner), owner);
 
     public MomentumState GetCurrentBand(Character owner) =>
         GetState(owner);
@@ -153,7 +153,7 @@ public class MomentumManager
             : enemyLastStandJudgmentThisTurn);
 
     public MomentumState GetFinalTurnState(Character owner) =>
-        EvaluateBand(GetPerspectiveValue(owner));
+        EvaluateBand(GetPerspectiveValue(owner), owner);
 
     public int GetPerspectiveValue(Character owner)
     {
@@ -210,13 +210,21 @@ public class MomentumManager
         return new MomentumShiftResult(before, CurrentMomentum, applied, reason);
     }
 
-    private MomentumState EvaluateBand(int value)
+    private MomentumState EvaluateBand(
+        int value,
+        Character owner = null)
     {
+        int advantageThreshold =
+            Canonical0922EmotionRuntimeHooks
+                .ResolveMomentumAdvantageThreshold(
+                    owner,
+                    settings.AdvantageThreshold);
+
         if (value <= settings.LastStandThreshold)
             return MomentumState.LastStand;
         if (value <= settings.DisadvantageThreshold)
             return MomentumState.Disadvantage;
-        if (value < settings.AdvantageThreshold)
+        if (value < advantageThreshold)
             return MomentumState.Balance;
         if (value < settings.OverwhelmThreshold)
             return MomentumState.Advantage;

@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 
 /// <summary>
 /// 0915 C-25 표준 HP Damage Pipeline.
@@ -25,7 +25,9 @@ public sealed class DamagePipeline
         ApplyFlatTargetModifiers(context);
         ApplyCharacterSpecificModifiers(context);
         ApplyMinimumDamage(context);
+        ApplyCanonicalPreGuardHooks(context);
         ApplyGuard(context);
+        ApplyCanonicalPostGuardHooks(context);
         FinalizeDamage(context);
     }
 
@@ -219,6 +221,19 @@ public sealed class DamagePipeline
         context.RecordStage(DamageStage.TargetModifiers, damage);
     }
 
+    private static void ApplyCanonicalPreGuardHooks(
+        DamageContext context)
+    {
+        context.TargetModifiedDamage =
+            Canonical0922EmotionRuntimeHooks.ModifyDamageBeforeGuard(
+                context,
+                context.TargetModifiedDamage);
+
+        context.RecordStage(
+            DamageStage.TargetModifiers,
+            context.TargetModifiedDamage);
+    }
+
     private static void ApplyGuard(DamageContext context)
     {
         RuntimeStatus runtime = context.Target?.RuntimeStatus;
@@ -232,6 +247,19 @@ public sealed class DamagePipeline
         context.GuardAfter = Mathf.Max(0, context.GuardBefore - context.GuardAbsorbed);
         context.DamageAfterGuard = Mathf.Max(0, context.TargetModifiedDamage - context.GuardAbsorbed);
         context.RecordStage(DamageStage.Guard, context.DamageAfterGuard);
+    }
+
+    private static void ApplyCanonicalPostGuardHooks(
+        DamageContext context)
+    {
+        context.DamageAfterGuard =
+            Canonical0922EmotionRuntimeHooks.ModifyDamageAfterGuard(
+                context,
+                context.DamageAfterGuard);
+
+        context.RecordStage(
+            DamageStage.Guard,
+            context.DamageAfterGuard);
     }
 
     private static void FinalizeDamage(DamageContext context)
