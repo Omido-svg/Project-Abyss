@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 
 public interface ICommonRollShiftStatus
 {
@@ -42,20 +42,6 @@ public static class CommonStatusSpeedRules
     }
 }
 
-/// <summary>
-/// 구 0915~0917 소스/마이그레이션 문자열 호환용 alias.
-/// 신규 공용 상태는 NumericTimedStatus를 직접 사용한다.
-/// </summary>
-public abstract class OneTurnCommonStatus : NumericTimedStatus
-{
-    protected OneTurnCommonStatus(
-        string name,
-        int stack,
-        int legacyMaxStack)
-        : base(name, stack, 1)
-    {
-    }
-}
 
 public sealed class StrengthStatus : NumericTimedStatus, ICommonRollShiftStatus
 {

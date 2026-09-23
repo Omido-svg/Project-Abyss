@@ -137,15 +137,28 @@ public class BattleStatusVisualDirector : MonoBehaviour
             return;
         }
 
+        // [0922_PHASE12_STATUS_EVENT_SEMANTICS]
+        // Numeric 새 Entry / Presence refresh / Bespoke stack을
+        // StatusEffectApplyResult의 canonical semantic으로 명확히 구분한다.
         StatusEffectVisualPhase phase =
-            result.Kind switch
+            result.CanonicalSemantic switch
             {
-                StatusEffectApplyKind.Stacked =>
-                    StatusEffectVisualPhase.Stacked,
-                StatusEffectApplyKind.Refreshed =>
+                CanonicalStatusApplySemanticKind.PresenceRefreshed =>
                     StatusEffectVisualPhase.Refreshed,
+
+                CanonicalStatusApplySemanticKind.BespokeStacked =>
+                    StatusEffectVisualPhase.Stacked,
+
                 _ =>
-                    StatusEffectVisualPhase.Applied
+                    result.Kind switch
+                    {
+                        StatusEffectApplyKind.Stacked =>
+                            StatusEffectVisualPhase.Stacked,
+                        StatusEffectApplyKind.Refreshed =>
+                            StatusEffectVisualPhase.Refreshed,
+                        _ =>
+                            StatusEffectVisualPhase.Applied
+                    }
             };
 
         ShowStatusLifecycle(

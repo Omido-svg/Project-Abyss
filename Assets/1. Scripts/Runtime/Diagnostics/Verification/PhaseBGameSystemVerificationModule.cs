@@ -1,11 +1,12 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 
 /// <summary>
-/// Phase B — Damage / Resource 18개 Requirement gate. 0916 정본 수치로 회귀 검증한다.
-/// 각 IsolatedRuntime case는 Runner가 새 Fixture로 실행한다.
+/// Phase B — Damage / Resource Requirement gate.
+/// Requirement ID는 기존 traceability를 보존하지만, 0922에서 재정의된 상태 규칙은
+/// 현재 canonical 기대값으로 검증한다. 각 IsolatedRuntime case는 새 Fixture로 실행된다.
 /// </summary>
 public sealed class PhaseBGameSystemVerificationModule : IGameSystemVerificationModule
 {
@@ -40,15 +41,15 @@ public sealed class PhaseBGameSystemVerificationModule : IGameSystemVerification
             "10 + 12 = 22", VerifyCrouchAdditive);
         yield return Runtime("phaseb.c25.damage_min_before_armor", "C-25", "최종 피해 min1 후 armor", GameSystemVerificationCategory.Damage,
             "flat으로 0 이하가 되어도 armor 전 1, armor가 그 1을 흡수 가능", VerifyDamageMinimumBeforeArmor);
-        // [0922_PHASE1_LEGACY_BASELINE]
-        // 0922 정본과 직접 충돌하는 pre-0922 기대값은 회귀 참고용으로만 유지한다.
-        // 새 0922 구현이 이 세 Case를 깨뜨리는 것이 정상일 수 있으므로 Required=false.
-        yield return Static("phaseb.c27.common_status_syntax", "C-27", "[LEGACY BASELINE] 공용 상태 0915 문법", GameSystemVerificationCategory.Status,
-            "LEGACY ONLY: 0915 Strength/Weakness + Sturdy/Disarm 비활성 기대", VerifyCommonStatusSyntax, required: false);
-        yield return Runtime("phaseb.c49.opposite_status_algebra", "C-49", "[LEGACY BASELINE] 반대 상태 destructive 상쇄", GameSystemVerificationCategory.Status,
-            "LEGACY ONLY: Strength3 + Weakness2 => Strength1 / Weakness 제거", VerifyOppositeStatusAlgebra, required: false);
-        yield return Static("phaseb.c48.regeneration_dimensions", "C-48", "[LEGACY BASELINE] 재생 channel 분리", GameSystemVerificationCategory.Status,
-            "LEGACY ONLY: HP/Stagger 재생을 별도 channel로 표현", VerifyRegenerationDimensions, required: false);
+        // [0922_PHASE12_CANONICALIZED_REGRESSION]
+        // Phase B의 Requirement ID는 과거 traceability를 위해 유지하되,
+        // 기대값은 현재 0922 canonical 상태 모델로 교체한다.
+        yield return Static("phaseb.c27.common_status_syntax", "C-27", "0922 공용 상태 N/T 문법", GameSystemVerificationCategory.Status,
+            "Strength/Weakness/Sturdy/Disarm = NumericTimed N/T, canonical factory duration 보존", VerifyCommonStatusSyntax);
+        yield return Runtime("phaseb.c49.opposite_status_algebra", "C-49", "0922 반대 상태 저장 보존", GameSystemVerificationCategory.Status,
+            "Strength3·3 + Weakness2·1은 둘 다 저장되고 계산 축에서만 +1", VerifyOppositeStatusAlgebra);
+        yield return Static("phaseb.c48.regeneration_dimensions", "C-48", "0922 재생 aggregate", GameSystemVerificationCategory.Status,
+            "Regeneration Entry N을 합산해 하나의 RegenTotal로 사용; legacy channel은 gameplay 축이 아님", VerifyRegenerationDimensions);
         yield return Static("phaseb.c41.elite_stagger_unset", "C-41", "Elite Stagger 미정=Unset", GameSystemVerificationCategory.Data,
             "Elite default maximum=0(Unset), 임의 100 금지", VerifyEliteStaggerUnset);
         yield return Static("phaseb.c43.normal_enemy_d8", "C-43", "일반 몹 D8 fallback", GameSystemVerificationCategory.Data,
@@ -385,36 +386,147 @@ public sealed class PhaseBGameSystemVerificationModule : IGameSystemVerification
 
     private static GameSystemVerificationProbeResult VerifyCommonStatusSyntax(GameSystemVerificationContext _)
     {
-        BattleAction action = new() { Slot = new ActionSlot() };
-        int strength = new StrengthStatus(2).GetRollShift(action);
-        int weakness = new WeaknessStatus(2).GetRollShift(action);
-        bool tbdDisabled = StatusEffectFactory.Create(StatusEffectId.Sturdy, 1, 1) == null &&
-                           StatusEffectFactory.Create(StatusEffectId.Disarm, 1, 1) == null;
-        bool ok = strength == 2 && weakness == -2 && tbdDisabled;
-        return ok ? GameSystemVerificationProbeResult.Pass($"Strength={strength}, Weakness={weakness}, TBDDisabled={tbdDisabled}")
-                  : GameSystemVerificationProbeResult.Fail($"Strength={strength}, Weakness={weakness}, TBDDisabled={tbdDisabled}");
+        StatusEffect strength =
+            StatusEffectFactory.CreateCanonical0922(
+                StatusEffectId.Strength,
+                2,
+                3);
+
+        StatusEffect weakness =
+            StatusEffectFactory.CreateCanonical0922(
+                StatusEffectId.Weakness,
+                2,
+                2);
+
+        StatusEffect sturdy =
+            StatusEffectFactory.CreateCanonical0922(
+                StatusEffectId.Sturdy,
+                4,
+                5);
+
+        StatusEffect disarm =
+            StatusEffectFactory.CreateCanonical0922(
+                StatusEffectId.Disarm,
+                3,
+                4);
+
+        bool ok =
+            strength is StrengthStatus &&
+            strength.StorageKind == StatusEffectStorageKind.NumericTimed &&
+            strength.NumericValue == 2 &&
+            strength.Duration == 3 &&
+            weakness is WeaknessStatus &&
+            weakness.NumericValue == 2 &&
+            weakness.Duration == 2 &&
+            sturdy is SturdyStatus &&
+            sturdy.NumericValue == 4 &&
+            sturdy.Duration == 5 &&
+            disarm is DisarmStatus &&
+            disarm.NumericValue == 3 &&
+            disarm.Duration == 4;
+
+        string actual =
+            $"Strength={strength?.NumericValue}·{strength?.Duration}, " +
+            $"Weakness={weakness?.NumericValue}·{weakness?.Duration}, " +
+            $"Sturdy={sturdy?.NumericValue}·{sturdy?.Duration}, " +
+            $"Disarm={disarm?.NumericValue}·{disarm?.Duration}";
+
+        return ok
+            ? GameSystemVerificationProbeResult.Pass(actual)
+            : GameSystemVerificationProbeResult.Fail(actual);
     }
 
     private static GameSystemVerificationProbeResult VerifyOppositeStatusAlgebra(GameSystemVerificationContext context)
     {
         if (!Fixture(context, out var f, out var fail)) return fail;
-        f.Player.AddStatus(new StrengthStatus(3), f.Player);
-        f.Player.AddStatus(new WeaknessStatus(2), f.Enemy);
-        StrengthStatus strength = f.Player.StatusEffects.OfType<StrengthStatus>().FirstOrDefault();
-        WeaknessStatus weakness = f.Player.StatusEffects.OfType<WeaknessStatus>().FirstOrDefault();
-        bool ok = strength?.Stack == 1 && weakness == null;
-        return ok ? GameSystemVerificationProbeResult.Pass($"Strength={strength?.Stack}, Weakness={(weakness == null ? 0 : weakness.Stack)}")
-                  : GameSystemVerificationProbeResult.Fail($"Strength={strength?.Stack}, Weakness={weakness?.Stack}");
+
+        foreach (StatusEffect status in
+                 f.Player.StatusEffects
+                     .Where(x => x is StrengthStatus || x is WeaknessStatus)
+                     .ToArray())
+        {
+            f.Player.RemoveStatus(status);
+        }
+
+        f.Player.AddStatus(
+            new StrengthStatus(3, 3),
+            f.Player);
+
+        f.Player.AddStatus(
+            new WeaknessStatus(2, 1),
+            f.Enemy);
+
+        StrengthStatus[] strengths =
+            f.Player.StatusEffects
+                .OfType<StrengthStatus>()
+                .ToArray();
+
+        WeaknessStatus[] weaknesses =
+            f.Player.StatusEffects
+                .OfType<WeaknessStatus>()
+                .ToArray();
+
+        int effective =
+            strengths.Sum(x => x.NumericValue) -
+            weaknesses.Sum(x => x.NumericValue);
+
+        bool ok =
+            strengths.Length == 1 &&
+            weaknesses.Length == 1 &&
+            strengths[0].NumericValue == 3 &&
+            strengths[0].Duration == 3 &&
+            weaknesses[0].NumericValue == 2 &&
+            weaknesses[0].Duration == 1 &&
+            effective == 1;
+
+        string actual =
+            $"Strength={strengths.Sum(x => x.NumericValue)}({strengths.Length} entry), " +
+            $"Weakness={weaknesses.Sum(x => x.NumericValue)}({weaknesses.Length} entry), " +
+            $"Effective={effective}";
+
+        return ok
+            ? GameSystemVerificationProbeResult.Pass(actual)
+            : GameSystemVerificationProbeResult.Fail(actual);
     }
 
     private static GameSystemVerificationProbeResult VerifyRegenerationDimensions(GameSystemVerificationContext _)
     {
-        RegenerationStatus hp = new(3, 8, RegenerationRecoveryChannel.HitPoints);
-        RegenerationStatus stagger = new(3, 5, RegenerationRecoveryChannel.Stagger);
-        bool ok = hp.Duration == 3 && hp.Stack == 3 && hp.HealAmount == 8 && hp.Channel == RegenerationRecoveryChannel.HitPoints &&
-                  stagger.Duration == 3 && stagger.Stack == 3 && stagger.HealAmount == 5 && stagger.Channel == RegenerationRecoveryChannel.Stagger;
-        return ok ? GameSystemVerificationProbeResult.Pass("HP:3x8 / Stagger:3x5")
-                  : GameSystemVerificationProbeResult.Fail("Regeneration dimensions mismatch");
+        RegenerationStatus first =
+            new(
+                3,
+                8,
+                RegenerationRecoveryChannel.HitPoints);
+
+        RegenerationStatus second =
+            new(
+                2,
+                5,
+                RegenerationRecoveryChannel.Stagger);
+
+        StatusEffect[] entries =
+        {
+            first,
+            second
+        };
+
+        int total =
+            CommonStatusAlgebra.GetRegenerationTotal(entries);
+
+        bool ok =
+            first.StorageKind == StatusEffectStorageKind.NumericTimed &&
+            first.NumericValue == 8 &&
+            first.Duration == 3 &&
+            second.NumericValue == 5 &&
+            second.Duration == 2 &&
+            total == 13;
+
+        string actual =
+            $"EntryA={first.NumericValue}·{first.Duration}, " +
+            $"EntryB={second.NumericValue}·{second.Duration}, Total={total}";
+
+        return ok
+            ? GameSystemVerificationProbeResult.Pass(actual)
+            : GameSystemVerificationProbeResult.Fail(actual);
     }
 
     private static GameSystemVerificationProbeResult VerifyEliteStaggerUnset(GameSystemVerificationContext _)
@@ -432,4 +544,4 @@ public sealed class PhaseBGameSystemVerificationModule : IGameSystemVerification
         return ok ? GameSystemVerificationProbeResult.Pass("Fallback=1..8")
                   : GameSystemVerificationProbeResult.Fail($"Fallback={NormalEnemyRuntimeSkill.FallbackDiceMin}..{NormalEnemyRuntimeSkill.FallbackDiceMax}");
     }
-}
+}
