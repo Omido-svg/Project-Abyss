@@ -1479,10 +1479,6 @@ public sealed class PlayerAutoPlanService
                 target,
                 targetPart);
 
-        // 약화 부위는 현재 규칙상 파괴 전 단계이므로 HP 기대 피해는 0으로 본다.
-        if (targetPart?.IsWeakened == true)
-            expectedDamage = 0f;
-
         return new Candidate
         {
             Source = source,

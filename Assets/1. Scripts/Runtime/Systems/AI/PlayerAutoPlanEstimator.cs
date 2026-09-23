@@ -14,18 +14,25 @@ public sealed class PlayerAutoPlanEstimator
             int rawPower,
             int clashPower,
             float probability,
-            CombatRollType rollType)
+            CombatRollType rollType,
+            ForcedRollJudgmentDirective forcedJudgment =
+                ForcedRollJudgmentDirective.None,
+            bool forcedFailure = false)
         {
             RawPower = rawPower;
             ClashPower = clashPower;
             Probability = probability;
             RollType = rollType;
+            ForcedJudgment = forcedJudgment;
+            ForcedFailure = forcedFailure;
         }
 
         public int RawPower { get; }
         public int ClashPower { get; }
         public float Probability { get; }
         public CombatRollType RollType { get; }
+        public ForcedRollJudgmentDirective ForcedJudgment { get; }
+        public bool ForcedFailure { get; }
     }
 
     private readonly struct ExchangeEstimate
@@ -333,8 +340,12 @@ public sealed class PlayerAutoPlanEstimator
                     player.Probability *
                     enemy.Probability;
 
-                if (player.ClashPower >
-                    enemy.ClashPower)
+                int comparison =
+                    ResolveForcedAwareComparison(
+                        player,
+                        enemy);
+
+                if (comparison > 0)
                 {
                     attemptWin += probability;
 
@@ -358,8 +369,7 @@ public sealed class PlayerAutoPlanEstimator
                             probability * damage;
                     }
                 }
-                else if (player.ClashPower <
-                         enemy.ClashPower)
+                else if (comparison < 0)
                 {
                     attemptLoss += probability;
                 }
@@ -426,6 +436,7 @@ public sealed class PlayerAutoPlanEstimator
     {
         List<RawOutcome> raw =
             BuildRawOutcomes(
+                owner,
                 skill,
                 rollIndex);
 
@@ -443,10 +454,10 @@ public sealed class PlayerAutoPlanEstimator
             rollData?.JudgmentModifier ?? 0;
 
         int speedModifier =
-            selfSpeed - opponentSpeed >= 6 &&
-            speedWeight > 0
-                ? 1
-                : 0;
+            ResolveCanonicalSpeedModifier(
+                selfSpeed,
+                opponentSpeed,
+                speedWeight);
 
         int preparationModifier =
             owner?.TurnClashPowerBonus ?? 0;
@@ -482,12 +493,32 @@ public sealed class PlayerAutoPlanEstimator
                 speedModifier +
                 preparationModifier;
 
+            RollResult previewRoll =
+                CreatePredictionRollResult(
+                    outcome,
+                    rollType,
+                    rollIndex);
+
+            ForcedRollJudgmentDirective forcedJudgment =
+                ResolveForcedRollJudgment(
+                    owner,
+                    preview,
+                    previewRoll);
+
+            bool forcedFailure =
+                ResolveForcedRollFailure(
+                    owner,
+                    preview,
+                    previewRoll);
+
             result.Add(
                 new PowerOutcome(
                     outcome.Power,
                     clash,
                     outcome.Probability,
-                    rollType));
+                    rollType,
+                    forcedJudgment,
+                    forcedFailure));
         }
 
         NormalizePowerOutcomes(result);
@@ -498,17 +529,26 @@ public sealed class PlayerAutoPlanEstimator
     {
         public RawOutcome(
             int power,
-            float probability)
+            float probability,
+            SkillResolverType resolverType =
+                SkillResolverType.Dice,
+            ChinchiroCombination chinchiroCombination =
+                ChinchiroCombination.None)
         {
             Power = power;
             Probability = probability;
+            ResolverType = resolverType;
+            ChinchiroCombination = chinchiroCombination;
         }
 
         public int Power { get; }
         public float Probability { get; }
+        public SkillResolverType ResolverType { get; }
+        public ChinchiroCombination ChinchiroCombination { get; }
     }
 
     private static List<RawOutcome> BuildRawOutcomes(
+        Character owner,
         Skill skill,
         int rollIndex)
     {
@@ -527,13 +567,49 @@ public sealed class PlayerAutoPlanEstimator
             skill.GetRollData(
                 rollIndex);
 
+        SkillResolverType resolverType =
+            data != null
+                ? ResolveRollResolverType(
+                    data,
+                    definition)
+                : definition?.ResolverType ??
+                  SkillResolverType.Dice;
+
+        if (resolverType ==
+            SkillResolverType.Chinchiro)
+        {
+            // Hifumi's actual runtime does not use the generic
+            // SkillRollData Chinchiro power fields. It resolves
+            // BasePower + canonical Chinchiro combination values and
+            // may apply a forced Arashi/Hifumi outcome for Trick.
+            // Prediction uses the same pure Hifumi builder so both the
+            // ordinary 216-outcome distribution and forced outcomes
+            // stay aligned with live combat.
+            HifumiMechanic hifumi =
+                owner?.GetMechanic<HifumiMechanic>();
+
+            if (hifumi != null)
+            {
+                return BuildHifumiChinchiroOutcomes(
+                    owner,
+                    skill,
+                    rollIndex,
+                    hifumi);
+            }
+
+            if (TryBuildForcedGenericChinchiroOutcome(
+                    owner,
+                    skill,
+                    data,
+                    definition,
+                    out List<RawOutcome> forcedGeneric))
+            {
+                return forcedGeneric;
+            }
+        }
+
         if (data != null)
         {
-            SkillResolverType resolverType =
-                ResolveRollResolverType(
-                    data,
-                    definition);
-
             return resolverType switch
             {
                 SkillResolverType.Coin =>
@@ -582,6 +658,375 @@ public sealed class PlayerAutoPlanEstimator
                     skill.MinPower,
                     skill.MaxPower);
         }
+    }
+
+    private static List<RawOutcome> BuildHifumiChinchiroOutcomes(
+        Character owner,
+        Skill skill,
+        int rollIndex,
+        HifumiMechanic mechanic)
+    {
+        int basePowerAdjustment =
+            skill?.ActionType == ActionType.Duel
+                ? mechanic?.ResolveDuelBasePowerAdjustment(
+                    skill.Definition?.SkillId) ?? 0
+                : 0;
+
+        int basePower =
+            Mathf.Max(
+                0,
+                (skill?.BasePower ?? 0) +
+                basePowerAdjustment);
+
+        if (TryGetForcedChinchiro(
+                owner,
+                out ChinchiroCombination forced))
+        {
+            int a =
+                forced == ChinchiroCombination.Hifumi
+                    ? 1
+                    : 6;
+            int b =
+                forced == ChinchiroCombination.Hifumi
+                    ? 2
+                    : 6;
+            int c =
+                forced == ChinchiroCombination.Hifumi
+                    ? 3
+                    : 6;
+
+            RollResult forcedResult =
+                HifumiChinchiroRuntime
+                    .BuildResultForVerification(
+                        basePower,
+                        a,
+                        b,
+                        c);
+
+            int forcedPower =
+                ResolveHifumiPredictionPower(
+                    skill,
+                    forcedResult);
+
+            return new List<RawOutcome>
+            {
+                new RawOutcome(
+                    forcedPower,
+                    1f,
+                    SkillResolverType.Chinchiro,
+                    forcedResult?.ChinchiroCombination ??
+                    ChinchiroCombination.None)
+            };
+        }
+
+        List<RawOutcome> result =
+            new List<RawOutcome>();
+
+        const float probability =
+            1f / 216f;
+
+        for (int a = 1; a <= 6; a++)
+        {
+            for (int b = 1; b <= 6; b++)
+            {
+                for (int c = 1; c <= 6; c++)
+                {
+                    RollResult roll =
+                        HifumiChinchiroRuntime
+                            .BuildResultForVerification(
+                                basePower,
+                                a,
+                                b,
+                                c);
+
+                    AddRawOutcome(
+                        result,
+                        ResolveHifumiPredictionPower(
+                            skill,
+                            roll),
+                        probability,
+                        SkillResolverType.Chinchiro,
+                        roll?.ChinchiroCombination ??
+                        ChinchiroCombination.None);
+                }
+            }
+        }
+
+        NormalizeRawOutcomes(result);
+        return result;
+    }
+
+    private static int ResolveHifumiPredictionPower(
+        Skill skill,
+        RollResult roll)
+    {
+        if (roll == null)
+            return 0;
+
+        // 0922 H 운명을 흔들다 overrides the common catastrophe:
+        // 1·2·3 becomes power 0 and is compared normally.
+        if (skill?.Definition?.SkillId ==
+                HifumiSkillIds.ShakeFate &&
+            roll.ChinchiroCombination ==
+                ChinchiroCombination.Hifumi)
+        {
+            return 0;
+        }
+
+        return Mathf.Max(
+            0,
+            roll.FinalPower);
+    }
+
+    private static bool TryBuildForcedGenericChinchiroOutcome(
+        Character owner,
+        Skill skill,
+        SkillRollData data,
+        SkillDefinition definition,
+        out List<RawOutcome> outcomes)
+    {
+        outcomes = null;
+
+        if (!TryGetForcedChinchiro(
+                owner ?? skill?.Owner,
+                out ChinchiroCombination forced))
+        {
+            return false;
+        }
+
+        ChinchiroCombination actualCombination =
+            forced == ChinchiroCombination.Hifumi
+                ? ChinchiroCombination.Hifumi
+                : ChinchiroCombination.Arashi;
+
+        int power;
+
+        if (data != null &&
+            data.RngSource !=
+                RollRngSource.CharacterDefault)
+        {
+            power =
+                actualCombination ==
+                    ChinchiroCombination.Hifumi
+                    ? data.ChinchiroHifumiPower
+                    : data.ChinchiroArashiPower;
+        }
+        else if (definition != null &&
+                 skill != null)
+        {
+            power =
+                actualCombination ==
+                    ChinchiroCombination.Hifumi
+                    ? skill.BasePower -
+                      definition.ChinchiroHifumiPenalty
+                    : skill.BasePower +
+                      definition.ChinchiroArashiBonus;
+        }
+        else if (data != null)
+        {
+            power =
+                actualCombination ==
+                    ChinchiroCombination.Hifumi
+                    ? data.ChinchiroHifumiPower
+                    : data.ChinchiroArashiPower;
+        }
+        else
+        {
+            return false;
+        }
+
+        outcomes =
+            new List<RawOutcome>
+            {
+                new RawOutcome(
+                    power,
+                    1f,
+                    SkillResolverType.Chinchiro,
+                    actualCombination)
+            };
+
+        return true;
+    }
+
+    private static bool TryGetForcedChinchiro(
+        Character owner,
+        out ChinchiroCombination forced)
+    {
+        forced =
+            ChinchiroCombination.None;
+
+        if (!ChinchiroOutcomeOverrideResolver.TryResolve(
+                owner,
+                out IChinchiroOutcomeOverride outcomeOverride) ||
+            outcomeOverride == null)
+        {
+            return false;
+        }
+
+        return outcomeOverride.TryGetForcedChinchiro(
+            out forced);
+    }
+
+    private static int ResolveCanonicalSpeedModifier(
+        int selfSpeed,
+        int opponentSpeed,
+        int speedWeight)
+    {
+        if (speedWeight <= 0)
+            return 0;
+
+        int speedGap =
+            Mathf.Max(
+                0,
+                selfSpeed -
+                opponentSpeed);
+
+        if (speedGap <= 0)
+            return 0;
+
+        return speedGap >= 6
+            ? 2
+            : 1;
+    }
+
+    private static RollResult CreatePredictionRollResult(
+        RawOutcome outcome,
+        CombatRollType rollType,
+        int rollIndex)
+    {
+        RollResult result =
+            new RollResult
+            {
+                ResolverType =
+                    outcome.ResolverType,
+                RollIndex =
+                    Mathf.Max(
+                        0,
+                        rollIndex),
+                RollType =
+                    rollType,
+                RawValue =
+                    outcome.Power,
+                ModifiedValue =
+                    outcome.Power,
+                FinalPower =
+                    outcome.Power,
+                ChinchiroCombination =
+                    outcome.ChinchiroCombination,
+                ChinchiroBonus =
+                    outcome.ResolverType ==
+                    SkillResolverType.Chinchiro
+                        ? outcome.Power
+                        : 0,
+                IsCritical = false
+            };
+
+        result.RecalculateClashPower();
+        return result;
+    }
+
+    private static ForcedRollJudgmentDirective
+        ResolveForcedRollJudgment(
+            Character owner,
+            BattleAction action,
+            RollResult roll)
+    {
+        if (owner?.Mechanics == null ||
+            action == null ||
+            roll == null)
+        {
+            return ForcedRollJudgmentDirective.None;
+        }
+
+        foreach (CombatMechanic mechanic
+                 in owner.Mechanics)
+        {
+            if (mechanic is
+                    IForcedRollJudgmentRule rule &&
+                rule.TryGetForcedRollJudgment(
+                    action,
+                    roll,
+                    out ForcedRollJudgmentDirective directive,
+                    out _) &&
+                directive !=
+                    ForcedRollJudgmentDirective.None)
+            {
+                return directive;
+            }
+        }
+
+        return ForcedRollJudgmentDirective.None;
+    }
+
+    private static bool ResolveForcedRollFailure(
+        Character owner,
+        BattleAction action,
+        RollResult roll)
+    {
+        if (owner?.Mechanics == null ||
+            action == null ||
+            roll == null)
+        {
+            return false;
+        }
+
+        foreach (CombatMechanic mechanic
+                 in owner.Mechanics)
+        {
+            if (mechanic is
+                    IForcedRollFailureRule rule &&
+                rule.IsForcedRollFailure(
+                    action,
+                    roll,
+                    out _))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static int ResolveForcedAwareComparison(
+        PowerOutcome player,
+        PowerOutcome enemy)
+    {
+        bool playerForcedWin =
+            player.ForcedJudgment ==
+                ForcedRollJudgmentDirective.ForceWin ||
+            enemy.ForcedJudgment ==
+                ForcedRollJudgmentDirective.ForceLoss;
+
+        bool enemyForcedWin =
+            enemy.ForcedJudgment ==
+                ForcedRollJudgmentDirective.ForceWin ||
+            player.ForcedJudgment ==
+                ForcedRollJudgmentDirective.ForceLoss;
+
+        // Same contract as ClashManager: one unambiguous forced
+        // judgment wins. Conflicting directives fall back to normal
+        // power comparison.
+        if (playerForcedWin != enemyForcedWin)
+            return playerForcedWin ? 1 : -1;
+
+        // Same contract as ClashManager: exactly one forced failure
+        // loses. If both sides fail (or neither does), compare power.
+        if (player.ForcedFailure != enemy.ForcedFailure)
+            return player.ForcedFailure ? -1 : 1;
+
+        if (player.ClashPower >
+            enemy.ClashPower)
+        {
+            return 1;
+        }
+
+        if (player.ClashPower <
+            enemy.ClashPower)
+        {
+            return -1;
+        }
+
+        return 0;
     }
 
     private static SkillResolverType ResolveRollResolverType(
@@ -784,27 +1229,37 @@ public sealed class PlayerAutoPlanEstimator
         AddRawOutcome(
             result,
             data.ChinchiroArashiPower,
-            6f / denominator);
+            6f / denominator,
+            SkillResolverType.Chinchiro,
+            ChinchiroCombination.Arashi);
 
         AddRawOutcome(
             result,
             data.ChinchiroShigoroPower,
-            6f / denominator);
+            6f / denominator,
+            SkillResolverType.Chinchiro,
+            ChinchiroCombination.Shigoro);
 
         AddRawOutcome(
             result,
             data.ChinchiroHifumiPower,
-            6f / denominator);
+            6f / denominator,
+            SkillResolverType.Chinchiro,
+            ChinchiroCombination.Hifumi);
 
         AddRawOutcome(
             result,
             data.ChinchiroMokuPower,
-            90f / denominator);
+            90f / denominator,
+            SkillResolverType.Chinchiro,
+            ChinchiroCombination.Moku);
 
         AddRawOutcome(
             result,
             data.ChinchiroBlankPower,
-            108f / denominator);
+            108f / denominator,
+            SkillResolverType.Chinchiro,
+            ChinchiroCombination.Blank);
 
         NormalizeRawOutcomes(result);
         return result;
@@ -872,8 +1327,11 @@ public sealed class PlayerAutoPlanEstimator
         SkillDefinition definition,
         int basePower)
     {
-        Dictionary<int, int> counts =
-            new Dictionary<int, int>();
+        List<RawOutcome> result =
+            new List<RawOutcome>();
+
+        const float probability =
+            1f / 216f;
 
         for (int a = 1; a <= 6; a++)
         {
@@ -890,11 +1348,14 @@ public sealed class PlayerAutoPlanEstimator
 
                     Array.Sort(values);
 
+                    ChinchiroCombination combination;
                     int value;
 
                     if (a == b &&
                         b == c)
                     {
+                        combination =
+                            ChinchiroCombination.Arashi;
                         value =
                             definition
                                 .ChinchiroArashiBonus;
@@ -903,6 +1364,8 @@ public sealed class PlayerAutoPlanEstimator
                              values[1] == 5 &&
                              values[2] == 6)
                     {
+                        combination =
+                            ChinchiroCombination.Shigoro;
                         value =
                             definition
                                 .ChinchiroShigoroBonus;
@@ -911,6 +1374,8 @@ public sealed class PlayerAutoPlanEstimator
                              values[1] == 2 &&
                              values[2] == 3)
                     {
+                        combination =
+                            ChinchiroCombination.Hifumi;
                         value =
                             -definition
                                 .ChinchiroHifumiPenalty;
@@ -919,6 +1384,9 @@ public sealed class PlayerAutoPlanEstimator
                              a == c ||
                              b == c)
                     {
+                        combination =
+                            ChinchiroCombination.Moku;
+
                         value =
                             a == b ||
                             a == c
@@ -927,32 +1395,20 @@ public sealed class PlayerAutoPlanEstimator
                     }
                     else
                     {
+                        combination =
+                            ChinchiroCombination.Blank;
                         value =
                             values[0];
                     }
 
-                    int total =
-                        basePower +
-                        value;
-
-                    if (!counts.ContainsKey(total))
-                        counts[total] = 0;
-
-                    counts[total]++;
+                    AddRawOutcome(
+                        result,
+                        basePower + value,
+                        probability,
+                        SkillResolverType.Chinchiro,
+                        combination);
                 }
             }
-        }
-
-        List<RawOutcome> result =
-            new List<RawOutcome>();
-
-        foreach (KeyValuePair<int, int> pair
-                 in counts)
-        {
-            result.Add(
-                new RawOutcome(
-                    pair.Key,
-                    pair.Value / 216f));
         }
 
         NormalizeRawOutcomes(result);
@@ -1035,14 +1491,40 @@ public sealed class PlayerAutoPlanEstimator
 
         List<RawOutcome> outcomes =
             BuildRawOutcomes(
+                owner,
                 skill,
                 rollIndex);
 
         float result = 0f;
 
+        BattleAction predictionAction =
+            CreatePreviewAction(
+                owner,
+                ownerPart,
+                speed,
+                skill,
+                target,
+                targetPart,
+                skill.GetRollType(rollIndex),
+                rollIndex);
+
         foreach (RawOutcome outcome
                  in outcomes)
         {
+            RollResult predictionRoll =
+                CreatePredictionRollResult(
+                    outcome,
+                    skill.GetRollType(rollIndex),
+                    rollIndex);
+
+            if (ResolveForcedRollFailure(
+                    owner,
+                    predictionAction,
+                    predictionRoll))
+            {
+                continue;
+            }
+
             float damage =
                 EstimateResolvedDamage(
                     context,
@@ -1203,36 +1685,16 @@ public sealed class PlayerAutoPlanEstimator
         if (calculated <= 0)
             return 0f;
 
-        // CharacterDamageController의 실제 적용 계약을 값 변경 없이 미리 계산한다.
-        if (targetPart == null ||
-            targetPart.IsBroken)
-        {
-            return Mathf.Min(
-                calculated,
-                Mathf.Max(0, target.CurrentHP));
-        }
-
-        if (targetPart.IsWeakened)
-        {
-            // 약화 타격은 이 타격에서 HP/부위 HP를 감소시키지 않고,
-            // 파괴 권한이 있으면 상태만 Broken으로 전환한다.
-            return 0f;
-        }
-
-        int partBefore =
-            Mathf.Max(
-                0,
-                Mathf.CeilToInt(
-                    targetPart.PartHP));
-
-        int maximumPartDamage =
-            Mathf.Max(
-                0,
-                partBefore - 1);
-
-        return Mathf.Min(
+        // 0922 §1.3/1.4:
+        // Part HP and Whole HP are separate ledgers.
+        // Normal part damage may clamp the part at 1, and a weakened part
+        // may no longer lose Part HP, but the requested HP damage still
+        // reduces Whole HP in full. AutoPlan ExpectedDamage is explicitly
+        // Expected HP Damage, so part-state clamps must not zero/cap it.
+        return LimitWholeHpExpectedDamage(
             calculated,
-            maximumPartDamage);
+            target.CurrentHP,
+            guard: 0);
     }
 
     private static float ApplyAggregateDamageLimits(
@@ -1246,11 +1708,6 @@ public sealed class PlayerAutoPlanEstimator
             return 0f;
         }
 
-        float damage =
-            Mathf.Max(
-                0f,
-                expectedDamage);
-
         int guard =
             target.RuntimeStatus != null
                 ? Mathf.Max(
@@ -1258,36 +1715,33 @@ public sealed class PlayerAutoPlanEstimator
                     target.RuntimeStatus.currentBlock)
                 : 0;
 
-        damage =
+        // targetPart is intentionally not used for the HP ledger.
+        // A normal/weakened/broken part changes Part HP/break state,
+        // not the amount charged to Whole HP.
+        return LimitWholeHpExpectedDamage(
+            expectedDamage,
+            target.CurrentHP,
+            guard);
+    }
+
+    private static float LimitWholeHpExpectedDamage(
+        float expectedDamage,
+        int currentHp,
+        int guard)
+    {
+        float afterGuard =
             Mathf.Max(
                 0f,
-                damage - guard);
-
-        if (targetPart == null ||
-            targetPart.IsBroken)
-        {
-            return Mathf.Min(
-                damage,
-                Mathf.Max(0, target.CurrentHP));
-        }
-
-        if (targetPart.IsWeakened)
-            return 0f;
-
-        int partBefore =
-            Mathf.Max(
-                0,
-                Mathf.CeilToInt(
-                    targetPart.PartHP));
-
-        int maximumPartDamage =
-            Mathf.Max(
-                0,
-                partBefore - 1);
+                expectedDamage -
+                Mathf.Max(
+                    0,
+                    guard));
 
         return Mathf.Min(
-            damage,
-            maximumPartDamage);
+            afterGuard,
+            Mathf.Max(
+                0,
+                currentHp));
     }
 
     public float ScoreTargetVulnerability(
@@ -1357,7 +1811,11 @@ public sealed class PlayerAutoPlanEstimator
     private static void AddRawOutcome(
         List<RawOutcome> destination,
         int power,
-        float probability)
+        float probability,
+        SkillResolverType resolverType =
+            SkillResolverType.Dice,
+        ChinchiroCombination chinchiroCombination =
+            ChinchiroCombination.None)
     {
         if (destination == null ||
             probability <= 0f)
@@ -1372,14 +1830,21 @@ public sealed class PlayerAutoPlanEstimator
             RawOutcome existing =
                 destination[index];
 
-            if (existing.Power != power)
+            if (existing.Power != power ||
+                existing.ResolverType != resolverType ||
+                existing.ChinchiroCombination !=
+                    chinchiroCombination)
+            {
                 continue;
+            }
 
             destination[index] =
                 new RawOutcome(
                     power,
                     existing.Probability +
-                    probability);
+                    probability,
+                    resolverType,
+                    chinchiroCombination);
 
             return;
         }
@@ -1387,7 +1852,9 @@ public sealed class PlayerAutoPlanEstimator
         destination.Add(
             new RawOutcome(
                 power,
-                probability));
+                probability,
+                resolverType,
+                chinchiroCombination));
     }
 
     private static void NormalizeRawOutcomes(
@@ -1423,7 +1890,9 @@ public sealed class PlayerAutoPlanEstimator
             outcomes[index] =
                 new RawOutcome(
                     outcome.Power,
-                    outcome.Probability / total);
+                    outcome.Probability / total,
+                    outcome.ResolverType,
+                    outcome.ChinchiroCombination);
         }
     }
 
@@ -1462,7 +1931,9 @@ public sealed class PlayerAutoPlanEstimator
                     outcome.RawPower,
                     outcome.ClashPower,
                     outcome.Probability / total,
-                    outcome.RollType);
+                    outcome.RollType,
+                    outcome.ForcedJudgment,
+                    outcome.ForcedFailure);
         }
     }
 
