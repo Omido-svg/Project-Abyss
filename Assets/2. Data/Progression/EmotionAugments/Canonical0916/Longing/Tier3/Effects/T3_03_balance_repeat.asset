@@ -9,9 +9,9 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 0}
+  m_Script: {fileID: 11500000, guid: 0095c46c74c1aee4dbf3ad41a69ad5df, type: 3}
   m_Name: T3_03_balance_repeat
-  m_EditorClassIdentifier: ProjectAbyss.Runtime::EmotionRulebreakerEffectDefinition
+  m_EditorClassIdentifier: 
   Operation: 9
   TargetPartType: 0
   AnyPart: 0
