@@ -107,6 +107,7 @@ InitTestScene*.unity*
 
 # 작업 맥락 — abyss-workspace(private)가 원본. public 레포에 커밋 금지
 CLAUDE.md
+AGENTS.md
 .claude/
 
 # macOS 생성 파일
