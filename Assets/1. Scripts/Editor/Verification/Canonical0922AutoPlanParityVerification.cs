@@ -42,11 +42,7 @@ public static class Canonical0922AutoPlanParityVerification
     public static void VerifyFromMenu()
     {
         List<Check> checks =
-            new List<Check>();
-
-        AddSpeedChecks(checks);
-        AddWholeHpChecks(checks);
-        AddSourceIntegrationChecks(checks);
+            BuildChecks();
 
         int pass = 0;
 
@@ -115,6 +111,67 @@ public static class Canonical0922AutoPlanParityVerification
             Debug.Log(summary.ToString());
         else
             Debug.LogError(summary.ToString());
+    }
+
+    /// <summary>
+    /// Report-independent live evaluation used by the Phase 13 final gate.
+    /// Rebuilds all parity checks from the current compiled runtime/source so a
+    /// stale PASS markdown file cannot hide a later AutoPlan regression.
+    /// </summary>
+    public static bool EvaluateForGate(out string actual)
+    {
+        List<Check> checks =
+            BuildChecks();
+
+        int fail = 0;
+        foreach (Check check in checks)
+        {
+            if (!check.Passed)
+                fail++;
+        }
+
+        actual =
+            $"Checks={checks.Count}, Fail={fail}";
+
+        if (fail > 0)
+        {
+            StringBuilder first =
+                new StringBuilder();
+
+            int added = 0;
+            foreach (Check check in checks)
+            {
+                if (check.Passed)
+                    continue;
+
+                if (added > 0)
+                    first.Append(" | ");
+
+                first.Append(check.Id);
+                first.Append(':');
+                first.Append(check.Actual);
+                added++;
+
+                if (added >= 4)
+                    break;
+            }
+
+            actual += "; First=" + first;
+        }
+
+        return fail == 0;
+    }
+
+    private static List<Check> BuildChecks()
+    {
+        List<Check> checks =
+            new List<Check>();
+
+        AddSpeedChecks(checks);
+        AddWholeHpChecks(checks);
+        AddSourceIntegrationChecks(checks);
+
+        return checks;
     }
 
     private static void AddSpeedChecks(

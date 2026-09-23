@@ -32,6 +32,7 @@ public static class Canonical0922Phase10EmotionAugmentVerification
         AddProgressionChecks(checks);
         AddInfiniteStatusChecks(checks);
         AddCanonicalEffectChecks(checks);
+        AddConfirmedSemanticsCoverageChecks(checks);
         AddCleanupChecks(checks);
 
         int pass = checks.Count(x => x.Passed);
@@ -280,6 +281,21 @@ public static class Canonical0922Phase10EmotionAugmentVerification
         Add(checks, "P10-S08", "Awe Time Sacrifice unknown Strength N is not invented",
             pendingTimeSacrifice,
             pendingTimeSacrifice ? "PENDING_CANONICAL / no TEMP proxy" : "unknown value was activated");
+    }
+
+    private static void AddConfirmedSemanticsCoverageChecks(
+        List<Check> checks)
+    {
+        bool passed =
+            Canonical0922EmotionConfirmedSemanticsVerification
+                .EvaluateForGate(out string actual);
+
+        Add(
+            checks,
+            "P10-S09",
+            "All 50 confirmed emotion cards match canonical runtime semantics",
+            passed,
+            actual);
     }
 
     private static void AddCleanupChecks(List<Check> checks)

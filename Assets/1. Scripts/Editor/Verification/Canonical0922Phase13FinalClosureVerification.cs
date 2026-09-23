@@ -17,6 +17,8 @@ using UnityEngine;
 /// verification artifacts and performs final live project sanity checks:
 /// - canonical identity / explicit pending inventory
 /// - status / calculation / timing / character / encounter / progression / HUD
+/// - live AutoPlan ↔ battle calculation parity (report-independent)
+/// - all 50 confirmed emotion augment runtime meanings (report-independent)
 /// - required assets and catalog wiring
 /// - missing scripts in Assets scenes/prefabs
 /// - Phase 12 full regression closure
@@ -472,6 +474,19 @@ public static class Canonical0922Phase13FinalClosureVerification
             ReportPassed(reports, "Phase 4"),
             "Phase4=" +
             BoolText(ReportPassed(reports, "Phase 4")));
+
+        bool autoPlanParity =
+            Canonical0922AutoPlanParityVerification
+                .EvaluateForGate(out string autoPlanActual);
+
+        Add(
+            checks,
+            "C",
+            "P13-C06",
+            "AutoPlan matches live battle calculation contracts",
+            "CalculationMismatch",
+            autoPlanParity,
+            autoPlanActual);
     }
 
     // ---------------------------------------------------------------------
@@ -547,8 +562,11 @@ public static class Canonical0922Phase13FinalClosureVerification
             "EmotionAugment / Progression confirmed rules closed",
             "ProgressionMismatch",
             ReportPassed(reports, "Phase 10") &&
+            Phase10CheckPassed(reports, "P10-S09") &&
             Phase12CheckPassed(reports, "P12-R03"),
             "Phase10=" + BoolText(ReportPassed(reports, "Phase 10")) +
+            ", Confirmed50=" +
+            BoolText(Phase10CheckPassed(reports, "P10-S09")) +
             ", Catalog63=" +
             BoolText(Phase12CheckPassed(reports, "P12-R03")));
 
@@ -580,6 +598,19 @@ public static class Canonical0922Phase13FinalClosureVerification
             nonNull == 63 &&
             uniqueIds == 63,
             $"Slots={slots}, NonNull={nonNull}, UniqueIds={uniqueIds}");
+
+        bool emotion50 =
+            Canonical0922EmotionConfirmedSemanticsVerification
+                .EvaluateForGate(out string emotion50Actual);
+
+        Add(
+            checks,
+            "E",
+            "P13-E04",
+            "All 50 confirmed emotion cards match live canonical runtime semantics",
+            "ProgressionMismatch",
+            emotion50,
+            emotion50Actual);
     }
 
     // ---------------------------------------------------------------------
@@ -918,6 +949,17 @@ public static class Canonical0922Phase13FinalClosureVerification
             state != null &&
             state.Exists &&
             state.Passed;
+    }
+
+    private static bool Phase10CheckPassed(
+        IReadOnlyDictionary<string, ReportState> reports,
+        string id)
+    {
+        return
+            ReportContainsCheckedId(
+                reports,
+                "Phase 10",
+                id);
     }
 
     private static bool Phase11CheckPassed(
