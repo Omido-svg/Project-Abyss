@@ -30,8 +30,22 @@ public class ActionSlot
     public int CommittedEnergyCost;
 
     // Planning에서 즉시 실행된 도사림의 역연산 journal.
-    // 캐릭터 고유 도사림은 실행 시 자신이 만든 변경만 기록한다.
-    public PlanningUndoJournal PlanningUndo { get; } = new();
+    // AutoPlan preview ActionSlot은 undo를 사용하지 않으므로 실제 접근 시에만 생성한다.
+    // 일반 Planning에서 PlanningUndo를 사용하는 기존 호출 의미는 그대로 유지된다.
+    private PlanningUndoJournal planningUndo;
+
+    public PlanningUndoJournal PlanningUndo =>
+        planningUndo ??=
+            new PlanningUndoJournal();
+
+    /// <summary>
+    /// Preview/AutoPlan scratch 슬롯이 journal을 생성하지 않고
+    /// 이미 존재하는 journal만 초기화할 수 있게 한다.
+    /// </summary>
+    public void ClearPlanningUndoIfCreated()
+    {
+        planningUndo?.Clear();
+    }
 
     // 도사림/위세처럼 계획 단계에서 이미 실행한 행동은 Resolution queue에 다시 넣지 않는다.
     public bool SkipResolution;

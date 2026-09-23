@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using System.Text;
+using Unity.Profiling;
 using UnityEngine;
 
 public enum PlayerAutoPlanMode
@@ -44,6 +46,331 @@ public sealed class PlayerAutoPlanService
     private readonly PlayerAutoPlanEstimator estimator = new();
     private readonly PlayerAutoPlanApplicationService applicationService = new();
 
+    // Search inner-loop diagnostics are intentionally disabled by default.
+    // Thousands of Debug.Log calls with stack traces can dominate the actual
+    // probability calculation in the Unity Editor. Outer summary/perf logs remain.
+    private static readonly bool VerboseSearchDiagnostics = false;
+
+    // Coarse marker that remains visible without Deep Profile.
+    // Do not put markers in the recursive inner loop: millions of nodes are possible.
+    private static readonly ProfilerMarker AutoPlanSearchMarker =
+        new ProfilerMarker("ProjectAbyss.AutoPlan.Search");
+
+    private static readonly ProfilerMarker AutoPlanPrepareMarker =
+        new ProfilerMarker("ProjectAbyss.AutoPlan.PrepareCandidates");
+
+    private readonly Dictionary<ThreatCandidateCacheKey, Candidate>
+        threatCandidateCache =
+            new Dictionary<ThreatCandidateCacheKey, Candidate>();
+
+    private readonly Dictionary<FillCandidateCacheKey, Candidate>
+        fillCandidateCache =
+            new Dictionary<FillCandidateCacheKey, Candidate>();
+
+    private readonly Dictionary<TargetPointCacheKey, List<TargetPoint>>
+        targetPointCache =
+            new Dictionary<TargetPointCacheKey, List<TargetPoint>>();
+
+    private int searchNodeCount;
+    private int validationCount;
+    private int threatCacheHits;
+    private int threatCacheMisses;
+    private int fillCacheHits;
+    private int fillCacheMisses;
+    private int targetPointCacheHits;
+    private int targetPointCacheMisses;
+    private int boundPruneCount;
+    private int rejectedBestValidationCount;
+
+    // Reused per recursion depth. Search visits a given sourceIndex sequentially,
+    // so the buffers at that depth are never used by a deeper recursive call.
+    private List<Candidate>[] rawCandidateScratch =
+        Array.Empty<List<Candidate>>();
+
+    private Dictionary<CandidateRouteKey, Candidate>[] reduceMapScratch =
+        Array.Empty<Dictionary<CandidateRouteKey, Candidate>>();
+
+    private List<Candidate>[] reducedCandidateScratch =
+        Array.Empty<List<Candidate>>();
+
+    // V3 exact-search preparation.
+    // Static candidate score/target work is performed once before DFS; the
+    // recursive hot path only evaluates state-dependent legality and routes.
+    private sealed class PreparedSourceCandidates
+    {
+        public readonly List<Candidate> SortedCandidates =
+            new List<Candidate>(96);
+
+        public readonly Dictionary<CandidateRouteKey, int>
+            RouteIndexByKey =
+                new Dictionary<CandidateRouteKey, int>(96);
+
+        public byte[] SkillLegalityValue =
+            Array.Empty<byte>();
+
+        public int[] SkillLegalityStamp =
+            Array.Empty<int>();
+
+        public int[] RouteSeenStamp =
+            Array.Empty<int>();
+
+        public int VisitStamp;
+        public int SkillCount;
+        public int RouteCount;
+        public float MaxDamage;
+    }
+
+    private sealed class WinRateCandidateComparer :
+        IComparer<Candidate>
+    {
+        public int Compare(
+            Candidate left,
+            Candidate right)
+        {
+            if (ReferenceEquals(left, right))
+                return 0;
+            if (IsBetterPureCandidate(
+                    left,
+                    right,
+                    PlayerAutoPlanMode.WinRate))
+            {
+                return -1;
+            }
+
+            if (IsBetterPureCandidate(
+                    right,
+                    left,
+                    PlayerAutoPlanMode.WinRate))
+            {
+                return 1;
+            }
+
+            return 0;
+        }
+    }
+
+    private sealed class DamageCandidateComparer :
+        IComparer<Candidate>
+    {
+        public int Compare(
+            Candidate left,
+            Candidate right)
+        {
+            if (ReferenceEquals(left, right))
+                return 0;
+            if (IsBetterPureCandidate(
+                    left,
+                    right,
+                    PlayerAutoPlanMode.Damage))
+            {
+                return -1;
+            }
+
+            if (IsBetterPureCandidate(
+                    right,
+                    left,
+                    PlayerAutoPlanMode.Damage))
+            {
+                return 1;
+            }
+
+            return 0;
+        }
+    }
+
+    private static readonly IComparer<Candidate>
+        WinRatePreparedCandidateComparer =
+            new WinRateCandidateComparer();
+
+    private static readonly IComparer<Candidate>
+        DamagePreparedCandidateComparer =
+            new DamageCandidateComparer();
+
+    private PreparedSourceCandidates[] preparedSources =
+        Array.Empty<PreparedSourceCandidates>();
+
+    // One reusable ActionSlot per recursion depth/source. A deeper recursive
+    // call uses a different slot, so the current plan remains stable until
+    // backtracking returns.
+    private ActionSlot[] searchSlotScratch =
+        Array.Empty<ActionSlot>();
+
+    private bool[] assignedThreatScratch =
+        Array.Empty<bool>();
+
+    // Row [sourceIndex, threatIndex] stores the maximum clash win rate that
+    // ANY source >= sourceIndex can still achieve against that threat.
+    private float[] remainingThreatWinUpper =
+        Array.Empty<float>();
+
+    private int threatUpperStride;
+
+    private float[] maxDamagePerSource =
+        Array.Empty<float>();
+
+    // Shared temporary array used only while computing an upper bound before
+    // recursion starts. It is never live across a recursive call.
+    private float[] upperBoundScratch =
+        Array.Empty<float>();
+
+    private int preparedCandidateCount;
+    private int preparedSourceCount;
+    private int preparedThreatCount;
+
+    private readonly struct ThreatCandidateCacheKey :
+        IEquatable<ThreatCandidateCacheKey>
+    {
+        private readonly SourceSlot source;
+        private readonly Skill skill;
+        private readonly ActionSlot threat;
+        private readonly BodyPart attackTargetPart;
+
+        public ThreatCandidateCacheKey(
+            SourceSlot source,
+            Skill skill,
+            ActionSlot threat,
+            BodyPart attackTargetPart)
+        {
+            this.source = source;
+            this.skill = skill;
+            this.threat = threat;
+            this.attackTargetPart = attackTargetPart;
+        }
+
+        public bool Equals(ThreatCandidateCacheKey other) =>
+            ReferenceEquals(source, other.source) &&
+            ReferenceEquals(skill, other.skill) &&
+            ReferenceEquals(threat, other.threat) &&
+            ReferenceEquals(attackTargetPart, other.attackTargetPart);
+
+        public override bool Equals(object obj) =>
+            obj is ThreatCandidateCacheKey other && Equals(other);
+
+        public override int GetHashCode()
+        {
+            unchecked
+            {
+                int hash = 17;
+                hash = hash * 31 + RefHash(source);
+                hash = hash * 31 + RefHash(skill);
+                hash = hash * 31 + RefHash(threat);
+                hash = hash * 31 + RefHash(attackTargetPart);
+                return hash;
+            }
+        }
+    }
+
+    private readonly struct FillCandidateCacheKey :
+        IEquatable<FillCandidateCacheKey>
+    {
+        private readonly SourceSlot source;
+        private readonly Skill skill;
+        private readonly Character target;
+        private readonly BodyPart targetPart;
+
+        public FillCandidateCacheKey(
+            SourceSlot source,
+            Skill skill,
+            Character target,
+            BodyPart targetPart)
+        {
+            this.source = source;
+            this.skill = skill;
+            this.target = target;
+            this.targetPart = targetPart;
+        }
+
+        public bool Equals(FillCandidateCacheKey other) =>
+            ReferenceEquals(source, other.source) &&
+            ReferenceEquals(skill, other.skill) &&
+            ReferenceEquals(target, other.target) &&
+            ReferenceEquals(targetPart, other.targetPart);
+
+        public override bool Equals(object obj) =>
+            obj is FillCandidateCacheKey other && Equals(other);
+
+        public override int GetHashCode()
+        {
+            unchecked
+            {
+                int hash = 17;
+                hash = hash * 31 + RefHash(source);
+                hash = hash * 31 + RefHash(skill);
+                hash = hash * 31 + RefHash(target);
+                hash = hash * 31 + RefHash(targetPart);
+                return hash;
+            }
+        }
+    }
+
+    private readonly struct TargetPointCacheKey :
+        IEquatable<TargetPointCacheKey>
+    {
+        private readonly Character target;
+        private readonly Skill skill;
+
+        public TargetPointCacheKey(
+            Character target,
+            Skill skill)
+        {
+            this.target = target;
+            this.skill = skill;
+        }
+
+        public bool Equals(TargetPointCacheKey other) =>
+            ReferenceEquals(target, other.target) &&
+            ReferenceEquals(skill, other.skill);
+
+        public override bool Equals(object obj) =>
+            obj is TargetPointCacheKey other && Equals(other);
+
+        public override int GetHashCode()
+        {
+            unchecked
+            {
+                int hash = 17;
+                hash = hash * 31 + RefHash(target);
+                hash = hash * 31 + RefHash(skill);
+                return hash;
+            }
+        }
+    }
+
+    private readonly struct CandidateRouteKey :
+        IEquatable<CandidateRouteKey>
+    {
+        private readonly ActionSlot threat;
+        private readonly int energy;
+
+        public CandidateRouteKey(
+            ActionSlot threat,
+            int energy)
+        {
+            this.threat = threat;
+            this.energy = energy;
+        }
+
+        public bool Equals(CandidateRouteKey other) =>
+            ReferenceEquals(threat, other.threat) &&
+            energy == other.energy;
+
+        public override bool Equals(object obj) =>
+            obj is CandidateRouteKey other && Equals(other);
+
+        public override int GetHashCode()
+        {
+            unchecked
+            {
+                return RefHash(threat) * 397 ^ energy;
+            }
+        }
+    }
+
+    private static int RefHash(object value) =>
+        value == null
+            ? 0
+            : RuntimeHelpers.GetHashCode(value);
+
     private sealed class SourceSlot
     {
         public Character Owner;
@@ -51,9 +378,6 @@ public sealed class PlayerAutoPlanService
         public int ActionIndex;
         public int Speed;
         public IReadOnlyList<Skill> Skills;
-
-        public string Key =>
-            $"{Part?.Type.ToString() ?? "CHAR"}:{ActionIndex}";
     }
 
     private sealed class Candidate
@@ -65,6 +389,13 @@ public sealed class PlayerAutoPlanService
         public ActionSlot Threat;
         public float WinRate;
         public float ExpectedDamage;
+
+        // V3/V5 prepared-search metadata. These values do not change while one
+        // BuildPureObjectivePlan call is running.
+        public int SkillIndex = -1;
+        public int ThreatIndex = -1;
+        public int RouteIndex = -1;
+        public CandidateRouteKey RouteKey;
     }
 
     /// <summary>
@@ -82,19 +413,14 @@ public sealed class PlayerAutoPlanService
         public readonly List<ActionSlot> Slots =
             new List<ActionSlot>();
 
-        private readonly HashSet<string> usedSourceKeys =
-            new HashSet<string>();
-
-        public bool IsSourceUsed(SourceSlot source) =>
-            source != null && usedSourceKeys.Contains(source.Key);
-
+        // DFS advances sourceIndex monotonically. A source can therefore never
+        // be selected twice in one branch, so no used-source HashSet is needed.
         public bool CanAdd(
             SourceSlot source,
             Skill skill)
         {
             if (Player == null ||
                 source == null ||
-                IsSourceUsed(source) ||
                 skill == null)
             {
                 return false;
@@ -147,7 +473,6 @@ public sealed class PlayerAutoPlanService
                 return;
             }
 
-            usedSourceKeys.Add(source.Key);
             Slots.Add(slot);
             PlannedEnergy +=
                 Mathf.Max(0, slot.Skill?.EnergyCost ?? 0);
@@ -164,6 +489,43 @@ public sealed class PlayerAutoPlanService
             }
         }
 
+        public void Unregister(
+            SourceSlot source,
+            ActionSlot slot)
+        {
+            if (source == null ||
+                slot == null ||
+                Slots.Count == 0)
+            {
+                return;
+            }
+
+            // Search always backtracks the most recently registered slot.
+            int lastIndex = Slots.Count - 1;
+
+            if (!ReferenceEquals(Slots[lastIndex], slot))
+            {
+                throw new InvalidOperationException(
+                    "AutoPlan backtracking order was corrupted.");
+            }
+
+            Slots.RemoveAt(lastIndex);
+
+            PlannedEnergy -=
+                Mathf.Max(0, slot.Skill?.EnergyCost ?? 0);
+
+            if (slot.Phase == ActionPhase.COMBAT)
+                PlannedCombatSlots--;
+            else
+                PlannedUtilitySlots--;
+
+            if (slot.Skill?.ActionType ==
+                ActionType.Prestige)
+            {
+                PlannedPrestigeCount--;
+            }
+        }
+
         public PlanningState Clone()
         {
             PlanningState clone =
@@ -177,20 +539,121 @@ public sealed class PlayerAutoPlanService
                 };
 
             foreach (ActionSlot slot in Slots)
-                clone.Slots.Add(slot);
-
-            foreach (string key in usedSourceKeys)
-                clone.usedSourceKeys.Add(key);
+            {
+                clone.Slots.Add(
+                    CloneSearchSlot(slot));
+            }
 
             return clone;
         }
 
     }
 
+    private struct SearchSlotSnapshot
+    {
+        public long ActionId;
+        public Character Owner;
+        public BodyPart Part;
+        public Skill Skill;
+        public int Speed;
+        public int ActionIndex;
+        public string SlotId;
+        public CharacterSlotConfig SlotConfig;
+        public ActionPhase Phase;
+        public Character TargetCharacter;
+        public BodyPart TargetPart;
+        public BodyPart SecondaryTargetPart;
+        public ActionSlot TargetSlot;
+        public bool UseCharacterRerollResource;
+        public string PlanningChoiceId;
+        public bool PlanningEffectCommitted;
+        public bool ResourceCostCommitted;
+        public int CommittedEnergyCost;
+        public bool SkipResolution;
+        public bool SuppressOneSidedResolution;
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static SearchSlotSnapshot Capture(
+            ActionSlot slot)
+        {
+            return new SearchSlotSnapshot
+            {
+                ActionId = slot.ActionId,
+                Owner = slot.Owner,
+                Part = slot.Part,
+                Skill = slot.Skill,
+                Speed = slot.Speed,
+                ActionIndex = slot.ActionIndex,
+                SlotId = slot.SlotId,
+                SlotConfig = slot.SlotConfig,
+                Phase = slot.Phase,
+                TargetCharacter = slot.TargetCharacter,
+                TargetPart = slot.TargetPart,
+                SecondaryTargetPart = slot.SecondaryTargetPart,
+                TargetSlot = slot.TargetSlot,
+                UseCharacterRerollResource =
+                    slot.UseCharacterRerollResource,
+                PlanningChoiceId =
+                    slot.PlanningChoiceId,
+                PlanningEffectCommitted =
+                    slot.PlanningEffectCommitted,
+                ResourceCostCommitted =
+                    slot.ResourceCostCommitted,
+                CommittedEnergyCost =
+                    slot.CommittedEnergyCost,
+                SkipResolution =
+                    slot.SkipResolution,
+                SuppressOneSidedResolution =
+                    slot.SuppressOneSidedResolution
+            };
+        }
+
+        public ActionSlot Materialize()
+        {
+            return new ActionSlot
+            {
+                ActionId = ActionId,
+                Owner = Owner,
+                Part = Part,
+                Skill = Skill,
+                Speed = Speed,
+                ActionIndex = ActionIndex,
+                SlotId = SlotId,
+                SlotConfig = SlotConfig,
+                Phase = Phase,
+                TargetCharacter = TargetCharacter,
+                TargetPart = TargetPart,
+                SecondaryTargetPart = SecondaryTargetPart,
+                TargetSlot = TargetSlot,
+                UseCharacterRerollResource =
+                    UseCharacterRerollResource,
+                PlanningChoiceId =
+                    PlanningChoiceId,
+                PlanningEffectCommitted =
+                    PlanningEffectCommitted,
+                ResourceCostCommitted =
+                    ResourceCostCommitted,
+                CommittedEnergyCost =
+                    CommittedEnergyCost,
+                SkipResolution =
+                    SkipResolution,
+                SuppressOneSidedResolution =
+                    SuppressOneSidedResolution
+            };
+        }
+    }
+
     private sealed class PurePlanSearchResult
     {
         public bool HasValue;
         public PlanningState State;
+        public SearchSlotSnapshot[] SlotSnapshots =
+            Array.Empty<SearchSlotSnapshot>();
+        public int SlotCount;
+        public int PlannedEnergy;
+        public int PlannedCombatSlots;
+        public int PlannedUtilitySlots;
+        public int PlannedPrestigeCount;
         public float WinRateSum;
         public float ExpectedDamage;
         public int EnergyCost;
@@ -823,34 +1286,105 @@ public sealed class PlayerAutoPlanService
             return root;
         }
 
+        IReadOnlyList<ActionSlot> safeThreats =
+            enemyThreats ??
+            Array.Empty<ActionSlot>();
+
+        ResetPureSearchCaches();
+
+        System.Diagnostics.Stopwatch prepareWatch =
+            System.Diagnostics.Stopwatch.StartNew();
+
+        estimator.BeginEvaluationSession(
+            context);
+
+        try
+        {
+            using (AutoPlanPrepareMarker.Auto())
+            {
+                PreparePureSearch(
+                    context,
+                    sources,
+                    safeThreats,
+                    mode);
+            }
+        }
+        finally
+        {
+            estimator.EndEvaluationSession();
+        }
+
+        prepareWatch.Stop();
+
+        System.Diagnostics.Stopwatch searchWatch =
+            System.Diagnostics.Stopwatch.StartNew();
+
         ActionPlanValidator validator =
             new ActionPlanValidator(actionManager);
 
         PurePlanSearchResult best =
-            new PurePlanSearchResult();
+            new PurePlanSearchResult
+            {
+                SlotSnapshots =
+                    new SearchSlotSnapshot[
+                        Mathf.Max(
+                            1,
+                            player.GetMaxActionSlots())]
+            };
 
-        SearchPureObjectivePlan(
-            context,
-            player,
-            validator,
-            sources,
-            enemyThreats ?? Array.Empty<ActionSlot>(),
-            mode,
-            sourceIndex: 0,
-            state: root,
-            assignedThreats: new HashSet<ActionSlot>(),
-            winRateSum: 0f,
-            expectedDamage: 0f,
-            best: best);
+        using (AutoPlanSearchMarker.Auto())
+        {
+            SearchPureObjectivePlan(
+                context,
+                player,
+                validator,
+                sources,
+                safeThreats,
+                mode,
+                sourceIndex: 0,
+                state: root,
+                assignedThreatCount: 0,
+                winRateSum: 0f,
+                expectedDamage: 0f,
+                best: best);
+        }
+
+        searchWatch.Stop();
+
+        if (best.HasValue)
+        {
+            best.State =
+                MaterializeBestState(
+                    player,
+                    best);
+        }
 
         float normalizedWinRate =
-            enemyThreats != null && enemyThreats.Count > 0
-                ? best.WinRateSum / enemyThreats.Count
+            safeThreats.Count > 0
+                ? best.WinRateSum /
+                  safeThreats.Count
                 : 0f;
 
         Debug.Log(
+            $"[PlayerAutoPlan][PURE_SEARCH_PERF] Mode={mode}, " +
+            $"PrepareMs={prepareWatch.Elapsed.TotalMilliseconds:0.00}, " +
+            $"SearchMs={searchWatch.Elapsed.TotalMilliseconds:0.00}, " +
+            $"TotalMs={(prepareWatch.Elapsed + searchWatch.Elapsed).TotalMilliseconds:0.00}, " +
+            $"PreparedCandidates={preparedCandidateCount}, " +
+            $"Nodes={searchNodeCount}, Validations={validationCount}, " +
+            $"BoundPruned={boundPruneCount}, " +
+            $"RejectedBestValidation={rejectedBestValidationCount}, " +
+            $"ThreatCache={threatCacheHits}H/{threatCacheMisses}M, " +
+            $"FillCache={fillCacheHits}H/{fillCacheMisses}M, " +
+            $"TargetPoints={targetPointCacheHits}H/{targetPointCacheMisses}M, " +
+            $"EstimatorRaw={estimator.RawOutcomeCacheHits}H/{estimator.RawOutcomeCacheMisses}M, " +
+            $"EstimatorPower={estimator.PowerOutcomeCacheHits}H/{estimator.PowerOutcomeCacheMisses}M, " +
+            $"EstimatorDamage={estimator.DamageEstimateCacheHits}H/{estimator.DamageEstimateCacheMisses}M, " +
+            $"EstimatorRollCount={estimator.RollCountCacheHits}H/{estimator.RollCountCacheMisses}M");
+
+        Debug.Log(
             $"[PlayerAutoPlan][PURE_SEARCH] Mode={mode}, " +
-            $"Threats={enemyThreats?.Count ?? 0}, " +
+            $"Threats={safeThreats.Count}, " +
             $"CoverageAdjustedWinRate={normalizedWinRate:P1}, " +
             $"ExpectedHPDamage={best.ExpectedDamage:0.00}, " +
             $"Energy={best.EnergyCost}, " +
@@ -868,25 +1402,281 @@ public sealed class PlayerAutoPlanService
         PlayerAutoPlanMode mode,
         int sourceIndex,
         PlanningState state,
-        HashSet<ActionSlot> assignedThreats,
+        int assignedThreatCount,
         float winRateSum,
         float expectedDamage,
         PurePlanSearchResult best)
     {
-        ConsiderPurePlan(
-            mode,
-            state,
-            winRateSum,
-            expectedDamage,
-            best);
+        searchNodeCount++;
 
-        if (sourceIndex >= sources.Count)
+        if (state == null ||
+            player == null ||
+            sources == null)
+        {
             return;
+        }
+
+        int maxTotalSlots =
+            Mathf.Max(
+                0,
+                player.GetMaxActionSlots());
+
+        int maxCombatSlots =
+            Mathf.Max(
+                0,
+                player.GetMaxCombatActionSlots());
+
+        bool capacityReached =
+            state.Slots.Count >=
+                maxTotalSlots ||
+            state.PlannedCombatSlots >=
+                maxCombatSlots;
+
+        if (sourceIndex >= sources.Count ||
+            capacityReached)
+        {
+            ConsiderPurePlan(
+                player,
+                validator,
+                mode,
+                state,
+                winRateSum,
+                expectedDamage,
+                best);
+            return;
+        }
+
+        if (best != null &&
+            best.HasValue)
+        {
+            int remainingSources =
+                Mathf.Max(
+                    0,
+                    sources.Count - sourceIndex);
+
+            int remainingTotalSlots =
+                Mathf.Max(
+                    0,
+                    maxTotalSlots -
+                    state.Slots.Count);
+
+            int remainingCombatSlots =
+                Mathf.Max(
+                    0,
+                    maxCombatSlots -
+                    state.PlannedCombatSlots);
+
+            int maxAdditionalActions =
+                Mathf.Min(
+                    remainingSources,
+                    Mathf.Min(
+                        remainingTotalSlots,
+                        remainingCombatSlots));
+
+            const float epsilon = 0.0001f;
+
+            if (mode == PlayerAutoPlanMode.WinRate)
+            {
+                int remainingThreats =
+                    Mathf.Max(
+                        0,
+                        preparedThreatCount -
+                        assignedThreatCount);
+
+                int maxAdditionalClashes =
+                    Mathf.Min(
+                        maxAdditionalActions,
+                        remainingThreats);
+
+                float optimisticAdditional =
+                    ComputeWinRateUpperBound(
+                        sourceIndex,
+                        maxAdditionalClashes);
+
+                if (winRateSum +
+                    optimisticAdditional <
+                    best.WinRateSum - epsilon)
+                {
+                    boundPruneCount++;
+                    return;
+                }
+            }
+            else
+            {
+                float optimisticAdditional =
+                    ComputeDamageUpperBound(
+                        sourceIndex,
+                        maxAdditionalActions);
+
+                if (expectedDamage +
+                    optimisticAdditional <
+                    best.ExpectedDamage - epsilon)
+                {
+                    boundPruneCount++;
+                    return;
+                }
+            }
+        }
 
         SourceSlot source =
             sources[sourceIndex];
 
-        // 이 슬롯을 비워 두는 조합도 반드시 비교한다.
+        if (source != null)
+        {
+            PreparedSourceCandidates prepared =
+                preparedSources[sourceIndex];
+
+            int visitStamp =
+                NextPreparedVisitStamp(
+                    prepared);
+
+            List<Candidate> candidates =
+                prepared.SortedCandidates;
+
+            for (int candidateIndex = 0;
+                 candidateIndex < candidates.Count;
+                 candidateIndex++)
+            {
+                Candidate candidate =
+                    candidates[candidateIndex];
+
+                if (candidate == null ||
+                    candidate.Skill == null)
+                {
+                    continue;
+                }
+
+                int threatIndex =
+                    candidate.ThreatIndex;
+
+                if (threatIndex >= 0 &&
+                    threatIndex < preparedThreatCount &&
+                    assignedThreatScratch[threatIndex])
+                {
+                    continue;
+                }
+
+                int skillIndex =
+                    candidate.SkillIndex;
+
+                if (skillIndex < 0 ||
+                    skillIndex >= prepared.SkillCount)
+                {
+                    continue;
+                }
+
+                byte legality;
+
+                if (prepared.SkillLegalityStamp[skillIndex] !=
+                    visitStamp)
+                {
+                    bool allowed =
+                        CanPlanSkill(
+                            context,
+                            state,
+                            source,
+                            candidate.Skill,
+                            requireClash: false);
+
+                    legality =
+                        allowed
+                            ? (byte)1
+                            : (byte)2;
+
+                    prepared.SkillLegalityStamp[skillIndex] =
+                        visitStamp;
+
+                    prepared.SkillLegalityValue[skillIndex] =
+                        legality;
+                }
+                else
+                {
+                    legality =
+                        prepared.SkillLegalityValue[skillIndex];
+                }
+
+                if (legality != 1)
+                    continue;
+
+                int routeIndex =
+                    candidate.RouteIndex;
+
+                if (routeIndex < 0 ||
+                    routeIndex >= prepared.RouteCount)
+                {
+                    continue;
+                }
+
+                if (prepared.RouteSeenStamp[routeIndex] ==
+                    visitStamp)
+                {
+                    continue;
+                }
+
+                prepared.RouteSeenStamp[routeIndex] =
+                    visitStamp;
+
+                ActionSlot planned =
+                    PrepareScratchSlot(
+                        searchSlotScratch[sourceIndex],
+                        candidate,
+                        state.Slots);
+
+                state.Register(
+                    source,
+                    planned);
+
+                bool threatAdded =
+                    threatIndex >= 0 &&
+                    threatIndex < preparedThreatCount;
+
+                if (threatAdded)
+                {
+                    assignedThreatScratch[threatIndex] =
+                        true;
+                }
+
+                float nextWinRateSum =
+                    winRateSum +
+                    (candidate.Threat != null
+                        ? Mathf.Clamp01(
+                            candidate.WinRate)
+                        : 0f);
+
+                float nextDamage =
+                    expectedDamage +
+                    Mathf.Max(
+                        0f,
+                        candidate.ExpectedDamage);
+
+                SearchPureObjectivePlan(
+                    context,
+                    player,
+                    validator,
+                    sources,
+                    enemyThreats,
+                    mode,
+                    sourceIndex + 1,
+                    state,
+                    assignedThreatCount +
+                        (threatAdded ? 1 : 0),
+                    nextWinRateSum,
+                    nextDamage,
+                    best);
+
+                if (threatAdded)
+                {
+                    assignedThreatScratch[threatIndex] =
+                        false;
+                }
+
+                state.Unregister(
+                    source,
+                    planned);
+            }
+        }
+
+        // Empty/skip choice remains part of the exact search space.
         SearchPureObjectivePlan(
             context,
             player,
@@ -896,101 +1686,782 @@ public sealed class PlayerAutoPlanService
             mode,
             sourceIndex + 1,
             state,
-            assignedThreats,
+            assignedThreatCount,
             winRateSum,
             expectedDamage,
             best);
+    }
 
-        if (source == null ||
-            state.IsSourceUsed(source))
+    private void PreparePureSearch(
+        BattleContext context,
+        IReadOnlyList<SourceSlot> sources,
+        IReadOnlyList<ActionSlot> enemyThreats,
+        PlayerAutoPlanMode mode)
+    {
+        int sourceCount =
+            sources?.Count ?? 0;
+
+        int threatCount =
+            enemyThreats?.Count ?? 0;
+
+        EnsurePreparedSearchScratch(
+            sourceCount,
+            threatCount);
+
+        preparedSourceCount =
+            sourceCount;
+
+        preparedThreatCount =
+            threatCount;
+
+        preparedCandidateCount = 0;
+
+        if (threatCount > 0)
+        {
+            Array.Clear(
+                assignedThreatScratch,
+                0,
+                threatCount);
+        }
+
+        int matrixLength =
+            (sourceCount + 1) *
+            threatUpperStride;
+
+        if (matrixLength > 0)
+        {
+            Array.Clear(
+                remainingThreatWinUpper,
+                0,
+                matrixLength);
+        }
+
+        if (sourceCount > 0)
+        {
+            Array.Clear(
+                maxDamagePerSource,
+                0,
+                sourceCount);
+        }
+
+        IComparer<Candidate> comparer =
+            mode == PlayerAutoPlanMode.WinRate
+                ? WinRatePreparedCandidateComparer
+                : DamagePreparedCandidateComparer;
+
+        for (int sourceIndex = 0;
+             sourceIndex < sourceCount;
+             sourceIndex++)
+        {
+            PreparedSourceCandidates prepared =
+                preparedSources[sourceIndex];
+
+            prepared.SortedCandidates.Clear();
+            prepared.RouteIndexByKey.Clear();
+            prepared.RouteCount = 0;
+            prepared.VisitStamp = 0;
+            prepared.MaxDamage = 0f;
+
+            SourceSlot source =
+                sources[sourceIndex];
+
+            int skillCount =
+                source?.Skills?.Count ?? 0;
+
+            prepared.SkillCount =
+                skillCount;
+
+            EnsureSkillLegalityCapacity(
+                prepared,
+                skillCount);
+
+            if (source?.Skills == null)
+                continue;
+
+            for (int skillIndex = 0;
+                 skillIndex < skillCount;
+                 skillIndex++)
+            {
+                Skill skill =
+                    source.Skills[skillIndex];
+
+                if (skill?.DefaultPhase !=
+                    ActionPhase.COMBAT)
+                {
+                    continue;
+                }
+
+                if (enemyThreats != null)
+                {
+                    for (int threatIndex = 0;
+                         threatIndex < threatCount;
+                         threatIndex++)
+                    {
+                        ActionSlot threat =
+                            enemyThreats[threatIndex];
+
+                        if (threat?.Skill == null ||
+                            threat.Owner == null)
+                        {
+                            continue;
+                        }
+
+                        List<TargetPoint> targetPoints =
+                            GetValidTargetPointsCached(
+                                threat.Owner,
+                                skill);
+
+                        for (int pointIndex = 0;
+                             pointIndex < targetPoints.Count;
+                             pointIndex++)
+                        {
+                            TargetPoint point =
+                                targetPoints[pointIndex];
+
+                            Candidate candidate =
+                                BuildThreatCandidate(
+                                    context,
+                                    source,
+                                    skill,
+                                    threat,
+                                    point.Part);
+
+                            if (candidate == null)
+                                continue;
+
+                            PrepareCandidateMetadata(
+                                candidate,
+                                skillIndex,
+                                threatIndex);
+
+                            prepared.SortedCandidates.Add(
+                                candidate);
+
+                            int upperIndex =
+                                sourceIndex *
+                                threatUpperStride +
+                                threatIndex;
+
+                            remainingThreatWinUpper[upperIndex] =
+                                Mathf.Max(
+                                    remainingThreatWinUpper[upperIndex],
+                                    Mathf.Clamp01(
+                                        candidate.WinRate));
+
+                            prepared.MaxDamage =
+                                Mathf.Max(
+                                    prepared.MaxDamage,
+                                    Mathf.Max(
+                                        0f,
+                                        candidate.ExpectedDamage));
+                        }
+                    }
+                }
+
+                if (context?.Enemies == null)
+                    continue;
+
+                for (int enemyIndex = 0;
+                     enemyIndex < context.Enemies.Count;
+                     enemyIndex++)
+                {
+                    Character enemy =
+                        context.Enemies[enemyIndex];
+
+                    if (enemy == null ||
+                        enemy.IsDead)
+                    {
+                        continue;
+                    }
+
+                    List<TargetPoint> targetPoints =
+                        GetValidTargetPointsCached(
+                            enemy,
+                            skill);
+
+                    for (int pointIndex = 0;
+                         pointIndex < targetPoints.Count;
+                         pointIndex++)
+                    {
+                        TargetPoint point =
+                            targetPoints[pointIndex];
+
+                        Candidate candidate =
+                            BuildFillCandidate(
+                                context,
+                                source,
+                                skill,
+                                point.Character,
+                                point.Part);
+
+                        if (candidate == null)
+                            continue;
+
+                        PrepareCandidateMetadata(
+                            candidate,
+                            skillIndex,
+                            threatIndex: -1);
+
+                        prepared.SortedCandidates.Add(
+                            candidate);
+
+                        prepared.MaxDamage =
+                            Mathf.Max(
+                                prepared.MaxDamage,
+                                Mathf.Max(
+                                    0f,
+                                    candidate.ExpectedDamage));
+                    }
+                }
+            }
+
+            prepared.SortedCandidates.Sort(
+                comparer);
+
+            for (int candidateIndex = 0;
+                 candidateIndex <
+                    prepared.SortedCandidates.Count;
+                 candidateIndex++)
+            {
+                Candidate candidate =
+                    prepared.SortedCandidates[
+                        candidateIndex];
+
+                if (!prepared.RouteIndexByKey.TryGetValue(
+                        candidate.RouteKey,
+                        out int routeIndex))
+                {
+                    routeIndex =
+                        prepared.RouteIndexByKey.Count;
+
+                    prepared.RouteIndexByKey.Add(
+                        candidate.RouteKey,
+                        routeIndex);
+                }
+
+                candidate.RouteIndex =
+                    routeIndex;
+            }
+
+            prepared.RouteCount =
+                prepared.RouteIndexByKey.Count;
+
+            EnsureRouteStampCapacity(
+                prepared,
+                prepared.RouteCount);
+
+            maxDamagePerSource[sourceIndex] =
+                prepared.MaxDamage;
+
+            preparedCandidateCount +=
+                prepared.SortedCandidates.Count;
+        }
+
+        // Convert per-source/per-threat maxima into suffix maxima:
+        // row s = best win rate against threat t from ANY source >= s.
+        for (int sourceIndex =
+                 sourceCount - 1;
+             sourceIndex >= 0;
+             sourceIndex--)
+        {
+            int row =
+                sourceIndex *
+                threatUpperStride;
+
+            int nextRow =
+                (sourceIndex + 1) *
+                threatUpperStride;
+
+            for (int threatIndex = 0;
+                 threatIndex < threatCount;
+                 threatIndex++)
+            {
+                remainingThreatWinUpper[
+                    row + threatIndex] =
+                    Mathf.Max(
+                        remainingThreatWinUpper[
+                            row + threatIndex],
+                        remainingThreatWinUpper[
+                            nextRow + threatIndex]);
+            }
+        }
+    }
+
+    private static void PrepareCandidateMetadata(
+        Candidate candidate,
+        int skillIndex,
+        int threatIndex)
+    {
+        candidate.SkillIndex =
+            skillIndex;
+
+        candidate.ThreatIndex =
+            threatIndex;
+
+        candidate.RouteKey =
+            new CandidateRouteKey(
+                candidate.Threat,
+                Mathf.Max(
+                    0,
+                    candidate.Skill?.EnergyCost ?? 0));
+    }
+
+    private void EnsurePreparedSearchScratch(
+        int sourceCount,
+        int threatCount)
+    {
+        sourceCount =
+            Mathf.Max(
+                0,
+                sourceCount);
+
+        threatCount =
+            Mathf.Max(
+                0,
+                threatCount);
+
+        if (preparedSources.Length <
+            sourceCount)
+        {
+            int oldLength =
+                preparedSources.Length;
+
+            Array.Resize(
+                ref preparedSources,
+                sourceCount);
+
+            for (int i = oldLength;
+                 i < sourceCount;
+                 i++)
+            {
+                preparedSources[i] =
+                    new PreparedSourceCandidates();
+            }
+        }
+
+        if (searchSlotScratch.Length <
+            sourceCount)
+        {
+            int oldLength =
+                searchSlotScratch.Length;
+
+            Array.Resize(
+                ref searchSlotScratch,
+                sourceCount);
+
+            for (int i = oldLength;
+                 i < sourceCount;
+                 i++)
+            {
+                searchSlotScratch[i] =
+                    new ActionSlot();
+            }
+        }
+
+        if (assignedThreatScratch.Length <
+            threatCount)
+        {
+            Array.Resize(
+                ref assignedThreatScratch,
+                threatCount);
+        }
+
+        if (maxDamagePerSource.Length <
+            sourceCount)
+        {
+            Array.Resize(
+                ref maxDamagePerSource,
+                sourceCount);
+        }
+
+        int neededBoundScratch =
+            Mathf.Max(
+                sourceCount,
+                threatCount);
+
+        if (upperBoundScratch.Length <
+            neededBoundScratch)
+        {
+            Array.Resize(
+                ref upperBoundScratch,
+                neededBoundScratch);
+        }
+
+        threatUpperStride =
+            Mathf.Max(
+                1,
+                threatCount);
+
+        int matrixLength =
+            (sourceCount + 1) *
+            threatUpperStride;
+
+        if (remainingThreatWinUpper.Length <
+            matrixLength)
+        {
+            Array.Resize(
+                ref remainingThreatWinUpper,
+                matrixLength);
+        }
+    }
+
+    private static void EnsureSkillLegalityCapacity(
+        PreparedSourceCandidates prepared,
+        int skillCount)
+    {
+        if (prepared == null ||
+            skillCount <= 0)
         {
             return;
         }
 
-        List<Candidate> candidates =
-            BuildPureCandidatesForSource(
-                context,
-                state,
-                source,
-                enemyThreats,
-                assignedThreats,
-                mode);
-
-        foreach (Candidate candidate in candidates)
+        if (prepared.SkillLegalityValue.Length <
+            skillCount)
         {
-            if (candidate == null ||
-                candidate.Skill == null)
-            {
-                continue;
-            }
+            Array.Resize(
+                ref prepared.SkillLegalityValue,
+                skillCount);
+        }
 
-            ActionSlot planned =
-                CreatePlannedSlot(
-                    candidate,
-                    state.Slots);
-
-            if (planned == null)
-                continue;
-
-            PlanningState nextState =
-                state.Clone();
-
-            nextState.Register(
-                source,
-                planned);
-
-            // 최종 Apply와 동일한 validator를 탐색 중에도 사용해
-            // "계산은 됐지만 마지막에 전체 rollback"되는 조합을 후보에서 제거한다.
-            ActionPlanValidationResult validation =
-                validator.ValidateReplacementPlan(
-                    player,
-                    nextState.Slots);
-
-            if (!validation.Success)
-            {
-                Debug.Log(
-                    $"[AUTO_PLAN_DIAG][PURE_BRANCH_BLOCK] " +
-                    $"mode={mode} skill={candidate.Skill.SkillName} " +
-                    $"code={validation.Code} reason={validation.Reason}");
-                continue;
-            }
-
-            HashSet<ActionSlot> nextAssigned =
-                new HashSet<ActionSlot>(assignedThreats);
-
-            float nextWinRateSum =
-                winRateSum;
-
-            if (candidate.Threat != null)
-            {
-                if (!nextAssigned.Add(candidate.Threat))
-                    continue;
-
-                nextWinRateSum +=
-                    Mathf.Clamp01(candidate.WinRate);
-            }
-
-            float nextDamage =
-                expectedDamage +
-                Mathf.Max(0f, candidate.ExpectedDamage);
-
-            SearchPureObjectivePlan(
-                context,
-                player,
-                validator,
-                sources,
-                enemyThreats,
-                mode,
-                sourceIndex + 1,
-                nextState,
-                nextAssigned,
-                nextWinRateSum,
-                nextDamage,
-                best);
+        if (prepared.SkillLegalityStamp.Length <
+            skillCount)
+        {
+            Array.Resize(
+                ref prepared.SkillLegalityStamp,
+                skillCount);
         }
     }
 
-    private static void ConsiderPurePlan(
+    private static void EnsureRouteStampCapacity(
+        PreparedSourceCandidates prepared,
+        int routeCount)
+    {
+        if (prepared == null ||
+            routeCount <= 0)
+        {
+            return;
+        }
+
+        if (prepared.RouteSeenStamp.Length <
+            routeCount)
+        {
+            Array.Resize(
+                ref prepared.RouteSeenStamp,
+                routeCount);
+        }
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static int NextPreparedVisitStamp(
+        PreparedSourceCandidates prepared)
+    {
+        int next =
+            prepared.VisitStamp + 1;
+
+        if (next <= 0)
+        {
+            if (prepared.SkillLegalityStamp.Length > 0)
+            {
+                Array.Clear(
+                    prepared.SkillLegalityStamp,
+                    0,
+                    prepared.SkillLegalityStamp.Length);
+            }
+
+            if (prepared.RouteSeenStamp.Length > 0)
+            {
+                Array.Clear(
+                    prepared.RouteSeenStamp,
+                    0,
+                    prepared.RouteSeenStamp.Length);
+            }
+
+            next = 1;
+        }
+
+        prepared.VisitStamp =
+            next;
+
+        return next;
+    }
+
+    private float ComputeWinRateUpperBound(
+        int sourceIndex,
+        int maxAdditionalClashes)
+    {
+        if (maxAdditionalClashes <= 0 ||
+            preparedThreatCount <= 0 ||
+            sourceIndex < 0 ||
+            sourceIndex > preparedSourceCount)
+        {
+            return 0f;
+        }
+
+        int count = 0;
+
+        int row =
+            sourceIndex *
+            threatUpperStride;
+
+        for (int threatIndex = 0;
+             threatIndex < preparedThreatCount;
+             threatIndex++)
+        {
+            if (assignedThreatScratch[threatIndex])
+                continue;
+
+            float value =
+                remainingThreatWinUpper[
+                    row + threatIndex];
+
+            if (value <= 0f)
+                continue;
+
+            InsertTopValue(
+                upperBoundScratch,
+                ref count,
+                maxAdditionalClashes,
+                value);
+        }
+
+        float sum = 0f;
+
+        for (int i = 0;
+             i < count;
+             i++)
+        {
+            sum +=
+                upperBoundScratch[i];
+        }
+
+        return sum;
+    }
+
+    private float ComputeDamageUpperBound(
+        int sourceIndex,
+        int maxAdditionalActions)
+    {
+        if (maxAdditionalActions <= 0 ||
+            sourceIndex < 0 ||
+            sourceIndex >= preparedSourceCount)
+        {
+            return 0f;
+        }
+
+        int count = 0;
+
+        for (int i = sourceIndex;
+             i < preparedSourceCount;
+             i++)
+        {
+            float value =
+                maxDamagePerSource[i];
+
+            if (value <= 0f)
+                continue;
+
+            InsertTopValue(
+                upperBoundScratch,
+                ref count,
+                maxAdditionalActions,
+                value);
+        }
+
+        float sum = 0f;
+
+        for (int i = 0;
+             i < count;
+             i++)
+        {
+            sum +=
+                upperBoundScratch[i];
+        }
+
+        return sum;
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static void InsertTopValue(
+        float[] values,
+        ref int count,
+        int maxCount,
+        float value)
+    {
+        if (values == null ||
+            maxCount <= 0)
+        {
+            return;
+        }
+
+        int insertAt =
+            count;
+
+        if (insertAt >
+            maxCount)
+        {
+            insertAt =
+                maxCount;
+        }
+
+        if (count < maxCount)
+        {
+            count++;
+            insertAt =
+                count - 1;
+        }
+        else if (value <=
+                 values[maxCount - 1])
+        {
+            return;
+        }
+        else
+        {
+            insertAt =
+                maxCount - 1;
+        }
+
+        while (insertAt > 0 &&
+               value >
+               values[insertAt - 1])
+        {
+            values[insertAt] =
+                values[insertAt - 1];
+
+            insertAt--;
+        }
+
+        values[insertAt] =
+            value;
+    }
+
+    private static ActionSlot PrepareScratchSlot(
+        ActionSlot slot,
+        Candidate candidate,
+        IReadOnlyList<ActionSlot> plannedSlots)
+    {
+        if (slot == null)
+        {
+            slot =
+                new ActionSlot();
+        }
+
+        slot.ActionId = 0;
+        slot.Owner =
+            candidate.Source.Owner;
+        slot.Part =
+            candidate.Source.Part;
+        slot.Skill =
+            candidate.Skill;
+        slot.Speed =
+            candidate.Source.Speed;
+        slot.ActionIndex =
+            candidate.Source.ActionIndex;
+        slot.SlotId = null;
+        slot.SlotConfig = null;
+        slot.Phase =
+            candidate.Skill?.DefaultPhase ??
+            ActionPhase.COMBAT;
+        slot.TargetCharacter =
+            candidate.Target;
+        slot.TargetPart =
+            candidate.TargetPart;
+        slot.SecondaryTargetPart = null;
+        slot.TargetSlot =
+            slot.Phase == ActionPhase.COMBAT
+                ? candidate.Threat
+                : null;
+
+        slot.UseCharacterRerollResource =
+            false;
+        slot.PlanningChoiceId =
+            null;
+        slot.PlanningEffectCommitted =
+            false;
+        slot.ResourceCostCommitted =
+            false;
+        slot.CommittedEnergyCost =
+            0;
+        slot.ClearPlanningUndoIfCreated();
+        slot.SkipResolution =
+            false;
+        slot.SuppressOneSidedResolution =
+            false;
+
+        ActionPlanningSkillContext planningContext =
+            new ActionPlanningSkillContext(
+                slot.Owner,
+                slot.Part,
+                slot.Skill,
+                slot.ActionIndex,
+                plannedSlots);
+
+        ActionPlanningMechanicPolicy
+            .ConfigurePlannedSlot(
+                planningContext,
+                slot);
+
+        return slot;
+    }
+
+    private static ActionSlot CloneSearchSlot(
+        ActionSlot source)
+    {
+        if (source == null)
+            return null;
+
+        ActionSlot clone =
+            new ActionSlot
+            {
+                ActionId =
+                    source.ActionId,
+                Owner =
+                    source.Owner,
+                Part =
+                    source.Part,
+                Skill =
+                    source.Skill,
+                Speed =
+                    source.Speed,
+                ActionIndex =
+                    source.ActionIndex,
+                SlotId =
+                    source.SlotId,
+                SlotConfig =
+                    source.SlotConfig,
+                Phase =
+                    source.Phase,
+                TargetCharacter =
+                    source.TargetCharacter,
+                TargetPart =
+                    source.TargetPart,
+                SecondaryTargetPart =
+                    source.SecondaryTargetPart,
+                TargetSlot =
+                    source.TargetSlot,
+                UseCharacterRerollResource =
+                    source.UseCharacterRerollResource,
+                PlanningChoiceId =
+                    source.PlanningChoiceId,
+                PlanningEffectCommitted =
+                    source.PlanningEffectCommitted,
+                ResourceCostCommitted =
+                    source.ResourceCostCommitted,
+                CommittedEnergyCost =
+                    source.CommittedEnergyCost,
+                SkipResolution =
+                    source.SkipResolution,
+                SuppressOneSidedResolution =
+                    source.SuppressOneSidedResolution
+            };
+
+        // Pure AutoPlan search only configures COMBAT slot metadata; it never
+        // commits planning effects, so the scratch journal is empty by contract.
+        return clone;
+    }
+
+    private void ConsiderPurePlan(
+        Character player,
+        ActionPlanValidator validator,
         PlayerAutoPlanMode mode,
         PlanningState state,
         float winRateSum,
@@ -999,16 +2470,20 @@ public sealed class PlayerAutoPlanService
     {
         if (state == null ||
             state.Slots.Count == 0 ||
-            best == null)
+            best == null ||
+            player == null ||
+            validator == null)
         {
             return;
         }
 
         int energy =
-            Mathf.Max(0, state.PlannedEnergy);
+            Mathf.Max(
+                0,
+                state.PlannedEnergy);
 
-        if (!best.HasValue ||
-            IsBetterPurePlan(
+        if (best.HasValue &&
+            !IsBetterPurePlan(
                 mode,
                 winRateSum,
                 expectedDamage,
@@ -1016,12 +2491,121 @@ public sealed class PlayerAutoPlanService
                 state.Slots.Count,
                 best))
         {
-            best.HasValue = true;
-            best.State = state.Clone();
-            best.WinRateSum = winRateSum;
-            best.ExpectedDamage = expectedDamage;
-            best.EnergyCost = energy;
+            return;
         }
+
+        // The old search revalidated the entire partial plan on EVERY branch.
+        // Candidate generation already performs incremental resource/mechanic/
+        // target legality checks. Full replacement-plan validation is only
+        // necessary before a numerically winning leaf is allowed to become best.
+        // This preserves the final validity contract while removing millions of
+        // repeated validations of plans that can never win the objective.
+        validationCount++;
+
+        ActionPlanValidationResult validation =
+            validator.ValidateReplacementPlan(
+                player,
+                state.Slots);
+
+        if (!validation.Success)
+        {
+            rejectedBestValidationCount++;
+
+            if (VerboseSearchDiagnostics)
+            {
+                Debug.Log(
+                    $"[AUTO_PLAN_DIAG][PURE_BEST_REJECT] " +
+                    $"mode={mode} code={validation.Code} " +
+                    $"reason={validation.Reason}");
+            }
+
+            return;
+        }
+
+        int slotCount =
+            state.Slots.Count;
+
+        if (best.SlotSnapshots.Length <
+            slotCount)
+        {
+            Array.Resize(
+                ref best.SlotSnapshots,
+                slotCount);
+        }
+
+        for (int index = 0;
+             index < slotCount;
+             index++)
+        {
+            best.SlotSnapshots[index] =
+                SearchSlotSnapshot.Capture(
+                    state.Slots[index]);
+        }
+
+        best.HasValue = true;
+        best.State = null;
+        best.SlotCount = slotCount;
+        best.PlannedEnergy =
+            state.PlannedEnergy;
+        best.PlannedCombatSlots =
+            state.PlannedCombatSlots;
+        best.PlannedUtilitySlots =
+            state.PlannedUtilitySlots;
+        best.PlannedPrestigeCount =
+            state.PlannedPrestigeCount;
+        best.WinRateSum = winRateSum;
+        best.ExpectedDamage = expectedDamage;
+        best.EnergyCost = energy;
+    }
+
+    private static PlanningState MaterializeBestState(
+        Character player,
+        PurePlanSearchResult best)
+    {
+        if (player == null ||
+            best == null ||
+            !best.HasValue ||
+            best.SlotCount <= 0)
+        {
+            return null;
+        }
+
+        PlanningState state =
+            new PlanningState
+            {
+                Player = player,
+                PlannedEnergy =
+                    best.PlannedEnergy,
+                PlannedCombatSlots =
+                    best.PlannedCombatSlots,
+                PlannedUtilitySlots =
+                    best.PlannedUtilitySlots,
+                PlannedPrestigeCount =
+                    best.PlannedPrestigeCount
+            };
+
+        int count =
+            Mathf.Min(
+                best.SlotCount,
+                best.SlotSnapshots.Length);
+
+        if (state.Slots.Capacity <
+            count)
+        {
+            state.Slots.Capacity =
+                count;
+        }
+
+        for (int index = 0;
+             index < count;
+             index++)
+        {
+            state.Slots.Add(
+                best.SlotSnapshots[index]
+                    .Materialize());
+        }
+
+        return state;
     }
 
     private static bool IsBetterPurePlan(
@@ -1069,7 +2653,9 @@ public sealed class PlayerAutoPlanService
             return energyCost < best.EnergyCost;
 
         int bestSlotCount =
-            best.State?.Slots.Count ?? int.MaxValue;
+            best.HasValue
+                ? best.SlotCount
+                : int.MaxValue;
 
         // 수치가 완전히 같으면 불필요한 행동을 덜 쓰는 계획을 선택한다.
         return slotCount < bestSlotCount;
@@ -1079,12 +2665,15 @@ public sealed class PlayerAutoPlanService
         BattleContext context,
         PlanningState state,
         SourceSlot source,
+        int sourceIndex,
         IReadOnlyList<ActionSlot> enemyThreats,
         HashSet<ActionSlot> assignedThreats,
         PlayerAutoPlanMode mode)
     {
         List<Candidate> raw =
-            new List<Candidate>();
+            rawCandidateScratch[sourceIndex];
+
+        raw.Clear();
 
         if (context?.Enemies == null ||
             state == null ||
@@ -1126,22 +2715,12 @@ public sealed class PlayerAutoPlanService
                     }
 
                     List<TargetPoint> targetPoints =
-                        GetValidTargetPoints(
+                        GetValidTargetPointsCached(
                             threat.Owner,
                             skill);
 
                     foreach (TargetPoint point in targetPoints)
                     {
-                        if (!CanChallengeTargetSlot(
-                                source,
-                                skill,
-                                threat.Owner,
-                                point.Part,
-                                threat))
-                        {
-                            continue;
-                        }
-
                         Candidate candidate =
                             BuildThreatCandidate(
                                 context,
@@ -1164,7 +2743,7 @@ public sealed class PlayerAutoPlanService
                     continue;
 
                 List<TargetPoint> targetPoints =
-                    GetValidTargetPoints(
+                    GetValidTargetPointsCached(
                         enemy,
                         skill);
 
@@ -1187,7 +2766,7 @@ public sealed class PlayerAutoPlanService
         return ReducePureCandidates(
             raw,
             mode,
-            enemyThreats);
+            sourceIndex);
     }
 
     /// <summary>
@@ -1196,42 +2775,37 @@ public sealed class PlayerAutoPlanService
     /// pure objective가 더 좋은 후보 하나만 남긴다.
     /// Fill(route 없음)도 비용별 최적 후보 하나만 남긴다.
     /// </summary>
-    private static List<Candidate> ReducePureCandidates(
+    private List<Candidate> ReducePureCandidates(
         IReadOnlyList<Candidate> candidates,
         PlayerAutoPlanMode mode,
-        IReadOnlyList<ActionSlot> enemyThreats)
+        int sourceIndex)
     {
-        Dictionary<string, Candidate> bestByRouteAndEnergy =
-            new Dictionary<string, Candidate>();
+        Dictionary<CandidateRouteKey, Candidate> bestByRouteAndEnergy =
+            reduceMapScratch[sourceIndex];
+
+        List<Candidate> result =
+            reducedCandidateScratch[sourceIndex];
+
+        bestByRouteAndEnergy.Clear();
+        result.Clear();
 
         if (candidates == null)
-            return new List<Candidate>();
+            return result;
 
         foreach (Candidate candidate in candidates)
         {
             if (candidate?.Skill == null)
                 continue;
 
-            int threatIndex = -1;
-            if (candidate.Threat != null && enemyThreats != null)
-            {
-                for (int i = 0; i < enemyThreats.Count; i++)
-                {
-                    if (ReferenceEquals(enemyThreats[i], candidate.Threat))
-                    {
-                        threatIndex = i;
-                        break;
-                    }
-                }
-            }
-
             int energy =
                 Mathf.Max(0, candidate.Skill.EnergyCost);
 
-            string key =
-                threatIndex >= 0
-                    ? $"T:{threatIndex}:E:{energy}"
-                    : $"F:E:{energy}";
+            // Reference identity is the actual route identity; avoid O(threats)
+            // index scans and temporary string allocations in every search node.
+            CandidateRouteKey key =
+                new CandidateRouteKey(
+                    candidate.Threat,
+                    energy);
 
             if (!bestByRouteAndEnergy.TryGetValue(
                     key,
@@ -1246,9 +2820,11 @@ public sealed class PlayerAutoPlanService
             }
         }
 
-        List<Candidate> result =
-            new List<Candidate>(
-                bestByRouteAndEnergy.Values);
+        foreach (Candidate candidate in
+                 bestByRouteAndEnergy.Values)
+        {
+            result.Add(candidate);
+        }
 
         result.Sort(
             (left, right) =>
@@ -1322,14 +2898,79 @@ public sealed class PlayerAutoPlanService
         if (skillName != 0)
             return skillName < 0;
 
-        string candidatePart =
-            candidate.TargetPart?.Type.ToString() ?? string.Empty;
-        string currentPart =
-            current.TargetPart?.Type.ToString() ?? string.Empty;
+        int candidatePart =
+            candidate.TargetPart != null
+                ? (int)candidate.TargetPart.Type
+                : -1;
 
-        return string.CompareOrdinal(
-            candidatePart,
-            currentPart) < 0;
+        int currentPart =
+            current.TargetPart != null
+                ? (int)current.TargetPart.Type
+                : -1;
+
+        return candidatePart < currentPart;
+    }
+
+    private void ResetPureSearchCaches()
+    {
+        threatCandidateCache.Clear();
+        fillCandidateCache.Clear();
+        targetPointCache.Clear();
+
+        searchNodeCount = 0;
+        validationCount = 0;
+        threatCacheHits = 0;
+        threatCacheMisses = 0;
+        fillCacheHits = 0;
+        fillCacheMisses = 0;
+        targetPointCacheHits = 0;
+        targetPointCacheMisses = 0;
+        boundPruneCount = 0;
+        rejectedBestValidationCount = 0;
+        preparedCandidateCount = 0;
+        preparedSourceCount = 0;
+        preparedThreatCount = 0;
+    }
+
+    private void EnsurePureCandidateScratch(
+        int sourceCount)
+    {
+        sourceCount =
+            Mathf.Max(
+                0,
+                sourceCount);
+
+        if (rawCandidateScratch.Length >= sourceCount)
+            return;
+
+        int oldLength =
+            rawCandidateScratch.Length;
+
+        Array.Resize(
+            ref rawCandidateScratch,
+            sourceCount);
+
+        Array.Resize(
+            ref reduceMapScratch,
+            sourceCount);
+
+        Array.Resize(
+            ref reducedCandidateScratch,
+            sourceCount);
+
+        for (int i = oldLength;
+             i < sourceCount;
+             i++)
+        {
+            rawCandidateScratch[i] =
+                new List<Candidate>(64);
+
+            reduceMapScratch[i] =
+                new Dictionary<CandidateRouteKey, Candidate>(32);
+
+            reducedCandidateScratch[i] =
+                new List<Candidate>(32);
+        }
     }
 
     private static bool CanPlanSkill(
@@ -1378,13 +3019,16 @@ public sealed class PlayerAutoPlanService
 
         if (!string.IsNullOrWhiteSpace(mechanicBlockReason))
         {
-            Debug.Log(
-                $"[AUTO_PLAN_DIAG][CANDIDATE_BLOCK] " +
-                $"owner={source.Owner.Data?.CharacterName ?? source.Owner.name} " +
-                $"skill={skill.SkillName} " +
-                $"part={source.Part?.Type.ToString() ?? "CHAR"} " +
-                $"actionIndex={source.ActionIndex} " +
-                $"reason={mechanicBlockReason}");
+            if (VerboseSearchDiagnostics)
+            {
+                Debug.Log(
+                    $"[AUTO_PLAN_DIAG][CANDIDATE_BLOCK] " +
+                    $"owner={source.Owner.Data?.CharacterName ?? source.Owner.name} " +
+                    $"skill={skill.SkillName} " +
+                    $"part={source.Part?.Type.ToString() ?? "CHAR"} " +
+                    $"actionIndex={source.ActionIndex} " +
+                    $"reason={mechanicBlockReason}");
+            }
             return false;
         }
 
@@ -1427,6 +3071,36 @@ public sealed class PlayerAutoPlanService
             return null;
         }
 
+        ThreatCandidateCacheKey key =
+            new ThreatCandidateCacheKey(
+                source,
+                skill,
+                threat,
+                attackTargetPart);
+
+        if (threatCandidateCache.TryGetValue(
+                key,
+                out Candidate cached))
+        {
+            threatCacheHits++;
+            return cached;
+        }
+
+        threatCacheMisses++;
+
+        // CanChallenge itself allocates a probe/policy. Cache the negative result
+        // together with the estimate so repeated backtracking never repeats it.
+        if (!CanChallengeTargetSlot(
+                source,
+                skill,
+                threat.Owner,
+                attackTargetPart,
+                threat))
+        {
+            threatCandidateCache[key] = null;
+            return null;
+        }
+
         PlayerAutoPlanEstimator.ClashEstimate estimate =
             estimator.EstimateClash(
                 context,
@@ -1441,16 +3115,20 @@ public sealed class PlayerAutoPlanService
                 attackTargetPart,
                 threat.TargetPart);
 
-        return new Candidate
-        {
-            Source = source,
-            Skill = skill,
-            Target = threat.Owner,
-            TargetPart = attackTargetPart,
-            Threat = threat,
-            WinRate = Mathf.Clamp01(estimate.WinRate),
-            ExpectedDamage = Mathf.Max(0f, estimate.ExpectedDamage)
-        };
+        Candidate result =
+            new Candidate
+            {
+                Source = source,
+                Skill = skill,
+                Target = threat.Owner,
+                TargetPart = attackTargetPart,
+                Threat = threat,
+                WinRate = Mathf.Clamp01(estimate.WinRate),
+                ExpectedDamage = Mathf.Max(0f, estimate.ExpectedDamage)
+            };
+
+        threatCandidateCache[key] = result;
+        return result;
     }
 
     private Candidate BuildFillCandidate(
@@ -1467,6 +3145,23 @@ public sealed class PlayerAutoPlanService
             return null;
         }
 
+        FillCandidateCacheKey key =
+            new FillCandidateCacheKey(
+                source,
+                skill,
+                target,
+                targetPart);
+
+        if (fillCandidateCache.TryGetValue(
+                key,
+                out Candidate cached))
+        {
+            fillCacheHits++;
+            return cached;
+        }
+
+        fillCacheMisses++;
+
         // Pure Fill 후보는 TargetSlot을 의도적으로 갖지 않는다.
         // 따라서 합 확률이 아니라 실제 일방공격 기대 HP 피해만 계산한다.
         float expectedDamage =
@@ -1479,16 +3174,20 @@ public sealed class PlayerAutoPlanService
                 target,
                 targetPart);
 
-        return new Candidate
-        {
-            Source = source,
-            Skill = skill,
-            Target = target,
-            TargetPart = targetPart,
-            Threat = null,
-            WinRate = 0f,
-            ExpectedDamage = Mathf.Max(0f, expectedDamage)
-        };
+        Candidate result =
+            new Candidate
+            {
+                Source = source,
+                Skill = skill,
+                Target = target,
+                TargetPart = targetPart,
+                Threat = null,
+                WinRate = 0f,
+                ExpectedDamage = Mathf.Max(0f, expectedDamage)
+            };
+
+        fillCandidateCache[key] = result;
+        return result;
     }
 
     private static ActionSlot CreatePlannedSlot(
@@ -1573,7 +3272,35 @@ public sealed class PlayerAutoPlanService
                 allowBrokenParts: allowBroken));
     }
 
-    private static List<TargetPoint> GetValidTargetPoints(
+    private List<TargetPoint> GetValidTargetPointsCached(
+        Character target,
+        Skill skill)
+    {
+        TargetPointCacheKey key =
+            new TargetPointCacheKey(
+                target,
+                skill);
+
+        if (targetPointCache.TryGetValue(
+                key,
+                out List<TargetPoint> cached))
+        {
+            targetPointCacheHits++;
+            return cached;
+        }
+
+        targetPointCacheMisses++;
+
+        List<TargetPoint> result =
+            BuildValidTargetPoints(
+                target,
+                skill);
+
+        targetPointCache[key] = result;
+        return result;
+    }
+
+    private static List<TargetPoint> BuildValidTargetPoints(
         Character target,
         Skill skill)
     {

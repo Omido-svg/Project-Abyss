@@ -120,26 +120,33 @@ public class BattleAction
     public bool HasRolled;
     public RollResult LastRollResult;
 
-    public List<RollResult> RollHistory { get; } = new();
-    public List<DamageContext> DamageContexts { get; } = new();
+    // AutoPlan preview는 이 runtime collection들을 사용하지 않는다.
+    // 실제 전투에서 처음 접근할 때만 생성해 preview BattleAction 생성 비용을 제거한다.
+    private List<RollResult> rollHistory;
+    private List<DamageContext> damageContexts;
+    private List<AttackWeightTarget> attackWeightTargets;
+    private List<AttackWeightHitResult> attackWeightHitResults;
+    private Dictionary<int, RollResult> cachedRollResults;
 
-    private readonly List<AttackWeightTarget>
-        attackWeightTargets =
-            new List<AttackWeightTarget>();
+    public List<RollResult> RollHistory =>
+        rollHistory ??=
+            new List<RollResult>();
 
-    private readonly List<AttackWeightHitResult>
-        attackWeightHitResults =
-            new List<AttackWeightHitResult>();
-
-    private readonly Dictionary<int, RollResult> cachedRollResults = new();
+    public List<DamageContext> DamageContexts =>
+        damageContexts ??=
+            new List<DamageContext>();
 
     public IReadOnlyList<AttackWeightTarget>
         AttackWeightTargets =>
-            attackWeightTargets;
+            attackWeightTargets ??
+            (IReadOnlyList<AttackWeightTarget>)
+                System.Array.Empty<AttackWeightTarget>();
 
     public IReadOnlyList<AttackWeightHitResult>
         AttackWeightHitResults =>
-            attackWeightHitResults;
+            attackWeightHitResults ??
+            (IReadOnlyList<AttackWeightHitResult>)
+                System.Array.Empty<AttackWeightHitResult>();
 
     public bool HasResolvedAttackWeightTargets
     {
@@ -153,20 +160,23 @@ public class BattleAction
             Skill?.AttackWeight ?? 1);
 
     public int ResolvedAttackWeight =>
-        attackWeightTargets.Count;
+        attackWeightTargets?.Count ?? 0;
 
     public DamageContext PrimaryDamageContext
     {
         get
         {
-            foreach (DamageContext context
-                     in DamageContexts)
+            if (damageContexts != null)
             {
-                if (context != null &&
-                    context.Target == Target &&
-                    context.TargetPart == TargetPart)
+                foreach (DamageContext context
+                         in damageContexts)
                 {
-                    return context;
+                    if (context != null &&
+                        context.Target == Target &&
+                        context.TargetPart == TargetPart)
+                    {
+                        return context;
+                    }
                 }
             }
 
@@ -189,7 +199,10 @@ public class BattleAction
         {
             int total = 0;
 
-            foreach (DamageContext context in DamageContexts)
+            if (damageContexts == null)
+                return total;
+
+            foreach (DamageContext context in damageContexts)
             {
                 total += context?.GetDisplayDamage() ?? 0;
             }
@@ -287,12 +300,12 @@ public class BattleAction
     public void BeginResolutionSequence()
     {
         ResetCurrentRollState();
-        RollHistory.Clear();
-        DamageContexts.Clear();
-        cachedRollResults.Clear();
+        rollHistory?.Clear();
+        damageContexts?.Clear();
+        cachedRollResults?.Clear();
 
-        attackWeightTargets.Clear();
-        attackWeightHitResults.Clear();
+        attackWeightTargets?.Clear();
+        attackWeightHitResults?.Clear();
         HasResolvedAttackWeightTargets = false;
 
         HasDamageLog = false;
@@ -324,7 +337,7 @@ public class BattleAction
     public int RollPower()
     {
         return RollPowerForExchange(
-            RollHistory.Count);
+            rollHistory?.Count ?? 0);
     }
 
     public int RollPowerForExchange(
@@ -337,8 +350,12 @@ public class BattleAction
         CurrentRollType = Skill.GetRollType(CurrentRollIndex);
 
         RollResult cached = null;
+        bool shouldReuse =
+            Skill.ShouldReuseRollData(CurrentRollIndex);
+
         bool reuse =
-            Skill.ShouldReuseRollData(CurrentRollIndex) &&
+            shouldReuse &&
+            cachedRollResults != null &&
             cachedRollResults.TryGetValue(
                 CurrentRollIndex,
                 out cached);
@@ -372,18 +389,26 @@ public class BattleAction
         LastRollResult.JudgmentModifier = JudgmentModifier;
         LastRollResult.RecalculateClashPower();
 
-        if (!reuse && Skill.ShouldReuseRollData(CurrentRollIndex))
-            cachedRollResults[CurrentRollIndex] = LastRollResult.Clone();
+        if (!reuse && shouldReuse)
+        {
+            (cachedRollResults ??=
+                new Dictionary<int, RollResult>())[
+                    CurrentRollIndex] =
+                        LastRollResult.Clone();
+        }
 
         HasRolled = true;
-        RollHistory.Add(LastRollResult.Clone());
+        (rollHistory ??=
+            new List<RollResult>())
+            .Add(
+                LastRollResult.Clone());
         return RolledPower;
     }
 
     public void InvalidateCachedRoll(
         int exchangeIndex)
     {
-        cachedRollResults.Remove(
+        cachedRollResults?.Remove(
             Mathf.Max(0, exchangeIndex));
     }
 
@@ -445,7 +470,7 @@ public class BattleAction
         HasDamageLog = true;
         LoggedDamage += Mathf.Max(0, damage);
 
-        if (DamageContexts.Count <= 1)
+        if ((damageContexts?.Count ?? 0) <= 1)
             LoggedBeforeHP = Mathf.Max(0, beforeHP);
 
         LoggedAfterHP = Mathf.Max(0, afterHP);
@@ -454,7 +479,7 @@ public class BattleAction
     public void SetAttackWeightTargets(
         IEnumerable<AttackWeightTarget> targets)
     {
-        attackWeightTargets.Clear();
+        attackWeightTargets?.Clear();
 
         if (targets != null)
         {
@@ -467,8 +492,10 @@ public class BattleAction
                     continue;
                 }
 
-                attackWeightTargets.Add(
-                    target);
+                (attackWeightTargets ??=
+                    new List<AttackWeightTarget>())
+                    .Add(
+                        target);
             }
         }
 
@@ -486,8 +513,10 @@ public class BattleAction
             return;
         }
 
-        attackWeightHitResults.Add(
-            result);
+        (attackWeightHitResults ??=
+            new List<AttackWeightHitResult>())
+            .Add(
+                result);
     }
 
     public void SetDamageContext(
@@ -511,14 +540,17 @@ public class BattleAction
         }
 
         bool isNewContext =
-            !DamageContexts.Contains(
+            damageContexts == null ||
+            !damageContexts.Contains(
                 context);
 
         if (!isNewContext)
             return;
 
-        DamageContexts.Add(
-            context);
+        (damageContexts ??=
+            new List<DamageContext>())
+            .Add(
+                context);
 
         SetDamageLog(
             context.GetDisplayDamage(),

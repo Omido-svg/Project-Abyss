@@ -16,7 +16,20 @@ public class DamageContext
     public float PhysicalResistanceMultiplier = 1f;
 
     public DamageStage CurrentStage;
-    public readonly List<DamageSnapshot> StageSnapshots = new();
+
+    // Runtime trace/debug path에서는 기존처럼 snapshot을 기록한다.
+    // AutoPlan preview는 최종 계산값만 필요하므로 snapshot capture를 끌 수 있다.
+    private List<DamageSnapshot> stageSnapshots;
+
+    public List<DamageSnapshot> StageSnapshots =>
+        stageSnapshots ??=
+            new List<DamageSnapshot>();
+
+    public bool CaptureStageSnapshots
+    {
+        get;
+        private set;
+    } = true;
 
     //--------------------------------
     // 피해 계산 파이프라인
@@ -106,7 +119,19 @@ public class DamageContext
 
     public DamageContext(
         DamageRequest request)
+        : this(
+            request,
+            captureStageSnapshots: true)
     {
+    }
+
+    public DamageContext(
+        DamageRequest request,
+        bool captureStageSnapshots)
+    {
+        CaptureStageSnapshots =
+            captureStageSnapshots;
+
         Request = request;
 
         Action = request.SourceAction;
@@ -148,24 +173,32 @@ public class DamageContext
     {
         CurrentStage = stage;
 
-        StageSnapshots.Add(
-            new DamageSnapshot(
-                stage,
-                Mathf.Max(0, damage),
-                Target,
-                TargetPart,
-                GuardBefore));
+        if (!CaptureStageSnapshots)
+            return;
+
+        (stageSnapshots ??=
+            new List<DamageSnapshot>())
+            .Add(
+                new DamageSnapshot(
+                    stage,
+                    Mathf.Max(0, damage),
+                    Target,
+                    TargetPart,
+                    GuardBefore));
     }
 
     public DamageSnapshot GetSnapshot(
         DamageStage stage)
     {
-        for (int i = StageSnapshots.Count - 1;
+        if (stageSnapshots == null)
+            return null;
+
+        for (int i = stageSnapshots.Count - 1;
              i >= 0;
              i--)
         {
             DamageSnapshot snapshot =
-                StageSnapshots[i];
+                stageSnapshots[i];
 
             if (snapshot != null &&
                 snapshot.Stage == stage)

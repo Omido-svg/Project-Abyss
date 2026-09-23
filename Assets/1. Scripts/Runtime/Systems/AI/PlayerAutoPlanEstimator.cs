@@ -69,6 +69,314 @@ public sealed class PlayerAutoPlanEstimator
         public float ExpectedDamage { get; }
     }
 
+    private readonly struct RawOutcomeCacheKey :
+        IEquatable<RawOutcomeCacheKey>
+    {
+        public RawOutcomeCacheKey(
+            Character owner,
+            Skill skill,
+            int rollIndex)
+        {
+            Owner = owner;
+            Skill = skill;
+            RollIndex = rollIndex;
+        }
+
+        private Character Owner { get; }
+        private Skill Skill { get; }
+        private int RollIndex { get; }
+
+        public bool Equals(
+            RawOutcomeCacheKey other) =>
+            ReferenceEquals(Owner, other.Owner) &&
+            ReferenceEquals(Skill, other.Skill) &&
+            RollIndex == other.RollIndex;
+
+        public override bool Equals(object obj) =>
+            obj is RawOutcomeCacheKey other &&
+            Equals(other);
+
+        public override int GetHashCode()
+        {
+            unchecked
+            {
+                int hash = RefHash(Owner);
+                hash = hash * 397 ^ RefHash(Skill);
+                hash = hash * 397 ^ RollIndex;
+                return hash;
+            }
+        }
+    }
+
+    private readonly struct PowerOutcomeCacheKey :
+        IEquatable<PowerOutcomeCacheKey>
+    {
+        public PowerOutcomeCacheKey(
+            Character owner,
+            BodyPart ownerPart,
+            int selfSpeed,
+            Character target,
+            BodyPart targetPart,
+            int opponentSpeed,
+            Skill skill,
+            int rollIndex,
+            int speedWeight)
+        {
+            Owner = owner;
+            OwnerPart = ownerPart;
+            SelfSpeed = selfSpeed;
+            Target = target;
+            TargetPart = targetPart;
+            OpponentSpeed = opponentSpeed;
+            Skill = skill;
+            RollIndex = rollIndex;
+            SpeedWeight = speedWeight;
+        }
+
+        private Character Owner { get; }
+        private BodyPart OwnerPart { get; }
+        private int SelfSpeed { get; }
+        private Character Target { get; }
+        private BodyPart TargetPart { get; }
+        private int OpponentSpeed { get; }
+        private Skill Skill { get; }
+        private int RollIndex { get; }
+        private int SpeedWeight { get; }
+
+        public bool Equals(
+            PowerOutcomeCacheKey other) =>
+            ReferenceEquals(Owner, other.Owner) &&
+            ReferenceEquals(OwnerPart, other.OwnerPart) &&
+            SelfSpeed == other.SelfSpeed &&
+            ReferenceEquals(Target, other.Target) &&
+            ReferenceEquals(TargetPart, other.TargetPart) &&
+            OpponentSpeed == other.OpponentSpeed &&
+            ReferenceEquals(Skill, other.Skill) &&
+            RollIndex == other.RollIndex &&
+            SpeedWeight == other.SpeedWeight;
+
+        public override bool Equals(object obj) =>
+            obj is PowerOutcomeCacheKey other &&
+            Equals(other);
+
+        public override int GetHashCode()
+        {
+            unchecked
+            {
+                int hash = RefHash(Owner);
+                hash = hash * 397 ^ RefHash(OwnerPart);
+                hash = hash * 397 ^ SelfSpeed;
+                hash = hash * 397 ^ RefHash(Target);
+                hash = hash * 397 ^ RefHash(TargetPart);
+                hash = hash * 397 ^ OpponentSpeed;
+                hash = hash * 397 ^ RefHash(Skill);
+                hash = hash * 397 ^ RollIndex;
+                hash = hash * 397 ^ SpeedWeight;
+                return hash;
+            }
+        }
+    }
+
+    private readonly struct DamageEstimateCacheKey :
+        IEquatable<DamageEstimateCacheKey>
+    {
+        public DamageEstimateCacheKey(
+            Character owner,
+            BodyPart ownerPart,
+            int speed,
+            Skill skill,
+            Character target,
+            BodyPart targetPart,
+            int rawPower,
+            int rollIndex,
+            bool isClashDamage)
+        {
+            Owner = owner;
+            OwnerPart = ownerPart;
+            Speed = speed;
+            Skill = skill;
+            Target = target;
+            TargetPart = targetPart;
+            RawPower = rawPower;
+            RollIndex = rollIndex;
+            IsClashDamage = isClashDamage;
+        }
+
+        private Character Owner { get; }
+        private BodyPart OwnerPart { get; }
+        private int Speed { get; }
+        private Skill Skill { get; }
+        private Character Target { get; }
+        private BodyPart TargetPart { get; }
+        private int RawPower { get; }
+        private int RollIndex { get; }
+        private bool IsClashDamage { get; }
+
+        public bool Equals(
+            DamageEstimateCacheKey other) =>
+            ReferenceEquals(Owner, other.Owner) &&
+            ReferenceEquals(OwnerPart, other.OwnerPart) &&
+            Speed == other.Speed &&
+            ReferenceEquals(Skill, other.Skill) &&
+            ReferenceEquals(Target, other.Target) &&
+            ReferenceEquals(TargetPart, other.TargetPart) &&
+            RawPower == other.RawPower &&
+            RollIndex == other.RollIndex &&
+            IsClashDamage == other.IsClashDamage;
+
+        public override bool Equals(object obj) =>
+            obj is DamageEstimateCacheKey other &&
+            Equals(other);
+
+        public override int GetHashCode()
+        {
+            unchecked
+            {
+                int hash = RefHash(Owner);
+                hash = hash * 397 ^ RefHash(OwnerPart);
+                hash = hash * 397 ^ Speed;
+                hash = hash * 397 ^ RefHash(Skill);
+                hash = hash * 397 ^ RefHash(Target);
+                hash = hash * 397 ^ RefHash(TargetPart);
+                hash = hash * 397 ^ RawPower;
+                hash = hash * 397 ^ RollIndex;
+                hash = hash * 397 ^ (IsClashDamage ? 1 : 0);
+                return hash;
+            }
+        }
+    }
+
+    private readonly struct RollCountCacheKey :
+        IEquatable<RollCountCacheKey>
+    {
+        public RollCountCacheKey(
+            Character owner,
+            BodyPart ownerPart,
+            int speed,
+            Skill skill,
+            Character target,
+            BodyPart targetPart)
+        {
+            Owner = owner;
+            OwnerPart = ownerPart;
+            Speed = speed;
+            Skill = skill;
+            Target = target;
+            TargetPart = targetPart;
+        }
+
+        private Character Owner { get; }
+        private BodyPart OwnerPart { get; }
+        private int Speed { get; }
+        private Skill Skill { get; }
+        private Character Target { get; }
+        private BodyPart TargetPart { get; }
+
+        public bool Equals(
+            RollCountCacheKey other) =>
+            ReferenceEquals(Owner, other.Owner) &&
+            ReferenceEquals(OwnerPart, other.OwnerPart) &&
+            Speed == other.Speed &&
+            ReferenceEquals(Skill, other.Skill) &&
+            ReferenceEquals(Target, other.Target) &&
+            ReferenceEquals(TargetPart, other.TargetPart);
+
+        public override bool Equals(object obj) =>
+            obj is RollCountCacheKey other &&
+            Equals(other);
+
+        public override int GetHashCode()
+        {
+            unchecked
+            {
+                int hash = RefHash(Owner);
+                hash = hash * 397 ^ RefHash(OwnerPart);
+                hash = hash * 397 ^ Speed;
+                hash = hash * 397 ^ RefHash(Skill);
+                hash = hash * 397 ^ RefHash(Target);
+                hash = hash * 397 ^ RefHash(TargetPart);
+                return hash;
+            }
+        }
+    }
+
+    private readonly Dictionary<RawOutcomeCacheKey, List<RawOutcome>>
+        rawOutcomeCache =
+            new Dictionary<RawOutcomeCacheKey, List<RawOutcome>>(128);
+
+    private readonly Dictionary<PowerOutcomeCacheKey, List<PowerOutcome>>
+        powerOutcomeCache =
+            new Dictionary<PowerOutcomeCacheKey, List<PowerOutcome>>(256);
+
+    private readonly Dictionary<DamageEstimateCacheKey, float>
+        damageEstimateCache =
+            new Dictionary<DamageEstimateCacheKey, float>(1024);
+
+    private readonly Dictionary<RollCountCacheKey, int>
+        rollCountCache =
+            new Dictionary<RollCountCacheKey, int>(128);
+
+    private float[] differenceDistributionA =
+        Array.Empty<float>();
+
+    private float[] differenceDistributionB =
+        Array.Empty<float>();
+
+    private bool evaluationSessionActive;
+    private DamagePipeline previewDamagePipeline;
+
+    public int RawOutcomeCacheHits { get; private set; }
+    public int RawOutcomeCacheMisses { get; private set; }
+    public int PowerOutcomeCacheHits { get; private set; }
+    public int PowerOutcomeCacheMisses { get; private set; }
+    public int DamageEstimateCacheHits { get; private set; }
+    public int DamageEstimateCacheMisses { get; private set; }
+    public int RollCountCacheHits { get; private set; }
+    public int RollCountCacheMisses { get; private set; }
+
+    // Prediction hooks only inspect the current roll synchronously.
+    // Reuse one fully-reset RollResult instead of allocating RollResult +
+    // three internal Lists for every probability outcome.
+    private readonly RollResult predictionRollScratch =
+        new RollResult();
+
+    public void BeginEvaluationSession(
+        BattleContext context)
+    {
+        rawOutcomeCache.Clear();
+        powerOutcomeCache.Clear();
+        damageEstimateCache.Clear();
+        rollCountCache.Clear();
+
+        RawOutcomeCacheHits = 0;
+        RawOutcomeCacheMisses = 0;
+        PowerOutcomeCacheHits = 0;
+        PowerOutcomeCacheMisses = 0;
+        DamageEstimateCacheHits = 0;
+        DamageEstimateCacheMisses = 0;
+        RollCountCacheHits = 0;
+        RollCountCacheMisses = 0;
+
+        previewDamagePipeline =
+            new DamagePipeline(
+                context?.Services?.MomentumManager);
+
+        evaluationSessionActive = true;
+    }
+
+    public void EndEvaluationSession()
+    {
+        evaluationSessionActive = false;
+        previewDamagePipeline = null;
+    }
+
+    private static int RefHash(
+        object value) =>
+        value == null
+            ? 0
+            : System.Runtime.CompilerServices
+                .RuntimeHelpers.GetHashCode(value);
+
     public bool TryEstimateClashWinRate(
         BattleContext context,
         Character playerOwner,
@@ -134,35 +442,23 @@ public sealed class PlayerAutoPlanEstimator
                 0f);
         }
 
-        BattleAction playerPreview =
-            CreatePreviewAction(
+        int playerRollCount =
+            GetEffectiveExchangeRollCount(
                 playerOwner,
                 playerPart,
                 playerSpeed,
                 playerSkill,
                 enemyOwner,
-                playerTargetPart,
-                CombatRollType.Attack,
-                0);
+                playerTargetPart);
 
-        BattleAction enemyPreview =
-            CreatePreviewAction(
+        int enemyRollCount =
+            GetEffectiveExchangeRollCount(
                 enemyOwner,
                 enemyPart,
                 enemySpeed,
                 enemySkill,
                 playerOwner,
-                enemyTargetPart,
-                CombatRollType.Attack,
-                0);
-
-        int playerRollCount =
-            playerPreview?.GetEffectiveExchangeRollCount() ??
-            Mathf.Max(1, playerSkill.ExchangeRollCount);
-
-        int enemyRollCount =
-            enemyPreview?.GetEffectiveExchangeRollCount() ??
-            Mathf.Max(1, enemySkill.ExchangeRollCount);
+                enemyTargetPart);
 
         int paired =
             Mathf.Min(
@@ -183,11 +479,35 @@ public sealed class PlayerAutoPlanEstimator
                 1,
                 rules.MaxTieRerolls);
 
-        Dictionary<int, float> differenceDistribution =
-            new Dictionary<int, float>
-            {
-                [0] = 1f
-            };
+        int distributionLength =
+            Mathf.Max(
+                1,
+                paired * 2 + 1);
+
+        EnsureDifferenceDistributionCapacity(
+            distributionLength);
+
+        Array.Clear(
+            differenceDistributionA,
+            0,
+            distributionLength);
+
+        Array.Clear(
+            differenceDistributionB,
+            0,
+            distributionLength);
+
+        int center =
+            paired;
+
+        differenceDistributionA[center] =
+            1f;
+
+        float[] currentDistribution =
+            differenceDistributionA;
+
+        float[] nextDistribution =
+            differenceDistributionB;
 
         float damage = 0f;
 
@@ -215,43 +535,57 @@ public sealed class PlayerAutoPlanEstimator
             damage +=
                 exchange.ExpectedDamage;
 
-            Dictionary<int, float> next =
-                new Dictionary<int, float>();
+            Array.Clear(
+                nextDistribution,
+                0,
+                distributionLength);
 
-            foreach (KeyValuePair<int, float> current
-                     in differenceDistribution)
+            for (int difference = -rollIndex;
+                 difference <= rollIndex;
+                 difference++)
             {
-                AddProbability(
-                    next,
-                    current.Key + 1,
-                    current.Value * exchange.Win);
+                int sourceIndex =
+                    center + difference;
 
-                AddProbability(
-                    next,
-                    current.Key - 1,
-                    current.Value * exchange.Loss);
+                float probability =
+                    currentDistribution[sourceIndex];
 
-                AddProbability(
-                    next,
-                    current.Key,
-                    current.Value * exchange.Draw);
+                if (probability <= 0f)
+                    continue;
+
+                nextDistribution[sourceIndex + 1] +=
+                    probability * exchange.Win;
+
+                nextDistribution[sourceIndex - 1] +=
+                    probability * exchange.Loss;
+
+                nextDistribution[sourceIndex] +=
+                    probability * exchange.Draw;
             }
 
-            differenceDistribution =
-                next;
+            float[] swap =
+                currentDistribution;
+
+            currentDistribution =
+                nextDistribution;
+
+            nextDistribution =
+                swap;
         }
 
         float finalWin = 0f;
-        float finalDraw = 0f;
 
-        foreach (KeyValuePair<int, float> pair
-                 in differenceDistribution)
+        for (int difference = 1;
+             difference <= paired;
+             difference++)
         {
-            if (pair.Key > 0)
-                finalWin += pair.Value;
-            else if (pair.Key == 0)
-                finalDraw += pair.Value;
+            finalWin +=
+                currentDistribution[
+                    center + difference];
         }
+
+        float finalDraw =
+            currentDistribution[center];
 
         for (int index = paired;
              index < paired + playerExtra;
@@ -302,7 +636,7 @@ public sealed class PlayerAutoPlanEstimator
         int speedWeight)
     {
         List<PowerOutcome> playerOutcomes =
-            BuildPowerOutcomes(
+            GetPowerOutcomesCached(
                 playerOwner,
                 playerPart,
                 playerSpeed,
@@ -314,7 +648,7 @@ public sealed class PlayerAutoPlanEstimator
                 speedWeight);
 
         List<PowerOutcome> enemyOutcomes =
-            BuildPowerOutcomes(
+            GetPowerOutcomesCached(
                 enemyOwner,
                 enemyPart,
                 enemySpeed,
@@ -333,13 +667,13 @@ public sealed class PlayerAutoPlanEstimator
         foreach (PowerOutcome player
                  in playerOutcomes)
         {
+            float enemyWinMass = 0f;
+            float enemyLossMass = 0f;
+            float enemyTieMass = 0f;
+
             foreach (PowerOutcome enemy
                      in enemyOutcomes)
             {
-                float probability =
-                    player.Probability *
-                    enemy.Probability;
-
                 int comparison =
                     ResolveForcedAwareComparison(
                         player,
@@ -347,36 +681,63 @@ public sealed class PlayerAutoPlanEstimator
 
                 if (comparison > 0)
                 {
-                    attemptWin += probability;
-
-                    if (player.RollType ==
-                        CombatRollType.Attack)
-                    {
-                        float damage =
-                            EstimateResolvedDamage(
-                                context,
-                                playerOwner,
-                                playerPart,
-                                playerSpeed,
-                                playerSkill,
-                                enemyOwner,
-                                playerTargetPart,
-                                player.RawPower,
-                                rollIndex,
-                                isClashDamage: true);
-
-                        winningDamageMass +=
-                            probability * damage;
-                    }
+                    enemyWinMass +=
+                        enemy.Probability;
                 }
                 else if (comparison < 0)
                 {
-                    attemptLoss += probability;
+                    enemyLossMass +=
+                        enemy.Probability;
                 }
                 else
                 {
-                    attemptTie += probability;
+                    enemyTieMass +=
+                        enemy.Probability;
                 }
+            }
+
+            float playerProbability =
+                player.Probability;
+
+            float playerWinMass =
+                playerProbability *
+                enemyWinMass;
+
+            attemptWin +=
+                playerWinMass;
+
+            attemptLoss +=
+                playerProbability *
+                enemyLossMass;
+
+            attemptTie +=
+                playerProbability *
+                enemyTieMass;
+
+            // DamagePipeline 결과는 같은 player RawPower에 대해
+            // 어떤 enemy outcome을 이겼는지와 무관하다.
+            // 기존 중첩 loop는 동일 damage를 enemy outcome 수만큼 반복 계산했다.
+            // 승리 확률 질량을 먼저 합친 뒤 정확히 한 번 계산한다.
+            if (playerWinMass > 0f &&
+                player.RollType ==
+                    CombatRollType.Attack)
+            {
+                float resolvedDamage =
+                    EstimateResolvedDamage(
+                        context,
+                        playerOwner,
+                        playerPart,
+                        playerSpeed,
+                        playerSkill,
+                        enemyOwner,
+                        playerTargetPart,
+                        player.RawPower,
+                        rollIndex,
+                        isClashDamage: true);
+
+                winningDamageMass +=
+                    playerWinMass *
+                    resolvedDamage;
             }
         }
 
@@ -423,7 +784,72 @@ public sealed class PlayerAutoPlanEstimator
             Mathf.Max(0f, expectedDamage));
     }
 
-    private static List<PowerOutcome> BuildPowerOutcomes(
+    private List<PowerOutcome> GetPowerOutcomesCached(
+        Character owner,
+        BodyPart ownerPart,
+        int selfSpeed,
+        Character target,
+        BodyPart targetPart,
+        int opponentSpeed,
+        Skill skill,
+        int rollIndex,
+        int speedWeight)
+    {
+        if (!evaluationSessionActive)
+        {
+            return BuildPowerOutcomesCore(
+                owner,
+                ownerPart,
+                selfSpeed,
+                target,
+                targetPart,
+                opponentSpeed,
+                skill,
+                rollIndex,
+                speedWeight);
+        }
+
+        PowerOutcomeCacheKey key =
+            new PowerOutcomeCacheKey(
+                owner,
+                ownerPart,
+                selfSpeed,
+                target,
+                targetPart,
+                opponentSpeed,
+                skill,
+                rollIndex,
+                speedWeight);
+
+        if (powerOutcomeCache.TryGetValue(
+                key,
+                out List<PowerOutcome> cached))
+        {
+            PowerOutcomeCacheHits++;
+            return cached;
+        }
+
+        PowerOutcomeCacheMisses++;
+
+        List<PowerOutcome> result =
+            BuildPowerOutcomesCore(
+                owner,
+                ownerPart,
+                selfSpeed,
+                target,
+                targetPart,
+                opponentSpeed,
+                skill,
+                rollIndex,
+                speedWeight);
+
+        powerOutcomeCache[key] =
+            result;
+
+        return result;
+    }
+
+    private List<PowerOutcome> BuildPowerOutcomesCore(
         Character owner,
         BodyPart ownerPart,
         int selfSpeed,
@@ -435,13 +861,14 @@ public sealed class PlayerAutoPlanEstimator
         int speedWeight)
     {
         List<RawOutcome> raw =
-            BuildRawOutcomes(
+            GetRawOutcomesCached(
                 owner,
                 skill,
                 rollIndex);
 
         List<PowerOutcome> result =
-            new List<PowerOutcome>();
+            new List<PowerOutcome>(
+                raw?.Count ?? 0);
 
         CombatRollType rollType =
             skill?.GetRollType(rollIndex) ??
@@ -502,10 +929,13 @@ public sealed class PlayerAutoPlanEstimator
                 preparationModifier;
 
             RollResult previewRoll =
-                CreatePredictionRollResult(
-                    outcome,
-                    rollType,
-                    rollIndex);
+                predictionRollScratch;
+
+            PopulatePredictionRollResult(
+                previewRoll,
+                outcome,
+                rollType,
+                rollIndex);
 
             ForcedRollJudgmentDirective forcedJudgment =
                 ResolveForcedRollJudgment(
@@ -533,6 +963,7 @@ public sealed class PlayerAutoPlanEstimator
         return result;
     }
 
+
     private readonly struct RawOutcome
     {
         public RawOutcome(
@@ -553,6 +984,47 @@ public sealed class PlayerAutoPlanEstimator
         public float Probability { get; }
         public SkillResolverType ResolverType { get; }
         public ChinchiroCombination ChinchiroCombination { get; }
+    }
+
+    private List<RawOutcome> GetRawOutcomesCached(
+        Character owner,
+        Skill skill,
+        int rollIndex)
+    {
+        if (!evaluationSessionActive)
+        {
+            return BuildRawOutcomes(
+                owner,
+                skill,
+                rollIndex);
+        }
+
+        RawOutcomeCacheKey key =
+            new RawOutcomeCacheKey(
+                owner,
+                skill,
+                rollIndex);
+
+        if (rawOutcomeCache.TryGetValue(
+                key,
+                out List<RawOutcome> cached))
+        {
+            RawOutcomeCacheHits++;
+            return cached;
+        }
+
+        RawOutcomeCacheMisses++;
+
+        List<RawOutcome> result =
+            BuildRawOutcomes(
+                owner,
+                skill,
+                rollIndex);
+
+        rawOutcomeCache[key] =
+            result;
+
+        return result;
     }
 
     private static List<RawOutcome> BuildRawOutcomes(
@@ -897,40 +1369,65 @@ public sealed class PlayerAutoPlanEstimator
             : 1;
     }
 
-    private static RollResult CreatePredictionRollResult(
+    private static void PopulatePredictionRollResult(
+        RollResult result,
         RawOutcome outcome,
         CombatRollType rollType,
         int rollIndex)
     {
-        RollResult result =
-            new RollResult
-            {
-                ResolverType =
-                    outcome.ResolverType,
-                RollIndex =
-                    Mathf.Max(
-                        0,
-                        rollIndex),
-                RollType =
-                    rollType,
-                RawValue =
-                    outcome.Power,
-                ModifiedValue =
-                    outcome.Power,
-                FinalPower =
-                    outcome.Power,
-                ChinchiroCombination =
-                    outcome.ChinchiroCombination,
-                ChinchiroBonus =
-                    outcome.ResolverType ==
-                    SkillResolverType.Chinchiro
-                        ? outcome.Power
-                        : 0,
-                IsCritical = false
-            };
+        if (result == null)
+            return;
+
+        result.ResolverType =
+            outcome.ResolverType;
+
+        result.RollIndex =
+            Mathf.Max(
+                0,
+                rollIndex);
+
+        result.RollType =
+            rollType;
+
+        result.JudgmentModifier = 0;
+        result.BasePower = 0;
+        result.RawValue = outcome.Power;
+        result.ModifiedValue = outcome.Power;
+        result.ExternalModifier = 0;
+        result.FinalPower = outcome.Power;
+        result.SpeedModifier = 0;
+        result.MomentumModifier = 0;
+        result.PreparationModifier = 0;
+
+        result.IsMax = false;
+        result.IsCritical = false;
+        result.WasRerolled = false;
+        result.WasReused = false;
+        result.DebugOverrideApplied = false;
+        result.DebugSource = null;
+
+        result.DiceMin = 0;
+        result.DiceMax = 0;
+        result.DiceValues?.Clear();
+        result.CoinFaces?.Clear();
+        result.CoinValues?.Clear();
+
+        result.SlotA = 0;
+        result.SlotB = 0;
+        result.SlotValue = 0;
+
+        result.ChinchiroCombination =
+            outcome.ChinchiroCombination;
+
+        result.ChinchiroBonus =
+            outcome.ResolverType ==
+            SkillResolverType.Chinchiro
+                ? outcome.Power
+                : 0;
+
+        result.ChinchiroSelfDamage = 0;
 
         result.RecalculateClashPower();
-        return result;
     }
 
     private static ForcedRollJudgmentDirective
@@ -1440,22 +1937,14 @@ public sealed class PlayerAutoPlanEstimator
 
         float total = 0f;
 
-        BattleAction preview =
-            CreatePreviewAction(
+        int count =
+            GetEffectiveExchangeRollCount(
                 owner,
                 ownerPart,
                 speed,
                 skill,
                 target,
-                targetPart,
-                CombatRollType.Attack,
-                0);
-
-        int count =
-            preview?.GetEffectiveExchangeRollCount() ??
-            Mathf.Max(
-                1,
-                skill.ExchangeRollCount);
+                targetPart);
 
         for (int index = 0;
              index < count;
@@ -1479,7 +1968,7 @@ public sealed class PlayerAutoPlanEstimator
             targetPart);
     }
 
-    private static float EstimateOneSidedRollDamage(
+    private float EstimateOneSidedRollDamage(
         BattleContext context,
         Skill skill,
         Character owner,
@@ -1498,7 +1987,7 @@ public sealed class PlayerAutoPlanEstimator
         }
 
         List<RawOutcome> outcomes =
-            BuildRawOutcomes(
+            GetRawOutcomesCached(
                 owner,
                 skill,
                 rollIndex);
@@ -1520,10 +2009,13 @@ public sealed class PlayerAutoPlanEstimator
                  in outcomes)
         {
             RollResult predictionRoll =
-                CreatePredictionRollResult(
-                    outcome,
-                    skill.GetRollType(rollIndex),
-                    rollIndex);
+                predictionRollScratch;
+
+            PopulatePredictionRollResult(
+                predictionRoll,
+                outcome,
+                skill.GetRollType(rollIndex),
+                rollIndex);
 
             if (ResolveForcedRollFailure(
                     owner,
@@ -1554,6 +2046,94 @@ public sealed class PlayerAutoPlanEstimator
         return Mathf.Max(
             0f,
             result);
+    }
+
+    private int GetEffectiveExchangeRollCount(
+        Character owner,
+        BodyPart ownerPart,
+        int speed,
+        Skill skill,
+        Character target,
+        BodyPart targetPart)
+    {
+        if (skill == null)
+            return 1;
+
+        RollCountCacheKey key =
+            new RollCountCacheKey(
+                owner,
+                ownerPart,
+                speed,
+                skill,
+                target,
+                targetPart);
+
+        if (evaluationSessionActive &&
+            rollCountCache.TryGetValue(
+                key,
+                out int cached))
+        {
+            RollCountCacheHits++;
+            return cached;
+        }
+
+        if (evaluationSessionActive)
+            RollCountCacheMisses++;
+
+        BattleAction preview =
+            CreatePreviewAction(
+                owner,
+                ownerPart,
+                speed,
+                skill,
+                target,
+                targetPart,
+                CombatRollType.Attack,
+                0);
+
+        int result =
+            preview?.GetEffectiveExchangeRollCount() ??
+            Mathf.Max(
+                1,
+                skill.ExchangeRollCount);
+
+        result =
+            Mathf.Max(
+                1,
+                result);
+
+        if (evaluationSessionActive)
+        {
+            rollCountCache[key] =
+                result;
+        }
+
+        return result;
+    }
+
+    private void EnsureDifferenceDistributionCapacity(
+        int required)
+    {
+        required =
+            Mathf.Max(
+                1,
+                required);
+
+        if (differenceDistributionA.Length <
+            required)
+        {
+            Array.Resize(
+                ref differenceDistributionA,
+                required);
+        }
+
+        if (differenceDistributionB.Length <
+            required)
+        {
+            Array.Resize(
+                ref differenceDistributionB,
+                required);
+        }
     }
 
     private static BattleAction CreatePreviewAction(
@@ -1598,7 +2178,7 @@ public sealed class PlayerAutoPlanEstimator
     /// HP/부위/가드 값을 읽기만 하고 Apply 단계는 호출하지 않으므로
     /// 자동계획 중 전투 상태를 변경하지 않는다.
     /// </summary>
-    private static float EstimateResolvedDamage(
+    private float EstimateResolvedDamage(
         BattleContext context,
         Character owner,
         BodyPart ownerPart,
@@ -1619,6 +2199,30 @@ public sealed class PlayerAutoPlanEstimator
         {
             return 0f;
         }
+
+        DamageEstimateCacheKey key =
+            new DamageEstimateCacheKey(
+                owner,
+                ownerPart,
+                speed,
+                skill,
+                target,
+                targetPart,
+                rawPower,
+                rollIndex,
+                isClashDamage);
+
+        if (evaluationSessionActive &&
+            damageEstimateCache.TryGetValue(
+                key,
+                out float cachedDamage))
+        {
+            DamageEstimateCacheHits++;
+            return cachedDamage;
+        }
+
+        if (evaluationSessionActive)
+            DamageEstimateCacheMisses++;
 
         BattleAction action =
             CreatePreviewAction(
@@ -1674,11 +2278,20 @@ public sealed class PlayerAutoPlanEstimator
         // 행동 단위 기대 피해를 합친 뒤 한 번만 적용한다.
         request.ApplyGuard = false;
 
+        // AutoPlan은 최종 계산값만 필요하다.
+        // Damage trace용 StageSnapshot 생성은 gameplay 결과에 관여하지 않으므로
+        // preview에서는 끄고 수십만 개의 snapshot allocation을 제거한다.
         DamageContext damageContext =
             new DamageContext(
-                request);
+                request,
+                captureStageSnapshots: false);
 
         DamagePipeline pipeline =
+            evaluationSessionActive
+                ? previewDamagePipeline
+                : null;
+
+        pipeline ??=
             new DamagePipeline(
                 context?.Services?.MomentumManager);
 
@@ -1690,19 +2303,21 @@ public sealed class PlayerAutoPlanEstimator
                 0,
                 damageContext.FinalDamage);
 
-        if (calculated <= 0)
-            return 0f;
+        float result =
+            calculated <= 0
+                ? 0f
+                : LimitWholeHpExpectedDamage(
+                    calculated,
+                    target.CurrentHP,
+                    guard: 0);
 
-        // 0922 §1.3/1.4:
-        // Part HP and Whole HP are separate ledgers.
-        // Normal part damage may clamp the part at 1, and a weakened part
-        // may no longer lose Part HP, but the requested HP damage still
-        // reduces Whole HP in full. AutoPlan ExpectedDamage is explicitly
-        // Expected HP Damage, so part-state clamps must not zero/cap it.
-        return LimitWholeHpExpectedDamage(
-            calculated,
-            target.CurrentHP,
-            guard: 0);
+        if (evaluationSessionActive)
+        {
+            damageEstimateCache[key] =
+                result;
+        }
+
+        return result;
     }
 
     private static float ApplyAggregateDamageLimits(

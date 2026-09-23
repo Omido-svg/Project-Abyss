@@ -9,6 +9,11 @@ using UnityEngine.UI;
 public sealed class BattleAutoPlanButtonPanel :
     MonoBehaviour
 {
+    // Full click snapshots enumerate all targets/slots and build a large log string.
+    // Keep them available for deep debugging, but do not pay that cost on every
+    // normal WinRate/Damage button click.
+    private static readonly bool VerboseClickDiagnostics = false;
+
     [Header("References")]
     [SerializeField] private BattleManager battleManager;
     [SerializeField] private BattleUIManager battleUiManager;
@@ -282,11 +287,14 @@ public sealed class BattleAutoPlanButtonPanel :
 
     private void ApplyWinRatePlan()
     {
-        Debug.Log(
-            BuildDiagnosticSnapshot(
-                PlayerAutoPlanMode.WinRate,
-                "ONCLICK"),
-            this);
+        if (VerboseClickDiagnostics)
+        {
+            Debug.Log(
+                BuildDiagnosticSnapshot(
+                    PlayerAutoPlanMode.WinRate,
+                    "ONCLICK"),
+                this);
+        }
 
         TogglePlan(
             PlayerAutoPlanMode.WinRate);
@@ -294,11 +302,14 @@ public sealed class BattleAutoPlanButtonPanel :
 
     private void ApplyDamagePlan()
     {
-        Debug.Log(
-            BuildDiagnosticSnapshot(
-                PlayerAutoPlanMode.Damage,
-                "ONCLICK"),
-            this);
+        if (VerboseClickDiagnostics)
+        {
+            Debug.Log(
+                BuildDiagnosticSnapshot(
+                    PlayerAutoPlanMode.Damage,
+                    "ONCLICK"),
+                this);
+        }
 
         TogglePlan(
             PlayerAutoPlanMode.Damage);
