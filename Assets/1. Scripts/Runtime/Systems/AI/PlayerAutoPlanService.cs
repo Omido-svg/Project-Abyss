@@ -1759,7 +1759,20 @@ public sealed class PlayerAutoPlanService
             prepared.SortedCandidates.Clear();
             prepared.RouteIndexByKey.Clear();
             prepared.RouteCount = 0;
-            prepared.VisitStamp = 0;
+
+            // Do NOT reset VisitStamp here.
+            //
+            // SkillLegalityStamp / RouteSeenStamp arrays intentionally survive
+            // between AutoPlan button invocations so the search can avoid
+            // Array.Clear on every DFS node. Resetting only the scalar stamp to
+            // zero while keeping those arrays makes the next invocation reuse
+            // stamp 1, 2, ... from the previous search. That aliases stale
+            // "already checked / already seen" entries and progressively hides
+            // valid candidates when WinRate <-> Damage is toggled repeatedly.
+            //
+            // Keep VisitStamp monotonic across preparations. The existing
+            // NextPreparedVisitStamp overflow branch clears both stamp arrays
+            // and safely restarts at 1 only when the integer wraps.
             prepared.MaxDamage = 0f;
 
             SourceSlot source =
