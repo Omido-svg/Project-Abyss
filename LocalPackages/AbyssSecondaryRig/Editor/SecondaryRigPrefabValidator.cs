@@ -80,21 +80,48 @@ namespace ProjectAbyss.SecondaryRig.Editor
 
             HashSet<int> springRoots = new();
             IReadOnlyList<SecondaryRigChainBinding> chains = controller.Chains;
+            int singleCount = 0;
+            int dualCount = 0;
+
             for (int i = 0; i < chains.Count; i++)
             {
                 SecondaryRigChainBinding chain = chains[i];
                 if (chain == null || !chain.HasUsableBones())
                     continue;
 
-                if (!springRoots.Add(chain.SpringRoot.GetInstanceID()))
-                    result.Error($"Duplicate Spring Root: {chain.SpringRoot.name}");
+                if (chain.UsesVirtualTarget) singleCount++;
+                else dualCount++;
 
-                if (!chain.SpringRoot.IsChildOf(root.transform) || !chain.TargetRoot.IsChildOf(root.transform))
-                    result.Error($"Chain '{chain.StableKey}' references transforms outside the character root.");
+                if (!springRoots.Add(chain.SpringRoot.GetInstanceID()))
+                    result.Error($"Duplicate Secondary Root: {chain.SpringRoot.name}");
+
+                if (!chain.SpringRoot.IsChildOf(root.transform))
+                    result.Error($"Chain '{chain.StableKey}' references a Secondary Root outside the character root.");
+
+                if (chain.UsesVirtualTarget)
+                {
+                    Transform driver = chain.EffectiveDriverParent;
+                    if (driver == null)
+                        result.Error($"SEC-only chain '{chain.StableKey}' has no Driver Parent.");
+                    else if (!driver.IsChildOf(root.transform) && driver != root.transform)
+                        result.Error($"SEC-only chain '{chain.StableKey}' references Driver Parent outside the character root.");
+
+                    if (!chain.HasStoredReferencePose())
+                        result.Warn($"SEC-only chain '{chain.StableKey}' has no stored reference local pose; runtime will capture the current pose on rebuild.");
+                }
+                else
+                {
+                    if (chain.TargetRoot == null)
+                        result.Error($"Dual chain '{chain.StableKey}' has no Target Root.");
+                    else if (!chain.TargetRoot.IsChildOf(root.transform))
+                        result.Error($"Dual chain '{chain.StableKey}' references Target Root outside the character root.");
+                }
 
                 if (controller.PresetLibrary != null && controller.PresetLibrary.Find(chain.PresetName) == null)
                     result.Warn($"Preset '{chain.PresetName}' is not in the library; fallback settings will be used.");
             }
+
+            result.Info($"Chain modes: SEC-only={singleCount}, TGT+SEC={dualCount}");
 
             SecondaryRigCollider[] colliders = colliderRoot != null
                 ? colliderRoot.GetComponentsInChildren<SecondaryRigCollider>(true)

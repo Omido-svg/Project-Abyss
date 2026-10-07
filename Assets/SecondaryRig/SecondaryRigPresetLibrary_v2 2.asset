@@ -9,9 +9,9 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 0}
-  m_Name: SecondaryRigPresetLibrary
-  m_EditorClassIdentifier: ProjectAbyss.SecondaryRig:ProjectAbyss.SecondaryRig:SecondaryRigPresetLibrary
+  m_Script: {fileID: 11500000, guid: 31fe54716cfe5f94a8e4099100095278, type: 3}
+  m_Name: SecondaryRigPresetLibrary_v2 2
+  m_EditorClassIdentifier: 
   dataVersion: 2
   presets:
   - PresetName: HAIR
@@ -22,6 +22,36 @@ MonoBehaviour:
       Gravity: 0.16
       MaxAngle: 48
       ParticleRadius: 0.014
+      EnableCollision: 1
+      Layer: 2
+      CollidesWith: 5
+      EnableSelfCollision: 0
+      CollideWithinSamePart: 0
+      EnableCrossChainConstraint: 0
+      CrossChainStiffness: 0
+  - PresetName: LONG_HAIR
+    OverrideManifestSpring: 1
+    Settings:
+      Stiffness: 0.25
+      Damping: 0.73
+      Gravity: 0.2
+      MaxAngle: 60
+      ParticleRadius: 0.016
+      EnableCollision: 1
+      Layer: 2
+      CollidesWith: 5
+      EnableSelfCollision: 0
+      CollideWithinSamePart: 0
+      EnableCrossChainConstraint: 0
+      CrossChainStiffness: 0
+  - PresetName: SHORT_HAIR
+    OverrideManifestSpring: 1
+    Settings:
+      Stiffness: 0.55
+      Damping: 0.82
+      Gravity: 0.08
+      MaxAngle: 28
+      ParticleRadius: 0.01
       EnableCollision: 1
       Layer: 2
       CollidesWith: 5
@@ -74,51 +104,6 @@ MonoBehaviour:
       CollideWithinSamePart: 0
       EnableCrossChainConstraint: 1
       CrossChainStiffness: 0.25
-  - PresetName: ACCESSORY
-    OverrideManifestSpring: 1
-    Settings:
-      Stiffness: 0.5
-      Damping: 0.8
-      Gravity: 0.18
-      MaxAngle: 45
-      ParticleRadius: 0.01
-      EnableCollision: 1
-      Layer: 8
-      CollidesWith: 7
-      EnableSelfCollision: 0
-      CollideWithinSamePart: 0
-      EnableCrossChainConstraint: 0
-      CrossChainStiffness: 0
-  - PresetName: LONG_HAIR
-    OverrideManifestSpring: 1
-    Settings:
-      Stiffness: 0.25
-      Damping: 0.73
-      Gravity: 0.2
-      MaxAngle: 60
-      ParticleRadius: 0.016
-      EnableCollision: 1
-      Layer: 2
-      CollidesWith: 5
-      EnableSelfCollision: 0
-      CollideWithinSamePart: 0
-      EnableCrossChainConstraint: 0
-      CrossChainStiffness: 0
-  - PresetName: SHORT_HAIR
-    OverrideManifestSpring: 1
-    Settings:
-      Stiffness: 0.55
-      Damping: 0.82
-      Gravity: 0.08
-      MaxAngle: 28
-      ParticleRadius: 0.01
-      EnableCollision: 1
-      Layer: 2
-      CollidesWith: 5
-      EnableSelfCollision: 0
-      CollideWithinSamePart: 0
-      EnableCrossChainConstraint: 0
-      CrossChainStiffness: 0
   - PresetName: RIBBON
     OverrideManifestSpring: 1
     Settings:
@@ -127,6 +112,21 @@ MonoBehaviour:
       Gravity: 0.12
       MaxAngle: 70
       ParticleRadius: 0.009
+      EnableCollision: 1
+      Layer: 8
+      CollidesWith: 7
+      EnableSelfCollision: 0
+      CollideWithinSamePart: 0
+      EnableCrossChainConstraint: 0
+      CrossChainStiffness: 0
+  - PresetName: ACCESSORY
+    OverrideManifestSpring: 1
+    Settings:
+      Stiffness: 0.5
+      Damping: 0.8
+      Gravity: 0.18
+      MaxAngle: 45
+      ParticleRadius: 0.01
       EnableCollision: 1
       Layer: 8
       CollidesWith: 7

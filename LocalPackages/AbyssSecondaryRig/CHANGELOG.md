@@ -1,5 +1,35 @@
 # Changelog
 
+## 1.3.1
+
+### Runtime manifest import robustness
+- Fixed `Build / Refresh Secondary Rig` producing 0 usable chains when a valid v3 SINGLE/SEC-only JSON still contained stale `OFFLINE_BAKE` metadata from an already-built Blender region.
+- The Unity Setup Wizard now treats assigning a JSON to the Runtime Setup Wizard as explicit runtime intent.
+- `Analyze` still reports Runtime/Offline source metadata so stale Blender authoring state remains visible.
+- Improved the 0-chain exception with an embedded analysis summary.
+- Existing v2 TGT+SPR/SEC and v3 DUAL manifests remain compatible.
+
+
+## 1.3.0
+
+### SEC-only runtime support
+- Added support for Blender `project-abyss.secondary-bone-rig.v3` manifests.
+- Added `SINGLE` / SEC-only chains with no exported TGT bones.
+- SEC-only chains reconstruct a Virtual Target every frame from the animated body parent plus the stored Secondary rest-local pose.
+- Setup Wizard captures the SEC local reference pose so runtime `RebuildRuntime()` does not accidentally adopt a previously simulated pose.
+- Added `secondaryRoot` / `secondaryBones` v3 fields while retaining `springRoot` / `springBones` v2 aliases.
+- Existing v2 TGT+SPR and v3 DUAL TGT+SEC files remain supported.
+- Setup analysis reports SEC-only and Dual chain counts separately.
+- Runtime validation understands SEC-only Driver Parent bindings and no longer requires TargetRoot for SINGLE chains.
+- OFFLINE_BAKE records in v3 manifests are ignored by the runtime importer.
+
+### Recommended Project Abyss workflow
+- Blender: `Secondary Workflow = Unity Runtime Physics`.
+- Blender: `Bone Structure = Single Bone / SEC Only`.
+- Export FBX with SEC deform bones plus `*_secondary_rig.json`.
+- Unity: Setup Wizard `Analyze` -> `Build / Refresh Secondary Rig`.
+- TGT bones are no longer required for the recommended runtime path.
+
 ## 1.2.0
 
 ### Production collider workflow

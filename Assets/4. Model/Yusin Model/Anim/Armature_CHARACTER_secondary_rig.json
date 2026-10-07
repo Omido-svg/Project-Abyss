@@ -1,0 +1,366 @@
+{
+  "schema": "project-abyss.secondary-bone-rig.v3",
+  "armature": "Armature",
+  "note": "Offline Bake does not need this file at runtime; export it only for a Unity runtime solver or tooling.",
+  "parts": [
+    {
+      "object": "Hair",
+      "partType": "DYNAMIC",
+      "parentBone": "CC_Base_Head",
+      "preset": "HAIR",
+      "workflow": "OFFLINE_BAKE",
+      "boneStructure": "SINGLE",
+      "targetRoots": [],
+      "secondaryRoots": [
+        "HAIR_SEC_C01_01",
+        "HAIR_SEC_C02_01",
+        "HAIR_SEC_C01_01.001",
+        "HAIR_SEC_C02_01.001",
+        "HAIR_SEC_C03_01"
+      ],
+      "secondaryBones": [
+        "HAIR_SEC_C01_01",
+        "HAIR_SEC_C01_02",
+        "HAIR_SEC_C01_03",
+        "HAIR_SEC_C01_04",
+        "HAIR_SEC_C01_05",
+        "HAIR_SEC_C01_06",
+        "HAIR_SEC_C02_01",
+        "HAIR_SEC_C02_02",
+        "HAIR_SEC_C02_03",
+        "HAIR_SEC_C02_04",
+        "HAIR_SEC_C02_05",
+        "HAIR_SEC_C02_06",
+        "HAIR_SEC_C01_01.001",
+        "HAIR_SEC_C01_02.001",
+        "HAIR_SEC_C02_01.001",
+        "HAIR_SEC_C02_02.001",
+        "HAIR_SEC_C03_01",
+        "HAIR_SEC_C03_02"
+      ],
+      "springRoots": [
+        "HAIR_SEC_C01_01",
+        "HAIR_SEC_C02_01",
+        "HAIR_SEC_C01_01.001",
+        "HAIR_SEC_C02_01.001",
+        "HAIR_SEC_C03_01"
+      ],
+      "springBones": [
+        "HAIR_SEC_C01_01",
+        "HAIR_SEC_C01_02",
+        "HAIR_SEC_C01_03",
+        "HAIR_SEC_C01_04",
+        "HAIR_SEC_C01_05",
+        "HAIR_SEC_C01_06",
+        "HAIR_SEC_C02_01",
+        "HAIR_SEC_C02_02",
+        "HAIR_SEC_C02_03",
+        "HAIR_SEC_C02_04",
+        "HAIR_SEC_C02_05",
+        "HAIR_SEC_C02_06",
+        "HAIR_SEC_C01_01.001",
+        "HAIR_SEC_C01_02.001",
+        "HAIR_SEC_C02_01.001",
+        "HAIR_SEC_C02_02.001",
+        "HAIR_SEC_C03_01",
+        "HAIR_SEC_C03_02"
+      ],
+      "chains": [
+        {
+          "chainIndex": 1,
+          "boneStructure": "SINGLE",
+          "targetRoot": "",
+          "secondaryRoot": "HAIR_SEC_C01_01",
+          "springRoot": "HAIR_SEC_C01_01",
+          "targetBones": [],
+          "secondaryBones": [
+            "HAIR_SEC_C01_01",
+            "HAIR_SEC_C01_02",
+            "HAIR_SEC_C01_03",
+            "HAIR_SEC_C01_04",
+            "HAIR_SEC_C01_05",
+            "HAIR_SEC_C01_06"
+          ],
+          "springBones": [
+            "HAIR_SEC_C01_01",
+            "HAIR_SEC_C01_02",
+            "HAIR_SEC_C01_03",
+            "HAIR_SEC_C01_04",
+            "HAIR_SEC_C01_05",
+            "HAIR_SEC_C01_06"
+          ]
+        },
+        {
+          "chainIndex": 2,
+          "boneStructure": "SINGLE",
+          "targetRoot": "",
+          "secondaryRoot": "HAIR_SEC_C02_01",
+          "springRoot": "HAIR_SEC_C02_01",
+          "targetBones": [],
+          "secondaryBones": [
+            "HAIR_SEC_C02_01",
+            "HAIR_SEC_C02_02",
+            "HAIR_SEC_C02_03",
+            "HAIR_SEC_C02_04",
+            "HAIR_SEC_C02_05",
+            "HAIR_SEC_C02_06"
+          ],
+          "springBones": [
+            "HAIR_SEC_C02_01",
+            "HAIR_SEC_C02_02",
+            "HAIR_SEC_C02_03",
+            "HAIR_SEC_C02_04",
+            "HAIR_SEC_C02_05",
+            "HAIR_SEC_C02_06"
+          ]
+        },
+        {
+          "chainIndex": 1,
+          "boneStructure": "SINGLE",
+          "targetRoot": "",
+          "secondaryRoot": "HAIR_SEC_C01_01.001",
+          "springRoot": "HAIR_SEC_C01_01.001",
+          "targetBones": [],
+          "secondaryBones": [
+            "HAIR_SEC_C01_01.001",
+            "HAIR_SEC_C01_02.001"
+          ],
+          "springBones": [
+            "HAIR_SEC_C01_01.001",
+            "HAIR_SEC_C01_02.001"
+          ]
+        },
+        {
+          "chainIndex": 2,
+          "boneStructure": "SINGLE",
+          "targetRoot": "",
+          "secondaryRoot": "HAIR_SEC_C02_01.001",
+          "springRoot": "HAIR_SEC_C02_01.001",
+          "targetBones": [],
+          "secondaryBones": [
+            "HAIR_SEC_C02_01.001",
+            "HAIR_SEC_C02_02.001"
+          ],
+          "springBones": [
+            "HAIR_SEC_C02_01.001",
+            "HAIR_SEC_C02_02.001"
+          ]
+        },
+        {
+          "chainIndex": 3,
+          "boneStructure": "SINGLE",
+          "targetRoot": "",
+          "secondaryRoot": "HAIR_SEC_C03_01",
+          "springRoot": "HAIR_SEC_C03_01",
+          "targetBones": [],
+          "secondaryBones": [
+            "HAIR_SEC_C03_01",
+            "HAIR_SEC_C03_02"
+          ],
+          "springBones": [
+            "HAIR_SEC_C03_01",
+            "HAIR_SEC_C03_02"
+          ]
+        }
+      ],
+      "springDefaults": {
+        "stiffness": 0.32,
+        "damping": 0.76,
+        "gravity": 0.16,
+        "maxAngle": 48.0
+      },
+      "regions": [
+        {
+          "group": "ABYSS_RIG_REGION_Hair_01",
+          "parentBone": "CC_Base_Head",
+          "preset": "HAIR",
+          "workflow": "OFFLINE_BAKE",
+          "boneStructure": "SINGLE",
+          "targetRoots": [],
+          "secondaryRoots": [
+            "HAIR_SEC_C01_01",
+            "HAIR_SEC_C02_01"
+          ],
+          "secondaryBones": [
+            "HAIR_SEC_C01_01",
+            "HAIR_SEC_C01_02",
+            "HAIR_SEC_C01_03",
+            "HAIR_SEC_C01_04",
+            "HAIR_SEC_C01_05",
+            "HAIR_SEC_C01_06",
+            "HAIR_SEC_C02_01",
+            "HAIR_SEC_C02_02",
+            "HAIR_SEC_C02_03",
+            "HAIR_SEC_C02_04",
+            "HAIR_SEC_C02_05",
+            "HAIR_SEC_C02_06"
+          ],
+          "springRoots": [
+            "HAIR_SEC_C01_01",
+            "HAIR_SEC_C02_01"
+          ],
+          "springBones": [
+            "HAIR_SEC_C01_01",
+            "HAIR_SEC_C01_02",
+            "HAIR_SEC_C01_03",
+            "HAIR_SEC_C01_04",
+            "HAIR_SEC_C01_05",
+            "HAIR_SEC_C01_06",
+            "HAIR_SEC_C02_01",
+            "HAIR_SEC_C02_02",
+            "HAIR_SEC_C02_03",
+            "HAIR_SEC_C02_04",
+            "HAIR_SEC_C02_05",
+            "HAIR_SEC_C02_06"
+          ],
+          "chains": [
+            {
+              "chainIndex": 1,
+              "boneStructure": "SINGLE",
+              "targetRoot": "",
+              "secondaryRoot": "HAIR_SEC_C01_01",
+              "springRoot": "HAIR_SEC_C01_01",
+              "targetBones": [],
+              "secondaryBones": [
+                "HAIR_SEC_C01_01",
+                "HAIR_SEC_C01_02",
+                "HAIR_SEC_C01_03",
+                "HAIR_SEC_C01_04",
+                "HAIR_SEC_C01_05",
+                "HAIR_SEC_C01_06"
+              ],
+              "springBones": [
+                "HAIR_SEC_C01_01",
+                "HAIR_SEC_C01_02",
+                "HAIR_SEC_C01_03",
+                "HAIR_SEC_C01_04",
+                "HAIR_SEC_C01_05",
+                "HAIR_SEC_C01_06"
+              ]
+            },
+            {
+              "chainIndex": 2,
+              "boneStructure": "SINGLE",
+              "targetRoot": "",
+              "secondaryRoot": "HAIR_SEC_C02_01",
+              "springRoot": "HAIR_SEC_C02_01",
+              "targetBones": [],
+              "secondaryBones": [
+                "HAIR_SEC_C02_01",
+                "HAIR_SEC_C02_02",
+                "HAIR_SEC_C02_03",
+                "HAIR_SEC_C02_04",
+                "HAIR_SEC_C02_05",
+                "HAIR_SEC_C02_06"
+              ],
+              "springBones": [
+                "HAIR_SEC_C02_01",
+                "HAIR_SEC_C02_02",
+                "HAIR_SEC_C02_03",
+                "HAIR_SEC_C02_04",
+                "HAIR_SEC_C02_05",
+                "HAIR_SEC_C02_06"
+              ]
+            }
+          ],
+          "springDefaults": {
+            "stiffness": 0.32,
+            "damping": 0.76,
+            "gravity": 0.16,
+            "maxAngle": 48.0
+          }
+        },
+        {
+          "group": "ABYSS_RIG_REGION_Hair_01_02",
+          "parentBone": "CC_Base_Head",
+          "preset": "HAIR",
+          "workflow": "OFFLINE_BAKE",
+          "boneStructure": "SINGLE",
+          "targetRoots": [],
+          "secondaryRoots": [
+            "HAIR_SEC_C01_01.001",
+            "HAIR_SEC_C02_01.001",
+            "HAIR_SEC_C03_01"
+          ],
+          "secondaryBones": [
+            "HAIR_SEC_C01_01.001",
+            "HAIR_SEC_C01_02.001",
+            "HAIR_SEC_C02_01.001",
+            "HAIR_SEC_C02_02.001",
+            "HAIR_SEC_C03_01",
+            "HAIR_SEC_C03_02"
+          ],
+          "springRoots": [
+            "HAIR_SEC_C01_01.001",
+            "HAIR_SEC_C02_01.001",
+            "HAIR_SEC_C03_01"
+          ],
+          "springBones": [
+            "HAIR_SEC_C01_01.001",
+            "HAIR_SEC_C01_02.001",
+            "HAIR_SEC_C02_01.001",
+            "HAIR_SEC_C02_02.001",
+            "HAIR_SEC_C03_01",
+            "HAIR_SEC_C03_02"
+          ],
+          "chains": [
+            {
+              "chainIndex": 1,
+              "boneStructure": "SINGLE",
+              "targetRoot": "",
+              "secondaryRoot": "HAIR_SEC_C01_01.001",
+              "springRoot": "HAIR_SEC_C01_01.001",
+              "targetBones": [],
+              "secondaryBones": [
+                "HAIR_SEC_C01_01.001",
+                "HAIR_SEC_C01_02.001"
+              ],
+              "springBones": [
+                "HAIR_SEC_C01_01.001",
+                "HAIR_SEC_C01_02.001"
+              ]
+            },
+            {
+              "chainIndex": 2,
+              "boneStructure": "SINGLE",
+              "targetRoot": "",
+              "secondaryRoot": "HAIR_SEC_C02_01.001",
+              "springRoot": "HAIR_SEC_C02_01.001",
+              "targetBones": [],
+              "secondaryBones": [
+                "HAIR_SEC_C02_01.001",
+                "HAIR_SEC_C02_02.001"
+              ],
+              "springBones": [
+                "HAIR_SEC_C02_01.001",
+                "HAIR_SEC_C02_02.001"
+              ]
+            },
+            {
+              "chainIndex": 3,
+              "boneStructure": "SINGLE",
+              "targetRoot": "",
+              "secondaryRoot": "HAIR_SEC_C03_01",
+              "springRoot": "HAIR_SEC_C03_01",
+              "targetBones": [],
+              "secondaryBones": [
+                "HAIR_SEC_C03_01",
+                "HAIR_SEC_C03_02"
+              ],
+              "springBones": [
+                "HAIR_SEC_C03_01",
+                "HAIR_SEC_C03_02"
+              ]
+            }
+          ],
+          "springDefaults": {
+            "stiffness": 0.32,
+            "damping": 0.76,
+            "gravity": 0.16,
+            "maxAngle": 48.0
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -13,11 +13,21 @@ namespace ProjectAbyss.SecondaryRig
             public Vector3 SpringAxisLocal;
             public Vector3 TargetAxisLocal;
             public Quaternion SpringFromTargetRotation;
+
+            // SEC-only virtual target reference pose.
+            public Vector3 ReferenceLocalPosition;
+            public Quaternion ReferenceLocalRotation;
+            public Vector3 ReferenceLocalScale;
+            public Vector3 VirtualTargetPosition;
+            public Quaternion VirtualTargetRotation;
         }
 
         public readonly SecondaryRigChainBinding Binding;
         public readonly SecondaryRigSettings Settings;
         public readonly Node[] Nodes;
+
+        private readonly bool usesVirtualTarget;
+        private readonly Transform driverParent;
 
         public int NodeCount => Nodes.Length;
         public string PartName => Binding.PartName ?? string.Empty;
@@ -31,6 +41,8 @@ namespace ProjectAbyss.SecondaryRig
             Binding = binding ?? throw new ArgumentNullException(nameof(binding));
             Settings = settings ?? throw new ArgumentNullException(nameof(settings));
             Nodes = new Node[binding.SpringBones.Length];
+            usesVirtualTarget = binding.UsesVirtualTarget;
+            driverParent = binding.EffectiveDriverParent;
 
             InitializeNodes();
             ResetToTarget();
@@ -38,6 +50,8 @@ namespace ProjectAbyss.SecondaryRig
 
         public void ResetToTarget()
         {
+            RefreshVirtualTargets();
+
             for (int i = 0; i < Nodes.Length; i++)
             {
                 Vector3 targetTip = GetTargetTip(i);
@@ -51,6 +65,8 @@ namespace ProjectAbyss.SecondaryRig
             Vector3 gravityDirection,
             SecondaryRigCollider[] colliders)
         {
+            RefreshVirtualTargets();
+
             Vector3 head = Binding.SpringBones[0].position;
 
             float dampingFactor = Mathf.Exp(-Mathf.Clamp01(Settings.Damping) * 12f * deltaTime);
@@ -98,11 +114,14 @@ namespace ProjectAbyss.SecondaryRig
 
         public void ApplyPose()
         {
+            // ResetSimulation can call ApplyPose without Integrate, so make sure the
+            // virtual target follows the current Animator/body pose in SEC-only mode.
+            RefreshVirtualTargets();
+
             for (int i = 0; i < Nodes.Length; i++)
             {
                 Transform springBone = Binding.SpringBones[i];
-                Transform targetBone = Binding.TargetBones[i];
-                if (springBone == null || targetBone == null)
+                if (springBone == null)
                     continue;
 
                 Vector3 head = i == 0
@@ -115,7 +134,19 @@ namespace ProjectAbyss.SecondaryRig
 
                 desired.Normalize();
 
-                Quaternion baseRotation = targetBone.rotation * Nodes[i].SpringFromTargetRotation;
+                Quaternion baseRotation;
+                if (usesVirtualTarget)
+                {
+                    baseRotation = Nodes[i].VirtualTargetRotation;
+                }
+                else
+                {
+                    Transform targetBone = Binding.TargetBones[i];
+                    if (targetBone == null)
+                        continue;
+                    baseRotation = targetBone.rotation * Nodes[i].SpringFromTargetRotation;
+                }
+
                 Vector3 baseAxis = baseRotation * Nodes[i].SpringAxisLocal;
                 if (baseAxis.sqrMagnitude <= 0.00000001f)
                     continue;
@@ -145,35 +176,94 @@ namespace ProjectAbyss.SecondaryRig
         {
             Transform[] springBones = Binding.SpringBones;
             Transform[] targetBones = Binding.TargetBones;
+            bool hasStoredReference = Binding.HasStoredReferencePose();
 
             for (int i = 0; i < springBones.Length; i++)
             {
                 float length = EstimateBoneLength(springBones, i);
                 Vector3 springAxisLocal = EstimateBoneAxisLocal(springBones, i);
-                Vector3 targetAxisLocal = EstimateBoneAxisLocal(targetBones, i);
+
+                Vector3 targetAxisLocal = springAxisLocal;
+                Quaternion springFromTarget = Quaternion.identity;
+
+                if (!usesVirtualTarget)
+                {
+                    targetAxisLocal = EstimateBoneAxisLocal(targetBones, i);
+                    springFromTarget = Quaternion.Inverse(targetBones[i].rotation) * springBones[i].rotation;
+                }
 
                 Nodes[i] = new Node
                 {
                     Length = Mathf.Max(0.0001f, length),
                     SpringAxisLocal = springAxisLocal,
                     TargetAxisLocal = targetAxisLocal,
-                    SpringFromTargetRotation = Quaternion.Inverse(targetBones[i].rotation) * springBones[i].rotation
+                    SpringFromTargetRotation = springFromTarget,
+                    ReferenceLocalPosition = hasStoredReference
+                        ? Binding.ReferenceLocalPositions[i]
+                        : springBones[i].localPosition,
+                    ReferenceLocalRotation = hasStoredReference
+                        ? Binding.ReferenceLocalRotations[i]
+                        : springBones[i].localRotation,
+                    ReferenceLocalScale = hasStoredReference
+                        ? Binding.ReferenceLocalScales[i]
+                        : springBones[i].localScale,
+                    VirtualTargetPosition = springBones[i].position,
+                    VirtualTargetRotation = springBones[i].rotation
                 };
+            }
+
+            RefreshVirtualTargets();
+        }
+
+        private void RefreshVirtualTargets()
+        {
+            if (!usesVirtualTarget)
+                return;
+
+            if (driverParent == null)
+                return;
+
+            Matrix4x4 parentWorld = driverParent.localToWorldMatrix;
+            for (int i = 0; i < Nodes.Length; i++)
+            {
+                Node node = Nodes[i];
+                Matrix4x4 local = Matrix4x4.TRS(
+                    node.ReferenceLocalPosition,
+                    node.ReferenceLocalRotation,
+                    node.ReferenceLocalScale);
+                Matrix4x4 world = parentWorld * local;
+
+                node.VirtualTargetPosition = world.GetColumn(3);
+                node.VirtualTargetRotation = world.rotation;
+                parentWorld = world;
             }
         }
 
         private Vector3 GetTargetTip(int index)
         {
+            if (usesVirtualTarget)
+            {
+                if (index < Nodes.Length - 1)
+                    return Nodes[index + 1].VirtualTargetPosition;
+
+                Node node = Nodes[index];
+                Vector3 direction = node.VirtualTargetRotation * node.SpringAxisLocal;
+                if (direction.sqrMagnitude <= 0.00000001f)
+                    direction = node.VirtualTargetRotation * Vector3.up;
+
+                return node.VirtualTargetPosition + direction.normalized * node.Length;
+            }
+
             Transform[] targetBones = Binding.TargetBones;
             if (index < targetBones.Length - 1)
                 return targetBones[index + 1].position;
 
             Transform target = targetBones[index];
-            Vector3 direction = target.TransformDirection(Nodes[index].TargetAxisLocal);
-            if (direction.sqrMagnitude <= 0.00000001f)
-                direction = target.up;
+            Vector3 targetDirection = target.TransformDirection(Nodes[index].TargetAxisLocal);
+            if (targetDirection.sqrMagnitude <= 0.00000001f)
+                targetDirection = target.up;
 
-            return target.position + direction.normalized * Nodes[index].Length;
+            return target.position + targetDirection.normalized * Nodes[index].Length;
         }
 
         private void ConstrainLengthAndAngle(int index, Vector3 head)
@@ -205,14 +295,25 @@ namespace ProjectAbyss.SecondaryRig
 
         private Vector3 GetTargetDirection(int index)
         {
+            if (usesVirtualTarget)
+            {
+                Vector3 tip = GetTargetTip(index);
+                Vector3 direction = tip - Nodes[index].VirtualTargetPosition;
+                if (direction.sqrMagnitude <= 0.00000001f)
+                    direction = Nodes[index].VirtualTargetRotation * Nodes[index].SpringAxisLocal;
+                if (direction.sqrMagnitude <= 0.00000001f)
+                    direction = Vector3.down;
+                return direction.normalized;
+            }
+
             Transform target = Binding.TargetBones[index];
-            Vector3 tip = GetTargetTip(index);
-            Vector3 direction = tip - target.position;
-            if (direction.sqrMagnitude <= 0.00000001f)
-                direction = target.TransformDirection(Nodes[index].TargetAxisLocal);
-            if (direction.sqrMagnitude <= 0.00000001f)
-                direction = Vector3.down;
-            return direction.normalized;
+            Vector3 targetTip = GetTargetTip(index);
+            Vector3 targetDirection = targetTip - target.position;
+            if (targetDirection.sqrMagnitude <= 0.00000001f)
+                targetDirection = target.TransformDirection(Nodes[index].TargetAxisLocal);
+            if (targetDirection.sqrMagnitude <= 0.00000001f)
+                targetDirection = Vector3.down;
+            return targetDirection.normalized;
         }
 
         private void ResolveBodyCollisions(int index, SecondaryRigCollider[] colliders)

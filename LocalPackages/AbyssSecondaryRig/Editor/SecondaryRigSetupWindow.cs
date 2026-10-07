@@ -46,9 +46,9 @@ namespace ProjectAbyss.SecondaryRig.Editor
         {
             EditorGUILayout.LabelField("Project Abyss Secondary Rig Setup", EditorStyles.boldLabel);
             EditorGUILayout.HelpBox(
-                "Blender Target/Spring JSON을 읽어 TGT/SPR Transform을 자동 연결하고, " +
-                "재사용 가능한 SecondaryRigController와 선택적 Humanoid Body Collider를 구성합니다. " +
-                "Model FBX 이름(.001 등)은 사용하지 않고 실제 Bone 이름으로 연결합니다.",
+                "Blender Secondary Rig JSON을 읽어 런타임 Chain을 구성합니다. " +
+                "v1.3은 기존 TGT+SPR/SEC(DUAL)과 v0.8+ SEC-only(SINGLE)를 모두 지원합니다. " +
+                "SEC-only는 별도 TGT 본 없이 Body Parent + 저장된 Rest Local Pose로 Virtual Target을 재구성합니다.",
                 MessageType.Info);
 
             scroll = EditorGUILayout.BeginScrollView(scroll);
@@ -120,15 +120,14 @@ namespace ProjectAbyss.SecondaryRig.Editor
             EditorGUILayout.Space(10f);
             EditorGUILayout.LabelField("Recommended Workflow", EditorStyles.boldLabel);
             EditorGUILayout.HelpBox(
-                "1) Character Prefab + JSON 지정\n" +
-                "2) Recommended Presets 생성\n" +
-                "3) Analyze에서 Missing Bone = 0 확인\n" +
-                "4) Build / Refresh\n" +
-                "5) Prefab에서 SecondaryRigColliders를 Scene View로 조정\n" +
-                "6) Preset Library에서 HAIR / LONG_COAT 물성 튜닝\n" +
-                "7) Validate Production Setup으로 Prefab QA\n" +
-                "8) Controller에서 Add Stress Test Component → Strong으로 흔들림 QA\n" +
-                "9) LOD / Live Performance 확인 후 실제 애니메이션 QA",
+                "1) Blender: Unity Runtime Physics + Single Bone / SEC Only 권장\n" +
+                "2) FBX와 *_secondary_rig.json을 Assets에 넣기\n" +
+                "3) Character Prefab + JSON 지정\n" +
+                "4) Analyze → Missing Bone = 0 확인\n" +
+                "5) Build / Refresh\n" +
+                "6) Collider / Preset 튜닝\n" +
+                "7) Validate Production Setup\n" +
+                "8) Stress Test → 실제 애니메이션 QA",
                 MessageType.None);
 
             EditorGUILayout.EndScrollView();
@@ -150,7 +149,8 @@ namespace ProjectAbyss.SecondaryRig.Editor
             {
                 SecondaryRigManifest manifest = SecondaryRigManifest.Parse(manifestJson.text);
                 analysisText = SecondaryRigManifestUtility.BuildAnalysisSummary(characterRoot, manifest);
-                analysisType = analysisText.Contains("Missing bone references: 0")
+                analysisType = analysisText.Contains("Missing bone references: 0") &&
+                               analysisText.Contains("Ambiguous transform names: 0")
                     ? MessageType.Info
                     : MessageType.Warning;
             }
@@ -249,15 +249,39 @@ namespace ProjectAbyss.SecondaryRig.Editor
             List<SecondaryRigChainBinding> bindings = new();
             List<string> missing = new();
             List<string> ambiguous = new();
+            int singleCount = 0;
+            int dualCount = 0;
 
             for (int i = 0; i < normalized.Count; i++)
             {
                 NormalizedManifestChain source = normalized[i];
-                Transform[] targetBones = ResolveBones(lookup, source.Chain.targetBones, missing, ambiguous);
-                Transform[] springBones = ResolveBones(lookup, source.Chain.springBones, missing, ambiguous);
-
-                if (HasNull(targetBones) || HasNull(springBones))
+                Transform[] springBones = ResolveBones(lookup, source.SpringBoneNames, missing, ambiguous);
+                if (HasNull(springBones))
                     continue;
+
+                Transform[] targetBones = Array.Empty<Transform>();
+                Transform driverParent = null;
+
+                if (source.UsesVirtualTarget)
+                {
+                    singleCount++;
+                    driverParent = ResolveDriverParent(lookup, source.ParentBone, springBones[0], missing, ambiguous);
+                    if (driverParent == null)
+                        continue;
+                }
+                else
+                {
+                    dualCount++;
+                    targetBones = ResolveBones(lookup, source.TargetBoneNames, missing, ambiguous);
+                    if (HasNull(targetBones) || targetBones.Length != springBones.Length)
+                        continue;
+                }
+
+                CaptureReferenceLocalPose(
+                    springBones,
+                    out Vector3[] referencePositions,
+                    out Quaternion[] referenceRotations,
+                    out Vector3[] referenceScales);
 
                 SecondaryRigChainBinding binding = new()
                 {
@@ -265,10 +289,15 @@ namespace ProjectAbyss.SecondaryRig.Editor
                     PartName = source.PartName,
                     RegionName = source.RegionName,
                     PresetName = source.PresetName,
-                    TargetRoot = targetBones[0],
+                    BoneStructure = source.UsesVirtualTarget ? "SINGLE" : "DUAL",
+                    TargetRoot = source.UsesVirtualTarget ? null : targetBones[0],
                     SpringRoot = springBones[0],
                     TargetBones = targetBones,
                     SpringBones = springBones,
+                    DriverParent = source.UsesVirtualTarget ? driverParent : null,
+                    ReferenceLocalPositions = source.UsesVirtualTarget ? referencePositions : Array.Empty<Vector3>(),
+                    ReferenceLocalRotations = source.UsesVirtualTarget ? referenceRotations : Array.Empty<Quaternion>(),
+                    ReferenceLocalScales = source.UsesVirtualTarget ? referenceScales : Array.Empty<Vector3>(),
                     ManifestDefaults = source.Defaults?.Clone() ?? new SecondaryRigManifestSpringDefaults()
                 };
 
@@ -287,7 +316,7 @@ namespace ProjectAbyss.SecondaryRig.Editor
             {
                 throw new InvalidOperationException(
                     "Secondary Rig build aborted because bone references are missing:\n" +
-                    string.Join("\n", missing));
+                    string.Join("\n", DistinctLines(missing)));
             }
 
             if (ambiguous.Count > 0)
@@ -295,7 +324,17 @@ namespace ProjectAbyss.SecondaryRig.Editor
                 throw new InvalidOperationException(
                     "Secondary Rig build aborted because transform names are ambiguous. " +
                     "Bone names must be unique under the selected character root:\n" +
-                    string.Join("\n", ambiguous));
+                    string.Join("\n", DistinctLines(ambiguous)));
+            }
+
+            if (bindings.Count == 0)
+            {
+                string summary = SecondaryRigManifestUtility.BuildAnalysisSummary(root, manifest);
+                throw new InvalidOperationException(
+                    "Secondary Rig build produced 0 usable runtime chains.\n" +
+                    "The Runtime Setup Wizard now accepts stale OFFLINE_BAKE metadata, so this usually means " +
+                    "the JSON has no usable chain records or the selected JSON is not the FBX-matching manifest.\n\n" +
+                    summary);
             }
 
             if (presetLibrary == null)
@@ -320,8 +359,9 @@ namespace ProjectAbyss.SecondaryRig.Editor
             EditorUtility.SetDirty(controller);
 
             Debug.Log(
-                $"[SecondaryRig] Build complete / Root={root.name}, Chains={bindings.Count}, " +
-                $"Ignored duplicate records={duplicateCount}, New colliders={colliderCreated}, Ambiguous names={ambiguous.Count}",
+                $"[SecondaryRig] Build complete / Root={root.name}, Chains={bindings.Count} " +
+                $"(SEC-only={singleCount}, Dual={dualCount}), Ignored duplicate records={duplicateCount}, " +
+                $"New colliders={colliderCreated}, Ambiguous names={ambiguous.Count}",
                 controller);
         }
 
@@ -331,7 +371,7 @@ namespace ProjectAbyss.SecondaryRig.Editor
             List<string> missing,
             List<string> ambiguous)
         {
-            if (names == null)
+            if (names == null || names.Count == 0)
                 return Array.Empty<Transform>();
 
             Transform[] result = new Transform[names.Count];
@@ -350,6 +390,46 @@ namespace ProjectAbyss.SecondaryRig.Editor
             return result;
         }
 
+        private static Transform ResolveDriverParent(
+            Dictionary<string, List<Transform>> lookup,
+            string parentBoneName,
+            Transform springRoot,
+            List<string> missing,
+            List<string> ambiguous)
+        {
+            if (!string.IsNullOrWhiteSpace(parentBoneName))
+            {
+                Transform parent = SecondaryRigManifestUtility.ResolveUnique(lookup, parentBoneName, out bool isAmbiguous);
+                if (parent == null)
+                    missing.Add(parentBoneName);
+                else if (isAmbiguous)
+                    ambiguous.Add(parentBoneName);
+                return parent;
+            }
+
+            return springRoot != null ? springRoot.parent : null;
+        }
+
+        private static void CaptureReferenceLocalPose(
+            Transform[] springBones,
+            out Vector3[] positions,
+            out Quaternion[] rotations,
+            out Vector3[] scales)
+        {
+            int count = springBones?.Length ?? 0;
+            positions = new Vector3[count];
+            rotations = new Quaternion[count];
+            scales = new Vector3[count];
+
+            for (int i = 0; i < count; i++)
+            {
+                Transform bone = springBones[i];
+                positions[i] = bone.localPosition;
+                rotations[i] = bone.localRotation;
+                scales[i] = bone.localScale;
+            }
+        }
+
         private static bool HasNull(Transform[] values)
         {
             if (values == null || values.Length == 0)
@@ -362,6 +442,17 @@ namespace ProjectAbyss.SecondaryRig.Editor
             }
 
             return false;
+        }
+
+        private static IEnumerable<string> DistinctLines(List<string> values)
+        {
+            HashSet<string> seen = new(StringComparer.Ordinal);
+            for (int i = 0; i < values.Count; i++)
+            {
+                string value = values[i];
+                if (seen.Add(value))
+                    yield return value;
+            }
         }
 
         private static SecondaryRigPresetLibrary CreateOrLoadRecommendedPresetLibrary()
