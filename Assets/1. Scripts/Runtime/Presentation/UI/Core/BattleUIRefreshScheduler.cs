@@ -1,14 +1,15 @@
 using System.Collections.Generic;
 using UnityEngine;
 
+/// <summary>
+/// Unity-facing frame scheduler for combat HUD refreshes.
+/// Invalidations are kept in BattleUIRefreshBatch, separate from the View.
+/// </summary>
 public sealed class BattleUIRefreshScheduler : MonoBehaviour
 {
     [SerializeField] private BattleUIManager uiManager;
 
-    private readonly HashSet<Character> dirtyCharacters = new();
-    private readonly Dictionary<BodyPart, Character> dirtyBodyParts = new();
-
-    private bool refreshAll;
+    private readonly BattleUIRefreshBatch pending = new();
     private bool isFlushing;
 
     private void Awake()
@@ -17,27 +18,12 @@ public sealed class BattleUIRefreshScheduler : MonoBehaviour
             uiManager = FindFirstObjectByType<BattleUIManager>();
     }
 
-    public void MarkAllDirty()
-    {
-        refreshAll = true;
-    }
+    public void MarkAllDirty() => pending.MarkAll();
 
-    public void MarkCharacterDirty(Character character)
-    {
-        if (character != null)
-            dirtyCharacters.Add(character);
-    }
+    public void MarkCharacterDirty(Character character) => pending.MarkCharacter(character);
 
-    public void MarkBodyPartDirty(Character character, BodyPart part)
-    {
-        if (part == null)
-        {
-            MarkCharacterDirty(character);
-            return;
-        }
-
-        dirtyBodyParts[part] = character ?? part.Owner;
-    }
+    public void MarkBodyPartDirty(Character character, BodyPart part) =>
+        pending.MarkPart(character, part);
 
     public void MarkActionDirty(BattleAction action)
     {
@@ -55,46 +41,45 @@ public sealed class BattleUIRefreshScheduler : MonoBehaviour
 
     public void Flush()
     {
-        if (isFlushing || uiManager == null)
+        if (isFlushing || uiManager == null || !pending.HasPending)
             return;
 
-        if (!refreshAll &&
-            dirtyCharacters.Count == 0 &&
-            dirtyBodyParts.Count == 0)
-        {
-            return;
-        }
-
+        // Drain before invoking UI callbacks. The old implementation cleared
+        // dirty flags *after* callbacks, dropping updates raised while flushing.
+        BattleUIRefreshSnapshot snapshot = pending.Drain();
         isFlushing = true;
 
         try
         {
-            if (refreshAll)
+            if (snapshot.RefreshAll)
             {
                 uiManager.RefreshAllUI();
+                return;
             }
-            else
+
+            var refreshedCharacters = new HashSet<Character>();
+            foreach (Character character in snapshot.Characters)
             {
-                foreach (Character character in dirtyCharacters)
-                    uiManager.RefreshCharacterUI(character);
+                if (character == null)
+                    continue;
 
-                foreach (KeyValuePair<BodyPart, Character> pair
-                         in dirtyBodyParts)
+                uiManager.RefreshCharacterUI(character);
+                refreshedCharacters.Add(character);
+            }
+
+            foreach (KeyValuePair<BodyPart, Character> pair in snapshot.Parts)
+            {
+                if (pair.Key == null ||
+                    (pair.Value != null && refreshedCharacters.Contains(pair.Value)))
                 {
-                    if (dirtyCharacters.Contains(pair.Value))
-                        continue;
-
-                    uiManager.RefreshTargetUI(
-                        pair.Value,
-                        pair.Key);
+                    continue;
                 }
+
+                uiManager.RefreshTargetUI(pair.Value, pair.Key);
             }
         }
         finally
         {
-            refreshAll = false;
-            dirtyCharacters.Clear();
-            dirtyBodyParts.Clear();
             isFlushing = false;
         }
     }

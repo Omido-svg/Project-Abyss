@@ -9,7 +9,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 0}
+  m_Script: {fileID: 11500000, guid: 92ad7173ec9a80443bda41705ffd4af3, type: 3}
   m_Name: Compassion_T3_03
   m_EditorClassIdentifier: ProjectAbyss.Runtime::EmotionAugmentDefinition
   AugmentId: emotion.compassion.t3.03

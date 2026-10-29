@@ -4,12 +4,11 @@ using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
 /// <summary>
-/// 한 부위가 보유한 ActionIndex 하나를 표시하는 런타임 버튼이다.
-/// 빈 슬롯도 선택 가능하며, 우클릭은 이미 등록된 행동만 제거한다.
+/// Render-only view for one action index on a body part.
+/// The presenter owns planning input and converts the runtime slot into text.
+/// The existing Bind signature and serialized scene references are preserved.
 /// </summary>
-public sealed class ActionSlotButtonUI :
-    MonoBehaviour,
-    IPointerClickHandler
+public sealed class ActionSlotButtonUI : MonoBehaviour, IPointerClickHandler
 {
     [SerializeField] private Button button;
     [SerializeField] private TMP_Text label;
@@ -25,11 +24,7 @@ public sealed class ActionSlotButtonUI :
     [SerializeField]
     private Color emptyColor = new(0.13f, 0.13f, 0.16f, 0.92f);
 
-    private BattleUIManager uiManager;
-    private Character owner;
-    private BodyPart ownerPart;
-    private ActionSlot slot;
-    private int actionIndex;
+    private readonly ActionSlotButtonPresenter presenter = new();
 
     private void Awake()
     {
@@ -47,6 +42,7 @@ public sealed class ActionSlotButtonUI :
         EnsureReferences();
     }
 
+    // Compatibility entry point used by BattleConfiguredSlotBoardUI and other callers.
     public void Bind(
         BattleUIManager manager,
         Character slotOwner,
@@ -56,24 +52,23 @@ public sealed class ActionSlotButtonUI :
         bool selected)
     {
         EnsureReferences();
+        presenter.Bind(manager, slotOwner, part, index, boundSlot);
+        Render(presenter.CreatePresentation(selected));
+    }
 
-        uiManager = manager;
-        owner = slotOwner;
-        ownerPart = part;
-        actionIndex = Mathf.Max(0, index);
-        slot = boundSlot;
-
+    private void Render(ActionSlotButtonPresentation state)
+    {
         if (label != null)
         {
             label.richText = true;
-            label.text = BuildLabel(selected);
+            label.text = state.Label;
         }
 
         if (background != null)
         {
-            background.color = selected
+            background.color = state.IsSelected
                 ? selectedColor
-                : slot != null
+                : state.HasAction
                     ? filledColor
                     : emptyColor;
         }
@@ -81,81 +76,28 @@ public sealed class ActionSlotButtonUI :
         if (button == null)
             return;
 
+        // Preserve the previous Bind behavior for runtime-generated buttons.
         button.onClick.RemoveAllListeners();
-        button.interactable =
-            uiManager != null &&
-            owner != null &&
-            ownerPart != null;
+        button.interactable = state.CanSelect;
 
         if (button.interactable)
-        {
-            button.onClick.AddListener(
-                SelectThisSlot);
-        }
-    }
-
-    private string BuildLabel(bool selected)
-    {
-        string marker = selected
-            ? "<color=#93C5FD>▶</color> "
-            : string.Empty;
-
-        string indexText =
-            $"{marker}<b>행동 #{actionIndex + 1}</b>";
-
-        if (slot == null)
-        {
-            return
-                $"{indexText}\n" +
-                "<color=#A1A1AA>빈 슬롯</color>";
-        }
-
-        ActionSlotViewModel model =
-            ActionSlotViewModel.FromSlot(slot);
-
-        string skillText =
-            model?.SkillText ?? "<없음>";
-
-        string targetText =
-            model?.TargetText ?? "대상 없음";
-
-        return
-            $"{indexText}\n" +
-            $"{skillText}\n" +
-            $"<size=80%>{targetText}</size>";
+            button.onClick.AddListener(SelectThisSlot);
     }
 
     private void SelectThisSlot()
     {
-        if (BattlePlanningCameraController.IsCameraMovementActive)
-            return;
-
-        uiManager?.OpenOwnerActionSlot(
-            owner,
-            ownerPart,
-            actionIndex);
+        presenter.OnPrimaryClick();
     }
 
-    public void OnPointerClick(
-        PointerEventData eventData)
+    public void OnPointerClick(PointerEventData eventData)
     {
-        if (BattlePlanningCameraController.IsCameraMovementActive)
-            return;
-
         if (eventData == null ||
-            eventData.button !=
-            PointerEventData.InputButton.Right)
+            eventData.button != PointerEventData.InputButton.Right)
         {
             return;
         }
 
-        if (slot == null)
-            return;
-
-        uiManager?.RemoveActionSlotAndContinueEditing(
-            owner,
-            ownerPart,
-            actionIndex);
+        presenter.OnSecondaryClick();
     }
 
     private void EnsureReferences()
