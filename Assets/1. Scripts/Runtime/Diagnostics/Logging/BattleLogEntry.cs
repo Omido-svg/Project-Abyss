@@ -127,7 +127,7 @@ public class BattleLogEntry
             Action.Speed;
 
         PurePower =
-            Action.RolledPower;
+            Action.GetDamagePower();
 
         ClashPower =
             Action.ClashPower;

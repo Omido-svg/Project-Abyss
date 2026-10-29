@@ -512,7 +512,7 @@ public static class Utils
 
         builder.AppendLine(
             $"  PurePower  : " +
-            $"{(action.HasRolled ? action.RolledPower.ToString() : "-")}");
+            $"{(action.HasRolled ? action.GetDamagePower().ToString() : "-")}");
 
         builder.AppendLine(
             $"  SpeedMod   : {action.SpeedModifier}");

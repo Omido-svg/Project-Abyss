@@ -192,14 +192,22 @@ public class DamageManager
 
         CaptureBeforeSnapshot(context);
 
-        // P0 D-09: 한 RED/Attack 타격은 흐트러짐 -> 창 개방 -> HP 내성 순서다.
-        // 따라서 창을 여는 바로 그 타격의 HP부터 Vulnerability override를 받는다.
-        if (context.Action?.Skill?.IsRed == true)
-        {
-            StaggerGaugeMechanic stagger =
-                context.Target?.GetMechanic<StaggerGaugeMechanic>();
+        // 1029 DMG-02: HP 내성은 '타격 시작 당시' 창 상태만 사용한다.
+        CaptureImpactSnapshot(context);
 
-            stagger?.ApplyBeforeHealthDamage(
+        // 1029 DMG-02: 흐트러짐 게이지 소모와 창 개방을 분리한다.
+        // 게이지는 HP 계산 전에 소모하지만, 창은 이 타격의 HP/부위/처치 결과가
+        // 확정된 뒤에 연다. 따라서 창을 여는 그 타격은 기존 HP 내성을 받는다.
+        StaggerGaugeMechanic stagger =
+            context.Action?.Skill?.IsRed == true
+                ? context.Target?.GetMechanic<StaggerGaugeMechanic>()
+                : null;
+
+        if (stagger != null)
+        {
+            stagger.BeginStaggerResolution();
+
+            stagger.ApplyBeforeHealthDamage(
                 context.Action,
                 Mathf.Max(0, request.RawPower),
                 request.PhysicalType);
@@ -219,6 +227,15 @@ public class DamageManager
         finally
         {
             target?.EndDamageResolution(context);
+        }
+
+        try
+        {
+            ApplyStaggerResolution(context, stagger);
+        }
+        finally
+        {
+            stagger?.DiscardPendingVulnerabilityWindow();
         }
 
         CaptureAfterSnapshot(context);
@@ -348,6 +365,46 @@ public class DamageManager
             context.Action);
 
         return true;
+    }
+
+    /// <summary>
+    /// 1029 DMG-02: 타격 시작 시점의 취약 창 상태를 고정한다.
+    /// 이 타격의 흐트러짐 처리로 창이 열려도 HP 내성은 이 값을 쓴다.
+    /// </summary>
+    private static void CaptureImpactSnapshot(
+        DamageContext context)
+    {
+        StaggerGaugeMechanic stagger =
+            context.Target?.GetMechanic<StaggerGaugeMechanic>();
+
+        context.HasImpactVulnerabilitySnapshot = true;
+        context.WasVulnerabilityWindowOpenAtImpactStart =
+            stagger?.IsVulnerabilityWindowOpen == true;
+    }
+
+    /// <summary>
+    /// 1029 DMG-02: 게이지 소모 결과를 DTO에 기록하고,
+    /// HP/부위/처치 결과 확정 후에 취약 창을 연다.
+    /// </summary>
+    private static void ApplyStaggerResolution(
+        DamageContext context,
+        StaggerGaugeMechanic stagger)
+    {
+        if (stagger == null)
+            return;
+
+        if (stagger.TryGetPendingStaggerResolution(
+                out int gaugeBefore,
+                out int gaugeAfter,
+                out int applied))
+        {
+            context.StaggerGaugeBefore = gaugeBefore;
+            context.StaggerGaugeAfter = gaugeAfter;
+            context.StaggerDamageApplied = applied;
+        }
+
+        context.OpenedVulnerabilityWindow =
+            stagger.CommitVulnerabilityWindowAfterHit();
     }
 
     private void CaptureBeforeSnapshot(

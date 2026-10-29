@@ -99,6 +99,23 @@ public class DamageContext
     public bool WasKilled;
     public bool WasDirectHPDamage;
 
+    //--------------------------------
+    // 1029 DMG-02: 취약 창 타격 스냅샷
+    //--------------------------------
+
+    // HP 내성은 '타격 시작 당시' 창 상태만 사용한다.
+    // 같은 타격의 흐트러짐 처리로 창이 열려도 그 타격의 내성을 소급 변경하지 않는다.
+    public bool HasImpactVulnerabilitySnapshot;
+    public bool WasVulnerabilityWindowOpenAtImpactStart;
+
+    // 이 타격이 HP/부위/처치 결과 확정 후에 창을 새로 열었는지.
+    public bool OpenedVulnerabilityWindow;
+
+    // 이 타격으로 실제 소모된 흐트러짐 게이지.
+    public int StaggerDamageApplied;
+    public int StaggerGaugeBefore;
+    public int StaggerGaugeAfter;
+
     public bool WeakenedPart => WasWeakened;
     public bool BrokePart => WasBroken;
 

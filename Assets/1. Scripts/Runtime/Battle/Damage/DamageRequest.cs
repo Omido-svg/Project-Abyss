@@ -53,8 +53,8 @@ public struct DamageRequest
             TargetCharacter = action?.Target,
             TargetPart = action?.TargetPart,
 
-            Damage = action?.RolledPower ?? 0,
-            RawPower = action?.RolledPower ?? 0,
+            Damage = action?.GetDamagePower() ?? 0,
+            RawPower = action?.GetDamagePower() ?? 0,
 
             PhysicalType = PhysicalDamageResolver.Resolve(action),
             ApplyPhysicalResistance = action != null,

@@ -196,6 +196,44 @@ public abstract class Character : MonoBehaviour
         }
     }
 
+    //------------------------------------------------
+    // 1029 DMG-06: 흐트러짐 최대치
+    //------------------------------------------------
+
+    /// <summary>
+    /// 현재 부위/대상 모델에서 유효한 흐트러짐 최대치를 계산한다.
+    /// 0은 '미확정(Unset)'이며 게이지를 생성하지 않는다는 뜻이다.
+    /// </summary>
+    public int ResolveMaxStaggerGauge()
+    {
+        return StaggerGaugeMaximumResolver.Resolve(
+            Data,
+            UsesBodyParts,
+            BodyParts);
+    }
+
+    /// <summary>
+    /// 1029 DMG-06: 런 중 부위 최대 HP가 변했을 때(성장/스테이지 이동/개체 교체)
+    /// 흐트러짐 최대치를 다시 계산한다.
+    /// 호출 시점 계약은 '명시적 갱신'이며, 현재 게이지는 값 그대로 새 최대치에 clamp한다.
+    /// </summary>
+    public bool RefreshMaxStaggerGauge()
+    {
+        StaggerGaugeMechanic gauge =
+            GetMechanic<StaggerGaugeMechanic>();
+
+        if (gauge == null)
+            return false;
+
+        int maximum = ResolveMaxStaggerGauge();
+
+        if (maximum <= 0)
+            return false;
+
+        gauge.RecalculateMaximum(maximum);
+        return true;
+    }
+
     //--------------------------------
     // Status
     //--------------------------------
@@ -424,11 +462,13 @@ public abstract class Character : MonoBehaviour
 
             if (Data?.EnableStaggerGauge == true)
             {
+                // 1029 DMG-06: 부위형은 '부위 1개의 최대 체력', 단일 HP형은 100.
+                // OverrideMaxStaggerGauge는 정본의 명시적 예외로만 사용한다.
                 int maximumStagger =
-                    Data.GetEffectiveMaxStaggerGauge(battleContext?.Rules);
+                    ResolveMaxStaggerGauge();
 
-                // 0915 C-41: Elite의 기본 최대치는 미정(Unset=0). 데이터가 확정되기 전에는
-                // 임의 100으로 게이지를 생성하지 않는다.
+                // 부위 데이터가 아직 확정되지 않은 경우(Unset=0)에는
+                // 임의 기본값으로 게이지를 만들지 않는다.
                 if (maximumStagger > 0)
                     AddMechanic(new StaggerGaugeMechanic(maximumStagger));
             }
@@ -1029,10 +1069,51 @@ public abstract class Character : MonoBehaviour
         if (!IsInitialized || IsDead)
             return;
 
-        statusController?.OnTurnEnd();
+        // 1029 DMG-03/04: 턴 종료 정산 트랜잭션.
+        // 도트 → 회복 순서를 강제하고, 정산 중 음수 HP와 사망 판정 보류를 허용한다.
+        using (BeginTurnEndSettlement())
+        {
+            statusController?.OnTurnEnd();
+        }
+
+        CommitTurnEndSettlement();
 
         // 0915 C-23: 방어도는 턴 종료에 지워지지 않는다.
         // 전투 종료 시 TurnManager.EndBattle에서만 초기화한다.
+    }
+
+    //--------------------------------
+    // 1029 DMG-04: 턴 종료 정산 범위
+    //--------------------------------
+
+    private int turnEndSettlementDepth;
+
+    public bool IsTurnEndSettlementActive =>
+        turnEndSettlementDepth > 0;
+
+    public TurnEndSettlementScope BeginTurnEndSettlement()
+    {
+        turnEndSettlementDepth++;
+        return new TurnEndSettlementScope(this);
+    }
+
+    internal void EndTurnEndSettlement()
+    {
+        if (turnEndSettlementDepth > 0)
+            turnEndSettlementDepth--;
+    }
+
+    /// <summary>
+    /// 정산 종료 시 최종 HP를 정규화하고 사망 판정을 한 번만 수행한다.
+    /// </summary>
+    public void CommitTurnEndSettlement()
+    {
+        if (RuntimeStatus != null &&
+            RuntimeStatus.currentHP < 0)
+        {
+            RuntimeStatus.currentHP = 0;
+        }
+
         CheckDead();
     }
 
@@ -1075,9 +1156,20 @@ public abstract class Character : MonoBehaviour
         if (RuntimeStatus == null)
             return;
 
+        int safeDamage =
+            Mathf.Max(0, damage);
+
+        // 1029 DMG-04: 턴 종료 정산 범위에서만 음수 HP를 허용한다.
+        // 정산 종료 시 CommitTurnEndSettlement가 0으로 정규화한다.
+        if (IsTurnEndSettlementActive)
+        {
+            RuntimeStatus.currentHP -= safeDamage;
+            return;
+        }
+
         RuntimeStatus.currentHP =
             Mathf.Max(
-                RuntimeStatus.currentHP - damage,
+                RuntimeStatus.currentHP - safeDamage,
                 0);
     }
 
@@ -1525,6 +1617,11 @@ public abstract class Character : MonoBehaviour
         if (lifeController == null)
             return;
 
+        // 1029 DMG-04: 턴 종료 정산 중에는 사망 판정과 부활 소모를 보류한다.
+        // 최종 판정은 CommitTurnEndSettlement에서 한 번만 수행한다.
+        if (IsTurnEndSettlementActive)
+            return;
+
         lifeController.CheckDead(
             killer,
             sourceAction);
@@ -1844,13 +1941,50 @@ public abstract class Character : MonoBehaviour
         BattleAction action,
         int roll)
     {
+        return
+            roll +
+            ResolveRollModification(
+                action,
+                roll).TotalModifier;
+    }
+
+    /// <summary>
+    /// 1029 정본 DMG-01: 피해 기준 위력.
+    /// 굴림 자체를 바꾸는 보정만 반영하며, 합 판정 전용 보정은 제외한다.
+    /// </summary>
+    public int ModifyDamageRoll(
+        BattleAction action,
+        int roll)
+    {
+        return
+            roll +
+            ResolveRollModification(
+                action,
+                roll).RollPowerModifier;
+    }
+
+    /// <summary>
+    /// 굴림 보정을 굴림 자체(피해 기준)와 합 판정 전용으로 분류해 반환한다.
+    /// 기존 ModifyRoll의 최종값은 두 축의 합과 동일하다.
+    /// </summary>
+    public RollModification ResolveRollModification(
+        BattleAction action,
+        int roll)
+    {
         int rulebreakerBonus = action?.RulebreakerFlatPowerBonus ?? 0;
 
         // 0915 O-05에서 요구한 공통 훅. 현재 0916 올라프 확정 카드에는
         // modifier 면역을 사용하는 카드가 없으므로 SO에서 명시적으로 켠 경우에만 동작한다.
         if (action?.Skill?.IgnoresOwnerRollModifiers(action) == true)
         {
-            return Mathf.Max(1, roll + rulebreakerBonus);
+            int forcedPower =
+                Mathf.Max(
+                    1,
+                    roll + rulebreakerBonus);
+
+            return new RollModification(
+                forcedPower - roll,
+                0);
         }
 
         int value = roll + rulebreakerBonus;
@@ -1897,10 +2031,13 @@ public abstract class Character : MonoBehaviour
 
         // 0915 C-19: 직전 턴을 짓눌림으로 끝낸 보상은 다음 턴의
         // 모든 판정값 +1이다. 현재 Momentum band와 섞지 않는다.
+        // 정본 DMG-01: 이 보상은 합 판정 전용이며 피해 위력에는 들어가지 않는다.
+        int judgmentOnlyModifier = 0;
+
         if (battleContext?.Services?.MomentumManager?
                 .HasLastStandJudgmentBonus(this) == true)
         {
-            value += 1;
+            judgmentOnlyModifier = 1;
         }
 
         // 공용 상태이상은 "범위 전체 이동"과 "최댓값 절단"을 별도 누산한다.
@@ -1924,7 +2061,11 @@ public abstract class Character : MonoBehaviour
             value = Mathf.Min(value, shiftedMaximum);
         }
 
-        return value;
+        // 힘/쇠약/공포/부위파괴/광기 등은 모두 굴림 자체를 바꾸는 보정이다.
+        // 합 전용 보상은 위에서 분리했으므로 여기서는 피해 축만 남는다.
+        return new RollModification(
+            value - roll,
+            judgmentOnlyModifier);
     }
 
     private static void ApplyRollStatusList(

@@ -672,6 +672,11 @@ public class ClashManager
         bool hasForcedJudgment = false;
         ClashJudgmentResult forcedJudgment = default;
 
+        // 1029 DMG-07: 고정 동률 감지용. 게임 규칙이 아니라 콘텐츠 오류 감지 상태다.
+        int repeatedTiePairCount = 0;
+        int previousTieFirstPower = int.MinValue;
+        int previousTieSecondPower = int.MinValue;
+
         while (true)
         {
             clashPowerPipeline.RollForClash(first, second, exchangeIndex);
@@ -735,36 +740,28 @@ public class ClashManager
             first.InvalidateCachedRoll(exchangeIndex);
             second.InvalidateCachedRoll(exchangeIndex);
 
-            if (rerolls >= clashRules.MaxTieRerolls)
+            // 1029 DMG-07: 동률은 승부가 날 때까지 재굴림한다.
+            // 값이 절대 변하지 않는 고정 굴림은 게임 규칙(무승부)이 아니라
+            // '콘텐츠 오류'로 판정해 무한 루프 없이 중단한다.
+            string contentErrorReason =
+                ResolveTieContentErrorReason(
+                    first,
+                    second,
+                    exchangeIndex,
+                    rerolls,
+                    ref repeatedTiePairCount,
+                    ref previousTieFirstPower,
+                    ref previousTieSecondPower);
+
+            if (!string.IsNullOrEmpty(contentErrorReason))
             {
-                first.Skill?.NotifyClashDraw(first, second);
-                second.Skill?.NotifyClashDraw(second, first);
-
-                ClashExchangeResult tie = new ClashExchangeResult
-                {
-                    ExchangeIndex = exchangeIndex,
-                    FirstAction = first,
-                    SecondAction = second,
-                    IsTie = true,
-                    FirstClashPower = first.ClashPower,
-                    SecondClashPower = second.ClashPower,
-                    FirstRollResult = first.LastRollResult?.Clone(),
-                    SecondRollResult = second.LastRollResult?.Clone(),
-                    FirstRollType = first.CurrentRollType,
-                    SecondRollType = second.CurrentRollType,
-                    TieRerollCount = rerolls,
-                    MomentumBefore = momentumBefore,
-                    MomentumAfter = momentumBefore
-                };
-
-                first.Skill?.NotifyRollEnd(
-                    first, second, exchangeIndex, false, tie,
-                    isClash: true, isOneSided: false);
-                second.Skill?.NotifyRollEnd(
-                    second, first, exchangeIndex, false, tie,
-                    isClash: true, isOneSided: false);
-
-                return tie;
+                return BuildTieContentErrorExchange(
+                    first,
+                    second,
+                    exchangeIndex,
+                    rerolls,
+                    momentumBefore,
+                    contentErrorReason);
             }
         }
 
@@ -965,6 +962,112 @@ public class ClashManager
             isClash: true, isOneSided: false);
 
         return exchange;
+    }
+
+    //--------------------------------------------------------------------
+    // 1029 DMG-07: 동률 콘텐츠 오류 처리
+    //--------------------------------------------------------------------
+
+    private const string TieContentErrorTag =
+        "[1029 DMG-07][CONTENT_ERROR]";
+
+    /// <summary>
+    /// 동률이 정본 계약(승부가 날 때까지 재굴림)으로 해소될 수 있는지 판정한다.
+    /// null이면 계속 재굴림, 문자열이면 콘텐츠 오류 사유다.
+    /// </summary>
+    private string ResolveTieContentErrorReason(
+        BattleAction first,
+        BattleAction second,
+        int exchangeIndex,
+        int rerolls,
+        ref int repeatedTiePairCount,
+        ref int previousTieFirstPower,
+        ref int previousTieSecondPower)
+    {
+        // (1) 양쪽 굴림이 값 고정 + 현재 동률 → 재굴림으로 승부가 날 수 없다.
+        if (ClashTiePolicy.IsGuaranteedTie(
+                first, second, exchangeIndex))
+        {
+            return
+                "고정 굴림이 항상 동률입니다 " +
+                $"(first={first.ClashPower}, second={second.ClashPower})";
+        }
+
+        // (2) 고정 굴림이 아니어도 같은 동률 쌍이 반복되면 데이터/디버그 고정으로 본다.
+        int firstPower = first.ClashPower;
+        int secondPower = second.ClashPower;
+
+        if (firstPower == previousTieFirstPower &&
+            secondPower == previousTieSecondPower)
+        {
+            repeatedTiePairCount++;
+        }
+        else
+        {
+            repeatedTiePairCount = 1;
+            previousTieFirstPower = firstPower;
+            previousTieSecondPower = secondPower;
+        }
+
+        if (repeatedTiePairCount >= ClashTiePolicy.RepeatedTiePairLimit)
+        {
+            return
+                $"동일 동률 값이 {repeatedTiePairCount}회 반복됩니다 " +
+                $"(first={firstPower}, second={secondPower})";
+        }
+
+        // (3) 기술적 안전 상한. 정본의 '무승부'가 아니라 콘텐츠 오류다.
+        if (rerolls >= clashRules.MaxTieRerolls)
+        {
+            return
+                $"동률 재굴림 안전 상한 {clashRules.MaxTieRerolls}회에 " +
+                "도달했습니다. 굴림 범위/보정 데이터를 확인하세요.";
+        }
+
+        return null;
+    }
+
+    private ClashExchangeResult BuildTieContentErrorExchange(
+        BattleAction first,
+        BattleAction second,
+        int exchangeIndex,
+        int rerolls,
+        int momentumBefore,
+        string reason)
+    {
+        ClashExchangeResult error = new ClashExchangeResult
+        {
+            ExchangeIndex = exchangeIndex,
+            FirstAction = first,
+            SecondAction = second,
+            IsContentError = true,
+            ContentErrorReason = reason,
+            WasCancelled = true,
+            FirstClashPower = first.ClashPower,
+            SecondClashPower = second.ClashPower,
+            FirstRollResult = first.LastRollResult?.Clone(),
+            SecondRollResult = second.LastRollResult?.Clone(),
+            FirstRollType = first.CurrentRollType,
+            SecondRollType = second.CurrentRollType,
+            TieRerollCount = rerolls,
+            MomentumBefore = momentumBefore,
+            MomentumAfter = momentumBefore
+        };
+
+        Debug.LogError(
+            $"{TieContentErrorTag} {reason} / " +
+            $"first={GetCharacterName(first?.Owner)}, " +
+            $"second={GetCharacterName(second?.Owner)}, " +
+            $"exchange={exchangeIndex}, rerolls={rerolls}");
+
+        first.Skill?.NotifyRollEnd(
+            first, second, exchangeIndex, false, error,
+            isClash: true, isOneSided: false);
+        second.Skill?.NotifyRollEnd(
+            second, first, exchangeIndex, false, error,
+            isClash: true, isOneSided: false);
+
+        return error;
     }
 
     private static bool TryCancelPairedExchangeByRule(
@@ -1267,7 +1370,7 @@ public class ClashManager
             isOneSided: true);
 
         // Gameplay v5: 일방 Stagger 굴림도 실제 흐트러짐 공격으로 성립한다.
-        // HP DamageContext/잔효과/기세 이동만 만들지 않고 교환 이벤트는 반드시 발행한다.
+        // HP DamageContext는 만들지 않지만 교환 이벤트와 기세 이동은 반드시 발행한다.
         if (!damagePower.HasDamage &&
             action.Skill?.IsBlue == true)
         {
@@ -1276,6 +1379,12 @@ public class ClashManager
                 action.Owner, blueTarget, action);
             int blueTakenGain = prestigeChargeService.ChargeOneSidedParticipant(
                 blueTarget, action.Owner, action);
+
+            // 1029 DMG-05: 색과 무관하게 성공한 일방타격은 기세를 20 움직인다.
+            // BLUE는 HP 피해만 만들지 않으며, 기세 이동은 RED 일방타격과 동일하다.
+            MomentumShiftResult blueMomentum =
+                momentumManager.ApplyHit(
+                    action.Owner);
 
             ClashExchangeResult staggerExchange = new ClashExchangeResult
             {
@@ -1289,8 +1398,11 @@ public class ClashManager
                 FirstRollType = action.CurrentRollType,
                 WinnerAction = action,
                 LoserAction = exhaustedOpponent,
-                MomentumBefore = momentumBefore,
-                MomentumAfter = momentumBefore,
+                MomentumBefore = blueMomentum.Before,
+                MomentumAfter = blueMomentum.After,
+                MomentumShift = blueMomentum.SignedShift,
+                HitMomentumShift = blueMomentum.SignedShift,
+                DuelMomentumShift = 0,
                 FirstPrestigeGain = blueDealtGain,
                 SecondPrestigeGain = blueTakenGain
             };

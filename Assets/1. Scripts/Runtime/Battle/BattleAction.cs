@@ -81,6 +81,13 @@ public class BattleAction
             : Skill.ActionType;
 
     public int RolledPower;
+
+    /// <summary>
+    /// 1029 정본 DMG-01: 굴림 자체(힘/쇠약/공포 등) 보정.
+    /// RolledPower에는 섞지 않고 피해 기준 위력에서만 더한다.
+    /// </summary>
+    public int DamagePowerModifier;
+
     public int ClashPower;
     public int SpeedModifier;
     public int MomentumModifier;
@@ -108,6 +115,7 @@ public class BattleAction
         {
             finalPower = value;
             RolledPower = value;
+            DamagePowerModifier = 0;
             ClashPower =
                 value +
                 JudgmentModifier +
@@ -378,13 +386,24 @@ public class BattleAction
 
         SetPurePower(LastRollResult.FinalPower);
 
-        int judgedPower = Owner != null
-            ? Owner.ModifyRoll(this, RolledPower)
-            : RolledPower;
+        RollModification modification =
+            Owner != null
+                ? Owner.ResolveRollModification(
+                    this,
+                    RolledPower)
+                : RollModification.None;
 
+        // 정본: 피해 기준 위력은 굴림 RNG + 굴림 자체 보정.
+        DamagePowerModifier =
+            modification.RollPowerModifier;
+
+        // 합 판정은 굴림 자체 보정 + 합 전용 보정(속도는 ApplyClashModifiers에서 추가).
         JudgmentModifier =
-            (judgedPower - RolledPower) +
+            modification.TotalModifier +
             LastRollResult.JudgmentModifier;
+
+        LastRollResult.DamagePowerModifier =
+            DamagePowerModifier;
 
         LastRollResult.JudgmentModifier = JudgmentModifier;
         LastRollResult.RecalculateClashPower();
@@ -439,12 +458,21 @@ public class BattleAction
         ApplyClashModifiers(0, 0);
     }
 
-    public int GetDamagePower() => RolledPower;
+    /// <summary>
+    /// 1029 정본 DMG-01: 실제 피해/흐트러짐 계산의 기준 위력.
+    /// 속도차·합 전용 보정은 포함하지 않는다.
+    /// </summary>
+    public int GetDamagePower() =>
+        Mathf.Max(
+            0,
+            RolledPower +
+            DamagePowerModifier);
 
     private void SetPurePower(int power)
     {
         RolledPower = power;
         finalPower = power;
+        DamagePowerModifier = 0;
         ClashPower = power;
     }
 
@@ -452,6 +480,7 @@ public class BattleAction
     {
         RolledPower = 0;
         finalPower = 0;
+        DamagePowerModifier = 0;
         ClashPower = 0;
         SpeedModifier = 0;
         MomentumModifier = 0;

@@ -49,7 +49,7 @@ public class CharacterData : ScriptableObject
 
     [Header("Stagger Gauge")]
     public bool EnableStaggerGauge = true;
-    [Tooltip("끄면 CombatantTier 기본값을 사용합니다. Player 350 / Normal 100 / Boss 400. Elite는 0915 C-41에 따라 Unset(0)이므로 데이터 Override가 필요합니다.")]
+    [Tooltip("1029 DMG-06: 정본의 명시적 예외로만 사용합니다. 켜면 MaxStaggerGauge 값을 그대로 사용합니다. 끄면 부위형은 '부위 1개의 최대 HP', 단일 HP형은 100으로 런타임에 계산합니다.")]
     public bool OverrideMaxStaggerGauge;
     [Min(1)] public int MaxStaggerGauge = 100;
     [HideInInspector, Min(0f)] public float StaggerDamageRatio = 1f;
@@ -61,15 +61,9 @@ public class CharacterData : ScriptableObject
     [Header("Initial Custom Resources")]
     public List<CombatResourceDefinition> InitialResources = new();
 
-    public int GetEffectiveMaxStaggerGauge(BattleRuleSettings rules = null)
-    {
-        if (OverrideMaxStaggerGauge)
-            return Mathf.Max(1, MaxStaggerGauge);
-
-        StaggerRuleSettings stagger = rules?.Stagger ?? new StaggerRuleSettings();
-        stagger.Normalize();
-        return stagger.GetTierMaximum(CombatantTier);
-    }
+    // 1029 DMG-06: 등급별 기본 최대치(GetEffectiveMaxStaggerGauge)는 삭제했다.
+    // 런타임 정본은 Character.ResolveMaxStaggerGauge → StaggerGaugeMaximumResolver 하나뿐이다.
+    // StaggerRuleSettings의 등급별 필드는 데이터/검증용으로만 남고 게이지 생성에 쓰이지 않는다.
 
 #if UNITY_EDITOR
     private void OnValidate()

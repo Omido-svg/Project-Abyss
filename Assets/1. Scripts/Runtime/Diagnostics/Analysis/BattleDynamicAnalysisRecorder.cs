@@ -886,7 +886,7 @@ public sealed class BattleDynamicAnalysisRecorder : MonoBehaviour
             actionType = slot.Skill?.ActionType.ToString() ?? "NONE",
             phase = slot.Phase.ToString(),
             speed = slot.Speed,
-            purePower = resolvedAction?.RolledPower ?? 0,
+            purePower = resolvedAction?.GetDamagePower() ?? 0,
             clashPower = resolvedAction?.ClashPower ?? 0,
             speedModifier = resolvedAction?.SpeedModifier ?? 0,
             momentumModifier = resolvedAction?.MomentumModifier ?? 0,

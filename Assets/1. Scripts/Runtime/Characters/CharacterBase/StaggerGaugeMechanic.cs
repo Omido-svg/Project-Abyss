@@ -22,6 +22,10 @@ public sealed class StaggerGaugeMechanic : ReactiveCombatMechanic,
     private int pendingAttackAfter = -1;
     private int pendingAttackApplied;
 
+    // 1029 DMG-02: 게이지가 0이 되어도 이 타격의 HP/부위/처치 결과가 확정될 때까지
+    // 창 개방을 보류한다. 창을 여는 타격은 기존 HP 내성을 받아야 한다.
+    private bool pendingVulnerabilityOpen;
+
     private bool IsSuppressed =>
         owner?.BattleContext?.Services?.EmotionRulebreakerService?
             .IsStaggerGaugeSuppressed(owner) == true;
@@ -104,8 +108,55 @@ public sealed class StaggerGaugeMechanic : ReactiveCombatMechanic,
         pendingAttackAfter = currentGauge;
         pendingAttackApplied = applied;
 
+        // 1029 DMG-02: 창 개방은 CommitVulnerabilityWindowAfterHit()에서 확정한다.
         if (currentGauge <= 0)
-            OpenVulnerabilityWindow();
+            pendingVulnerabilityOpen = true;
+    }
+
+    /// <summary>
+    /// 1029 DMG-02: 한 타격의 흐트러짐 정산 시작. 이전 타격의 잔여 상태를 버린다.
+    /// </summary>
+    public void BeginStaggerResolution()
+    {
+        ClearPendingAttackSnapshot();
+    }
+
+    public bool TryGetPendingStaggerResolution(
+        out int gaugeBefore,
+        out int gaugeAfter,
+        out int applied)
+    {
+        gaugeBefore = pendingAttackBefore;
+        gaugeAfter = pendingAttackAfter;
+        applied = pendingAttackApplied;
+
+        return pendingAttackApplied > 0;
+    }
+
+    /// <summary>
+    /// 1029 DMG-02: 이 타격의 HP/부위/처치 결과가 확정된 뒤 호출한다.
+    /// 게이지가 0이 되었다면 이제 취약 창을 연다. 실제로 열었으면 true.
+    /// </summary>
+    public bool CommitVulnerabilityWindowAfterHit()
+    {
+        if (!pendingVulnerabilityOpen)
+            return false;
+
+        pendingVulnerabilityOpen = false;
+
+        if (vulnerabilityWindowOpen)
+            return false;
+
+        OpenVulnerabilityWindow();
+        return true;
+    }
+
+    /// <summary>
+    /// 1029 DMG-02: 피해 적용이 중단된 경우 보류된 창 개방을 폐기한다.
+    /// </summary>
+    public void DiscardPendingVulnerabilityWindow()
+    {
+        pendingVulnerabilityOpen = false;
     }
 
     public void ApplyRequiredExchangeReaction(
@@ -218,6 +269,14 @@ public sealed class StaggerGaugeMechanic : ReactiveCombatMechanic,
                 currentGauge + modified,
                 0,
                 maxGauge);
+    }
+
+    public void RecalculateMaximum(int newMaximum)
+    {
+        // 1029 DMG-06: 부위 최대 HP 변경 등으로 최대치를 다시 계산할 때 사용한다.
+        // 현재 게이지는 비율이 아니라 값 그대로 유지하고 새 최대치로만 clamp한다.
+        maxGauge = Mathf.Max(1, newMaximum);
+        currentGauge = Mathf.Clamp(currentGauge, 0, maxGauge);
     }
 
     public void AdjustMaximum(
@@ -388,6 +447,7 @@ public sealed class StaggerGaugeMechanic : ReactiveCombatMechanic,
         pendingAttackBefore = -1;
         pendingAttackAfter = -1;
         pendingAttackApplied = 0;
+        pendingVulnerabilityOpen = false;
     }
 
     private void OpenVulnerabilityWindow()

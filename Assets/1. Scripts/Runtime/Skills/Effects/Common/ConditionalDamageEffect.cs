@@ -49,10 +49,11 @@ public class ConditionalDamageEffect : SkillEffectDefinition
 
         if (useRolledPower)
         {
+            if (!context.Action.HasRolled)
+                context.Action.RollPower();
+
             baseValue +=
-                context.Action.HasRolled
-                    ? context.Action.RolledPower
-                    : context.Action.RollPower();
+                context.Action.GetDamagePower();
         }
 
         int damage = Mathf.Max(

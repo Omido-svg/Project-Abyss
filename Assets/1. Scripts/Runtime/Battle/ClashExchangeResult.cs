@@ -12,6 +12,13 @@ public sealed class ClashExchangeResult
     public bool WasCancelled;
     public bool WasDefenseResolution;
     public int TieRerollCount;
+
+    /// <summary>
+    /// 1029 DMG-07: 동률이 '승부가 날 때까지' 해소되지 않는 콘텐츠 오류로 판정된 교환.
+    /// 게임 규칙상의 무승부가 아니며, 승자/피해가 없는 중단 교환으로 처리한다.
+    /// </summary>
+    public bool IsContentError;
+    public string ContentErrorReason;
     public CombatRollType FirstRollType;
     public CombatRollType SecondRollType;
 

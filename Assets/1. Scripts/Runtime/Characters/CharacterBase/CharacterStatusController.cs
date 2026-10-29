@@ -463,11 +463,16 @@ public class CharacterStatusController
 
     public void OnTurnEnd()
     {
-        // [0922_PHASE3_TURN_END_AGGREGATE]
-        // 살아 있는 Numeric N을 먼저 합산해 효과를 한 번 적용하고,
-        // 그 뒤 각 Entry의 Duration을 독립 감소시킨다.
-        ApplyCanonicalTurnEndAggregates();
+        // 1029 DMG-03: 턴 종료 정산 순서는 '도트 전부 → 회복 전부 → 사망 판정'이다.
+        // 지속시간은 효과를 적용한 뒤 감소하므로, 회복 집계값은 도트 발동 전에
+        // 고정해 두어야 마지막 턴의 재생도 이번 정산에 포함된다.
+        int regeneration =
+            GetActiveNumericTotal<RegenerationStatus>();
 
+        // Heat/Stagnation의 위세 보정 시점은 기존 계약을 유지한다.
+        ApplyTurnEndPrestigeDelta();
+
+        // Stage A: 도트 전부. 정산 범위 안에서는 음수 HP가 허용되고 사망은 보류된다.
         TickCharacterStatuses(
             StatusEffectTickTiming.TurnEnd);
 
@@ -476,30 +481,33 @@ public class CharacterStatusController
             TickPartStatuses(
                 StatusEffectTickTiming.TurnEnd);
         }
+
+        // Stage B: 회복 전부.
+        ApplyTurnEndRegeneration(
+            regeneration);
     }
 
-    private void ApplyCanonicalTurnEndAggregates()
+    private void ApplyTurnEndPrestigeDelta()
     {
         if (owner == null || owner.IsDead)
             return;
 
-        int heat =
-            GetActiveNumericTotal<HeatStatus>();
-
-        int stagnation =
-            GetActiveNumericTotal<StagnationStatus>();
-
         int prestigeDelta =
-            heat - stagnation;
+            GetActiveNumericTotal<HeatStatus>() -
+            GetActiveNumericTotal<StagnationStatus>();
 
         if (prestigeDelta != 0)
         {
             owner.AdjustPrestige(
                 prestigeDelta);
         }
+    }
 
-        int regeneration =
-            GetActiveNumericTotal<RegenerationStatus>();
+    private void ApplyTurnEndRegeneration(
+        int regeneration)
+    {
+        if (owner == null || owner.IsDead)
+            return;
 
         if (regeneration <= 0)
             return;

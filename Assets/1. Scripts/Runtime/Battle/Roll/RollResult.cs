@@ -16,6 +16,12 @@ public class RollResult
     public int ExternalModifier;
     public int FinalPower;
 
+    /// <summary>
+    /// 1029 DMG-01: 이 굴림에 적용된 굴림 자체 보정(힘/쇠약/공포 등).
+    /// FinalPower에는 섞지 않고 피해 기준 위력에서만 더한다.
+    /// </summary>
+    public int DamagePowerModifier;
+
     public int SpeedModifier;
     public int MomentumModifier;
     public int PreparationModifier;
@@ -30,6 +36,17 @@ public class RollResult
     public string DebugSource;
 
     public bool Critical => IsCritical;
+
+    /// <summary>원본 RNG 기반 굴림값(호환).</summary>
+    public int BaseRollPower => FinalPower;
+
+    /// <summary>정본 피해 기준 위력 = 원본 굴림 + 굴림 자체 보정.</summary>
+    public int DamagePower =>
+        FinalPower +
+        DamagePowerModifier;
+
+    /// <summary>합 판정값(속도/합 전용 보정 포함).</summary>
+    public int ClashJudgmentPower => ClashPower;
 
     public int DiceMin;
     public int DiceMax;

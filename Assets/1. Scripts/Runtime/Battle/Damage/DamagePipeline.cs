@@ -55,7 +55,14 @@ public sealed class DamagePipeline
             EmotionRulebreakerService rulebreakers =
                 context.Target.BattleContext?.Services?.EmotionRulebreakerService;
 
-            if (stagger?.IsVulnerabilityWindowOpen == true)
+            // 1029 DMG-02: HP 내성은 '타격 시작 당시' 창 상태만 사용한다.
+            // 같은 타격의 흐트러짐 처리로 창이 열려도 이 타격의 내성은 바뀌지 않는다.
+            bool vulnerabilityOpen =
+                context.HasImpactVulnerabilitySnapshot
+                    ? context.WasVulnerabilityWindowOpenAtImpactStart
+                    : stagger?.IsVulnerabilityWindowOpen == true;
+
+            if (vulnerabilityOpen)
             {
                 context.PhysicalResistanceMultiplier =
                     context.Target.BattleContext?.Rules?.Stagger?

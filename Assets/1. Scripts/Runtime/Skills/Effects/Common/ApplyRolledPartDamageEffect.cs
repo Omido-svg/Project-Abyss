@@ -86,16 +86,9 @@ public class ApplyRolledPartDamageEffect : SkillEffectDefinition
             return 0;
 
         if (!action.HasRolled)
-        {
-            int power = action.RollPower();
-            action.RolledPower = power;
-            action.finalPower = power;
-            action.HasRolled = true;
-            return power;
-        }
+            action.RollPower();
 
-        return action.finalPower > 0
-            ? action.finalPower
-            : action.RolledPower;
+        // DMG-01: 굴림 자체 보정(힘/쇠약/공포 등)을 포함한 피해 기준 위력을 쓴다.
+        return action.GetDamagePower();
     }
 }
