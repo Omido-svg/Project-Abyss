@@ -15,8 +15,10 @@ using UnityEngine;
 public static class ClashTiePolicy
 {
     /// <summary>
-    /// 고정 굴림이 아닌데도 같은 동률 쌍이 반복되는 경우(디버그 강제 굴림 등)의
-    /// 안전 감지 횟수. 게임 규칙이 아니라 콘텐츠 오류 감지 임계값이다.
+    /// 같은 동률 쌍이 반복될 때 '진단 경고'를 남기는 횟수.
+    /// 1029 R7(리뷰 B): 확률적으로도 발생할 수 있으므로 이 값을 초과해도
+    /// 교환을 취소하지 않는다. 실제 중단은 64회 안전 상한이 담당한다.
+    /// 게임 규칙이 아니라 콘텐츠 오류 감지 보조 임계값이다.
     /// </summary>
     public const int RepeatedTiePairLimit = 4;
 

@@ -398,9 +398,17 @@ public class BattleAction
             modification.RollPowerModifier;
 
         // 합 판정은 굴림 자체 보정 + 합 전용 보정(속도는 ApplyClashModifiers에서 추가).
+        // 1029 R7: 재사용 캐시에는 캐릭터 보정이 이미 합산된 JudgmentModifier가 들어 있다.
+        // 원본(SkillJudgmentModifier)을 기준으로 다시 계산해야 보정이 두 번 더해지지 않는다.
+        int skillJudgmentModifier = reuse
+            ? LastRollResult.SkillJudgmentModifier
+            : LastRollResult.JudgmentModifier;
+
+        LastRollResult.SkillJudgmentModifier = skillJudgmentModifier;
+
         JudgmentModifier =
             modification.TotalModifier +
-            LastRollResult.JudgmentModifier;
+            skillJudgmentModifier;
 
         LastRollResult.DamagePowerModifier =
             DamagePowerModifier;

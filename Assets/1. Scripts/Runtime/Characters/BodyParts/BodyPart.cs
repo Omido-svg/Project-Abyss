@@ -312,6 +312,10 @@ public class BodyPart
             1f,
             oldMaxHP + increase);
 
+        // 1029 R7(리뷰 E): 런 중 부위 최대 HP가 변하면 흐트러짐 최대치도
+        // '부위 최대 HP' 계약에 맞춰 다시 계산한다. (감정 증강/견고한 육체 성장 경로)
+        Owner?.RefreshMaxStaggerGauge();
+
         PartHP = healByIncreaseAmount
             ? Mathf.Clamp(
                 PartHP + increase,

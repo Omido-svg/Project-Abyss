@@ -186,11 +186,13 @@ public sealed class StaggerGaugeMechanic : ReactiveCombatMechanic,
             return;
         }
 
+        // 1029 R7(리뷰 A): 상대에게 주는 흐트러짐 피해가 내성/플랫 보정으로 0이 되어도
+        // 아래 BLUE 자기 회복은 계속 진행해야 한다. 조기 반환은 '상대 피해'에만 적용한다.
         int staggerDamage = CalculateStaggerDamage(winner, target);
-        if (staggerDamage <= 0)
-            return;
 
-        if (target == owner && !vulnerabilityWindowOpen)
+        if (staggerDamage > 0 &&
+            target == owner &&
+            !vulnerabilityWindowOpen)
         {
             int before =
                 currentGauge;
@@ -219,6 +221,7 @@ public sealed class StaggerGaugeMechanic : ReactiveCombatMechanic,
         // C-10 / 0915 정본 BLUE:
         // 상대에게 주는 흐트러짐 피해는 상대 내성을 적용하지만, 자기 회복은
         // "굴림 값만큼"의 고정값이며 상대 내성/규칙 배율의 영향을 받지 않는다.
+        // 1029 R7(리뷰 A): 위 staggerDamage 계산과 독립적으로 실행한다.
         if (winner.Owner == owner &&
             winner.Skill.IsBlue)
         {

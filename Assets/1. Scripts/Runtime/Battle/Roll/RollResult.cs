@@ -10,6 +10,13 @@ public class RollResult
     public CombatRollType RollType = CombatRollType.Attack;
     public int JudgmentModifier;
 
+    /// <summary>
+    /// 1029 R7: 굴림 데이터 자체의 판정 보정(캐릭터 보정 합산 전 원본).
+    /// 재사용 캐시에 캐릭터 보정이 섞인 JudgmentModifier가 저장되므로,
+    /// 재사용 시 이 원본을 기준으로 다시 계산해 이중 가산을 막는다.
+    /// </summary>
+    public int SkillJudgmentModifier;
+
     public int BasePower;
     public int RawValue;
     public int ModifiedValue;

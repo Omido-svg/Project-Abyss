@@ -971,6 +971,10 @@ public class ClashManager
     private const string TieContentErrorTag =
         "[1029 DMG-07][CONTENT_ERROR]";
 
+    // 1029 R7(리뷰 B): 반복 동률은 '콘텐츠 오류'가 아니라 진단 경고다.
+    private const string TieRepeatedTag =
+        "[1029 DMG-07][REPEATED_TIE]";
+
     /// <summary>
     /// 동률이 정본 계약(승부가 날 때까지 재굴림)으로 해소될 수 있는지 판정한다.
     /// null이면 계속 재굴림, 문자열이면 콘텐츠 오류 사유다.
@@ -993,7 +997,10 @@ public class ClashManager
                 $"(first={first.ClashPower}, second={second.ClashPower})";
         }
 
-        // (2) 고정 굴림이 아니어도 같은 동률 쌍이 반복되면 데이터/디버그 고정으로 본다.
+        // (2) 1029 R7(리뷰 B): 고정 굴림이 아닌데 같은 동률 쌍이 반복되는 것은
+        // 좁은 굴림 범위에서 충분히 발생할 수 있는 '확률적 사건'이다.
+        // 정본은 '승부가 날 때까지 재굴림'이므로 여기서 교환을 취소하지 않는다.
+        // 데이터/디버그 고정 의심은 경고로만 남기고, 실제 중단은 (3) 안전 상한이 담당한다.
         int firstPower = first.ClashPower;
         int secondPower = second.ClashPower;
 
@@ -1009,11 +1016,12 @@ public class ClashManager
             previousTieSecondPower = secondPower;
         }
 
-        if (repeatedTiePairCount >= ClashTiePolicy.RepeatedTiePairLimit)
+        if (repeatedTiePairCount == ClashTiePolicy.RepeatedTiePairLimit)
         {
-            return
-                $"동일 동률 값이 {repeatedTiePairCount}회 반복됩니다 " +
-                $"(first={firstPower}, second={secondPower})";
+            Debug.LogWarning(
+                $"{TieRepeatedTag} 같은 동률 쌍이 {repeatedTiePairCount}회 " +
+                "반복되었습니다. 확률적 반복일 수 있으므로 교환을 취소하지 않고 " +
+                $"재굴림을 계속합니다. (first={firstPower}, second={secondPower})");
         }
 
         // (3) 기술적 안전 상한. 정본의 '무승부'가 아니라 콘텐츠 오류다.
