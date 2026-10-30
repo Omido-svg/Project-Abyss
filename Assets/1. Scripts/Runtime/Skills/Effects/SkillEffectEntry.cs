@@ -51,6 +51,14 @@ public sealed class SkillEffectEntry
         SkillEffectContext context,
         SkillEffectTiming currentTiming)
     {
+        return TryApply(context,currentTiming,null);
+    }
+
+    public SkillEffectResult TryApply(
+        SkillEffectContext context,
+        SkillEffectTiming currentTiming,
+        Func<SkillEffectContext,SkillEffectOverrides,bool> nativeApply)
+    {
         if (Definition == null)
             return null;
 
@@ -82,12 +90,18 @@ public sealed class SkillEffectEntry
             }
         }
 
-        if (!EvaluateEntryConditions(context))
+        // R3: Entry Target predicates must evaluate the same selected target
+        // that Definition.Apply will use. This performs selection ONCE.
+        // Owner-only conditions still read context.Owner (unchanged).
+        SkillEffectContext selectedContext =
+            context?.WithTarget(Definition.TargetSelector);
+
+        if (!EvaluateEntryConditions(selectedContext))
         {
             return SkillEffectResult.ConditionFailed(
                 Definition,
                 currentTiming,
-                context,
+                selectedContext,
                 "Entry condition failed.");
         }
 
@@ -100,11 +114,12 @@ public sealed class SkillEffectEntry
                 UpgradeKey,
                 Overrides);
 
-        return Definition.TryApply(
-            context,
+        return Definition.TryApplyWithSelectedTarget(
+            selectedContext,
             currentTiming,
             effectiveOverrides,
-            runtimeEventWake ? currentTiming : scheduledTiming);
+            runtimeEventWake ? currentTiming : scheduledTiming,
+            nativeApply);
     }
 
     private bool EvaluateEntryConditions(SkillEffectContext context)

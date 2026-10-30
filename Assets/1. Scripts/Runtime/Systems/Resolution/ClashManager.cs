@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class ClashManager
+public partial class ClashManager
 {
     private readonly DamageManager damageManager;
     private readonly MomentumManager momentumManager;
@@ -89,6 +89,15 @@ public class ClashManager
                 firstAction,
                 secondAction);
         }
+
+        // Fix the original Duel-vs-Duel card-effect gate at pairing time.
+        // Subsequent hit/damage events may have no opponentAction argument.
+        bool duelEffectsEligible =
+            pair.IsClash &&
+            firstAction?.ActionType == ActionType.Duel &&
+            secondAction?.ActionType == ActionType.Duel;
+        firstAction?.SetDuelEffectsEligible(duelEffectsEligible);
+        secondAction?.SetDuelEffectsEligible(duelEffectsEligible);
 
         bool firstStarted = false;
         bool secondStarted = false;
@@ -660,6 +669,12 @@ public class ClashManager
             first, second, exchangeIndex, isOneSided: false);
         second.Skill?.NotifyDuelMatched(
             second, first, exchangeIndex, isOneSided: false);
+
+        // R1: a roll is used exactly once, before its RNG judgment.
+        first.Skill?.NotifyRollUsing(
+            first, second, exchangeIndex, isClash: true, isOneSided: false);
+        second.Skill?.NotifyRollUsing(
+            second, first, exchangeIndex, isClash: true, isOneSided: false);
 
         // 아래 RollStart는 구 Gameplay v5 데이터 호환용 phase다.
         first.Skill?.NotifyRollStart(
@@ -1299,6 +1314,14 @@ public class ClashManager
                 exchangeIndex,
                 isOneSided: true);
         }
+
+        // R1: one-sided rolls count as a use, not as an exchange victory.
+        action.Skill?.NotifyRollUsing(
+            action,
+            exhaustedOpponent,
+            exchangeIndex,
+            isClash: cameFromClash,
+            isOneSided: true);
 
         // 구 Gameplay v5 데이터 호환용 phase.
         action.Skill?.NotifyRollStart(
@@ -1974,6 +1997,12 @@ public class ClashManager
 
         action.Skill.Execute(action);
         executed = true;
+
+        action.Skill.NotifyAttackResolutionStarting(
+            action,
+            opponentAction,
+            isClash,
+            isOneSided);
 
         if (!CanContinueRoll(action))
             return true;

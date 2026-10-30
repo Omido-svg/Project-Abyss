@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using UnityEngine;
 
 public readonly struct HifumiCounterPreview
@@ -109,6 +109,59 @@ public sealed class HifumiMechanic :
     private readonly HashSet<string>
         processedCatastrophes = new();
 
+    // R6 experiment: default stays legacy synchronous counter.
+    private bool deferCountersToR6;
+
+    public bool TryEnableR6DeferredCounters()
+    {
+        if(!IsRegistered || battleContext?.Services?.ReactionScheduler==null ||
+            battleContext.Services.SpecialistReactionRegistry==null)
+            return false;
+        deferCountersToR6=true;
+        return true;
+    }
+
+    public void DisableR6DeferredCounters() => deferCountersToR6=false;
+
+    private bool TryQueueR6Counter(BattleAction source,Character target,
+        BodyPart part,int count,bool reward,int bonus,
+        ProjectAbyss.Abilities.ReactionTimingCheckpoint checkpoint)
+    {
+        var service=battleContext?.Services;
+        var scheduler=service?.ReactionScheduler;
+        var registry=service?.SpecialistReactionRegistry;
+        if(!deferCountersToR6 || scheduler==null || registry==null ||
+           source==null || source.ActionId<=0 || target==null ||
+           count<=0 || owner==null)
+            return false;
+        long id=scheduler.AllocateRequestId();
+        var skillId=source.Skill?.Definition?.SkillId ??
+            source.Skill?.SkillName ?? "HifumiCounterSequence";
+        var request=new ProjectAbyss.Abilities.ReactionRequest(
+            id,source.ActionId,source.ActionId,id,source.ActionId,
+            ProjectAbyss.Abilities.R4LiveSlotQuery.ActorRuntimeId(owner),
+            skillId,checkpoint,0,id);
+        bool registered=registry.TryRegister(request,
+            () => IsRegistered && owner!=null && !owner.IsDead &&
+                source.OwnerPart!=null && !source.OwnerPart.IsBroken &&
+                target!=null && !target.IsDead &&
+                (part==null || part.Owner==target && !part.IsBroken),
+            () => ResolveCounterSequence(source,target,part,count,reward,bonus),
+            out var reason);
+        if(!registered)
+        {
+            Debug.LogWarning("[R6-Hifumi] Registry refused "+reason);
+            return false;
+        }
+        if(!scheduler.TrySchedule(request))
+        {
+            registry.CancelUnscheduled(id);
+            Debug.LogWarning("[R6-Hifumi] Queue refused; use original immediate path.");
+            return false;
+        }
+        return true;
+    }
+
     public int Bone => bone;
     public int AdvanceBone => advanceBone;
     public int SpendableBone => Mathf.Max(0, bone) + Mathf.Max(0, advanceBone);
@@ -205,6 +258,7 @@ public sealed class HifumiMechanic :
         catastropheCounterBonusByAction.Clear();
         counterPowerBonusByAction.Clear();
         processedCatastrophes.Clear();
+        deferCountersToR6=false;
     }
 
     /// <summary>
@@ -1020,12 +1074,10 @@ public sealed class HifumiMechanic :
             Character target = action.Target;
             BodyPart targetPart = action.TargetPart;
 
-            ResolveCounterSequence(
-                action,
-                target,
-                targetPart,
-                1,
-                applyTaggedSkillReward: false);
+            if(!TryQueueR6Counter(action,target,targetPart,1,false,0,
+                ProjectAbyss.Abilities.ReactionTimingCheckpoint.AfterClashCompleted))
+                ResolveCounterSequence(action,target,targetPart,1,
+                    applyTaggedSkillReward:false);
             return;
         }
 
@@ -1125,15 +1177,12 @@ public sealed class HifumiMechanic :
             opponentAction?.OwnerPart ??
             myAction.TargetPart;
 
-        ResolveCounterSequence(
-            myAction,
-            target,
-            targetPart,
-            counterCount,
-            applyTaggedSkillReward:
-                taggedLosses > 0,
-            counterPowerBonus:
-                counterPowerBonus);
+        if(!TryQueueR6Counter(myAction,target,targetPart,counterCount,
+            taggedLosses>0,counterPowerBonus,
+            ProjectAbyss.Abilities.ReactionTimingCheckpoint.AfterClashCompleted))
+            ResolveCounterSequence(myAction,target,targetPart,counterCount,
+                applyTaggedSkillReward:taggedLosses>0,
+                counterPowerBonus:counterPowerBonus);
     }
 
     private void ApplyEngraveStage4CompleteBlock(

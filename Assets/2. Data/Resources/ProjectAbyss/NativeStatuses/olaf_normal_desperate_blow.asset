@@ -1,0 +1,25 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a5aaa0192af195341ab6fd044c2b1b93, type: 3}
+  m_Name: olaf_normal_desperate_blow
+  m_EditorClassIdentifier: 
+  SchemaVersion: 1
+  StableId: olaf.normal.desperate_blow
+  SourceAssetGuid: f8b7e47d31402ae49b2c05ce019b7c94
+  SourceAssetName: Olaf_N_09
+  Trigger: 2
+  Status: 0
+  Level0Stacks: 1
+  Level1Stacks: 2
+  Level2Stacks: 3
+  RestrictToRoll: 0
+  RollNumber: 1

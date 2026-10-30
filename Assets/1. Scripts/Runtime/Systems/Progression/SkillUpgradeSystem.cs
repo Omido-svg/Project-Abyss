@@ -104,6 +104,15 @@ public sealed class SkillUpgradeState
             : 0;
     }
 
+    // Native AbilityDefinition uses the stable key directly. The legacy
+    // SkillDefinition overload remains only for compatibility with old callers.
+    public int GetLevel(string stableDefinitionId)
+    {
+        return !string.IsNullOrWhiteSpace(stableDefinitionId) &&
+               levels.TryGetValue(stableDefinitionId, out int level)
+            ? level : 0;
+    }
+
     public bool TryUpgrade(SkillDefinition definition, int maximumLevel = 2)
     {
         if (definition == null)

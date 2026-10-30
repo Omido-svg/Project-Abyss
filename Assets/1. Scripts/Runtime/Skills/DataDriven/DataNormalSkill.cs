@@ -33,8 +33,7 @@ public class DataNormalSkill : NormalSkill
         if (action == null)
             return;
 
-        ExecuteDefinitionEffects(
-            action,
-            SkillEffectTiming.OnExecute);
+        // R1: card OnExecute is invoked per *actual* roll by ClashManager.
+        // Do not dispatch it once at action start (or during autoplan).
     }
 }

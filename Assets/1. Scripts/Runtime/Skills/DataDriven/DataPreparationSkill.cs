@@ -33,6 +33,12 @@ public class DataPreparationSkill : PreparationSkill
         if (action == null)
             return;
 
+        // 1029 canonical preparation activation (no attack roll).
+        ExecuteDefinitionEffects(
+            action,
+            SkillEffectTiming.OnPreparationActivated);
+
+        // Legacy preparation cards authored as OnExecute remain compatible.
         ExecuteDefinitionEffects(
             action,
             SkillEffectTiming.OnExecute);

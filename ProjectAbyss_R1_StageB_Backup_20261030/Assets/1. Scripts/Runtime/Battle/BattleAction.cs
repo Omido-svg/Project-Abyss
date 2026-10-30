@@ -1,0 +1,597 @@
+using System.Collections.Generic;
+using UnityEngine;
+
+public enum ActionType
+{
+    NormalAttack,
+    Duel,
+    Preparation,
+    Prestige
+}
+
+public class BattleAction
+{
+    public ActionSlot Slot;
+
+    private Character resolutionTarget;
+    private BodyPart resolutionTargetPart;
+    private bool hasResolutionTargetOverride;
+    private bool primaryTargetTerminatedDuringResolution;
+
+    public long ActionId => Slot == null ? 0 : Slot.ActionId;
+    public int ActionIndex => Slot == null ? 0 : Slot.ActionIndex;
+    public Character Owner => Slot == null ? null : Slot.Owner;
+
+    /// <summary>
+    /// 행동을 계획할 때 선택했던 원래 대상입니다.
+    /// 합에 끌려 들어간 행동은 실제 교환 상대와 다를 수 있습니다.
+    /// </summary>
+    public Character DeclaredTarget =>
+        Slot == null
+            ? null
+            : Slot.TargetCharacter;
+
+    public BodyPart DeclaredTargetPart =>
+        Slot == null
+            ? null
+            : Slot.TargetPart;
+
+    /// <summary>
+    /// 현재 해석에서 실제 효과와 피해를 받을 대상입니다.
+    /// 일반·일방 행동에서는 계획 대상이고,
+    /// 합에서는 대상 Character를 상대 BattleAction의 Owner로 고정합니다.
+    /// 단, 처음부터 그 상대를 공격하도록 계획한 행동의 TargetPart는 그대로 보존합니다.
+    /// TargetSlot은 합 상대를, TargetPart는 실제 피해 부위를 나타내는 독립 계약입니다.
+    /// </summary>
+    public Character Target =>
+        hasResolutionTargetOverride
+            ? resolutionTarget
+            : DeclaredTarget;
+
+    public BodyPart OwnerPart => Slot == null ? null : Slot.Part;
+
+    public BodyPart TargetPart =>
+        hasResolutionTargetOverride
+            ? resolutionTargetPart
+            : DeclaredTargetPart;
+
+    public bool HasResolutionTargetOverride =>
+        hasResolutionTargetOverride;
+
+    public bool WasRedirectedByClash =>
+        hasResolutionTargetOverride &&
+        (resolutionTarget != DeclaredTarget ||
+         resolutionTargetPart != DeclaredTargetPart);
+
+    /// <summary>
+    /// C-09: 이 Action의 현재 primary target이 이번 해석 중 사망하거나 파괴되었는지.
+    /// 처음부터 파괴되어 있던 부위를 조준한 경우에는 false이며, 그 행동은 1.5 규칙대로
+    /// 전체 HP 일방타격을 계속할 수 있다.
+    /// </summary>
+    public bool PrimaryTargetTerminatedDuringResolution =>
+        primaryTargetTerminatedDuringResolution;
+
+    public Skill Skill => Slot == null ? null : Slot.Skill;
+    public int Speed => Slot == null ? 0 : Slot.Speed;
+    public ActionPhase Phase => Slot == null ? ActionPhase.COMBAT : Slot.Phase;
+
+    public ActionType ActionType =>
+        Skill == null
+            ? ActionType.NormalAttack
+            : Skill.ActionType;
+
+    public int RolledPower;
+
+    /// <summary>
+    /// 1029 정본 DMG-01: 굴림 자체(힘/쇠약/공포 등) 보정.
+    /// RolledPower에는 섞지 않고 피해 기준 위력에서만 더한다.
+    /// </summary>
+    public int DamagePowerModifier;
+
+    public int ClashPower;
+    public int SpeedModifier;
+    public int MomentumModifier;
+    public int PreparationModifier;
+    public int JudgmentModifier;
+
+    // Phase D Olaf rulebreaker runtime annotations. Action 단위로만 유지되어
+    // SO 데이터와 다음 행동에 상태가 새지 않는다.
+    public int RulebreakerFlatPowerBonus;
+    public PartBreakMode PartBreakModeOverride = PartBreakMode.None;
+
+    public int CurrentRollIndex;
+    public CombatRollType CurrentRollType = CombatRollType.Attack;
+
+    public bool Critical =>
+        LastRollResult != null &&
+        LastRollResult.IsCritical;
+
+    public int finalPower;
+
+    public int FinalPower
+    {
+        get => finalPower;
+        set
+        {
+            finalPower = value;
+            RolledPower = value;
+            DamagePowerModifier = 0;
+            ClashPower =
+                value +
+                JudgmentModifier +
+                SpeedModifier +
+                MomentumModifier +
+                PreparationModifier;
+        }
+    }
+
+    public bool HasRolled;
+    public RollResult LastRollResult;
+
+    // AutoPlan preview는 이 runtime collection들을 사용하지 않는다.
+    // 실제 전투에서 처음 접근할 때만 생성해 preview BattleAction 생성 비용을 제거한다.
+    private List<RollResult> rollHistory;
+    private List<DamageContext> damageContexts;
+    private List<AttackWeightTarget> attackWeightTargets;
+    private List<AttackWeightHitResult> attackWeightHitResults;
+    private Dictionary<int, RollResult> cachedRollResults;
+
+    public List<RollResult> RollHistory =>
+        rollHistory ??=
+            new List<RollResult>();
+
+    public List<DamageContext> DamageContexts =>
+        damageContexts ??=
+            new List<DamageContext>();
+
+    public IReadOnlyList<AttackWeightTarget>
+        AttackWeightTargets =>
+            attackWeightTargets ??
+            (IReadOnlyList<AttackWeightTarget>)
+                System.Array.Empty<AttackWeightTarget>();
+
+    public IReadOnlyList<AttackWeightHitResult>
+        AttackWeightHitResults =>
+            attackWeightHitResults ??
+            (IReadOnlyList<AttackWeightHitResult>)
+                System.Array.Empty<AttackWeightHitResult>();
+
+    public bool HasResolvedAttackWeightTargets
+    {
+        get;
+        private set;
+    }
+
+    public int RequestedAttackWeight =>
+        Mathf.Max(
+            1,
+            Skill?.AttackWeight ?? 1);
+
+    public int ResolvedAttackWeight =>
+        attackWeightTargets?.Count ?? 0;
+
+    public DamageContext PrimaryDamageContext
+    {
+        get
+        {
+            if (damageContexts != null)
+            {
+                foreach (DamageContext context
+                         in damageContexts)
+                {
+                    if (context != null &&
+                        context.Target == Target &&
+                        context.TargetPart == TargetPart)
+                    {
+                        return context;
+                    }
+                }
+            }
+
+            return LastDamageContext;
+        }
+    }
+
+    public bool HasDamageLog;
+    public int LoggedDamage;
+    public int LoggedBeforeHP;
+    public int LoggedAfterHP;
+
+    public DamageContext LastDamageContext;
+    public DamageResult LastDamageResult;
+    public DamageEventResult LastDamageEventResult;
+
+    public int TotalResolvedDamage
+    {
+        get
+        {
+            int total = 0;
+
+            if (damageContexts == null)
+                return total;
+
+            foreach (DamageContext context in damageContexts)
+            {
+                total += context?.GetDisplayDamage() ?? 0;
+            }
+
+            return total;
+        }
+    }
+
+    /// <summary>
+    /// ActionSlot의 계획 타깃을 변경하지 않고,
+    /// 현재 해석에서만 사용할 타깃을 고정합니다.
+    /// UI 화살표와 다음 턴 계획에는 영향을 주지 않습니다.
+    /// </summary>
+    public void BindResolutionTarget(
+        Character target,
+        BodyPart targetPart)
+    {
+        if (targetPart != null &&
+            targetPart.Owner != null &&
+            targetPart.Owner != target)
+        {
+            Debug.LogError(
+                "[BattleAction] 해석 타깃 부위의 Owner가 대상 캐릭터와 다릅니다. " +
+                $"ActionId={ActionId}, " +
+                $"Owner={GetCharacterName(Owner)}, " +
+                $"Target={GetCharacterName(target)}, " +
+                $"PartOwner={GetCharacterName(targetPart.Owner)}, " +
+                $"Part={targetPart.Type}");
+
+            targetPart = null;
+        }
+
+        resolutionTarget = target;
+        resolutionTargetPart = targetPart;
+        hasResolutionTargetOverride = true;
+    }
+
+    public void BindClashOpponent(
+        BattleAction opponent)
+    {
+        if (opponent == null)
+            return;
+
+        BodyPart targetPart =
+            ResolveClashTargetPart(opponent);
+
+        BindResolutionTarget(
+            opponent.Owner,
+            targetPart);
+    }
+
+    private BodyPart ResolveClashTargetPart(
+        BattleAction opponent)
+    {
+        if (opponent?.Owner == null)
+            return null;
+
+        // 정확한 적 ActionSlot(TargetSlot)을 지정해 합을 만들었더라도
+        // 실제 피해 부위(TargetPart)는 별도 선택값이다.
+        // Stage 1 Boss처럼 상대 ActionSlot.Part가 null인 글로벌 슬롯에서
+        // HEAD 같은 선언 피해 부위를 null로 덮어쓰지 않는다.
+        if (DeclaredTarget == opponent.Owner)
+        {
+            BodyPart declaredPart =
+                DeclaredTargetPart;
+
+            if (declaredPart == null ||
+                declaredPart.Owner == null ||
+                declaredPart.Owner == opponent.Owner)
+            {
+                return declaredPart;
+            }
+        }
+
+        // 원래 다른 대상을 보던 행동이 합에 끌려온 경우에는
+        // 기존 규칙대로 상대 행동의 원천 부위를 사용한다.
+        return opponent.OwnerPart;
+    }
+
+    public void ClearResolutionTarget()
+    {
+        resolutionTarget = null;
+        resolutionTargetPart = null;
+        hasResolutionTargetOverride = false;
+    }
+
+    private static string GetCharacterName(
+        Character character)
+    {
+        return character?.Data?.CharacterName ??
+               character?.name ??
+               "NULL";
+    }
+
+    public void BeginResolutionSequence()
+    {
+        ResetCurrentRollState();
+        rollHistory?.Clear();
+        damageContexts?.Clear();
+        cachedRollResults?.Clear();
+
+        attackWeightTargets?.Clear();
+        attackWeightHitResults?.Clear();
+        HasResolvedAttackWeightTargets = false;
+
+        HasDamageLog = false;
+        LoggedDamage = 0;
+        LoggedBeforeHP = 0;
+        LoggedAfterHP = 0;
+        LastDamageContext = null;
+        LastDamageResult = null;
+        LastDamageEventResult = null;
+        primaryTargetTerminatedDuringResolution = false;
+        RulebreakerFlatPowerBonus = 0;
+        PartBreakModeOverride = PartBreakMode.None;
+    }
+
+    public int GetEffectiveExchangeRollCount()
+    {
+        int baseCount =
+            Mathf.Max(
+                1,
+                Skill?.ExchangeRollCount ?? 1);
+
+        return Owner == null
+            ? baseCount
+            : Owner.ModifyExchangeRollCount(
+                this,
+                baseCount);
+    }
+
+    public int RollPower()
+    {
+        return RollPowerForExchange(
+            rollHistory?.Count ?? 0);
+    }
+
+    public int RollPowerForExchange(
+        int exchangeIndex)
+    {
+        ResetCurrentRollState();
+        if (Skill == null) return 0;
+
+        CurrentRollIndex = Mathf.Max(0, exchangeIndex);
+        CurrentRollType = Skill.GetRollType(CurrentRollIndex);
+
+        RollResult cached = null;
+        bool shouldReuse =
+            Skill.ShouldReuseRollData(CurrentRollIndex);
+
+        bool reuse =
+            shouldReuse &&
+            cachedRollResults != null &&
+            cachedRollResults.TryGetValue(
+                CurrentRollIndex,
+                out cached);
+
+        LastRollResult = reuse && cached != null
+            ? cached.Clone()
+            : Skill.RollPowerResultForExchange(CurrentRollIndex);
+
+        if (LastRollResult == null)
+        {
+            SetPurePower(Skill.BasePower);
+            HasRolled = true;
+            return RolledPower;
+        }
+
+        LastRollResult.RollIndex = CurrentRollIndex;
+        LastRollResult.RollType = CurrentRollType;
+        LastRollResult.ClearClashModifiers();
+        LastRollResult.WasReused = reuse;
+
+        SetPurePower(LastRollResult.FinalPower);
+
+        RollModification modification =
+            Owner != null
+                ? Owner.ResolveRollModification(
+                    this,
+                    RolledPower)
+                : RollModification.None;
+
+        // 정본: 피해 기준 위력은 굴림 RNG + 굴림 자체 보정.
+        DamagePowerModifier =
+            modification.RollPowerModifier;
+
+        // 합 판정은 굴림 자체 보정 + 합 전용 보정(속도는 ApplyClashModifiers에서 추가).
+        // 1029 R7: 재사용 캐시에는 캐릭터 보정이 이미 합산된 JudgmentModifier가 들어 있다.
+        // 원본(SkillJudgmentModifier)을 기준으로 다시 계산해야 보정이 두 번 더해지지 않는다.
+        int skillJudgmentModifier = reuse
+            ? LastRollResult.SkillJudgmentModifier
+            : LastRollResult.JudgmentModifier;
+
+        LastRollResult.SkillJudgmentModifier = skillJudgmentModifier;
+
+        JudgmentModifier =
+            modification.TotalModifier +
+            skillJudgmentModifier;
+
+        LastRollResult.DamagePowerModifier =
+            DamagePowerModifier;
+
+        LastRollResult.JudgmentModifier = JudgmentModifier;
+        LastRollResult.RecalculateClashPower();
+
+        if (!reuse && shouldReuse)
+        {
+            (cachedRollResults ??=
+                new Dictionary<int, RollResult>())[
+                    CurrentRollIndex] =
+                        LastRollResult.Clone();
+        }
+
+        HasRolled = true;
+        (rollHistory ??=
+            new List<RollResult>())
+            .Add(
+                LastRollResult.Clone());
+        return RolledPower;
+    }
+
+    public void InvalidateCachedRoll(
+        int exchangeIndex)
+    {
+        cachedRollResults?.Remove(
+            Mathf.Max(0, exchangeIndex));
+    }
+
+    public void ApplyClashModifiers(
+        int speedModifier,
+        int momentumModifier,
+        int preparationModifier = 0)
+    {
+        SpeedModifier = speedModifier;
+        MomentumModifier = momentumModifier;
+        PreparationModifier = preparationModifier;
+
+        ClashPower =
+            RolledPower +
+            JudgmentModifier +
+            SpeedModifier +
+            MomentumModifier +
+            PreparationModifier;
+
+        LastRollResult?.SetClashModifiers(
+            SpeedModifier,
+            MomentumModifier,
+            PreparationModifier);
+    }
+
+    public void ClearClashModifiers()
+    {
+        ApplyClashModifiers(0, 0);
+    }
+
+    /// <summary>
+    /// 1029 정본 DMG-01: 실제 피해/흐트러짐 계산의 기준 위력.
+    /// 속도차·합 전용 보정은 포함하지 않는다.
+    /// </summary>
+    public int GetDamagePower() =>
+        Mathf.Max(
+            0,
+            RolledPower +
+            DamagePowerModifier);
+
+    private void SetPurePower(int power)
+    {
+        RolledPower = power;
+        finalPower = power;
+        DamagePowerModifier = 0;
+        ClashPower = power;
+    }
+
+    private void ResetCurrentRollState()
+    {
+        RolledPower = 0;
+        finalPower = 0;
+        DamagePowerModifier = 0;
+        ClashPower = 0;
+        SpeedModifier = 0;
+        MomentumModifier = 0;
+        PreparationModifier = 0;
+        JudgmentModifier = 0;
+        CurrentRollType = CombatRollType.Attack;
+        HasRolled = false;
+        LastRollResult = null;
+    }
+
+    public void SetDamageLog(
+        int damage,
+        int beforeHP,
+        int afterHP)
+    {
+        HasDamageLog = true;
+        LoggedDamage += Mathf.Max(0, damage);
+
+        if ((damageContexts?.Count ?? 0) <= 1)
+            LoggedBeforeHP = Mathf.Max(0, beforeHP);
+
+        LoggedAfterHP = Mathf.Max(0, afterHP);
+    }
+
+    public void SetAttackWeightTargets(
+        IEnumerable<AttackWeightTarget> targets)
+    {
+        attackWeightTargets?.Clear();
+
+        if (targets != null)
+        {
+            foreach (AttackWeightTarget target
+                     in targets)
+            {
+                if (target == null ||
+                    target.TargetCharacter == null)
+                {
+                    continue;
+                }
+
+                (attackWeightTargets ??=
+                    new List<AttackWeightTarget>())
+                    .Add(
+                        target);
+            }
+        }
+
+        HasResolvedAttackWeightTargets =
+            true;
+    }
+
+    public void AddAttackWeightHitResult(
+        AttackWeightHitResult result)
+    {
+        if (result == null ||
+            result.Target == null ||
+            result.DamageContext == null)
+        {
+            return;
+        }
+
+        (attackWeightHitResults ??=
+            new List<AttackWeightHitResult>())
+            .Add(
+                result);
+    }
+
+    public void SetDamageContext(
+        DamageContext context)
+    {
+        LastDamageContext = context;
+        LastDamageResult = context?.Result;
+        LastDamageEventResult = context?.EventResult;
+
+        if (context == null)
+            return;
+
+        // 0915 C-09: "이미 파괴된 부위를 처음부터 조준"한 행동과
+        // "이 Action의 타격으로 방금 target/part가 종료"된 행동을 구분한다.
+        // secondary AttackWeight target의 종료는 primary action의 남은 굴림을 지우지 않는다.
+        if (context.Target == Target &&
+            context.TargetPart == TargetPart &&
+            (context.WasKilled || context.BrokePart))
+        {
+            primaryTargetTerminatedDuringResolution = true;
+        }
+
+        bool isNewContext =
+            damageContexts == null ||
+            !damageContexts.Contains(
+                context);
+
+        if (!isNewContext)
+            return;
+
+        (damageContexts ??=
+            new List<DamageContext>())
+            .Add(
+                context);
+
+        SetDamageLog(
+            context.GetDisplayDamage(),
+            context.GetPrimaryHpBefore(),
+            context.GetPrimaryHpAfter());
+    }
+}

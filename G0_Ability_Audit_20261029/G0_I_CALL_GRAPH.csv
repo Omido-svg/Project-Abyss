@@ -1,0 +1,53 @@
+﻿CallerFile,CallerMethod,Callee,Category,Line,Source
+Assets/1. Scripts/Runtime/Battle/BattleEffectResolver.cs,ApplyStatusPartDamage,ApplyDamageContext,DamageCommit,161,.ApplyDamageContext(damageRequest);
+Assets/1. Scripts/Runtime/Battle/BattleEffectResolver.cs,ApplyTrueDamage,ApplyDamageContext,DamageCommit,200,.ApplyDamageContext(damageRequest);
+Assets/1. Scripts/Runtime/Battle/StatusEffectTickContext.cs,ApplyDamage,ApplyDamageContext,DamageCommit,66,DamageManager.ApplyDamageContext(request);
+Assets/1. Scripts/Runtime/Characters/CharacterBase/ReactiveCombatMechanic.cs,DispatchExchangeResolved,OnExchangeResolved,CounterHook,295,OnExchangeResolved(exchange);
+Assets/1. Scripts/Runtime/Characters/Hifumi/Mechanics/HifumiMechanic.cs,ResolveCatastrophe,ResolveCounterSequence,CounterSequence,1023,ResolveCounterSequence(
+Assets/1. Scripts/Runtime/Characters/Hifumi/Mechanics/HifumiMechanic.cs,ApplyCatastropheSelfDamage,ApplyDamageContext,DamageCommit,1046,?.ApplyDamageContext(
+Assets/1. Scripts/Runtime/Characters/Hifumi/Mechanics/HifumiMechanic.cs,OnClashResolved,ResolveCounterSequence,CounterSequence,1128,ResolveCounterSequence(
+Assets/1. Scripts/Runtime/Characters/Hifumi/Mechanics/HifumiMechanic.cs,ResolveCounterSequence,ApplyDamageContext,DamageCommit,1409,?.ApplyDamageContext(request);
+Assets/1. Scripts/Runtime/Characters/Hifumi/Skills/HifumiRuntimeSkills.cs,Execute,ExecuteSkill,SkillExecution,368,action?.Owner?.GetMechanic<HifumiMechanic>()?.ExecuteSkill(action);
+Assets/1. Scripts/Runtime/Characters/Hifumi/Skills/HifumiRuntimeSkills.cs,Execute,ExecuteSkill,SkillExecution,379,action?.Owner?.GetMechanic<HifumiMechanic>()?.ExecuteSkill(action);
+Assets/1. Scripts/Runtime/Characters/Olaf/Mechanics/OlafMadnessMechanic.cs,TryExplodeBleeding,ApplyDamageContext,DamageCommit,331,battleContext?.ResolveDamageManager()?.ApplyDamageContext(request);
+Assets/1. Scripts/Runtime/Characters/Olaf/Mechanics/OlafMadnessMechanic.cs,ApplyBurstingMadness,ApplyDamageContext,DamageCommit,373,battleContext?.ResolveDamageManager()?.ApplyDamageContext(request);
+Assets/1. Scripts/Runtime/Characters/Olaf/Mechanics/OlafRulebreakerMechanic.cs,OnExchangeResolved,ApplyDamageContext,DamageCommit,441,battleContext?.ResolveDamageManager()?.ApplyDamageContext(request);
+Assets/1. Scripts/Runtime/Characters/Olaf/Olaf.cs,Execute,ExecuteSkill,SkillExecution,231,action?.Owner?.GetMechanic<OlafMadnessMechanic>()?.ExecuteSkill(action);
+Assets/1. Scripts/Runtime/Characters/Olaf/Olaf.cs,Execute,ExecuteSkill,SkillExecution,246,action?.Owner?.GetMechanic<OlafMadnessMechanic>()?.ExecuteSkill(action);
+Assets/1. Scripts/Runtime/Characters/Olaf/OlafCombatPipeline.cs,ApplyDamage,ApplyDamageContext,DamageCommit,16,return manager.ApplyDamageContext(
+Assets/1. Scripts/Runtime/Characters/Yujin/Mechanics/YujinMechanic.cs,ApplyMarkTrapDamage,ApplyDamageContext,DamageCommit,1740,?.ApplyDamageContext(request);
+Assets/1. Scripts/Runtime/Characters/Yujin/Mechanics/YujinMechanic.cs,ResolvePursuitExtraCoinsCore,ApplyDamageContext,DamageCommit,1867,?.ApplyDamageContext(request);
+Assets/1. Scripts/Runtime/Characters/Yujin/Skills/YujinRuntimeSkills.cs,Execute,ExecuteSkill,SkillExecution,248,?.ExecuteSkill(action);
+Assets/1. Scripts/Runtime/Characters/Yujin/Skills/YujinRuntimeSkills.cs,Execute,ExecuteSkill,SkillExecution,268,?.ExecuteSkill(action);
+Assets/1. Scripts/Runtime/Presentation/Visual/Data/BattleVisualRequestBuilder.cs,Build,ApplyDamageContext,DamageCommit,52,request.ApplyDamageContext(sourceContext);
+Assets/1. Scripts/Runtime/Skills/DataDriven/SkillEffectContext.cs,ApplyDamage,ApplyDamageContext,DamageCommit,378,return manager.ApplyDamageContext(request);
+Assets/1. Scripts/Runtime/Skills/Effects/Canonical0916/Yujin0916SkillEffectDefinition.cs,ApplyFixedDamage,ApplyDamageContext,DamageCommit,346,context.BattleContext?.ResolveDamageManager()?.ApplyDamageContext(request);
+Assets/1. Scripts/Runtime/Systems/Progression/Canonical0922/Canonical0922Emotion33EffectDefinition.cs,ApplyDeferredDamage,ApplyDamageContext,DamageCommit,961,manager.ApplyDamageContext(request);
+Assets/1. Scripts/Runtime/Systems/Progression/Canonical0922/Canonical0922Emotion33EffectDefinition.cs,DealRandomEnemyPartDamage,ApplyDamageContext,DamageCommit,1045,manager.ApplyDamageContext(request);
+Assets/1. Scripts/Runtime/Systems/Resolution/ActionResolver.cs,Resolve,ResolveClashQueue,Resolution,39,yield return ResolveClashQueue(
+Assets/1. Scripts/Runtime/Systems/Resolution/ActionResolver.cs,ResolveStandaloneQueue,ExecuteSkill,SkillExecution,69,if (!ExecuteSkill(action))
+Assets/1. Scripts/Runtime/Systems/Resolution/ActionResolver.cs,ResolveClashQueue,ResolvePair,Resolution,105,clashManager.ResolvePair(
+Assets/1. Scripts/Runtime/Systems/Resolution/ClashManager.cs,Resolve,ResolvePair,Resolution,58,ResolvePair(clashQueue.Dequeue());
+Assets/1. Scripts/Runtime/Systems/Resolution/ClashManager.cs,ResolveClash,ResolvePairedExchange,Resolution,268,ResolvePairedExchange(
+Assets/1. Scripts/Runtime/Systems/Resolution/ClashManager.cs,ResolveClash,ResolveOneSideExchange,Resolution,387,ResolveOneSideExchange(
+Assets/1. Scripts/Runtime/Systems/Resolution/ClashManager.cs,ResolveClash,RaiseClashResolved,EventRaise,439,.RaiseClashResolved(result);
+Assets/1. Scripts/Runtime/Systems/Resolution/ClashManager.cs,ResolvePairedExchange,ExecuteSkillOnce,SkillExecution,623,ExecuteSkillOnce(
+Assets/1. Scripts/Runtime/Systems/Resolution/ClashManager.cs,ResolvePairedExchange,ExecuteSkillOnce,SkillExecution,630,ExecuteSkillOnce(
+Assets/1. Scripts/Runtime/Systems/Resolution/ClashManager.cs,ResolvePairedExchange,NotifyRollOutcome,OutcomeSignal,806,winner.Skill?.NotifyRollOutcome(
+Assets/1. Scripts/Runtime/Systems/Resolution/ClashManager.cs,ResolvePairedExchange,NotifyRollOutcome,OutcomeSignal,809,loser.Skill?.NotifyRollOutcome(
+Assets/1. Scripts/Runtime/Systems/Resolution/ClashManager.cs,ResolvePairedExchange,ApplyDamageContext,DamageCommit,845,damageManager.ApplyDamageContext(
+Assets/1. Scripts/Runtime/Systems/Resolution/ClashManager.cs,ResolvePairedExchange,RaiseExchangeResolved,EventRaise,951,.RaiseExchangeResolved(exchange);
+Assets/1. Scripts/Runtime/Systems/Resolution/ClashManager.cs,ResolvePairedExchange,NotifyHit,HitSignal,953,winner.Skill?.NotifyHit(
+Assets/1. Scripts/Runtime/Systems/Resolution/ClashManager.cs,ResolveOneSide,ResolveOneSideExchange,Resolution,1213,ResolveOneSideExchange(
+Assets/1. Scripts/Runtime/Systems/Resolution/ClashManager.cs,ResolveOneSideExchange,ExecuteSkillOnce,SkillExecution,1270,bool executed = ExecuteSkillOnce(
+Assets/1. Scripts/Runtime/Systems/Resolution/ClashManager.cs,ResolveOneSideExchange,NotifyRollOutcome,OutcomeSignal,1317,action.Skill?.NotifyRollOutcome(
+Assets/1. Scripts/Runtime/Systems/Resolution/ClashManager.cs,ResolveOneSideExchange,RaiseExchangeResolved,EventRaise,1345,.RaiseExchangeResolved(forcedFailure);
+Assets/1. Scripts/Runtime/Systems/Resolution/ClashManager.cs,ResolveOneSideExchange,NotifyRollOutcome,OutcomeSignal,1372,action.Skill?.NotifyRollOutcome(
+Assets/1. Scripts/Runtime/Systems/Resolution/ClashManager.cs,ResolveOneSideExchange,RaiseExchangeResolved,EventRaise,1426,battleContext._battleEvent.RaiseExchangeResolved(staggerExchange);
+Assets/1. Scripts/Runtime/Systems/Resolution/ClashManager.cs,ResolveOneSideExchange,NotifyHit,HitSignal,1428,action.Skill?.NotifyHit(
+Assets/1. Scripts/Runtime/Systems/Resolution/ClashManager.cs,ResolveOneSideExchange,ApplyDamageContext,DamageCommit,1468,DamageContext damageContext = damageManager.ApplyDamageContext(
+Assets/1. Scripts/Runtime/Systems/Resolution/ClashManager.cs,ResolveOneSideExchange,RaiseExchangeResolved,EventRaise,1544,.RaiseExchangeResolved(exchange);
+Assets/1. Scripts/Runtime/Systems/Resolution/ClashManager.cs,ResolveOneSideExchange,NotifyHit,HitSignal,1546,action.Skill?.NotifyHit(
+Assets/1. Scripts/Runtime/Systems/Resolution/DamageManager.cs,ApplyDamageContext,ApplyDamageContext,DamageCommit,54,return ApplyDamageContext(request);
+Assets/1. Scripts/Runtime/Systems/Resolution/DamageManager.cs,ApplyDamageContext,ApplyDamageContext,DamageCommit,84,return ApplyDamageContext(request);
+Assets/1. Scripts/Runtime/Systems/Resolution/DamageManager.cs,ApplyAttackWeightDamageContext,ApplyDamageContext,DamageCommit,176,return ApplyDamageContext(

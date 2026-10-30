@@ -10,8 +10,18 @@ public interface IBattleActionPresentation
     IEnumerator PlayClash(ClashResultContext result);
 }
 
+/// <summary>
+/// R6-Ic optional presentation for ALREADY committed combat exchanges.
+/// Existing production presenters still support their original PlayClash.
+/// </summary>
+public interface IBattleActionStepPresentation
+{
+    IEnumerator PlayCommittedExchange(
+        ClashResultContext root, ClashExchangeResult exchange);
+}
+
 public sealed class BattleActionPresentationService :
-    IBattleActionPresentation
+    IBattleActionPresentation, IBattleActionStepPresentation
 {
     private readonly BattleAnimationDirector director;
     private readonly BattleVisualRequestBuilder requestBuilder;
@@ -66,6 +76,37 @@ public sealed class BattleActionPresentationService :
         if (request == null)
             yield break;
 
+        yield return director.Play(request);
+    }
+
+    /// <summary>
+    /// Build an isolated one-exchange visual request. Never re-run any
+    /// roll, damage, status or BattleEvent. Original ExchangeIndex survives.
+    /// Each request uses the existing Timeline pipeline and is awaited
+    /// before the next reaction or original exchange.
+    /// </summary>
+    public IEnumerator PlayCommittedExchange(
+        ClashResultContext root, ClashExchangeResult exchange)
+    {
+        if (root == null || exchange == null ||
+            BattleSimulationRuntime.IsBatchSimulation || director == null)
+            yield break;
+        if (root.Exchanges == null || !root.Exchanges.Contains(exchange))
+            throw new System.InvalidOperationException(
+                "Cannot present an exchange absent from the committed domain result.");
+
+        var slice = new ClashResultContext
+        {
+            FirstAction = root.FirstAction,
+            SecondAction = root.SecondAction,
+            IsClash = root.IsClash,
+            MomentumAtStart = exchange.MomentumBefore,
+            MomentumAfterResolution = exchange.MomentumAfter
+        };
+        slice.Exchanges.Add(exchange);
+        var request = requestBuilder.BuildClashSequence(slice);
+        if (request == null)
+            yield break;
         yield return director.Play(request);
     }
 

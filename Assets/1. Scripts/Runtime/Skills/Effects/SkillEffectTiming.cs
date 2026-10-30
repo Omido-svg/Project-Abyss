@@ -57,7 +57,9 @@ public enum SkillEffectTiming
     OnDuelMatched = 31,            // 정본: 매칭시
     OnPartWeakened = 32,           // 해당 피해로 정상 -> 약화 전이
     OnPartBroken = 33,             // 해당 피해로 약화 -> 파괴 전이
-    OnClashEnd = 34                // 정본: 합 종료시 (남은 일방타격까지 모두 처리 후)
+    OnClashEnd = 34,               // 정본: 합 종료시 (남은 일방타격까지 모두 처리 후)
+    OnAttackResolutionStarting = 35, // 1029: 공격 스킬 해결 시작시 (글로벌 전투 시작 아님)
+    OnPreparationActivated = 36      // 1029: 도사림 발동시 (신규 저작 전용)
 }
 
 /// <summary>
@@ -70,18 +72,19 @@ public static class SkillEffectTimingCatalog
     // 나머지 enum 값은 직렬화/런타임 이벤트 호환 전용이며 신규 카드 UI에 노출하지 않는다.
     private static readonly SkillEffectTiming[] authoringTimings =
     {
+        SkillEffectTiming.OnAttackResolutionStarting,
         SkillEffectTiming.OnExecute,
-        SkillEffectTiming.OnDuelMatched,
         SkillEffectTiming.OnExchangeWin,
         SkillEffectTiming.OnExchangeLose,
-        SkillEffectTiming.OnClashEnd
+        SkillEffectTiming.OnClashEnd,
+        SkillEffectTiming.OnPreparationActivated
     };
 
     // Roll 위치에서 쓸 수 있는 정본 Trigger는 매칭/교환 승패뿐이다.
     // 사용시/합 종료시는 SkillDefinition 레벨 EffectEntries에서 작성한다.
     private static readonly SkillEffectTiming[] rollAuthoringTimings =
     {
-        SkillEffectTiming.OnDuelMatched,
+        SkillEffectTiming.OnExecute,
         SkillEffectTiming.OnExchangeWin,
         SkillEffectTiming.OnExchangeLose
     };
@@ -100,8 +103,10 @@ public static class SkillEffectTimingCatalog
     {
         SkillEffectTiming.OnBattleStart => "전투 시작시",
         SkillEffectTiming.OnTurnStart => "턴 시작시",
-        SkillEffectTiming.OnExecute => "사용시",
-        SkillEffectTiming.OnDuelMatched => "매칭시 (결투)",
+        SkillEffectTiming.OnExecute => "사용시 (굴림별)",
+        SkillEffectTiming.OnAttackResolutionStarting => "공격 해결 시작시",
+        SkillEffectTiming.OnPreparationActivated => "도사림 발동시",
+        SkillEffectTiming.OnDuelMatched => "매칭시 (레거시)",
         SkillEffectTiming.OnExchangeWin => "교환 승리시",
         SkillEffectTiming.OnExchangeLose => "교환 패배시",
         SkillEffectTiming.AfterDamage => "피해 적용 후",
@@ -206,13 +211,19 @@ public static class SkillEffectTimingCatalog
             "해당 턴 시작 시점. 턴 시작형 효과에 사용합니다.",
 
         SkillEffectTiming.OnExecute =>
-            "정본의 '사용시'. 스킬/준비 행동을 실제로 사용한 순간 확정되며 매칭·승패와 무관합니다.",
+            "1029 '사용시': 실제 굴림 사용마다 판정 전에 1회. 일방 굴림도 포함하며 동률 재굴림은 중복 발동하지 않습니다.",
+
+        SkillEffectTiming.OnAttackResolutionStarting =>
+            "1029 '전투 시작시': 해당 공격 카드의 해결 시작, 첫 굴림 전에 카드당 1회. 글로벌 전투 시작과 별개입니다.",
+
+        SkillEffectTiming.OnPreparationActivated =>
+            "1029 '도사림 발동시': 계획 단계에서 해당 준비 행동을 발동할 때 카드당 1회.",
 
         SkillEffectTiming.OnDuelMatched =>
-            "정본의 '매칭시'. 원래 행동이 결투 대 결투로 매칭된 경우 각 굴림 위치마다 발동합니다. 상대 굴림이 먼저 소진되어 뒤쪽 위치가 일방타격이 되어도 원래 결투 대 결투 게이트는 유지됩니다.",
+            "레거시 호환 전용입니다. 1029 정본에서는 별도 매칭시 트리거가 없으며 결투 대 결투는 카드 효과의 공통 게이트입니다.",
 
         SkillEffectTiming.OnExchangeWin =>
-            "정본의 '승리시' = 교환 승리시. 해당 굴림이 상대 굴림과 실제로 맞붙어 이긴 직후, 피해 적용 전에 발동합니다. 평타는 유효한 일방타격도 승리로 보지만 결투는 결투 대 결투에서 실제로 맞붙어 이긴 경우에만 발동합니다. 합 전체 다수결 승리와는 별개입니다.",
+            "1029 '승리시': 두 굴림이 실제로 교환했고 그 교환에서 이겼을 때만 발동합니다. 일방타격은 승리로 세지 않습니다.",
 
         SkillEffectTiming.OnExchangeLose =>
             "정본의 '패배시' = 교환 패배시. 해당 굴림이 상대 굴림과 실제로 맞붙어 진 직후, 피해 적용 전에 발동합니다. 결투의 패배 효과는 결투 대 결투 게이트 안에서만 발동합니다. 합 전체 다수결 패배와는 별개입니다.",

@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using ProjectAbyss.Abilities;
 
 public class ActionResolver
 {
@@ -9,6 +10,74 @@ public class ActionResolver
 
     private readonly IBattleActionReporter actionReporter;
     private readonly IBattleActionPresentation actionPresentation;
+    private BattleReactionScheduler reactionScheduler;
+    private R6ReactionActionRegistry reactionRegistry;
+    private R6SpecialistReactionRegistry specialistReactionRegistry;
+    public void EnableR6SpecialistReactions(R6SpecialistReactionRegistry registry)
+    {
+        specialistReactionRegistry=registry ?? throw new System.ArgumentNullException(nameof(registry));
+    }
+    private bool useR6StepwiseClashes;
+
+    /// <summary>
+    /// R6-Ib opt-in observation of a fully committed exchange, emitted
+    /// AFTER damage/events and BEFORE reaction checkpoint pumping.
+    /// Subscribers may enqueue requests only, not recursively resolve damage.
+    /// </summary>
+    public event System.Action<ClashExchangeResult> R6ExchangeSettled;
+
+    public void EnableR6StepwiseClashes()
+    {
+        if(reactionScheduler==null || reactionRegistry==null)
+            throw new System.InvalidOperationException(
+                "R6-Ib requires an existing reaction scheduler and action registry.");
+        if(!(actionPresentation is IBattleActionStepPresentation))
+            throw new System.InvalidOperationException(
+                "R6-Ic requires a step presenter to prevent duplicated/out-of-order playback.");
+        r6StepTrace.Clear();
+        useR6StepwiseClashes=true;
+    }
+
+    public void DisableR6StepwiseClashes() => useR6StepwiseClashes=false;
+    private readonly List<R6ReactionExecutionRecord> reactionExecutionTrace =
+        new List<R6ReactionExecutionRecord>();
+    private readonly List<R6StepTraceRecord> r6StepTrace =
+        new List<R6StepTraceRecord>();
+
+    public IReadOnlyList<R6StepTraceRecord> R6StepTrace =>
+        r6StepTrace.AsReadOnly();
+
+    private void Trace(R6StepTraceKind kind, long actionId,
+        long rootActionId, long causeEventId, int exchangeIndex)
+    {
+        r6StepTrace.Add(new R6StepTraceRecord(
+            r6StepTrace.Count, kind, actionId, rootActionId,
+            causeEventId, exchangeIndex));
+    }
+
+    public IReadOnlyList<R6ReactionExecutionRecord> ReactionExecutionTrace =>
+        reactionExecutionTrace.AsReadOnly();
+
+    /// <summary>
+    /// R6-Ia opt-in only. Existing BattleRuntimeFactory does not bind this
+    /// automatically, preventing duplicate legacy Hifumi counter execution.
+    /// </summary>
+    public void EnableR6ReactionExecution(
+        BattleReactionScheduler scheduler,R6ReactionActionRegistry registry)
+    {
+        reactionScheduler=scheduler ?? throw new System.ArgumentNullException(nameof(scheduler));
+        reactionRegistry=registry ?? throw new System.ArgumentNullException(nameof(registry));
+        reactionExecutionTrace.Clear();
+    }
+
+    public void DisableR6ReactionExecution()
+    {
+        reactionScheduler=null;
+        reactionRegistry=null;
+        specialistReactionRegistry=null;
+        reactionExecutionTrace.Clear();
+        useR6StepwiseClashes=false;
+    }
 
     public ActionResolver(
         BattleContext battleContext,
@@ -86,6 +155,11 @@ public class ActionResolver
                         .RaiseActionEnd(action);
                 }
             }
+
+            // Standalone RaiseActionEnd is finalized in finally above.
+            if(reactionScheduler!=null && reactionRegistry!=null)
+                yield return PumpR6ReactionCheckpoint(
+                    ReactionTimingCheckpoint.AfterActionCompleted);
         }
     }
 
@@ -100,20 +174,153 @@ public class ActionResolver
             ClashPair pair =
                 clashQueue.Dequeue();
 
-            // 굴림부터 HP 적용까지의 전투 결과를 먼저 확정합니다.
-            ClashResultContext result =
-                clashManager.ResolvePair(
-                    pair);
+            ClashResultContext result;
+            bool streamed = useR6StepwiseClashes &&
+                reactionScheduler!=null && reactionRegistry!=null;
+            if(streamed)
+            {
+                // A single coordinator, no recursive ResolvePair from a
+                // BattleEvent callback. Default production ResolvePair is
+                // preserved unless the caller explicitly opts in.
+                using(var session=clashManager.BeginStepwise(pair))
+                {
+                    while(!session.IsComplete)
+                    {
+                        bool committed=session.Advance(out var exchange);
+                        if(!committed)
+                            break;
+                        // This is a new *notification*, not a new gameplay
+                        // ExchangeResolved event or additional damage.
+                        R6ExchangeSettled?.Invoke(exchange);
+                        long originalId=session.RootActionId;
+                        Trace(R6StepTraceKind.ExchangeCommitted,originalId,
+                            originalId,0,exchange?.ExchangeIndex ?? -1);
+                        // Timeline must display this factual exchange BEFORE
+                        // any reaction and BEFORE a future original exchange.
+                        yield return ((IBattleActionStepPresentation)actionPresentation)
+                            .PlayCommittedExchange(session.Result,exchange);
+                        Trace(R6StepTraceKind.ExchangeVisualCompleted,originalId,
+                            originalId,0,exchange?.ExchangeIndex ?? -1);
+                        yield return PumpR6ReactionCheckpoint(
+                            ReactionTimingCheckpoint.AfterExchangeSettled);
+                        session.ResumeAfterCheckpoint();
+                    }
+                    result=session.Result;
+                }
+            }
+            else
+                result=clashManager.ResolvePair(pair);
 
-            if (result == null)
+            if(result==null)
                 continue;
 
-            // 결과 재생은 확정된 전투 데이터를 소비하기만 합니다.
-            if (actionPresentation != null)
+            // The R6-Ic stream already played EVERY committed exchange.
+            // Do not replay the complete root result and duplicate damage UI.
+            if (!streamed && actionPresentation != null)
             {
                 yield return actionPresentation
                     .PlayClash(result);
             }
+            if(streamed)
+                Trace(R6StepTraceKind.OriginalActionCompleted,
+                    result.FirstAction?.ActionId ?? 0, result.FirstAction?.ActionId ?? 0,
+                    0,-1);
+
+            // ResolvePair and its RaiseClashResolved callbacks have completely
+            // returned. The original result presentation also precedes newly
+            // inserted reaction presentation. NEVER pump in event handlers.
+            if(reactionScheduler!=null && reactionRegistry!=null)
+            {
+                yield return PumpR6ReactionCheckpoint(
+                    ReactionTimingCheckpoint.AfterClashCompleted);
+                yield return PumpR6ReactionCheckpoint(
+                    ReactionTimingCheckpoint.AfterActionCompleted);
+            }
+        }
+    }
+
+    private IEnumerator PumpR6ReactionCheckpoint(
+        ReactionTimingCheckpoint checkpoint)
+    {
+        if(reactionScheduler==null || reactionRegistry==null)
+            yield break;
+
+        while(reactionScheduler.TryDequeue(checkpoint,out var request))
+        {
+            if(specialistReactionRegistry?.IsChainQuarantined(request.ChainId)==true)
+            {
+                reactionExecutionTrace.Add(new R6ReactionExecutionRecord(
+                    request,0,false,"Origin chain quarantined after unknown specialist commit."));
+                continue;
+            }
+            if(specialistReactionRegistry?.Contains(request.RequestId)==true)
+            {
+                bool applied=specialistReactionRegistry.TryExecute(request,out var specialistProblem);
+                reactionExecutionTrace.Add(new R6ReactionExecutionRecord(
+                    request,0,applied,applied ?
+                    "Original specialist reactive sequence executed." :
+                    specialistProblem));
+                if(!applied)
+                    Debug.LogWarning("[R6-Specialist] "+request.RequestId+" / "+specialistProblem);
+                continue;
+            }
+            if(!reactionRegistry.TryTake(request,out var slot,out var problem))
+            {
+                reactionExecutionTrace.Add(
+                    new R6ReactionExecutionRecord(request,0,false,problem));
+                Debug.LogWarning("[R6-Exec] Reaction request rejected at checkpoint: "+
+                    request.RequestId+" / "+problem);
+                continue;
+            }
+
+            // Re-validate at execution time, AFTER other actions may have
+            // killed the target/broken the slot. No new execution on stale slot.
+            // Never collide with a planned action ID already in ActionManager.
+            bool idCollision=battleContext?.Services?.ActionManager
+                ?.FindSlotById(slot.ActionId)!=null;
+            bool hostileSide=battleContext!=null &&
+                (slot.Owner==battleContext.Player &&
+                 battleContext.Enemies!=null &&
+                 battleContext.Enemies.Contains(slot.TargetCharacter) ||
+                 battleContext.Enemies!=null &&
+                 battleContext.Enemies.Contains(slot.Owner) &&
+                 slot.TargetCharacter==battleContext.Player);
+            if(!CanExecuteSlot(slot) || slot.TargetCharacter==null ||
+                slot.TargetCharacter==slot.Owner ||
+                idCollision || !hostileSide)
+            {
+                reactionExecutionTrace.Add(
+                    new R6ReactionExecutionRecord(request,slot.ActionId,false,
+                        "Reaction slot no longer executable."));
+                continue;
+            }
+
+            // A reaction is an independent ONE-SIDED action, never an automatic
+            // extra clash against the reaction target's next planned slot.
+            // Existing ClashManager remains the only damage/roll authority.
+            ClashResultContext result=clashManager.ResolvePair(new ClashPair(slot));
+            if(result==null)
+            {
+                reactionExecutionTrace.Add(
+                    new R6ReactionExecutionRecord(request,slot.ActionId,false,
+                        "ClashManager returned no executable reaction result."));
+                continue;
+            }
+
+            reactionExecutionTrace.Add(
+                new R6ReactionExecutionRecord(request,slot.ActionId,true,
+                    "One-sided reaction resolved by ClashManager."));
+
+            if(useR6StepwiseClashes)
+                Trace(R6StepTraceKind.ReactionCommitted,slot.ActionId,
+                    request.RootActionId,request.CauseEventId,-1);
+            // An actual reaction result is played after its own commit,
+            // before the original action resumes its next exchange.
+            if(actionPresentation!=null)
+                yield return actionPresentation.PlayClash(result);
+            if(useR6StepwiseClashes)
+                Trace(R6StepTraceKind.ReactionVisualCompleted,slot.ActionId,
+                    request.RootActionId,request.CauseEventId,-1);
         }
     }
 

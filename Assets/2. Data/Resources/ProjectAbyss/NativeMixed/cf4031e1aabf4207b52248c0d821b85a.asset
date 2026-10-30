@@ -1,0 +1,32 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a9642ce53eaa9cb4eb688bef0013151d, type: 3}
+  m_Name: cf4031e1aabf4207b52248c0d821b85a
+  m_EditorClassIdentifier: 
+  SchemaVersion: 2
+  StableId: cf4031e1aabf4207b52248c0d821b85a
+  SourceAssetGuid: 9307bc19f87268e49b814a05778f430c
+  SourceCanBreakPart: 0
+  SourceAssetName: "\uAD11\uC804\uC0AC\uC758 \uACB0\uD22C(\uACB0\uD22C)"
+  Operations:
+  - Kind: 2
+    Trigger: 1
+    EntryIndex: 0
+    StackAmount: 1
+    DamageMultiplier: 1
+    DamageFlatBonus: 0
+    DamageType: 0
+    UseSkillCanBreakPart: 1
+    CanBreakPart: 0
+    ApplyMomentum: 0
+    ApplyGuard: 1
+    Duration: 3

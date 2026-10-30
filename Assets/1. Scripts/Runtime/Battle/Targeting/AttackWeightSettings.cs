@@ -25,6 +25,10 @@ public sealed class AttackWeightSettings
     [Min(1)]
     public int Weight = 1;
 
+    [Tooltip("기본값은 기존 캐릭터 무작위 선택입니다. 슬롯 예산 방식은 명시적 opt-in 전용입니다.")]
+    public ProjectAbyss.Abilities.AttackWeightTargetingModel TargetingModel =
+        ProjectAbyss.Abilities.AttackWeightTargetingModel.LegacyCharacterRandom;
+
     [Tooltip(
         "추가 타깃의 부위를 고르는 방식입니다. " +
         "캐릭터 자체가 추가 타깃으로 뽑힌 뒤 이 규칙으로 부위를 정합니다.")]

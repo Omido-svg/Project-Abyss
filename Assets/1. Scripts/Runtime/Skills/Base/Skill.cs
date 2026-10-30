@@ -82,6 +82,11 @@ public abstract class Skill
         RuntimeDefinition?.AttackWeight
             ?.EffectiveWeight ?? 1;
 
+    public virtual ProjectAbyss.Abilities.AttackWeightTargetingModel
+        AttackWeightTargetingModel =>
+        RuntimeDefinition?.AttackWeight?.TargetingModel ??
+        ProjectAbyss.Abilities.AttackWeightTargetingModel.LegacyCharacterRandom;
+
     public virtual float
         SecondaryTargetDamageMultiplier =>
             RuntimeDefinition?.AttackWeight
@@ -460,6 +465,70 @@ public abstract class Skill
             rollSucceeded: false);
     }
 
+    /// <summary>
+    /// R1 canonical '사용시': once per consumed roll, before its RNG judgment.
+    /// Tie rerolls are NOT another roll use. One-sided rolls are uses, but
+    /// Duel card effects require an original Duel-vs-Duel partner.
+    /// </summary>
+    public void NotifyRollUsing(
+        BattleAction action,
+        BattleAction opponentAction,
+        int rollIndex,
+        bool isClash,
+        bool isOneSided)
+    {
+        if (action == null)
+            return;
+
+        if (action.ActionType == ActionType.Duel &&
+            !action.DuelEffectsEligible)
+            return;
+
+        ExecuteDefinitionEffects(
+            action,
+            SkillEffectTiming.OnExecute,
+            opponentAction,
+            rollIndex: rollIndex,
+            rollResult: null,
+            isClash: isClash,
+            isOneSided: isOneSided);
+
+        ExecuteRollDetailedEffects(
+            action,
+            opponentAction,
+            rollIndex,
+            SkillEffectTiming.OnExecute,
+            null,
+            null,
+            isClash,
+            isOneSided,
+            false);
+    }
+
+    /// <summary>
+    /// The card's attack-resolution-start event, not global battle start.
+    /// </summary>
+    public void NotifyAttackResolutionStarting(
+        BattleAction action,
+        BattleAction opponentAction,
+        bool isClash,
+        bool isOneSided)
+    {
+        if (action == null)
+            return;
+
+        if (action.ActionType == ActionType.Duel &&
+            !action.DuelEffectsEligible)
+            return;
+
+        ExecuteDefinitionEffects(
+            action,
+            SkillEffectTiming.OnAttackResolutionStarting,
+            opponentAction,
+            isClash: isClash,
+            isOneSided: isOneSided);
+    }
+
     public void NotifyRollStart(
         BattleAction action,
         BattleAction opponentAction,
@@ -607,10 +676,11 @@ public abstract class Skill
             isDuel &&
             opponentAction?.ActionType == ActionType.Duel;
 
+        // Canonical exchange victory/defeat requires TWO actually opposed rolls.
+        // One-sided hits are tracked separately and must not grant win effects.
         bool canonicalOutcomeAllowed =
-            isOneSided
-                ? !isDuel && succeeded
-                : !isDuel || duelVsDuel;
+            !isOneSided &&
+            (!isDuel || duelVsDuel);
 
         if (canonicalOutcomeAllowed)
         {
@@ -852,7 +922,8 @@ public abstract class Skill
         bool rollSucceeded = false,
         KillEventContext killContext = null)
     {
-        if (effects == null || action == null || RuntimeDefinition == null)
+        if (effects == null || action == null || RuntimeDefinition == null ||
+            (action.ActionType == ActionType.Duel && !action.DuelEffectsEligible))
             return;
 
         SkillEffectContext context = new SkillEffectContext(
@@ -888,7 +959,8 @@ public abstract class Skill
         bool rollSucceeded = false,
         KillEventContext killContext = null)
     {
-        if (effects == null || action == null || RuntimeDefinition == null)
+        if (effects == null || action == null || RuntimeDefinition == null ||
+            (action.ActionType == ActionType.Duel && !action.DuelEffectsEligible))
             return;
 
         SkillEffectContext context = new SkillEffectContext(
@@ -925,6 +997,13 @@ public abstract class Skill
             bool rollSucceeded = false,
             ClashResultContext clashResult = null)
     {
+        // R1: applies to ALL effects of a Duel card, including
+        // ClashEnd, DamageSettled and legacy runtime-wake entries.
+        // Global battle lifecycle executes via ExecuteOwnerDefinitionEffects.
+        if (action?.ActionType == ActionType.Duel &&
+            !action.DuelEffectsEligible)
+            return Array.Empty<SkillEffectResult>();
+
         return effectDispatcher.Execute(
             RuntimeDefinition,
             action,

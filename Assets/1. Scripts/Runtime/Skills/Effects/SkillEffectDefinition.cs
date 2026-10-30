@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -65,26 +66,58 @@ public abstract class SkillEffectDefinition : ScriptableObject
                 "Context is null.");
         }
 
-        SkillEffectContext selectedContext =
-            context.WithTarget(targetSelector);
-
-        if (!EvaluateConditions(
-                selectedContext,
-                out string failureMessage))
-        {
-            return SkillEffectResult.ConditionFailed(
-                this,
-                currentTiming,
-                selectedContext,
-                failureMessage);
-        }
-
-        Apply(selectedContext, overrides);
-
-        return SkillEffectResult.Applied(
-            this,
+        // The selector is resolved once, then both Entry and Definition
+        // conditions refer to the exact same target. Direct legacy callers
+        // still use this path.
+        return TryApplyWithSelectedTarget(
+            context.WithTarget(targetSelector),
             currentTiming,
-            selectedContext);
+            overrides,
+            scheduledTiming);
+    }
+
+    /// <summary>
+    /// R3: Entry resolves target before its own candidate conditions; Definition
+    /// must not roll a second random target after those conditions pass.
+    /// </summary>
+    public SkillEffectResult TryApplyWithSelectedTarget(
+        SkillEffectContext selectedContext,
+        SkillEffectTiming currentTiming,
+        SkillEffectOverrides overrides,
+        SkillEffectTiming scheduledTiming)
+    {
+        return TryApplyWithSelectedTarget(selectedContext,currentTiming,
+            overrides,scheduledTiming,null);
+    }
+
+    public SkillEffectResult TryApplyWithSelectedTarget(
+        SkillEffectContext selectedContext,
+        SkillEffectTiming currentTiming,
+        SkillEffectOverrides overrides,
+        SkillEffectTiming scheduledTiming,
+        Func<SkillEffectContext,SkillEffectOverrides,bool> nativeApply)
+    {
+        if (currentTiming != scheduledTiming &&
+            !CanWakeFromRuntimeEvent(currentTiming))
+            return SkillEffectResult.NotScheduled(this, currentTiming);
+
+        if (selectedContext == null)
+            return SkillEffectResult.Failed(this, currentTiming, null, "Context is null.");
+
+        if (!EvaluateConditions(selectedContext, out string failureMessage))
+            return SkillEffectResult.ConditionFailed(
+                this, currentTiming, selectedContext, failureMessage);
+
+        if(nativeApply!=null)
+        {
+            bool committed=nativeApply(selectedContext,overrides);
+            return committed
+                ? SkillEffectResult.Applied(this,currentTiming,selectedContext)
+                : SkillEffectResult.Failed(this,currentTiming,selectedContext,
+                    "Native command was not committed.");
+        }
+        Apply(selectedContext, overrides);
+        return SkillEffectResult.Applied(this, currentTiming, selectedContext);
     }
 
     public bool CanWakeFromRuntimeEvent(SkillEffectTiming runtimeTiming)

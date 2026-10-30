@@ -28,6 +28,17 @@ public sealed class AttackWeightTargetResolver
         if (action.HasResolvedAttackWeightTargets)
             return action.AttackWeightTargets;
 
+        // R5-W opt-in: legacy random targeting remains the default.
+        // Invalid slot allocation is fail-closed (main only), never random fallback.
+        if (action.Skill?.AttackWeightTargetingModel ==
+            ProjectAbyss.Abilities.AttackWeightTargetingModel.SlotWeighted)
+        {
+            action.SetAttackWeightTargets(
+                ProjectAbyss.Abilities.R5SlotWeightedTargetBridge.Resolve(
+                    battleContext, action));
+            return action.AttackWeightTargets;
+        }
+
         List<AttackWeightTarget> resolved =
             new List<AttackWeightTarget>();
 

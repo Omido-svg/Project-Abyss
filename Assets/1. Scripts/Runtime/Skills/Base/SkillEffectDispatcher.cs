@@ -59,6 +59,27 @@ internal sealed class SkillEffectDispatcher
                     rollSucceeded,
                     clashResult);
 
+            // R7 opt-in: ONE exclusive path, legacy is the default.
+            var migration = ProjectAbyss.Abilities.R7ExclusiveEntryMigrationScope.Active;
+            if (migration != null && migration.CanRoute(definition))
+                return migration.Execute(definition, context, timing);
+
+            // R7 production cohort runs via a native typed R5 resource
+            // command, not TempBalanceSkillProxyEffectDefinition.Apply.
+            var native = context.BattleContext?.Services?.R7NativeResourceMigration;
+            if (native!=null && native.CanRoute(definition))
+                return native.Execute(definition,context,timing);
+            // R7 single-effect Bleeding cohort, production active after
+            // target/part/status/replay parity validation.
+            var bleeding = context.BattleContext?.Services?.R7NativeBleedingMigration;
+            if(bleeding!=null && bleeding.CanRoute(definition))
+                return bleeding.Execute(definition,context,timing);
+            var legacyStatus=context.BattleContext?.Services?.R7LegacyStatusMigration;
+            if(legacyStatus!=null && legacyStatus.CanRoute(definition))
+                return legacyStatus.Execute(definition,context,timing);
+            var prep=context.BattleContext?.Services?.R7PreparationStatusMigration;
+            if(prep!=null && prep.CanRoute(definition))
+                return prep.Execute(definition,context,timing);
             return ExecuteEntries(
                 definition,
                 context,

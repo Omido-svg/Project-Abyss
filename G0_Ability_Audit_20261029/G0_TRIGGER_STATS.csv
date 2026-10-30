@@ -1,0 +1,17 @@
+﻿Scope,TimingValue,DisplayTiming,Count
+RawAssetTimingField,0,사용시,150
+EffectiveEntryTiming,0,사용시,61
+EffectiveEntryTiming,7,교환 승리시,51
+EffectiveEntryTiming,8,교환 패배시,2
+EffectiveEntryTiming,31,매칭시 (결투),4
+CanonicalContractWatch,-1,AfterDamage(3),0
+CanonicalContractWatch,-1,OnBattleStart(16),0
+CanonicalContractWatch,-1,OnClashEnd(34),0
+CanonicalContractWatch,-1,OnDuelMatched(31),4
+CanonicalContractWatch,-1,OnExchangeLose(8),2
+CanonicalContractWatch,-1,OnExchangeWin(7),51
+CanonicalContractWatch,-1,OnExecute(0),61
+CanonicalContractWatch,-1,OnRollFailure(24),0
+CanonicalContractWatch,-1,OnRollLose(15),0
+CanonicalContractWatch,-1,OnRollSuccess(23),0
+CanonicalContractWatch,-1,OnRollWin(14),0

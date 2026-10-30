@@ -33,8 +33,7 @@ public class DataDuelSkill : DuelSkill
         if (action == null)
             return;
 
-        ExecuteDefinitionEffects(
-            action,
-            SkillEffectTiming.OnExecute);
+        // R1: card OnExecute is invoked per *actual* roll by ClashManager.
+        // The Duel-vs-Duel card-effect gate is enforced at the roll boundary.
     }
 }

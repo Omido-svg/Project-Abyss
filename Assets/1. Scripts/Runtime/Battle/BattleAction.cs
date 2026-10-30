@@ -18,6 +18,16 @@ public class BattleAction
     private bool hasResolutionTargetOverride;
     private bool primaryTargetTerminatedDuringResolution;
 
+    // R1: immutable eligibility once the action pair was selected.
+    // This is not inferred from the current target: it must survive
+    // the transition from paired exchanges to leftover one-sided rolls.
+    public bool DuelEffectsEligible { get; private set; }
+
+    public void SetDuelEffectsEligible(bool eligible)
+    {
+        DuelEffectsEligible = eligible;
+    }
+
     public long ActionId => Slot == null ? 0 : Slot.ActionId;
     public int ActionIndex => Slot == null ? 0 : Slot.ActionIndex;
     public Character Owner => Slot == null ? null : Slot.Owner;

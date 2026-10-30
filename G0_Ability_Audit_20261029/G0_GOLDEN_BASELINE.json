@@ -1,0 +1,532 @@
+{
+    "GeneratedAtUtc": "2026-10-30T15:19:17.3767941Z",
+    "UnityVersion": "6000.0.56f1",
+    "Branch": "Default-Battle-Test",
+    "Commit": "1546ad3927a99931843853335c89e6d2a9500d9d",
+    "Scenarios": [
+        {
+            "Id": "G0-G01",
+            "Description": "3굴림 평타 vs 3굴림 평타 (전부 맞붙음)",
+            "FirstActionType": "NormalAttack",
+            "SecondActionType": "NormalAttack",
+            "FirstRollCount": 3,
+            "SecondRollCount": 3,
+            "IsClash": true,
+            "ExchangeCount": 3,
+            "OneSidedHitCount": 0,
+            "DamageEventCount": 3,
+            "PositiveDamageEventCount": 3,
+            "AttackWeight": 0,
+            "PrimaryDamage": 0,
+            "SecondaryHitCount": 0,
+            "SecondaryDamageTotal": 0,
+            "HitTargets": [],
+            "ProbeCounts": [
+                {
+                    "Label": "OnExecute",
+                    "FirstOwnerCount": 3,
+                    "SecondOwnerCount": 3
+                },
+                {
+                    "Label": "OnExchangeWin",
+                    "FirstOwnerCount": 3,
+                    "SecondOwnerCount": 0
+                },
+                {
+                    "Label": "OnExchangeLose",
+                    "FirstOwnerCount": 0,
+                    "SecondOwnerCount": 3
+                },
+                {
+                    "Label": "OnDuelMatched",
+                    "FirstOwnerCount": 0,
+                    "SecondOwnerCount": 0
+                },
+                {
+                    "Label": "OnClashEnd",
+                    "FirstOwnerCount": 1,
+                    "SecondOwnerCount": 1
+                },
+                {
+                    "Label": "AfterDamage",
+                    "FirstOwnerCount": 3,
+                    "SecondOwnerCount": 0
+                }
+            ],
+            "Trace": [
+                "OnExecute:First@0:roll=1:clash=True:one=False:dmg=0",
+                "OnExecute:Second@0:roll=1:clash=True:one=False:dmg=0",
+                "OnExchangeWin:First@7:roll=1:clash=True:one=False:dmg=0",
+                "OnExchangeLose:Second@8:roll=1:clash=True:one=False:dmg=0",
+                "AfterDamage:First@3:roll=1:clash=True:one=False:dmg=10",
+                "OnExecute:First@0:roll=2:clash=True:one=False:dmg=0",
+                "OnExecute:Second@0:roll=2:clash=True:one=False:dmg=0",
+                "OnExchangeWin:First@7:roll=2:clash=True:one=False:dmg=0",
+                "OnExchangeLose:Second@8:roll=2:clash=True:one=False:dmg=0",
+                "AfterDamage:First@3:roll=2:clash=True:one=False:dmg=10",
+                "OnExecute:First@0:roll=3:clash=True:one=False:dmg=0",
+                "OnExecute:Second@0:roll=3:clash=True:one=False:dmg=0",
+                "OnExchangeWin:First@7:roll=3:clash=True:one=False:dmg=0",
+                "OnExchangeLose:Second@8:roll=3:clash=True:one=False:dmg=0",
+                "AfterDamage:First@3:roll=3:clash=True:one=False:dmg=10",
+                "OnClashEnd:First@34:roll=0:clash=True:one=False:dmg=0",
+                "OnClashEnd:Second@34:roll=0:clash=True:one=False:dmg=0"
+            ]
+        },
+        {
+            "Id": "G0-G02",
+            "Description": "1굴림 평타 vs 1굴림 평타",
+            "FirstActionType": "NormalAttack",
+            "SecondActionType": "NormalAttack",
+            "FirstRollCount": 1,
+            "SecondRollCount": 1,
+            "IsClash": true,
+            "ExchangeCount": 1,
+            "OneSidedHitCount": 0,
+            "DamageEventCount": 1,
+            "PositiveDamageEventCount": 1,
+            "AttackWeight": 0,
+            "PrimaryDamage": 0,
+            "SecondaryHitCount": 0,
+            "SecondaryDamageTotal": 0,
+            "HitTargets": [],
+            "ProbeCounts": [
+                {
+                    "Label": "OnExecute",
+                    "FirstOwnerCount": 1,
+                    "SecondOwnerCount": 1
+                },
+                {
+                    "Label": "OnExchangeWin",
+                    "FirstOwnerCount": 1,
+                    "SecondOwnerCount": 0
+                },
+                {
+                    "Label": "OnExchangeLose",
+                    "FirstOwnerCount": 0,
+                    "SecondOwnerCount": 1
+                },
+                {
+                    "Label": "OnDuelMatched",
+                    "FirstOwnerCount": 0,
+                    "SecondOwnerCount": 0
+                },
+                {
+                    "Label": "OnClashEnd",
+                    "FirstOwnerCount": 1,
+                    "SecondOwnerCount": 1
+                },
+                {
+                    "Label": "AfterDamage",
+                    "FirstOwnerCount": 1,
+                    "SecondOwnerCount": 0
+                }
+            ],
+            "Trace": [
+                "OnExecute:First@0:roll=1:clash=True:one=False:dmg=0",
+                "OnExecute:Second@0:roll=1:clash=True:one=False:dmg=0",
+                "OnExchangeWin:First@7:roll=1:clash=True:one=False:dmg=0",
+                "OnExchangeLose:Second@8:roll=1:clash=True:one=False:dmg=0",
+                "AfterDamage:First@3:roll=1:clash=True:one=False:dmg=10",
+                "OnClashEnd:First@34:roll=0:clash=True:one=False:dmg=0",
+                "OnClashEnd:Second@34:roll=0:clash=True:one=False:dmg=0"
+            ]
+        },
+        {
+            "Id": "G0-G03",
+            "Description": "결투 3굴림 vs 결투 3굴림",
+            "FirstActionType": "Duel",
+            "SecondActionType": "Duel",
+            "FirstRollCount": 3,
+            "SecondRollCount": 3,
+            "IsClash": true,
+            "ExchangeCount": 3,
+            "OneSidedHitCount": 0,
+            "DamageEventCount": 3,
+            "PositiveDamageEventCount": 3,
+            "AttackWeight": 0,
+            "PrimaryDamage": 0,
+            "SecondaryHitCount": 0,
+            "SecondaryDamageTotal": 0,
+            "HitTargets": [],
+            "ProbeCounts": [
+                {
+                    "Label": "OnExecute",
+                    "FirstOwnerCount": 3,
+                    "SecondOwnerCount": 3
+                },
+                {
+                    "Label": "OnExchangeWin",
+                    "FirstOwnerCount": 3,
+                    "SecondOwnerCount": 0
+                },
+                {
+                    "Label": "OnExchangeLose",
+                    "FirstOwnerCount": 0,
+                    "SecondOwnerCount": 3
+                },
+                {
+                    "Label": "OnDuelMatched",
+                    "FirstOwnerCount": 3,
+                    "SecondOwnerCount": 3
+                },
+                {
+                    "Label": "OnClashEnd",
+                    "FirstOwnerCount": 1,
+                    "SecondOwnerCount": 1
+                },
+                {
+                    "Label": "AfterDamage",
+                    "FirstOwnerCount": 3,
+                    "SecondOwnerCount": 0
+                }
+            ],
+            "Trace": [
+                "OnDuelMatched:First@31:roll=1:clash=True:one=False:dmg=0",
+                "OnDuelMatched:Second@31:roll=1:clash=True:one=False:dmg=0",
+                "OnExecute:First@0:roll=1:clash=True:one=False:dmg=0",
+                "OnExecute:Second@0:roll=1:clash=True:one=False:dmg=0",
+                "OnExchangeWin:First@7:roll=1:clash=True:one=False:dmg=0",
+                "OnExchangeLose:Second@8:roll=1:clash=True:one=False:dmg=0",
+                "AfterDamage:First@3:roll=1:clash=True:one=False:dmg=10",
+                "OnDuelMatched:First@31:roll=2:clash=True:one=False:dmg=0",
+                "OnDuelMatched:Second@31:roll=2:clash=True:one=False:dmg=0",
+                "OnExecute:First@0:roll=2:clash=True:one=False:dmg=0",
+                "OnExecute:Second@0:roll=2:clash=True:one=False:dmg=0",
+                "OnExchangeWin:First@7:roll=2:clash=True:one=False:dmg=0",
+                "OnExchangeLose:Second@8:roll=2:clash=True:one=False:dmg=0",
+                "AfterDamage:First@3:roll=2:clash=True:one=False:dmg=10",
+                "OnDuelMatched:First@31:roll=3:clash=True:one=False:dmg=0",
+                "OnDuelMatched:Second@31:roll=3:clash=True:one=False:dmg=0",
+                "OnExecute:First@0:roll=3:clash=True:one=False:dmg=0",
+                "OnExecute:Second@0:roll=3:clash=True:one=False:dmg=0",
+                "OnExchangeWin:First@7:roll=3:clash=True:one=False:dmg=0",
+                "OnExchangeLose:Second@8:roll=3:clash=True:one=False:dmg=0",
+                "AfterDamage:First@3:roll=3:clash=True:one=False:dmg=10",
+                "OnClashEnd:First@34:roll=0:clash=True:one=False:dmg=0",
+                "OnClashEnd:Second@34:roll=0:clash=True:one=False:dmg=0"
+            ]
+        },
+        {
+            "Id": "G0-G04",
+            "Description": "결투 1굴림 vs 평타 1굴림",
+            "FirstActionType": "Duel",
+            "SecondActionType": "NormalAttack",
+            "FirstRollCount": 1,
+            "SecondRollCount": 1,
+            "IsClash": true,
+            "ExchangeCount": 1,
+            "OneSidedHitCount": 0,
+            "DamageEventCount": 1,
+            "PositiveDamageEventCount": 1,
+            "AttackWeight": 0,
+            "PrimaryDamage": 0,
+            "SecondaryHitCount": 0,
+            "SecondaryDamageTotal": 0,
+            "HitTargets": [],
+            "ProbeCounts": [
+                {
+                    "Label": "OnExecute",
+                    "FirstOwnerCount": 0,
+                    "SecondOwnerCount": 1
+                },
+                {
+                    "Label": "OnExchangeWin",
+                    "FirstOwnerCount": 0,
+                    "SecondOwnerCount": 0
+                },
+                {
+                    "Label": "OnExchangeLose",
+                    "FirstOwnerCount": 0,
+                    "SecondOwnerCount": 1
+                },
+                {
+                    "Label": "OnDuelMatched",
+                    "FirstOwnerCount": 0,
+                    "SecondOwnerCount": 0
+                },
+                {
+                    "Label": "OnClashEnd",
+                    "FirstOwnerCount": 0,
+                    "SecondOwnerCount": 1
+                },
+                {
+                    "Label": "AfterDamage",
+                    "FirstOwnerCount": 0,
+                    "SecondOwnerCount": 0
+                }
+            ],
+            "Trace": [
+                "OnExecute:Second@0:roll=1:clash=True:one=False:dmg=0",
+                "OnExchangeLose:Second@8:roll=1:clash=True:one=False:dmg=0",
+                "OnClashEnd:Second@34:roll=0:clash=True:one=False:dmg=0"
+            ]
+        },
+        {
+            "Id": "G0-G05",
+            "Description": "평타 3굴림 일방타격 (상대 행동 없음)",
+            "FirstActionType": "NormalAttack",
+            "SecondActionType": "None",
+            "FirstRollCount": 3,
+            "SecondRollCount": 0,
+            "IsClash": false,
+            "ExchangeCount": 3,
+            "OneSidedHitCount": 3,
+            "DamageEventCount": 3,
+            "PositiveDamageEventCount": 3,
+            "AttackWeight": 0,
+            "PrimaryDamage": 0,
+            "SecondaryHitCount": 0,
+            "SecondaryDamageTotal": 0,
+            "HitTargets": [],
+            "ProbeCounts": [
+                {
+                    "Label": "OnExecute",
+                    "FirstOwnerCount": 3,
+                    "SecondOwnerCount": 0
+                },
+                {
+                    "Label": "OnExchangeWin",
+                    "FirstOwnerCount": 0,
+                    "SecondOwnerCount": 0
+                },
+                {
+                    "Label": "OnExchangeLose",
+                    "FirstOwnerCount": 0,
+                    "SecondOwnerCount": 0
+                },
+                {
+                    "Label": "OnDuelMatched",
+                    "FirstOwnerCount": 0,
+                    "SecondOwnerCount": 0
+                },
+                {
+                    "Label": "OnClashEnd",
+                    "FirstOwnerCount": 0,
+                    "SecondOwnerCount": 0
+                },
+                {
+                    "Label": "AfterDamage",
+                    "FirstOwnerCount": 3,
+                    "SecondOwnerCount": 0
+                }
+            ],
+            "Trace": [
+                "OnExecute:First@0:roll=1:clash=False:one=True:dmg=0",
+                "AfterDamage:First@3:roll=1:clash=False:one=True:dmg=10",
+                "OnExecute:First@0:roll=2:clash=False:one=True:dmg=0",
+                "AfterDamage:First@3:roll=2:clash=False:one=True:dmg=10",
+                "OnExecute:First@0:roll=3:clash=False:one=True:dmg=0",
+                "AfterDamage:First@3:roll=3:clash=False:one=True:dmg=10"
+            ]
+        },
+        {
+            "Id": "G0-G06",
+            "Description": "평타 3굴림 vs 평타 1굴림 (남은 2굴림 일방 전환)",
+            "FirstActionType": "NormalAttack",
+            "SecondActionType": "NormalAttack",
+            "FirstRollCount": 3,
+            "SecondRollCount": 1,
+            "IsClash": true,
+            "ExchangeCount": 3,
+            "OneSidedHitCount": 2,
+            "DamageEventCount": 3,
+            "PositiveDamageEventCount": 3,
+            "AttackWeight": 0,
+            "PrimaryDamage": 0,
+            "SecondaryHitCount": 0,
+            "SecondaryDamageTotal": 0,
+            "HitTargets": [],
+            "ProbeCounts": [
+                {
+                    "Label": "OnExecute",
+                    "FirstOwnerCount": 3,
+                    "SecondOwnerCount": 1
+                },
+                {
+                    "Label": "OnExchangeWin",
+                    "FirstOwnerCount": 1,
+                    "SecondOwnerCount": 0
+                },
+                {
+                    "Label": "OnExchangeLose",
+                    "FirstOwnerCount": 0,
+                    "SecondOwnerCount": 1
+                },
+                {
+                    "Label": "OnDuelMatched",
+                    "FirstOwnerCount": 0,
+                    "SecondOwnerCount": 0
+                },
+                {
+                    "Label": "OnClashEnd",
+                    "FirstOwnerCount": 1,
+                    "SecondOwnerCount": 1
+                },
+                {
+                    "Label": "AfterDamage",
+                    "FirstOwnerCount": 3,
+                    "SecondOwnerCount": 0
+                }
+            ],
+            "Trace": [
+                "OnExecute:First@0:roll=1:clash=True:one=False:dmg=0",
+                "OnExecute:Second@0:roll=1:clash=True:one=False:dmg=0",
+                "OnExchangeWin:First@7:roll=1:clash=True:one=False:dmg=0",
+                "OnExchangeLose:Second@8:roll=1:clash=True:one=False:dmg=0",
+                "AfterDamage:First@3:roll=1:clash=True:one=False:dmg=10",
+                "OnExecute:First@0:roll=2:clash=True:one=True:dmg=0",
+                "AfterDamage:First@3:roll=2:clash=False:one=True:dmg=10",
+                "OnExecute:First@0:roll=3:clash=True:one=True:dmg=0",
+                "AfterDamage:First@3:roll=3:clash=False:one=True:dmg=10",
+                "OnClashEnd:First@34:roll=0:clash=True:one=False:dmg=0",
+                "OnClashEnd:Second@34:roll=0:clash=True:one=False:dmg=0"
+            ]
+        },
+        {
+            "Id": "G0-G07",
+            "Description": "원본 피해 1회 + 추가타 2회 (AfterDamage 재점화 측정)",
+            "FirstActionType": "NormalAttack",
+            "SecondActionType": "NormalAttack",
+            "FirstRollCount": 1,
+            "SecondRollCount": 1,
+            "IsClash": true,
+            "ExchangeCount": 1,
+            "OneSidedHitCount": 0,
+            "DamageEventCount": 3,
+            "PositiveDamageEventCount": 3,
+            "AttackWeight": 0,
+            "PrimaryDamage": 0,
+            "SecondaryHitCount": 0,
+            "SecondaryDamageTotal": 0,
+            "HitTargets": [],
+            "ProbeCounts": [
+                {
+                    "Label": "OnExecute",
+                    "FirstOwnerCount": 1,
+                    "SecondOwnerCount": 1
+                },
+                {
+                    "Label": "OnExchangeWin",
+                    "FirstOwnerCount": 1,
+                    "SecondOwnerCount": 0
+                },
+                {
+                    "Label": "OnExchangeLose",
+                    "FirstOwnerCount": 0,
+                    "SecondOwnerCount": 1
+                },
+                {
+                    "Label": "OnDuelMatched",
+                    "FirstOwnerCount": 0,
+                    "SecondOwnerCount": 0
+                },
+                {
+                    "Label": "OnClashEnd",
+                    "FirstOwnerCount": 1,
+                    "SecondOwnerCount": 1
+                },
+                {
+                    "Label": "AfterDamage",
+                    "FirstOwnerCount": 1,
+                    "SecondOwnerCount": 0
+                }
+            ],
+            "Trace": [
+                "OnExecute:First@0:roll=1:clash=True:one=False:dmg=0",
+                "OnExecute:Second@0:roll=1:clash=True:one=False:dmg=0",
+                "OnExchangeWin:First@7:roll=1:clash=True:one=False:dmg=0",
+                "OnExchangeLose:Second@8:roll=1:clash=True:one=False:dmg=0",
+                "AfterDamage:First@3:roll=1:clash=True:one=False:dmg=10",
+                "OnClashEnd:First@34:roll=0:clash=True:one=False:dmg=0",
+                "OnClashEnd:Second@34:roll=0:clash=True:one=False:dmg=0"
+            ]
+        },
+        {
+            "Id": "G0-W01",
+            "Description": "Legacy 공격 가중치 1 (메인 1 + 서브 0)",
+            "FirstActionType": "NormalAttack",
+            "SecondActionType": "None",
+            "FirstRollCount": 1,
+            "SecondRollCount": 0,
+            "IsClash": false,
+            "ExchangeCount": 1,
+            "OneSidedHitCount": 1,
+            "DamageEventCount": 1,
+            "PositiveDamageEventCount": 1,
+            "AttackWeight": 1,
+            "PrimaryDamage": 10,
+            "SecondaryHitCount": 0,
+            "SecondaryDamageTotal": 0,
+            "HitTargets": [],
+            "ProbeCounts": [],
+            "Trace": [
+                "weight=1",
+                "hits=0",
+                "secondaryContexts=0",
+                "primaryDamage=10",
+                "secondaryDamage=0",
+                "damageEvents=1"
+            ]
+        },
+        {
+            "Id": "G0-W02",
+            "Description": "Legacy 공격 가중치 2 (메인 1 + 서브 1)",
+            "FirstActionType": "NormalAttack",
+            "SecondActionType": "None",
+            "FirstRollCount": 1,
+            "SecondRollCount": 0,
+            "IsClash": false,
+            "ExchangeCount": 1,
+            "OneSidedHitCount": 1,
+            "DamageEventCount": 2,
+            "PositiveDamageEventCount": 2,
+            "AttackWeight": 2,
+            "PrimaryDamage": 10,
+            "SecondaryHitCount": 1,
+            "SecondaryDamageTotal": 10,
+            "HitTargets": [
+                "SUB EliteEnemy_Test(Clone)_G0WeightEnemy2/legs=10"
+            ],
+            "ProbeCounts": [],
+            "Trace": [
+                "weight=2",
+                "hits=1",
+                "secondaryContexts=1",
+                "primaryDamage=10",
+                "secondaryDamage=10",
+                "damageEvents=2"
+            ]
+        },
+        {
+            "Id": "G0-W03",
+            "Description": "Legacy 공격 가중치 3 (메인 1 + 서브 2)",
+            "FirstActionType": "NormalAttack",
+            "SecondActionType": "None",
+            "FirstRollCount": 1,
+            "SecondRollCount": 0,
+            "IsClash": false,
+            "ExchangeCount": 1,
+            "OneSidedHitCount": 1,
+            "DamageEventCount": 3,
+            "PositiveDamageEventCount": 3,
+            "AttackWeight": 3,
+            "PrimaryDamage": 10,
+            "SecondaryHitCount": 2,
+            "SecondaryDamageTotal": 20,
+            "HitTargets": [
+                "SUB EliteEnemy_Test(Clone)_G0WeightEnemy2/extra=10",
+                "SUB EliteEnemy_Test(Clone)_G0WeightEnemy3/legs=10"
+            ],
+            "ProbeCounts": [],
+            "Trace": [
+                "weight=3",
+                "hits=2",
+                "secondaryContexts=2",
+                "primaryDamage=10",
+                "secondaryDamage=20",
+                "damageEvents=3"
+            ]
+        }
+    ]
+}

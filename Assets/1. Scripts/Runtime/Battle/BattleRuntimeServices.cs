@@ -1,5 +1,6 @@
 using System.Collections;
 using UnityEngine;
+using ProjectAbyss.Abilities;
 
 /// <summary>
 /// BattleContext가 상위 BattleManager로 역참조하지 않고도
@@ -19,6 +20,13 @@ public sealed class BattleRuntimeServices
     public DamageManager DamageManager { get; set; }
     public ClashManager ClashManager { get; set; }
     public ActionResolver ActionResolver { get; set; }
+    public BattleReactionScheduler ReactionScheduler { get; set; }
+    public R6ReactionActionRegistry ReactionActionRegistry { get; set; }
+    public R6SpecialistReactionRegistry SpecialistReactionRegistry { get; set; }
+    public R7ProductionNativeResourceMigration R7NativeResourceMigration { get; set; }
+    public R7ProductionNativeBleedingMigration R7NativeBleedingMigration { get; set; }
+    public R7ProductionLegacyStatusMigration R7LegacyStatusMigration { get; set; }
+    public R7ProductionPreparationStatusMigration R7PreparationStatusMigration { get; set; }
     public ClashBuilder ClashBuilder { get; set; }
     public AIManager AIManager { get; set; }
     public TurnManager TurnManager { get; set; }
@@ -40,6 +48,13 @@ public sealed class BattleRuntimeServices
             DamageManager = DamageManager,
             ClashManager = ClashManager,
             ActionResolver = ActionResolver,
+            ReactionScheduler = ReactionScheduler,
+            ReactionActionRegistry = ReactionActionRegistry,
+            SpecialistReactionRegistry = SpecialistReactionRegistry,
+            R7NativeResourceMigration = R7NativeResourceMigration,
+            R7NativeBleedingMigration = R7NativeBleedingMigration,
+            R7LegacyStatusMigration = R7LegacyStatusMigration,
+            R7PreparationStatusMigration = R7PreparationStatusMigration,
             ClashBuilder = ClashBuilder,
             AIManager = AIManager,
             TurnManager = TurnManager,
