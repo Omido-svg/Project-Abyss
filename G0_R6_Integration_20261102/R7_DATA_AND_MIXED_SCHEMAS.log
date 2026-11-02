@@ -1,0 +1,14 @@
+[R7-DataGate] PASS D01 native resource assets exactly 15 
+[R7-DataGate] PASS D02 native status assets exactly 9 
+[R7-DataGate] PASS D03 no native duplicate stable ID 
+[R7-DataGate] PASS D04 no native ID collides with duplicate legacy 
+[R7-DataGate] PASS D05 every graph points to one existing source asset 
+[R7-DataGate] PASS D06 all 15 compiled resource values/timing/GUID match 
+[R7-DataGate] PASS D07 all 9 compiled status stacks/timing/GUID match 
+[R7-DataGate] PASS D08 native graphs have no SkillDefinition fields 
+[R7-DataGate] PASS D09 native graph runtime Resource count 
+[R7-DataGate] PASS D10 native graph runtime Bleeding count 
+[R7-DataGate] PASS D11 auditable manifest exactly 24 definitions 
+[R7-DataGate] RESULT PASS=11 FAIL=0 manifest=F:\GitCorp\Project-Abyss\ProjectAbyss_R7NativeSO_24_Audit_20261031.csv
+[R7-NativeMixed] DATA PASS=7 FAIL=0 runtimeRouteChanged=0
+[R7-MixedV2] DATA PASS=7 FAIL=0

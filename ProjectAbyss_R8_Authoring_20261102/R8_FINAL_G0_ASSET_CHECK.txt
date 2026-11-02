@@ -1,0 +1,5 @@
+G0=398 changed=0 missing=0
+R8 skills=145 validNative=37/37 corrupt=0
+Blockers=9 warnings=60
+StagingTestFolder=False Scratch=False
+PlayMode=False Scene=Battle Test Scene Dirty=True

@@ -1074,8 +1074,14 @@ public sealed class HifumiMechanic :
             Character target = action.Target;
             BodyPart targetPart = action.TargetPart;
 
-            if(!TryQueueR6Counter(action,target,targetPart,1,false,0,
-                ProjectAbyss.Abilities.ReactionTimingCheckpoint.AfterClashCompleted))
+            if(deferCountersToR6)
+            {
+                // In production a rejected queue request cannot fall back to
+                // an immediate counter during the current exchange callback.
+                TryQueueR6Counter(action,target,targetPart,1,false,0,
+                    ProjectAbyss.Abilities.ReactionTimingCheckpoint.AfterClashCompleted);
+            }
+            else
                 ResolveCounterSequence(action,target,targetPart,1,
                     applyTaggedSkillReward:false);
             return;
@@ -1177,9 +1183,15 @@ public sealed class HifumiMechanic :
             opponentAction?.OwnerPart ??
             myAction.TargetPart;
 
-        if(!TryQueueR6Counter(myAction,target,targetPart,counterCount,
-            taggedLosses>0,counterPowerBonus,
-            ProjectAbyss.Abilities.ReactionTimingCheckpoint.AfterClashCompleted))
+        if(deferCountersToR6)
+        {
+            // Do not violate the post-commit checkpoint if the queue is full
+            // or rejected. Old synchronous behavior stays only in legacy mode.
+            TryQueueR6Counter(myAction,target,targetPart,counterCount,
+                taggedLosses>0,counterPowerBonus,
+                ProjectAbyss.Abilities.ReactionTimingCheckpoint.AfterClashCompleted);
+        }
+        else
             ResolveCounterSequence(myAction,target,targetPart,counterCount,
                 applyTaggedSkillReward:taggedLosses>0,
                 counterPowerBonus:counterPowerBonus);

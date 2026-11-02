@@ -1,0 +1,7 @@
+G0_BASELINE=398
+MISSING=0
+MODIFIED=0
+
+PLAY=False
+SCENE=Battle Test Scene
+DIRTY=True

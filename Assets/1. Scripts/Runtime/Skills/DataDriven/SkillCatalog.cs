@@ -36,22 +36,18 @@ public sealed class SkillCatalog : ScriptableObject
         if (string.IsNullOrWhiteSpace(skillId) || skills == null)
             return null;
 
+        SkillDefinition found=null;
         for (int i = 0; i < skills.Count; i++)
         {
-            SkillDefinition definition = skills[i];
-            if (definition == null)
+            SkillDefinition definition=skills[i];
+            if(definition==null||
+               !string.Equals(definition.SkillId,skillId,StringComparison.Ordinal))
                 continue;
-
-            if (string.Equals(
-                    definition.SkillId,
-                    skillId,
-                    StringComparison.Ordinal))
-            {
-                return definition;
-            }
+            if(found!=null&&!ReferenceEquals(found,definition))
+                return null; // ID-only lookup is ambiguous.
+            found=definition;
         }
-
-        return null;
+        return found;
     }
 
 #if UNITY_EDITOR

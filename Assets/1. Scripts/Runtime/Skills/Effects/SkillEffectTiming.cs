@@ -54,7 +54,7 @@ public enum SkillEffectTiming
     // ---------------------------------------------------------------------
     // Rules 2026-09 canonical additions.
     // ---------------------------------------------------------------------
-    OnDuelMatched = 31,            // 정본: 매칭시
+    OnDuelMatched = 31,            // 구형 매칭시 (직렬화 호환 전용, 신규 저작 금지)
     OnPartWeakened = 32,           // 해당 피해로 정상 -> 약화 전이
     OnPartBroken = 33,             // 해당 피해로 약화 -> 파괴 전이
     OnClashEnd = 34,               // 정본: 합 종료시 (남은 일방타격까지 모두 처리 후)
@@ -68,7 +68,7 @@ public enum SkillEffectTiming
 /// </summary>
 public static class SkillEffectTimingCatalog
 {
-    // 0915 정본: 카드 Authoring Trigger는 정확히 5개뿐이다.
+    // 1029 정본: 카드 Authoring Trigger는 정확히 5+1개다.
     // 나머지 enum 값은 직렬화/런타임 이벤트 호환 전용이며 신규 카드 UI에 노출하지 않는다.
     private static readonly SkillEffectTiming[] authoringTimings =
     {
@@ -80,7 +80,7 @@ public static class SkillEffectTimingCatalog
         SkillEffectTiming.OnPreparationActivated
     };
 
-    // Roll 위치에서 쓸 수 있는 정본 Trigger는 매칭/교환 승패뿐이다.
+    // Roll 위치에서 쓸 수 있는 정본 Trigger는 사용시/교환 승패뿐이다.
     // 사용시/합 종료시는 SkillDefinition 레벨 EffectEntries에서 작성한다.
     private static readonly SkillEffectTiming[] rollAuthoringTimings =
     {

@@ -664,7 +664,7 @@ public partial class ClashManager
             };
         }
 
-        // 정본의 "매칭시"는 RNG/승패보다 먼저, 굴림 위치마다 판정한다.
+        // 구형 OnDuelMatched 직렬화 호환: 신규 카드 트리거가 아니며 굴림별 기존 데이터만 처리한다.
         first.Skill?.NotifyDuelMatched(
             first, second, exchangeIndex, isOneSided: false);
         second.Skill?.NotifyDuelMatched(

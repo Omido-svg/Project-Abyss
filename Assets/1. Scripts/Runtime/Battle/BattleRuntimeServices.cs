@@ -22,11 +22,15 @@ public sealed class BattleRuntimeServices
     public ActionResolver ActionResolver { get; set; }
     public BattleReactionScheduler ReactionScheduler { get; set; }
     public R6ReactionActionRegistry ReactionActionRegistry { get; set; }
+
+    public R6ReactionLifetimeRegistry20261102 ReactionLifetimeRegistry { get; set; }
     public R6SpecialistReactionRegistry SpecialistReactionRegistry { get; set; }
     public R7ProductionNativeResourceMigration R7NativeResourceMigration { get; set; }
     public R7ProductionNativeBleedingMigration R7NativeBleedingMigration { get; set; }
+    public R7ProductionNativeUniqueGaugeMigration R7NativeUniqueGaugeMigration { get; set; }
     public R7ProductionLegacyStatusMigration R7LegacyStatusMigration { get; set; }
     public R7ProductionPreparationStatusMigration R7PreparationStatusMigration { get; set; }
+    public R7ProductionSingleEffectMigration20261102 R7SingleEffectMigration { get; set; }
     public ClashBuilder ClashBuilder { get; set; }
     public AIManager AIManager { get; set; }
     public TurnManager TurnManager { get; set; }
@@ -50,11 +54,15 @@ public sealed class BattleRuntimeServices
             ActionResolver = ActionResolver,
             ReactionScheduler = ReactionScheduler,
             ReactionActionRegistry = ReactionActionRegistry,
+
+            ReactionLifetimeRegistry = ReactionLifetimeRegistry,
             SpecialistReactionRegistry = SpecialistReactionRegistry,
             R7NativeResourceMigration = R7NativeResourceMigration,
             R7NativeBleedingMigration = R7NativeBleedingMigration,
+            R7NativeUniqueGaugeMigration = R7NativeUniqueGaugeMigration,
             R7LegacyStatusMigration = R7LegacyStatusMigration,
             R7PreparationStatusMigration = R7PreparationStatusMigration,
+            R7SingleEffectMigration = R7SingleEffectMigration,
             ClashBuilder = ClashBuilder,
             AIManager = AIManager,
             TurnManager = TurnManager,

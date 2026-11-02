@@ -59,11 +59,6 @@ internal sealed class SkillEffectDispatcher
                     rollSucceeded,
                     clashResult);
 
-            // R7 opt-in: ONE exclusive path, legacy is the default.
-            var migration = ProjectAbyss.Abilities.R7ExclusiveEntryMigrationScope.Active;
-            if (migration != null && migration.CanRoute(definition))
-                return migration.Execute(definition, context, timing);
-
             // R7 production cohort runs via a native typed R5 resource
             // command, not TempBalanceSkillProxyEffectDefinition.Apply.
             var native = context.BattleContext?.Services?.R7NativeResourceMigration;
@@ -74,12 +69,34 @@ internal sealed class SkillEffectDispatcher
             var bleeding = context.BattleContext?.Services?.R7NativeBleedingMigration;
             if(bleeding!=null && bleeding.CanRoute(definition))
                 return bleeding.Execute(definition,context,timing);
+            var nativeGauge=context.BattleContext?.Services?.R7NativeUniqueGaugeMigration;
+            if(nativeGauge!=null && nativeGauge.CanRoute(definition))
+                return nativeGauge.Execute(definition,context,timing);
             var legacyStatus=context.BattleContext?.Services?.R7LegacyStatusMigration;
             if(legacyStatus!=null && legacyStatus.CanRoute(definition))
                 return legacyStatus.Execute(definition,context,timing);
             var prep=context.BattleContext?.Services?.R7PreparationStatusMigration;
             if(prep!=null && prep.CanRoute(definition))
                 return prep.Execute(definition,context,timing);
+            var generic=context.BattleContext?.Services?.R7SingleEffectMigration;
+            if(generic!=null && generic.CanRoute(definition))
+                return generic.Execute(definition,context,timing);
+            // The approved Preparation cannot silently execute old Entry.TryApply
+            // if a graph/service is missing or a native contract fails validation.
+            if(ProjectAbyss.Abilities.R7ProductionPreparationStatusMigration
+                    .IsAuthoredSource(definition))
+                throw new InvalidOperationException(
+                    "R7-1 Preparation native route unavailable; refusing legacy fallback.");
+            // An authored native graph must never become a legacy migration
+            // simply because its runtime route or data is unavailable.
+            if(IsRegisteredNativeSource(definition))
+                throw new InvalidOperationException(
+                    "R7-1 production native graph unavailable; refusing legacy fallback.");
+            // Optional legacy/pilot adapter remains only for content not yet
+            // migrated. R7-3..R7-11 will replace its effect families.
+            var migration = ProjectAbyss.Abilities.R7ExclusiveEntryMigrationScope.Active;
+            if (migration != null && migration.CanRoute(definition))
+                return migration.Execute(definition, context, timing);
             return ExecuteEntries(
                 definition,
                 context,
@@ -119,6 +136,15 @@ internal sealed class SkillEffectDispatcher
                     timing,
                     useCountThisTurn);
 
+            // Owner-lifecycle events have no Action/Slot. The approved R7-1
+            // Preparation only has on-activation operations: never dispatch
+            // its retained legacy entries through owner-level TryApply.
+            if(ProjectAbyss.Abilities.R7ProductionPreparationStatusMigration
+                    .IsAuthoredSource(definition) || IsRegisteredNativeSource(definition))
+                return Array.Empty<SkillEffectResult>();
+            var migration = ProjectAbyss.Abilities.R7ExclusiveEntryMigrationScope.Active;
+            if (migration != null && migration.CanRoute(definition))
+                return migration.Execute(definition, context, timing);
             return ExecuteEntries(
                 definition,
                 context,
@@ -134,6 +160,45 @@ internal sealed class SkillEffectDispatcher
     {
         activeDispatches.Clear();
     }
+
+    // Registry uses only authored metadata; it does not modify original SOs.
+    // Lazily cached to keep normal production dispatch and legacy fallback fast.
+    // Resources scans happen on the Unity main thread on first use.
+    private static readonly Lazy<HashSet<string>> NativeSourceKeys =
+        new Lazy<HashSet<string>>(() =>
+        {
+            var keys=new HashSet<string>(StringComparer.Ordinal);
+            void Add(string id,string name)
+            {
+                if(!string.IsNullOrWhiteSpace(id)&&
+                   !string.IsNullOrWhiteSpace(name))
+                    keys.Add(id+"|"+name);
+            }
+            foreach(var x in UnityEngine.Resources.LoadAll<
+                ProjectAbyss.Abilities.R7NativeAbilityDefinition>(
+                    "ProjectAbyss/NativeAbilities"))
+                Add(x.StableId,x.SourceAssetName);
+            foreach(var x in UnityEngine.Resources.LoadAll<
+                ProjectAbyss.Abilities.R7NativeStatusAbilityDefinition>(
+                    "ProjectAbyss/NativeStatuses"))
+                Add(x.StableId,x.SourceAssetName);
+            foreach(var x in UnityEngine.Resources.LoadAll<
+                ProjectAbyss.Abilities.R7NativeMixedAbilityDefinition>(
+                    "ProjectAbyss/NativeMixed"))
+                Add(x.StableId,x.SourceAssetName);
+            foreach(var x in UnityEngine.Resources.LoadAll<
+                ProjectAbyss.Abilities.R7NativeUniqueGaugeDefinition>(
+                    "ProjectAbyss/NativeUniqueGauges"))
+                Add(x.StableId,x.SourceAssetName);
+            foreach(var x in UnityEngine.Resources.LoadAll<
+                ProjectAbyss.Abilities.R7NativeSingleEffectDefinition20261102>(
+                    "ProjectAbyss/NativeSingles"))
+                Add(x.StableId,x.SourceAssetName);
+            return keys;
+        });
+    private static bool IsRegisteredNativeSource(SkillDefinition definition) =>
+        definition!=null && NativeSourceKeys.Value.Contains(
+            definition.SkillId+"|"+definition.name);
 
     private static bool HasExecutableEffects(
         SkillDefinition definition)

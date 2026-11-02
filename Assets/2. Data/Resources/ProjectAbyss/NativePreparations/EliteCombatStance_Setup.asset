@@ -1,0 +1,23 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fb1e785e78a2a0a4aa9e73611bd168a7, type: 3}
+  m_Name: EliteCombatStance_Setup
+  m_EditorClassIdentifier: 
+  SchemaVersion: 1
+  StableId: 356e72e97ac84a3a8757d1a188237f43
+  SourceAssetGuid: f9c5728c648630849a9ba0afe641d02a
+  SourceAssetName: "\uC804\uD22C \uD0DC\uC138(\uB3C4\uC0AC\uB9BC)"
+  Trigger: 1
+  BlockGain: 3
+  TurnClashPowerBonus: 1
+  WeakenedLegPenalty: 1
+  GiveToSelectedTarget: 0

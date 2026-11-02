@@ -16,8 +16,11 @@ namespace ProjectAbyss.Abilities
         public readonly bool WeakenedPart;
         public readonly bool BrokePart;
         public readonly bool KilledActor;
+        public readonly long TargetActorRuntimeId;
+        public readonly string TargetPartId;
         public AppliedDamageEvidence(long cause, long rollUseId, long hitId, bool additional,
-            int appliedHp, bool weakened, bool broken, bool killed)
+            int appliedHp, bool weakened, bool broken, bool killed,
+            long targetActorRuntimeId = 0, string targetPartId = null)
         {
             CauseEventId = cause;
             OriginRollUseId = rollUseId;
@@ -26,7 +29,10 @@ namespace ProjectAbyss.Abilities
             AppliedHpDamage = Math.Max(0, appliedHp);
             WeakenedPart = weakened;
             BrokePart = broken;
-            KilledActor = killed;
+            
+            TargetActorRuntimeId = targetActorRuntimeId;
+            TargetPartId = targetPartId ?? string.Empty;
+KilledActor = killed;
         }
     }
 
@@ -69,8 +75,13 @@ namespace ProjectAbyss.Abilities
 
             var d = damage.DamageEvidence;
             if (d.CauseEventId == 0 || d.CauseEventId != context.Event.CauseId ||
-                d.OriginRollUseId == 0 ||
-                (RequireOriginalHit && d.IsAdditionalHit))
+                d.OriginRollUseId == 0 || d.OriginHitId == 0 ||
+                (RequireOriginalHit && d.IsAdditionalHit) ||
+                (d.TargetActorRuntimeId > 0 && candidate.ActorRuntimeId > 0 &&
+                 d.TargetActorRuntimeId != candidate.ActorRuntimeId) ||
+                (!string.IsNullOrEmpty(d.TargetPartId) &&
+                 !string.IsNullOrEmpty(candidate.PartId) &&
+                 !string.Equals(d.TargetPartId,candidate.PartId,StringComparison.Ordinal)))
                 return false;
 
             switch (Test)

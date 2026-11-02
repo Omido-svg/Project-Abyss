@@ -565,6 +565,11 @@ public sealed class BattleWorldSlotArrowOverlayUI : MonoBehaviour
             focusedEnemySlot,
             hoveredCell);
 
+        // R4-W: only explicitly SlotWeighted, already-planned actions show
+        // cached SECONDARY hit targets as subtle dashed arrows. The main
+        // arrow and actual clash pairing remain authoritative and untouched.
+        used = DrawWeightedSecondaryPreviews(slots, player, used, focusMode);
+
         // 클릭 전 Hover도 실제 TargetSlot을 놓았을 때와 같은 합/일방공격 규칙으로 보여준다.
         if (hasPendingPlan)
         {
@@ -655,6 +660,85 @@ public sealed class BattleWorldSlotArrowOverlayUI : MonoBehaviour
         HideUnused(used);
     }
 
+    private int DrawWeightedSecondaryPreviews(
+        IReadOnlyList<ActionSlot> slots, Character player, int used, bool focusMode)
+    {
+        if (battleManager?.ClashBuilder == null ||
+            battleManager.BattleContext == null || slots == null)
+            return used;
+        var battle = battleManager.BattleContext;
+        foreach (var source in slots)
+        {
+            if (source?.Owner != player || source.Phase != ActionPhase.COMBAT ||
+                source.SkipResolution || source.Skill == null ||
+                source.Skill.AttackWeight <= 1 ||
+                source.Skill.AttackWeightTargetingModel !=
+                    ProjectAbyss.Abilities.AttackWeightTargetingModel.SlotWeighted ||
+                !BattleWorldActionSlotCellUI.TryGetPlanningCell(
+                    source, out BattleWorldActionSlotCellUI fromCell))
+                continue;
+            var preview = battleManager.ClashBuilder.BuildAttackWeightPreview(
+                battle, source, slots);
+            if (preview?.Success != true || preview.DistinctHitTargets.Count < 2)
+                continue;
+            Vector2 from = fromCell.GetScreenCenter(targetCamera);
+            for (int i = 1; i < preview.DistinctHitTargets.Count; i++)
+            {
+                var hit = preview.DistinctHitTargets[i];
+                Character actor = null;
+                if (battle.Enemies != null)
+                    foreach (var enemy in battle.Enemies)
+                        if (enemy != null &&
+                            ProjectAbyss.Abilities.R4LiveSlotQuery.ActorRuntimeId(enemy)
+                                == hit.ActorRuntimeId)
+                        { actor = enemy; break; }
+                if (actor == null || actor.IsDead) continue;
+                BodyPart part = null;
+                if (actor.UsesBodyParts)
+                {
+                    if (actor.BodyParts != null)
+                        foreach (var candidate in actor.BodyParts)
+                            if (candidate != null && !candidate.IsBroken &&
+                                candidate.PartId == hit.PartId)
+                            { part = candidate; break; }
+                    if (part == null || !actor.IsValidTargetPart(part)) continue;
+                }
+                if (!BattleWorldActionSlotCellUI.TryGetTargetCell(
+                    actor, part, out BattleWorldActionSlotCellUI toCell))
+                    continue;
+                var to = toCell.GetScreenCenter(targetCamera);
+                Color c = playerArrowColor;
+                c.a *= focusMode ? 0.58f : idlePlayerArrowAlpha * 0.72f;
+                used = DrawR4DashedArrow(used, from, to, c);
+            }
+        }
+        return used;
+    }
+
+    // Use existing pooled arrow visuals; dashed sections are presentation
+    // only and do not create a clash or action slot.
+    private int DrawR4DashedArrow(int index, Vector2 from, Vector2 to, Color color)
+    {
+        float length = Vector2.Distance(from,to);
+        if (length < 18f) return index;
+        int segments = Mathf.Clamp(Mathf.CeilToInt(length / 38f), 3, 12);
+        for (int i = 0; i < segments; i++)
+        {
+            float t0 = i / (float)segments;
+            float t1 = (i + 0.60f) / segments;
+            int drawn = index;
+            index = DrawArrow(index, Vector2.Lerp(from,to,t0),
+                Vector2.Lerp(from,to,t1), color, Mathf.Max(1f,normalThickness * 0.42f));
+            if (i < segments - 1 && drawn < arrows.Count)
+            {
+                if (arrows[drawn].HeadLeft != null) arrows[drawn].HeadLeft.enabled = false;
+                if (arrows[drawn].HeadRight != null) arrows[drawn].HeadRight.enabled = false;
+            }
+        }
+        return index;
+    }
+
+    
     private IReadOnlyList<ClashPair> BuildPreviewPairs(
         IReadOnlyList<ActionSlot> slots)
     {
@@ -1431,7 +1515,11 @@ public sealed class BattleWorldSlotArrowOverlayUI : MonoBehaviour
         Color color,
         float thickness)
     {
+
         ArrowVisual visual = GetArrow(index);
+        // Restore pooled arrowheads after using dashed secondary previews.
+        if (visual.HeadLeft != null) visual.HeadLeft.enabled = true;
+        if (visual.HeadRight != null) visual.HeadRight.enabled = true;
         index++;
 
         Vector2 delta = to - from;

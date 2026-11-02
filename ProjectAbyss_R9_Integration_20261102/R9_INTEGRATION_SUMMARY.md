@@ -1,0 +1,12 @@
+# R9 integrated regression
+- State: COMPLETE_ALL_GATES_PASSED
+- Completed gates: 69 / 69
+- Gate PASS=69 FAIL=0 PENDING=0 NOT_RUN=0
+- Assertions PASS=1325 FAIL=0
+- PlayMode entries: 1 for 39 Play gates (single domain reload)
+- Runtime scene resets (no PlayMode exit): 38
+- Runtime reset source: saved Battle Test Scene; unsaved editor scene is preserved
+- Cross-gate contamination is checked by each gate's independent diagnostics
+- No hidden PASS for no-summary, exception, or skipped gate
+- Unresolved R7 content blockers remain tracked by R8 Validator
+- EndUTC=2026-11-02T10:10:34.0813537Z

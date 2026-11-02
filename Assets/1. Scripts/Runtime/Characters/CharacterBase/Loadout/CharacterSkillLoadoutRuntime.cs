@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 /// <summary>
 /// ScriptableObject 원본을 변경하지 않고 런타임 장착 상태를 보관한다.
@@ -14,6 +15,8 @@ public sealed class CharacterSkillLoadoutRuntime
         equippedByType = new();
     private readonly HashSet<string> ownedSkillIds =
         new(StringComparer.Ordinal);
+    private readonly HashSet<string> ownedCollisionGuids =
+        new(StringComparer.OrdinalIgnoreCase);
     private bool prestigeLockedForRun;
 
     public event Action LoadoutChanged;
@@ -35,7 +38,12 @@ public sealed class CharacterSkillLoadoutRuntime
             foreach (SkillDefinition definition in GetEquipped(type))
             {
                 if (definition != null && type != ActionType.Prestige)
+                {
                     ownedSkillIds.Add(definition.SkillId);
+                    string guid=R7SkillIdentityContract20261102.GuidFor(definition);
+                    if(!string.IsNullOrEmpty(guid))
+                        ownedCollisionGuids.Add(guid);
+                }
             }
         }
         prestigeLockedForRun = GetEquipped(ActionType.Prestige).Count > 0;
@@ -63,8 +71,15 @@ public sealed class CharacterSkillLoadoutRuntime
             .Contains(definition);
     }
 
-    public bool Owns(SkillDefinition definition) =>
-        definition != null && ownedSkillIds.Contains(definition.SkillId);
+    public bool Owns(SkillDefinition definition)
+    {
+        if(definition==null||!ownedSkillIds.Contains(definition.SkillId))
+            return false;
+        if(!R7SkillIdentityContract20261102.IsDuplicateId(definition.SkillId))
+            return true;
+        string guid=R7SkillIdentityContract20261102.GuidFor(definition);
+        return !string.IsNullOrEmpty(guid) && ownedCollisionGuids.Contains(guid);
+    }
 
     public bool TryAcquire(SkillDefinition definition, out string reason)
     {
@@ -81,7 +96,16 @@ public sealed class CharacterSkillLoadoutRuntime
         }
         if (!ValidateCandidate(definition, out reason))
             return false;
+        var collisionGuid=R7SkillIdentityContract20261102.GuidFor(definition);
+        if(R7SkillIdentityContract20261102.IsDuplicateId(definition.SkillId) &&
+           string.IsNullOrWhiteSpace(collisionGuid))
+        {
+            reason="등록되지 않은 중복 SkillId GUID입니다.";
+            return false;
+        }
         ownedSkillIds.Add(definition.SkillId);
+        if(!string.IsNullOrEmpty(collisionGuid))
+            ownedCollisionGuids.Add(collisionGuid);
         return true;
     }
 
@@ -267,13 +291,16 @@ public sealed class CharacterSkillLoadoutRuntime
     public CharacterSkillLoadoutState CaptureState()
     {
         CharacterSkillLoadoutState state = new();
-        CaptureIds(ActionType.NormalAttack, state.NormalSkillIds);
-        CaptureIds(ActionType.Duel, state.DuelSkillIds);
-        CaptureIds(ActionType.Preparation, state.PreparationSkillIds);
-        CaptureIds(ActionType.Prestige, state.PrestigeSkillIds);
+        CaptureIds(ActionType.NormalAttack,state.NormalSkillIds,state.NormalSkillGuids);
+        CaptureIds(ActionType.Duel,state.DuelSkillIds,state.DuelSkillGuids);
+        CaptureIds(ActionType.Preparation,state.PreparationSkillIds,state.PreparationSkillGuids);
+        CaptureIds(ActionType.Prestige,state.PrestigeSkillIds,state.PrestigeSkillGuids);
         state.OwnedSkillIds.Clear();
-        foreach (string id in ownedSkillIds)
+        foreach(string id in ownedSkillIds.OrderBy(x=>x,StringComparer.Ordinal))
             state.OwnedSkillIds.Add(id);
+        state.OwnedSkillGuids.Clear();
+        foreach(string guid in ownedCollisionGuids.OrderBy(x=>x,StringComparer.OrdinalIgnoreCase))
+            state.OwnedSkillGuids.Add(guid);
         return state;
     }
 
@@ -281,144 +308,119 @@ public sealed class CharacterSkillLoadoutRuntime
     /// 모든 카테고리를 먼저 검증한 뒤 한 번에 적용한다.
     /// 일부만 복원되는 중간 상태를 만들지 않는다.
     /// </summary>
-    public bool TryRestoreState(
-        CharacterSkillLoadoutState state,
-        out string reason)
+    public bool TryRestoreState(CharacterSkillLoadoutState state,out string reason)
     {
-        reason = string.Empty;
-
-        if (state == null)
+        reason=string.Empty;
+        if(state==null){reason="복원할 장착 상태가 없습니다.";return false;}
+        var staged=new Dictionary<ActionType,List<SkillDefinition>>();
+        var types=new[]{ActionType.NormalAttack,ActionType.Duel,
+            ActionType.Preparation,ActionType.Prestige};
+        foreach(var type in types)
         {
-            reason = "복원할 장착 상태가 없습니다.";
-            return false;
-        }
-
-        Dictionary<ActionType, List<SkillDefinition>> staged = new();
-        ActionType[] types =
-        {
-            ActionType.NormalAttack,
-            ActionType.Duel,
-            ActionType.Preparation,
-            ActionType.Prestige
-        };
-
-        for (int i = 0; i < types.Length; i++)
-        {
-            ActionType type = types[i];
-            if (!TryResolveStateList(
-                    type,
-                    state.GetIds(type),
-                    out List<SkillDefinition> values,
-                    out reason))
-            {
+            if(!TryResolveStateList(type,state.GetIds(type),state.GetGuids(type),
+                out var values,out reason))
                 return false;
-            }
-
-            staged[type] = values;
+            staged[type]=values;
         }
 
-        foreach (KeyValuePair<ActionType, List<SkillDefinition>> pair in staged)
+        var available=GetResolutionCandidates();
+        var ownedIds=new HashSet<string>(StringComparer.Ordinal);
+        if(state.OwnedSkillIds!=null)
+            foreach(var id in state.OwnedSkillIds)
+                if(!string.IsNullOrWhiteSpace(id))ownedIds.Add(id);
+        var ownedGuids=new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        if(state.OwnedSkillGuids!=null)
         {
-            List<SkillDefinition> destination =
-                GetMutableList(pair.Key);
-            destination.Clear();
-            destination.AddRange(pair.Value);
-        }
-
-        ownedSkillIds.Clear();
-        if (state.OwnedSkillIds != null)
-        {
-            foreach (string id in state.OwnedSkillIds)
+            foreach(var guid in state.OwnedSkillGuids)
             {
-                if (!string.IsNullOrWhiteSpace(id))
-                    ownedSkillIds.Add(id);
+                if(string.IsNullOrWhiteSpace(guid))continue;
+                var matches=available.Where(x=>x!=null &&
+                    ownedIds.Contains(x.SkillId) &&
+                    R7SkillIdentityContract20261102.IsDuplicateId(x.SkillId) &&
+                    string.Equals(R7SkillIdentityContract20261102.GuidFor(x),
+                        guid,StringComparison.OrdinalIgnoreCase)).ToArray();
+                if(matches.Length!=1)
+                {reason="저장된 소유 스킬 GUID를 후보에서 찾을 수 없습니다: "+guid;return false;}
+                ownedGuids.Add(guid);
             }
         }
-
-        // 구 저장 데이터에는 OwnedSkillIds가 없으므로 현재 장착 중인 비-위세 카드는 최소 보유로 복구한다.
-        foreach (KeyValuePair<ActionType, List<SkillDefinition>> pair in equippedByType)
+        foreach(var id in ownedIds)
         {
-            if (pair.Key == ActionType.Prestige)
+            if(!R7SkillIdentityContract20261102.IsDuplicateId(id) ||
+               available.Any(x=>x!=null&&x.SkillId==id &&
+                   ownedGuids.Contains(R7SkillIdentityContract20261102.GuidFor(x))))
                 continue;
-            foreach (SkillDefinition definition in pair.Value)
+            // Old save: ID-only. Select the unique local candidate or the
+            // explicitly recorded PhaseE default, never collection order.
+            if(!R7SkillIdentityContract20261102.TryResolve(id,"",available,
+                out var selected,out reason))
+                return false;
+            ownedGuids.Add(R7SkillIdentityContract20261102.GuidFor(selected));
+        }
+        foreach(var pair in staged)
+        {
+            if(pair.Key==ActionType.Prestige)continue;
+            foreach(var d in pair.Value)
             {
-                if (definition != null)
-                    ownedSkillIds.Add(definition.SkillId);
+                ownedIds.Add(d.SkillId);
+                var guid=R7SkillIdentityContract20261102.GuidFor(d);
+                if(R7SkillIdentityContract20261102.IsDuplicateId(d.SkillId) &&
+                   string.IsNullOrEmpty(guid))
+                {reason="장착 스킬 GUID 레지스트리가 누락됐습니다: "+d.name;return false;}
+                if(!string.IsNullOrEmpty(guid))ownedGuids.Add(guid);
             }
         }
-        prestigeLockedForRun = GetEquipped(ActionType.Prestige).Count > 0;
-
+        // Transactional commit. No partially restored loadout on failures.
+        foreach(var pair in staged)
+        {
+            var dest=GetMutableList(pair.Key);
+            dest.Clear();
+            dest.AddRange(pair.Value);
+        }
+        ownedSkillIds.Clear();
+        ownedSkillIds.UnionWith(ownedIds);
+        ownedCollisionGuids.Clear();
+        ownedCollisionGuids.UnionWith(ownedGuids);
+        prestigeLockedForRun=GetEquipped(ActionType.Prestige).Count>0;
         LoadoutChanged?.Invoke();
         return true;
     }
 
-    private bool TryResolveStateList(
-        ActionType actionType,
-        IReadOnlyList<string> ids,
-        out List<SkillDefinition> result,
-        out string reason)
+    private bool TryResolveStateList(ActionType actionType,
+        IReadOnlyList<string> ids,IReadOnlyList<string> guids,
+        out List<SkillDefinition> result,out string reason)
     {
-        result = new List<SkillDefinition>();
-        reason = string.Empty;
-
-        int count = ids?.Count ?? 0;
-        int limit = GetEquipLimit(actionType);
-        if (count > limit)
+        result=new List<SkillDefinition>();
+        reason=string.Empty;
+        int count=ids?.Count??0;
+        if(count>GetEquipLimit(actionType))
+        {reason="저장된 장착 수가 허용 한도를 초과했습니다.";return false;}
+        if(guids!=null&&guids.Count!=0&&guids.Count!=count)
+        {reason="SkillId/GUID 배열 길이가 서로 다릅니다.";return false;}
+        var candidates=GetResolutionCandidates();
+        for(int i=0;i<count;i++)
         {
-            reason =
-                $"{GetCategoryName(actionType)} 저장 데이터가 한도 {limit}개를 초과합니다.";
-            return false;
+            var guid=guids!=null&&guids.Count==count?guids[i]:null;
+            if(!R7SkillIdentityContract20261102.TryResolve(ids[i],guid,
+                candidates,out var definition,out reason))
+                return false;
+            if(definition.ActionType!=actionType)
+            {reason="저장 슬롯과 스킬 종류가 다릅니다: "+definition.name;return false;}
+            if(!ValidateCandidate(definition,out reason))return false;
+            if(!result.Contains(definition))result.Add(definition);
         }
-
-        for (int i = 0; i < count; i++)
-        {
-            string id = ids[i];
-            SkillDefinition definition = ResolveDefinition(id);
-            if (definition == null)
-            {
-                reason = $"스킬 ID '{id}'를 카탈로그에서 찾지 못했습니다.";
-                return false;
-            }
-
-            if (definition.ActionType != actionType)
-            {
-                reason = $"스킬 '{definition.SkillName}'의 카테고리가 저장 슬롯과 다릅니다.";
-                return false;
-            }
-
-            if (!ValidateCandidate(definition, out reason))
-                return false;
-
-            if (!result.Contains(definition))
-                result.Add(definition);
-        }
-
         return true;
     }
 
-    private SkillDefinition ResolveDefinition(string skillId)
+    private SkillDefinition[] GetResolutionCandidates()
     {
-        SkillDefinition fromCatalog =
-            source?.Catalog?.FindById(skillId);
-        if (fromCatalog != null)
-            return fromCatalog;
-
-        if (source == null)
-            return null;
-
-        foreach (SkillDefinition definition in source.EnumerateAllDefinitions())
-        {
-            if (definition != null &&
-                string.Equals(
-                    definition.SkillId,
-                    skillId,
-                    StringComparison.Ordinal))
-            {
-                return definition;
-            }
-        }
-
-        return null;
+        // Preserve the legacy catalog lookup even when catalog pool expansion
+        // is disabled. ValidateCandidate still enforces loadout restrictions.
+        var local=source?.EnumerateAllDefinitions() ??
+            System.Linq.Enumerable.Empty<SkillDefinition>();
+        var global=source?.Catalog?.Skills ??
+            (IReadOnlyList<SkillDefinition>)Array.Empty<SkillDefinition>();
+        return local.Concat(global).Where(x=>x!=null).Distinct().ToArray();
     }
 
     private bool ValidateCandidate(
@@ -453,19 +455,15 @@ public sealed class CharacterSkillLoadoutRuntime
         return true;
     }
 
-    private void CaptureIds(
-        ActionType actionType,
-        List<string> destination)
+    private void CaptureIds(ActionType actionType,List<string> ids,List<string> guids)
     {
-        destination.Clear();
-        IReadOnlyList<SkillDefinition> values =
-            GetEquipped(actionType);
-
-        for (int i = 0; i < values.Count; i++)
+        ids.Clear();
+        guids.Clear();
+        foreach(SkillDefinition definition in GetEquipped(actionType))
         {
-            SkillDefinition definition = values[i];
-            if (definition != null)
-                destination.Add(definition.SkillId);
+            if(definition==null)continue;
+            ids.Add(definition.SkillId);
+            guids.Add(R7SkillIdentityContract20261102.GuidFor(definition));
         }
     }
 

@@ -657,7 +657,7 @@ public abstract class Skill
     /// <summary>
     /// 굴림 승패가 확정된 직후, 실제 피해 적용 전에 호출한다.
     /// Rules 2026-09 정본의 "승리시/패배시"를 여기서 발행한다.
-    /// - 평타: 맞붙은 교환 승/패 + 유효한 일방타격 승리를 인정
+    /// - 평타: 실제 맞붙은 교환의 승/패만 인정 (일방타격 제외)
     /// - 결투: 결투 대 결투에서 실제로 맞붙은 교환 승/패만 인정
     /// 구 OnRollSuccess/Failure는 기존 직렬화 데이터 호환을 위해 뒤에서 계속 발행한다.
     /// </summary>
@@ -669,18 +669,11 @@ public abstract class Skill
         bool isClash,
         bool isOneSided)
     {
-        bool isDuel =
-            action?.ActionType == ActionType.Duel;
-
-        bool duelVsDuel =
-            isDuel &&
-            opponentAction?.ActionType == ActionType.Duel;
-
         // Canonical exchange victory/defeat requires TWO actually opposed rolls.
         // One-sided hits are tracked separately and must not grant win effects.
         bool canonicalOutcomeAllowed =
-            !isOneSided &&
-            (!isDuel || duelVsDuel);
+            R1CanonicalEventPolicy.AllowsExchangeOutcome(
+                action, opponentAction, isClash, isOneSided);
 
         if (canonicalOutcomeAllowed)
         {

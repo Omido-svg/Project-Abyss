@@ -24,6 +24,13 @@ namespace ProjectAbyss.Abilities
         public bool ApplyMomentum;
         public bool ApplyGuard = true;
 public int Duration;
+        // R7-4 per-operation native roll/condition filters.
+        // Existing schema-2 assets remain unrestricted by default.
+        public bool RestrictToRoll;
+        [Min(1)] public int RollNumber=1;
+        public R7MixedConditionKind20261102 Condition;
+        public StatusEffectId RequiredStatus=StatusEffectId.Strength;
+        [Min(1)] public int RequiredNumericValue=1;
     }
 
     [CreateAssetMenu(menuName = "Project Abyss/Abilities/Native Mixed Ability",
@@ -50,6 +57,7 @@ public string SourceAssetName;
                 {
                     var e = Operations[i];
                     if (e == null || e.EntryIndex != i ||
+                        !R7NativeMixedGate20261102.IsValid(e) ||
                         (e.Kind != R7MixedOperationKind.ApplyBleeding &&
                          e.Kind != R7MixedOperationKind.RolledPartDamage) ||
                         (e.Kind == R7MixedOperationKind.ApplyBleeding &&

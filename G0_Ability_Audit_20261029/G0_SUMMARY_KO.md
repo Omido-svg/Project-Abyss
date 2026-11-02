@@ -1,9 +1,9 @@
 # G0 — 능력 5요소 아키텍처 기준선 감사
 
-- 생성 시각(UTC): `2026-10-30T05:57:23.2905837Z`
+- 생성 시각(UTC): `2026-11-02T10:08:03.5956831Z`
 - Unity: `6000.0.56f1`
 - 브랜치: `Default-Battle-Test`
-- 커밋: `1546ad3927a99931843853335c89e6d2a9500d9d`
+- 커밋: `7ec5d6b93158368d6f4fb2deef9b165c4c61f9e7`
 - 프로젝트: `F:\GitCorp\Project-Abyss`
 
 ## 1. 요약
@@ -23,12 +23,12 @@
 | 키워드/상태 저장 감사 행 | 28 |
 | 키워드 수동 검토 대상 | 3 |
 | 필수 키워드 목록 | 14 |
-| 필수 키워드 미구현 | 6 |
+| 필수 키워드 미구현 | 5 |
 | 필수 키워드 정책 미정 | 10 |
 | 용어집 키워드 | 40 |
 | 스킬 저작 키워드 Entry | 0 |
 | 커스텀 자원 정의 | 0 |
-| 실행 호출 그래프 간선 | 52 |
+| 실행 호출 그래프 간선 | 60 |
 | 가중치 2 이상 스킬 | 0 |
 | 가중치 보호 목록 스킬 | 0 |
 
@@ -52,7 +52,7 @@
 
 | 값 | 표시 | 개수 |
 |---|---|---|
-| 0 | 사용시 | 150 |
+| 0 | 사용시 (굴림별) | 150 |
 
 ## 3. Entry 출처(Scope) 분포
 
@@ -103,6 +103,8 @@
 | `Assets/1. Scripts/Editor/Verification/DamageSystemR3TurnEndSettlementVerification20261029.cs` | 147 | `OnCharacterDeath` |
 | `Assets/1. Scripts/Editor/Verification/G0AbilityAuditReport20261029.cs` | 2274 | `OnDamageEventResolved` |
 | `Assets/1. Scripts/Editor/Verification/G0AbilityAuditReport20261029.cs` | 2437 | `OnDamageEventResolved` |
+| `Assets/1. Scripts/Editor/Verification/R6HifumiDeferredParityVerification20261030.cs` | 94 | `OnReactiveRollResolved` |
+| `Assets/1. Scripts/Runtime/Abilities/Runtime/R7SkillPilotObserver.cs` | 96 | `OnActionStart` |
 | `Assets/1. Scripts/Runtime/Characters/CharacterBase/ReactiveCombatMechanic.cs` | 45 | `OnTurnStart` |
 | `Assets/1. Scripts/Runtime/Characters/CharacterBase/ReactiveCombatMechanic.cs` | 53 | `OnTurnEnd` |
 | `Assets/1. Scripts/Runtime/Characters/CharacterBase/ReactiveCombatMechanic.cs` | 61 | `OnActionStart` |
@@ -154,16 +156,16 @@
 | `Assets/1. Scripts/Runtime/Diagnostics/Verification/CharacterVerificationAutoBattleDriver.cs` | 1032 | `OnBodyPartBreakResolved` |
 | `Assets/1. Scripts/Runtime/Diagnostics/Verification/CharacterVerificationAutoBattleDriver.cs` | 1034 | `OnCharacterDeathResolved` |
 | `Assets/1. Scripts/Runtime/Diagnostics/Verification/CharacterVerificationAutoBattleDriver.cs` | 1036 | `OnKillResolved` |
-| `Assets/1. Scripts/Runtime/Skills/Base/Skill.cs` | 1064 | `OnBattleStarted` |
-| `Assets/1. Scripts/Runtime/Skills/Base/Skill.cs` | 1066 | `OnBattleEnded` |
-| `Assets/1. Scripts/Runtime/Skills/Base/Skill.cs` | 1068 | `OnTurnStart` |
-| `Assets/1. Scripts/Runtime/Skills/Base/Skill.cs` | 1070 | `OnTurnEnd` |
-| `Assets/1. Scripts/Runtime/Skills/Base/Skill.cs` | 1072 | `OnActionStart` |
-| `Assets/1. Scripts/Runtime/Skills/Base/Skill.cs` | 1074 | `OnActionEnd` |
-| `Assets/1. Scripts/Runtime/Skills/Base/Skill.cs` | 1076 | `OnDamageEventResolved` |
-| `Assets/1. Scripts/Runtime/Skills/Base/Skill.cs` | 1078 | `OnBodyPartWeakenResolved` |
-| `Assets/1. Scripts/Runtime/Skills/Base/Skill.cs` | 1080 | `OnBodyPartBreakResolved` |
-| `Assets/1. Scripts/Runtime/Skills/Base/Skill.cs` | 1082 | `OnKillResolved` |
+| `Assets/1. Scripts/Runtime/Skills/Base/Skill.cs` | 1136 | `OnBattleStarted` |
+| `Assets/1. Scripts/Runtime/Skills/Base/Skill.cs` | 1138 | `OnBattleEnded` |
+| `Assets/1. Scripts/Runtime/Skills/Base/Skill.cs` | 1140 | `OnTurnStart` |
+| `Assets/1. Scripts/Runtime/Skills/Base/Skill.cs` | 1142 | `OnTurnEnd` |
+| `Assets/1. Scripts/Runtime/Skills/Base/Skill.cs` | 1144 | `OnActionStart` |
+| `Assets/1. Scripts/Runtime/Skills/Base/Skill.cs` | 1146 | `OnActionEnd` |
+| `Assets/1. Scripts/Runtime/Skills/Base/Skill.cs` | 1148 | `OnDamageEventResolved` |
+| `Assets/1. Scripts/Runtime/Skills/Base/Skill.cs` | 1150 | `OnBodyPartWeakenResolved` |
+| `Assets/1. Scripts/Runtime/Skills/Base/Skill.cs` | 1152 | `OnBodyPartBreakResolved` |
+| `Assets/1. Scripts/Runtime/Skills/Base/Skill.cs` | 1154 | `OnKillResolved` |
 | `Assets/1. Scripts/Runtime/Systems/Stats/BattleRewardService.cs` | 25 | `OnBodyPartWeakenResolved` |
 | `Assets/1. Scripts/Runtime/Systems/Stats/BattleRewardService.cs` | 26 | `OnKillResolved` |
 | `Assets/1. Scripts/Runtime/Characters/Enemies/Canonical0922/NormalEnemy0922RoleMechanic.cs` | 37 | `OnTurnStart` |
@@ -173,12 +175,12 @@
 | `Assets/1. Scripts/Runtime/Characters/Enemies/EliteEnemy/EliteEnemyMechanic.cs` | 24 | `OnBodyPartBreakResolved` |
 | `Assets/1. Scripts/Runtime/Characters/Enemies/EliteEnemy/EnemyPostureMechanic.cs` | 109 | `OnTurnStart` |
 | `Assets/1. Scripts/Runtime/Characters/Enemies/NormalEnemy/NormalEnemyBloodScentMechanic.cs` | 10 | `OnClashWin` |
-| `Assets/1. Scripts/Runtime/Characters/Hifumi/Mechanics/HifumiMechanic.cs` | 154 | `OnTurnStart` |
-| `Assets/1. Scripts/Runtime/Characters/Hifumi/Mechanics/HifumiMechanic.cs` | 159 | `OnTurnEnd` |
-| `Assets/1. Scripts/Runtime/Characters/Hifumi/Mechanics/HifumiMechanic.cs` | 164 | `OnActionStart` |
-| `Assets/1. Scripts/Runtime/Characters/Hifumi/Mechanics/HifumiMechanic.cs` | 169 | `OnExchangeResolved` |
-| `Assets/1. Scripts/Runtime/Characters/Hifumi/Mechanics/HifumiMechanic.cs` | 174 | `OnClashResolved` |
-| `Assets/1. Scripts/Runtime/Characters/Hifumi/Mechanics/HifumiMechanic.cs` | 179 | `OnDamageEventResolved` |
+| `Assets/1. Scripts/Runtime/Characters/Hifumi/Mechanics/HifumiMechanic.cs` | 207 | `OnTurnStart` |
+| `Assets/1. Scripts/Runtime/Characters/Hifumi/Mechanics/HifumiMechanic.cs` | 212 | `OnTurnEnd` |
+| `Assets/1. Scripts/Runtime/Characters/Hifumi/Mechanics/HifumiMechanic.cs` | 217 | `OnActionStart` |
+| `Assets/1. Scripts/Runtime/Characters/Hifumi/Mechanics/HifumiMechanic.cs` | 222 | `OnExchangeResolved` |
+| `Assets/1. Scripts/Runtime/Characters/Hifumi/Mechanics/HifumiMechanic.cs` | 227 | `OnClashResolved` |
+| `Assets/1. Scripts/Runtime/Characters/Hifumi/Mechanics/HifumiMechanic.cs` | 232 | `OnDamageEventResolved` |
 | `Assets/1. Scripts/Runtime/Characters/Olaf/Mechanics/OlafImmortalFuryMechanic.cs` | 21 | `OnExchangeResolved` |
 | `Assets/1. Scripts/Runtime/Characters/Olaf/Mechanics/OlafImmortalFuryMechanic.cs` | 26 | `OnTurnEnd` |
 | `Assets/1. Scripts/Runtime/Characters/Olaf/Mechanics/OlafMadnessMechanic.cs` | 42 | `OnExchangeResolved` |
@@ -358,16 +360,16 @@
 
 | 키워드 | 소유(문서/코드) | Carrier | Storage | 상태 | 관측 식별자 |
 |---|---|---|---|---|---|
-| `Bleed` | Olaf | Actor | Bespoke | Found | Assets/1. Scripts/Runtime/Skills/DataDriven/SkillRulebreakerSettings.cs:33 \| Assets/1. Scripts/Runtime/Skills/DataDriven/SkillRulebreakerSettings.cs:40 \| Assets/1. Scripts/Runtime/Skills/Effects/SkillEffectCondition.cs:329 \| Assets/1. Scripts/Runtime/Skills/Effects/TempBalanceSkillProxyEffectDefinition.cs:75 |
+| `Bleed` | Olaf | Actor | Bespoke | Found | Assets/1. Scripts/Runtime/Abilities/Native/R7NativeMixedAbilityEngine.cs:130 \| Assets/1. Scripts/Runtime/Abilities/Native/R7NativePreparationStatusGraph20261102.cs:27 \| Assets/1. Scripts/Runtime/Abilities/Native/R7NativePreparationStatusGraph20261102.cs:43 \| Assets/1. Scripts/Runtime/Abilities/Native/R7NativeStatusAbilityDefinition.cs:17 |
 | `Fear` | Olaf | Actor | Presence | Found | Assets/1. Scripts/Runtime/Characters/CharacterBase/Character.cs:2087 \| Assets/1. Scripts/Runtime/Skills/Effects/SkillEffectCondition.cs:333 \| Assets/1. Scripts/Runtime/Status/Common/CommonStatusAlgebra.cs:122 \| Assets/1. Scripts/Runtime/Characters/Olaf/Mechanics/OlafMadnessMechanic.cs:430 |
-| `Madness` | Olaf | Actor | Bespoke | FoundButPolicyUndecided | Assets/1. Scripts/Runtime/Characters/Olaf/Olaf.cs:16 \| Assets/1. Scripts/Runtime/Characters/Olaf/Olaf.cs:17 \| Assets/1. Scripts/Runtime/Characters/Olaf/Olaf.cs:73 \| Assets/1. Scripts/Runtime/Characters/Olaf/Olaf.cs:231 |
+| `Madness` | Olaf | Actor | Bespoke | FoundButPolicyUndecided | Assets/1. Scripts/Runtime/Abilities/Native/R7NativeUniqueGaugeEngine.cs:28 \| Assets/1. Scripts/Runtime/Abilities/Native/R7NativeUniqueGaugeEngine.cs:51 \| Assets/1. Scripts/Runtime/Characters/Olaf/Olaf.cs:16 \| Assets/1. Scripts/Runtime/Characters/Olaf/Olaf.cs:17 |
 | `Mark` | Yujin | Actor | Bespoke | FoundButPolicyUndecided | Assets/1. Scripts/Runtime/Characters/Yujin/Mechanics/YujinMechanic.cs:835 \| Assets/1. Scripts/Runtime/Characters/Yujin/Mechanics/YujinMechanic.cs:847 \| Assets/1. Scripts/Runtime/Characters/Yujin/Mechanics/YujinMechanic.cs:853 \| Assets/1. Scripts/Runtime/Characters/Yujin/Mechanics/YujinMechanic.cs:882 |
 | `Designation` | Yujin | Actor | NumericTimed | Found | Assets/1. Scripts/Runtime/Characters/Yujin/Status/YujinDesignationStatus.cs:7 \| Assets/1. Scripts/Runtime/Characters/Yujin/Status/YujinDesignationStatus.cs:15 \| Assets/1. Scripts/Runtime/Characters/Yujin/Status/YujinDesignationStatus.cs:23 \| Assets/1. Scripts/Runtime/Presentation/UI/Components/BattleStatusUiText.cs:261 |
 | `AssassinSense` | Yujin | Actor | Bespoke | Missing | (코드에 'AssassinSense' 없음) |
 | `BloodPrice` | Hifumi(문서) / Olaf(코드) | Actor | Bespoke | FoundButPolicyUndecided | Assets/1. Scripts/Runtime/Characters/Olaf/OlafSkillIds.cs:40 \| Assets/1. Scripts/Runtime/Characters/Olaf/OlafSkillIds.cs:85 |
-| `Taunt` | Hifumi | Actor | Bespoke | Missing | (코드에 'Taunt' 없음) |
-| `Bone` | Hifumi | Actor | Bespoke | Found | Assets/1. Scripts/Runtime/Characters/Hifumi/Mechanics/HifumiMechanic.cs:113 \| Assets/1. Scripts/Runtime/Systems/AI/Advisors/HifumiAutoPlanAdvisor.cs:158 \| Assets/1. Scripts/Runtime/Characters/Hifumi/Mechanics/HifumiMechanic.cs:407 \| Assets/1. Scripts/Runtime/Characters/Hifumi/Mechanics/HifumiMechanic.cs:549 |
-| `Advance` | Hifumi | Actor | Bespoke | FoundButPolicyUndecided | Assets/1. Scripts/Runtime/Characters/Hifumi/Mechanics/HifumiMechanic.cs:113 \| Assets/1. Scripts/Runtime/Systems/AI/Advisors/HifumiAutoPlanAdvisor.cs:158 |
+| `Taunt` | Hifumi | Actor | Bespoke | FoundButPolicyUndecided | Assets/1. Scripts/Runtime/Abilities/Targeting/R4TargetPlanningRules20261102.cs:8 |
+| `Bone` | Hifumi | Actor | Bespoke | Found | Assets/1. Scripts/Runtime/Characters/Hifumi/Mechanics/HifumiMechanic.cs:166 \| Assets/1. Scripts/Runtime/Systems/AI/Advisors/HifumiAutoPlanAdvisor.cs:158 \| Assets/1. Scripts/Runtime/Characters/Hifumi/Mechanics/HifumiMechanic.cs:461 \| Assets/1. Scripts/Runtime/Characters/Hifumi/Mechanics/HifumiMechanic.cs:603 |
+| `Advance` | Hifumi | Actor | Bespoke | FoundButPolicyUndecided | Assets/1. Scripts/Runtime/Characters/Hifumi/Mechanics/HifumiMechanic.cs:166 \| Assets/1. Scripts/Runtime/Systems/AI/Advisors/HifumiAutoPlanAdvisor.cs:158 |
 | `Stealth` | Yujin | Actor | Bespoke | Missing | (코드에 'Stealth' 없음) |
 | `ExplosiveTrap` | Yujin | Part | Bespoke | Missing | (코드에 'ExplosiveTrap' 없음) |
 | `ResonanceTrap` | Yujin | Part | Bespoke | Missing | (코드에 'ResonanceTrap' 없음) |
@@ -379,7 +381,7 @@
 - `Mark` (FoundButPolicyUndecided) — 예약 표식 발화 시 무기 판정 기준 미정
 - `AssassinSense` (Missing) — 런타임 구현 없음 — 신규 콘텐츠
 - `BloodPrice` (FoundButPolicyUndecided) — 문서상 히후미 키워드이나 코드에는 Olaf 스킬 ID만 존재 — 소유/의미 충돌 미정
-- `Taunt` (Missing) — 런타임 구현 없음 — 은신과의 목표 충돌 우선순위 미정
+- `Taunt` (FoundButPolicyUndecided) — 런타임 구현 없음 — 은신과의 목표 충돌 우선순위 미정
 - `Advance` (FoundButPolicyUndecided) — '가불' 의미와 턴 종료 정산 시점은 기획 확인 필요
 - `Stealth` (Missing) — 런타임 구현 없음 — 도발과의 충돌 규칙 미정
 - `ExplosiveTrap` (Missing) — 현재 YujinMarkTrap 단일 프록시만 존재 — 3종 분리 미정
@@ -399,19 +401,19 @@
 | 구분 | 간선 수 |
 |---|---|
 | CounterHook | 1 |
-| CounterSequence | 2 |
-| DamageCommit | 21 |
-| EventRaise | 5 |
+| CounterSequence | 3 |
+| DamageCommit | 22 |
+| EventRaise | 6 |
 | HitSignal | 3 |
 | OutcomeSignal | 4 |
-| Resolution | 6 |
+| Resolution | 11 |
 | SkillExecution | 10 |
 
 ### 반격/추가타 종류
 
 | 종류 | 출현 수 | 현재 코드 대응 | 관측 식별자 |
 |---|---|---|---|
-| HifumiCounterRoll | 10 | HifumiMechanic.ResolveCounterSequence / BuildCounterPreviewForVerification / IsCounterSkill | ResolveCounterSequence \| HifumiCounterPreview \| IsCounterSkill |
+| HifumiCounterRoll | 11 | HifumiMechanic.ResolveCounterSequence / BuildCounterPreviewForVerification / IsCounterSkill | ResolveCounterSequence \| HifumiCounterPreview \| IsCounterSkill |
 | EnemyCounterRoll | 1 | BattleReactiveRollSourceKind.Counter — 적 반격은 별도 클래스 없이 반응 굴림으로 표현 | BattleReactiveRollSourceKind.Counter |
 | SecondaryHit | 33 | AttackWeightHitResult / ClashResultContext.SecondaryDamageContexts — 공격 가중치 추가 피격 | AttackWeightHitResult \| SecondaryDamageContexts |
 | FollowUpRoll | 0 | BattleReactiveRollSourceKind.FollowUp — 후속 굴림 | BattleReactiveRollSourceKind.FollowUp |
@@ -431,14 +433,14 @@
 
 - 없음
 
-`AttackWeight` 소스 참조 149건 (UI 표시/자동 계획/Undo 갱신 여부는 G0-W 5항목에서 별도 확인).
+`AttackWeight` 소스 참조 272건 (UI 표시/자동 계획/Undo 갱신 여부는 G0-W 5항목에서 별도 확인).
 
 ## 9. G0 판정
 
 - **PASS** — 감사표 생성 완료, FATAL Missing Script/중복 GUID 없음.
 
 - G0-K: PASS (키워드/상태 행 28, 수동 검토 3)
-- G0-I: PASS (호출 간선 52, 반격 종류 5)
+- G0-I: PASS (호출 간선 60, 반격 종류 5)
 - G0-W: PASS (가중치 스킬 145, 보호 0)
 
 ## 10. 산출물

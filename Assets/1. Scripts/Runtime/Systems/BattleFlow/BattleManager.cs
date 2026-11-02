@@ -116,6 +116,8 @@ public class BattleManager : MonoBehaviour
             InitializeContext(player, enemies);
             CreateManagers();
             InitializeCharacters();
+            // R6 production stepwise is enabled after character mechanics register.
+            R6ProductionActivation20261102.Activate(BattleContext);
 
             battleUIManager?.BuildParticipantButtons(
                 BattleContext);
@@ -686,6 +688,11 @@ public class BattleManager : MonoBehaviour
                 "BattleEvent.RaiseBattleEnded",
                 () => battleEvent?.RaiseBattleEnded());
 
+
+
+            RunCleanupStep(
+                "R6.StepwiseReactionEnd",
+                () => R6ProductionActivation20261102.Deactivate(BattleContext));
             RunCleanupStep(
                 "Character Mechanics",
                 CleanupCharacters);

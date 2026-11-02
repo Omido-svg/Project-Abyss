@@ -49,11 +49,15 @@ public static class BattleRuntimeFactory
         // Battle-local one-shot queue and binding data cannot leak across runs.
         services.ReactionScheduler?.ClearForBattleEnd();
         services.ReactionActionRegistry?.ClearForBattleEnd();
+
+        services.ReactionLifetimeRegistry?.ClearForBattleEnd();
         services.SpecialistReactionRegistry?.ClearForBattleEnd();
         services.R7NativeResourceMigration?.Dispose();
         services.R7NativeBleedingMigration?.Dispose();
+        services.R7NativeUniqueGaugeMigration?.Dispose();
         services.R7LegacyStatusMigration?.Dispose();
         services.R7PreparationStatusMigration?.Dispose();
+        services.R7SingleEffectMigration?.Dispose();
 
         services.CoroutineHost =
             new UnityBattleCoroutineHost(coroutineOwner);
@@ -105,6 +109,10 @@ public static class BattleRuntimeFactory
         // the only executor until that content is explicitly migrated.
         services.ReactionScheduler = new BattleReactionScheduler();
         services.ReactionActionRegistry = new R6ReactionActionRegistry();
+
+        services.ReactionLifetimeRegistry = new R6ReactionLifetimeRegistry20261102();
+        services.ActionResolver.EnableR6ReactionLifetime(
+            services.ReactionLifetimeRegistry);
         services.SpecialistReactionRegistry = new R6SpecialistReactionRegistry();
         // R7 first production cohort: 15 uniquely identified, single-resource
         // effect cards. Each executes native R5 commands; all others legacy.
@@ -116,6 +124,8 @@ public static class BattleRuntimeFactory
         // Per-battle Enabled=false instantly restores the legacy path.
         services.R7NativeBleedingMigration =
             new R7ProductionNativeBleedingMigration(context);
+        services.R7NativeUniqueGaugeMigration =
+            new R7ProductionNativeUniqueGaugeMigration();
         // Seven verified non-Preparation legacy/mixed status cards:
         // only Bleeding status entry uses native R5 command; mixed damage
         // entries retain exactly their original dispatch order.
@@ -127,6 +137,8 @@ public static class BattleRuntimeFactory
         // Third setup entry remains on the original specialist.
         services.R7PreparationStatusMigration =
             new R7ProductionPreparationStatusMigration(context);
+        services.R7SingleEffectMigration =
+            new R7ProductionSingleEffectMigration20261102(context);
         services.ActionResolver.EnableR6ReactionExecution(
             services.ReactionScheduler,services.ReactionActionRegistry);
         services.ActionResolver.EnableR6SpecialistReactions(

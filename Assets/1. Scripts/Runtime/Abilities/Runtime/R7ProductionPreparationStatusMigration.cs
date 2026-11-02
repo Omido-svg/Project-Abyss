@@ -5,9 +5,9 @@ using System.Linq;
 namespace ProjectAbyss.Abilities
 {
     /// <summary>
-    /// Single authored Preparation skill: two independent legacy status
-    /// entries become native R5 commands while its flat-setup entry stays
-    /// on the original specialist. Includes exact PlanningUndoJournal state.
+    /// Single authored Preparation skill: all three effect mutations use
+    /// native SO data and R5 commands. Original SkillEffectEntry assets are
+    /// read only for diagnostic UI metadata. Preserves PlanningUndoJournal.
     /// </summary>
     public sealed class R7ProductionPreparationStatusMigration : IDisposable
     {
@@ -56,6 +56,14 @@ namespace ProjectAbyss.Abilities
             new Dictionary<ActionSlot,CombatCommandApplyService>();
         private readonly AbilityRunner runner=new AbilityRunner();
         private readonly Match matcher=new Match();
+        private readonly R7NativePreparationSetupEngine setup=new R7NativePreparationSetupEngine();
+        private static R7NativePreparationSetupDefinition SetupGraph=>
+            UnityEngine.Resources.Load<R7NativePreparationSetupDefinition>(
+                "ProjectAbyss/NativePreparations/EliteCombatStance_Setup");
+        private static R7NativePreparationStatusGraph20261102 StatusGraph=>
+            UnityEngine.Resources.Load<R7NativePreparationStatusGraph20261102>(
+                "ProjectAbyss/NativePreparations/EliteCombatStance_Statuses");
+        public int NativeSetupCommits=>setup.CommandCommits;
         private readonly Dictionary<(ActionSlot,int),AbilityInstance> identities=
             new Dictionary<(ActionSlot,int),AbilityInstance>();
         private bool disposed;
@@ -67,23 +75,24 @@ namespace ProjectAbyss.Abilities
         {
             this.battle=battle??throw new ArgumentNullException(nameof(battle));
         }
+        // R7-1 production identity. A matched source must NEVER fall through
+        // to TryApply or the pilot adapter when native services are unavailable.
+        public static bool IsAuthoredSource(SkillDefinition d) =>
+            d!=null && d.SkillId==SkillId && d.name==AssetName &&
+            d.ActionType==ActionType.Preparation && d.EffectEntries?.Count==3;
+
         public bool CanRoute(SkillDefinition d)
         {
-            if(disposed||!Enabled||d==null||d.SkillId!=SkillId||
-               d.name!=AssetName||d.ActionType!=ActionType.Preparation||
-               d.EffectEntries?.Count!=3)return false;
-            for(int i=0;i<2;i++)
-            {
-                var entry=d.EffectEntries[i];
-                if(!(entry?.Definition is AddBodyPartStatusEffect status)||
-                   status.AuthoringSchema!=StatusEffectAuthoringSchema.Legacy||
-                   status.ApplicationTiming!=StatusApplicationTiming.Immediate||
-                   status.StatusEffectId!=(i==0?StatusEffectId.Bleeding:StatusEffectId.Burn)||
-                   entry.EffectiveTiming!=SkillEffectTiming.OnExecute)
-                    return false;
-            }
-            return d.EffectEntries[2]?.Definition is PreparationFlatSetupEffect &&
-                   d.EffectEntries[2].EffectiveTiming==SkillEffectTiming.OnExecute;
+            if(disposed||!Enabled||!IsAuthoredSource(d))return false;
+            var statuses=StatusGraph;
+            return SetupGraph?.IsValid==true &&
+                SetupGraph.StableId==SkillId &&
+                SetupGraph.SourceAssetGuid==AssetGuid &&
+                SetupGraph.SourceAssetName==AssetName &&
+                statuses?.IsValid==true &&
+                statuses.StableId==SkillId &&
+                statuses.SourceAssetGuid==AssetGuid &&
+                statuses.SourceAssetName==AssetName;
         }
 
         public IReadOnlyList<SkillEffectResult> Execute(
@@ -100,7 +109,7 @@ namespace ProjectAbyss.Abilities
                 var entry=d.EffectEntries[i];
                 SkillEffectResult result;
                 if(i==2)
-                    result=entry.TryApply(context,timing); // unchanged setup effect
+                    result=ExecuteNativeSetup(context,timing,entry);
                 else
                 {
                     int index=i;
@@ -118,30 +127,80 @@ namespace ProjectAbyss.Abilities
                         AbilityEventKind.RollUsing,action.ActionId,
                         action.ActionId,R4LiveSlotQuery.ActorRuntimeId(context.Owner),
                         context.RollIndex,action.DuelEffectsEligible,context.IsOneSided);
-                    result=entry.TryApply(context,timing,(selected,overrides)=>
-                        ApplyNative(ability,cause,selected,overrides,
-                            (AddBodyPartStatusEffect)entry.Definition,index));
+                    var op=StatusGraph.Operations[index];
+                    if(timing!=SkillEffectTiming.OnExecute ||
+                       op.Trigger!=AbilityEventKind.RollUsing)
+                        result=SkillEffectResult.NotScheduled(entry?.Definition,timing);
+                    else if(context==null)
+                        result=SkillEffectResult.Failed(entry?.Definition,timing,context,
+                            "Native preparation status requires context");
+                    else
+                    {
+                        // Data, timing, selector and values are native SO only.
+                        // SkillEffectEntry remains diagnostic metadata, never executes.
+                        var selected=context.WithTarget(op.Selector);
+                        bool committed=ApplyNative(ability,cause,selected,op,index);
+                        result=committed
+                            ?SkillEffectResult.Applied(entry?.Definition,timing,selected)
+                            :SkillEffectResult.Failed(entry?.Definition,timing,selected,
+                                "Native status command was not committed");
+                    }
                 }
                 if(result!=null)results.Add(result);
             }
             return results;
         }
 
+        private SkillEffectResult ExecuteNativeSetup(SkillEffectContext ctx,
+            SkillEffectTiming timing,SkillEffectEntry originalIdentity)
+        {
+            var metadata=originalIdentity?.Definition;
+            if(timing!=SkillEffectTiming.OnExecute)
+                return SkillEffectResult.NotScheduled(metadata,timing);
+            var action=ctx?.Action;
+            if(action?.Slot==null||ctx.Owner==null)
+                return SkillEffectResult.Failed(metadata,timing,ctx,"Invalid setup action");
+            var key=(action.Slot,2);
+            if(!identities.TryGetValue(key,out var instance))
+            {
+                instance=new AbilityInstance(
+                    new AbilityDefinitionRef(SkillId,AssetGuid),
+                    new AbilityIdentity(SkillId,R4LiveSlotQuery.ActorRuntimeId(ctx.Owner),
+                        action.Slot.SlotId??string.Empty,2));
+                identities.Add(key,instance);
+            }
+            if(!ledgers.TryGetValue(action.Slot,out var ledger))
+            {
+                ledger=new CombatCommandApplyService();
+                ledgers.Add(action.Slot,ledger);
+            }
+            var evt=new AbilityEventContext(AbilityEventKind.RollUsing,
+                action.ActionId,action.ActionId,
+                R4LiveSlotQuery.ActorRuntimeId(ctx.Owner),ctx.RollIndex,
+                action.DuelEffectsEligible,ctx.IsOneSided);
+            bool applied=setup.Apply(SetupGraph,ctx,instance,evt,ledger);
+            return applied ?SkillEffectResult.Applied(metadata,timing,ctx):
+                SkillEffectResult.Failed(metadata,timing,ctx,
+                    "Native setup command did not commit");
+        }
+
         private bool ApplyNative(AbilityInstance ability,AbilityEventContext cause,
-            SkillEffectContext ctx,SkillEffectOverrides overrides,
-            AddBodyPartStatusEffect definition,int index)
+            SkillEffectContext ctx,
+            R7NativePreparationStatusGraph20261102.StatusOperation operation,int index)
         {
             if(ctx?.Resolver==null||ctx.Owner==null||ctx.Target==null||
                ctx.Action==null||ctx.Target.IsDead ||
                cause.ActionId<=0)return false;
             var anchor=CombatStatusAnchor.Resolve(ctx.Target,ctx.TargetPart);
             if(!anchor.IsValid)return false;
-            int value=definition.ResolveAuthoredValue(overrides);
-            int duration=definition.ResolveAuthoredDuration(overrides);
-            var status=StatusEffectFactory.CreateForAuthoring(
-                definition.AuthoringSchema,definition.StatusEffectId,
-                value,duration,definition.RegenerationHealAmount,
-                definition.RegenerationChannel);
+            if(!operation.IsValid || operation.Trigger!=cause.Kind ||
+               operation.RestrictToRoll && cause.RollUseIndex+1!=operation.RollNumber)
+                return false;
+            int value=operation.Stacks;
+            StatusEffect status=operation.Status==StatusEffectId.Bleeding
+                ?new Bleeding(value,operation.Duration)
+                :operation.Status==StatusEffectId.Burn
+                    ?new Burn(value,operation.Duration):null;
             if(status==null)return false;
             var existing=(anchor.IsPartAnchor
                 ?(IReadOnlyList<StatusEffect>)anchor.Part.StatusEffects:
@@ -233,6 +292,7 @@ namespace ProjectAbyss.Abilities
             if(disposed)return;
             disposed=true;Enabled=false;
             identities.Clear();
+            setup.Clear();
             foreach(var ledger in ledgers.Values)ledger.ResetForBattle();
             ledgers.Clear();
         }

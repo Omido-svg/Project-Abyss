@@ -1,0 +1,28 @@
+[R3-Reaction] PASS I01 committed origin result captured once | historical damage=17
+[R3-Reaction] PASS I02 current live owner/part/target/resource allows start | threshold exactly 3
+[R3-Reaction] PASS I03 current available resource insufficient cancels | no retroactive resource subtraction
+[R3-Reaction] PASS I04 unavailable skill cancels | without changing original roll result
+[R3-Reaction] PASS I05 missing/dead target cancels | no implicit retarget
+[R3-Reaction] PASS I06 malformed owner part cancels | wrong body part actor
+[R3-Reaction] PASS I07 different cause cannot be recorded | unrelated damage 99 ignored
+[R3-Reaction] PASS I08 uncommitted damage cannot be recorded | requires committed DamageResult
+[R3-Reaction] PASS I09 initial trigger and lifetime rejection | Request not created when origin gate rejects
+[R3-Reaction] PASS I10 Free policy cannot hide a nonzero custom cost | explicit cost descriptor required
+[R3-Reaction] PASS I11 result snapshot remains immutable across current checks | request 17 damage not reconstructed from HP
+[R3-Reaction] PASS L01 selected owner not same as original enemy target | selectedContext.Owner vs original Target
+[R3-Reaction] PASS L02 definition and entry use one owner selected target | legacy direct vs entry selected context
+[R3-Reaction] PASS L03 legacy Invert + new NOT have explicit double-negative | false inverted Always, NOT false -> true
+[R3-Reaction] PASS L04 legacy list AND applies unchanged | existing SkillEffectCondition serialization intact
+[R3-Reaction] RESULT PASS=15 FAIL=0
+[R2-I] RESULT PASS=13 FAIL=0
+[R2-Mark] RESULT PASS=11 FAIL=0
+[G0] GOLDEN RESULT PASS=10 FAIL=0
+[R1] RESULT PASS=10 FAIL=0
+[Damage R1] RESULT PASS=23 FAIL=0
+[Damage R2] RESULT PASS=23 FAIL=0
+[Damage R3] RESULT PASS=10 FAIL=0
+[Damage R4] RESULT PASS=11 FAIL=0
+[Damage R5] RESULT PASS=35 FAIL=0
+[Damage R6] RESULT PASS=47 FAIL=0
+[Damage R7] RESULT PASS=27 FAIL=0
+[Damage G1] RESULT PASS=46 FAIL=0

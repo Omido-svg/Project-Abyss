@@ -31,7 +31,10 @@ namespace ProjectAbyss.Abilities
         Deferred,
         Failed,
         SkippedDuplicate,
-        UnknownCommit
+        UnknownCommit,
+        // R5: a reaction request has been accepted into R6's queue.
+        // This is NOT an executed reaction or applied gameplay effect.
+        Scheduled
     }
 
     public readonly struct CombatCommandEnvelope
@@ -105,7 +108,9 @@ namespace ProjectAbyss.Abilities
         public IReadOnlyList<CombatCommandAppliedRecord> Records { get; }
         public int PlannedCount { get; }
         public int CommittedCount { get; }
-        public int RejectedCount { get; }
+        
+        public int ScheduledCount { get; }
+public int RejectedCount { get; }
         public bool HasUnknownCommit { get; }
         public bool HasCommitted => CommittedCount > 0;
 
@@ -114,16 +119,20 @@ namespace ProjectAbyss.Abilities
             var stable = new List<CombatCommandAppliedRecord>(records ?? new List<CombatCommandAppliedRecord>());
             Records = stable.AsReadOnly();
             PlannedCount = stable.Count;
-            int committed=0,rejected=0;bool unknown=false;
+            int committed=0,rejected=0,scheduled=0;bool unknown=false;
             foreach(var entry in stable)
             {
                 if(entry.Receipt.EffectCommitted)committed++;
                 if(entry.Receipt.Outcome==CombatCommandOutcome.Rejected ||
                    entry.Receipt.Outcome==CombatCommandOutcome.Failed ||
                    entry.Receipt.Outcome==CombatCommandOutcome.SkippedDuplicate)rejected++;
-                if(entry.Receipt.Outcome==CombatCommandOutcome.UnknownCommit)unknown=true;
+                
+                if(entry.Receipt.Outcome==CombatCommandOutcome.Scheduled)scheduled++;
+if(entry.Receipt.Outcome==CombatCommandOutcome.UnknownCommit)unknown=true;
             }
-            CommittedCount=committed;
+            
+            ScheduledCount=scheduled;
+CommittedCount=committed;
             RejectedCount=rejected;
             HasUnknownCommit=unknown;
         }

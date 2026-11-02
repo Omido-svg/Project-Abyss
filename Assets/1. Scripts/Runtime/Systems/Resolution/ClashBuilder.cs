@@ -101,6 +101,33 @@ public sealed class ClashBuilder
             pairingResult.Pairs);
     }
 
+    /// <summary>
+    /// R4-W opt-in side-target preview. This does not modify pairing, ActionSlots,
+    /// skill definitions, or any RNG state. UI and R5-W share a battle-local
+    /// frozen allocation for the same planned source action.
+    /// </summary>
+    public ProjectAbyss.Abilities.R4WeightPlanningPreview BuildAttackWeightPreview(
+        BattleContext battle, ActionSlot source, IReadOnlyList<ActionSlot> plans)
+    {
+        if (battle == null || source?.Skill == null ||
+            source.Skill.AttackWeight <= 1 ||
+            source.Skill.AttackWeightTargetingModel !=
+                ProjectAbyss.Abilities.AttackWeightTargetingModel.SlotWeighted)
+            return null;
+        IReadOnlyList<Character> hostileSide = null;
+        if (source.Owner == battle.Player && battle.Enemies != null &&
+            battle.Enemies.Contains(source.TargetCharacter))
+            hostileSide = battle.Enemies;
+        else if (battle.Enemies != null && battle.Enemies.Contains(source.Owner) &&
+                 source.TargetCharacter == battle.Player)
+            hostileSide = new Character[]{battle.Player};
+        if (hostileSide == null)
+            return null;
+        return ProjectAbyss.Abilities.R4BattlePlanningSession.Preview(
+            battle,source,hostileSide,plans);
+    }
+
+    
     public ActionPairingResult BuildPairingResult(
         IReadOnlyList<ActionSlot> combatSlots)
     {

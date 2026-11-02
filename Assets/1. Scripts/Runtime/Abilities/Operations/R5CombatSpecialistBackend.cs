@@ -23,7 +23,11 @@ namespace ProjectAbyss.Abilities
         }
 
         private readonly BattleContext battle;
-        private readonly Dictionary<string, Binding> bindings =
+        private readonly Dictionary<string, DamageContext> committedDamageContexts =
+            new Dictionary<string, DamageContext>(StringComparer.Ordinal);
+
+        
+private readonly Dictionary<string, Binding> bindings =
             new Dictionary<string, Binding>(StringComparer.Ordinal);
 
         public R5CombatSpecialistBackend(BattleContext battle)
@@ -31,7 +35,14 @@ namespace ProjectAbyss.Abilities
             this.battle = battle ?? throw new ArgumentNullException(nameof(battle));
         }
 
-        public int BoundCommandCount => bindings.Count;
+        
+        /// <summary>Actual existing DamageManager result; never a synthesized estimate.</summary>
+        public bool TryGetDamageContext(string commandId, out DamageContext result)
+        {
+            result = null;
+            return commandId != null && committedDamageContexts.TryGetValue(commandId,out result);
+        }
+public int BoundCommandCount => bindings.Count;
 
         public bool CanApply(CombatCommandKind kind)
         {
@@ -146,7 +157,9 @@ namespace ProjectAbyss.Abilities
                     DamageContext result=battle.ResolveDamageManager().ApplyDamageContext(request);
                     if (result?.Result == null)
                         return CombatCommandReceipt.Reject("DamageManager rejected the request.");
-                    int applied=Math.Max(0,result.AppliedDamage);
+                    
+                    committedDamageContexts[command.CommandId]=result;
+int applied=Math.Max(0,result.AppliedDamage);
                     int stagger=Math.Max(0,result.StaggerDamageApplied);
                     bool committed=result.WasApplied || applied>0 || stagger>0 ||
                         result.WasKilled || result.WasWeakened || result.WasBroken;
@@ -196,6 +209,10 @@ namespace ProjectAbyss.Abilities
         }
 
         // Battle-scope lifecycle owned by the caller / ability composition root.
-        public void ClearBindings() => bindings.Clear();
+        public void ClearBindings()
+        {
+            bindings.Clear();
+            committedDamageContexts.Clear();
+        }
     }
 }

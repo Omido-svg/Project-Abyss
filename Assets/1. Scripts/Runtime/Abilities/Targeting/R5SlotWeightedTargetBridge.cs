@@ -70,8 +70,13 @@ namespace ProjectAbyss.Abilities
                 TargetSlot=null,
                 Phase=ActionPhase.COMBAT
             };
-            var snapshot=R4LiveSlotQuery.Capture(projection,hostileSide,
-                null,planningRevision:0,effectiveWeight:action.Skill.AttackWeight);
+            // Prefer the exact immutable R4 allocation displayed during planning.
+            // A stale or missing preview is never blindly trusted; existing
+            // deterministic live capture remains the safe headless path.
+            R4LiveSlotSnapshot snapshot;
+            if (!R4BattlePlanningSession.TryGetFrozen(battle,action,out snapshot))
+                snapshot=R4LiveSlotQuery.Capture(projection,hostileSide,
+                    null,planningRevision:0,effectiveWeight:action.Skill.AttackWeight);
 
             if(snapshot?.Selection?.Success!=true ||
                !snapshot.HasUnambiguousMain ||

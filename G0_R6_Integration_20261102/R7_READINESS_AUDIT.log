@@ -1,0 +1,12 @@
+[R7-Audit] PASS A01 enumerated all loaded SkillDefinitions
+[R7-Audit] PASS A02 written markdown and CSV in project root
+[R7-Audit] PASS A03 asset GUID retained for every inventory record
+[R7-Audit] PASS A04 every row has valid location
+[R7-Audit] PASS A05 duplicate IDs explicitly classified
+[R7-Audit] PASS A06 no candidate contains legacy effects
+[R7-Audit] PASS A07 no candidate contains authored effects
+[R7-Audit] PASS A08 Hifumi reactive content never auto-candidate
+[R7-Audit] PASS A09 all stable duplicate paths logged
+[R7-Audit] PASS A10 no SkillDefinition or SO marked dirty by audit
+[R7-Audit] SUMMARY total=145 entryCount=102 legacySkillCount=11 duplicateIds=4 metadataCandidates=9 report=F:\GitCorp\Project-Abyss\ProjectAbyss_R7_SkillDryRun_20261030.md csv=F:\GitCorp\Project-Abyss\ProjectAbyss_R7_SkillDryRun_20261030.csv
+[R7-Audit] RESULT PASS=10 FAIL=0

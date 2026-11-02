@@ -1,8 +1,8 @@
 {
-    "GeneratedAtUtc": "2026-10-30T15:19:17.3767941Z",
+    "GeneratedAtUtc": "2026-11-02T10:09:22.5689502Z",
     "UnityVersion": "6000.0.56f1",
     "Branch": "Default-Battle-Test",
-    "Commit": "1546ad3927a99931843853335c89e6d2a9500d9d",
+    "Commit": "7ec5d6b93158368d6f4fb2deef9b165c4c61f9e7",
     "Scenarios": [
         {
             "Id": "G0-G01",

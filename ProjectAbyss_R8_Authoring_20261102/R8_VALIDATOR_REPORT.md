@@ -1,0 +1,108 @@
+# Project Abyss R8 — Native Authoring Validator
+Read-only scan. Content blockers are not automatically fixed.
+
+- SkillDefinition: 145
+- Native SO: 37/37 valid, corruption=0
+- Native auto-convertible not created: 0
+- Full-native coverage not verified: 109
+- Duplicate source SkillId groups: 4
+- Augments: 63 / pending=1
+- Run items: 60 / temporary=60
+- Issues: blocker=9 warning=60
+
+## Issues
+- [Blocker] AUGMENT_DESIGN_PENDING | Assets/2. Data/Progression/EmotionAugments/Canonical0916/Awe/Tier3/Awe_T3_01.asset | emotion.awe.t3.01 [0922 Phase10] Strength N 미정. TEMP proxy 제거 / PENDING_CANONICAL.
+- [Blocker] DUPLICATE_SKILL_ID | Assets/2. Data/Characters/Design2026/Olaf/Skills/Olaf_ShowOff.asset | olaf.preparation.bloto; GUID-based disambiguation required
+- [Blocker] DUPLICATE_SKILL_ID | Assets/2. Data/Characters/Design2026/Olaf/Skills/Olaf_Standard.asset | olaf.duel.standard; GUID-based disambiguation required
+- [Blocker] DUPLICATE_SKILL_ID | Assets/2. Data/Characters/Design2026/Yujin/Skills/환형_공격.asset | yujin.preparation.hwanhyeong.attack; GUID-based disambiguation required
+- [Blocker] DUPLICATE_SKILL_ID | Assets/2. Data/Characters/Design2026/Yujin/Skills/환형_수비.asset | yujin.preparation.hwanhyeong.defense; GUID-based disambiguation required
+- [Blocker] DUPLICATE_SKILL_ID | Assets/2. Data/Progression/PhaseE/TEMP_BALANCE_V1/Skills/Olaf/Duel/Olaf_D_01.asset | olaf.duel.standard; GUID-based disambiguation required
+- [Blocker] DUPLICATE_SKILL_ID | Assets/2. Data/Progression/PhaseE/TEMP_BALANCE_V1/Skills/Olaf/Preparation/Olaf_P_01.asset | olaf.preparation.bloto; GUID-based disambiguation required
+- [Blocker] DUPLICATE_SKILL_ID | Assets/2. Data/Progression/PhaseE/TEMP_BALANCE_V1/Skills/Yujin/Preparation/Yujin_P_03.asset | yujin.preparation.hwanhyeong.attack; GUID-based disambiguation required
+- [Blocker] DUPLICATE_SKILL_ID | Assets/2. Data/Progression/PhaseE/TEMP_BALANCE_V1/Skills/Yujin/Preparation/Yujin_P_04.asset | yujin.preparation.hwanhyeong.defense; GUID-based disambiguation required
+- [Warning] ITEM_TEMP_IMPLEMENTATION | Assets/2. Data/Progression/RunItems/TEMP_BALANCE_V1/Class/Hifumi/class_hifumi_01.asset | temp_balance_v1.class.hifumi.01
+- [Warning] ITEM_TEMP_IMPLEMENTATION | Assets/2. Data/Progression/RunItems/TEMP_BALANCE_V1/Class/Hifumi/class_hifumi_02.asset | temp_balance_v1.class.hifumi.02
+- [Warning] ITEM_TEMP_IMPLEMENTATION | Assets/2. Data/Progression/RunItems/TEMP_BALANCE_V1/Class/Hifumi/class_hifumi_03.asset | temp_balance_v1.class.hifumi.03
+- [Warning] ITEM_TEMP_IMPLEMENTATION | Assets/2. Data/Progression/RunItems/TEMP_BALANCE_V1/Class/Hifumi/class_hifumi_04.asset | temp_balance_v1.class.hifumi.04
+- [Warning] ITEM_TEMP_IMPLEMENTATION | Assets/2. Data/Progression/RunItems/TEMP_BALANCE_V1/Class/Hifumi/class_hifumi_05.asset | temp_balance_v1.class.hifumi.05
+- [Warning] ITEM_TEMP_IMPLEMENTATION | Assets/2. Data/Progression/RunItems/TEMP_BALANCE_V1/Class/Hifumi/class_hifumi_06.asset | temp_balance_v1.class.hifumi.06
+- [Warning] ITEM_TEMP_IMPLEMENTATION | Assets/2. Data/Progression/RunItems/TEMP_BALANCE_V1/Class/Hifumi/class_hifumi_07.asset | temp_balance_v1.class.hifumi.07
+- [Warning] ITEM_TEMP_IMPLEMENTATION | Assets/2. Data/Progression/RunItems/TEMP_BALANCE_V1/Class/Hifumi/class_hifumi_08.asset | temp_balance_v1.class.hifumi.08
+- [Warning] ITEM_TEMP_IMPLEMENTATION | Assets/2. Data/Progression/RunItems/TEMP_BALANCE_V1/Class/Hifumi/class_hifumi_09.asset | temp_balance_v1.class.hifumi.09
+- [Warning] ITEM_TEMP_IMPLEMENTATION | Assets/2. Data/Progression/RunItems/TEMP_BALANCE_V1/Class/Hifumi/class_hifumi_10.asset | temp_balance_v1.class.hifumi.10
+- [Warning] ITEM_TEMP_IMPLEMENTATION | Assets/2. Data/Progression/RunItems/TEMP_BALANCE_V1/Class/Olaf/class_olaf_01.asset | temp_balance_v1.class.olaf.01
+- [Warning] ITEM_TEMP_IMPLEMENTATION | Assets/2. Data/Progression/RunItems/TEMP_BALANCE_V1/Class/Olaf/class_olaf_02.asset | temp_balance_v1.class.olaf.02
+- [Warning] ITEM_TEMP_IMPLEMENTATION | Assets/2. Data/Progression/RunItems/TEMP_BALANCE_V1/Class/Olaf/class_olaf_03.asset | temp_balance_v1.class.olaf.03
+- [Warning] ITEM_TEMP_IMPLEMENTATION | Assets/2. Data/Progression/RunItems/TEMP_BALANCE_V1/Class/Olaf/class_olaf_04.asset | temp_balance_v1.class.olaf.04
+- [Warning] ITEM_TEMP_IMPLEMENTATION | Assets/2. Data/Progression/RunItems/TEMP_BALANCE_V1/Class/Olaf/class_olaf_05.asset | temp_balance_v1.class.olaf.05
+- [Warning] ITEM_TEMP_IMPLEMENTATION | Assets/2. Data/Progression/RunItems/TEMP_BALANCE_V1/Class/Olaf/class_olaf_06.asset | temp_balance_v1.class.olaf.06
+- [Warning] ITEM_TEMP_IMPLEMENTATION | Assets/2. Data/Progression/RunItems/TEMP_BALANCE_V1/Class/Olaf/class_olaf_07.asset | temp_balance_v1.class.olaf.07
+- [Warning] ITEM_TEMP_IMPLEMENTATION | Assets/2. Data/Progression/RunItems/TEMP_BALANCE_V1/Class/Olaf/class_olaf_08.asset | temp_balance_v1.class.olaf.08
+- [Warning] ITEM_TEMP_IMPLEMENTATION | Assets/2. Data/Progression/RunItems/TEMP_BALANCE_V1/Class/Olaf/class_olaf_09.asset | temp_balance_v1.class.olaf.09
+- [Warning] ITEM_TEMP_IMPLEMENTATION | Assets/2. Data/Progression/RunItems/TEMP_BALANCE_V1/Class/Olaf/class_olaf_10.asset | temp_balance_v1.class.olaf.10
+- [Warning] ITEM_TEMP_IMPLEMENTATION | Assets/2. Data/Progression/RunItems/TEMP_BALANCE_V1/Class/Yujin/class_yujin_01.asset | temp_balance_v1.class.yujin.01
+- [Warning] ITEM_TEMP_IMPLEMENTATION | Assets/2. Data/Progression/RunItems/TEMP_BALANCE_V1/Class/Yujin/class_yujin_02.asset | temp_balance_v1.class.yujin.02
+- [Warning] ITEM_TEMP_IMPLEMENTATION | Assets/2. Data/Progression/RunItems/TEMP_BALANCE_V1/Class/Yujin/class_yujin_03.asset | temp_balance_v1.class.yujin.03
+- [Warning] ITEM_TEMP_IMPLEMENTATION | Assets/2. Data/Progression/RunItems/TEMP_BALANCE_V1/Class/Yujin/class_yujin_04.asset | temp_balance_v1.class.yujin.04
+- [Warning] ITEM_TEMP_IMPLEMENTATION | Assets/2. Data/Progression/RunItems/TEMP_BALANCE_V1/Class/Yujin/class_yujin_05.asset | temp_balance_v1.class.yujin.05
+- [Warning] ITEM_TEMP_IMPLEMENTATION | Assets/2. Data/Progression/RunItems/TEMP_BALANCE_V1/Class/Yujin/class_yujin_06.asset | temp_balance_v1.class.yujin.06
+- [Warning] ITEM_TEMP_IMPLEMENTATION | Assets/2. Data/Progression/RunItems/TEMP_BALANCE_V1/Class/Yujin/class_yujin_07.asset | temp_balance_v1.class.yujin.07
+- [Warning] ITEM_TEMP_IMPLEMENTATION | Assets/2. Data/Progression/RunItems/TEMP_BALANCE_V1/Class/Yujin/class_yujin_08.asset | temp_balance_v1.class.yujin.08
+- [Warning] ITEM_TEMP_IMPLEMENTATION | Assets/2. Data/Progression/RunItems/TEMP_BALANCE_V1/Class/Yujin/class_yujin_09.asset | temp_balance_v1.class.yujin.09
+- [Warning] ITEM_TEMP_IMPLEMENTATION | Assets/2. Data/Progression/RunItems/TEMP_BALANCE_V1/Class/Yujin/class_yujin_10.asset | temp_balance_v1.class.yujin.10
+- [Warning] ITEM_TEMP_IMPLEMENTATION | Assets/2. Data/Progression/RunItems/TEMP_BALANCE_V1/Common/T1/common_t1_01.asset | temp_balance_v1.common.t1.01
+- [Warning] ITEM_TEMP_IMPLEMENTATION | Assets/2. Data/Progression/RunItems/TEMP_BALANCE_V1/Common/T1/common_t1_02.asset | temp_balance_v1.common.t1.02
+- [Warning] ITEM_TEMP_IMPLEMENTATION | Assets/2. Data/Progression/RunItems/TEMP_BALANCE_V1/Common/T1/common_t1_03.asset | temp_balance_v1.common.t1.03
+- [Warning] ITEM_TEMP_IMPLEMENTATION | Assets/2. Data/Progression/RunItems/TEMP_BALANCE_V1/Common/T1/common_t1_04.asset | temp_balance_v1.common.t1.04
+- [Warning] ITEM_TEMP_IMPLEMENTATION | Assets/2. Data/Progression/RunItems/TEMP_BALANCE_V1/Common/T1/common_t1_05.asset | temp_balance_v1.common.t1.05
+- [Warning] ITEM_TEMP_IMPLEMENTATION | Assets/2. Data/Progression/RunItems/TEMP_BALANCE_V1/Common/T1/common_t1_06.asset | temp_balance_v1.common.t1.06
+- [Warning] ITEM_TEMP_IMPLEMENTATION | Assets/2. Data/Progression/RunItems/TEMP_BALANCE_V1/Common/T2/common_t2_01.asset | temp_balance_v1.common.t2.01
+- [Warning] ITEM_TEMP_IMPLEMENTATION | Assets/2. Data/Progression/RunItems/TEMP_BALANCE_V1/Common/T2/common_t2_02.asset | temp_balance_v1.common.t2.02
+- [Warning] ITEM_TEMP_IMPLEMENTATION | Assets/2. Data/Progression/RunItems/TEMP_BALANCE_V1/Common/T2/common_t2_03.asset | temp_balance_v1.common.t2.03
+- [Warning] ITEM_TEMP_IMPLEMENTATION | Assets/2. Data/Progression/RunItems/TEMP_BALANCE_V1/Common/T2/common_t2_04.asset | temp_balance_v1.common.t2.04
+- [Warning] ITEM_TEMP_IMPLEMENTATION | Assets/2. Data/Progression/RunItems/TEMP_BALANCE_V1/Common/T2/common_t2_05.asset | temp_balance_v1.common.t2.05
+- [Warning] ITEM_TEMP_IMPLEMENTATION | Assets/2. Data/Progression/RunItems/TEMP_BALANCE_V1/Common/T2/common_t2_06.asset | temp_balance_v1.common.t2.06
+- [Warning] ITEM_TEMP_IMPLEMENTATION | Assets/2. Data/Progression/RunItems/TEMP_BALANCE_V1/Common/T3/common_t3_01.asset | temp_balance_v1.common.t3.01
+- [Warning] ITEM_TEMP_IMPLEMENTATION | Assets/2. Data/Progression/RunItems/TEMP_BALANCE_V1/Common/T3/common_t3_02.asset | temp_balance_v1.common.t3.02
+- [Warning] ITEM_TEMP_IMPLEMENTATION | Assets/2. Data/Progression/RunItems/TEMP_BALANCE_V1/Common/T3/common_t3_03.asset | temp_balance_v1.common.t3.03
+- [Warning] ITEM_TEMP_IMPLEMENTATION | Assets/2. Data/Progression/RunItems/TEMP_BALANCE_V1/Common/T3/common_t3_04.asset | temp_balance_v1.common.t3.04
+- [Warning] ITEM_TEMP_IMPLEMENTATION | Assets/2. Data/Progression/RunItems/TEMP_BALANCE_V1/Common/T3/common_t3_05.asset | temp_balance_v1.common.t3.05
+- [Warning] ITEM_TEMP_IMPLEMENTATION | Assets/2. Data/Progression/RunItems/TEMP_BALANCE_V1/Common/T3/common_t3_06.asset | temp_balance_v1.common.t3.06
+- [Warning] ITEM_TEMP_IMPLEMENTATION | Assets/2. Data/Progression/RunItems/TEMP_BALANCE_V1/Common/T4/common_t4_01.asset | temp_balance_v1.common.t4.01
+- [Warning] ITEM_TEMP_IMPLEMENTATION | Assets/2. Data/Progression/RunItems/TEMP_BALANCE_V1/Common/T4/common_t4_02.asset | temp_balance_v1.common.t4.02
+- [Warning] ITEM_TEMP_IMPLEMENTATION | Assets/2. Data/Progression/RunItems/TEMP_BALANCE_V1/Common/T4/common_t4_03.asset | temp_balance_v1.common.t4.03
+- [Warning] ITEM_TEMP_IMPLEMENTATION | Assets/2. Data/Progression/RunItems/TEMP_BALANCE_V1/Common/T4/common_t4_04.asset | temp_balance_v1.common.t4.04
+- [Warning] ITEM_TEMP_IMPLEMENTATION | Assets/2. Data/Progression/RunItems/TEMP_BALANCE_V1/Common/T4/common_t4_05.asset | temp_balance_v1.common.t4.05
+- [Warning] ITEM_TEMP_IMPLEMENTATION | Assets/2. Data/Progression/RunItems/TEMP_BALANCE_V1/Common/T4/common_t4_06.asset | temp_balance_v1.common.t4.06
+- [Warning] ITEM_TEMP_IMPLEMENTATION | Assets/2. Data/Progression/RunItems/TEMP_BALANCE_V1/Common/T5/common_t5_01.asset | temp_balance_v1.common.t5.01
+- [Warning] ITEM_TEMP_IMPLEMENTATION | Assets/2. Data/Progression/RunItems/TEMP_BALANCE_V1/Common/T5/common_t5_02.asset | temp_balance_v1.common.t5.02
+- [Warning] ITEM_TEMP_IMPLEMENTATION | Assets/2. Data/Progression/RunItems/TEMP_BALANCE_V1/Common/T5/common_t5_03.asset | temp_balance_v1.common.t5.03
+- [Warning] ITEM_TEMP_IMPLEMENTATION | Assets/2. Data/Progression/RunItems/TEMP_BALANCE_V1/Common/T5/common_t5_04.asset | temp_balance_v1.common.t5.04
+- [Warning] ITEM_TEMP_IMPLEMENTATION | Assets/2. Data/Progression/RunItems/TEMP_BALANCE_V1/Common/T5/common_t5_05.asset | temp_balance_v1.common.t5.05
+- [Warning] ITEM_TEMP_IMPLEMENTATION | Assets/2. Data/Progression/RunItems/TEMP_BALANCE_V1/Common/T5/common_t5_06.asset | temp_balance_v1.common.t5.06
+- [Info] MANUAL_NATIVE_CONTRACT | Assets/2. Data/Progression/Canonical0917/Yujin/Skills/Yujin_D_15.asset | Unsupported non-proxy effect; never use legacy adapter
+- [Info] MANUAL_NATIVE_CONTRACT | Assets/2. Data/Progression/Canonical0917/Yujin/Skills/Yujin_D_16.asset | Unsupported non-proxy effect; never use legacy adapter
+- [Info] MANUAL_NATIVE_CONTRACT | Assets/2. Data/Progression/PhaseE/TEMP_BALANCE_V1/Skills/Olaf/Duel/Olaf_D_06.asset | Unsupported non-proxy effect; never use legacy adapter
+- [Info] MANUAL_NATIVE_CONTRACT | Assets/2. Data/Progression/PhaseE/TEMP_BALANCE_V1/Skills/Olaf/Duel/Olaf_D_11.asset | Unsupported non-proxy effect; never use legacy adapter
+- [Info] MANUAL_NATIVE_CONTRACT | Assets/2. Data/Progression/PhaseE/TEMP_BALANCE_V1/Skills/Olaf/Duel/Olaf_D_12.asset | Unsupported non-proxy effect; never use legacy adapter
+- [Info] MANUAL_NATIVE_CONTRACT | Assets/2. Data/Progression/PhaseE/TEMP_BALANCE_V1/Skills/Olaf/Duel/Olaf_D_16.asset | Unsupported non-proxy effect; never use legacy adapter
+- [Info] MANUAL_NATIVE_CONTRACT | Assets/2. Data/Progression/PhaseE/TEMP_BALANCE_V1/Skills/Olaf/Duel/Olaf_D_17.asset | Unsupported non-proxy effect; never use legacy adapter
+- [Info] MANUAL_NATIVE_CONTRACT | Assets/2. Data/Progression/PhaseE/TEMP_BALANCE_V1/Skills/Olaf/Normal/Olaf_N_01.asset | Unsupported non-proxy effect; never use legacy adapter
+- [Info] MANUAL_NATIVE_CONTRACT | Assets/2. Data/Progression/PhaseE/TEMP_BALANCE_V1/Skills/Olaf/Normal/Olaf_N_14.asset | Unsupported non-proxy effect; never use legacy adapter
+- [Info] MANUAL_NATIVE_CONTRACT | Assets/2. Data/Progression/PhaseE/TEMP_BALANCE_V1/Skills/Olaf/Normal/Olaf_N_15.asset | Unsupported non-proxy effect; never use legacy adapter
+- [Info] MANUAL_NATIVE_CONTRACT | Assets/2. Data/Progression/PhaseE/TEMP_BALANCE_V1/Skills/Yujin/Duel/Yujin_D_03.asset | Unsupported non-proxy effect; never use legacy adapter
+- [Info] MANUAL_NATIVE_CONTRACT | Assets/2. Data/Progression/PhaseE/TEMP_BALANCE_V1/Skills/Yujin/Duel/Yujin_D_05.asset | Unsupported non-proxy effect; never use legacy adapter
+- [Info] MANUAL_NATIVE_CONTRACT | Assets/2. Data/Progression/PhaseE/TEMP_BALANCE_V1/Skills/Yujin/Duel/Yujin_D_08.asset | Unsupported non-proxy effect; never use legacy adapter
+- [Info] MANUAL_NATIVE_CONTRACT | Assets/2. Data/Progression/PhaseE/TEMP_BALANCE_V1/Skills/Yujin/Duel/Yujin_D_11.asset | Unsupported non-proxy effect; never use legacy adapter
+- [Info] MANUAL_NATIVE_CONTRACT | Assets/2. Data/Progression/PhaseE/TEMP_BALANCE_V1/Skills/Yujin/Duel/Yujin_D_12.asset | Unsupported non-proxy effect; never use legacy adapter
+- [Info] MANUAL_NATIVE_CONTRACT | Assets/2. Data/Progression/PhaseE/TEMP_BALANCE_V1/Skills/Yujin/Duel/Yujin_D_13.asset | Unsupported non-proxy effect; never use legacy adapter
+- [Info] MANUAL_NATIVE_CONTRACT | Assets/2. Data/Progression/PhaseE/TEMP_BALANCE_V1/Skills/Yujin/Normal/Yujin_N_03.asset | Unsupported non-proxy effect; never use legacy adapter
+- [Info] MANUAL_NATIVE_CONTRACT | Assets/2. Data/Progression/PhaseE/TEMP_BALANCE_V1/Skills/Yujin/Normal/Yujin_N_04.asset | Unsupported non-proxy effect; never use legacy adapter
+- [Info] MANUAL_NATIVE_CONTRACT | Assets/2. Data/Progression/PhaseE/TEMP_BALANCE_V1/Skills/Yujin/Normal/Yujin_N_05.asset | Unsupported non-proxy effect; never use legacy adapter
+- [Info] MANUAL_NATIVE_CONTRACT | Assets/2. Data/Progression/PhaseE/TEMP_BALANCE_V1/Skills/Yujin/Normal/Yujin_N_06.asset | Unsupported non-proxy effect; never use legacy adapter
+- [Info] MANUAL_NATIVE_CONTRACT | Assets/2. Data/Progression/PhaseE/TEMP_BALANCE_V1/Skills/Yujin/Normal/Yujin_N_07.asset | Unsupported non-proxy effect; never use legacy adapter
+- [Info] MANUAL_NATIVE_CONTRACT | Assets/2. Data/Progression/PhaseE/TEMP_BALANCE_V1/Skills/Yujin/Normal/Yujin_N_08.asset | Unsupported non-proxy effect; never use legacy adapter
+- [Info] MANUAL_NATIVE_CONTRACT | Assets/2. Data/Progression/PhaseE/TEMP_BALANCE_V1/Skills/Yujin/Normal/Yujin_N_09.asset | Unsupported non-proxy effect; never use legacy adapter
+- [Info] MANUAL_NATIVE_CONTRACT | Assets/2. Data/Progression/PhaseE/TEMP_BALANCE_V1/Skills/Yujin/Preparation/Yujin_P_05.asset | Unsupported non-proxy effect; never use legacy adapter
+- [Info] MANUAL_NATIVE_CONTRACT | Assets/2. Data/Progression/PhaseE/TEMP_BALANCE_V1/Skills/Yujin/Preparation/Yujin_P_06.asset | Unsupported non-proxy effect; never use legacy adapter
+- [Info] MANUAL_NATIVE_CONTRACT | Assets/2. Data/Progression/PhaseE/TEMP_BALANCE_V1/Skills/Yujin/Preparation/Yujin_P_07.asset | Unsupported non-proxy effect; never use legacy adapter

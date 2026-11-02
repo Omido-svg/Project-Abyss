@@ -1,0 +1,7 @@
+"ScriptPath","Line","Signature","Category"
+"Assets/1. Scripts/Runtime/Abilities/Runtime/R7ExclusiveEntryMigrationScope.cs","36","""R7.LEGACY_SPECIALIST_ADAPTER"",targets[0],1));","ADAPTER_INFRASTRUCTURE"
+"Assets/1. Scripts/Runtime/Abilities/Runtime/R7ExclusiveEntryMigrationScope.cs","109","new R7ExclusiveEntryMigrationScope(assets);","ADAPTER_INFRASTRUCTURE"
+"Assets/1. Scripts/Runtime/Abilities/Runtime/R7ExclusiveEntryMigrationScope.cs","159","result=entry.TryApply(context,timing,(selected,overrides)=>","ENTRY_GATE"
+"Assets/1. Scripts/Runtime/Abilities/Runtime/R7ExclusiveEntryMigrationScope.cs","170","result=new LegacySkillEffectEntryAdapter(entry).Execute(context,timing);","LEGACY_ADAPTER"
+"Assets/1. Scripts/Runtime/Diagnostics/Verification/CharacterVerificationForcedScenarioRunner.cs","623","SkillEffectResult result = entry.TryApply(","ENTRY_GATE"
+"Assets/1. Scripts/Runtime/Skills/Base/SkillEffectDispatcher.cs","172","entry.TryApply(","ENTRY_GATE"

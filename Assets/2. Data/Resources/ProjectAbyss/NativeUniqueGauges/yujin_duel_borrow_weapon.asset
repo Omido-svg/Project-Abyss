@@ -1,0 +1,25 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 80c7d7d617fc1354d9a96c98567284f9, type: 3}
+  m_Name: yujin_duel_borrow_weapon
+  m_EditorClassIdentifier: 
+  SchemaVersion: 1
+  StableId: yujin.duel.borrow_weapon
+  SourceAssetGuid: 620a7e18873bb554297c5f3a4421b983
+  SourceAssetName: Yujin_D_10
+  Kind: 2
+  Trigger: 2
+  Level0Amount: 1
+  Level1Amount: 2
+  Level2Amount: 2
+  RestrictToRoll: 0
+  RollNumber: 1

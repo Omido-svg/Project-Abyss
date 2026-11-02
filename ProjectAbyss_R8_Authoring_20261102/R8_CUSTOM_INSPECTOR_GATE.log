@@ -1,0 +1,5 @@
+R7NativeAbilityDefinition => R8ResourceNativeInspector20261102 PASS=True
+R7NativeStatusAbilityDefinition => R8StatusNativeInspector20261102 PASS=True
+R7NativeMixedAbilityDefinition => R8MixedNativeInspector20261102 PASS=True
+R7NativeUniqueGaugeDefinition => R8UniqueGaugeNativeInspector20261102 PASS=True
+R7NativePreparationSetupDefinition => R8PreparationNativeInspector20261102 PASS=True

@@ -1,0 +1,6 @@
+G0 frozen assets=398 CHANGED=0 MISSING=0
+R8 SO=37/37 corruption=0
+R8 scanned skill=145 augment=63 item=60
+R8 blockers=9 warnings=60
+Unity Play=False scene=Battle Test Scene Dirty=True
+R8 SCRATCH=False R8 STAGING=False

@@ -12,11 +12,19 @@ public class ActionResolver
     private readonly IBattleActionPresentation actionPresentation;
     private BattleReactionScheduler reactionScheduler;
     private R6ReactionActionRegistry reactionRegistry;
+
+    private R6ReactionLifetimeRegistry20261102 reactionLifetime;
+    public void EnableR6ReactionLifetime(R6ReactionLifetimeRegistry20261102 lifetime)
+    {
+        reactionLifetime = lifetime ?? throw new System.ArgumentNullException(nameof(lifetime));
+    }
     private R6SpecialistReactionRegistry specialistReactionRegistry;
     public void EnableR6SpecialistReactions(R6SpecialistReactionRegistry registry)
     {
         specialistReactionRegistry=registry ?? throw new System.ArgumentNullException(nameof(registry));
     }
+
+    public bool IsR6StepwiseActive => useR6StepwiseClashes;
     private bool useR6StepwiseClashes;
 
     /// <summary>
@@ -74,6 +82,8 @@ public class ActionResolver
     {
         reactionScheduler=null;
         reactionRegistry=null;
+
+        reactionLifetime=null;
         specialistReactionRegistry=null;
         reactionExecutionTrace.Clear();
         useR6StepwiseClashes=false;
@@ -245,37 +255,50 @@ public class ActionResolver
         if(reactionScheduler==null || reactionRegistry==null)
             yield break;
 
+        int dispatches=0;
         while(reactionScheduler.TryDequeue(checkpoint,out var request))
         {
+            if(++dispatches>256)
+                throw new System.InvalidOperationException(
+                    "R6 checkpoint dispatch limit exceeded; halt instead of looping.");
+            if(reactionLifetime!=null &&
+                !reactionLifetime.MayStart(request,out var lifetimeReason))
+            {
+                reactionLifetime.Cancel(request);
+                reactionExecutionTrace.Add(new R6ReactionExecutionRecord(
+                    request,0,false,"R6 lifetime blocked: "+lifetimeReason));
+                continue;
+            }
             if(specialistReactionRegistry?.IsChainQuarantined(request.ChainId)==true)
             {
+                reactionLifetime?.Cancel(request);
                 reactionExecutionTrace.Add(new R6ReactionExecutionRecord(
                     request,0,false,"Origin chain quarantined after unknown specialist commit."));
                 continue;
             }
+
             if(specialistReactionRegistry?.Contains(request.RequestId)==true)
             {
-                bool applied=specialistReactionRegistry.TryExecute(request,out var specialistProblem);
+                bool applied=specialistReactionRegistry.TryExecute(request,out var problem);
+                reactionLifetime?.CompleteSpecialist(request,applied,out _);
                 reactionExecutionTrace.Add(new R6ReactionExecutionRecord(
                     request,0,applied,applied ?
-                    "Original specialist reactive sequence executed." :
-                    specialistProblem));
+                    "Original specialist reactive sequence executed." : problem));
                 if(!applied)
-                    Debug.LogWarning("[R6-Specialist] "+request.RequestId+" / "+specialistProblem);
-                continue;
-            }
-            if(!reactionRegistry.TryTake(request,out var slot,out var problem))
-            {
-                reactionExecutionTrace.Add(
-                    new R6ReactionExecutionRecord(request,0,false,problem));
-                Debug.LogWarning("[R6-Exec] Reaction request rejected at checkpoint: "+
-                    request.RequestId+" / "+problem);
+                    Debug.LogWarning("[R6-Specialist] "+request.RequestId+" / "+problem);
                 continue;
             }
 
-            // Re-validate at execution time, AFTER other actions may have
-            // killed the target/broken the slot. No new execution on stale slot.
-            // Never collide with a planned action ID already in ActionManager.
+            if(!reactionRegistry.TryTake(request,out var slot,out var diagnostic))
+            {
+                reactionLifetime?.Cancel(request);
+                reactionExecutionTrace.Add(new R6ReactionExecutionRecord(
+                    request,0,false,diagnostic));
+                Debug.LogWarning("[R6-Exec] Unbound reaction "+
+                    request.RequestId+" / "+diagnostic);
+                continue;
+            }
+
             bool idCollision=battleContext?.Services?.ActionManager
                 ?.FindSlotById(slot.ActionId)!=null;
             bool hostileSide=battleContext!=null &&
@@ -286,49 +309,56 @@ public class ActionResolver
                  battleContext.Enemies.Contains(slot.Owner) &&
                  slot.TargetCharacter==battleContext.Player);
             if(!CanExecuteSlot(slot) || slot.TargetCharacter==null ||
-                slot.TargetCharacter==slot.Owner ||
-                idCollision || !hostileSide)
+                slot.TargetCharacter==slot.Owner || idCollision || !hostileSide)
             {
-                reactionExecutionTrace.Add(
-                    new R6ReactionExecutionRecord(request,slot.ActionId,false,
-                        "Reaction slot no longer executable."));
+                reactionLifetime?.Cancel(request);
+                reactionExecutionTrace.Add(new R6ReactionExecutionRecord(
+                    request,slot.ActionId,false,
+                    "Reaction owner, target or action slot invalid at execution."));
                 continue;
             }
 
-            // A reaction is an independent ONE-SIDED action, never an automatic
-            // extra clash against the reaction target's next planned slot.
-            // Existing ClashManager remains the only damage/roll authority.
-            ClashResultContext result=clashManager.ResolvePair(new ClashPair(slot));
-            if(result==null)
+            // The original ClashManager remains sole roll and damage writer.
+            // A reaction never becomes an extra paired clash. If its specialist
+            // throws after partial HP commit, quarantine the whole chain.
+            ClashResultContext resolved;
+            try
             {
-                reactionExecutionTrace.Add(
-                    new R6ReactionExecutionRecord(request,slot.ActionId,false,
-                        "ClashManager returned no executable reaction result."));
+                resolved=clashManager.ResolvePair(new ClashPair(slot));
+            }
+            catch
+            {
+                reactionLifetime?.QuarantineUnknownCommit(request);
+                throw;
+            }
+            if(resolved==null)
+            {
+                reactionLifetime?.Cancel(request);
+                reactionExecutionTrace.Add(new R6ReactionExecutionRecord(
+                    request,slot.ActionId,false,
+                    "ClashManager returned no executable reaction result."));
                 continue;
             }
 
-            reactionExecutionTrace.Add(
-                new R6ReactionExecutionRecord(request,slot.ActionId,true,
-                    "One-sided reaction resolved by ClashManager."));
+            if(reactionLifetime!=null &&
+               !reactionLifetime.Complete(request,resolved,out var lifetimeCommitProblem) &&
+               !string.IsNullOrEmpty(lifetimeCommitProblem))
+                Debug.Log("[R6-Lifetime] "+request.RequestId+": "+
+                    lifetimeCommitProblem);
+            reactionExecutionTrace.Add(new R6ReactionExecutionRecord(
+                request,slot.ActionId,true,
+                "Independent one-sided reaction resolved by ClashManager."));
 
             if(useR6StepwiseClashes)
                 Trace(R6StepTraceKind.ReactionCommitted,slot.ActionId,
                     request.RootActionId,request.CauseEventId,-1);
-            // An actual reaction result is played after its own commit,
-            // before the original action resumes its next exchange.
             if(actionPresentation!=null)
-                yield return actionPresentation.PlayClash(result);
+                yield return actionPresentation.PlayClash(resolved);
             if(useR6StepwiseClashes)
                 Trace(R6StepTraceKind.ReactionVisualCompleted,slot.ActionId,
                     request.RootActionId,request.CauseEventId,-1);
         }
     }
-
-
-
-
-
-
 
     private bool ExecuteSkill(
         BattleAction action)

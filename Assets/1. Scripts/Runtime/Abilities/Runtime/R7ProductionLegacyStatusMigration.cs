@@ -79,6 +79,18 @@ namespace ProjectAbyss.Abilities
                     results.Add(SkillEffectResult.NotScheduled(diagnostic,timing));
                     continue;
                 }
+                var gate=R7NativeMixedGate20261102.Evaluate(operation,context);
+                if(gate==R7MixedGateVerdict20261102.NotScheduled)
+                {
+                    results.Add(SkillEffectResult.NotScheduled(diagnostic,timing));
+                    continue;
+                }
+                if(gate==R7MixedGateVerdict20261102.ConditionFailed)
+                {
+                    results.Add(SkillEffectResult.ConditionFailed(diagnostic,
+                        timing,context,"R7-4 native predicate was not met."));
+                    continue;
+                }
                 if(context?.Action==null||context.Action.ActionId<=0||
                    context.Owner==null)
                 {

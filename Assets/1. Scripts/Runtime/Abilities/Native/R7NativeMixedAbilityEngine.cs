@@ -70,7 +70,11 @@ namespace ProjectAbyss.Abilities
                 context.Resolver==null||context.Action.ActionId<=0)
                 return false;
             var op=graph.Operations[index];
-            if(op==null||op.Trigger!=AbilityEventKind.RollUsing||
+            if(op==null||
+                R7NativeMixedGate20261102.Evaluate(op,context)!=
+                    R7MixedGateVerdict20261102.Execute)
+                return false;
+            if(op.Trigger!=AbilityEventKind.RollUsing||
                 context.Timing!=SkillEffectTiming.OnExecute)
                 return false;
             long actionId=context.Action.ActionId;

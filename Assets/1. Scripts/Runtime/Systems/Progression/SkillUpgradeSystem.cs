@@ -97,7 +97,7 @@ public sealed class SkillUpgradeState
         if (definition == null)
             return 0;
 
-        string key = definition.SkillId;
+        string key = R7SkillIdentityContract20261102.UniqueKey(definition);
         return !string.IsNullOrWhiteSpace(key) &&
                levels.TryGetValue(key, out int level)
             ? level
@@ -113,6 +113,18 @@ public sealed class SkillUpgradeState
             ? level : 0;
     }
 
+    // Use when a native command only carries stable ID + source asset GUID.
+    // A collision SkillId alone cannot identify an upgrade profile safely.
+    public int GetLevel(string stableDefinitionId,string assetGuid)
+    {
+        if(string.IsNullOrWhiteSpace(stableDefinitionId))return 0;
+        if(!R7SkillIdentityContract20261102.IsDuplicateId(stableDefinitionId))
+            return GetLevel(stableDefinitionId);
+        if(string.IsNullOrWhiteSpace(assetGuid))return 0;
+        return levels.TryGetValue("guid:"+assetGuid.ToLowerInvariant(),out int level)
+            ?level:0;
+    }
+
     public bool TryUpgrade(SkillDefinition definition, int maximumLevel = 2)
     {
         if (definition == null)
@@ -122,7 +134,7 @@ public sealed class SkillUpgradeState
         if (current >= Mathf.Max(0, maximumLevel))
             return false;
 
-        string key = definition.SkillId;
+        string key = R7SkillIdentityContract20261102.UniqueKey(definition);
         if (string.IsNullOrWhiteSpace(key))
             return false;
 
@@ -135,7 +147,7 @@ public sealed class SkillUpgradeState
         if (definition == null)
             return false;
 
-        string key = definition.SkillId;
+        string key = R7SkillIdentityContract20261102.UniqueKey(definition);
         if (string.IsNullOrWhiteSpace(key))
             return false;
 

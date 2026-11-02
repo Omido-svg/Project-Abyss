@@ -1,0 +1,47 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 13b9d4d73f05414458c20767ac09fed3, type: 3}
+  m_Name: R7SkillIdentityRegistry
+  m_EditorClassIdentifier: 
+  Entries:
+  - SkillId: olaf.duel.standard
+    AssetGuid: d685378dcfe71d3418bf9cde7ff0542d
+    Definition: {fileID: 11400000, guid: d685378dcfe71d3418bf9cde7ff0542d, type: 2}
+    LegacyIdDefault: 0
+  - SkillId: olaf.duel.standard
+    AssetGuid: cd90424506385934784ae6ead386e62b
+    Definition: {fileID: 11400000, guid: cd90424506385934784ae6ead386e62b, type: 2}
+    LegacyIdDefault: 1
+  - SkillId: olaf.preparation.bloto
+    AssetGuid: 0cd53d9b56e64a24b82911598f800af9
+    Definition: {fileID: 11400000, guid: 0cd53d9b56e64a24b82911598f800af9, type: 2}
+    LegacyIdDefault: 0
+  - SkillId: olaf.preparation.bloto
+    AssetGuid: 3b904fc8be62e1d4e9f69e195c2f1c9f
+    Definition: {fileID: 11400000, guid: 3b904fc8be62e1d4e9f69e195c2f1c9f, type: 2}
+    LegacyIdDefault: 1
+  - SkillId: yujin.preparation.hwanhyeong.attack
+    AssetGuid: 0a914f0a1b2c3d4e5f60718293a4b5c6
+    Definition: {fileID: 11400000, guid: 0a914f0a1b2c3d4e5f60718293a4b5c6, type: 2}
+    LegacyIdDefault: 0
+  - SkillId: yujin.preparation.hwanhyeong.attack
+    AssetGuid: 271781acc71e5ca46aa05fd44090435c
+    Definition: {fileID: 11400000, guid: 271781acc71e5ca46aa05fd44090435c, type: 2}
+    LegacyIdDefault: 1
+  - SkillId: yujin.preparation.hwanhyeong.defense
+    AssetGuid: 0b914f0b1c2d3e4f5061728394a5b6c7
+    Definition: {fileID: 11400000, guid: 0b914f0b1c2d3e4f5061728394a5b6c7, type: 2}
+    LegacyIdDefault: 0
+  - SkillId: yujin.preparation.hwanhyeong.defense
+    AssetGuid: e13cd646b4403b545a8e6ca6def71493
+    Definition: {fileID: 11400000, guid: e13cd646b4403b545a8e6ca6def71493, type: 2}
+    LegacyIdDefault: 1

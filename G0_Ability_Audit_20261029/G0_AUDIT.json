@@ -1,9 +1,9 @@
 {
-    "GeneratedAtUtc": "2026-10-30T05:57:23.2905837Z",
+    "GeneratedAtUtc": "2026-11-02T10:08:03.5956831Z",
     "UnityVersion": "6000.0.56f1",
     "ProjectPath": "F:\\GitCorp\\Project-Abyss",
     "Branch": "Default-Battle-Test",
-    "Commit": "1546ad3927a99931843853335c89e6d2a9500d9d",
+    "Commit": "7ec5d6b93158368d6f4fb2deef9b165c4c61f9e7",
     "SkillAssetCount": 145,
     "EntryCount": 118,
     "EffectDefinitionAssetCount": 159,
@@ -17,25 +17,25 @@
     "KeywordRowCount": 28,
     "KeywordManualReviewCount": 3,
     "RequiredKeywordCount": 14,
-    "RequiredKeywordMissingCount": 6,
+    "RequiredKeywordMissingCount": 5,
     "RequiredKeywordUndecidedCount": 10,
     "GlossaryKeywordCount": 40,
     "SkillKeywordEntryCount": 0,
     "CombatResourceCount": 0,
-    "CallGraphEdgeCount": 52,
+    "CallGraphEdgeCount": 60,
     "AttackWeightedSkillCount": 0,
     "AttackWeightProtectedSkillCount": 0,
     "RawTimingHistogram": [
         {
             "TimingValue": 0,
-            "DisplayTiming": "사용시",
+            "DisplayTiming": "사용시 (굴림별)",
             "Count": 150
         }
     ],
     "EffectiveTimingHistogram": [
         {
             "TimingValue": 0,
-            "DisplayTiming": "사용시",
+            "DisplayTiming": "사용시 (굴림별)",
             "Count": 61
         },
         {
@@ -50,7 +50,7 @@
         },
         {
             "TimingValue": 31,
-            "DisplayTiming": "매칭시 (결투)",
+            "DisplayTiming": "매칭시 (레거시)",
             "Count": 4
         }
     ],
@@ -312,6 +312,18 @@
             "Line": 2437,
             "EventName": "OnDamageEventResolved",
             "Source": "fixture.Context._battleEvent.OnDamageEventResolved += OnDamageEvent;"
+        },
+        {
+            "Path": "Assets/1. Scripts/Editor/Verification/R6HifumiDeferredParityVerification20261030.cs",
+            "Line": 94,
+            "EventName": "OnReactiveRollResolved",
+            "Source": "ctx._battleEvent.OnReactiveRollResolved += rollObserver;"
+        },
+        {
+            "Path": "Assets/1. Scripts/Runtime/Abilities/Runtime/R7SkillPilotObserver.cs",
+            "Line": 96,
+            "EventName": "OnActionStart",
+            "Source": "battleEvent.OnActionStart += OnActionStart;"
         },
         {
             "Path": "Assets/1. Scripts/Runtime/Characters/CharacterBase/ReactiveCombatMechanic.cs",
@@ -621,61 +633,61 @@
         },
         {
             "Path": "Assets/1. Scripts/Runtime/Skills/Base/Skill.cs",
-            "Line": 1064,
+            "Line": 1136,
             "EventName": "OnBattleStarted",
             "Source": "registeredBattleEvent.OnBattleStarted +="
         },
         {
             "Path": "Assets/1. Scripts/Runtime/Skills/Base/Skill.cs",
-            "Line": 1066,
+            "Line": 1138,
             "EventName": "OnBattleEnded",
             "Source": "registeredBattleEvent.OnBattleEnded +="
         },
         {
             "Path": "Assets/1. Scripts/Runtime/Skills/Base/Skill.cs",
-            "Line": 1068,
+            "Line": 1140,
             "EventName": "OnTurnStart",
             "Source": "registeredBattleEvent.OnTurnStart +="
         },
         {
             "Path": "Assets/1. Scripts/Runtime/Skills/Base/Skill.cs",
-            "Line": 1070,
+            "Line": 1142,
             "EventName": "OnTurnEnd",
             "Source": "registeredBattleEvent.OnTurnEnd +="
         },
         {
             "Path": "Assets/1. Scripts/Runtime/Skills/Base/Skill.cs",
-            "Line": 1072,
+            "Line": 1144,
             "EventName": "OnActionStart",
             "Source": "registeredBattleEvent.OnActionStart +="
         },
         {
             "Path": "Assets/1. Scripts/Runtime/Skills/Base/Skill.cs",
-            "Line": 1074,
+            "Line": 1146,
             "EventName": "OnActionEnd",
             "Source": "registeredBattleEvent.OnActionEnd +="
         },
         {
             "Path": "Assets/1. Scripts/Runtime/Skills/Base/Skill.cs",
-            "Line": 1076,
+            "Line": 1148,
             "EventName": "OnDamageEventResolved",
             "Source": "registeredBattleEvent.OnDamageEventResolved +="
         },
         {
             "Path": "Assets/1. Scripts/Runtime/Skills/Base/Skill.cs",
-            "Line": 1078,
+            "Line": 1150,
             "EventName": "OnBodyPartWeakenResolved",
             "Source": "registeredBattleEvent.OnBodyPartWeakenResolved +="
         },
         {
             "Path": "Assets/1. Scripts/Runtime/Skills/Base/Skill.cs",
-            "Line": 1080,
+            "Line": 1152,
             "EventName": "OnBodyPartBreakResolved",
             "Source": "registeredBattleEvent.OnBodyPartBreakResolved +="
         },
         {
             "Path": "Assets/1. Scripts/Runtime/Skills/Base/Skill.cs",
-            "Line": 1082,
+            "Line": 1154,
             "EventName": "OnKillResolved",
             "Source": "registeredBattleEvent.OnKillResolved +="
         },
@@ -735,37 +747,37 @@
         },
         {
             "Path": "Assets/1. Scripts/Runtime/Characters/Hifumi/Mechanics/HifumiMechanic.cs",
-            "Line": 154,
+            "Line": 207,
             "EventName": "OnTurnStart",
             "Source": "() => battleEvent.OnTurnStart += OnTurnStart,"
         },
         {
             "Path": "Assets/1. Scripts/Runtime/Characters/Hifumi/Mechanics/HifumiMechanic.cs",
-            "Line": 159,
+            "Line": 212,
             "EventName": "OnTurnEnd",
             "Source": "() => battleEvent.OnTurnEnd += OnTurnEnd,"
         },
         {
             "Path": "Assets/1. Scripts/Runtime/Characters/Hifumi/Mechanics/HifumiMechanic.cs",
-            "Line": 164,
+            "Line": 217,
             "EventName": "OnActionStart",
             "Source": "() => battleEvent.OnActionStart += OnActionStart,"
         },
         {
             "Path": "Assets/1. Scripts/Runtime/Characters/Hifumi/Mechanics/HifumiMechanic.cs",
-            "Line": 169,
+            "Line": 222,
             "EventName": "OnExchangeResolved",
             "Source": "() => battleEvent.OnExchangeResolved += OnExchangeResolved,"
         },
         {
             "Path": "Assets/1. Scripts/Runtime/Characters/Hifumi/Mechanics/HifumiMechanic.cs",
-            "Line": 174,
+            "Line": 227,
             "EventName": "OnClashResolved",
             "Source": "() => battleEvent.OnClashResolved += OnClashResolved,"
         },
         {
             "Path": "Assets/1. Scripts/Runtime/Characters/Hifumi/Mechanics/HifumiMechanic.cs",
-            "Line": 179,
+            "Line": 232,
             "EventName": "OnDamageEventResolved",
             "Source": "() => battleEvent.OnDamageEventResolved += OnDamageResolved,"
         },
@@ -1706,7 +1718,7 @@
             "SourceKind": "LegacyEffects",
             "SerializedTimingValue": 0,
             "EffectiveTimingValue": 0,
-            "DisplayTiming": "사용시",
+            "DisplayTiming": "사용시 (굴림별)",
             "ConditionTypes": "",
             "TargetSelector": "Current Target",
             "OperationType": "AddBodyPartStatusEffect",
@@ -1731,7 +1743,7 @@
             "SourceKind": "LegacyEffects",
             "SerializedTimingValue": 0,
             "EffectiveTimingValue": 0,
-            "DisplayTiming": "사용시",
+            "DisplayTiming": "사용시 (굴림별)",
             "ConditionTypes": "",
             "TargetSelector": "Current Target",
             "OperationType": "AddBodyPartStatusEffect",
@@ -1756,7 +1768,7 @@
             "SourceKind": "LegacyEffects",
             "SerializedTimingValue": 0,
             "EffectiveTimingValue": 0,
-            "DisplayTiming": "사용시",
+            "DisplayTiming": "사용시 (굴림별)",
             "ConditionTypes": "",
             "TargetSelector": "Current Target",
             "OperationType": "PreparationFlatSetupEffect",
@@ -1781,7 +1793,7 @@
             "SourceKind": "LegacyEffects",
             "SerializedTimingValue": 0,
             "EffectiveTimingValue": 0,
-            "DisplayTiming": "사용시",
+            "DisplayTiming": "사용시 (굴림별)",
             "ConditionTypes": "",
             "TargetSelector": "Current Target",
             "OperationType": "AddBodyPartStatusEffect",
@@ -1806,7 +1818,7 @@
             "SourceKind": "LegacyEffects",
             "SerializedTimingValue": 0,
             "EffectiveTimingValue": 0,
-            "DisplayTiming": "사용시",
+            "DisplayTiming": "사용시 (굴림별)",
             "ConditionTypes": "",
             "TargetSelector": "Current Target",
             "OperationType": "AddBodyPartStatusEffect",
@@ -1831,7 +1843,7 @@
             "SourceKind": "LegacyEffects",
             "SerializedTimingValue": 0,
             "EffectiveTimingValue": 0,
-            "DisplayTiming": "사용시",
+            "DisplayTiming": "사용시 (굴림별)",
             "ConditionTypes": "",
             "TargetSelector": "Current Target",
             "OperationType": "ApplyRolledPartDamageEffect",
@@ -1856,7 +1868,7 @@
             "SourceKind": "LegacyEffects",
             "SerializedTimingValue": 0,
             "EffectiveTimingValue": 0,
-            "DisplayTiming": "사용시",
+            "DisplayTiming": "사용시 (굴림별)",
             "ConditionTypes": "",
             "TargetSelector": "Current Target",
             "OperationType": "AddBodyPartStatusEffect",
@@ -1881,7 +1893,7 @@
             "SourceKind": "LegacyEffects",
             "SerializedTimingValue": 0,
             "EffectiveTimingValue": 0,
-            "DisplayTiming": "사용시",
+            "DisplayTiming": "사용시 (굴림별)",
             "ConditionTypes": "",
             "TargetSelector": "Current Target",
             "OperationType": "AddBodyPartStatusEffect",
@@ -1906,7 +1918,7 @@
             "SourceKind": "LegacyEffects",
             "SerializedTimingValue": 0,
             "EffectiveTimingValue": 0,
-            "DisplayTiming": "사용시",
+            "DisplayTiming": "사용시 (굴림별)",
             "ConditionTypes": "",
             "TargetSelector": "Current Target",
             "OperationType": "AddBodyPartStatusEffect",
@@ -1931,7 +1943,7 @@
             "SourceKind": "LegacyEffects",
             "SerializedTimingValue": 0,
             "EffectiveTimingValue": 0,
-            "DisplayTiming": "사용시",
+            "DisplayTiming": "사용시 (굴림별)",
             "ConditionTypes": "",
             "TargetSelector": "Current Target",
             "OperationType": "ApplyRolledPartDamageEffect",
@@ -1956,7 +1968,7 @@
             "SourceKind": "LegacyEffects",
             "SerializedTimingValue": 0,
             "EffectiveTimingValue": 0,
-            "DisplayTiming": "사용시",
+            "DisplayTiming": "사용시 (굴림별)",
             "ConditionTypes": "",
             "TargetSelector": "Current Target",
             "OperationType": "AddBodyPartStatusEffect",
@@ -1981,7 +1993,7 @@
             "SourceKind": "LegacyEffects",
             "SerializedTimingValue": 0,
             "EffectiveTimingValue": 0,
-            "DisplayTiming": "사용시",
+            "DisplayTiming": "사용시 (굴림별)",
             "ConditionTypes": "",
             "TargetSelector": "Current Target",
             "OperationType": "OlafBreakOwnPartEffect",
@@ -2006,7 +2018,7 @@
             "SourceKind": "LegacyEffects",
             "SerializedTimingValue": 0,
             "EffectiveTimingValue": 0,
-            "DisplayTiming": "사용시",
+            "DisplayTiming": "사용시 (굴림별)",
             "ConditionTypes": "",
             "TargetSelector": "Current Target",
             "OperationType": "PreparationFlatSetupEffect",
@@ -2031,7 +2043,7 @@
             "SourceKind": "LegacyEffects",
             "SerializedTimingValue": 0,
             "EffectiveTimingValue": 0,
-            "DisplayTiming": "사용시",
+            "DisplayTiming": "사용시 (굴림별)",
             "ConditionTypes": "",
             "TargetSelector": "Current Target",
             "OperationType": "AddBodyPartStatusEffect",
@@ -2056,7 +2068,7 @@
             "SourceKind": "LegacyEffects",
             "SerializedTimingValue": 0,
             "EffectiveTimingValue": 0,
-            "DisplayTiming": "사용시",
+            "DisplayTiming": "사용시 (굴림별)",
             "ConditionTypes": "",
             "TargetSelector": "Current Target",
             "OperationType": "OlafPrestigeEffect",
@@ -2081,7 +2093,7 @@
             "SourceKind": "LegacyEffects",
             "SerializedTimingValue": 0,
             "EffectiveTimingValue": 0,
-            "DisplayTiming": "사용시",
+            "DisplayTiming": "사용시 (굴림별)",
             "ConditionTypes": "",
             "TargetSelector": "Current Target",
             "OperationType": "OlafNormalBleedEffect",
@@ -2106,7 +2118,7 @@
             "SourceKind": "DefinitionEffectEntries",
             "SerializedTimingValue": 31,
             "EffectiveTimingValue": 31,
-            "DisplayTiming": "매칭시 (결투)",
+            "DisplayTiming": "매칭시 (레거시)",
             "ConditionTypes": "",
             "TargetSelector": "Current Target",
             "OperationType": "Olaf0922Phase7SkillEffectDefinition",
@@ -2131,7 +2143,7 @@
             "SourceKind": "DefinitionEffectEntries",
             "SerializedTimingValue": 31,
             "EffectiveTimingValue": 31,
-            "DisplayTiming": "매칭시 (결투)",
+            "DisplayTiming": "매칭시 (레거시)",
             "ConditionTypes": "",
             "TargetSelector": "Current Target",
             "OperationType": "Olaf0922Phase7SkillEffectDefinition",
@@ -2156,7 +2168,7 @@
             "SourceKind": "DefinitionEffectEntries",
             "SerializedTimingValue": 31,
             "EffectiveTimingValue": 31,
-            "DisplayTiming": "매칭시 (결투)",
+            "DisplayTiming": "매칭시 (레거시)",
             "ConditionTypes": "",
             "TargetSelector": "Current Target",
             "OperationType": "Olaf0922Phase7SkillEffectDefinition",
@@ -2181,7 +2193,7 @@
             "SourceKind": "DefinitionEffectEntries",
             "SerializedTimingValue": 31,
             "EffectiveTimingValue": 31,
-            "DisplayTiming": "매칭시 (결투)",
+            "DisplayTiming": "매칭시 (레거시)",
             "ConditionTypes": "",
             "TargetSelector": "Current Target",
             "OperationType": "Olaf0922Phase7SkillEffectDefinition",
@@ -2202,7 +2214,7 @@
             "EffectSource": "Assets/1. Scripts/Runtime/Characters/Hifumi/Mechanics/HifumiTurnStatuses.cs",
             "RemovePolicy": "DurationPolicy=StatusEffectDurationPolicy.TurnEnd",
             "OwnedRule": "Generic",
-            "CurrentCodePath": "Assets/1. Scripts/Runtime/Characters/Hifumi/Mechanics/HifumiMechanic.cs:806",
+            "CurrentCodePath": "Assets/1. Scripts/Runtime/Characters/Hifumi/Mechanics/HifumiMechanic.cs:860",
             "SerializedRefs": "",
             "NeedsManualReview": false
         },
@@ -2244,7 +2256,7 @@
             "EffectSource": "Assets/1. Scripts/Runtime/Status/DamageOverTime/Bleeding.cs",
             "RemovePolicy": "DurationPolicy=StatusEffectDurationPolicy.Permanent",
             "OwnedRule": "UniqueKeyword",
-            "CurrentCodePath": "Assets/1. Scripts/Editor/Verification/DamageSystemR3TurnEndSettlementVerification20261029.cs:213 | Assets/1. Scripts/Runtime/Diagnostics/Verification/CharacterBehaviorCoverageCatalog.cs:516 | Assets/1. Scripts/Runtime/Diagnostics/Verification/CharacterBehaviorCoverageCatalog.cs:616 | Assets/1. Scripts/Runtime/Diagnostics/Verification/CharacterBehaviorCoverageCatalog.cs:617 | Assets/1. Scripts/Runtime/Diagnostics/Verification/CharacterBehaviorCoverageCatalog.cs:621",
+            "CurrentCodePath": "Assets/1. Scripts/Editor/Verification/DamageSystemR3TurnEndSettlementVerification20261029.cs:213 | Assets/1. Scripts/Editor/Verification/R7LegacyMixedActualClashVerification20261030.cs:92 | Assets/1. Scripts/Editor/Verification/R7LegacyMixedActualClashVerification20261030.cs:93 | Assets/1. Scripts/Editor/Verification/R7LegacyMixedActualClashVerification20261030.cs:94 | Assets/1. Scripts/Editor/Verification/R7LegacyMixedActualClashVerification20261030.cs:95",
             "SerializedRefs": "Assets/2. Data/BattleEffects/Templates/AddBodyPartStatusEffect_Bleeding_6f0a573b3e.asset | Assets/2. Data/BattleEffects/Templates/OlafPrestigeEffect_ea4a0633c6.asset | Assets/2. Data/BattleVisual/StatusVisuals/Bleeding_Tick_VFX.asset | Assets/2. Data/Characters/Design2026/Hifumi/Skills/골단.asset | Assets/2. Data/Characters/Design2026/Hifumi/Skills/과감한 판단.asset | Assets/2. Data/Characters/Design2026/Hifumi/Skills/무모한 베팅.asset | Assets/2. Data/Characters/Design2026/Hifumi/Skills/속임수.asset | Assets/2. Data/Characters/Design2026/Hifumi/Skills/올인.asset",
             "NeedsManualReview": true
         },
@@ -2300,7 +2312,7 @@
             "EffectSource": "Assets/1. Scripts/Runtime/Status/DamageOverTime/Burn.cs",
             "RemovePolicy": "Default(DurationPolicy/Manual)",
             "OwnedRule": "Generic",
-            "CurrentCodePath": "Assets/1. Scripts/Runtime/Diagnostics/Verification/CharacterVerificationScenarioTools.cs:362 | Assets/1. Scripts/Runtime/Skills/Effects/Common/StatusEffectFactory.cs:111",
+            "CurrentCodePath": "Assets/1. Scripts/Editor/Verification/R7PreparationPartlessUndoParity20261030.cs:23 | Assets/1. Scripts/Editor/Verification/R7Stage1NativeBoundaryGate20261102.cs:64 | Assets/1. Scripts/Runtime/Abilities/Runtime/R7ProductionPreparationStatusMigration.cs:199 | Assets/1. Scripts/Runtime/Diagnostics/Verification/CharacterVerificationScenarioTools.cs:362 | Assets/1. Scripts/Runtime/Skills/Effects/Common/StatusEffectFactory.cs:111",
             "SerializedRefs": "Assets/2. Data/BattleEffects/Templates/AddBodyPartStatusEffect_Burn_c1497aacd1.asset | Assets/2. Data/BattleVisual/StatusVisuals/Burn_Tick_VFX.asset",
             "NeedsManualReview": false
         },
@@ -2592,7 +2604,7 @@
             "CarrierScope": "Actor",
             "StorageKind": "Bespoke",
             "CoverageStatus": "Found",
-            "ObservedIdentifiers": "Assets/1. Scripts/Runtime/Skills/DataDriven/SkillRulebreakerSettings.cs:33 | Assets/1. Scripts/Runtime/Skills/DataDriven/SkillRulebreakerSettings.cs:40 | Assets/1. Scripts/Runtime/Skills/Effects/SkillEffectCondition.cs:329 | Assets/1. Scripts/Runtime/Skills/Effects/TempBalanceSkillProxyEffectDefinition.cs:75",
+            "ObservedIdentifiers": "Assets/1. Scripts/Runtime/Abilities/Native/R7NativeMixedAbilityEngine.cs:130 | Assets/1. Scripts/Runtime/Abilities/Native/R7NativePreparationStatusGraph20261102.cs:27 | Assets/1. Scripts/Runtime/Abilities/Native/R7NativePreparationStatusGraph20261102.cs:43 | Assets/1. Scripts/Runtime/Abilities/Native/R7NativeStatusAbilityDefinition.cs:17",
             "DecisionNote": ""
         },
         {
@@ -2610,7 +2622,7 @@
             "CarrierScope": "Actor",
             "StorageKind": "Bespoke",
             "CoverageStatus": "FoundButPolicyUndecided",
-            "ObservedIdentifiers": "Assets/1. Scripts/Runtime/Characters/Olaf/Olaf.cs:16 | Assets/1. Scripts/Runtime/Characters/Olaf/Olaf.cs:17 | Assets/1. Scripts/Runtime/Characters/Olaf/Olaf.cs:73 | Assets/1. Scripts/Runtime/Characters/Olaf/Olaf.cs:231",
+            "ObservedIdentifiers": "Assets/1. Scripts/Runtime/Abilities/Native/R7NativeUniqueGaugeEngine.cs:28 | Assets/1. Scripts/Runtime/Abilities/Native/R7NativeUniqueGaugeEngine.cs:51 | Assets/1. Scripts/Runtime/Characters/Olaf/Olaf.cs:16 | Assets/1. Scripts/Runtime/Characters/Olaf/Olaf.cs:17",
             "DecisionNote": "광기 '받는 피해 +1'의 정확한 피해 채널(HP/흐트러짐/고정) 미정"
         },
         {
@@ -2654,8 +2666,8 @@
             "OwnerCharacterId": "Hifumi",
             "CarrierScope": "Actor",
             "StorageKind": "Bespoke",
-            "CoverageStatus": "Missing",
-            "ObservedIdentifiers": "(코드에 'Taunt' 없음)",
+            "CoverageStatus": "FoundButPolicyUndecided",
+            "ObservedIdentifiers": "Assets/1. Scripts/Runtime/Abilities/Targeting/R4TargetPlanningRules20261102.cs:8",
             "DecisionNote": "런타임 구현 없음 — 은신과의 목표 충돌 우선순위 미정"
         },
         {
@@ -2664,7 +2676,7 @@
             "CarrierScope": "Actor",
             "StorageKind": "Bespoke",
             "CoverageStatus": "Found",
-            "ObservedIdentifiers": "Assets/1. Scripts/Runtime/Characters/Hifumi/Mechanics/HifumiMechanic.cs:113 | Assets/1. Scripts/Runtime/Systems/AI/Advisors/HifumiAutoPlanAdvisor.cs:158 | Assets/1. Scripts/Runtime/Characters/Hifumi/Mechanics/HifumiMechanic.cs:407 | Assets/1. Scripts/Runtime/Characters/Hifumi/Mechanics/HifumiMechanic.cs:549",
+            "ObservedIdentifiers": "Assets/1. Scripts/Runtime/Characters/Hifumi/Mechanics/HifumiMechanic.cs:166 | Assets/1. Scripts/Runtime/Systems/AI/Advisors/HifumiAutoPlanAdvisor.cs:158 | Assets/1. Scripts/Runtime/Characters/Hifumi/Mechanics/HifumiMechanic.cs:461 | Assets/1. Scripts/Runtime/Characters/Hifumi/Mechanics/HifumiMechanic.cs:603",
             "DecisionNote": ""
         },
         {
@@ -2673,7 +2685,7 @@
             "CarrierScope": "Actor",
             "StorageKind": "Bespoke",
             "CoverageStatus": "FoundButPolicyUndecided",
-            "ObservedIdentifiers": "Assets/1. Scripts/Runtime/Characters/Hifumi/Mechanics/HifumiMechanic.cs:113 | Assets/1. Scripts/Runtime/Systems/AI/Advisors/HifumiAutoPlanAdvisor.cs:158",
+            "ObservedIdentifiers": "Assets/1. Scripts/Runtime/Characters/Hifumi/Mechanics/HifumiMechanic.cs:166 | Assets/1. Scripts/Runtime/Systems/AI/Advisors/HifumiAutoPlanAdvisor.cs:158",
             "DecisionNote": "'가불' 의미와 턴 종료 정산 시점은 기획 확인 필요"
         },
         {
@@ -2919,6 +2931,14 @@
     "CombatResources": [],
     "CallGraphEdges": [
         {
+            "CallerFile": "Assets/1. Scripts/Runtime/Abilities/Operations/R5CombatSpecialistBackend.cs",
+            "CallerMethod": "Apply",
+            "Callee": "ApplyDamageContext",
+            "Category": "DamageCommit",
+            "Line": 157,
+            "Source": "DamageContext result=battle.ResolveDamageManager().ApplyDamageContext(request);"
+        },
+        {
             "CallerFile": "Assets/1. Scripts/Runtime/Battle/BattleEffectResolver.cs",
             "CallerMethod": "ApplyStatusPartDamage",
             "Callee": "ApplyDamageContext",
@@ -2952,18 +2972,26 @@
         },
         {
             "CallerFile": "Assets/1. Scripts/Runtime/Characters/Hifumi/Mechanics/HifumiMechanic.cs",
+            "CallerMethod": "TryQueueR6Counter",
+            "Callee": "ResolveCounterSequence",
+            "Category": "CounterSequence",
+            "Line": 149,
+            "Source": "() => ResolveCounterSequence(source,target,part,count,reward,bonus),"
+        },
+        {
+            "CallerFile": "Assets/1. Scripts/Runtime/Characters/Hifumi/Mechanics/HifumiMechanic.cs",
             "CallerMethod": "ResolveCatastrophe",
             "Callee": "ResolveCounterSequence",
             "Category": "CounterSequence",
-            "Line": 1023,
-            "Source": "ResolveCounterSequence("
+            "Line": 1085,
+            "Source": "ResolveCounterSequence(action,target,targetPart,1,"
         },
         {
             "CallerFile": "Assets/1. Scripts/Runtime/Characters/Hifumi/Mechanics/HifumiMechanic.cs",
             "CallerMethod": "ApplyCatastropheSelfDamage",
             "Callee": "ApplyDamageContext",
             "Category": "DamageCommit",
-            "Line": 1046,
+            "Line": 1104,
             "Source": "?.ApplyDamageContext("
         },
         {
@@ -2971,15 +2999,15 @@
             "CallerMethod": "OnClashResolved",
             "Callee": "ResolveCounterSequence",
             "Category": "CounterSequence",
-            "Line": 1128,
-            "Source": "ResolveCounterSequence("
+            "Line": 1195,
+            "Source": "ResolveCounterSequence(myAction,target,targetPart,counterCount,"
         },
         {
             "CallerFile": "Assets/1. Scripts/Runtime/Characters/Hifumi/Mechanics/HifumiMechanic.cs",
             "CallerMethod": "ResolveCounterSequence",
             "Callee": "ApplyDamageContext",
             "Category": "DamageCommit",
-            "Line": 1409,
+            "Line": 1470,
             "Source": "?.ApplyDamageContext(request);"
         },
         {
@@ -3123,7 +3151,7 @@
             "CallerMethod": "Resolve",
             "Callee": "ResolveClashQueue",
             "Category": "Resolution",
-            "Line": 39,
+            "Line": 118,
             "Source": "yield return ResolveClashQueue("
         },
         {
@@ -3131,7 +3159,7 @@
             "CallerMethod": "ResolveStandaloneQueue",
             "Callee": "ExecuteSkill",
             "Category": "SkillExecution",
-            "Line": 69,
+            "Line": 148,
             "Source": "if (!ExecuteSkill(action))"
         },
         {
@@ -3139,8 +3167,56 @@
             "CallerMethod": "ResolveClashQueue",
             "Callee": "ResolvePair",
             "Category": "Resolution",
-            "Line": 105,
-            "Source": "clashManager.ResolvePair("
+            "Line": 222,
+            "Source": "result=clashManager.ResolvePair(pair);"
+        },
+        {
+            "CallerFile": "Assets/1. Scripts/Runtime/Systems/Resolution/ActionResolver.cs",
+            "CallerMethod": "PumpR6ReactionCheckpoint",
+            "Callee": "ResolvePair",
+            "Category": "Resolution",
+            "Line": 327,
+            "Source": "resolved=clashManager.ResolvePair(new ClashPair(slot));"
+        },
+        {
+            "CallerFile": "Assets/1. Scripts/Runtime/Systems/Resolution/ClashManager.R6Stepwise.cs",
+            "CallerMethod": "Advance",
+            "Callee": "ResolvePairedExchange",
+            "Category": "Resolution",
+            "Line": 155,
+            "Source": "committed=manager.ResolvePairedExchange(first,second,exchangeIndex,"
+        },
+        {
+            "CallerFile": "Assets/1. Scripts/Runtime/Systems/Resolution/ClashManager.R6Stepwise.cs",
+            "CallerMethod": "Advance",
+            "Callee": "ResolveOneSideExchange",
+            "Category": "Resolution",
+            "Line": 181,
+            "Source": "committed=manager.ResolveOneSideExchange(only,null,exchangeIndex,"
+        },
+        {
+            "CallerFile": "Assets/1. Scripts/Runtime/Systems/Resolution/ClashManager.R6Stepwise.cs",
+            "CallerMethod": "Advance",
+            "Callee": "ResolveOneSideExchange",
+            "Category": "Resolution",
+            "Line": 222,
+            "Source": "committed=manager.ResolveOneSideExchange(attacker,exhausted,"
+        },
+        {
+            "CallerFile": "Assets/1. Scripts/Runtime/Systems/Resolution/ClashManager.R6Stepwise.cs",
+            "CallerMethod": "Advance",
+            "Callee": "ResolveOneSideExchange",
+            "Category": "Resolution",
+            "Line": 228,
+            "Source": "committed=manager.ResolveOneSideExchange(attacker,exhausted,"
+        },
+        {
+            "CallerFile": "Assets/1. Scripts/Runtime/Systems/Resolution/ClashManager.R6Stepwise.cs",
+            "CallerMethod": "Finish",
+            "Callee": "RaiseClashResolved",
+            "Category": "EventRaise",
+            "Line": 290,
+            "Source": "battle._battleEvent.RaiseClashResolved(result);"
         },
         {
             "CallerFile": "Assets/1. Scripts/Runtime/Systems/Resolution/ClashManager.cs",
@@ -3155,7 +3231,7 @@
             "CallerMethod": "ResolveClash",
             "Callee": "ResolvePairedExchange",
             "Category": "Resolution",
-            "Line": 268,
+            "Line": 277,
             "Source": "ResolvePairedExchange("
         },
         {
@@ -3163,7 +3239,7 @@
             "CallerMethod": "ResolveClash",
             "Callee": "ResolveOneSideExchange",
             "Category": "Resolution",
-            "Line": 387,
+            "Line": 396,
             "Source": "ResolveOneSideExchange("
         },
         {
@@ -3171,7 +3247,7 @@
             "CallerMethod": "ResolveClash",
             "Callee": "RaiseClashResolved",
             "Category": "EventRaise",
-            "Line": 439,
+            "Line": 448,
             "Source": ".RaiseClashResolved(result);"
         },
         {
@@ -3179,7 +3255,7 @@
             "CallerMethod": "ResolvePairedExchange",
             "Callee": "ExecuteSkillOnce",
             "Category": "SkillExecution",
-            "Line": 623,
+            "Line": 632,
             "Source": "ExecuteSkillOnce("
         },
         {
@@ -3187,7 +3263,7 @@
             "CallerMethod": "ResolvePairedExchange",
             "Callee": "ExecuteSkillOnce",
             "Category": "SkillExecution",
-            "Line": 630,
+            "Line": 639,
             "Source": "ExecuteSkillOnce("
         },
         {
@@ -3195,7 +3271,7 @@
             "CallerMethod": "ResolvePairedExchange",
             "Callee": "NotifyRollOutcome",
             "Category": "OutcomeSignal",
-            "Line": 806,
+            "Line": 821,
             "Source": "winner.Skill?.NotifyRollOutcome("
         },
         {
@@ -3203,7 +3279,7 @@
             "CallerMethod": "ResolvePairedExchange",
             "Callee": "NotifyRollOutcome",
             "Category": "OutcomeSignal",
-            "Line": 809,
+            "Line": 824,
             "Source": "loser.Skill?.NotifyRollOutcome("
         },
         {
@@ -3211,7 +3287,7 @@
             "CallerMethod": "ResolvePairedExchange",
             "Callee": "ApplyDamageContext",
             "Category": "DamageCommit",
-            "Line": 845,
+            "Line": 860,
             "Source": "damageManager.ApplyDamageContext("
         },
         {
@@ -3219,7 +3295,7 @@
             "CallerMethod": "ResolvePairedExchange",
             "Callee": "RaiseExchangeResolved",
             "Category": "EventRaise",
-            "Line": 951,
+            "Line": 966,
             "Source": ".RaiseExchangeResolved(exchange);"
         },
         {
@@ -3227,7 +3303,7 @@
             "CallerMethod": "ResolvePairedExchange",
             "Callee": "NotifyHit",
             "Category": "HitSignal",
-            "Line": 953,
+            "Line": 968,
             "Source": "winner.Skill?.NotifyHit("
         },
         {
@@ -3235,7 +3311,7 @@
             "CallerMethod": "ResolveOneSide",
             "Callee": "ResolveOneSideExchange",
             "Category": "Resolution",
-            "Line": 1213,
+            "Line": 1228,
             "Source": "ResolveOneSideExchange("
         },
         {
@@ -3243,7 +3319,7 @@
             "CallerMethod": "ResolveOneSideExchange",
             "Callee": "ExecuteSkillOnce",
             "Category": "SkillExecution",
-            "Line": 1270,
+            "Line": 1285,
             "Source": "bool executed = ExecuteSkillOnce("
         },
         {
@@ -3251,7 +3327,7 @@
             "CallerMethod": "ResolveOneSideExchange",
             "Callee": "NotifyRollOutcome",
             "Category": "OutcomeSignal",
-            "Line": 1317,
+            "Line": 1340,
             "Source": "action.Skill?.NotifyRollOutcome("
         },
         {
@@ -3259,7 +3335,7 @@
             "CallerMethod": "ResolveOneSideExchange",
             "Callee": "RaiseExchangeResolved",
             "Category": "EventRaise",
-            "Line": 1345,
+            "Line": 1368,
             "Source": ".RaiseExchangeResolved(forcedFailure);"
         },
         {
@@ -3267,7 +3343,7 @@
             "CallerMethod": "ResolveOneSideExchange",
             "Callee": "NotifyRollOutcome",
             "Category": "OutcomeSignal",
-            "Line": 1372,
+            "Line": 1395,
             "Source": "action.Skill?.NotifyRollOutcome("
         },
         {
@@ -3275,7 +3351,7 @@
             "CallerMethod": "ResolveOneSideExchange",
             "Callee": "RaiseExchangeResolved",
             "Category": "EventRaise",
-            "Line": 1426,
+            "Line": 1449,
             "Source": "battleContext._battleEvent.RaiseExchangeResolved(staggerExchange);"
         },
         {
@@ -3283,7 +3359,7 @@
             "CallerMethod": "ResolveOneSideExchange",
             "Callee": "NotifyHit",
             "Category": "HitSignal",
-            "Line": 1428,
+            "Line": 1451,
             "Source": "action.Skill?.NotifyHit("
         },
         {
@@ -3291,7 +3367,7 @@
             "CallerMethod": "ResolveOneSideExchange",
             "Callee": "ApplyDamageContext",
             "Category": "DamageCommit",
-            "Line": 1468,
+            "Line": 1491,
             "Source": "DamageContext damageContext = damageManager.ApplyDamageContext("
         },
         {
@@ -3299,7 +3375,7 @@
             "CallerMethod": "ResolveOneSideExchange",
             "Callee": "RaiseExchangeResolved",
             "Category": "EventRaise",
-            "Line": 1544,
+            "Line": 1567,
             "Source": ".RaiseExchangeResolved(exchange);"
         },
         {
@@ -3307,7 +3383,7 @@
             "CallerMethod": "ResolveOneSideExchange",
             "Callee": "NotifyHit",
             "Category": "HitSignal",
-            "Line": 1546,
+            "Line": 1569,
             "Source": "action.Skill?.NotifyHit("
         },
         {
@@ -3338,16 +3414,16 @@
     "CounterKinds": [
         {
             "Kind": "HifumiCounterRoll",
-            "OccurrenceCount": 10,
+            "OccurrenceCount": 11,
             "MappingNote": "HifumiMechanic.ResolveCounterSequence / BuildCounterPreviewForVerification / IsCounterSkill",
             "ObservedIdentifiers": "ResolveCounterSequence | HifumiCounterPreview | IsCounterSkill",
             "SampleSites": [
-                "Assets/1. Scripts/Runtime/Characters/Hifumi/Mechanics/HifumiMechanic.cs:1023: ResolveCounterSequence(",
-                "Assets/1. Scripts/Runtime/Characters/Hifumi/Mechanics/HifumiMechanic.cs:1128: ResolveCounterSequence(",
-                "Assets/1. Scripts/Runtime/Characters/Hifumi/Mechanics/HifumiMechanic.cs:1256: private void ResolveCounterSequence(",
+                "Assets/1. Scripts/Runtime/Characters/Hifumi/Mechanics/HifumiMechanic.cs:149: () => ResolveCounterSequence(source,target,part,count,reward,bonus),",
+                "Assets/1. Scripts/Runtime/Characters/Hifumi/Mechanics/HifumiMechanic.cs:1085: ResolveCounterSequence(action,target,targetPart,1,",
+                "Assets/1. Scripts/Runtime/Characters/Hifumi/Mechanics/HifumiMechanic.cs:1195: ResolveCounterSequence(myAction,target,targetPart,counterCount,",
+                "Assets/1. Scripts/Runtime/Characters/Hifumi/Mechanics/HifumiMechanic.cs:1317: private void ResolveCounterSequence(",
                 "Assets/1. Scripts/Runtime/Characters/Hifumi/Mechanics/HifumiMechanic.cs:4: public readonly struct HifumiCounterPreview",
-                "Assets/1. Scripts/Runtime/Characters/Hifumi/Mechanics/HifumiMechanic.cs:6: public HifumiCounterPreview(",
-                "Assets/1. Scripts/Runtime/Characters/Hifumi/Mechanics/HifumiMechanic.cs:710: public HifumiCounterPreview BuildCounterPreviewForVerification("
+                "Assets/1. Scripts/Runtime/Characters/Hifumi/Mechanics/HifumiMechanic.cs:6: public HifumiCounterPreview("
             ]
         },
         {
@@ -3356,7 +3432,7 @@
             "MappingNote": "BattleReactiveRollSourceKind.Counter — 적 반격은 별도 클래스 없이 반응 굴림으로 표현",
             "ObservedIdentifiers": "BattleReactiveRollSourceKind.Counter",
             "SampleSites": [
-                "Assets/1. Scripts/Runtime/Characters/Hifumi/Mechanics/HifumiMechanic.cs:1337: SourceKind = BattleReactiveRollSourceKind.Counter,"
+                "Assets/1. Scripts/Runtime/Characters/Hifumi/Mechanics/HifumiMechanic.cs:1398: SourceKind = BattleReactiveRollSourceKind.Counter,"
             ]
         },
         {
@@ -3365,12 +3441,12 @@
             "MappingNote": "AttackWeightHitResult / ClashResultContext.SecondaryDamageContexts — 공격 가중치 추가 피격",
             "ObservedIdentifiers": "AttackWeightHitResult | SecondaryDamageContexts",
             "SampleSites": [
-                "Assets/1. Scripts/Runtime/Battle/BattleAction.cs:136: private List<AttackWeightHitResult> attackWeightHitResults;",
-                "Assets/1. Scripts/Runtime/Battle/BattleAction.cs:153: public IReadOnlyList<AttackWeightHitResult>",
-                "Assets/1. Scripts/Runtime/Battle/BattleAction.cs:156: (IReadOnlyList<AttackWeightHitResult>)",
-                "Assets/1. Scripts/Runtime/Battle/BattleAction.cs:157: System.Array.Empty<AttackWeightHitResult>();",
-                "Assets/1. Scripts/Runtime/Battle/BattleAction.cs:544: AttackWeightHitResult result)",
-                "Assets/1. Scripts/Runtime/Battle/BattleAction.cs:554: new List<AttackWeightHitResult>())"
+                "Assets/1. Scripts/Runtime/Battle/BattleAction.cs:146: private List<AttackWeightHitResult> attackWeightHitResults;",
+                "Assets/1. Scripts/Runtime/Battle/BattleAction.cs:163: public IReadOnlyList<AttackWeightHitResult>",
+                "Assets/1. Scripts/Runtime/Battle/BattleAction.cs:166: (IReadOnlyList<AttackWeightHitResult>)",
+                "Assets/1. Scripts/Runtime/Battle/BattleAction.cs:167: System.Array.Empty<AttackWeightHitResult>();",
+                "Assets/1. Scripts/Runtime/Battle/BattleAction.cs:554: AttackWeightHitResult result)",
+                "Assets/1. Scripts/Runtime/Battle/BattleAction.cs:564: new List<AttackWeightHitResult>())"
             ]
         },
         {
@@ -5767,37 +5843,144 @@
         "Assets/1. Scripts/Editor/Verification/G0AbilityAuditReport20261029.cs:3702: public List<G0AttackWeightProtectionRow> AttackWeightProtectionRows;",
         "Assets/1. Scripts/Editor/Verification/G0AbilityAuditReport20261029.cs:3703: public List<string> AttackWeightUiReferences;",
         "Assets/1. Scripts/Editor/Verification/G0AbilityAuditReport20261029.cs:3751: public int AttackWeight;",
-        "Assets/1. Scripts/Runtime/Battle/BattleAction.cs:135: private List<AttackWeightTarget> attackWeightTargets;",
-        "Assets/1. Scripts/Runtime/Battle/BattleAction.cs:136: private List<AttackWeightHitResult> attackWeightHitResults;",
-        "Assets/1. Scripts/Runtime/Battle/BattleAction.cs:147: public IReadOnlyList<AttackWeightTarget>",
-        "Assets/1. Scripts/Runtime/Battle/BattleAction.cs:148: AttackWeightTargets =>",
-        "Assets/1. Scripts/Runtime/Battle/BattleAction.cs:150: (IReadOnlyList<AttackWeightTarget>)",
-        "Assets/1. Scripts/Runtime/Battle/BattleAction.cs:151: System.Array.Empty<AttackWeightTarget>();",
-        "Assets/1. Scripts/Runtime/Battle/BattleAction.cs:153: public IReadOnlyList<AttackWeightHitResult>",
-        "Assets/1. Scripts/Runtime/Battle/BattleAction.cs:154: AttackWeightHitResults =>",
-        "Assets/1. Scripts/Runtime/Battle/BattleAction.cs:156: (IReadOnlyList<AttackWeightHitResult>)",
-        "Assets/1. Scripts/Runtime/Battle/BattleAction.cs:157: System.Array.Empty<AttackWeightHitResult>();",
-        "Assets/1. Scripts/Runtime/Battle/BattleAction.cs:159: public bool HasResolvedAttackWeightTargets",
-        "Assets/1. Scripts/Runtime/Battle/BattleAction.cs:165: public int RequestedAttackWeight =>",
-        "Assets/1. Scripts/Runtime/Battle/BattleAction.cs:168: Skill?.AttackWeight ?? 1);",
-        "Assets/1. Scripts/Runtime/Battle/BattleAction.cs:170: public int ResolvedAttackWeight =>",
-        "Assets/1. Scripts/Runtime/Battle/BattleAction.cs:317: HasResolvedAttackWeightTargets = false;",
-        "Assets/1. Scripts/Runtime/Battle/BattleAction.cs:516: public void SetAttackWeightTargets(",
-        "Assets/1. Scripts/Runtime/Battle/BattleAction.cs:517: IEnumerable<AttackWeightTarget> targets)",
-        "Assets/1. Scripts/Runtime/Battle/BattleAction.cs:523: foreach (AttackWeightTarget target",
-        "Assets/1. Scripts/Runtime/Battle/BattleAction.cs:533: new List<AttackWeightTarget>())",
-        "Assets/1. Scripts/Runtime/Battle/BattleAction.cs:539: HasResolvedAttackWeightTargets =",
-        "Assets/1. Scripts/Runtime/Battle/BattleAction.cs:543: public void AddAttackWeightHitResult(",
-        "Assets/1. Scripts/Runtime/Battle/BattleAction.cs:544: AttackWeightHitResult result)",
-        "Assets/1. Scripts/Runtime/Battle/BattleAction.cs:554: new List<AttackWeightHitResult>())",
-        "Assets/1. Scripts/Runtime/Battle/BattleAction.cs:571: // secondary AttackWeight target의 종료는 primary action의 남은 굴림을 지우지 않는다.",
+        "Assets/1. Scripts/Editor/Verification/G0KIWBaselineFreeze20261102.cs:20: public int NeedsManualReviewCount,AttackWeightedSkillCount;",
+        "Assets/1. Scripts/Editor/Verification/G0KIWBaselineFreeze20261102.cs:46: (\"W-DOMAIN\",A+\"Battle/Targeting/AttackWeightTargetResolver.cs\",\"SlotWeighted\",\"Opt-in selection route\"),",
+        "Assets/1. Scripts/Editor/Verification/G0KIWBaselineFreeze20261102.cs:49: (\"W-RESULT\",A+\"Battle/BattleAction.cs\",\"AttackWeightHitResults\",\"Damage result target grouping\"),",
+        "Assets/1. Scripts/Editor/Verification/G0KIWBaselineFreeze20261102.cs:50: (\"W-LEGACY\",A+\"Battle/Targeting/AttackWeightTargetResolver.cs\",\"SecondaryTargetPart\",\"Protected legacy part selection\")",
+        "Assets/1. Scripts/Editor/Verification/G0KIWBaselineFreeze20261102.cs:164: \"- Authored SkillDefinitions whose weight exceeds 1: \"+audit.AttackWeightedSkillCount+",
+        "Assets/1. Scripts/Editor/Verification/G0KIWBaselineFreeze20261102.cs:177: ManualReviewEffects=audit.NeedsManualReviewCount,AuthoredWeightedSkills=audit.AttackWeightedSkillCount,",
+        "Assets/1. Scripts/Editor/Verification/R1AbilityTimingVerification20261030.cs:23: public int AttackWeight;",
+        "Assets/1. Scripts/Editor/Verification/R1AbilityTimingVerification20261030.cs:143: Find(\"G0-W03\")?.AttackWeight == 3,",
+        "Assets/1. Scripts/Editor/Verification/R1CanonicalContractsVerification20261102.cs:152: var legacy=new AttackWeightSettings();",
+        "Assets/1. Scripts/Editor/Verification/R1CanonicalContractsVerification20261102.cs:154: legacy.TargetingModel==AttackWeightTargetingModel.LegacyCharacterRandom &&",
+        "Assets/1. Scripts/Editor/Verification/R2AbilityContractVerification20261030.cs:48: var allocation = new AttackWeightAllocation(88, 1, 2,",
+        "Assets/1. Scripts/Editor/Verification/R2ExtendedContractsVerification20261102.cs:170: var planSnapshot=new R2AttackWeightSelectionSnapshot(key,2,p,",
+        "Assets/1. Scripts/Editor/Verification/R2ExtendedContractsVerification20261102.cs:172: var startSnapshot=new R2AttackWeightSelectionSnapshot(key,2,p,",
+        "Assets/1. Scripts/Editor/Verification/R2ExtendedContractsVerification20261102.cs:174: var useSnapshot=new R2AttackWeightSelectionSnapshot(key,2,p,",
+        "Assets/1. Scripts/Editor/Verification/R2ExtendedContractsVerification20261102.cs:198: new AttackWeightSettings().EffectiveWeight==1 &&",
+        "Assets/1. Scripts/Editor/Verification/R2ExtendedContractsVerification20261102.cs:199: new AttackWeightSettings().TargetingModel==",
+        "Assets/1. Scripts/Editor/Verification/R2ExtendedContractsVerification20261102.cs:200: AttackWeightTargetingModel.LegacyCharacterRandom,",
+        "Assets/1. Scripts/Editor/Verification/R4PlanningPreviewParityVerification20261102.cs:18: private readonly AttackWeightTargetingModel mode;",
+        "Assets/1. Scripts/Editor/Verification/R4PlanningPreviewParityVerification20261102.cs:19: public WeightedProbe(int weight,AttackWeightTargetingModel mode)",
+        "Assets/1. Scripts/Editor/Verification/R4PlanningPreviewParityVerification20261102.cs:26: public override int AttackWeight=>weight;",
+        "Assets/1. Scripts/Editor/Verification/R4PlanningPreviewParityVerification20261102.cs:27: public override AttackWeightTargetingModel AttackWeightTargetingModel=>mode;",
+        "Assets/1. Scripts/Editor/Verification/R4PlanningPreviewParityVerification20261102.cs:41: private static string Key(AttackWeightTarget t)=>",
+        "Assets/1. Scripts/Editor/Verification/R4PlanningPreviewParityVerification20261102.cs:69: var skill=new WeightedProbe(3,AttackWeightTargetingModel.SlotWeighted);",
+        "Assets/1. Scripts/Editor/Verification/R4PlanningPreviewParityVerification20261102.cs:80: var preview=mgr.ClashBuilder.BuildAttackWeightPreview(battle,source,plans);",
+        "Assets/1. Scripts/Editor/Verification/R4PlanningPreviewParityVerification20261102.cs:124: TargetCharacter=another,Skill=new WeightedProbe(1,AttackWeightTargetingModel.LegacyCharacterRandom),",
+        "Assets/1. Scripts/Editor/Verification/R4PlanningPreviewParityVerification20261102.cs:128: var kept=mgr.ClashBuilder.BuildAttackWeightPreview(battle,source,plans);",
+        "Assets/1. Scripts/Editor/Verification/R4PlanningPreviewParityVerification20261102.cs:132: var keptAgain=mgr.ClashBuilder.BuildAttackWeightPreview(battle,source,plans);",
+        "Assets/1. Scripts/Editor/Verification/R4PlanningPreviewParityVerification20261102.cs:142: var newPreview=mgr.ClashBuilder.BuildAttackWeightPreview(battle,source,plans);",
+        "Assets/1. Scripts/Editor/Verification/R4PlanningPreviewParityVerification20261102.cs:155: source.Skill=new WeightedProbe(2,AttackWeightTargetingModel.SlotWeighted);",
+        "Assets/1. Scripts/Editor/Verification/R4PlanningPreviewParityVerification20261102.cs:156: var newSkillPreview=mgr.ClashBuilder.BuildAttackWeightPreview(battle,source,plans);",
+        "Assets/1. Scripts/Editor/Verification/R4PlanningPreviewParityVerification20261102.cs:168: var recaptured=mgr.ClashBuilder.BuildAttackWeightPreview(battle,source,plans);",
+        "Assets/1. Scripts/Editor/Verification/R4PlanningPreviewParityVerification20261102.cs:171: source.Skill=new WeightedProbe(3,AttackWeightTargetingModel.LegacyCharacterRandom);",
+        "Assets/1. Scripts/Editor/Verification/R4PlanningPreviewParityVerification20261102.cs:173: mgr.ClashBuilder.BuildAttackWeightPreview(battle,source,plans)==null);",
+        "Assets/1. Scripts/Editor/Verification/R4PlanningPreviewParityVerification20261102.cs:181: source.Skill=new WeightedProbe(3,AttackWeightTargetingModel.SlotWeighted);",
+        "Assets/1. Scripts/Editor/Verification/R4PlanningPreviewParityVerification20261102.cs:185: var policyPreview=mgr.ClashBuilder.BuildAttackWeightPreview(battle,source,plans);",
+        "Assets/1. Scripts/Editor/Verification/R4PlanningPreviewParityVerification20261102.cs:199: var deniedMain=mgr.ClashBuilder.BuildAttackWeightPreview(battle,source,plans);",
+        "Assets/1. Scripts/Editor/Verification/R4PlanningPreviewParityVerification20261102.cs:204: var restored=mgr.ClashBuilder.BuildAttackWeightPreview(battle,source,plans);",
+        "Assets/1. Scripts/Editor/Verification/R4PlanningSnapshotCacheVerification20261030.cs:46: cache.Invalidate(101,R4PlanMutationKind.AttackWeightPolicyChanged);",
+        "Assets/1. Scripts/Editor/Verification/R4SlotWeightedPlannerVerification20261030.cs:108: Check(\"W18 no legacy AttackWeightSettings rewriting\",",
+        "Assets/1. Scripts/Editor/Verification/R4SlotWeightedPlannerVerification20261030.cs:109: typeof(AttackWeightSettings).GetField(\"Weight\")!=null &&",
+        "Assets/1. Scripts/Editor/Verification/R4SlotWeightedPlannerVerification20261030.cs:110: (int)AttackWeightTargetingModel.LegacyCharacterRandom==0 &&",
+        "Assets/1. Scripts/Editor/Verification/R4SlotWeightedPlannerVerification20261030.cs:111: (int)AttackWeightTargetingModel.SlotWeighted==1);",
+        "Assets/1. Scripts/Editor/Verification/R5MultiTargetDamageVerification20261102.cs:50: new AttackWeightTarget(0,normals[0],null,true),",
+        "Assets/1. Scripts/Editor/Verification/R5MultiTargetDamageVerification20261102.cs:51: new AttackWeightTarget(1,normals[1],null,false),",
+        "Assets/1. Scripts/Editor/Verification/R5MultiTargetDamageVerification20261102.cs:52: new AttackWeightTarget(2,elite,elitePart,false)",
+        "Assets/1. Scripts/Editor/Verification/R5MultiTargetDamageVerification20261102.cs:54: DamageRequest Request(AttackWeightTarget target)=>",
+        "Assets/1. Scripts/Editor/Verification/R5MultiTargetDamageVerification20261102.cs:118: new AttackWeightTarget(0,normals[0],null,true),",
+        "Assets/1. Scripts/Editor/Verification/R5MultiTargetDamageVerification20261102.cs:119: new AttackWeightTarget(1,normals[0],null,false)",
+        "Assets/1. Scripts/Editor/Verification/R5MultiTargetDamageVerification20261102.cs:127: var wrongRequest=new Func<AttackWeightTarget,DamageRequest>(",
+        "Assets/1. Scripts/Editor/Verification/R5SlotWeightedIntegrationVerification20261030.cs:18: private readonly AttackWeightTargetingModel mode;",
+        "Assets/1. Scripts/Editor/Verification/R5SlotWeightedIntegrationVerification20261030.cs:19: public ProbeSkill(int weight, AttackWeightTargetingModel mode)",
+        "Assets/1. Scripts/Editor/Verification/R5SlotWeightedIntegrationVerification20261030.cs:26: public override int AttackWeight => weight;",
+        "Assets/1. Scripts/Editor/Verification/R5SlotWeightedIntegrationVerification20261030.cs:27: public override AttackWeightTargetingModel AttackWeightTargetingModel => mode;",
+        "Assets/1. Scripts/Editor/Verification/R5SlotWeightedIntegrationVerification20261030.cs:32: BodyPart part, int weight, AttackWeightTargetingModel mode, long id)",
+        "Assets/1. Scripts/Editor/Verification/R5SlotWeightedIntegrationVerification20261030.cs:47: private static string Key(AttackWeightTarget t) =>",
+        "Assets/1. Scripts/Editor/Verification/R5SlotWeightedIntegrationVerification20261030.cs:74: var legacyDefault=new AttackWeightSettings();",
+        "Assets/1. Scripts/Editor/Verification/R5SlotWeightedIntegrationVerification20261030.cs:76: legacyDefault.TargetingModel==AttackWeightTargetingModel.LegacyCharacterRandom);",
+        "Assets/1. Scripts/Editor/Verification/R5SlotWeightedIntegrationVerification20261030.cs:78: var attack=Action(player,normals[0],null,3,AttackWeightTargetingModel.SlotWeighted,94501);",
+        "Assets/1. Scripts/Editor/Verification/R5SlotWeightedIntegrationVerification20261030.cs:79: var resolver=new AttackWeightTargetResolver(ctx);",
+        "Assets/1. Scripts/Editor/Verification/R5SlotWeightedIntegrationVerification20261030.cs:94: attack.HasResolvedAttackWeightTargets && replay.Count==picked.Length &&",
+        "Assets/1. Scripts/Editor/Verification/R5SlotWeightedIntegrationVerification20261030.cs:97: var eliteAttack=Action(player,elite,head,12,AttackWeightTargetingModel.SlotWeighted,94502);",
+        "Assets/1. Scripts/Editor/Verification/R5SlotWeightedIntegrationVerification20261030.cs:110: var wrongPart=Action(player,elite,null,4,AttackWeightTargetingModel.SlotWeighted,94503);",
+        "Assets/1. Scripts/Editor/Verification/R5SlotWeightedIntegrationVerification20261030.cs:117: var allySide=Action(elite,normals[0],null,3,AttackWeightTargetingModel.SlotWeighted,94504);",
+        "Assets/1. Scripts/Editor/Verification/R5SlotWeightedIntegrationVerification20261030.cs:125: AttackWeightTargetingModel.SlotWeighted,94505);",
+        "Assets/1. Scripts/Editor/Verification/R5SlotWeightedIntegrationVerification20261030.cs:131: var single=Action(player,normals[0],null,1,AttackWeightTargetingModel.SlotWeighted,94506);",
+        "Assets/1. Scripts/Editor/Verification/R5SlotWeightedIntegrationVerification20261030.cs:136: AttackWeightTargetingModel.LegacyCharacterRandom,94507);",
+        "Assets/1. Scripts/Editor/Verification/R5SlotWeightedIntegrationVerification20261030.cs:154: var context=ctx.ResolveDamageManager().ApplyAttackWeightDamageContext(",
+        "Assets/1. Scripts/Editor/Verification/R5SlotWeightedIntegrationVerification20261030.cs:157: attack.AddAttackWeightHitResult(new AttackWeightHitResult(0,t,context));",
+        "Assets/1. Scripts/Editor/Verification/R5SlotWeightedIntegrationVerification20261030.cs:163: attack.AttackWeightHitResults.Count==secondaryContexts &&",
+        "Assets/1. Scripts/Editor/Verification/R5SlotWeightedIntegrationVerification20261030.cs:164: attack.AttackWeightHitResults.All(x=>x.DamageContext?.Result!=null &&",
+        "Assets/1. Scripts/Editor/Verification/R5SlotWeightedIntegrationVerification20261030.cs:171: attack.AttackWeightHitResults.All(x=>x.ExchangeIndex==0));",
+        "Assets/1. Scripts/Editor/Verification/R7SkillMigrationDryRun20261030.cs:53: if(skill.AttackWeight?.TargetingModel ==",
+        "Assets/1. Scripts/Editor/Verification/R7SkillMigrationDryRun20261030.cs:54: ProjectAbyss.Abilities.AttackWeightTargetingModel.SlotWeighted)",
+        "Assets/1. Scripts/Editor/Verification/R8SkillAuthoringValidation20261030.cs:67: if(s.AttackWeight==null)",
+        "Assets/1. Scripts/Editor/Verification/R8SkillAuthoringValidation20261030.cs:69: if(s.AttackWeight!=null &&",
+        "Assets/1. Scripts/Editor/Verification/R8SkillAuthoringValidation20261030.cs:70: s.AttackWeight.TargetingModel==",
+        "Assets/1. Scripts/Editor/Verification/R8SkillAuthoringValidation20261030.cs:71: ProjectAbyss.Abilities.AttackWeightTargetingModel.SlotWeighted)",
+        "Assets/1. Scripts/Editor/Verification/R8SkillAuthoringValidation20261030.cs:130: items.Count(x=>x.Skill.AttackWeight?.TargetingModel==",
+        "Assets/1. Scripts/Editor/Verification/R8SkillAuthoringValidation20261030.cs:131: ProjectAbyss.Abilities.AttackWeightTargetingModel.SlotWeighted)==0);",
+        "Assets/1. Scripts/Runtime/Battle/BattleAction.cs:145: private List<AttackWeightTarget> attackWeightTargets;",
+        "Assets/1. Scripts/Runtime/Battle/BattleAction.cs:146: private List<AttackWeightHitResult> attackWeightHitResults;",
+        "Assets/1. Scripts/Runtime/Battle/BattleAction.cs:157: public IReadOnlyList<AttackWeightTarget>",
+        "Assets/1. Scripts/Runtime/Battle/BattleAction.cs:158: AttackWeightTargets =>",
+        "Assets/1. Scripts/Runtime/Battle/BattleAction.cs:160: (IReadOnlyList<AttackWeightTarget>)",
+        "Assets/1. Scripts/Runtime/Battle/BattleAction.cs:161: System.Array.Empty<AttackWeightTarget>();",
+        "Assets/1. Scripts/Runtime/Battle/BattleAction.cs:163: public IReadOnlyList<AttackWeightHitResult>",
+        "Assets/1. Scripts/Runtime/Battle/BattleAction.cs:164: AttackWeightHitResults =>",
+        "Assets/1. Scripts/Runtime/Battle/BattleAction.cs:166: (IReadOnlyList<AttackWeightHitResult>)",
+        "Assets/1. Scripts/Runtime/Battle/BattleAction.cs:167: System.Array.Empty<AttackWeightHitResult>();",
+        "Assets/1. Scripts/Runtime/Battle/BattleAction.cs:169: public bool HasResolvedAttackWeightTargets",
+        "Assets/1. Scripts/Runtime/Battle/BattleAction.cs:175: public int RequestedAttackWeight =>",
+        "Assets/1. Scripts/Runtime/Battle/BattleAction.cs:178: Skill?.AttackWeight ?? 1);",
+        "Assets/1. Scripts/Runtime/Battle/BattleAction.cs:180: public int ResolvedAttackWeight =>",
+        "Assets/1. Scripts/Runtime/Battle/BattleAction.cs:327: HasResolvedAttackWeightTargets = false;",
+        "Assets/1. Scripts/Runtime/Battle/BattleAction.cs:526: public void SetAttackWeightTargets(",
+        "Assets/1. Scripts/Runtime/Battle/BattleAction.cs:527: IEnumerable<AttackWeightTarget> targets)",
+        "Assets/1. Scripts/Runtime/Battle/BattleAction.cs:533: foreach (AttackWeightTarget target",
+        "Assets/1. Scripts/Runtime/Battle/BattleAction.cs:543: new List<AttackWeightTarget>())",
+        "Assets/1. Scripts/Runtime/Battle/BattleAction.cs:549: HasResolvedAttackWeightTargets =",
+        "Assets/1. Scripts/Runtime/Battle/BattleAction.cs:553: public void AddAttackWeightHitResult(",
+        "Assets/1. Scripts/Runtime/Battle/BattleAction.cs:554: AttackWeightHitResult result)",
+        "Assets/1. Scripts/Runtime/Battle/BattleAction.cs:564: new List<AttackWeightHitResult>())",
+        "Assets/1. Scripts/Runtime/Battle/BattleAction.cs:581: // secondary AttackWeight target의 종료는 primary action의 남은 굴림을 지우지 않는다.",
         "Assets/1. Scripts/Runtime/Battle/ClashExchangeResult.cs:84: public int ResolvedAttackWeight =>",
         "Assets/1. Scripts/Runtime/Battle/ClashResultContext.cs:68: public int AttackWeightDamage",
         "Assets/1. Scripts/Runtime/Battle/ClashResultContext.cs:90: AttackWeightDamage;",
+        "Assets/1. Scripts/Runtime/Abilities/Operations/R5MultiTargetDamageBatch20261102.cs:79: BattleAction action,IReadOnlyList<AttackWeightTarget> physicalTargets,",
+        "Assets/1. Scripts/Runtime/Abilities/Operations/R5MultiTargetDamageBatch20261102.cs:80: Func<AttackWeightTarget,DamageRequest> requestFactory,",
+        "Assets/1. Scripts/Runtime/Abilities/Targeting/R2AttackWeightSelectionSnapshot.cs:73: public sealed class R2AttackWeightSelectionSnapshot",
+        "Assets/1. Scripts/Runtime/Abilities/Targeting/R2AttackWeightSelectionSnapshot.cs:87: public R2AttackWeightSelectionSnapshot(R2WeightSelectionKey key,",
+        "Assets/1. Scripts/Runtime/Abilities/Targeting/R4BattlePlanningSession20261102.cs:80: Weight==(slot.Skill?.AttackWeight??0);",
+        "Assets/1. Scripts/Runtime/Abilities/Targeting/R4BattlePlanningSession20261102.cs:88: Weight=slot.Skill?.AttackWeight??0",
+        "Assets/1. Scripts/Runtime/Abilities/Targeting/R4BattlePlanningSession20261102.cs:130: revision,Math.Max(1,source.Skill?.AttackWeight??1));",
+        "Assets/1. Scripts/Runtime/Abilities/Targeting/R4BattlePlanningSession20261102.cs:141: revision,Math.Max(1,source.Skill?.AttackWeight??1),main,eligible);",
+        "Assets/1. Scripts/Runtime/Abilities/Targeting/R4LiveSlotQuery.cs:10: /// consume RNG, or change AttackWeightTargetResolver's legacy behavior.",
+        "Assets/1. Scripts/Runtime/Abilities/Targeting/R4PlanningAllocationCache.cs:12: AttackWeightPolicyChanged,",
+        "Assets/1. Scripts/Runtime/Abilities/Targeting/R5SlotWeightedTargetBridge.cs:9: /// then adapts it to the EXISTING AttackWeightTarget/ClashManager/DamageManager",
+        "Assets/1. Scripts/Runtime/Abilities/Targeting/R5SlotWeightedTargetBridge.cs:15: public static IReadOnlyList<AttackWeightTarget> Resolve(",
+        "Assets/1. Scripts/Runtime/Abilities/Targeting/R5SlotWeightedTargetBridge.cs:23: out IReadOnlyList<AttackWeightTarget> resolved, out string diagnostic)",
+        "Assets/1. Scripts/Runtime/Abilities/Targeting/R5SlotWeightedTargetBridge.cs:25: var targets=new List<AttackWeightTarget>();",
+        "Assets/1. Scripts/Runtime/Abilities/Targeting/R5SlotWeightedTargetBridge.cs:35: var primary=new AttackWeightTarget(0,action.Target,action.TargetPart,true);",
+        "Assets/1. Scripts/Runtime/Abilities/Targeting/R5SlotWeightedTargetBridge.cs:38: if(action.Skill.AttackWeight<=1)",
+        "Assets/1. Scripts/Runtime/Abilities/Targeting/R5SlotWeightedTargetBridge.cs:79: null,planningRevision:0,effectiveWeight:action.Skill.AttackWeight);",
+        "Assets/1. Scripts/Runtime/Abilities/Targeting/R5SlotWeightedTargetBridge.cs:132: // One AttackWeightTarget per distinct actor/part; damage is",
+        "Assets/1. Scripts/Runtime/Abilities/Targeting/R5SlotWeightedTargetBridge.cs:134: targets.Add(new AttackWeightTarget(weightIndex++,actor,part,false));",
+        "Assets/1. Scripts/Runtime/Abilities/Targeting/SlotWeightContracts.cs:6: // R2-W contracts only. Legacy AttackWeightSettings still owns live behavior.",
+        "Assets/1. Scripts/Runtime/Abilities/Targeting/SlotWeightContracts.cs:7: public enum AttackWeightTargetingModel",
+        "Assets/1. Scripts/Runtime/Abilities/Targeting/SlotWeightContracts.cs:66: public sealed class AttackWeightAllocation",
+        "Assets/1. Scripts/Runtime/Abilities/Targeting/SlotWeightContracts.cs:73: public AttackWeightAllocation(long actionId, int revision, int weight,",
+        "Assets/1. Scripts/Runtime/Abilities/Targeting/SlotWeightedTargetPlanner.cs:44: public AttackWeightAllocation Allocation { get; }",
+        "Assets/1. Scripts/Runtime/Abilities/Targeting/SlotWeightedTargetPlanner.cs:50: AttackWeightAllocation allocation, int unspentBudget, string diagnostic)",
+        "Assets/1. Scripts/Runtime/Abilities/Targeting/SlotWeightedTargetPlanner.cs:155: var allocation = new AttackWeightAllocation(actionId, planningRevision,",
         "Assets/1. Scripts/Runtime/Battle/Targeting/AttackWeightSettings.cs:4: public enum AttackWeightSecondaryPartMode",
         "Assets/1. Scripts/Runtime/Battle/Targeting/AttackWeightSettings.cs:18: public sealed class AttackWeightSettings",
-        "Assets/1. Scripts/Runtime/Battle/Targeting/AttackWeightSettings.cs:31: public AttackWeightSecondaryPartMode SecondaryPartMode =",
-        "Assets/1. Scripts/Runtime/Battle/Targeting/AttackWeightSettings.cs:32: AttackWeightSecondaryPartMode.RandomValidTargetPoint;",
+        "Assets/1. Scripts/Runtime/Battle/Targeting/AttackWeightSettings.cs:29: public ProjectAbyss.Abilities.AttackWeightTargetingModel TargetingModel =",
+        "Assets/1. Scripts/Runtime/Battle/Targeting/AttackWeightSettings.cs:30: ProjectAbyss.Abilities.AttackWeightTargetingModel.LegacyCharacterRandom;",
+        "Assets/1. Scripts/Runtime/Battle/Targeting/AttackWeightSettings.cs:35: public AttackWeightSecondaryPartMode SecondaryPartMode =",
+        "Assets/1. Scripts/Runtime/Battle/Targeting/AttackWeightSettings.cs:36: AttackWeightSecondaryPartMode.RandomValidTargetPoint;",
         "Assets/1. Scripts/Runtime/Battle/Targeting/AttackWeightTarget.cs:1: public sealed class AttackWeightTarget",
         "Assets/1. Scripts/Runtime/Battle/Targeting/AttackWeightTarget.cs:3: public AttackWeightTarget(",
         "Assets/1. Scripts/Runtime/Battle/Targeting/AttackWeightTarget.cs:50: public sealed class AttackWeightHitResult",
@@ -5810,56 +5993,72 @@
         "Assets/1. Scripts/Runtime/Battle/Targeting/AttackWeightTargetResolver.cs:26: return Array.Empty<AttackWeightTarget>();",
         "Assets/1. Scripts/Runtime/Battle/Targeting/AttackWeightTargetResolver.cs:28: if (action.HasResolvedAttackWeightTargets)",
         "Assets/1. Scripts/Runtime/Battle/Targeting/AttackWeightTargetResolver.cs:29: return action.AttackWeightTargets;",
-        "Assets/1. Scripts/Runtime/Battle/Targeting/AttackWeightTargetResolver.cs:31: List<AttackWeightTarget> resolved =",
-        "Assets/1. Scripts/Runtime/Battle/Targeting/AttackWeightTargetResolver.cs:32: new List<AttackWeightTarget>();",
+        "Assets/1. Scripts/Runtime/Battle/Targeting/AttackWeightTargetResolver.cs:33: if (action.Skill?.AttackWeightTargetingModel ==",
+        "Assets/1. Scripts/Runtime/Battle/Targeting/AttackWeightTargetResolver.cs:34: ProjectAbyss.Abilities.AttackWeightTargetingModel.SlotWeighted)",
         "Assets/1. Scripts/Runtime/Battle/Targeting/AttackWeightTargetResolver.cs:36: action.SetAttackWeightTargets(",
         "Assets/1. Scripts/Runtime/Battle/Targeting/AttackWeightTargetResolver.cs:39: return action.AttackWeightTargets;",
-        "Assets/1. Scripts/Runtime/Battle/Targeting/AttackWeightTargetResolver.cs:43: new AttackWeightTarget(",
-        "Assets/1. Scripts/Runtime/Battle/Targeting/AttackWeightTargetResolver.cs:52: action.Skill?.AttackWeight ?? 1);",
-        "Assets/1. Scripts/Runtime/Battle/Targeting/AttackWeightTargetResolver.cs:56: action.SetAttackWeightTargets(",
-        "Assets/1. Scripts/Runtime/Battle/Targeting/AttackWeightTargetResolver.cs:59: return action.AttackWeightTargets;",
-        "Assets/1. Scripts/Runtime/Battle/Targeting/AttackWeightTargetResolver.cs:62: if (action.Skill.SecondaryAttackWeightPartMode ==",
-        "Assets/1. Scripts/Runtime/Battle/Targeting/AttackWeightTargetResolver.cs:63: AttackWeightSecondaryPartMode.AnotherPartOnPrimaryCharacter)",
-        "Assets/1. Scripts/Runtime/Battle/Targeting/AttackWeightTargetResolver.cs:70: action.SetAttackWeightTargets(",
-        "Assets/1. Scripts/Runtime/Battle/Targeting/AttackWeightTargetResolver.cs:73: return action.AttackWeightTargets;",
-        "Assets/1. Scripts/Runtime/Battle/Targeting/AttackWeightTargetResolver.cs:104: new AttackWeightTarget(",
-        "Assets/1. Scripts/Runtime/Battle/Targeting/AttackWeightTargetResolver.cs:111: action.SetAttackWeightTargets(",
-        "Assets/1. Scripts/Runtime/Battle/Targeting/AttackWeightTargetResolver.cs:114: return action.AttackWeightTargets;",
-        "Assets/1. Scripts/Runtime/Battle/Targeting/AttackWeightTargetResolver.cs:119: ICollection<AttackWeightTarget> resolved,",
-        "Assets/1. Scripts/Runtime/Battle/Targeting/AttackWeightTargetResolver.cs:166: new AttackWeightTarget(",
-        "Assets/1. Scripts/Runtime/Battle/Targeting/AttackWeightTargetResolver.cs:293: AttackWeightSecondaryPartMode mode =",
-        "Assets/1. Scripts/Runtime/Battle/Targeting/AttackWeightTargetResolver.cs:295: .SecondaryAttackWeightPartMode;",
-        "Assets/1. Scripts/Runtime/Battle/Targeting/AttackWeightTargetResolver.cs:298: AttackWeightSecondaryPartMode",
-        "Assets/1. Scripts/Runtime/Battle/Targeting/AttackWeightTargetResolver.cs:308: .AllowBrokenAttackWeightParts);",
-        "Assets/1. Scripts/Runtime/Battle/Targeting/AttackWeightTargetResolver.cs:322: AttackWeightSecondaryPartMode",
+        "Assets/1. Scripts/Runtime/Battle/Targeting/AttackWeightTargetResolver.cs:42: List<AttackWeightTarget> resolved =",
+        "Assets/1. Scripts/Runtime/Battle/Targeting/AttackWeightTargetResolver.cs:43: new List<AttackWeightTarget>();",
+        "Assets/1. Scripts/Runtime/Battle/Targeting/AttackWeightTargetResolver.cs:47: action.SetAttackWeightTargets(",
+        "Assets/1. Scripts/Runtime/Battle/Targeting/AttackWeightTargetResolver.cs:50: return action.AttackWeightTargets;",
+        "Assets/1. Scripts/Runtime/Battle/Targeting/AttackWeightTargetResolver.cs:54: new AttackWeightTarget(",
+        "Assets/1. Scripts/Runtime/Battle/Targeting/AttackWeightTargetResolver.cs:63: action.Skill?.AttackWeight ?? 1);",
+        "Assets/1. Scripts/Runtime/Battle/Targeting/AttackWeightTargetResolver.cs:67: action.SetAttackWeightTargets(",
+        "Assets/1. Scripts/Runtime/Battle/Targeting/AttackWeightTargetResolver.cs:70: return action.AttackWeightTargets;",
+        "Assets/1. Scripts/Runtime/Battle/Targeting/AttackWeightTargetResolver.cs:73: if (action.Skill.SecondaryAttackWeightPartMode ==",
+        "Assets/1. Scripts/Runtime/Battle/Targeting/AttackWeightTargetResolver.cs:74: AttackWeightSecondaryPartMode.AnotherPartOnPrimaryCharacter)",
+        "Assets/1. Scripts/Runtime/Battle/Targeting/AttackWeightTargetResolver.cs:81: action.SetAttackWeightTargets(",
+        "Assets/1. Scripts/Runtime/Battle/Targeting/AttackWeightTargetResolver.cs:84: return action.AttackWeightTargets;",
+        "Assets/1. Scripts/Runtime/Battle/Targeting/AttackWeightTargetResolver.cs:115: new AttackWeightTarget(",
+        "Assets/1. Scripts/Runtime/Battle/Targeting/AttackWeightTargetResolver.cs:122: action.SetAttackWeightTargets(",
+        "Assets/1. Scripts/Runtime/Battle/Targeting/AttackWeightTargetResolver.cs:125: return action.AttackWeightTargets;",
+        "Assets/1. Scripts/Runtime/Battle/Targeting/AttackWeightTargetResolver.cs:130: ICollection<AttackWeightTarget> resolved,",
+        "Assets/1. Scripts/Runtime/Battle/Targeting/AttackWeightTargetResolver.cs:177: new AttackWeightTarget(",
+        "Assets/1. Scripts/Runtime/Battle/Targeting/AttackWeightTargetResolver.cs:304: AttackWeightSecondaryPartMode mode =",
+        "Assets/1. Scripts/Runtime/Battle/Targeting/AttackWeightTargetResolver.cs:306: .SecondaryAttackWeightPartMode;",
+        "Assets/1. Scripts/Runtime/Battle/Targeting/AttackWeightTargetResolver.cs:309: AttackWeightSecondaryPartMode",
+        "Assets/1. Scripts/Runtime/Battle/Targeting/AttackWeightTargetResolver.cs:319: .AllowBrokenAttackWeightParts);",
+        "Assets/1. Scripts/Runtime/Battle/Targeting/AttackWeightTargetResolver.cs:333: AttackWeightSecondaryPartMode",
         "Assets/1. Scripts/Runtime/Skills/Base/Skill.cs:81: public virtual int AttackWeight =>",
         "Assets/1. Scripts/Runtime/Skills/Base/Skill.cs:82: RuntimeDefinition?.AttackWeight",
-        "Assets/1. Scripts/Runtime/Skills/Base/Skill.cs:87: RuntimeDefinition?.AttackWeight",
-        "Assets/1. Scripts/Runtime/Skills/Base/Skill.cs:90: public virtual AttackWeightSecondaryPartMode",
-        "Assets/1. Scripts/Runtime/Skills/Base/Skill.cs:91: SecondaryAttackWeightPartMode =>",
+        "Assets/1. Scripts/Runtime/Skills/Base/Skill.cs:85: public virtual ProjectAbyss.Abilities.AttackWeightTargetingModel",
+        "Assets/1. Scripts/Runtime/Skills/Base/Skill.cs:86: AttackWeightTargetingModel =>",
+        "Assets/1. Scripts/Runtime/Skills/Base/Skill.cs:87: RuntimeDefinition?.AttackWeight?.TargetingModel ??",
+        "Assets/1. Scripts/Runtime/Skills/Base/Skill.cs:88: ProjectAbyss.Abilities.AttackWeightTargetingModel.LegacyCharacterRandom;",
         "Assets/1. Scripts/Runtime/Skills/Base/Skill.cs:92: RuntimeDefinition?.AttackWeight",
-        "Assets/1. Scripts/Runtime/Skills/Base/Skill.cs:94: global::AttackWeightSecondaryPartMode",
-        "Assets/1. Scripts/Runtime/Skills/Base/Skill.cs:98: AllowBrokenAttackWeightParts =>",
-        "Assets/1. Scripts/Runtime/Skills/Base/Skill.cs:99: RuntimeDefinition?.AttackWeight",
+        "Assets/1. Scripts/Runtime/Skills/Base/Skill.cs:95: public virtual AttackWeightSecondaryPartMode",
+        "Assets/1. Scripts/Runtime/Skills/Base/Skill.cs:96: SecondaryAttackWeightPartMode =>",
+        "Assets/1. Scripts/Runtime/Skills/Base/Skill.cs:97: RuntimeDefinition?.AttackWeight",
+        "Assets/1. Scripts/Runtime/Skills/Base/Skill.cs:99: global::AttackWeightSecondaryPartMode",
+        "Assets/1. Scripts/Runtime/Skills/Base/Skill.cs:103: AllowBrokenAttackWeightParts =>",
+        "Assets/1. Scripts/Runtime/Skills/Base/Skill.cs:104: RuntimeDefinition?.AttackWeight",
         "Assets/1. Scripts/Runtime/Skills/DataDriven/SkillDefinition.cs:49: public AttackWeightSettings AttackWeight =",
         "Assets/1. Scripts/Runtime/Skills/DataDriven/SkillDefinition.cs:50: new AttackWeightSettings();",
         "Assets/1. Scripts/Runtime/Skills/DataDriven/SkillDefinition.cs:221: AttackWeight ??= new AttackWeightSettings();",
         "Assets/1. Scripts/Runtime/Skills/DataDriven/SkillDefinition.cs:222: AttackWeight.Sanitize();",
+        "Assets/1. Scripts/Runtime/Systems/Resolution/ClashBuilder.cs:109: public ProjectAbyss.Abilities.R4WeightPlanningPreview BuildAttackWeightPreview(",
+        "Assets/1. Scripts/Runtime/Systems/Resolution/ClashBuilder.cs:113: source.Skill.AttackWeight <= 1 ||",
+        "Assets/1. Scripts/Runtime/Systems/Resolution/ClashBuilder.cs:114: source.Skill.AttackWeightTargetingModel !=",
+        "Assets/1. Scripts/Runtime/Systems/Resolution/ClashBuilder.cs:115: ProjectAbyss.Abilities.AttackWeightTargetingModel.SlotWeighted)",
         "Assets/1. Scripts/Runtime/Systems/Resolution/ClashManager.cs:10: private readonly AttackWeightTargetResolver",
         "Assets/1. Scripts/Runtime/Systems/Resolution/ClashManager.cs:31: new AttackWeightTargetResolver(",
-        "Assets/1. Scripts/Runtime/Systems/Resolution/ClashManager.cs:857: ApplyAttackWeightDamage(",
-        "Assets/1. Scripts/Runtime/Systems/Resolution/ClashManager.cs:1480: ApplyAttackWeightDamage(",
-        "Assets/1. Scripts/Runtime/Systems/Resolution/ClashManager.cs:1661: ApplyAttackWeightDamage(",
-        "Assets/1. Scripts/Runtime/Systems/Resolution/ClashManager.cs:1674: action.Skill.AttackWeight <= 1)",
-        "Assets/1. Scripts/Runtime/Systems/Resolution/ClashManager.cs:1679: IReadOnlyList<AttackWeightTarget> targets =",
-        "Assets/1. Scripts/Runtime/Systems/Resolution/ClashManager.cs:1694: AttackWeightTarget target =",
-        "Assets/1. Scripts/Runtime/Systems/Resolution/ClashManager.cs:1706: .ApplyAttackWeightDamageContext(",
-        "Assets/1. Scripts/Runtime/Systems/Resolution/ClashManager.cs:1717: action.AddAttackWeightHitResult(",
-        "Assets/1. Scripts/Runtime/Systems/Resolution/ClashManager.cs:1718: new AttackWeightHitResult(",
+        "Assets/1. Scripts/Runtime/Systems/Resolution/ClashManager.cs:872: ApplyAttackWeightDamage(",
+        "Assets/1. Scripts/Runtime/Systems/Resolution/ClashManager.cs:1503: ApplyAttackWeightDamage(",
+        "Assets/1. Scripts/Runtime/Systems/Resolution/ClashManager.cs:1684: ApplyAttackWeightDamage(",
+        "Assets/1. Scripts/Runtime/Systems/Resolution/ClashManager.cs:1697: action.Skill.AttackWeight <= 1)",
+        "Assets/1. Scripts/Runtime/Systems/Resolution/ClashManager.cs:1702: IReadOnlyList<AttackWeightTarget> targets =",
+        "Assets/1. Scripts/Runtime/Systems/Resolution/ClashManager.cs:1717: AttackWeightTarget target =",
+        "Assets/1. Scripts/Runtime/Systems/Resolution/ClashManager.cs:1729: .ApplyAttackWeightDamageContext(",
+        "Assets/1. Scripts/Runtime/Systems/Resolution/ClashManager.cs:1740: action.AddAttackWeightHitResult(",
+        "Assets/1. Scripts/Runtime/Systems/Resolution/ClashManager.cs:1741: new AttackWeightHitResult(",
         "Assets/1. Scripts/Runtime/Systems/Resolution/DamageManager.cs:87: public DamageContext ApplyAttackWeightDamageContext(",
         "Assets/1. Scripts/Runtime/Systems/Resolution/DamageManager.cs:89: AttackWeightTarget weightedTarget,",
         "Assets/1. Scripts/Runtime/Presentation/UI/Components/BattleSkillUiText.cs:211: if (skill.AttackWeight > 1)",
         "Assets/1. Scripts/Runtime/Presentation/UI/Components/BattleSkillUiText.cs:214: $\"공격 가중치: {skill.AttackWeight} \" +",
-        "Assets/1. Scripts/Runtime/Presentation/UI/Components/BattleSkillUiText.cs:412: if (skill.AttackWeight > 1)"
+        "Assets/1. Scripts/Runtime/Presentation/UI/Components/BattleSkillUiText.cs:412: if (skill.AttackWeight > 1)",
+        "Assets/1. Scripts/Runtime/Presentation/UI/Panels/BattleWorldSlotArrowOverlayUI.cs:674: source.Skill.AttackWeight <= 1 ||",
+        "Assets/1. Scripts/Runtime/Presentation/UI/Panels/BattleWorldSlotArrowOverlayUI.cs:675: source.Skill.AttackWeightTargetingModel !=",
+        "Assets/1. Scripts/Runtime/Presentation/UI/Panels/BattleWorldSlotArrowOverlayUI.cs:676: ProjectAbyss.Abilities.AttackWeightTargetingModel.SlotWeighted ||",
+        "Assets/1. Scripts/Runtime/Presentation/UI/Panels/BattleWorldSlotArrowOverlayUI.cs:680: var preview = battleManager.ClashBuilder.BuildAttackWeightPreview("
     ]
 }

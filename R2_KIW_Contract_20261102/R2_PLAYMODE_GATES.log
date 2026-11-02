@@ -1,0 +1,26 @@
+[R2-I] PASS I01 two requests create distinct live BattleActions A= B=
+[R2-I] PASS I02 common parent/root/cause/chain remain immutable same origin; request identity distinct
+[R2-I] PASS I03 shared SkillDefinition, separate runtime Skill and AbilityInstance no mutable state shared between executions
+[R2-I] PASS I04 activation history isolated per reaction distinct ability memory
+[R2-I] PASS I05 newly created action never forges planning cost scheduler/commit stage still owned by R6
+[R2-I] PASS I06 duplicate action ID rejected no reuse of committed IDs
+[R2-I] PASS I07 child action cannot masquerade as parent/root lineage invariant
+[R2-I] PASS I08 wrong requesting actor rejected before execution no actor impersonation
+[R2-I] PASS I09 skill identity mismatch rejected no arbitrary skill substitution
+[R2-I] PASS I13 partial damage checkpoint is not executable at R2 checkpoint remains R5/R6 policy, not card trigger
+[R2-I] PASS I10 factory has NOT dealt damage, scheduled or emitted events draft only; no double execution
+[R2-I] PASS I11 factory battle cleanup releases identity allocations lifetime reset
+[R2-I] PASS I12 isolated legacy effect execution parity old/new state=Applied/Applied effect calls=1/1
+[R2-I] RESULT PASS=13 FAIL=0
+[R2-Mark] PASS M01 three runtime characters exist and carry separate actor IDs | A=4294670622 B=4294670420 target=4294670218
+[R2-Mark] PASS M02 real enemy target has both independent hand Parts | left=LEFT_HAND right=RIGHT_HAND
+[R2-Mark] PASS M03 read bridge registers each real owner and carrier once | read-only integration into YujinMechanic
+[R2-Mark] PASS M04 feature set shared, actor binding independent | no per-SO mutable counters
+[R2-Mark] PASS M05 actual Yujin mechanic stores 43/10 per part | live left=43 right=10
+[R2-Mark] PASS M06 second Yujin same ContentId stores 7 independently | A left=43 B left=7
+[R2-Mark] PASS M07 R2-K reads actual native stored left 43 | R2=43 native=43
+[R2-Mark] PASS M08 R2-K reads actual native stored right 10 | R2=10 native=10
+[R2-Mark] PASS M09 second owner reads own mark, not first owner's | R2B=7 nativeB=7
+[R2-Mark] PASS M10 foreign keyword/invalid part and unregistered source rejected | no false zero or cross-owner leakage
+[R2-Mark] PASS M11 lifecycle clearing does not mutate Yujin's actual marks | native backing not copied/cleared
+[R2-Mark] RESULT PASS=11 FAIL=0
