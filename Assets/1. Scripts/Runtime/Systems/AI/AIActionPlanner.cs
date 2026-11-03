@@ -148,6 +148,20 @@ public sealed class AIActionPlanner
             return result;
         }
 
+        // R7-8 / 1029: the real AIManager uses AIActionPlanner, not
+        // Enemy.DecideSlots directly. Stage1's GUID-backed 12-species
+        // action selection must therefore execute HERE in production.
+        // Keep every noncanonical/test/boss/elite enemy on the normal
+        // AIActionPlanner route; do not alter their slot rules.
+        if(enemy is NormalEnemy canonicalNormal)
+        {
+            var nativeRole=canonicalNormal
+                .GetMechanic<NormalEnemy0922RoleMechanic>();
+            if(nativeRole?.RoleAssigned==true&&
+                nativeRole.Species!=R7EnemySpecies1029.Unknown)
+                return canonicalNormal.DecideSlots(context);
+        }
+
         AIPlanningState state =
             new AIPlanningState(
                 enemy,

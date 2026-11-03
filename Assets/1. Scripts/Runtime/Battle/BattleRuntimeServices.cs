@@ -31,6 +31,8 @@ public sealed class BattleRuntimeServices
     public R7ProductionLegacyStatusMigration R7LegacyStatusMigration { get; set; }
     public R7ProductionPreparationStatusMigration R7PreparationStatusMigration { get; set; }
     public R7ProductionSingleEffectMigration20261102 R7SingleEffectMigration { get; set; }
+    public R7ProductionOlafNativeMigration20261103 R7OlafNativeMigration { get; set; }
+    public R7ProductionYujinNativeMigration20261103 R7YujinNativeMigration { get; set; }
     public ClashBuilder ClashBuilder { get; set; }
     public AIManager AIManager { get; set; }
     public TurnManager TurnManager { get; set; }
@@ -63,6 +65,8 @@ public sealed class BattleRuntimeServices
             R7LegacyStatusMigration = R7LegacyStatusMigration,
             R7PreparationStatusMigration = R7PreparationStatusMigration,
             R7SingleEffectMigration = R7SingleEffectMigration,
+            R7OlafNativeMigration = R7OlafNativeMigration,
+            R7YujinNativeMigration = R7YujinNativeMigration,
             ClashBuilder = ClashBuilder,
             AIManager = AIManager,
             TurnManager = TurnManager,

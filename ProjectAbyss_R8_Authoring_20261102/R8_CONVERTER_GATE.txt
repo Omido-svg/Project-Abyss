@@ -1,4 +1,0 @@
-R8 unified converter tests: PASS=18 FAIL=0
-Sources=145 NativeGood=37/37 duplicateIdGroups=4
-AugmentPending=1 TemporaryItems=60
-No production source SO or .meta modifications.

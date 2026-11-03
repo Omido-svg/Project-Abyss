@@ -58,7 +58,6 @@ public static class R1TieAndCancellationVerification20261102
         defs.Add(so);
         return so;
     }
-    [MenuItem("Game System Verification/R1 - Tie And Cancel (Play Mode)")]
     public static void Run()
     {
         if(!Application.isPlaying)throw new InvalidOperationException("PlayMode required.");

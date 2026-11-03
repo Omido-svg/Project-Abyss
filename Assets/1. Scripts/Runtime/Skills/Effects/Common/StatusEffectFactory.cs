@@ -22,7 +22,8 @@ public enum StatusEffectId
     // 0922 append-only ids. 기존 serialized enum 번호는 절대 바꾸지 않는다.
     Stagnation = 15,
     Designation = 16,
-    Fear = 17
+    Fear = 17,
+    Bind = 18 // 1029 §11.2 append-only numeric 속박 N/T
 }
 
 /// <summary>
@@ -195,6 +196,8 @@ public static class StatusEffectFactory
                 new StagnationStatus(safeValue, safeDuration),
             StatusEffectId.Swift =>
                 new SwiftStatus(safeValue, safeDuration),
+            StatusEffectId.Bind =>
+                new R7EnemyBindStatus20261103(safeValue,safeDuration),
             StatusEffectId.Regeneration =>
                 new RegenerationStatus(
                     safeDuration,
@@ -255,6 +258,7 @@ public static class StatusEffectFactory
             StatusEffectId.Heat or
             StatusEffectId.Stagnation or
             StatusEffectId.Swift or
+            StatusEffectId.Bind or
             StatusEffectId.Regeneration or
             StatusEffectId.Designation =>
                 StatusEffectStorageKind.NumericTimed,
@@ -299,7 +303,7 @@ public static class StatusEffectFactory
             StatusEffectId.Stun =>
                 effect is Stun,
             StatusEffectId.Strength =>
-                effect is StrengthStatus,
+                effect is StrengthStatus or R7EnemyCommanderStrengthAura20261103,
             StatusEffectId.Weakness =>
                 effect is WeaknessStatus,
             StatusEffectId.Sturdy =>
@@ -321,7 +325,9 @@ public static class StatusEffectFactory
             StatusEffectId.Pain =>
                 effect is PainStatus,
             StatusEffectId.Swift =>
-                effect is SwiftStatus,
+                effect is SwiftStatus or R7EnemyCommanderSwiftAura20261103,
+            StatusEffectId.Bind =>
+                effect is R7EnemyBindStatus20261103,
             StatusEffectId.Designation =>
                 effect is YujinDesignationStatus,
             StatusEffectId.Fear =>
@@ -540,6 +546,12 @@ public static class StatusEffectFactory
                     target,
                     part,
                     StatusEffectId.Swift,
+                    checkCharacterStatus,
+                    checkPartStatus) -
+                GetNumericTotal(
+                    target,
+                    part,
+                    StatusEffectId.Bind,
                     checkCharacterStatus,
                     checkPartStatus),
 

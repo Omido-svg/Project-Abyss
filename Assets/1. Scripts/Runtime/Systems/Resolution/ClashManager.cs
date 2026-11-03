@@ -976,6 +976,7 @@ public partial class ClashManager
             loser, winner, exchangeIndex, false, exchange,
             isClash: true, isOneSided: false);
 
+        ResolveOlafExploitGapChain(exchange);
         return exchange;
     }
 
@@ -1573,6 +1574,7 @@ public partial class ClashManager
             action, exhaustedOpponent, exchangeIndex, true, exchange,
             isClash: cameFromClash, isOneSided: true);
 
+        ResolveOlafExploitGapChain(exchange);
         return exchange;
     }
 

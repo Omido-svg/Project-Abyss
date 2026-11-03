@@ -62,6 +62,33 @@ public sealed class RunFlowLiveContentRegistry : ScriptableObject
         return count;
     }
 
+    // R7-11 distinguishes a serialized TEMP combat link from an
+    // actual canonically approved native combat implementation.
+    public int CountNativeReadyRunItems()
+    {
+        if(RunItemCatalog?.Items==null)return 0;
+        int count=0;
+        foreach(var item in RunItemCatalog.Items)
+            if(item!=null&&
+               R7NativeRunItemCatalog20261103.TryResolve(item,out var graph)&&
+               graph.State==R7NativeRunItemState20261103.NativeReady)
+                count++;
+        return count;
+    }
+
+    public int CountNativePendingRunItems()
+    {
+        if(RunItemCatalog?.Items==null)return 0;
+        int count=0;
+        foreach(var item in RunItemCatalog.Items)
+            if(item!=null&&
+               R7NativeRunItemCatalog20261103.TryResolve(item,out var graph)&&
+               graph.State==
+                   R7NativeRunItemState20261103.CanonicalEffectPending)
+                count++;
+        return count;
+    }
+
     public int CountCombatLinkedRunItems()
     {
         if (RunItemCatalog?.Items == null)

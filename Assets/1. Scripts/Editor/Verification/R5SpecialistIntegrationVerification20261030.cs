@@ -24,7 +24,6 @@ public static class R5SpecialistIntegrationVerification20261030
         new AbilityEventContext(AbilityEventKind.RollUsing,action,cause,
             R4LiveSlotQuery.ActorRuntimeId(owner),0,false,false);
 
-    [MenuItem("Game System Verification/R5 - Specialist Real Services (Play Mode)")]
     public static void Run()
     {
         if(!Application.isPlaying)

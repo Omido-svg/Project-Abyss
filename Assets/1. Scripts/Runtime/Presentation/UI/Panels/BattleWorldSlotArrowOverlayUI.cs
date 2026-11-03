@@ -855,8 +855,8 @@ public sealed class BattleWorldSlotArrowOverlayUI : MonoBehaviour
 
             bool hoverRelated =
                 hoveredCell != null &&
-                hoveredCell.IsTargetedBy(
-                    source);
+                BattleMvpSlotHoverRelations20261103.IsRelated(
+                    hoveredCell, source, uiManager);
 
             float alphaMultiplier =
                 ResolveArrowAlpha(
@@ -888,6 +888,8 @@ public sealed class BattleWorldSlotArrowOverlayUI : MonoBehaviour
     {
         if (!showEnemyIntentArrows || slots == null)
             return used;
+        var forcedParts=R7HifumiProvocationTargeting20261103
+            .PreviewTargetParts(slots);
 
         foreach (ActionSlot source in slots)
         {
@@ -910,8 +912,11 @@ public sealed class BattleWorldSlotArrowOverlayUI : MonoBehaviour
             }
 
             BattleWorldActionSlotCellUI toCell = null;
+            if(forcedParts.TryGetValue(source,out var forcedPart))
+                BattleWorldActionSlotCellUI.TryGetPlanningCell(
+                    player,forcedPart,out toCell);
 
-            if (source.TargetSlot != null &&
+            if(toCell==null&&source.TargetSlot != null &&
                 source.TargetSlot.Owner == player)
             {
                 BattleWorldActionSlotCellUI.TryGetPlanningCell(
@@ -939,8 +944,8 @@ public sealed class BattleWorldSlotArrowOverlayUI : MonoBehaviour
 
             bool hoverRelated =
                 hoveredCell != null &&
-                hoveredCell.IsTargetedBy(
-                    source);
+                BattleMvpSlotHoverRelations20261103.IsRelated(
+                    hoveredCell, source, uiManager);
 
             float alphaMultiplier =
                 ResolveArrowAlpha(
@@ -1041,10 +1046,10 @@ public sealed class BattleWorldSlotArrowOverlayUI : MonoBehaviour
 
             bool hoverRelated =
                 hoveredCell != null &&
-                (hoveredCell.IsTargetedBy(
-                     playerSlot) ||
-                 hoveredCell.IsTargetedBy(
-                     enemySlot));
+                (BattleMvpSlotHoverRelations20261103.IsRelated(
+                    hoveredCell, playerSlot, uiManager) ||
+                 BattleMvpSlotHoverRelations20261103.IsRelated(
+                    hoveredCell, enemySlot, uiManager));
 
             float alphaMultiplier =
                 ResolveArrowAlpha(

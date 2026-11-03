@@ -164,7 +164,18 @@ public sealed class BattleWorldCharacterPlateUI : MonoBehaviour
         if (gauges == null)
             gauges = gameObject.AddComponent<BattleWorldUniqueGaugeUI>();
 
-        gauges.Configure(character);
+        
+        // MVP visual-only statuses share the existing WorldSpace plate canvas.
+        // A single child Canvas isolates status glyph rebuilds from HP animation.
+        if (character != null)
+        {
+            BattleMvpWorldStatusStrip20261103 statusStrip =
+                GetComponent<BattleMvpWorldStatusStrip20261103>();
+            if (statusStrip == null)
+                statusStrip = gameObject.AddComponent<BattleMvpWorldStatusStrip20261103>();
+            statusStrip.Configure(character, nameText);
+        }
+gauges.Configure(character);
     }
 
     private void OnDisable()
@@ -693,13 +704,16 @@ public sealed class BattleWorldCharacterPlateUI : MonoBehaviour
 
         if (nameText != null)
         {
-            nameText.text =
-                character.Data?.CharacterName ??
-                character.name;
+            string displayName = character.Data?.CharacterName ?? character.name;
+            if (nameText.text != displayName)
+                nameText.text = displayName;
         }
-
         if (hpText != null)
-            hpText.text = $"{current} / {maximum}";
+        {
+            string hpLabel = $"{current} / {maximum}";
+            if (hpText.text != hpLabel)
+                hpText.text = hpLabel;
+        }
 
         hideWhenAnimationCompletes =
             !hasHpOverride &&

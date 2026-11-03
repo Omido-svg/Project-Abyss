@@ -401,6 +401,9 @@ public class TargetArrowUI : MonoBehaviour
         if (slots == null)
             return arrowIndex;
 
+        var forcedParts=R7HifumiProvocationTargeting20261103
+            .PreviewTargetParts(slots);
+
         foreach (ActionSlot slot in slots)
         {
             if (hasCurrentVisual &&
@@ -420,7 +423,8 @@ public class TargetArrowUI : MonoBehaviour
                 DrawActionArrow(
                     arrowIndex,
                     slot,
-                    enemyClashArrowColor);
+                    enemyClashArrowColor,
+                    forcedParts.TryGetValue(slot,out var forced)?forced:null);
         }
 
         return arrowIndex;
@@ -711,7 +715,8 @@ public class TargetArrowUI : MonoBehaviour
     private int DrawActionArrow(
         int arrowIndex,
         ActionSlot slot,
-        Color color)
+        Color color,
+        BodyPart previewOverride=null)
     {
         if (slot == null)
             return arrowIndex;
@@ -721,10 +726,11 @@ public class TargetArrowUI : MonoBehaviour
                 slot.Owner,
                 slot.Part);
 
+        BodyPart targetPart=previewOverride??slot.TargetPart;
         BodyPartButton toButton =
             FindButton(
                 slot.TargetCharacter,
-                slot.TargetPart);
+                targetPart);
 
         if (fromButton == null ||
             toButton == null)
@@ -737,7 +743,7 @@ public class TargetArrowUI : MonoBehaviour
             slot.TargetCharacter &&
             IsSamePart(
                 slot.Part,
-                slot.TargetPart);
+                targetPart);
 
         if (isSelfTarget ||
             fromButton == toButton)

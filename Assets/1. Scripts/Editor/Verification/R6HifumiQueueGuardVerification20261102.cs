@@ -11,7 +11,6 @@ using ProjectAbyss.Abilities;
 /// </summary>
 public static class R6HifumiQueueGuardVerification20261102
 {
-    [MenuItem("Game System Verification/R6 - Deferred Hifumi Queue Failure Safety (Play Mode)")]
     public static void Run()
     {
         if(!Application.isPlaying)throw new InvalidOperationException("PlayMode only");

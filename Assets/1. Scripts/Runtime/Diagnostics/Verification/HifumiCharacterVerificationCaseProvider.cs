@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -384,7 +384,7 @@ public sealed class HifumiCharacterVerificationCaseProvider :
             yukcham.BoneGain == 60 && yukcham.Heal == 0 && !yukcham.ConsumeAllBone &&
             goldan.Enabled && goldan.CounterPower == 13 && goldan.ConsumeAllBone && goldan.Heal == 0 &&
             bloom.CounterCount == 6 && bloom.CounterPower == 14 && bloom.Heal == 350 &&
-            bloom.ConsumeAllBone && bloom.Weaken && bloom.BreakPart && bloom.MomentumPush == 25 &&
+            bloom.ConsumeAllBone && !bloom.Weaken && bloom.BreakPart && bloom.MomentumPush == 25 &&
             small.Enabled && small.CounterPower == 5 && small.BoneGain == 0 && !small.ConsumeAllBone &&
             !disabled.Enabled;
 

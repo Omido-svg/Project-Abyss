@@ -47,7 +47,6 @@ public static class R7NativePreparationStatusAssetMigration20261102
         }
         return source;
     }
-    [MenuItem("Game System Verification/R7-1 - Create Native Preparation Status Graph (Edit Mode)")]
     public static void Stage()
     {
         if(Application.isPlaying)throw new InvalidOperationException("EditMode required");
@@ -83,7 +82,6 @@ public static class R7NativePreparationStatusAssetMigration20261102
         Debug.Log("[R7-1] CREATED native status operation SO; old source preserved");
     }
 
-    [MenuItem("Game System Verification/R7-1 - Verify Native Preparation Status Graph (Edit Mode)")]
     public static void Verify()
     {
         var src=GetSource();

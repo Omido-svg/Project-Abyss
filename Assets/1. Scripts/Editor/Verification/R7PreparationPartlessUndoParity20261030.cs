@@ -23,7 +23,6 @@ public static class R7PreparationPartlessUndoParity20261030
         var b=c.GetStatus<Bleeding>();var f=c.GetStatus<Burn>();
         return (b?.Stack??0,f?.Stack??0,b?.Duration??0,f?.Duration??0);
     }
-    [MenuItem("Game System Verification/R7 - Preparation Partless Undo Parity (Play Mode)")]
     public static void Run()
     {
         if(!Application.isPlaying)
@@ -53,7 +52,8 @@ public static class R7PreparationPartlessUndoParity20261030
             var original=Make(battle,owner,a,d,999620);
             var modern=Make(battle,owner,b,d,999621);
             router.Enabled=false;
-            original.Skill.Execute(new BattleAction{Slot=original});
+            R7HistoricalParityScope20261103.ExecuteLegacy(d, () =>
+                original.Skill.Execute(new BattleAction{Slot=original}));
             router.Enabled=true;
             int beforeCommit=router.NativeCommits;
             modern.Skill.Execute(new BattleAction{Slot=modern});

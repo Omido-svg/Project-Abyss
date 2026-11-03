@@ -1,3 +1,6 @@
+#if UNITY_EDITOR
+// R7-12: retained for historical EditMode parity/diagnostics only.
+// Not compiled into player builds; never a production gameplay adapter.
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -169,3 +172,4 @@ namespace ProjectAbyss.Abilities
         }
     }
 }
+#endif

@@ -10,7 +10,6 @@ public static class R6SpecialistQueueContractVerification20261030
         =>new ReactionRequest(id,root,root,cause,chain,301,"HIFUMI-COUNTER",
             ReactionTimingCheckpoint.AfterClashCompleted,0,id);
 
-    [MenuItem("Game System Verification/R6-Ia - Specialist Queue Contract (Edit Mode)")]
     public static void Run()
     {
         if(Application.isPlaying)throw new InvalidOperationException("Edit Mode only");

@@ -17,6 +17,10 @@ public sealed class OlafMadnessMechanic : CombatMechanic, ICharacterUniqueGaugeP
 
     // 출혈 폭발 특전은 한 행동당 첫 성공 교환에서만 1회 허용한다.
     private readonly HashSet<BattleAction> bleedingExplosionActions = new();
+    // R7-9: one passive application per resolved damage context and newly
+    // broken body part. Nothing is stored on a shared ScriptableObject.
+    private readonly HashSet<DamageContext> passiveHitContexts=new();
+    private readonly HashSet<BodyPartBreakEventContext> passiveCountedBreakEvents=new();
 
     public int CurrentMadness => madness;
     public int MaxMadness => MaxMadnessValue;
@@ -27,7 +31,7 @@ public sealed class OlafMadnessMechanic : CombatMechanic, ICharacterUniqueGaugeP
 
     public int PassivePowerBonus => MadnessStage;
     public int PassiveIncomingDamageIncrease => MadnessStage;
-    public int RedNormalBleedingGain => MadnessStage + 1;
+    public int RedNormalBleedingGain => IsBlooming ? 2 : 1;
 
     public string GaugeLabel => "광기";
     public float GaugeNormalized => (float)CurrentMadness / MaxMadnessValue;
@@ -58,6 +62,8 @@ public sealed class OlafMadnessMechanic : CombatMechanic, ICharacterUniqueGaugeP
     {
         madness = 0;
         bleedingExplosionActions.Clear();
+        passiveHitContexts.Clear();
+        passiveCountedBreakEvents.Clear();
     }
 
     public override int ModifyRoll(BattleAction action, int roll)
@@ -170,6 +176,11 @@ public sealed class OlafMadnessMechanic : CombatMechanic, ICharacterUniqueGaugeP
 
     private void ExecuteBloto(BattleAction action)
     {
+        // 1029 Bloto: +2 Madness total. The strong-preparation passive
+        // already adds +1, this is Bloto's additional +1 with planning undo.
+        int previousMadness=madness;
+        AddMadness(1);
+        action.Slot?.PlanningUndo?.Record(()=>madness=previousMadness);
         BodyPart weakened = WeakenLowestNormalPart(out float hpBeforeWeaken);
         List<FearRollbackSnapshot> fearSnapshots = ApplyFearToEnemies(action);
 
@@ -189,7 +200,8 @@ public sealed class OlafMadnessMechanic : CombatMechanic, ICharacterUniqueGaugeP
 
     private void OnExchangeResolved(ClashExchangeResult exchange)
     {
-        if (exchange == null || exchange.WasCancelled || exchange.IsTie)
+        if (exchange==null||exchange.WasCancelled||
+            exchange.IsTie||exchange.IsContentError||owner==null)
             return;
 
         BattleAction myAction =
@@ -198,7 +210,6 @@ public sealed class OlafMadnessMechanic : CombatMechanic, ICharacterUniqueGaugeP
                 : exchange.SecondAction?.Owner == owner
                     ? exchange.SecondAction
                     : null;
-
         if (myAction == null)
             return;
 
@@ -207,37 +218,44 @@ public sealed class OlafMadnessMechanic : CombatMechanic, ICharacterUniqueGaugeP
                 ? exchange.SecondAction
                 : exchange.FirstAction;
 
-        bool won = exchange.WinnerAction == myAction;
+        // R7-9: the fixed bleeding passive belongs to ACTUAL ATTACK hits,
+        // not every nominally won exchange. Include independently resolved
+        // secondary weight-target hits, but never manufacture hits from a
+        // cancelled/defensive exchange with no applied DamageContext.
+        int hitBleeding = IsBlooming ? 2 : 1;
+        ApplyPassiveHitBleeding(exchange,myAction,
+            exchange.DamageContext,hitBleeding);
+        if(exchange.SecondaryDamageContexts!=null)
+            foreach(var secondary in exchange.SecondaryDamageContexts)
+                if(!object.ReferenceEquals(secondary,exchange.DamageContext))
+                    ApplyPassiveHitBleeding(exchange,myAction,
+                        secondary,hitBleeding);
 
-        // 0916 §17.2 기본 잔효과. 평타는 결투 게이트가 없고 일방타격도 승리로 친다.
-        if (won && myAction.ActionType == ActionType.NormalAttack)
-        {
-            if (myAction.Skill?.IsRed == true)
-            {
-                ApplyBleeding(
-                    myAction.Target,
-                    myAction.TargetPart,
-                    RedNormalBleedingGain,
-                    myAction,
-                    exchange.ExchangeIndex);
-            }
-            else if (myAction.Skill?.IsBlue == true)
-            {
-                AddMadness(1);
-            }
-        }
-
-        // 0916 §17.1: 결투 대 결투에서 진 교환은 카드 종류와 무관하게 광기 +1.
-        bool duelVsDuel =
-            !exchange.IsOneSided &&
-            myAction.ActionType == ActionType.Duel &&
-            opponentAction?.ActionType == ActionType.Duel;
-
-        if (duelVsDuel && !won)
+        // BLUE NORMAL '승리시' is a real won exchange. A one-sided hit
+        // still applies passive Bleeding above, but grants no win-only Madness.
+        if(R7FixedPassiveContract20261103.IsOlafBlueNormalWin(exchange,myAction))
             AddMadness(1);
 
-        if (duelVsDuel && won)
+        if(R7FixedPassiveContract20261103.IsOlafDuelLoss(
+            exchange,myAction,opponentAction))
+            AddMadness(1);
+
+        // The first winning ATTACK Duel exchange may explode Bleeding once
+        // if the canonical source carries the explosion privilege.
+        if(exchange.IsDuelExchange&&!exchange.IsOneSided&&
+           R7FixedPassiveContract20261103.IsOlafAttackHit(
+               exchange,myAction,exchange.DamageContext))
             TryExplodeBleeding(myAction);
+    }
+
+    private void ApplyPassiveHitBleeding(
+        ClashExchangeResult exchange,BattleAction action,
+        DamageContext hit,int amount)
+    {
+        if(!R7FixedPassiveContract20261103.IsOlafAttackHit(
+            exchange,action,hit)||!passiveHitContexts.Add(hit))return;
+        ApplyBleeding(hit.Target,hit.TargetPart,amount,
+            action,exchange.ExchangeIndex);
     }
 
     private void OnActionEnd(BattleAction action)
@@ -248,7 +266,9 @@ public sealed class OlafMadnessMechanic : CombatMechanic, ICharacterUniqueGaugeP
 
     private void OnBodyPartBreakResolved(BodyPartBreakEventContext context)
     {
-        if (context?.Part != null)
+        if(R7FixedPassiveContract20261103.IsOlafRelevantPartBreak(
+            context,owner,battleContext)&&
+           passiveCountedBreakEvents.Add(context))
             AddMadness(PartBreakMadnessGain);
     }
 
@@ -283,7 +303,9 @@ public sealed class OlafMadnessMechanic : CombatMechanic, ICharacterUniqueGaugeP
     private bool TryExplodeBleeding(BattleAction action)
     {
         SkillRulebreakerSettings rule = action?.Skill?.Definition?.Rulebreaker;
-        int multiplier = Mathf.Max(0, rule?.BleedingExplosionMultiplier ?? 0);
+        // 1029 §17.1: explosion is a canonical x5, not the stale
+        // pre-balance multiplier (currently 0 on both PhaseE duel SOs).
+        const int multiplier = 5;
 
         // 0916 §17.6: 폭발 계수는 미정이다. SO에 값이 들어오기 전에는 실행하지 않는다.
         if (rule?.Enabled != true ||

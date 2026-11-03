@@ -86,7 +86,8 @@ public sealed class StaggerGaugeMechanic : ReactiveCombatMechanic,
             return;
 
         float multiplier = owner.Data?.StaggerResistances?.GetMultiplier(physicalType) ?? 1f;
-        int staggerDamage = Mathf.Max(0, Mathf.FloorToInt(raw * multiplier));
+        int staggerDamage = Mathf.Max(0, Mathf.FloorToInt(raw * multiplier))
+            + ResolveFinalAdditionalStaggerDamage(action,owner);
 
         // [0917_CONFIRMED_GAP:STAGGER_RED_PATH]
         // 내성 적용 후 견고/무장해제 flat 보정을 적용한다.
@@ -356,7 +357,8 @@ public sealed class StaggerGaugeMechanic : ReactiveCombatMechanic,
 
         PhysicalDamageType type = PhysicalDamageResolver.Resolve(action);
         float multiplier = target.Data?.StaggerResistances?.GetMultiplier(type) ?? 1f;
-        int staggerDamage = Mathf.Max(0, Mathf.FloorToInt(raw * multiplier));
+        int staggerDamage = Mathf.Max(0, Mathf.FloorToInt(raw * multiplier))
+            + ResolveFinalAdditionalStaggerDamage(action,target);
 
         // [0917_CONFIRMED_GAP:STAGGER_BLUE_PATH]
         return ApplyTargetStaggerDamageFlatModifiers(
@@ -420,6 +422,17 @@ public sealed class StaggerGaugeMechanic : ReactiveCombatMechanic,
         return Mathf.Max(
             0,
             damage + flatModifier);
+    }
+
+    private static int ResolveFinalAdditionalStaggerDamage(
+        BattleAction action,Character target)
+    {
+        if(action?.Owner?.Mechanics==null)return 0;
+        int value=0;
+        foreach(var mechanic in action.Owner.Mechanics)
+            if(mechanic is IAdditionalFinalStaggerDamageProvider20261103 rule)
+                value+=Mathf.Max(0,rule.GetAdditionalFinalStaggerDamage(action,target));
+        return Mathf.Max(0,value);
     }
 
     private static int ResolveAdditionalStaggerDamage(

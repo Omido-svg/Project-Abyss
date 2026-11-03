@@ -25,7 +25,6 @@ public static class R8EffectfulBatchPreflight20261030
     }
     private static string Q(string x) => "\"" + (x??"").Replace("\"","\"\"") + "\"";
 
-    [MenuItem("Game System Verification/R8 - 68 Effectful Batch Backup Gate (Edit Mode)")]
     public static void Run()
     {
         if(Application.isPlaying)
@@ -120,7 +119,7 @@ public static class R8EffectfulBatchPreflight20261030
             if(yes){pass++;Debug.Log("[R8-Batch] PASS "+id);}
             else{fail++;Debug.LogError("[R8-Batch] FAIL "+id);}
         }
-        Check("B01 catalog 145",catalog.Length==145);
+        Check("B01 catalog 145+19=164",catalog.Length==164);
         Check("B02 effectful safe cohort verified",eligible.Length==68);
         Check("B03 root effect entries verified",count==85);
         Check("B04 every eligible asset has backed-up .meta",

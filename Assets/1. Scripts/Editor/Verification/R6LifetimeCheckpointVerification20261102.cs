@@ -7,7 +7,6 @@ using ProjectAbyss.Abilities;
 /// <summary>R6 lifetime phases, refusal isolation, cooldown and chain safety.</summary>
 public static class R6LifetimeCheckpointVerification20261102
 {
-    [MenuItem("Game System Verification/R6 - Lifetime Commit Phases (Edit Mode)")]
     public static void Run()
     {
         if(Application.isPlaying)throw new InvalidOperationException("EditMode only.");

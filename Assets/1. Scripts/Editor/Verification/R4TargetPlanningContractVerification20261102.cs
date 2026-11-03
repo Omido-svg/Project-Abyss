@@ -24,7 +24,6 @@ public static class R4TargetPlanningContractVerification20261102
     private static string Key(IEnumerable<WeightedTargetSlot> slots)=>
         string.Join("|",slots.Select(s=>s.Slot.ActorRuntimeId+":"+s.Slot.SlotId+":"+s.Slot.PartId));
 
-    [MenuItem("Game System Verification/R4 - Stable Target Query Contracts (Edit Mode)")]
     public static void Run()
     {
         if(Application.isPlaying)throw new InvalidOperationException("R4 query test requires EditMode");

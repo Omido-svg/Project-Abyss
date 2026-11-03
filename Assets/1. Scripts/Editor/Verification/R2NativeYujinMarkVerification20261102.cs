@@ -12,7 +12,6 @@ using ProjectAbyss.Abilities;
 /// </summary>
 public static class R2NativeYujinMarkVerification20261102
 {
-    [MenuItem("Game System Verification/R2 - Live Yujin Mark Part Isolation (Play Mode)")]
     public static void Run()
     {
         if(!Application.isPlaying)throw new InvalidOperationException("Play Mode required.");

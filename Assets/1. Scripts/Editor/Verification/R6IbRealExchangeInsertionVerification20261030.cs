@@ -74,7 +74,6 @@ public static class R6IbRealExchangeInsertionVerification20261030
         };
     }
 
-    [MenuItem("Game System Verification/R6-Ib - Actual Mid-Exchange Insertion (Play Mode)")]
     public static void Run()
     {
         if(!Application.isPlaying)throw new InvalidOperationException("Play Mode only");

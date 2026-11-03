@@ -24,7 +24,6 @@ public static class R4SlotWeightedPlannerVerification20261030
             "|hits="+string.Join(";",r.Allocation.DistinctHitTargets.Select(x=>x.ActorRuntimeId+":"+x.PartId));
     }
 
-    [MenuItem("Game System Verification/R4 - Slot Weighted Deterministic Planner (Edit Mode)")]
     public static void Run()
     {
         if(Application.isPlaying)throw new InvalidOperationException("Edit Mode only");

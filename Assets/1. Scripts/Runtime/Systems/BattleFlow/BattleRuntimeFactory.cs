@@ -58,6 +58,8 @@ public static class BattleRuntimeFactory
         services.R7LegacyStatusMigration?.Dispose();
         services.R7PreparationStatusMigration?.Dispose();
         services.R7SingleEffectMigration?.Dispose();
+        services.R7OlafNativeMigration?.Dispose();
+        services.R7YujinNativeMigration?.Dispose();
 
         services.CoroutineHost =
             new UnityBattleCoroutineHost(coroutineOwner);
@@ -139,6 +141,10 @@ public static class BattleRuntimeFactory
             new R7ProductionPreparationStatusMigration(context);
         services.R7SingleEffectMigration =
             new R7ProductionSingleEffectMigration20261102(context);
+        services.R7OlafNativeMigration =
+            new R7ProductionOlafNativeMigration20261103();
+        services.R7YujinNativeMigration =
+            new R7ProductionYujinNativeMigration20261103();
         services.ActionResolver.EnableR6ReactionExecution(
             services.ReactionScheduler,services.ReactionActionRegistry);
         services.ActionResolver.EnableR6SpecialistReactions(

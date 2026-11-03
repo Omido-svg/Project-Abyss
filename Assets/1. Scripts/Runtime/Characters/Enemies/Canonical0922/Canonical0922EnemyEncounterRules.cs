@@ -70,27 +70,12 @@ public static class Canonical0922EnemyEncounterRules
         return 3;
     }
 
+    // 1029 §12.3: encounter headcount must NEVER change per-enemy HP.
+    // Each NormalEnemy temporarily uses its original authored fallback until
+    // the encounter coordinator assigns one of the five 70/80/90/105 roles.
+    // This avoids transient 0922 135/101 roster-based HP normalization.
     public static int ResolveNormalEnemyHp(BattleContext context, int fallback)
     {
-        if (context?.Enemies == null)
-            return Mathf.Max(1, fallback);
-
-        int normalCount = 0;
-        int aliveOrConfigured = 0;
-        foreach (Character enemy in context.Enemies)
-        {
-            if (enemy == null)
-                continue;
-            aliveOrConfigured++;
-            if (enemy is NormalEnemy)
-                normalCount++;
-        }
-
-        if (normalCount != aliveOrConfigured)
-            return Mathf.Max(1, fallback);
-
-        if (normalCount == 3) return ThreeEnemyHp;
-        if (normalCount == 4) return FourEnemyHp;
         return Mathf.Max(1, fallback);
     }
 

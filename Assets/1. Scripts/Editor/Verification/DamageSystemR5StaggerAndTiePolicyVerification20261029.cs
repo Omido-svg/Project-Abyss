@@ -28,7 +28,6 @@ public static class DamageSystemR5StaggerAndTiePolicyVerification20261029
 
     private static readonly List<SkillDefinition> createdDefinitions = new();
 
-    [MenuItem("Game System Verification/1029 Damage R5 - Stagger Maximum and Tie Policy (Play Mode)")]
     public static void VerifyFromMenu()
     {
         if (!Application.isPlaying)

@@ -23,5 +23,5 @@ MonoBehaviour:
   Amount: 2
   Duration: 2
   NextTurn: 1
-  RestrictToRoll: 0
-  RollNumber: 1
+  RestrictToRoll: 1
+  RollNumber: 3

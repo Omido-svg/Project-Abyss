@@ -71,6 +71,46 @@ public sealed class HifumiMechanic :
     // 0922 §19.1: 가불은 실제 뼈와 완전히 분리된 턴 한정 자원이다.
     // BoneBand에는 들어가지 않고, 비용/보유 조건에는 먼저 사용하며, 만개 조건에는 합산한다.
     private int advanceBone;
+    // Hifumi-exclusive Blood Price N/T: a hit-accrual modifier, NOT actual Bone.
+    // Never changes BoneBand and never multiplies direct grants.
+    private int bloodPriceThisTurn;
+    private int bloodPriceNextTurn;
+    private int catastropheSelfDamageDepth;
+    // Hifumi-exclusive provocation, intentionally not a generic StatusEffect.
+    // Each entry counts hostile attack ACTIONS, never individual dice rolls.
+    private readonly System.Collections.Generic.Dictionary<BodyPart,int>
+        provocationActive=new();
+    private readonly System.Collections.Generic.Dictionary<BodyPart,int>
+        provocationNextTurn=new();
+
+    public void QueueProvocationNextTurn(BodyPart part,int actions)
+    {
+        if(actions<=0||part==null||owner==null||part.Owner!=owner||
+            part.IsBroken||owner.IsDead)return;
+        provocationNextTurn.TryGetValue(part,out int prior);
+        provocationNextTurn[part]=Mathf.Min(9999,prior+actions);
+    }
+    public System.Collections.Generic.IReadOnlyDictionary<BodyPart,int>
+        GetActiveProvocationSnapshot()
+    {
+        var copy=new System.Collections.Generic.Dictionary<BodyPart,int>();
+        if(owner==null||owner.IsDead)return copy;
+        foreach(var kv in provocationActive)
+            if(kv.Key!=null&&kv.Key.Owner==owner&&!kv.Key.IsBroken&&
+               owner.IsValidTargetPart(kv.Key)&&kv.Value>0)
+                copy[kv.Key]=kv.Value;
+        return copy;
+    }
+    private void ActivateQueuedProvocation()
+    {
+        provocationActive.Clear();
+        if(owner!=null&&!owner.IsDead)
+            foreach(var kv in provocationNextTurn)
+                if(kv.Key!=null&&kv.Key.Owner==owner&&!kv.Key.IsBroken&&
+                   owner.IsValidTargetPart(kv.Key)&&kv.Value>0)
+                    provocationActive[kv.Key]=kv.Value;
+        provocationNextTurn.Clear();
+    }
 
     private readonly HifumiEngraveRunProgression localEngraveProgress = new();
 
@@ -83,8 +123,10 @@ public sealed class HifumiMechanic :
     private bool nextTurnSpeedPenalty;
     private bool boldJudgmentTracking;
     private int boldJudgmentHpDamageTaken;
+    private int boldJudgmentStaggerDamageTaken;
     private bool engraveCompleteBlockTracking;
     private int engraveHpDamageTaken;
+    private int engraveStaggerDamageTaken;
 
     // [0917_CONFIRMED_GAP:HIFUMI_C_FIELDS]
     // 무모한 베팅(C): 뼈<70 사용 1회당 다음 턴 받는 HP 피해 +3.
@@ -164,6 +206,16 @@ public sealed class HifumiMechanic :
 
     public int Bone => bone;
     public int AdvanceBone => advanceBone;
+    public int BloodPriceThisTurn => bloodPriceThisTurn;
+
+    public void GrantBloodPriceForTurn(int amount)
+    {
+        if(amount>0)bloodPriceThisTurn+=amount;
+    }
+    public void QueueBloodPriceNextTurn(int amount)
+    {
+        if(amount>0)bloodPriceNextTurn+=amount;
+    }
     public int SpendableBone => Mathf.Max(0, bone) + Mathf.Max(0, advanceBone);
     public int BoneBand => Mathf.Clamp(bone / BonePerTier, 0, MaxBoneTier);
     public int BoneTier => BoneBand;
@@ -238,6 +290,11 @@ public sealed class HifumiMechanic :
     {
         bone = 0;
         advanceBone = 0;
+        bloodPriceThisTurn = 0;
+        bloodPriceNextTurn = 0;
+        catastropheSelfDamageDepth = 0;
+        provocationActive.Clear();
+        provocationNextTurn.Clear();
         raiseStakePowerBonus = 0;
         raiseStakeEnergyIncrease = 0;
         localEngraveProgress.Reset();
@@ -246,8 +303,11 @@ public sealed class HifumiMechanic :
         nextTurnSpeedPenalty = false;
         boldJudgmentTracking = false;
         boldJudgmentHpDamageTaken = 0;
+        boldJudgmentStaggerDamageTaken = 0;
         engraveCompleteBlockTracking = false;
         engraveHpDamageTaken = 0;
+        engraveStaggerDamageTaken = 0;
+        engraveStaggerDamageTaken = 0;
         recklessBetIncomingDamagePenaltyQueued = 0;
         recklessBetIncomingDamagePenaltyActive = 0;
         trickActive = false; // [0917_CONFIRMED_GAP:HIFUMI_C_RESET]
@@ -299,14 +359,12 @@ public sealed class HifumiMechanic :
         // 두 효과는 같은 flat HP damage 축이므로 먼저 대수합한 뒤 한 번만 clamp한다.
         // 무모한 베팅의 +3은 '교환당' 규칙이므로 Action 기반 피해에만 적용한다.
         int flatModifier = 0;
-        if (context.Action != null)
-        {
-            if (pokerFaceActive)
-                flatModifier -= 4;
-
-            flatModifier +=
-                Mathf.Max(0, recklessBetIncomingDamagePenaltyActive);
-        }
+        // 1029 Poker Face reduces every hit (not just action-based damage).
+        if(pokerFaceActive)
+            flatModifier-=4;
+        // The old Reckless Bet penalty is exchange-scoped.
+        if(context.Action!=null)
+            flatModifier+=Mathf.Max(0,recklessBetIncomingDamagePenaltyActive);
 
         return Mathf.Max(0, damage + flatModifier);
     }
@@ -432,10 +490,16 @@ public sealed class HifumiMechanic :
         if (id == HifumiSkillIds.PokerFace)
         {
             bool before = pokerFaceActive;
+            int priceBefore = bloodPriceThisTurn;
             pokerFaceActive = true;
-
-            action?.Slot?.PlanningUndo?.Record(
-                () => pokerFaceActive = before);
+            // Current PhaseE provisional +4; 1029 canon explicitly says
+            // Poker Face Blood Price amount is still undecided.
+            GrantBloodPriceForTurn(4);
+            action?.Slot?.PlanningUndo?.Record(() =>
+            {
+                pokerFaceActive = before;
+                bloodPriceThisTurn = priceBefore;
+            });
         }
         else if (id == HifumiSkillIds.EngraveBone)
         {
@@ -541,9 +605,10 @@ public sealed class HifumiMechanic :
         }
         else if (id == HifumiSkillIds.GamblerMove)
         {
-            int burned = bone;
-            bone = 0;
-            owner?.AddTurnClashPowerBonus((burned / 100) * 6);
+            int burned = SpendableBone;
+            ConsumeAllBonePaymentResources();
+            owner?.AddTurnClashPowerBonus(
+                R7HifumiNativeRules20261103.GamblingPowerFromBoneBurned(burned));
         }
         else if (id == HifumiSkillIds.AllIn)
         {
@@ -803,7 +868,7 @@ public sealed class HifumiMechanic :
             yukcham ? (tier + 1) * 20 : 0,
             goldan && bloom ? 350 : 0,
             goldan,
-            goldan && bloom && !targetAlreadyWeakened,
+            false, // execution authority is not a free Weaken status
             goldan && bloom,
             goldan && bloom ? 25 : 0);
     }
@@ -843,6 +908,9 @@ public sealed class HifumiMechanic :
         engraveBoneActive = false;
         trickActive = false;
         forceTrickFailure = false;
+        bloodPriceThisTurn = bloodPriceNextTurn;
+        bloodPriceNextTurn = 0;
+        ActivateQueuedProvocation();
         catastropheCounterBonusByAction.Clear();
         counterPowerBonusByAction.Clear();
         processedCatastrophes.Clear();
@@ -878,6 +946,8 @@ public sealed class HifumiMechanic :
         engraveBoneActive = false;
         trickActive = false;
         forceTrickFailure = false;
+        bloodPriceThisTurn = 0;
+        provocationActive.Clear();
         recklessBetIncomingDamagePenaltyActive = 0; // [0917_CONFIRMED_GAP:HIFUMI_C_TURN_END]
         governorActivePenalty = 0;
         boldJudgmentTracking = false;
@@ -901,6 +971,7 @@ public sealed class HifumiMechanic :
         {
             boldJudgmentTracking = true;
             boldJudgmentHpDamageTaken = 0;
+            boldJudgmentStaggerDamageTaken = 0;
         }
 
         if (skillId == HifumiSkillIds.EngraveBody &&
@@ -909,6 +980,7 @@ public sealed class HifumiMechanic :
         {
             engraveCompleteBlockTracking = true;
             engraveHpDamageTaken = 0;
+            engraveStaggerDamageTaken = 0;
         }
 
         ApplyActionStartCost(skillId);
@@ -951,6 +1023,13 @@ public sealed class HifumiMechanic :
             result?.DamageResult?.FinalHpDamage ??
             context.FinalHpDamage;
 
+        // A fully blocked exchange must also reject stagger-only damage.
+        // Track effective StaggerDamage even when final HP loss is zero.
+        int staggerDamage = Mathf.Max(0,context.StaggerDamageApplied);
+        if (boldJudgmentTracking)
+            boldJudgmentStaggerDamageTaken += staggerDamage;
+        if (engraveCompleteBlockTracking)
+            engraveStaggerDamageTaken += staggerDamage;
         if (finalHpDamage <= 0)
             return;
 
@@ -959,12 +1038,15 @@ public sealed class HifumiMechanic :
         if (engraveCompleteBlockTracking)
             engraveHpDamageTaken += finalHpDamage;
 
-        // H-03: exact post-mitigation HP loss 1:1. No inverse/LastStand compensation.
-        AddBone(finalHpDamage);
+        // The 1029 common catastrophe gives direct +60 Bone separately,
+        // and its own SelfCost must not ALSO accrue received-hit Bone.
+        if(catastropheSelfDamageDepth>0 && context.DamageType==DamageType.SelfCost)
+            return;
 
-        // Poker Face buys back 4 bone per actual hit after its -4 reduction.
-        if (pokerFaceActive && context.Action != null)
-            AddBone(4);
+        // Hifumi-only Blood Price N/T applies solely to genuine received
+        // HP injury, after shields and damage reduction.
+        AddBone(R7HifumiNativeRules20261103.BoneFromReceivedHit(
+            finalHpDamage,bloodPriceThisTurn));
     }
 
     private void OnExchangeResolved(ClashExchangeResult exchange)
@@ -1100,11 +1182,17 @@ public sealed class HifumiMechanic :
         if (owner == null || owner.IsDead)
             return;
 
-        battleContext?.Services?.DamageManager
-            ?.ApplyDamageContext(
-                DamageRequest.SelfCost(
-                    owner,
-                    HifumiSelfDamage));
+        AddBone(R7HifumiNativeRules20261103.CatastropheDirectBone);
+        catastropheSelfDamageDepth++;
+        try
+        {
+            battleContext?.Services?.DamageManager?.ApplyDamageContext(
+                DamageRequest.SelfCost(owner,HifumiSelfDamage));
+        }
+        finally
+        {
+            catastropheSelfDamageDepth--;
+        }
     }
 
     private void OnClashResolved(ClashResultContext clash)
@@ -1219,7 +1307,8 @@ public sealed class HifumiMechanic :
                 staggerDamageTaken += Mathf.Max(0, exchange.StaggerDamage);
         }
 
-        if (engraveHpDamageTaken <= 0 && staggerDamageTaken <= 0)
+        if (IsCompleteBlockForVerification(engraveHpDamageTaken,
+                Mathf.Max(staggerDamageTaken,engraveStaggerDamageTaken)))
             ConvertAllAdvanceToBone();
 
         engraveCompleteBlockTracking = false;
@@ -1253,10 +1342,11 @@ public sealed class HifumiMechanic :
 
         TryApplyBoldJudgmentCompleteBlockReward(
             hpDamageTaken,
-            staggerDamageTaken);
+            Mathf.Max(staggerDamageTaken,boldJudgmentStaggerDamageTaken));
 
         boldJudgmentTracking = false;
         boldJudgmentHpDamageTaken = 0;
+        boldJudgmentStaggerDamageTaken = 0;
     }
 
     private bool TryApplyBoldJudgmentCompleteBlockReward(
@@ -1338,13 +1428,10 @@ public sealed class HifumiMechanic :
         bool isNormalCounter =
             sourceAction.ActionType == ActionType.NormalAttack;
 
-        bool isYukcham =
-            applyTaggedSkillReward &&
-            skillId == HifumiSkillIds.Yukcham;
-
-        bool isGoldan =
-            applyTaggedSkillReward &&
-            skillId == HifumiSkillIds.Goldan;
+        // 1029 skill-specific counter rewards apply whenever the skill's
+        // counter actually resolves, including a catastrophe-only counter.
+        bool isYukcham=skillId==HifumiSkillIds.Yukcham;
+        bool isGoldan=skillId==HifumiSkillIds.Goldan;
 
         int boneSnapshot = bone;
         int tierSnapshot =
@@ -1367,7 +1454,6 @@ public sealed class HifumiMechanic :
         int pending = initialCounterCount;
         int sequenceIndex = 0;
         int attempted = 0;
-        bool bloomBreakAttempted = false;
 
         while (pending > 0 &&
                attempted < CounterSafetyLimit)
@@ -1437,13 +1523,7 @@ public sealed class HifumiMechanic :
             int counterPower =
                 Mathf.Max(1, roll?.FinalPower ?? 1);
 
-            bool canBloomBreak =
-                isGoldan &&
-                bloomSnapshot &&
-                !bloomBreakAttempted;
-
-            if (canBloomBreak)
-                bloomBreakAttempted = true;
+            bool canGoldanBreak = isGoldan;
 
             DamageRequest request =
                 DamageRequest.Custom(
@@ -1453,17 +1533,14 @@ public sealed class HifumiMechanic :
                     targetPart,
                     counterPower,
                     1f,
-                    canBreakPart: canBloomBreak,
+                    canBreakPart: canGoldanBreak,
                     applyMomentum: false,
                     applyGuard: true,
                     sourceAction: sourceAction);
 
-            if (canBloomBreak)
-            {
-                // H-06: the sole prior-weaken bypass path.
+            if(canGoldanBreak)
                 request.BreakMode =
-                    PartBreakMode.IgnoreWeakenedPrerequisite;
-            }
+                    R7HifumiNativeRules20261103.GoldanBreakMode(bloomSnapshot);
 
             DamageContext counterDamage =
                 battleContext?.Services?.DamageManager
@@ -1489,19 +1566,6 @@ public sealed class HifumiMechanic :
             if (bloomSnapshot)
             {
                 owner.RestoreCurrentHP(350);
-
-                if (targetPart != null &&
-                    target != null &&
-                    !target.IsDead &&
-                    !targetPart.IsBroken)
-                {
-                    // If the bypass damage did not actually break the part,
-                    // bloom Goldan still guarantees immediate weaken.
-                    target.WeakenPart(
-                        targetPart,
-                        owner,
-                        sourceAction);
-                }
 
                 battleContext?.Services?.MomentumManager
                     ?.ApplySkillShift(
@@ -1589,10 +1653,9 @@ public sealed class HifumiMechanic :
     private void ResolveAllIn(
         IReadOnlyList<ChinchiroCombination> rolls)
     {
-        // 0922: 실제 뼈 전량을 먼저 wager한다. 가불은 별도 턴 자원이므로
-        // prestige wager에 섞지 않는다.
-        int wageredBone = bone;
-        bone = 0;
+        // 1029: wager consumes both temporary Advance first and actual Bone.
+        int wageredBone = SpendableBone;
+        ConsumeAllBonePaymentResources();
 
         ChinchiroCombination best = ChinchiroCombination.None;
 

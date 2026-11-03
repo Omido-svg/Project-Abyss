@@ -21,7 +21,6 @@ public static class R8SkillAuthoringValidation20261030
         public bool Blocker;
     }
 
-    [MenuItem("Game System Verification/R8 - Skill Authoring Validator Dry Run (Edit Mode)")]
     public static void Run()
     {
         if(Application.isPlaying)
@@ -46,7 +45,14 @@ public static class R8SkillAuthoringValidation20261030
             var s=x.Skill;
             string id=s.SkillId;
             if(string.IsNullOrWhiteSpace(id))Add(id,x.Path,"EMPTY_STABLE_ID",true);
-            if(duplicateNames.Contains(id))Add(id,x.Path,"DUPLICATE_STABLE_ID",true);
+            if(duplicateNames.Contains(id))
+            {
+                bool approved=duplicates.Any(g=>g.Key==id &&
+                    R7Stage2SkillIdContractGate20261102.IsApprovedGroup(
+                        g.Select(entry=>entry.Skill)));
+                Add(id,x.Path,approved?"APPROVED_DUPLICATE_GUID_CONTRACT":
+                    "DUPLICATE_STABLE_ID",!approved);
+            }
             if(s.EffectEntries!=null&&s.EffectEntries.Any(e=>e==null||e.Definition==null))
                 Add(id,x.Path,"UNBOUND_EFFECT_TEMPLATE",true);
             if(s.Rolls!=null&&s.Rolls.Count>8)
@@ -107,9 +113,11 @@ public static class R8SkillAuthoringValidation20261030
             if(ok){pass++;Debug.Log("[R8-Validator] PASS "+label);}
             else{fail++;Debug.LogError("[R8-Validator] FAIL "+label);}
         }
-        Check("V01 inspected SkillDefinitions",items.Length==145);
-        Check("V02 known duplicate stable IDs surfaced as blockers",
-            duplicates.Length>0 && issues.Any(i=>i.Code=="DUPLICATE_STABLE_ID"));
+        Check("V01 inspected SkillDefinitions",items.Length==164);
+        Check("V02 historical duplicate IDs have verified GUID/save contracts",
+            duplicates.Length==4 && duplicates.All(g=>
+                R7Stage2SkillIdContractGate20261102.IsApprovedGroup(
+                    g.Select(x=>x.Skill))));
         Check("V03 every blocker references a real asset",
             issues.Where(i=>i.Blocker).All(i=>File.Exists(i.Path)));
         Check("V04 every warning references a real asset",
@@ -119,11 +127,14 @@ public static class R8SkillAuthoringValidation20261030
                 !x.Skill.EffectEntries.Any(e=>e==null||e.Definition==null)||
                 issues.Any(i=>i.Path==x.Path&&i.Code=="UNBOUND_EFFECT_TEMPLATE")));
         Check("V06 every duplicate ID has all paths reported",
-            duplicates.All(g=>issues.Count(x=>x.Code=="DUPLICATE_STABLE_ID"&&
+            duplicates.All(g=>issues.Count(x=>
+                (x.Code=="DUPLICATE_STABLE_ID"||
+                 x.Code=="APPROVED_DUPLICATE_GUID_CONTRACT")&&
                 x.SkillId==g.Key)==g.Count()));
         Check("V07 report created in project root",File.Exists(path));
-        Check("V08 report marks current gate blocked",
-            issues.Any(i=>i.Blocker)&&sb.ToString().Contains("Gate status: BLOCKED"));
+        Check("V08 gate status matches unresolved structural blockers",
+            sb.ToString().Contains(issues.Any(i=>i.Blocker)
+                ?"Gate status: BLOCKED":"Gate status: NO_STRUCTURAL_BLOCKERS"));
         Check("V09 no pending ScriptableObject modifications",
             items.All(x=>!EditorUtility.IsDirty(x.Skill)));
         Check("V10 read-only validator does not set any skill SlotWeighted flag",

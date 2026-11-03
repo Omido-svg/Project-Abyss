@@ -79,13 +79,11 @@ public class SpeedManager
         }
     }
 
-    private int RollSpeed(
-        Character character,
-        BodyPart part)
+    // Extracted from the pre-R7-5 RollSpeed implementation unchanged.
+    // Shared by RNG speed and next-turn canonical max-speed effects.
+    private (int min,int max) ResolveAdjustedSpeedBounds(Character character,BodyPart part)
     {
-        if (character?.CurrentStatus == null)
-            return 0;
-
+        if(character?.CurrentStatus==null)return (0,0);
         int minSpeed =
             character.CurrentStatus.minSpeed;
 
@@ -102,6 +100,17 @@ public class SpeedManager
         {
             minSpeed = sharedMin;
             maxSpeed = sharedMax;
+        }
+
+        // 1029 §12.3: corrosion soldier leads with base speed 4..6,
+        // while other stage-1 mobs use the normal 1..6 range. Swift/Bind
+        // remain separate maximum-speed changes below.
+        if(character is NormalEnemy &&
+           character.GetMechanic<NormalEnemy0922RoleMechanic>()?.Species==
+               R7EnemySpecies1029.Corrosion)
+        {
+            minSpeed=4;
+            maxSpeed=6;
         }
 
         int weakenedSpeedMaxPenalty = 0;
@@ -146,11 +155,29 @@ public class SpeedManager
         if (brokenSpeedMaxPenalty > 0)
             maxSpeed = Mathf.Max(minSpeed, maxSpeed - brokenSpeedMaxPenalty);
 
-        maxSpeed += CommonStatusSpeedRules.GetSpeedMaximumIncrease(character, part);
+        maxSpeed = Mathf.Max(1,
+            maxSpeed+CommonStatusSpeedRules.GetSpeedMaximumIncrease(character,part));
+        // Bind may reduce Corrosion's base 4..6 maximum below its old
+        // minimum. Keep a legal roll interval, preserving global floor 1.
+        minSpeed=Mathf.Clamp(minSpeed,1,maxSpeed);
 
-        return Random.Range(
-            minSpeed,
-            maxSpeed + 1);
+        return (minSpeed,maxSpeed);
+    }
+
+    private int RollSpeed(Character character,BodyPart part)
+    {
+        if(character?.CurrentStatus==null)return 0;
+        var bounds=ResolveAdjustedSpeedBounds(character,part);
+        return Random.Range(bounds.min,bounds.max+1);
+    }
+
+    public int GetAdjustedMaximumSpeed(Character character,BodyPart part)
+    {
+        int speed=ResolveAdjustedSpeedBounds(character,part).max;
+        if(part?.StatusEffects!=null)
+        foreach(var status in part.StatusEffects)
+            if(status!=null)speed=status.ModifySpeed(part,speed);
+        return Mathf.Max(0,speed);
     }
 
     public int GetSpeed(
@@ -217,14 +244,17 @@ public class SpeedManager
 
         if (olafRulebreaker?.ShouldForceInfiniteAttackSpeed(slot.Skill) == true)
         {
-            slot.Speed = OlafRulebreakerMechanic.InfiniteAttackSpeed;
+            // 1029 P07: post-modifier maximum; never infinite speed.
+            slot.Speed=GetAdjustedMaximumSpeed(slot.Owner,slot.Part);
             return;
         }
 
-        slot.Speed =
-            GetSpeed(
-                slot.Owner,
-                slot.Part);
+        int speed=GetSpeed(slot.Owner,slot.Part);
+        // 1029 N12: the next turn's matched slot takes the already
+        // adjusted maximum, including Swift, leg weakness and binds.
+        if(olafRulebreaker?.ShouldForceNextTurnMaximumSpeed(slot)==true)
+            speed=GetAdjustedMaximumSpeed(slot.Owner,slot.Part);
+        slot.Speed=speed;
     }
 
     public void ApplySpeedToSlots(

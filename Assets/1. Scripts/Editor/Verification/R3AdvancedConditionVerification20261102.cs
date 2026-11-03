@@ -59,7 +59,6 @@ public static class R3AdvancedConditionVerification20261102
             Calls++;return value;
         }
     }
-    [MenuItem("Game System Verification/R3 - Subject Snapshot And Damage Gate (Edit Mode)")]
     public static void Run()
     {
         if(Application.isPlaying)throw new InvalidOperationException("Edit Mode required");

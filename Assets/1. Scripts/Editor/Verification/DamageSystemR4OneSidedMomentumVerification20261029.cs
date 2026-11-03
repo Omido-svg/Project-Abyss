@@ -22,7 +22,6 @@ public static class DamageSystemR4OneSidedMomentumVerification20261029
 
     private static readonly List<SkillDefinition> createdDefinitions = new();
 
-    [MenuItem("Game System Verification/1029 Damage R4 - One Sided Momentum (Play Mode)")]
     public static void VerifyFromMenu()
     {
         if (!Application.isPlaying)

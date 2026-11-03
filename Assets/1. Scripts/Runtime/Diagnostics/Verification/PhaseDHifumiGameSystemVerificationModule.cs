@@ -242,7 +242,7 @@ public sealed class PhaseDHifumiGameSystemVerificationModule : IGameSystemVerifi
             yuk.CounterPower == 11 && yuk.BoneGain == 60 && !yuk.ConsumeAllBone &&
             gold.CounterPower == 13 && gold.ConsumeAllBone && gold.Heal == 0 &&
             bloom.CounterPower == 14 && bloom.Heal == 350 && bloom.ConsumeAllBone &&
-            bloom.Weaken && bloom.BreakPart && bloom.MomentumPush == 25 &&
+            !bloom.Weaken && bloom.BreakPart && bloom.MomentumPush == 25 &&
             pair.RawValue == 5 && pair.FinalPower == 16 &&
             shigoro.RawValue == 18 && shigoro.FinalPower == 29;
 

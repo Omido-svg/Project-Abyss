@@ -19,13 +19,23 @@ public sealed class OlafRulebreakerMechanic :
         new Dictionary<long, int>();
 
     private bool infiniteAttackSpeedThisTurn;
-    private bool honorableFightPartlessPendingLogged;
+    private int turnPowerBonus;
+    private BodyPart protectedOwnerPartThisTurn;
+    private ActionSlot nextTurnMaximumSpeedSlot;
+    private int nextTurnMaximumSpeedDueTurn=-1;
+    private int currentTurn;
+    public BodyPart ProtectedOwnerPartThisTurn=>protectedOwnerPartThisTurn;
+    public int TurnPowerBonus=>turnPowerBonus;
 
     public override string MechanicName => "Olaf Rulebreakers";
     public bool HasInfiniteAttackSpeedThisTurn => infiniteAttackSpeedThisTurn;
 
     public override void OnRegister()
     {
+        SubscribeToBattleEvent(
+            () => battleEvent.OnTurnStart += OnTurnStart,
+            () => battleEvent.OnTurnStart -= OnTurnStart,
+            "OnTurnStart");
         SubscribeToBattleEvent(
             () => battleEvent.OnTurnEnd += OnTurnEnd,
             () => battleEvent.OnTurnEnd -= OnTurnEnd,
@@ -47,8 +57,132 @@ public sealed class OlafRulebreakerMechanic :
         committedUses.Clear();
         bloodOathTierByAction.Clear();
         infiniteAttackSpeedThisTurn = false;
-        honorableFightPartlessPendingLogged = false;
+        turnPowerBonus=0;
+        protectedOwnerPartThisTurn=null;
+        nextTurnMaximumSpeedSlot=null;
+        nextTurnMaximumSpeedDueTurn=-1;
+        currentTurn=0;
         ClearSuppressedSlots();
+    }
+
+    // 1029 §17.2 Aim Weakness: only the THIRD actual roll receives
+    // +1 power per distinct negative status currently on its target.
+    // It is computed during roll evaluation, not cached on the action.
+    public override int ModifyRoll(BattleAction action,int roll)
+    {
+        if(action?.Owner!=owner)return roll;
+        int modifier=turnPowerBonus;
+        if(action.CurrentRollIndex==2 &&
+           ProjectAbyss.Abilities.R7ProductionOlafNativeMigration20261103
+               .HasThirdRollDebuffPower(action.Skill?.Definition))
+            modifier+=CountTargetNegativeStatusKinds(action.Target,action.TargetPart);
+        if(ProjectAbyss.Abilities.R7ProductionOlafNativeMigration20261103
+               .HasNoRetreatWeakenPower(action.Skill?.Definition) &&
+           owner.BodyParts!=null)
+            foreach(var part in owner.BodyParts)
+                if(part!=null&&part.IsWeakened)modifier+=2;
+        return roll+modifier;
+    }
+
+    private static readonly StatusEffectId[] negativeKinds={
+        StatusEffectId.Bleeding,StatusEffectId.Burn,
+        StatusEffectId.Stun,StatusEffectId.Weakness,
+        StatusEffectId.Disarm,StatusEffectId.Fracture,
+        StatusEffectId.Rupture,StatusEffectId.Pain,
+        StatusEffectId.Stagnation,StatusEffectId.Designation,
+        StatusEffectId.Fear
+    };
+
+    public static int CountTargetNegativeStatusKinds(Character target,BodyPart part)
+    {
+        if(target==null)return 0;
+        int count=0;
+        foreach(var id in negativeKinds)
+        {
+            if(StatusEffectFactory.HasStatus(target,part,id))count++;
+        }
+        return count;
+    }
+
+    public override bool CanBreakOwnerPart(BodyPart part,BattleAction sourceAction)
+    {
+        // One part is fixed for this turn. Can still be weakened,
+        // but must not transition to Broken; never auto-retarget.
+        return part==null||part!=protectedOwnerPartThisTurn;
+    }
+
+    public bool ProtectLowestHpOwnerPart(BattleAction action)
+    {
+        if(action?.Owner!=owner||owner?.BodyParts==null)return false;
+        BodyPart selected=null;
+        foreach(var part in owner.BodyParts)
+        {
+            if(part==null||part.IsBroken)continue;
+            if(selected==null||part.PartHP<selected.PartHP)
+                selected=part;
+        }
+        if(selected==null)return false;
+        var previous=protectedOwnerPartThisTurn;
+        protectedOwnerPartThisTurn=selected;
+        action.Slot?.PlanningUndo?.Record(()=>
+            protectedOwnerPartThisTurn=previous);
+        return true;
+    }
+
+    public bool ScheduleNextTurnMaximumSlotSpeed(BattleAction action)
+    {
+        if(action?.Owner!=owner||action.Slot==null||currentTurn<=0)return false;
+        nextTurnMaximumSpeedSlot=action.Slot;
+        nextTurnMaximumSpeedDueTurn=currentTurn+1;
+        return true;
+    }
+
+    public bool ShouldForceNextTurnMaximumSpeed(ActionSlot slot) =>
+        slot!=null&&slot.Owner==owner&&
+        currentTurn==nextTurnMaximumSpeedDueTurn&&
+        nextTurnMaximumSpeedSlot!=null&&
+        nextTurnMaximumSpeedSlot.HasSameKey(slot);
+
+    private void OnTurnStart(int turn)
+    {
+        currentTurn=turn;
+        if(nextTurnMaximumSpeedDueTurn>0&&
+           currentTurn>nextTurnMaximumSpeedDueTurn)
+        {
+            nextTurnMaximumSpeedSlot=null;
+            nextTurnMaximumSpeedDueTurn=-1;
+        }
+    }
+
+    public void GrantTurnPowerBonus(int amount)
+    {
+        if(amount>0)turnPowerBonus+=amount;
+    }
+
+    public int ConsumeOwnerBleedingUpTo(int amount)
+    {
+        if(owner==null||amount<=0)return 0;
+        int remaining=amount;
+        var general=owner.GetStatus<Bleeding>();
+        if(general!=null&&remaining>0)
+        {
+            int taken=general.ConsumeStacks(remaining);
+            remaining-=taken;
+            if(general.Stack<=0)
+                owner.RemoveStatus(general,StatusEffectRemoveReason.Manual);
+        }
+        if(owner.BodyParts!=null)
+        foreach(var part in owner.BodyParts)
+        {
+            if(part==null||remaining<=0)continue;
+            var bleed=owner.GetPartStatus<Bleeding>(part);
+            if(bleed==null)continue;
+            int taken=bleed.ConsumeStacks(remaining);
+            remaining-=taken;
+            if(bleed.Stack<=0)
+                owner.RemovePartStatus(part,bleed,StatusEffectRemoveReason.Manual);
+        }
+        return amount-remaining;
     }
 
     public int ResolveEnergyCost(SkillDefinition definition, int baseCost)
@@ -96,6 +230,9 @@ public sealed class OlafRulebreakerMechanic :
 
     public bool CanUse(SkillDefinition definition)
     {
+        if(definition?.SkillId==OlafSkillIds.LastResistance)
+            return battleContext?.Services?.MomentumManager?
+                .GetPreviousTurnFinalState(owner)==MomentumState.LastStand;
         SkillRulebreakerSettings rule = definition?.Rulebreaker;
         if (rule?.Enabled != true || !rule.RequirePreviousTurnLastStand)
             return true;
@@ -201,16 +338,17 @@ public sealed class OlafRulebreakerMechanic :
         switch (tier)
         {
             case 2:
-                action.RulebreakerFlatPowerBonus += 8;
-                action.PartBreakModeOverride = PartBreakMode.IgnoreWeakenedPrerequisite;
-                break;
-
-            case 1:
+                // 1029: 10+ bleeding; no inherited regeneration.
                 action.RulebreakerFlatPowerBonus += 4;
-                action.PartBreakModeOverride = PartBreakMode.WeakenedOnly;
-                ApplyOwnerNumericStatus(StatusEffectId.Regeneration, 4, 3, action);
+                action.PartBreakModeOverride = PartBreakMode.IgnoreWeakenedPrerequisite;
+                action.Owner.AddEnergy(1,CombatResourceChangeReason.SkillEffect,action,action.Skill);
                 break;
-
+            case 1:
+                // 1029: 5~9 bleeding, power+2 and Regeneration 2 for 3 turns.
+                action.RulebreakerFlatPowerBonus += 2;
+                action.PartBreakModeOverride = PartBreakMode.WeakenedOnly;
+                ApplyOwnerNumericStatus(StatusEffectId.Regeneration,2,3,action);
+                break;
             default:
                 action.PartBreakModeOverride = PartBreakMode.None;
                 break;
@@ -229,14 +367,9 @@ public sealed class OlafRulebreakerMechanic :
         if (!bloodOathTierByAction.TryGetValue(action.ActionId, out int tier) || tier <= 0)
             return;
 
-        if (rollNumber == 1)
-            AddBleeding(action.Target, action.TargetPart, 3, action);
-
-        if (tier >= 2 && rollNumber == 2)
-        {
-            AddBleeding(action.Target, action.TargetPart, 3, action);
-            owner.AddEnergy(1, CombatResourceChangeReason.SkillEffect, action, action.Skill);
-        }
+        // First winning roll only for 5~9; every winning roll for 10+.
+        if ((tier==1 && rollNumber==1)||tier==2)
+            AddBleeding(action.Target,action.TargetPart,2,action);
     }
 
     public int GetOwnerBleedingTotal()
@@ -347,7 +480,7 @@ public sealed class OlafRulebreakerMechanic :
 
     public static int CalculateHeadOnSelfDamage(int dealtDamage)
     {
-        return Mathf.Max(0, dealtDamage) / 10;
+        return (Mathf.Max(0,dealtDamage)*35) / 100; // 1029: 35%, integer floor
     }
 
     void IExchangeRepeatRule.ModifyRemainingRollCountsAfterExchange(
@@ -381,27 +514,15 @@ public sealed class OlafRulebreakerMechanic :
         if (opponent?.Skill?.Definition?.SkillId != OlafSkillIds.HonorableFight)
             return;
 
-        // 부위 없는 일반몹 종료조건은 0922 정본에서 미정이다. 임의 반복 규칙을 발명하지 않는다.
-        if (myAction.TargetPart == null || opponent.TargetPart == null)
-        {
-            if (!honorableFightPartlessPendingLogged)
-            {
-                honorableFightPartlessPendingLogged = true;
-                Debug.LogWarning(
-                    "[PENDING_CANONICAL][0922][Olaf/HonorableFight] " +
-                    "부위 없는 대상의 반복 종료조건이 미정이므로 일반 1교환으로 종료합니다.");
-            }
-            return;
-        }
-
-        bool eitherWeakened =
-            myAction.TargetPart.IsWeakened ||
-            myAction.TargetPart.IsBroken ||
-            opponent.TargetPart.IsWeakened ||
-            opponent.TargetPart.IsBroken;
-
-        if (eitherWeakened)
-            return;
+        // 1029 §17.3: without body parts, death is equivalent to
+        // the completion of the part-break stop condition.
+        bool firstStopped=myAction.TargetPart==null
+            ?myAction.Target==null||myAction.Target.IsDead
+            :myAction.TargetPart.IsWeakened||myAction.TargetPart.IsBroken;
+        bool secondStopped=opponent.TargetPart==null
+            ?opponent.Target==null||opponent.Target.IsDead
+            :opponent.TargetPart.IsWeakened||opponent.TargetPart.IsBroken;
+        if(firstStopped||secondStopped)return;
 
         // 기술적 무한루프 안전망. gameplay 종료조건을 대체하지 않는다.
         if (exchange.ExchangeIndex >= 255)
@@ -470,28 +591,24 @@ public sealed class OlafRulebreakerMechanic :
                 sourceAction?.CurrentRollIndex ?? -1));
     }
 
+    public void ActivateCanonicalLastResistance()
+    {
+        ActivateInfiniteAttackSpeed();
+    }
+
     private void ActivateInfiniteAttackSpeed()
     {
-        infiniteAttackSpeedThisTurn = true;
-
-        ActionManager actionManager = battleContext?.Services?.ActionManager;
-        if (actionManager?.Slots == null)
-            return;
-
-        foreach (ActionSlot slot in actionManager.Slots)
+        // Retain old method name for legacy rule-flag compatibility;
+        // its gameplay effect is now the 1029 post-modifier speed maximum.
+        infiniteAttackSpeedThisTurn=true;
+        var actionManager=battleContext?.Services?.ActionManager;
+        var speed=battleContext?.Services?.SpeedManager;
+        if(actionManager?.Slots==null||speed==null)return;
+        foreach(var slot in actionManager.Slots)
         {
-            if (slot?.Owner != owner)
+            if(slot?.Owner!=owner || !ShouldForceInfiniteAttackSpeed(slot.Skill))
                 continue;
-
-            bool attackCapableSlot =
-                slot.Part == null
-                    ? ShouldForceInfiniteAttackSpeed(slot.Skill)
-                    : BodyPartSkillAccessPolicy.Allows(
-                        slot.Part,
-                        ActionType.NormalAttack);
-
-            if (attackCapableSlot)
-                slot.Speed = InfiniteAttackSpeed;
+            slot.Speed=speed.GetAdjustedMaximumSpeed(slot.Owner,slot.Part);
         }
     }
 
@@ -529,7 +646,15 @@ public sealed class OlafRulebreakerMechanic :
 
     private void OnTurnEnd(int _)
     {
+        if(nextTurnMaximumSpeedDueTurn>0&&
+           currentTurn>=nextTurnMaximumSpeedDueTurn)
+        {
+            nextTurnMaximumSpeedSlot=null;
+            nextTurnMaximumSpeedDueTurn=-1;
+        }
         infiniteAttackSpeedThisTurn = false;
+        turnPowerBonus=0;
+        protectedOwnerPartThisTurn=null;
         ClearSuppressedSlots();
     }
 

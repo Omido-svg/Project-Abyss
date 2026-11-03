@@ -99,6 +99,15 @@ public sealed class EmotionAugmentManager
         if (selected == null)
             return false;
 
+        // R7-10 is fail-closed: the selected original SO must have its
+        // exact native source graph. Never execute an old TEMP proxy.
+        if(!R7NativeEmotionCatalog20261103.TryResolve(selected,out _))
+        {
+            Debug.LogError("[R7-10] Emotion graph missing/mismatched: "+
+                selected.AugmentId);
+            return false;
+        }
+
         PendingOffer = null;
         acquired.Add(selected);
         Apply(selected);
@@ -184,32 +193,25 @@ public sealed class EmotionAugmentManager
     private void Apply(
         EmotionAugmentDefinition augment)
     {
-        Character owner = context?.Player;
-        if (owner == null || augment?.Effects == null)
-            return;
+        Character owner=context?.Player;
+        if(owner==null||augment==null)return;
+        if(!R7NativeEmotionCatalog20261103.TryResolve(augment,out var graph))
+            throw new InvalidOperationException(
+                "[R7-10] Emotion native source mismatch: "+
+                augment.AugmentId);
 
-        EmotionAugmentRuntimeContext runtime =
-            new EmotionAugmentRuntimeContext
-            {
-                BattleContext = context,
-                Owner = owner,
-                Augment = augment
-            };
-
-        foreach (EmotionAugmentEffectDefinition effect
-                 in augment.Effects)
+        var runtime=new EmotionAugmentRuntimeContext
         {
-            if (effect == null)
-                continue;
+            BattleContext=context,Owner=owner,Augment=augment
+        };
 
-            effect.Apply(runtime);
-
-            CombatMechanic mechanic =
-                effect.CreateMechanic(runtime);
-
-            if (mechanic != null)
-                owner.AddRuntimeMechanic(mechanic);
-        }
+        // Direct native execution on the battle-scoped graph, not on
+        // any retained legacy EffectDefinition or TEMP_BALANCE proxy.
+        // Pending graphs explicitly log missing canonical numbers and
+        // never manufacture alternative effects.
+        graph.Apply(runtime);
+        CombatMechanic mechanic=graph.CreateMechanic(runtime);
+        if(mechanic!=null)owner.AddRuntimeMechanic(mechanic);
     }
 
 

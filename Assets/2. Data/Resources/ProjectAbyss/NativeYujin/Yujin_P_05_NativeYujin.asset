@@ -1,0 +1,28 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8f0328d8e6ec2fa468960fce8e71f931, type: 3}
+  m_Name: Yujin_P_05_NativeYujin
+  m_EditorClassIdentifier: 
+  SchemaVersion: 1
+  StableId: yujin.preparation.wait_chance
+  SourceAssetName: Yujin_P_05
+  SourceAssetGuid: 4f5735bf82d841041a64340944a123af
+  Operations:
+  - Operation: 9
+    Timing: 0
+    Condition: 0
+    RestrictToRoll: 0
+    RollNumber: 1
+    Amount: 1
+    AlternativeAmount: 0
+    Duration: 3
+    ProvisionalBalance: 1

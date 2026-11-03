@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using DG.Tweening;
 using TMPro;
 using UnityEngine;
@@ -82,6 +83,8 @@ public sealed class BattleActionOrderRailUI : MonoBehaviour
     private readonly HashSet<long> domainCompletedResolutionActions = new();
     private readonly ActionPhaseSorter sorter = new();
     private readonly Dictionary<ActionSlot, ActionSlot> clashPartnerBySlot = new();
+    private IReadOnlyDictionary<ActionSlot,BodyPart> hifumiPreviewTargets =
+        new Dictionary<ActionSlot,BodyPart>();
     private readonly HashSet<GameObject> completedResolutionRows = new();
 
     private BattleEvent boundBattleEvent;
@@ -1363,6 +1366,8 @@ public sealed class BattleActionOrderRailUI : MonoBehaviour
 
         BuildClashSet(
             slots);
+        hifumiPreviewTargets =
+            R7HifumiProvocationTargeting20261103.PreviewTargetParts(slots);
 
         HashSet<ActionSlot> consumed =
             new HashSet<ActionSlot>();
@@ -1491,6 +1496,20 @@ public sealed class BattleActionOrderRailUI : MonoBehaviour
                 hash * 31 +
                 (slot.TargetPart
                     ?.GetHashCode() ?? 0);
+            // Invalidate the order rail when the CURRENT provocation
+            // changes without any planning ActionSlot mutation.
+            if(slot.TargetCharacter is Hifumi victim)
+            {
+                var snapshot=victim.GetMechanic<HifumiMechanic>()
+                    ?.GetActiveProvocationSnapshot();
+                if(snapshot!=null)
+                    foreach(var taunt in snapshot.OrderBy(x=>x.Key?.PartId,
+                        System.StringComparer.Ordinal))
+                    {
+                        hash=hash*31+(taunt.Key?.PartId?.GetHashCode()??0);
+                        hash=hash*31+taunt.Value;
+                    }
+            }
         }
 
         hash =
@@ -1517,11 +1536,14 @@ public sealed class BattleActionOrderRailUI : MonoBehaviour
 
         hash =
             hash * 31 +
-            (BattleWorldActionSlotCellUI
-                .HoveredCell
+            (BattleWorldActionSlotCellUI.HoveredCell
                 ?.GetRepresentedActionSlot()
-                ?.ActionId
-                .GetHashCode() ?? 0);
+                ?.ActionId.GetHashCode() ?? 0);
+
+        // A currently empty planning cell has no ActionId.
+        // Include cell identity when hovering an unassigned part slot.
+        hash = hash * 31 +
+            (BattleWorldActionSlotCellUI.HoveredCell?.GetInstanceID() ?? 0);
 
         return hash;
     }
@@ -1576,10 +1598,10 @@ public sealed class BattleActionOrderRailUI : MonoBehaviour
                 slot.ActionIndex);
 
         bool hoveredTarget =
-            slot != null &&
-            BattleWorldActionSlotCellUI
-                .HoveredTargetCell
-                ?.TargetSlot == slot;
+            slot != null && !playerSide &&
+            BattleWorldActionSlotCellUI.HoveredCell != null &&
+            BattleMvpSlotHoverRelations20261103.IsRelated(
+                BattleWorldActionSlotCellUI.HoveredCell, slot, uiManager);
 
         long hoveredActionId =
             BattleWorldActionSlotCellUI
@@ -1588,10 +1610,10 @@ public sealed class BattleActionOrderRailUI : MonoBehaviour
                 ?.ActionId ?? 0;
 
         bool hoveredPlayer =
-            slot != null &&
-            playerSide &&
-            slot.ActionId > 0 &&
-            hoveredActionId == slot.ActionId;
+            slot != null && playerSide &&
+            BattleWorldActionSlotCellUI.HoveredCell != null &&
+            BattleMvpSlotHoverRelations20261103.IsRelated(
+                BattleWorldActionSlotCellUI.HoveredCell, slot, uiManager);
 
         GameObject row =
             new GameObject(
@@ -1707,9 +1729,12 @@ public sealed class BattleActionOrderRailUI : MonoBehaviour
                 ? "<color=#4FA5FF>→</color>"
                 : "<color=#FF5A5A>→</color>";
 
+        BodyPart displayedPart=slot!=null&&
+            hifumiPreviewTargets.TryGetValue(slot,out var forced)
+                ? forced : slot?.TargetPart;
         string target =
             slot?.TargetCharacter != null
-                ? $"{GetCharacterName(slot.TargetCharacter)} · {GetPartLabel(slot.TargetPart)}"
+                ? $"{GetCharacterName(slot.TargetCharacter)} · {GetPartLabel(displayedPart)}"
                 : string.Empty;
 
         string orderLabel =
@@ -1783,7 +1808,19 @@ public sealed class BattleActionOrderRailUI : MonoBehaviour
                 .HoveredTargetCell
                 ?.TargetSlot;
 
-        bool hoveredTarget =
+        
+        if (BattleWorldActionSlotCellUI.HoveredCell != null)
+        {
+            // The enemy attacking a hovered part and its player clash partner
+            // must illuminate the SAME rail row.
+            bool relatedFirst=BattleMvpSlotHoverRelations20261103.IsRelated(
+                BattleWorldActionSlotCellUI.HoveredCell, first, uiManager);
+            bool relatedSecond=BattleMvpSlotHoverRelations20261103.IsRelated(
+                BattleWorldActionSlotCellUI.HoveredCell, second, uiManager);
+            if (relatedFirst || relatedSecond)
+                hoveredPlayer = true;
+        }
+bool hoveredTarget =
             hoveredTargetSlot == first ||
             hoveredTargetSlot == second;
 

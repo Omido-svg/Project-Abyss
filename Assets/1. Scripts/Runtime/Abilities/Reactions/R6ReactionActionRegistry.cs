@@ -71,6 +71,17 @@ namespace ProjectAbyss.Abilities
             return true;
         }
 
+        /// <summary>
+        /// If scheduling failed after registering, remove only the unconsumed
+        /// binding. Never reuse this request ID or ActionId in the same battle.
+        /// </summary>
+        public bool CancelUnscheduled(long requestId)
+        {
+            var removed=bindings.Remove(requestId);
+            registeredRequests.Remove(requestId);
+            return removed;
+        }
+
         private static string Validate(ReactionRequest request,ActionSlot slot)
         {
             if(request.RequestId<=0 || request.RootActionId<=0 ||

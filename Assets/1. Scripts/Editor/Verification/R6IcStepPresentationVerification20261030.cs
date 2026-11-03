@@ -81,7 +81,6 @@ public static class R6IcStepPresentationVerification20261030
             Skill=new SkillProbe(skill,owner,battle._battleEvent,power,rolls)
         };
 
-    [MenuItem("Game System Verification/R6-Ic - Domain to Step Presentation (Play Mode)")]
     public static void Run()
     {
         if(!Application.isPlaying)throw new InvalidOperationException("Play Mode required");

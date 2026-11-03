@@ -44,7 +44,6 @@ public static class R4PlanningPreviewParityVerification20261102
     private static string Key(R4WeightPlanningPreview p)=>
         string.Join("|",p.DistinctHitTargets.Select(Key));
 
-    [MenuItem("Game System Verification/R4 - Preview And Execution Target Parity (Play Mode)")]
     public static void Run()
     {
         if(!Application.isPlaying)throw new InvalidOperationException("PlayMode required.");

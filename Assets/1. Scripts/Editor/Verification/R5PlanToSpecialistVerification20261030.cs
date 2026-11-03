@@ -40,7 +40,6 @@ public static class R5PlanToSpecialistVerification20261030
         }
     }
 
-    [MenuItem("Game System Verification/R5 - Plan to Real Specialist (Play Mode)")]
     public static void Run()
     {
         if(!Application.isPlaying)

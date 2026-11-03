@@ -20,7 +20,6 @@ public static class R3ReactionAndLegacyVerification20261102
         public bool Evaluate(IReadOnlyAbilityContext _,CombatTargetRef candidate)=>
             condition.Evaluate(selectedContext);
     }
-    [MenuItem("Game System Verification/R3 - Reaction And Legacy Conditions (Play Mode)")]
     public static void Run()
     {
         if(!Application.isPlaying)throw new InvalidOperationException("PlayMode required");

@@ -129,6 +129,13 @@ public sealed class OlafNormalRuntimeSkill : DataNormalSkill
         : base(definition)
     {
     }
+
+    // 1029 §17.2: Exploit Gap's main attack is exactly one roll.
+    // Each chained hit is a NEW independent one-sided attack, not
+    // extra rolls from the 3-roll TEMP_BALANCE source SO.
+    public override int ExchangeRollCount =>
+        Definition?.SkillId==OlafSkillIds.ExploitGap?
+            1:base.ExchangeRollCount;
 }
 
 public sealed class OlafDuelRuntimeSkill : DataDuelSkill

@@ -1,7 +1,0 @@
-"BundleGUID","Path","Kind","Name","OverrideLoadout","AugmentSlots","Index","AugmentGUID","AugmentPath","AugmentType","NextStep"
-"eb7261a753961fc489b836f4cdf83480","Assets/2. Data/Characters/Design2026/Hifumi/Hifumi_Bundle.asset","Hifumi","Hifumi_Bundle","True","0","-1","","","","R7-9"
-"060a5617ffe7f004f979c24bc775dc19","Assets/2. Data/Characters/Design2026/Yujin/Yujin_TODO_Bundle.asset","Yujin","Yujin_TODO_Bundle","True","1","0","7e2e9f7eb1f565342b8432de76931154","Assets/2. Data/Characters/Design2026/Yujin/Passives/Yujin_HwanhyeongFlow.asset","YujinHwanhyeongFlowPassive","R7-9"
-"4cd864e96bd9715489a28ca2d152a878","Assets/2. Data/Characters/Enemies/EliteEnemy/Authoring/EliteEnemy Character Bundle.asset","EliteEnemy","EliteEnemy Character Bundle","False","0","-1","","","","R7-9"
-"ab112592a9dd8794a99785077bfa9285","Assets/2. Data/Characters/Olaf/Authoring/Olaf Character Bundle.asset","Olaf","Olaf Character Bundle","False","0","-1","","","","R7-9"
-"a4db292def3e6f5489eab81eeca0e115","Assets/2. Data/TestEncounters/Data/BossEnemy_Test_Bundle.asset","EliteEnemy","BossEnemy_Test_Bundle","True","0","-1","","","","R7-9"
-"8c4b86585fa0a1047aa26db534ce7f2a","Assets/2. Data/TestEncounters/Data/NormalEnemy_Test_Bundle.asset","NormalEnemy","NormalEnemy_Test_Bundle","True","0","-1","","","","R7-9"

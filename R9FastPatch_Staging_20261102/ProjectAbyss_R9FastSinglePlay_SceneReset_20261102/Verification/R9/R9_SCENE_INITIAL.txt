@@ -1,5 +1,0 @@
-Scene=Assets/5. Scenes/Battle Test Scene.unity
-Dirty=True
-StartUTC=2026-11-02T10:07:42.0887895Z
-EditGates=30 PlayGates=39
-One PlayMode session for all Play gates.

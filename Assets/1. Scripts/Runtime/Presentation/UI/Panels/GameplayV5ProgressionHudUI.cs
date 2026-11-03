@@ -43,7 +43,9 @@ public sealed class GameplayV5ProgressionHudUI : MonoBehaviour
 
     private Coroutine exaltationAnimationRoutine;
     private int observedFervorLevel = -1;
-    private int observedExaltation = -1;
+    
+    private string projectedTurnEndGainLabel = string.Empty;
+private int observedExaltation = -1;
     private float displayedExaltationRatio = -1f;
     private Color currentAccentColor = Color.white;
 
@@ -344,7 +346,14 @@ public sealed class GameplayV5ProgressionHudUI : MonoBehaviour
             : transform.root;
     }
 
-    public void Refresh()
+    private static void SetTextIfChanged(TMP_Text label, string value)
+    {
+        if (label != null && label.text != value)
+            label.text = value;
+    }
+
+    
+public void Refresh()
     {
         if (root == null)
             return;
@@ -370,7 +379,29 @@ public sealed class GameplayV5ProgressionHudUI : MonoBehaviour
                 ? Mathf.Max(0, rules.MaximumLevel)
                 : 3;
 
-        int nextCost =
+        
+        // Display the projected CURRENT turn-end result. It can change
+        // while clashes push the shared momentum bar.
+        if (fervor != null && context?.Player != null &&
+            level < maximumLevel)
+        {
+            int forecast = fervor.PreviewTurnEndGain(context.Player);
+            MomentumState band = context.Services.MomentumManager
+                .GetFinalTurnState(context.Player);
+            string bandName = band switch
+            {
+                MomentumState.Overwhelm => "짓누름",
+                MomentumState.Advantage => "우세",
+                MomentumState.Balance => "중립",
+                MomentumState.Disadvantage => "열세",
+                MomentumState.LastStand => "짓눌림",
+                _ => "기세"
+            };
+            projectedTurnEndGainLabel = $" · 종료+{forecast}({bandName})";
+        }
+        else
+            projectedTurnEndGainLabel = string.Empty;
+int nextCost =
             level >= maximumLevel
                 ? 0
                 : Mathf.Max(
@@ -397,11 +428,12 @@ public sealed class GameplayV5ProgressionHudUI : MonoBehaviour
 
         currentAccentColor = theme.Accent;
 
-        if (accent != null)
+        if (accent != null && accent.color != theme.Accent)
             accent.color = theme.Accent;
 
         if (exaltationFill != null &&
-            exaltationAnimationRoutine == null)
+            exaltationAnimationRoutine == null &&
+            exaltationFill.color != theme.Accent)
         {
             exaltationFill.color = theme.Accent;
         }
@@ -410,24 +442,27 @@ public sealed class GameplayV5ProgressionHudUI : MonoBehaviour
         {
             Color outlineColor = theme.Accent;
             outlineColor.a = 0.58f;
-            outline.effectColor = outlineColor;
+            if (outline.effectColor != outlineColor)
+                outline.effectColor = outlineColor;
         }
 
         if (background != null)
         {
             Color soft = theme.SoftAccent;
-            background.color = new Color(
+            Color newColor = new Color(
                 Mathf.Lerp(0.025f, soft.r, 0.16f),
                 Mathf.Lerp(0.030f, soft.g, 0.16f),
                 Mathf.Lerp(0.045f, soft.b, 0.16f),
                 0.95f);
+            if (background.color != newColor)
+                background.color = newColor;
         }
 
         if (emotionText != null)
         {
-            emotionText.text =
-                $"<b>감정 · {emotionLabel}</b>";
-            emotionText.color = theme.Accent;
+            SetTextIfChanged(emotionText, $"<b>감정 · {emotionLabel}</b>");
+            if (emotionText.color != theme.Accent)
+                emotionText.color = theme.Accent;
         }
 
         float ratio =
@@ -466,10 +501,7 @@ public sealed class GameplayV5ProgressionHudUI : MonoBehaviour
                     ? " · 증강 데이터 미연결"
                     : string.Empty;
 
-            fervorText.text =
-                $"열광 {pips}  Lv.{level} · 증강 {acquired}" +
-                pending +
-                dataState;
+            SetTextIfChanged(fervorText, $"열광 {pips}  Lv.{level} · 증강 {acquired}" + pending + dataState);
         }
     }
 
@@ -789,10 +821,10 @@ public sealed class GameplayV5ProgressionHudUI : MonoBehaviour
         if (exaltationText == null)
             return;
 
-        exaltationText.text =
+        SetTextIfChanged(exaltationText,
             level >= maximumLevel
                 ? $"고조 <b>{exaltation}</b> · 열광 MAX{suffix}"
-                : $"고조 <b>{exaltation}/{Mathf.Max(1, cost)}</b> · 다음 열광{suffix}";
+                : $"고조 <b>{exaltation}/{Mathf.Max(1, cost)}</b> · 다음 열광{suffix}{projectedTurnEndGainLabel}");
     }
 
     private TMP_Text CreateText(

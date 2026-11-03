@@ -484,6 +484,9 @@ public abstract class Skill
             !action.DuelEffectsEligible)
             return;
 
+        // R7-8 stage1 native enemy first-roll effects: actual roll consumption.
+        R7EnemyStage1Effect20261103.OnRollUsing(action,rollIndex);
+
         ExecuteDefinitionEffects(
             action,
             SkillEffectTiming.OnExecute,

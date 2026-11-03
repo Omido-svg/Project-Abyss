@@ -14,7 +14,6 @@ using ProjectAbyss.Abilities;
 /// </summary>
 public static class R7Stage1NativeBoundaryGate20261102
 {
-    [MenuItem("Game System Verification/R7-1 - Native Boundary and Adapter Isolation")]
     public static void Run()
     {
         if(Application.isPlaying)throw new InvalidOperationException("EditMode required");

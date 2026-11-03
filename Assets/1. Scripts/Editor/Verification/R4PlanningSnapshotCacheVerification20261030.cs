@@ -18,7 +18,6 @@ public static class R4PlanningSnapshotCacheVerification20261030
         return new R4LiveSlotSnapshot(id,revision,slots,main,new List<string>(),result);
     }
 
-    [MenuItem("Game System Verification/R4 - Planning Snapshot Cache (Edit Mode)")]
     public static void Run()
     {
         if (Application.isPlaying)

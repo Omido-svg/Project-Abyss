@@ -32,7 +32,6 @@ public static class R7LegacyMixedStatusParity20261030
             SlotId="R7-MIXED-"+id
         };
     }
-    [MenuItem("Game System Verification/R7 - 7 Legacy Mixed Native Status (Play Mode)")]
     public static void Run()
     {
         if(!Application.isPlaying)throw new InvalidOperationException("Play Mode only");
@@ -98,7 +97,8 @@ public static class R7LegacyMixedStatusParity20261030
                 float part0=partA.PartHP,part1=partB.PartHP;
                 var state=UnityEngine.Random.state;
                 router.Enabled=false;
-                var prior=Call(data,legacyAction);
+                var prior=R7HistoricalParityScope20261103.ExecuteLegacy(data,
+                    () => Call(data,legacyAction));
                 UnityEngine.Random.state=state;
                 router.Enabled=true;
                 Check("M"+i+"B "+data.name+" routed by verified asset",

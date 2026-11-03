@@ -13,7 +13,6 @@ using ProjectAbyss.Abilities;
 /// </summary>
 public static class R6ProductionHifumiActivationVerification20261102
 {
-    [MenuItem("Game System Verification/R6 - Production Hifumi Startup and Cleanup (Play Mode)")]
     public static void Run()
     {
         if(!Application.isPlaying)throw new InvalidOperationException("PlayMode required");

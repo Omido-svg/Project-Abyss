@@ -50,7 +50,6 @@ public static class G0KIWBaselineFreeze20261102
         ("W-LEGACY",A+"Battle/Targeting/AttackWeightTargetResolver.cs","SecondaryTargetPart","Protected legacy part selection")
     };
 
-    [MenuItem("Game System Verification/G0 - K I W Freeze (Edit Mode)")]
     public static void Run()
     {
         if(Application.isPlaying) throw new InvalidOperationException("Run in Edit Mode only.");

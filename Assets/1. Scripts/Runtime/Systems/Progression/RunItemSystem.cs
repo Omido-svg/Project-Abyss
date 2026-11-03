@@ -58,8 +58,10 @@ public sealed class ItemEconomySettings
         _ => 0
     };
 
+    // 1029 §16.1 sales: 132/182/231/280/330/297.
+    // Mathf.RoundToInt uses ties-to-even, unlike old FloorToInt.
     public int GetSellPrice(RunItemDefinition item) =>
-        item == null ? 0 : Mathf.FloorToInt(GetPrice(item.Tier) * SellRate);
+        item == null ? 0 : Mathf.RoundToInt(GetPrice(item.Tier) * SellRate);
 }
 
 public sealed class RunInventory
@@ -70,7 +72,10 @@ public sealed class RunInventory
 
     public bool Acquire(RunItemDefinition item)
     {
-        if (item == null) return false;
+        if(item==null)return false;
+        // 1029 §16.2: sold class items never reappear in this run.
+        if(item.Tier==RunItemTier.Class&&HasEverAcquired(item))
+            return false;
         owned.Add(item);
         acquiredHistory.Add(GetId(item));
         return true;

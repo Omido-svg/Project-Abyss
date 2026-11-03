@@ -55,7 +55,6 @@ public static class R7NativeStatusAssetMigration20261031
              r.OnLoseEffectEntries?.Any(x=>x?.Definition!=null)!=true));
     }
 
-    [MenuItem("Game System Verification/R7 Native SO - Convert 9 Bleeding Effects (Edit Mode)")]
     public static void Convert()
     {
         if(Application.isPlaying)throw new InvalidOperationException("Edit mode only");

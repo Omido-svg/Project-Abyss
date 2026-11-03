@@ -8,7 +8,6 @@ using UnityEngine;
 /// counters in an old gate show PASS.</summary>
 public static class R9ExpectedDiagnosticPolicyVerification20261102
 {
-    [MenuItem("Game System Verification/R9 - Expected Diagnostic Fail-Closed Policy (Edit Mode)")]
     public static void Run()
     {
         if(Application.isPlaying)throw new InvalidOperationException("EditMode");

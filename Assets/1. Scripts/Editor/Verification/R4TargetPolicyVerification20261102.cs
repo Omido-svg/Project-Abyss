@@ -17,7 +17,6 @@ public static class R4TargetPolicyVerification20261102
         public bool IsTargetable(long attackerId,in CombatSlotRef target)=>
             !blocked.Contains(Key(target));
     }
-    [MenuItem("Game System Verification/R4 - Forced Aim And Visibility Contracts (Edit Mode)")]
     public static void Run()
     {
         if(Application.isPlaying)throw new InvalidOperationException("Edit Mode required");

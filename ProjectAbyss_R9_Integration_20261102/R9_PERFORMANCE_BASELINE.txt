@@ -1,8 +1,0 @@
-R9 baseline only — NO production SLA defined; numbers include fixture construction, runtime service creation, actual 3-roll ClashManager.ResolvePair, cleanup and Unity editor overhead.
-Samples=12 warmup=2
-P50 ms=6.023
-P95 ms=6.747
-MAX ms=6.747
-ManagedHeapDeltaMeanBytes=282624
-MIN exchanges=3
-SeedSeries=45000..45011

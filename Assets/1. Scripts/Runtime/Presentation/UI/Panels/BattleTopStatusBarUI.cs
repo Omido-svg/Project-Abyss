@@ -132,7 +132,26 @@ public sealed class BattleTopStatusBarUI : MonoBehaviour
         configuredGameplayV5Template = template;
     }
 
-    public void Refresh()
+    private int changedTextWrites;
+    private int skippedTextWrites;
+    public int ChangedTextWrites => changedTextWrites;
+    public int SkippedTextWrites => skippedTextWrites;
+
+    private void SetTextIfChanged(TMP_Text label, string value)
+    {
+        if (label == null)
+            return;
+        if (label.text == value)
+        {
+            skippedTextWrites++;
+            return;
+        }
+        label.text = value;
+        changedTextWrites++;
+    }
+
+    
+public void Refresh()
     {
         if (battleManager == null)
             return;
@@ -141,8 +160,7 @@ public sealed class BattleTopStatusBarUI : MonoBehaviour
             ? Mathf.Max(1, battleManager.TurnManager.CurrentTurn)
             : 1;
 
-        if (turnText != null)
-            turnText.text = $"턴 {turn:00}";
+        SetTextIfChanged(turnText, $"턴 {turn:00}");
 
         MomentumScrollbarUI v5Bar =
             momentumSlider != null
@@ -176,8 +194,7 @@ public sealed class BattleTopStatusBarUI : MonoBehaviour
                         battleManager.MomentumManager.GetState(player));
             }
 
-            momentumText.text =
-                $"기세 {momentum:+#;-#;0}  ·  {stateName}";
+            SetTextIfChanged(momentumText, $"기세 {momentum:+#;-#;0}  ·  {stateName}");
         }
 
         // MomentumScrollbarUI가 Slider를 0~1 정규화 값으로 소유한다.
@@ -218,8 +235,7 @@ public sealed class BattleTopStatusBarUI : MonoBehaviour
                     : "빛";
 
             string pendingMark = pending ? "  ◀ 선택 반영" : string.Empty;
-            lightText.text =
-                $"{prefix} {available}/{maximum}{pendingMark}";
+            SetTextIfChanged(lightText, $"{prefix} {available}/{maximum}{pendingMark}");
         }
 
         if (enemyText != null)
@@ -241,7 +257,7 @@ public sealed class BattleTopStatusBarUI : MonoBehaviour
                 }
             }
 
-            enemyText.text = $"적 {alive}/{total}";
+            SetTextIfChanged(enemyText, $"적 {alive}/{total}");
         }
 
         gameplayV5Hud?.Refresh();

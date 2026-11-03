@@ -27,7 +27,6 @@ public static class R7NativeSOResourceParityVerification20261031
         };
     }
 
-    [MenuItem("Game System Verification/R7 Native SO - 15 Skills x 3 Upgrade Levels (Play Mode)")]
     public static void Run()
     {
         if(!Application.isPlaying)
@@ -82,6 +81,12 @@ public static class R7NativeSOResourceParityVerification20261031
                     graph.Level0Amount==R7NativeResourceAssetMigration20261031.ResolveAmount(data,0)&&
                     graph.Level1Amount==R7NativeResourceAssetMigration20261031.ResolveAmount(data,1)&&
                     graph.Level2Amount==R7NativeResourceAssetMigration20261031.ResolveAmount(data,2));
+                if(R7HistoricalParityScope20261103.IsSupersededSource(data))
+                {
+                    Check("G04b final authoritative rule owner "+graph.StableId,
+                        R7HistoricalParityScope20261103.HasFinalOwner(data,ctx));
+                    continue;
+                }
                 var leftObj=UnityEngine.Object.Instantiate(prefab);
                 var rightObj=UnityEngine.Object.Instantiate(prefab);
                 var oldOwner=leftObj.GetComponent<Hifumi>();
@@ -98,8 +103,9 @@ public static class R7NativeSOResourceParityVerification20261031
                             previous==previousNew);
                         var timing=data.EffectEntries[0].EffectiveTiming;
                         router.Enabled=false;
-                        var old=Call(data,new BattleAction{
-                            Slot=Make(ctx,oldOwner,enemy,data,id++)},timing);
+                        var old=R7HistoricalParityScope20261103.ExecuteLegacy(data, () =>
+                            Call(data,new BattleAction{
+                            Slot=Make(ctx,oldOwner,enemy,data,id++)},timing));
                         router.Enabled=true;
                         int count=router.ActualNativeCommits;
                         var newer=Call(data,new BattleAction{

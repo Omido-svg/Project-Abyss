@@ -66,7 +66,6 @@ public static class R6ReactionActionExecutionVerification20261030
             name,cp,priority:0,sequence:id);
     }
 
-    [MenuItem("Game System Verification/R6-Ia - Live Reaction Checkpoints (Play Mode)")]
     public static void Run()
     {
         if(!Application.isPlaying)

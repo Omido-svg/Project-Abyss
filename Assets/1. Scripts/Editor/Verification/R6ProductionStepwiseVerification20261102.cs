@@ -54,7 +54,6 @@ public static class R6ProductionStepwiseVerification20261102
         }
     }
 
-    [MenuItem("Game System Verification/R6 - Production Stepwise Interruption (Play Mode)")]
     public static void Run()
     {
         if(!Application.isPlaying)throw new InvalidOperationException("PlayMode required.");

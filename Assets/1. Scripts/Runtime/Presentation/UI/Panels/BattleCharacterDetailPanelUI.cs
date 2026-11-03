@@ -880,7 +880,12 @@ public sealed class BattleCharacterDetailPanelUI : MonoBehaviour
             if (item == null)
                 continue;
 
-            StatusEffect captured = effect;
+            // Preserve the existing Status tab's independent status rows,
+            // sources, locations and descriptions. Add only an icon badge.
+            BattleMvpDetailStatusBadge20261103.Attach(
+                item, effect, character);
+            
+StatusEffect captured = effect;
             item.onClick.AddListener(
                 () => SetDetailText(
                     BattleStatusUiText.GetDisplayName(captured),

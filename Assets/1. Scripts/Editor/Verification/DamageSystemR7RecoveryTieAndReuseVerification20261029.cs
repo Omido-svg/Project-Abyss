@@ -28,7 +28,6 @@ public static class DamageSystemR7RecoveryTieAndReuseVerification20261029
 
     private static readonly List<SkillDefinition> createdDefinitions = new();
 
-    [MenuItem("Game System Verification/1029 Damage R7 - Recovery, Tie Policy and Roll Reuse (Play Mode)")]
     public static void VerifyFromMenu()
     {
         if (!Application.isPlaying)

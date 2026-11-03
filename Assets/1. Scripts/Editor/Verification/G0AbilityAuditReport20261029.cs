@@ -42,7 +42,6 @@ public static class G0AbilityAuditReport20261029
     // 1. 에셋 전수 감사
     //====================================================================
 
-    [MenuItem("Game System Verification/G0 - Ability Asset Audit (Edit Mode)")]
     public static void RunAuditFromMenu()
     {
         if (Application.isPlaying)
@@ -1986,7 +1985,6 @@ public static class G0AbilityAuditReport20261029
     // 3. Golden Baseline (Play Mode)
     //====================================================================
 
-    [MenuItem("Game System Verification/G0 - Golden Baseline (Play Mode)")]
     public static void RunGoldenBaselineFromMenu()
     {
         if (!Application.isPlaying)

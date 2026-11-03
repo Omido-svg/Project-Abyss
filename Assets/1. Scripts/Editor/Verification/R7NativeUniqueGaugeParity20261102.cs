@@ -29,7 +29,6 @@ public static class R7NativeUniqueGaugeParity20261102
         };
     }
 
-    [MenuItem("Game System Verification/R7 - 5 Unique Gauge Native Parity x 3 Levels (Play Mode)")]
     public static void Run()
     {
         if(!Application.isPlaying)throw new InvalidOperationException("PlayMode required");
@@ -72,6 +71,12 @@ public static class R7NativeUniqueGaugeParity20261102
                 Check("G02 exact source graph "+graph.StableId,
                     graph.IsValid && data.SkillId==graph.StableId &&
                     data.name==graph.SourceAssetName && route.CanRoute(data));
+                if(R7HistoricalParityScope20261103.IsSupersededSource(data))
+                {
+                    Check("G02b final authoritative gauge owner "+graph.StableId,
+                        R7HistoricalParityScope20261103.HasFinalOwner(data,battle));
+                    continue;
+                }
                 var prefab=AssetDatabase.LoadAssetAtPath<GameObject>(
                     graph.Kind==R7UniqueGaugeKind.OlafMadness
                         ?"Assets/2. Data/TestEncounters/Prefabs/Olaf_Test.prefab"
@@ -96,8 +101,9 @@ public static class R7NativeUniqueGaugeParity20261102
                             ",native="+Gauge(newOwner,graph.Kind));
                         var timing=data.EffectEntries[0].EffectiveTiming;
                         route.Enabled=false;
-                        var legacy=Call(data,new BattleAction{
-                            Slot=Make(battle,oldOwner,enemy,data,action++)},timing);
+                        var legacy=R7HistoricalParityScope20261103.ExecuteLegacy(data, () =>
+                            Call(data,new BattleAction{
+                            Slot=Make(battle,oldOwner,enemy,data,action++)},timing));
                         route.Enabled=true;
                         int commits=route.Commits;
                         var newer=Call(data,new BattleAction{

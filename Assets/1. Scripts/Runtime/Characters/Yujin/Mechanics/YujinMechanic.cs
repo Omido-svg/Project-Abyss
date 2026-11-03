@@ -91,6 +91,9 @@ public sealed class YujinMechanic : CombatMechanic,
     private bool hasPendingWeapon;
     private int pendingWeaponEnergyPaid;
     private int sense;
+    // R7-9 fixed passive: one TurnStart transition per turn, even when
+    // the battle observer accidentally receives the same turn twice.
+    private int lastProcessedTurnStart=int.MinValue;
 
     private bool captureActive;
     private bool sentencingActive;
@@ -207,6 +210,7 @@ public sealed class YujinMechanic : CombatMechanic,
         capturePlanningActions.Clear();
         sentencingPlanningActions.Clear();
         sense = 0;
+        lastProcessedTurnStart=int.MinValue;
         weaponSwitchUsedThisTurn = false;
         hasPendingWeapon = false;
         pendingWeaponEnergyPaid = 0;
@@ -1148,6 +1152,8 @@ public sealed class YujinMechanic : CombatMechanic,
 
     private void OnTurnStart(int turn)
     {
+        if(lastProcessedTurnStart==turn)return;
+        lastProcessedTurnStart=turn;
         capturePlanningActions.Clear();
         sentencingPlanningActions.Clear();
 
@@ -1173,7 +1179,7 @@ public sealed class YujinMechanic : CombatMechanic,
         MaterializePendingMarks();
 
         weaponSwitchUsedThisTurn = false;
-        AddSense(1);
+        AddSense(R7FixedPassiveContract20261103.YujinTurnSenseGain);
     }
 
     private void OnTurnEnd(int turn)
@@ -1187,6 +1193,7 @@ public sealed class YujinMechanic : CombatMechanic,
     private void OnBattleEnded()
     {
         sense = 0;
+        lastProcessedTurnStart=int.MinValue;
         marks.Clear();
         pendingMarks.Clear();
         delayedTriggers.Clear();
@@ -1247,37 +1254,30 @@ public sealed class YujinMechanic : CombatMechanic,
                 action,
                 exchange);
 
-        if (skillId == YujinSkillIds.Inspection)
-        {
-            AddMarkToAnchors(
-                hitAnchors,
-                CurrentWeaponProfile.NormalMarkAmount,
-                action);
-        }
-        else if (skillId == YujinSkillIds.Breakfast)
-        {
+        // 1029 §18.2: Nakjeom belongs to the WEAPON, not only to the
+        // historical Inspection / Inscription skill IDs. Each real winning
+        // Duel exchange grants DuelMarkAmount; a RED Normal grants its
+        // NormalMarkAmount. BLUE 'catch breath' never grants Nakjeom.
+        // A one-sided hit is not a won exchange (1029 §18.2).
+        bool actualWin = !exchange.IsOneSided;
+        if (actualWin && action.ActionType == ActionType.Duel)
+            AddMarkToAnchors(hitAnchors,
+                CurrentWeaponProfile.DuelMarkAmount,action);
+        else if (actualWin && action.ActionType == ActionType.NormalAttack &&
+                 action.Skill?.IsRed == true)
+            AddMarkToAnchors(hitAnchors,
+                CurrentWeaponProfile.NormalMarkAmount,action);
+
+        // Older Yujin_N_02 is still the BLUE catch-breath data source.
+        // Its +1 sense is historical PhaseE balance until 1029 value is set.
+        if (actualWin && skillId == YujinSkillIds.Breakfast)
             AddSense(1);
-        }
-        else if (skillId == YujinSkillIds.Inscription &&
-                 opponent?.ActionType == ActionType.Duel)
-        {
-            AddMarkToAnchors(
-                hitAnchors,
-                CurrentWeaponProfile.DuelMarkAmount,
-                action);
-        }
 
-        if (brandActive)
-        {
-            AddMarkToAnchors(
-                hitAnchors,
-                3,
-                action);
-        }
+        if (actualWin && brandActive)
+            AddMarkToAnchors(hitAnchors,3,action);
 
-        TryExecuteNakil(
-            action,
-            hitAnchors);
+        if (actualWin)
+            TryExecuteNakil(action,hitAnchors);
 
         if (skillId == YujinSkillIds.Pursuit &&
             opponent?.ActionType == ActionType.Duel &&

@@ -14,6 +14,49 @@ public class NormalEnemy : Enemy, ICharacterAuthoringTarget
 
     public override bool SupportsLastStand => false;
 
+    /// <summary>
+    /// 1029 stage-1 species content is isolated from historical CharacterData
+    /// loadouts. Only a genuinely authored, GUID-backed native card is added
+    /// to this action. Other/(미정) choices retain the original AI fallback.
+    /// No prefab, old loadout, or original SkillDefinition is mutated.
+    /// </summary>
+    public override List<ActionSlot> DecideSlots(BattleContext context)
+    {
+        var role=GetMechanic<NormalEnemy0922RoleMechanic>();
+        if(role?.RoleAssigned!=true||
+            role.Species==R7EnemySpecies1029.Unknown||
+            context?.Services?.SpeedManager==null)
+            return base.DecideSlots(context);
+        var definition=R7EnemyStage1SkillCatalog20261103.Get(
+            role.Species,role.PlannedAction);
+        if(definition==null)
+            return base.DecideSlots(context);
+        var skill=NormalEnemyRuntimeSkill.Create(definition);
+        if(skill==null)return base.DecideSlots(context);
+        skill.Initialize(this,BattleEvent);
+        if(!skill.CanUseByResource(this)||!IsSkillUsable(null,skill))
+            return base.DecideSlots(context);
+        var target=ChooseTarget(context);
+        if(target==null||target.IsDead)return new List<ActionSlot>();
+        var point=BattleTargetValidator.ChooseWeightedTargetPoint(
+            target,TargetSelectionRule.StandardAttack,brokenPartWeight:.7f);
+        if(!point.IsValid)return base.DecideSlots(context);
+        return new List<ActionSlot>
+        {
+            new ActionSlot
+            {
+                Owner=this,
+                Part=null,
+                Skill=skill,
+                TargetCharacter=point.Character,
+                TargetPart=point.Part,
+                Speed=context.Services.SpeedManager.GetSpeed(this,null),
+                Phase=CalculateActionPhase(skill),
+                ActionIndex=0
+            }
+        };
+    }
+
     public override int GetMaxCombatActionSlots() => 1;
 
     public bool ApplyCharacterAuthoring(
@@ -77,6 +120,24 @@ public class NormalEnemy : Enemy, ICharacterAuthoringTarget
             new NormalEnemyBloodScentMechanic());
     }
 
+    // Native 1029 support preparation is immediately committed by AIManager
+    // during planning, never fought as a COMBAT clash.
+    protected override bool AllowPreparationSkillAI
+    {
+        get
+        {
+            var p=GetMechanic<NormalEnemy0922RoleMechanic>()?.PlannedAction;
+            return p==R7EnemyAction1029.HealPreparation||
+                   p==R7EnemyAction1029.SupplyPreparation;
+        }
+    }
+
+    // R7-8 / 1029 §12.3: AI chooses only an affordable card.
+    // A 2-light Duel must not suppress a legal 0-light Normal attack.
+    protected override bool IsSkillUsable(BodyPart part,Skill skill) =>
+        skill!=null&&skill.CanUseByResource(this)&&
+        base.IsSkillUsable(part,skill);
+
     protected override StatusEffect
         CreateDisabledDebuff(BodyPart part)
     {
@@ -117,7 +178,8 @@ internal static class NormalEnemyRuntimeSkill
             Resolver = CreateUniformDice(definition);
         }
 
-        public override int ExchangeRollCount => 3;
+        public override int ExchangeRollCount =>
+            RuntimeDefinition?.EffectiveRollCount ?? base.ExchangeRollCount;
         public override SkillRollReusePolicy RollReusePolicy => SkillRollReusePolicy.RollEachExchange;
     }
 
@@ -129,7 +191,8 @@ internal static class NormalEnemyRuntimeSkill
             Resolver = CreateUniformDice(definition);
         }
 
-        public override int ExchangeRollCount => 3;
+        public override int ExchangeRollCount =>
+            RuntimeDefinition?.EffectiveRollCount ?? base.ExchangeRollCount;
         public override SkillRollReusePolicy RollReusePolicy => SkillRollReusePolicy.RollEachExchange;
     }
 
@@ -141,18 +204,20 @@ internal static class NormalEnemyRuntimeSkill
             Resolver = CreateUniformDice(definition);
         }
 
-        public override int ExchangeRollCount => 3;
+        public override int ExchangeRollCount =>
+            RuntimeDefinition?.EffectiveRollCount ?? base.ExchangeRollCount;
         public override SkillRollReusePolicy RollReusePolicy => SkillRollReusePolicy.RollEachExchange;
     }
 
     private static SkillResolver CreateUniformDice(
         SkillDefinition definition)
     {
-        // 0922 §12.1 confirmed invariant: normal-enemy RNG is uniform D8.
-        // Per-roll serialized data is normalized by the Phase 9 migration too;
-        // this resolver remains the canonical fallback for data without rolls.
-        return new DiceResolver(
-            FallbackDiceMin,
-            FallbackDiceMax);
+        // 1029 counter soldier's 6-power retaliation is FIXED, not D8.
+        // Never override its native authored zero-variance roll with 1..8.
+        if(definition.SkillId==R7EnemyCounterReaction20261103.CounterSkillId)
+            return definition.CreateResolver();
+
+        // Normal enemy attacks otherwise still use the canonical D8.
+        return new DiceResolver(FallbackDiceMin,FallbackDiceMax);
     }
 }

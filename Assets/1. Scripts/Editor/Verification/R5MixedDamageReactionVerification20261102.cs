@@ -8,7 +8,6 @@ using ProjectAbyss.Abilities;
 /// <summary>R5 live mixed command: actual DamageManager + deferred R6 reaction.</summary>
 public static class R5MixedDamageReactionVerification20261102
 {
-    [MenuItem("Game System Verification/R5 - Damage Plus Reaction Mixed Commands (Play Mode)")]
     public static void Run()
     {
         if(!Application.isPlaying)throw new InvalidOperationException("PlayMode required");

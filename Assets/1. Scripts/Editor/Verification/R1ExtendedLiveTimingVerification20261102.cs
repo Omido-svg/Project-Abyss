@@ -78,7 +78,6 @@ public static class R1ExtendedLiveTimingVerification20261102
         return d;
     }
 
-    [MenuItem("Game System Verification/R1 - Extended Live Timing (Play Mode)")]
     public static void Run()
     {
         if(!Application.isPlaying)

@@ -1,0 +1,28 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5ad039dc4e8a7434b991337345cbee7d, type: 3}
+  m_Name: emotion_impression_t1_01
+  m_EditorClassIdentifier: ProjectAbyss.Runtime::R7NativeEmotionPendingGraph20261103
+  SchemaVersion: 1
+  StableId: emotion.impression.t1.01
+  SourceGuid: 475c32e86a43caa4d9b953c521cf00a3
+  SourceAssetName: Impression_T1_01
+  SourceDisplayName: "\uC0AC\uB840"
+  Emotion: 3
+  Tier: 1
+  CanonicalDesignStatus: "\uAC12 \uBBF8\uC815"
+  State: 1
+  PendingReason: "1029 \xA714.3 unresolved canonical magnitude/odds; old TEMP_BALANCE
+    proxy is no longer a native effect. Source status=\uAC12 \uBBF8\uC815; [TEMP_BALANCE_V1]
+    \uC815\uC2DD \uC804\uC6A9 hook \uD655\uC815 \uC804 flat proxy \uC5F0\uACB0. \uAE30\uC874
+    \uC774\uB984/\uC124\uBA85/DesignStatus\uB294 0916 \uC6D0\uBCF8 \uBCF4\uC874."
+  LegacyEffectEntries: 1

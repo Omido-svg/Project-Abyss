@@ -20,7 +20,6 @@ public static class R7SkillMigrationDryRun20261030
         public bool Candidate;
     }
 
-    [MenuItem("Game System Verification/R7 - All Skill Migration Readiness (Edit Mode)")]
     public static void Run()
     {
         if(Application.isPlaying)
@@ -83,10 +82,10 @@ public static class R7SkillMigrationDryRun20261030
         }
 
         string root=Directory.GetParent(Application.dataPath).FullName;
-        string report=Path.Combine(root,"ProjectAbyss_R7_SkillDryRun_20261030.md");
-        string csv=Path.Combine(root,"ProjectAbyss_R7_SkillDryRun_20261030.csv");
+        string report=Path.Combine(root,"ProjectAbyss_R7_SkillDryRun_20261103_164.md");
+        string csv=Path.Combine(root,"ProjectAbyss_R7_SkillDryRun_20261103_164.csv");
         var md=new StringBuilder();
-        md.AppendLine("# Project Abyss — R7 145 SkillDefinition Dry Run (2026-10-30)");
+        md.AppendLine("# Project Abyss — R7 164 SkillDefinition Dry Run, original145+R7-8 new19 (2026-11-03)");
         md.AppendLine();
         md.AppendLine("This is a READ-ONLY manifest. No SO, GUID, prefab, scene or combat runtime content was changed.");
         md.AppendLine("A CANDIDATE_METADATA_ONLY entry is NOT migrated, balanced, or parity-verified.");
@@ -141,7 +140,8 @@ public static class R7SkillMigrationDryRun20261030
             if(yes){pass++;Debug.Log("[R7-Audit] PASS "+label);}
             else{fail++;Debug.LogError("[R7-Audit] FAIL "+label);}
         }
-        Check("A01 enumerated all loaded SkillDefinitions",records.Count==145);
+        Check("A01 enumerated original 145 and 19 stage1",records.Count==164&&
+            R7Stage12SkillCorpus20261103.IsExactLayeredCensus());
         Check("A02 written markdown and CSV in project root",
             File.Exists(report)&&File.Exists(csv));
         Check("A03 asset GUID retained for every inventory record",

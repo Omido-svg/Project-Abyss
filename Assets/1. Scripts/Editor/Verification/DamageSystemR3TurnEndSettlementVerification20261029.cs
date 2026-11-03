@@ -21,7 +21,6 @@ public static class DamageSystemR3TurnEndSettlementVerification20261029
     private static int pass;
     private static int fail;
 
-    [MenuItem("Game System Verification/1029 Damage R3 - Turn End Settlement (Play Mode)")]
     public static void VerifyFromMenu()
     {
         if (!Application.isPlaying)

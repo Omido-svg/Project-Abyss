@@ -83,7 +83,6 @@ public static class R7NativeMixedSchema2Migration20261031
             throw new InvalidOperationException("Unexpected mixed layout "+d.SkillId);
     }
 
-    [MenuItem("Game System Verification/R7 Native Mixed - Upgrade 7 Data SO to V2 (Edit Mode)")]
     public static void Upgrade()
     {
         if(Application.isPlaying)throw new InvalidOperationException("Edit mode only");
@@ -142,7 +141,6 @@ public static class R7NativeMixedSchema2Migration20261031
         Debug.Log("[R7-MixedV2] UPGRADED="+changed+" sourceSOmodified=0");
     }
 
-    [MenuItem("Game System Verification/R7 Native Mixed - V2 Data Gate (Edit Mode)")]
     public static void Verify()
     {
         var graphs=Resources.LoadAll<R7NativeMixedAbilityDefinition>(Folder);

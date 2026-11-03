@@ -42,7 +42,6 @@ public static class Canonical0917EmotionAugmentMigration
         public string Path;
     }
 
-    [MenuItem("Game System Verification/0917 Spec Patch/Apply 0917 Emotion Roster Patch")]
     public static void ApplyFromMenu()
     {
         if (ApplyCanonicalRoster(out string report))

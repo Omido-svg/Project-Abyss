@@ -42,7 +42,6 @@ public static class R8NativeAuthoringVerification20261102
         return skill;
     }
 
-    [MenuItem("Game System Verification/R8 - Unified Converter Inspector Validator (Edit Mode)")]
     public static void Run()
     {
         if(Application.isPlaying)throw new InvalidOperationException("EditMode required");
@@ -51,14 +50,14 @@ public static class R8NativeAuthoringVerification20261102
         var preview=R8NativeAuthoringCore20261102.AnalyzeAll();
         var existing=preview.Where(p=>p.Status==
             R8NativeAuthoringCore20261102.Verdict.ExistsValid).ToArray();
-        Check(before.SkillCount==145&&before.NativeCount==37&&
+        Check(before.SkillCount==164&&before.NativeCount==37&&
               before.NativeGoodCount==37&&before.NativeCorruptionCount==0,
-            "V01 full 145 / 37 authored native schemas",ref pass,ref fail);
+            "V01 current 164 (145+19) / 37 authored native schemas",ref pass,ref fail);
         Check(existing.Length==29&&before.AutoConvertibleCount==0,
             "V02 15 resource + 9 status + 5 gauge source levels match",ref pass,ref fail);
         Check(before.DuplicateSourceIdGroups==4&&
-              before.Issues.Count(x=>x.Code=="DUPLICATE_SKILL_ID")==8,
-            "V03 duplicate IDs blocked per asset",ref pass,ref fail);
+              before.Issues.Count(x=>x.Code=="R7_2_GUID_CONTRACT_RESOLVED")==8,
+            "V03 duplicate-ID assets registered under R7-2 GUID contracts",ref pass,ref fail);
         Check(before.PendingAugments==1 && before.TemporaryItems==60 &&
               before.AugmentCount==63 && before.ItemCount==60,
             "V04 pending augment and temporary item issues are visible",ref pass,ref fail);
@@ -176,9 +175,9 @@ public static class R8NativeAuthoringVerification20261102
             R7ProductionNativeUniqueGaugeMigration.ResetCatalogCache();
         }
         var after=R8NativeValidation20261102.Scan();
-        Check(after.SkillCount==145 && after.NativeCount==37 &&
+        Check(after.SkillCount==164 && after.NativeCount==37 &&
               after.NativeCorruptionCount==0,
-            "V15 fixture cleanup restores 145 source + 37 native baseline",
+            "V15 fixture cleanup restores 164 source + 37 native baseline",
             ref pass,ref fail);
         Check(!AssetDatabase.IsValidFolder(Scratch) &&
               targets.All(x=>AssetDatabase.LoadMainAssetAtPath(x)==null),

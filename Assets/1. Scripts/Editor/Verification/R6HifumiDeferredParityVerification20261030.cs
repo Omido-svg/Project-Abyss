@@ -54,7 +54,6 @@ public static class R6HifumiDeferredParityVerification20261030
         return clash;
     }
 
-    [MenuItem("Game System Verification/R6 - Hifumi Deferred Counter Parity (Play Mode)")]
     public static void Run()
     {
         if(!Application.isPlaying)throw new InvalidOperationException("PlayMode required");

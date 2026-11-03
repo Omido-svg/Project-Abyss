@@ -65,7 +65,6 @@ public static class R3ConditionVerification20261030
         }
     }
 
-    [MenuItem("Game System Verification/R3 - Condition Tree & Target Binding (Edit Mode)")]
     public static void RunFromMenu()
     {
         if(Application.isPlaying)

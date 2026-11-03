@@ -1,0 +1,32 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f7b7cddcc35023a4fa484fb3c1fe2ac1, type: 3}
+  m_Name: emotion_longing_t2_02
+  m_EditorClassIdentifier: ProjectAbyss.Runtime::R7NativeEmotionRulebreakerGraph20261103
+  SchemaVersion: 1
+  StableId: emotion.longing.t2.02
+  SourceGuid: 2b4e019c2e8856649a77e538ad018191
+  SourceAssetName: Longing_T2_02
+  SourceDisplayName: "\uC794\uB958"
+  Emotion: 5
+  Tier: 2
+  CanonicalDesignStatus: "\uD655\uC815"
+  State: 0
+  PendingReason: 
+  Operations:
+  - Operation: 7
+    TargetPartType: 0
+    AnyPart: 0
+    Amount: 1
+    Value: 1
+    RequiredConsecutiveTurns: 1
+    BooleanValue: 1

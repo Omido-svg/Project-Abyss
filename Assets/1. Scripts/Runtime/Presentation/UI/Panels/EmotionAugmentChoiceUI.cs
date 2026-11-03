@@ -691,11 +691,20 @@ public sealed class EmotionAugmentChoiceUI : MonoBehaviour
                     ? choice.name
                     : choice.DisplayName;
 
+            bool nativeResolved=
+                R7NativeEmotionCatalog20261103.TryResolve(choice,out var graph);
+            bool canonicalPending=nativeResolved&&
+                graph.State==R7NativeEmotionGraphState20261103.CanonicalValuesPending;
             card.Body.text =
                 $"TIER {Mathf.Clamp(choice.Tier, 1, 3)}\n\n" +
                 (string.IsNullOrWhiteSpace(choice.Description)
                     ? "설명이 없습니다."
-                    : choice.Description.Trim());
+                    : choice.Description.Trim()) +
+                (canonicalPending
+                    ? "\n\n[정본 수치 미정] 현재 전투 효과는 발동하지 않습니다."
+                    : !nativeResolved
+                        ? "\n\n[오류] 네이티브 감정 증강 그래프를 찾지 못했습니다."
+                        : string.Empty);
 
             Color cardColor = theme.SoftAccent;
             card.Background.color = new Color(

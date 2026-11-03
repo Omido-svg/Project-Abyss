@@ -158,7 +158,7 @@ public sealed class PhaseDOlafGameSystemVerificationModule : IGameSystemVerifica
             mechanic.MadnessStage == 1 &&
             mechanic.PassivePowerBonus == 1 &&
             mechanic.ModifyDamageTaken(incoming, 10) == 11 &&
-            mechanic.RedNormalBleedingGain == 2;
+            mechanic.RedNormalBleedingGain == 1;
 
         mechanic.SetMadnessForDebug(8);
         bool eight =
@@ -166,7 +166,7 @@ public sealed class PhaseDOlafGameSystemVerificationModule : IGameSystemVerifica
             mechanic.MadnessStage == 2 &&
             mechanic.PassivePowerBonus == 2 &&
             mechanic.ModifyDamageTaken(incoming, 10) == 12 &&
-            mechanic.RedNormalBleedingGain == 3 &&
+            mechanic.RedNormalBleedingGain == 2 &&
             mechanic.IsBlooming;
 
         mechanic.AddMadness(99);
@@ -179,7 +179,7 @@ public sealed class PhaseDOlafGameSystemVerificationModule : IGameSystemVerifica
 
         return ok
             ? GameSystemVerificationProbeResult.Pass(
-                "0:[P+0/D+0/Bleed1], 4:[P+1/D+1/Bleed2], 8:[P+2/D+2/Bleed3,Bloom]")
+                "0:[P+0/D+0/Bleed1], 4:[P+1/D+1/Bleed1], 8:[P+2/D+2/Bleed2,Bloom]")
             : GameSystemVerificationProbeResult.Fail(
                 $"Max={OlafMadnessMechanic.MaxMadnessValue}, Unit={OlafMadnessMechanic.MadnessPerStage}, 0={zero},4={four},8={eight},Clamp={clamp}");
     }

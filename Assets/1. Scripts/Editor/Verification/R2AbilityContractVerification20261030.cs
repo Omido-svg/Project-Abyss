@@ -6,7 +6,6 @@ using ProjectAbyss.Abilities;
 
 public static class R2AbilityContractVerification20261030
 {
-    [MenuItem("Game System Verification/R2 - Contract Isolation (Edit Mode)")]
     public static void Verify()
     {
         if (Application.isPlaying)

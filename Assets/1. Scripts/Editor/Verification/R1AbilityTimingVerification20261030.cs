@@ -44,7 +44,6 @@ public static class R1AbilityTimingVerification20261030
         public string GeneratedAtUtc;
     }
 
-    [MenuItem("Game System Verification/R1 - Canonical Trigger Gate (Play Mode)")]
     public static void RunFromMenu()
     {
         if (!Application.isPlaying)

@@ -21,7 +21,6 @@ public static class R5ReactionCommandVerification20261102
                 request.RequestedAmount,0,true,"R5 fake damage test only");
         }
     }
-    [MenuItem("Game System Verification/R5 - Reaction Command Schedule Contract (Edit Mode)")]
     public static void Run()
     {
         if(Application.isPlaying)throw new InvalidOperationException("Edit Mode required");

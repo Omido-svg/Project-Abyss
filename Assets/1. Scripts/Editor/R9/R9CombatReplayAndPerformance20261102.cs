@@ -131,7 +131,6 @@ public static class R9CombatReplayAndPerformance20261102
         else{fail++;UnityEngine.Debug.LogError("[R9-Replay] FAIL "+name);}
     }
 
-    [MenuItem("Game System Verification/R9 - Seeded Combat Determinism (Play Mode)")]
     public static void Determinism()
     {
         if(!Application.isPlaying)throw new InvalidOperationException("PlayMode only");
@@ -162,7 +161,6 @@ public static class R9CombatReplayAndPerformance20261102
         if(fail>0)throw new InvalidOperationException("R9 deterministic replay failed");
     }
 
-    [MenuItem("Game System Verification/R9 - Production Battle Performance Baseline (Play Mode)")]
     public static void Performance()
     {
         if(!Application.isPlaying)throw new InvalidOperationException("PlayMode only");

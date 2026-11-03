@@ -53,7 +53,6 @@ public static class R2ExtendedContractsVerification20261102
         }
     }
 
-    [MenuItem("Game System Verification/R2 - K W Shared Contracts (Edit Mode)")]
     public static void Run()
     {
         if(Application.isPlaying)throw new InvalidOperationException("Edit Mode required");

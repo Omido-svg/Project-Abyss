@@ -71,7 +71,6 @@ public static class R7NativeResourceAssetMigration20261031
         return true;
     }
 
-    [MenuItem("Game System Verification/R7 Native SO - Convert 15 Resource Effects (Edit Mode)")]
     public static void Convert()
     {
         if(Application.isPlaying)throw new InvalidOperationException("Edit mode required");

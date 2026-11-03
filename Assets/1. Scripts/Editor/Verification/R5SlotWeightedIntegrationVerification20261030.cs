@@ -48,7 +48,6 @@ public static class R5SlotWeightedIntegrationVerification20261030
         R4LiveSlotQuery.ActorRuntimeId(t.TargetCharacter)+":"+
         (t.TargetPart?.PartId ?? "");
 
-    [MenuItem("Game System Verification/R5-W - Slot Weighted Live Hit Batch (Play Mode)")]
     public static void Run()
     {
         if(!Application.isPlaying)

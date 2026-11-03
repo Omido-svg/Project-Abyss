@@ -43,7 +43,6 @@ public static class R7Stage0ContentLedger20261102
         if(good){pass++;Debug.Log("[R7-0] PASS "+id+" "+summary);}
         else{fail++;Debug.LogError("[R7-0] FAIL "+id+" "+summary);}
     }
-    [MenuItem("Game System Verification/R7-0 - Full Skills Augments Items Passive Ledger")]
     public static void Run()
     {
         if(Application.isPlaying)throw new InvalidOperationException("Edit Mode only");
@@ -118,7 +117,7 @@ public static class R7Stage0ContentLedger20261102
                 effects.Count(e=>e.RestrictToRoll).ToString(),
                 (s.UpgradeProfile!=null).ToString(),stage,step});
         }
-        Write("R7_0_ALL_145_SKILLS.csv",rows);
+        Write("R7_0_ALL_164_CURRENT_SKILLS.csv",rows);
 
         var augmentRows=new List<string[]>{
             new[]{"GUID","Path","AugmentId","DisplayName","RuntimeReadiness",
@@ -198,10 +197,11 @@ public static class R7Stage0ContentLedger20261102
         Write("R7_1_LEGACY_BOUNDARY_CALLS.csv",boundaries);
 
         int pass=0,fail=0;
-        Check("A01 145 sourced skills",skills.Length==145,
+        Check("A01 original 145 plus 19 stage1 sources",
+             skills.Length==164&&R7Stage12SkillCorpus20261103.IsExactLayeredCensus(),
             skills.Length.ToString(),ref pass,ref fail);
         Check("A02 each source GUID unique",
-            rows.Skip(1).Select(x=>x[0]).Distinct().Count()==145,
+            rows.Skip(1).Select(x=>x[0]).Distinct().Count()==164,
             "source GUIDs",ref pass,ref fail);
         Check("A03 36 exact native skill graphs",
             countByStatus.GetValueOrDefault("VERIFIED_NATIVE_GRAPH")==36,
@@ -228,14 +228,14 @@ public static class R7Stage0ContentLedger20261102
             candidateRows.Count>1,"candidate scripts="+(candidateRows.Count-1),
             ref pass,ref fail);
         Check("A11 all skill rows assigned exactly one group",
-            countByStatus.Values.Sum()==145,
+            countByStatus.Values.Sum()==164,
             string.Join(";",countByStatus.Select(x=>x.Key+":"+x.Value)),
             ref pass,ref fail);
         Check("A12 legacy executable callsites listed",
             boundaries.Count>1,
             "candidate callsites="+(boundaries.Count-1),ref pass,ref fail);
         string summary="# R7-0 migration source ledger\n"+
-            "145 SkillDefinitions all inventoried by GUID; "+
+             "164 SkillDefinitions (145 original + 19 stage1) inventoried by GUID; "+
             "not a claim that every effect is fully migrated.\n\n"+
             string.Join("\n",countByStatus.OrderBy(x=>x.Key)
                 .Select(x=>"- "+x.Key+": "+x.Value))+"\n\n"+
@@ -245,8 +245,8 @@ public static class R7Stage0ContentLedger20261102
             " (needs character-wise R7-9 review, not a proven passive count)\n"+
             "- Residual adapter callsites: "+(boundaries.Count-1)+
             " (source search candidates, not all live routes)\n"+
-            "- 109/145 non-36-native skills include 1 newly direct-native "+
-            "Preparation, 8 duplicates and other pending rows.\n"+
+            "- 128/164 skills outside original 36-graph census include direct-native stages and 19 new Stage1 1029 cards; "+
+            "Preparation, 8 GUID-resolved duplicate IDs and pending designs.\n"+
             "- R7-1's Preparation does not count inside the prior 36, "+
             "to avoid retroactively changing the baseline.\n"+
             "\nSee four CSVs for full source-level evidence.\n";

@@ -27,6 +27,18 @@ public sealed class RunFlowTestHarness : MonoBehaviour
     private GUIStyle boxStyle;
     private bool stylesReady;
 
+    // R7-11: the live 60-source catalog has no approved item-effect values.
+    // Show this next to each card, not only in the global debug summary.
+    // Transient test-only items intentionally keep their mock presentation.
+    private static string NativeItemPendingLabel(RunItemDefinition source)
+    {
+        if(source!=null &&
+           R7NativeRunItemCatalog20261103.TryResolve(source,out var graph)&&
+           graph.State==R7NativeRunItemState20261103.CanonicalEffectPending)
+            return " [효과 미정 · 전투 보너스 없음]";
+        return string.Empty;
+    }
+
     private void Awake()
     {
         session = new RunFlowTestSession();
@@ -433,7 +445,7 @@ public sealed class RunFlowTestHarness : MonoBehaviour
             if (item == null) continue;
             int price = session.ItemEconomy.GetPrice(item.Tier);
             GUILayout.BeginHorizontal(GUI.skin.box);
-            GUILayout.Label($"[{item.Tier}] {item.DisplayName}", bodyStyle, GUILayout.ExpandWidth(true));
+            GUILayout.Label($"[{item.Tier}] {item.DisplayName}{NativeItemPendingLabel(item)}", bodyStyle, GUILayout.ExpandWidth(true));
             GUILayout.Label($"{price}G", bodyStyle, GUILayout.Width(80f));
             int index = i;
             if (GUILayout.Button("Buy", GUILayout.Width(90f)))
@@ -571,7 +583,7 @@ public sealed class RunFlowTestHarness : MonoBehaviour
                 {
                     RunItemDefinition item = session.CurrentBossOffer[i];
                     int index = i;
-                    if (GUILayout.Button(item.DisplayName, GUILayout.Height(42f)))
+                    if (GUILayout.Button(item.DisplayName+NativeItemPendingLabel(item), GUILayout.Height(42f)))
                     {
                         session.ChooseBossClassItemAndCompleteStage(index, out string message);
                         lastAction = message;
@@ -652,7 +664,7 @@ public sealed class RunFlowTestHarness : MonoBehaviour
             {
                 RunItemDefinition item = owned[i];
                 GUILayout.BeginHorizontal();
-                GUILayout.Label($"{i + 1}. [{item.Tier}] {item.DisplayName}", smallStyle, GUILayout.ExpandWidth(true));
+                GUILayout.Label($"{i + 1}. [{item.Tier}] {item.DisplayName}{NativeItemPendingLabel(item)}", smallStyle, GUILayout.ExpandWidth(true));
                 int index = i;
                 if (GUILayout.Button($"Sell +{session.ItemEconomy.GetSellPrice(item)}G", GUILayout.Width(110f)))
                 {

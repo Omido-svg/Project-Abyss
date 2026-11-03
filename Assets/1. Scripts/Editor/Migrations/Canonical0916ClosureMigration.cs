@@ -234,7 +234,6 @@ public static class Canonical0916ClosureMigration
         EditorApplication.delayCall += ApplyIfNeeded;
     }
 
-    [MenuItem("Tools/Project Abyss/Migrations/0916/Apply Canonical Character Closure")]
     public static void ApplyFromMenu()
     {
         Apply();

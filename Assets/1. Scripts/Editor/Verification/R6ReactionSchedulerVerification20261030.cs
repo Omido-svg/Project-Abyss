@@ -15,7 +15,6 @@ public static class R6ReactionSchedulerVerification20261030
             "R6-TEST-REACTION",cp,priority,sequence);
     }
 
-    [MenuItem("Game System Verification/R6-Ia - Reaction Queue Safety (Edit Mode)")]
     public static void Run()
     {
         if(Application.isPlaying)

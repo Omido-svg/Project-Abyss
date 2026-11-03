@@ -1,0 +1,27 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5ad039dc4e8a7434b991337345cbee7d, type: 3}
+  m_Name: emotion_awe_t3_01
+  m_EditorClassIdentifier: ProjectAbyss.Runtime::R7NativeEmotionPendingGraph20261103
+  SchemaVersion: 1
+  StableId: emotion.awe.t3.01
+  SourceGuid: 57d557449b9eb544eaa21896332d8092
+  SourceAssetName: Awe_T3_01
+  SourceDisplayName: "\uC81C\uBB3C(\uC2DC\uAC04)"
+  Emotion: 0
+  Tier: 3
+  CanonicalDesignStatus: "(\uBBF8\uC815 \uD3EC\uD568)"
+  State: 1
+  PendingReason: "1029 \xA714.3 unresolved canonical magnitude/odds; old TEMP_BALANCE
+    proxy is no longer a native effect. Source status=(\uBBF8\uC815 \uD3EC\uD568);
+    [0922 Phase10] Strength N \uBBF8\uC815. TEMP proxy \uC81C\uAC70 / PENDING_CANONICAL."
+  LegacyEffectEntries: 0

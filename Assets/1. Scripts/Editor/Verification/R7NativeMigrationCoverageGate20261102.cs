@@ -26,7 +26,6 @@ public static class R7NativeMigrationCoverageGate20261102
         public bool Valid;
     }
 
-    [MenuItem("Game System Verification/R7 - Native Coverage and Collision Gate (Edit Mode)")]
     public static void Run()
     {
         if(Application.isPlaying)
@@ -123,7 +122,7 @@ public static class R7NativeMigrationCoverageGate20261102
             else {errors.Add(id+" "+detail);Debug.LogError(
                 "[R7-Coverage] FAIL "+id+" "+detail);}
         }
-        Check("C01 all SkillDefinition assets inventoried",results.Count==145,
+        Check("C01 all SkillDefinition assets inventoried",results.Count==R7Stage12SkillCorpus20261103.ExpectedTotalSkillCount,
             "count="+results.Count);
         Check("C02 native SO family counts",native.Count==36 &&
             native.Count(x=>x.Family=="NATIVE_RESOURCE")==15 &&
@@ -166,7 +165,7 @@ public static class R7NativeMigrationCoverageGate20261102
             prepStatuses.SourceAssetGuid==prepSetup.SourceAssetGuid,
             "native status operations=2, native setup=1");
         Check("C09 metadata pilot is not falsely counted as native",
-            pilots==9,"read-only candidates="+pilots);
+            pilots==13,"read-only candidates="+pilots);
         Check("C10 production native router catalogs have same cardinality",
             R7ProductionNativeResourceMigration.ApprovedSkillCount==15 &&
             R7ProductionNativeBleedingMigration.ApprovedSkillCount==9 &&
@@ -193,7 +192,7 @@ public static class R7NativeMigrationCoverageGate20261102
         lines.AddRange(results.Select(x=>string.Join(",",new[]{
             x.Id,x.Guid,x.Path,x.Name,x.Action,x.Entries.ToString(),
             x.LegacyEntries.ToString(),x.EffectFamily,x.Classification}.Select(Csv))));
-        File.WriteAllLines(Path.Combine(output,"R7_NATIVE_COVERAGE_145.csv"),
+        File.WriteAllLines(Path.Combine(output,"R7_NATIVE_COVERAGE_164_CURRENT.csv"),
             lines,new UTF8Encoding(false));
         var report=new StringBuilder()
             .AppendLine("# R7 migration handover, 2026-11-02")
@@ -224,7 +223,7 @@ public static class R7NativeMigrationCoverageGate20261102
         File.WriteAllText(Path.Combine(output,"R7_NATIVE_HANDOVER.md"),
             report.ToString(),new UTF8Encoding(false));
         Debug.Log("[R7-Coverage] RESULT PASS="+(11-errors.Count)+
-            " FAIL="+errors.Count+" native=36/145 partial="+partial+
+            " FAIL="+errors.Count+" native=36/164 partial="+partial+
             " pilot="+pilots+" duplicate="+collisions.Count);
         if(errors.Count>0)
             throw new InvalidOperationException(

@@ -1,0 +1,28 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 21c9aa14438ed9a438252582fdacbf4e, type: 3}
+  m_Name: temp_balance_v1_common_t3_02
+  m_EditorClassIdentifier: 
+  SchemaVersion: 1
+  StableId: temp_balance_v1.common.t3.02
+  SourceGuid: a6581cfe701d01e468eff8f3c323add2
+  SourceAssetName: common_t3_02
+  SourceDisplayName: "TEMP \uACF5\uC6A9 T3-02"
+  SourceTier: 3
+  CharacterKey: 
+  FormerCombatProxyGuid: 391cf133328c5f84b956426854722caf
+  State: 0
+  CanonicalTierMappingPending: 1
+  PendingReason: "1029 \xA716.1: ALL 60 item effect values are (\uBBF8\uC815); TEMP_BALANCE_V1
+    RollBonus/FlatDamage/MaxEnergy/Speed etc are not approved. Common source tier
+    composition is 6/6/6/6/6 but canonical distribution is 10/8/6/4/2; do not guess
+    which placeholder belongs to each tier."

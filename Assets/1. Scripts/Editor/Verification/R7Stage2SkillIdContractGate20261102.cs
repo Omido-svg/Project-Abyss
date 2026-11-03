@@ -30,7 +30,6 @@ public static class R7Stage2SkillIdContractGate20261102
         return sources.All(s=>entries.Count(x=>ReferenceEquals(x.Definition,s))==1);
     }
 
-    [MenuItem("Game System Verification/R7-2 - Skill ID GUID and Save Contract (Edit Only)")]
     public static void Run()
     {
         if(Application.isPlaying)throw new InvalidOperationException("R7-2 EditMode only");
@@ -50,7 +49,8 @@ public static class R7Stage2SkillIdContractGate20261102
             .Where(x=>x!=null).ToArray();
         var groups=skills.GroupBy(x=>x.SkillId,StringComparer.Ordinal)
             .Where(x=>x.Count()>1).OrderBy(x=>x.Key).ToArray();
-        Check("S01 145 source skills",skills.Length==145);
+        Check("S01 145 original + 19 R7-8 skills",skills.Length==164&&
+            R7Stage12SkillCorpus20261103.IsExactLayeredCensus());
         Check("S02 4 exact collision groups / 8 assets",
             groups.Length==4&&groups.Sum(x=>x.Count())==8);
         Check("S03 8 GUID registry bindings",entries.Length==8);

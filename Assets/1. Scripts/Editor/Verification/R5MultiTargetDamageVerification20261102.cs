@@ -14,7 +14,6 @@ public static class R5MultiTargetDamageVerification20261102
         public ProbeSkill(){SkillName="R5_DAMAGE_BATCH_VIRTUAL";BasePower=2;Resolver=new DiceResolver(1,2);}
         public override void Execute(BattleAction action){}
     }
-    [MenuItem("Game System Verification/R5 - Multi Target Damage Result Batch (Play Mode)")]
     public static void Run()
     {
         if(!Application.isPlaying)throw new InvalidOperationException("PlayMode required");

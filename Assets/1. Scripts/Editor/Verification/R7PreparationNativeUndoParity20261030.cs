@@ -25,7 +25,6 @@ public static class R7PreparationNativeUndoParity20261030
         var u=part?.StatusEffects?.OfType<Burn>().FirstOrDefault();
         return (b?.Stack??0,u?.Stack??0,b?.Duration??0,u?.Duration??0);
     }
-    [MenuItem("Game System Verification/R7 - Preparation Status Undo Parity (Play Mode)")]
     public static void Run()
     {
         if(!Application.isPlaying)
@@ -63,7 +62,8 @@ public static class R7PreparationNativeUndoParity20261030
             var firstLegacy=Make(battle,old,a,d,999310);
             var firstModern=Make(battle,modern,b,d,999311);
             router.Enabled=false;
-            firstLegacy.Skill.Execute(new BattleAction{Slot=firstLegacy});
+            R7HistoricalParityScope20261103.ExecuteLegacy(d, () =>
+                firstLegacy.Skill.Execute(new BattleAction{Slot=firstLegacy}));
             router.Enabled=true;
             Check("P03 explicit native route enabled",router.CanRoute(d));
             int nativeCommitsAtStart=router.NativeCommits;
@@ -90,7 +90,8 @@ public static class R7PreparationNativeUndoParity20261030
             var secondLegacy=Make(battle,old,a,d,999312);
             var secondModern=Make(battle,modern,b,d,999313);
             router.Enabled=false;
-            secondLegacy.Skill.Execute(new BattleAction{Slot=secondLegacy});
+            R7HistoricalParityScope20261103.ExecuteLegacy(d, () =>
+                secondLegacy.Skill.Execute(new BattleAction{Slot=secondLegacy}));
             router.Enabled=true;
             secondModern.Skill.Execute(new BattleAction{Slot=secondModern});
             Check("P07 merged statuses match after second activation",
@@ -128,7 +129,8 @@ public static class R7PreparationNativeUndoParity20261030
             // Real planning can reactivate the exact same slot after its Undo.
             int commitsBeforeRetry=router.NativeCommits;
             router.Enabled=false;
-            firstLegacy.Skill.Execute(new BattleAction{Slot=firstLegacy});
+            R7HistoricalParityScope20261103.ExecuteLegacy(d, () =>
+                firstLegacy.Skill.Execute(new BattleAction{Slot=firstLegacy}));
             router.Enabled=true;
             firstModern.Skill.Execute(new BattleAction{Slot=firstModern});
             Check("P19 same slot and ActionId may legitimately reactivate",
@@ -145,7 +147,8 @@ public static class R7PreparationNativeUndoParity20261030
             var replacedModern=Make(battle,modern,b,d,999311);
             commitsBeforeRetry=router.NativeCommits;
             router.Enabled=false;
-            replacedOld.Skill.Execute(new BattleAction{Slot=replacedOld});
+            R7HistoricalParityScope20261103.ExecuteLegacy(d, () =>
+                replacedOld.Skill.Execute(new BattleAction{Slot=replacedOld}));
             router.Enabled=true;
             replacedModern.Skill.Execute(new BattleAction{Slot=replacedModern});
             Check("P21 replacement slot reusing ActionId commits new commands",

@@ -60,7 +60,6 @@ public static class Canonical0917PatchMigration
         public int[] max;
     }
 
-    [MenuItem("Game System Verification/0917 Spec Patch/Apply 0917 Patch")]
     public static void ApplyFromMenu()
     {
         int sourcePatches = ApplySourcePatches();

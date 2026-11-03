@@ -1,3 +1,0 @@
-G0 frozen manifest count=398 changed=0 missing=0
-
-SCENE=Battle Test Scene DIRTY=True PLAY=False

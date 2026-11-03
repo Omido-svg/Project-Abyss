@@ -13,7 +13,6 @@ public static class R6AbilityLifetimeVerification20261030
     private static AbilityExecutionResult Applied(int value=1) =>
         new AbilityExecutionResult(1,value,"");
 
-    [MenuItem("Game System Verification/R6 - Lifetime Memory (Edit Mode)")]
     public static void Run()
     {
         if(Application.isPlaying)throw new InvalidOperationException("Edit Mode only");

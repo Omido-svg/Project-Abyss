@@ -30,7 +30,6 @@ public static class DamageSystemR6SpecialDamageAuditVerification20261029
 
     private static readonly List<SkillDefinition> createdDefinitions = new();
 
-    [MenuItem("Game System Verification/1029 Damage R6 - Special Damage Audit (Play Mode)")]
     public static void VerifyFromMenu()
     {
         if (!Application.isPlaying)

@@ -20,7 +20,6 @@ public static class R7LegacyMixedActualClashVerification20261030
             SlotId="R7-LEGACY-NATIVE-ACTUAL-"+id
         };
     }
-    [MenuItem("Game System Verification/R7 - Mixed Native Real Clash (Play Mode)")]
     public static void Run()
     {
         if(!Application.isPlaying)throw new InvalidOperationException("Play Mode required");
@@ -67,8 +66,9 @@ public static class R7LegacyMixedActualClashVerification20261030
             float beforeOldPart=leftPart.PartHP;
             float beforeNewPart=rightPart.PartHP;
             router.Enabled=false;
-            var legacy=ctx.Services.ClashManager.ResolvePair(
-                new ClashPair(Slot(ctx,owner,oldTarget,leftPart,bite,999910)));
+            var legacy=R7HistoricalParityScope20261103.ExecuteLegacy(bite, () =>
+                ctx.Services.ClashManager.ResolvePair(
+                new ClashPair(Slot(ctx,owner,oldTarget,leftPart,bite,999910))));
             int beforeNativeCommit=router.NativeCommits;
             UnityEngine.Random.state=random;
             router.Enabled=true;

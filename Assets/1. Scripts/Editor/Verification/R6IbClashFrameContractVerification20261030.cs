@@ -13,7 +13,6 @@ public static class R6IbClashFrameContractVerification20261030
             "VIRTUAL-REACTION",ReactionTimingCheckpoint.AfterExchangeSettled,
             0,id);
 
-    [MenuItem("Game System Verification/R6-Ib - Frame Cursor & Checkpoint (Edit Mode)")]
     public static void Run()
     {
         if(Application.isPlaying)

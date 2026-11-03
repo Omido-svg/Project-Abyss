@@ -59,6 +59,26 @@ internal sealed class SkillEffectDispatcher
                     rollSucceeded,
                     clashResult);
 
+#if UNITY_EDITOR
+            // R7-12: historical parity only, strictly one GUID-bound test
+            // invocation at a time. NEVER available in player builds and
+            // NEVER an implicit fallback for a missing production graph.
+            if(R7HistoricalParityScope20261103.Matches(definition))
+                return ExecuteEntries(definition,context,timing);
+#endif
+            // R7-5 canonical Olaf must take priority over stale resource/
+            // unique-gauge pilot graphs with matching IDs (D04/D07).
+            // The event-owned 3 prestige cards run from OlafMadnessMechanic
+            // exactly once; never also execute their TEMP proxy/native gauge.
+            if(ProjectAbyss.Abilities.R7ProductionOlafNativeMigration20261103
+                .IsNativePrestigeSource(definition))
+                return Array.Empty<SkillEffectResult>();
+            var olaf=context.BattleContext?.Services?.R7OlafNativeMigration;
+            if(olaf!=null && olaf.CanRoute(definition))
+                return olaf.Execute(definition,context,timing);
+            var yujin=context.BattleContext?.Services?.R7YujinNativeMigration;
+            if(yujin!=null && yujin.CanRoute(definition))
+                return yujin.Execute(definition,context,timing);
             // R7 production cohort runs via a native typed R5 resource
             // command, not TempBalanceSkillProxyEffectDefinition.Apply.
             var native = context.BattleContext?.Services?.R7NativeResourceMigration;
@@ -81,6 +101,21 @@ internal sealed class SkillEffectDispatcher
             var generic=context.BattleContext?.Services?.R7SingleEffectMigration;
             if(generic!=null && generic.CanRoute(definition))
                 return generic.Execute(definition,context,timing);
+            // R7-5 standard/single-cut explosion is executed by the Olaf
+            // native event mechanic, not the stale TempBalance TargetBleeding.
+            if(ProjectAbyss.Abilities.R7ProductionOlafNativeMigration20261103
+                .IsNativeExplosionSource(definition) ||
+                ProjectAbyss.Abilities.R7ProductionOlafNativeMigration20261103
+                    .IsNativePrestigeSource(definition))
+                return Array.Empty<SkillEffectResult>();
+            // R7-8: seven known enemy skill sources must NEVER fall back to
+            // the legacy entry dispatcher when a native graph/service is
+            // missing. This also rejects a mismatched name/entry count under
+            // a known stable ID, preventing silent save-identity collisions.
+            if(R7Enemy1029NativeContract20261103.HasKnownSkillId(
+                definition.SkillId))
+                throw new InvalidOperationException(
+                    "R7-8 enemy native route missing or mismatched; legacy fallback forbidden.");
             // The approved Preparation cannot silently execute old Entry.TryApply
             // if a graph/service is missing or a native contract fails validation.
             if(ProjectAbyss.Abilities.R7ProductionPreparationStatusMigration
@@ -89,14 +124,22 @@ internal sealed class SkillEffectDispatcher
                     "R7-1 Preparation native route unavailable; refusing legacy fallback.");
             // An authored native graph must never become a legacy migration
             // simply because its runtime route or data is unavailable.
-            if(IsRegisteredNativeSource(definition))
+            if(ProjectAbyss.Abilities.R7ProductionYujinNativeMigration20261103
+                    .IsKnownSource(definition) ||
+               IsRegisteredNativeSource(definition) ||
+               ProjectAbyss.Abilities.R7ProductionOlafNativeMigration20261103
+                   .IsApprovedSource(definition))
                 throw new InvalidOperationException(
                     "R7-1 production native graph unavailable; refusing legacy fallback.");
-            // Optional legacy/pilot adapter remains only for content not yet
-            // migrated. R7-3..R7-11 will replace its effect families.
+            // Editor-only legacy/pilot adapter is retained for historical tests.
+            // Unmigrated sources still use ExecuteEntries until authored.
+#if UNITY_EDITOR
+            // R7-12: opt-in historical parity-only adapter.
+            // Never compile this legacy entry hook into player builds.
             var migration = ProjectAbyss.Abilities.R7ExclusiveEntryMigrationScope.Active;
             if (migration != null && migration.CanRoute(definition))
                 return migration.Execute(definition, context, timing);
+#endif
             return ExecuteEntries(
                 definition,
                 context,
@@ -136,15 +179,30 @@ internal sealed class SkillEffectDispatcher
                     timing,
                     useCountThisTurn);
 
+            // Approved enemy source graphs have no owner-lifecycle entries.
+            // Never run their retained legacy EffectEntry.TryApply on owners.
+            if(R7Enemy1029NativeContract20261103.HasKnownSkillId(
+                definition.SkillId))
+                return Array.Empty<SkillEffectResult>();
             // Owner-lifecycle events have no Action/Slot. The approved R7-1
             // Preparation only has on-activation operations: never dispatch
             // its retained legacy entries through owner-level TryApply.
             if(ProjectAbyss.Abilities.R7ProductionPreparationStatusMigration
-                    .IsAuthoredSource(definition) || IsRegisteredNativeSource(definition))
+                    .IsAuthoredSource(definition) || IsRegisteredNativeSource(definition) ||
+                ProjectAbyss.Abilities.R7ProductionOlafNativeMigration20261103
+                    .IsApprovedSource(definition) ||
+                ProjectAbyss.Abilities.R7ProductionOlafNativeMigration20261103
+                    .IsNativeExplosionSource(definition) ||
+                ProjectAbyss.Abilities.R7ProductionYujinNativeMigration20261103
+                    .IsKnownSource(definition))
                 return Array.Empty<SkillEffectResult>();
+#if UNITY_EDITOR
+            // R7-12: opt-in historical parity-only adapter.
+            // Never compile this legacy entry hook into player builds.
             var migration = ProjectAbyss.Abilities.R7ExclusiveEntryMigrationScope.Active;
             if (migration != null && migration.CanRoute(definition))
                 return migration.Execute(definition, context, timing);
+#endif
             return ExecuteEntries(
                 definition,
                 context,
@@ -193,6 +251,18 @@ internal sealed class SkillEffectDispatcher
             foreach(var x in UnityEngine.Resources.LoadAll<
                 ProjectAbyss.Abilities.R7NativeSingleEffectDefinition20261102>(
                     "ProjectAbyss/NativeSingles"))
+                Add(x.StableId,x.SourceAssetName);
+            foreach(var x in UnityEngine.Resources.LoadAll<
+                ProjectAbyss.Abilities.R7NativeOlafAbilityDefinition20261103>(
+                    "ProjectAbyss/NativeOlaf"))
+                Add(x.StableId,x.SourceAssetName);
+            foreach(var x in UnityEngine.Resources.LoadAll<
+                ProjectAbyss.Abilities.R7NativeOlafAbilityDefinition20261103>(
+                    "ProjectAbyss/NativeOlafCanon"))
+                Add(x.StableId,x.SourceAssetName);
+            foreach(var x in UnityEngine.Resources.LoadAll<
+                ProjectAbyss.Abilities.R7NativeYujinAbilityDefinition20261103>(
+                    "ProjectAbyss/NativeYujin"))
                 Add(x.StableId,x.SourceAssetName);
             return keys;
         });

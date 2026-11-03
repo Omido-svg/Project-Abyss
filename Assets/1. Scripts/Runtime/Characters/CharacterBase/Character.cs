@@ -1042,21 +1042,28 @@ public abstract class Character : MonoBehaviour
         switch (energyPolicy)
         {
             case TurnStartEnergyPolicy.RefillToMaximum:
-                resourceController?.RestoreEnergyToFull();
+                // R7-8: only natural gain is blocked; existing light stays.
+                resourceController?.AddEnergy(
+                    R7EnemyStage1Effect20261103.AdjustNaturalTurnRefill(
+                        this,Mathf.Max(0,MaxEnergy-CurrentEnergy)),
+                    CombatResourceChangeReason.TurnRefill);
                 break;
 
             case TurnStartEnergyPolicy.GainFlat:
                 resourceController?.AddEnergy(
-                    Data?.TurnStartEnergyAmount ?? 0,
+                    R7EnemyStage1Effect20261103.AdjustNaturalTurnRefill(
+                        this,Data?.TurnStartEnergyAmount??0),
                     CombatResourceChangeReason.TurnRefill);
                 break;
 
             case TurnStartEnergyPolicy.None:
+                R7EnemyStage1Effect20261103.AdjustNaturalTurnRefill(this,0);
                 break;
 
             default:
                 resourceController?.AddEnergy(
-                    battleContext?.Rules?.Energy?.TurnStartGain ?? 1,
+                    R7EnemyStage1Effect20261103.AdjustNaturalTurnRefill(
+                        this,battleContext?.Rules?.Energy?.TurnStartGain??1),
                     CombatResourceChangeReason.TurnRefill);
                 break;
         }

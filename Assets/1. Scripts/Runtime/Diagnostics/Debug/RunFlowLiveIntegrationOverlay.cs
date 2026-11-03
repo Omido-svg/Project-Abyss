@@ -138,7 +138,8 @@ public sealed class RunFlowLiveIntegrationOverlay : MonoBehaviour
 
         GUILayout.Label(
             "LIVE 경로는 같은 RunProgressionState/SkillUpgradeState를 BattleContext에 전달하고, " +
-            "Inventory의 RunItemDefinition.CombatItem을 실제 Player build에 주입합니다.");
+            "R7-11: 보유 아이템 원본 GUID는 보존하지만, 정본 수치가 미정인 " +
+            "TEMP_BALANCE 효과는 전투 빌드에 주입하지 않습니다.");
 
         GUI.DragWindow();
     }
@@ -306,7 +307,9 @@ public sealed class RunFlowLiveIntegrationOverlay : MonoBehaviour
         target.Log(
             $"LIVE Integration: Phase E RunItemCatalog 연결 / " +
             $"Definitions={registry.CountValidRunItems()}, " +
-            $"CombatLinked={registry.CountCombatLinkedRunItems()}");
+            $"SourceProxyLinks={registry.CountCombatLinkedRunItems()}, " +
+            $"NativeReady={registry.CountNativeReadyRunItems()}, " +
+            $"CanonicalPending={registry.CountNativePendingRunItems()}");
     }
 
     private void LogRegistryState()
@@ -320,7 +323,9 @@ public sealed class RunFlowLiveIntegrationOverlay : MonoBehaviour
         int total = registry.CountValidRunItems();
         int linked = registry.CountCombatLinkedRunItems();
         lastStatus =
-            $"Ready / Phase E Item {linked}/{total} combat-linked / " +
+            $"Run source {linked}/{total} linked / " +
+            $"R7-11 native effects ready {registry.CountNativeReadyRunItems()}, " +
+            $"pending {registry.CountNativePendingRunItems()} / " +
             $"Battle scene handoff available";
     }
 

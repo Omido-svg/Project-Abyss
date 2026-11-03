@@ -77,7 +77,6 @@ public static class R7NativeUniqueGaugeAssetMigration20261102
         return s;
     }
 
-    [MenuItem("Game System Verification/R7 - Author Five Native Unique Gauge Graphs (Edit Mode)")]
     public static void Stage()
     {
         if(Application.isPlaying)throw new InvalidOperationException("EditMode required");
@@ -113,7 +112,6 @@ public static class R7NativeUniqueGaugeAssetMigration20261102
         Debug.Log("[R7-GaugeMigration] STAGED="+created+" (existing preserved)");
     }
 
-    [MenuItem("Game System Verification/R7 - Verify Five Native Unique Gauge Graphs (Edit Mode)")]
     public static void Verify()
     {
         if(Application.isPlaying)throw new InvalidOperationException("EditMode required");

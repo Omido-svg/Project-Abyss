@@ -20,7 +20,6 @@ public static class R7NativeSOStatusParityVerification20261031
             SlotId="R7-NATIVE-STATUS-"+id
         };
     }
-    [MenuItem("Game System Verification/R7 Native SO - 9 Bleeding x 3 Levels (Play Mode)")]
     public static void Run()
     {
         if(!Application.isPlaying)throw new InvalidOperationException("Play Mode");
@@ -69,6 +68,12 @@ public static class R7NativeSOStatusParityVerification20261031
                     graph.Level0Stacks==R7NativeStatusAssetMigration20261031.ResolveStacks(d,0)&&
                     graph.Level1Stacks==R7NativeStatusAssetMigration20261031.ResolveStacks(d,1)&&
                     graph.Level2Stacks==R7NativeStatusAssetMigration20261031.ResolveStacks(d,2));
+                if(R7HistoricalParityScope20261103.IsSupersededSource(d))
+                {
+                    Check("S03b final native/event owner "+graph.StableId,
+                        R7HistoricalParityScope20261103.HasFinalOwner(d,c));
+                    continue;
+                }
                 for(int level=0;level<=2;level++)
                 {
                     c.SkillUpgrades.TrySetLevel(d,level);
@@ -78,7 +83,8 @@ public static class R7NativeSOStatusParityVerification20261031
                         priorOld==priorNew);
                     var timing=d.EffectEntries[0].EffectiveTiming;
                     router.Enabled=false;
-                    var old=Call(d,new BattleAction{Slot=Make(c,actor,targets[0],d,id++)},timing);
+                    var old=R7HistoricalParityScope20261103.ExecuteLegacy(d, () =>
+                        Call(d,new BattleAction{Slot=Make(c,actor,targets[0],d,id++)},timing));
                     router.Enabled=true;
                     int commits=router.NativeCommits;
                     var modern=Call(d,new BattleAction{Slot=Make(c,actor,targets[1],d,id++)},timing);

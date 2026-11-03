@@ -1,0 +1,31 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 048bbcf959bca544c9517bc47d1426b8, type: 3}
+  m_Name: emotion_compassion_t2_01
+  m_EditorClassIdentifier: ProjectAbyss.Runtime::R7NativeEmotion33Graph20261103
+  SchemaVersion: 1
+  StableId: emotion.compassion.t2.01
+  SourceGuid: dc13ab99634bd124e9b71e95fb5a3c6e
+  SourceAssetName: Compassion_T2_01
+  SourceDisplayName: "\uAD50\uD658 \uC2B9\uB9AC \uD68C\uBCF5"
+  Emotion: 4
+  Tier: 2
+  CanonicalDesignStatus: "\uD655\uC815"
+  State: 0
+  PendingReason: 
+  Kind: 1
+  Amount: 4
+  SecondaryAmount: 2
+  Duration: 1
+  MaximumTotal: 0
+  Ratio: 0
+  Multiplier: 1

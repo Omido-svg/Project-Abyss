@@ -10,7 +10,6 @@ using ProjectAbyss.Abilities;
 
 public static class R7NativeSODataGate20261031
 {
-    [MenuItem("Game System Verification/R7 Native SO - 24 Data Gate (Edit Mode)")]
     public static void Run()
     {
         if(Application.isPlaying)throw new InvalidOperationException("Edit mode required");

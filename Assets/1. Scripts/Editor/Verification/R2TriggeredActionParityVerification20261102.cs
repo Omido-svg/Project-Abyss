@@ -9,7 +9,6 @@ using ProjectAbyss.Abilities;
 /// <summary>R2-I live battle-action identity and legacy single-path parity.</summary>
 public static class R2TriggeredActionParityVerification20261102
 {
-    [MenuItem("Game System Verification/R2 - Independent Triggered Actions (Play Mode)")]
     public static void Run()
     {
         if(!Application.isPlaying)throw new InvalidOperationException("Play Mode required.");

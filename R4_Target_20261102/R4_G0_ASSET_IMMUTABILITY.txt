@@ -1,7 +1,0 @@
-G0_ASSET_SHA256=398
-CHANGED=0
-MISSING=0
-
-PLAY=False
-SCENE=Battle Test Scene
-DIRTY=True

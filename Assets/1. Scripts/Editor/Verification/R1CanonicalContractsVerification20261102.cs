@@ -21,7 +21,6 @@ public static class R1CanonicalContractsVerification20261102
         public string[] Failures;
     }
 
-    [MenuItem("Game System Verification/R1 - Canonical I W Contracts (Edit Mode)")]
     public static void Run()
     {
         if(Application.isPlaying)throw new InvalidOperationException("R1 contract gate requires Edit Mode.");

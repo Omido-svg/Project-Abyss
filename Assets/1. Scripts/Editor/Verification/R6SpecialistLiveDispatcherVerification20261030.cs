@@ -48,7 +48,6 @@ public static class R6SpecialistLiveDispatcherVerification20261030
         => new ReactionRequest(id,root,root,cause,chain,ownerId,skill,
             ReactionTimingCheckpoint.AfterClashCompleted,priority,id);
 
-    [MenuItem("Game System Verification/R6-Ia - Specialist Coordinator Live (Play Mode)")]
     public static void Run()
     {
         if(!Application.isPlaying)throw new InvalidOperationException("Play Mode required");

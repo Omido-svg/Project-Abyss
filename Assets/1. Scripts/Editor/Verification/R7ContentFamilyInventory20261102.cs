@@ -14,7 +14,6 @@ using ProjectAbyss.Abilities;
 /// </summary>
 public static class R7ContentFamilyInventory20261102
 {
-    [MenuItem("Game System Verification/R7 - Full Content Family Readiness (Edit Mode)")]
     public static void Run()
     {
         if(Application.isPlaying)throw new InvalidOperationException("EditMode only");
@@ -104,7 +103,8 @@ public static class R7ContentFamilyInventory20261102
             if(valid){pass++;Debug.Log("[R7-Content] PASS "+id+" "+desc);}
             else{fail++;Debug.LogError("[R7-Content] FAIL "+id+" "+desc);}
         }
-        Check("C01 inventory 145 skills",skill.Length==145,"skills="+skill.Length);
+        Check("C01 original 145 plus Stage1 19 skills",
+             skill.Length==164&&R7Stage12SkillCorpus20261103.IsExactLayeredCensus(),"skills="+skill.Length);
         Check("C02 36 native graph-linked source skills",
             nativeResource.Length==15 && nativeStatus.Length==9 &&
             nativeMixed.Length==7 && nativeGauge.Length==5,"15+9+7+5");

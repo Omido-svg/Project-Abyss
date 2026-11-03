@@ -38,7 +38,9 @@ public static class CommonStatusSpeedRules
             }
         }
 
-        return Mathf.Max(0, total);
+        // Swift and Bind are independent N/T entries; sum signed values.
+        // Bounds clamp happens in SpeedManager, after algebraic combination.
+        return total;
     }
 }
 

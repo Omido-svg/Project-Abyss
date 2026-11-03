@@ -74,6 +74,10 @@ public sealed class BattleActionPlanCommandService
         // 교체/취소로 두 번째 행동을 꽂아 즉시 효과를 중복 실행할 수 없게 잠근다.
         if (result.PreviousSlot?.PlanningEffectCommitted == true)
             return Fail(result, "이미 계획 단계에서 실행된 행동 슬롯은 이번 턴에 교체할 수 없습니다.");
+        if(R7OlafSingleCombatAimLock20261103.IsLockedForOther(
+                actionManager,request.Owner,request.TargetSlot,request.Skill,
+                result.PreviousSlot))
+            return Fail(result,"일기토가 독점 조준한 적 슬롯입니다.");
 
         ActionSlot slot = new()
         {
@@ -153,6 +157,8 @@ public sealed class BattleActionPlanCommandService
             slot.SkipResolution = true;
         }
 
+        R7OlafSingleCombatAimLock20261103.ApplyExclusiveAssignment(
+            actionManager,slot);
         result.Success = true;
         result.Slot = slot;
         return result;
@@ -289,10 +295,16 @@ public sealed class BattleActionPlanCommandService
             return false;
         }
 
+        if(R7OlafSingleCombatAimLock20261103.IsLockedForOther(
+                actionManager,liveSource.Owner,targetSlot,liveSource.Skill,
+                liveSource))
+            return false;
         liveSource.TargetCharacter = targetSlot.Owner;
         liveSource.TargetPart = targetPart;
         liveSource.TargetSlot = targetSlot;
         liveSource.SecondaryTargetPart = null;
+        R7OlafSingleCombatAimLock20261103.ApplyExclusiveAssignment(
+            actionManager,liveSource);
         return true;
     }
 

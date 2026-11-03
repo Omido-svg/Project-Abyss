@@ -56,7 +56,11 @@ public sealed class BattleWorldActionSlotCellUI : MonoBehaviour,
     private Color normalColor;
     private Color currentColor;
     private Vector3 currentScale = Vector3.one;
-    private bool pointerInside;
+    
+    // Presentation-only: share the same computed hover relation for alpha,
+    // tint and outline in this LateUpdate pass.
+    private bool isFocusRelated;
+private bool pointerInside;
     private CanvasGroup canvasGroup;
     private TMP_Text targetDecisionBadge;
     private TMP_Text threatBadge;
@@ -232,6 +236,10 @@ public sealed class BattleWorldActionSlotCellUI : MonoBehaviour,
         if (assignedTarget)
             wantedColor = Color.Lerp(normalColor, AssignedTargetTint, 0.22f);
 
+        if (isFocusRelated)
+            wantedColor = Color.Lerp(wantedColor,
+                new Color(0.90f, 0.88f, 0.52f, 1f), 0.25f);
+
         if (targetSlot != null &&
             manager != null &&
             manager.IsSelectingTarget)
@@ -309,6 +317,11 @@ public sealed class BattleWorldActionSlotCellUI : MonoBehaviour,
 
                 outlineColor = candidate;
             }
+            else if (isFocusRelated && !pending && !selected)
+            {
+                outlineColor = new Color(0.98f, 0.81f, 0.30f, 0.94f);
+            }
+            
             else if (assignedSkill && !pending && !selected)
             {
                 outlineColor = new Color(0.18f, 0.72f, 1f, alpha);
@@ -468,10 +481,9 @@ public sealed class BattleWorldActionSlotCellUI : MonoBehaviour,
             hovered == this;
 
         bool isIncomingSource =
-            hoverFocus &&
-            !isHovered &&
-            RepresentsIncomingAttackTo(
-                hovered);
+            hoverFocus && !isHovered &&
+            RepresentsIncomingAttackTo(hovered);
+        isFocusRelated = isIncomingSource;
 
         bool targetFocus =
             manager != null &&
@@ -534,21 +546,17 @@ public sealed class BattleWorldActionSlotCellUI : MonoBehaviour,
                 t);
     }
 
-    private bool RepresentsIncomingAttackTo(
+private bool RepresentsIncomingAttackTo(
         BattleWorldActionSlotCellUI hovered)
     {
         if (hovered == null)
             return false;
 
-        ActionSlot represented =
-            GetRepresentedActionSlot();
-
-        if (represented == null)
-            return false;
-
-        return ActionTargetsCell(
-            represented,
-            hovered);
+        // Include direct incoming attacks, their clash/attack partners,
+        // and an unassigned player-part cell that receives the hovered
+        // enemy's outgoing attack. Read-only UI focus only.
+        return BattleMvpSlotHoverRelations20261103.IsRelatedCell(
+            hovered, this, manager);
     }
 
     public ActionSlot GetRepresentedActionSlot()

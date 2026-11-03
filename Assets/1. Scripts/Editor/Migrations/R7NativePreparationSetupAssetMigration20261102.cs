@@ -24,7 +24,6 @@ public static class R7NativePreparationSetupAssetMigration20261102
             throw new InvalidOperationException("Preparation source contract changed");
         return src;
     }
-    [MenuItem("Game System Verification/R7 - Author Native Preparation Setup (Edit Mode)")]
     public static void Stage()
     {
         if(Application.isPlaying)throw new InvalidOperationException("EditMode");
@@ -50,7 +49,6 @@ public static class R7NativePreparationSetupAssetMigration20261102
         }
         Verify();
     }
-    [MenuItem("Game System Verification/R7 - Verify Native Preparation Setup (Edit Mode)")]
     public static void Verify()
     {
         if(Application.isPlaying)throw new InvalidOperationException("EditMode");

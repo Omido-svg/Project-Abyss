@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -334,8 +334,13 @@ public sealed class RunFlowLiveBattleBridge : MonoBehaviour
             }
         }
 
-        List<CharacterItem> merged =
-            new List<CharacterItem>(originalItems);
+        // R7-11: never inject/retain an unapproved TEMP_BALANCE_V1
+        // item from the live run into the combat build. The original
+        // prefab item list is preserved separately for exact restoration.
+        List<CharacterItem> merged = new List<CharacterItem>();
+        foreach(CharacterItem original in originalItems)
+            if(original is not TempBalanceRunItem)
+                merged.Add(original);
 
         int injected = 0;
         IReadOnlyList<RunItemDefinition> owned =
@@ -345,8 +350,12 @@ public sealed class RunFlowLiveBattleBridge : MonoBehaviour
         {
             for (int i = 0; i < owned.Count; i++)
             {
+                // Fail closed: known R7-11 source IDs must match their
+                // source-locked native graph. Until §16 item effects are
+                // authored, this returns null instead of a TEMP proxy.
                 CharacterItem combatItem =
-                    owned[i]?.CombatItem;
+                    R7NativeRunItemCatalog20261103.ResolveExecutableCombatItem(
+                        owned[i]);
 
                 if (combatItem == null || merged.Contains(combatItem))
                     continue;
@@ -514,7 +523,9 @@ public sealed class RunFlowLiveBattleBridge : MonoBehaviour
         HashSet<CharacterItem> unique = new();
         for (int i = 0; i < owned.Count; i++)
         {
-            CharacterItem item = owned[i]?.CombatItem;
+            CharacterItem item =
+                R7NativeRunItemCatalog20261103.ResolveExecutableCombatItem(
+                    owned[i]);
             if (item != null)
                 unique.Add(item);
         }
@@ -541,7 +552,9 @@ public sealed class RunFlowLiveBattleBridge : MonoBehaviour
         HashSet<CharacterItem> expected = new();
         for (int i = 0; i < owned.Count; i++)
         {
-            CharacterItem item = owned[i]?.CombatItem;
+            CharacterItem item =
+                R7NativeRunItemCatalog20261103.ResolveExecutableCombatItem(
+                    owned[i]);
             if (item != null)
                 expected.Add(item);
         }
@@ -574,7 +587,11 @@ public sealed class RunFlowLiveBattleBridge : MonoBehaviour
         HashSet<CharacterItem> unique = new();
         for (int i = 0; i < owned.Count; i++)
         {
-            CharacterItem item = owned[i]?.CombatItem;
+            // R7-11: no TEMP_BALANCE RunItem has an approved native
+            // combat payload. This audit count is necessarily zero.
+            CharacterItem item =
+                R7NativeRunItemCatalog20261103.ResolveExecutableCombatItem(
+                    owned[i]);
             if (item is TempBalanceRunItem)
                 unique.Add(item);
         }

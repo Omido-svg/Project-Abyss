@@ -23,7 +23,6 @@ public static class DamageSystemR1RollPowerVerification20261029
 
     private static readonly List<SkillDefinition> createdDefinitions = new();
 
-    [MenuItem("Game System Verification/1029 Damage R1 - Roll Power Contract (Play Mode)")]
     public static void VerifyFromMenu()
     {
         if (!Application.isPlaying)

@@ -42,7 +42,6 @@ public static class R5CommandApplyVerification20261030
     private static AbilityEventContext Event(long action=900,long cause=111) =>
         new AbilityEventContext(AbilityEventKind.RollUsing,action,cause,101,0,false,false);
 
-    [MenuItem("Game System Verification/R5 - Command Apply Contract (Edit Mode)")]
     public static void Run()
     {
         if(Application.isPlaying)throw new InvalidOperationException("Edit Mode only");

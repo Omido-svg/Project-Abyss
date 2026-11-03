@@ -23,7 +23,6 @@ public static class R8PilotAssetBackupGate20261030
             return BitConverter.ToString(hash.ComputeHash(source))
                 .Replace("-","").ToLowerInvariant();
     }
-    [MenuItem("Game System Verification/R8 - Immutable Pilot Asset Backup (Edit Mode)")]
     public static void Run()
     {
         if(Application.isPlaying)
@@ -109,7 +108,7 @@ public static class R8PilotAssetBackupGate20261030
             if(ok){pass++;Debug.Log("[R8-Backup] PASS "+label);}
             else{fail++;Debug.LogError("[R8-Backup] FAIL "+label);}
         }
-        Check("B01 expected vetted candidate set",candidates.Length==9);
+        Check("B01 expected vetted candidate set",candidates.Length==13);
         Check("B02 source and matching meta backed up",pairs.Count==2*candidates.Length);
         Check("B03 every asset has exact-byte SHA verified backup",
             pairs.All(p=>File.Exists(p.Backup)&&Sha(p.Original)==Sha(p.Backup)));

@@ -28,7 +28,6 @@ public static class DamageSystemG1CompletionVerification20261029
 
     private static readonly List<SkillDefinition> createdDefinitions = new();
 
-    [MenuItem("Game System Verification/1029 Damage G1 - Completion Gate (Play Mode)")]
     public static void VerifyFromMenu()
     {
         if (!Application.isPlaying)

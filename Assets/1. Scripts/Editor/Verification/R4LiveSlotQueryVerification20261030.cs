@@ -8,7 +8,6 @@ using ProjectAbyss.Abilities;
 
 public static class R4LiveSlotQueryVerification20261030
 {
-    [MenuItem("Game System Verification/R4 - Live Slot Query (Play Mode)")]
     public static void Run()
     {
         if (!Application.isPlaying)

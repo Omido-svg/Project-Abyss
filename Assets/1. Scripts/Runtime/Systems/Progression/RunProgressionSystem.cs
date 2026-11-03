@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using UnityEngine;
 
 public enum RunNodeRewardKind
@@ -69,6 +69,17 @@ public enum HifumiEngraveBranch
     Defeat = 2
 }
 
+/// <summary>Serializable save boundary for Hifumi's run-persistent Engrave track.</summary>
+[Serializable]
+public sealed class HifumiEngraveRunSnapshot20261103
+{
+    public int SchemaVersion=1;
+    public int Stage=1;
+    public HifumiEngraveBranch Branch;
+    public int VictoryProgress;
+    public int DefeatProgress;
+}
+
 /// <summary>
 /// 0922 §19.7 몸에 새기다의 런 영구 진행 상태.
 /// 단계 상승 임계치는 아직 (미정)이므로 여기서는 진행 축/branch lock/현재 단계를
@@ -89,6 +100,39 @@ public sealed class HifumiEngraveRunProgression
         VictoryProgress = 0;
         DefeatProgress = 0;
     }
+
+    /// <summary>Explicit, versioned run-save snapshot. Pure read, no mutation.</summary>
+    public HifumiEngraveRunSnapshot20261103 CaptureSnapshot() =>
+        new HifumiEngraveRunSnapshot20261103
+        {
+            SchemaVersion=1,
+            Stage=Stage,
+            Branch=Branch,
+            VictoryProgress=VictoryProgress,
+            DefeatProgress=DefeatProgress
+        };
+
+    /// <summary>
+    /// Reject malformed/old snapshots atomically. A missing snapshot is not
+    /// an instruction to reset a live run; caller decides when to Reset().
+    /// No arbitrary stage thresholds are inferred from the saved progress.
+    /// </summary>
+    public bool TryRestoreSnapshot(HifumiEngraveRunSnapshot20261103 snapshot)
+    {
+        if(snapshot==null||snapshot.SchemaVersion!=1||
+            snapshot.Stage<1||snapshot.Stage>4||
+            !Enum.IsDefined(typeof(HifumiEngraveBranch),snapshot.Branch)||
+            snapshot.VictoryProgress<0||snapshot.DefeatProgress<0||
+            (snapshot.Stage==1&&snapshot.Branch!=HifumiEngraveBranch.None)||
+            (snapshot.Stage>1&&snapshot.Branch==HifumiEngraveBranch.None))
+            return false;
+        Stage=snapshot.Stage;
+        Branch=snapshot.Branch;
+        VictoryProgress=snapshot.VictoryProgress;
+        DefeatProgress=snapshot.DefeatProgress;
+        return true;
+    }
+
 
     public void RecordExchangeOutcome(bool won)
     {
@@ -180,6 +224,12 @@ public sealed class RunProgressionState
     public SkillUpgradeState SkillUpgrades { get; } = new();
     public RunInventory Inventory { get; } = new();
     public HifumiEngraveRunProgression HifumiEngrave { get; } = new();
+
+    public HifumiEngraveRunSnapshot20261103 CaptureHifumiEngrave() =>
+        HifumiEngrave.CaptureSnapshot();
+
+    public bool TryRestoreHifumiEngrave(HifumiEngraveRunSnapshot20261103 snapshot) =>
+        HifumiEngrave.TryRestoreSnapshot(snapshot);
 
     public void Reset(int startingGold = 0, int startingStage = 1)
     {

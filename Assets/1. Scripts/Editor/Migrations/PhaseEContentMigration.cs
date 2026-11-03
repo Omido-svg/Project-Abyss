@@ -138,7 +138,6 @@ public static class PhaseEContentMigration
         EditorApplication.delayCall += ApplyIfNeeded;
     }
 
-    [MenuItem("Tools/Project Abyss/Migrations/Phase E/Apply Confirmed Content Migration")]
     public static void ApplyFromMenu()
     {
         Apply();
