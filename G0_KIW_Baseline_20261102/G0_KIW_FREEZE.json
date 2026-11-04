@@ -1,0 +1,29 @@
+{
+    "GeneratedAtUtc": "2026-11-04T03:30:12.7164362Z",
+    "Branch": "Default-Battle-Test",
+    "Head": "bc6168ccc94f1ad65f84d912a01c956fe8aa7871",
+    "ActiveScene": "Assets/5. Scenes/Battle Test Scene.unity",
+    "GoldenHash": "fd59b9b210ca79e5802b33a90f8503496c4ec182c6f746d510beaea98d62e332",
+    "AuditHash": "d67d48e06afd5a0ce8979fdf631dc920b7dbe42ee73f1d3270dd88e368047465",
+    "SceneDirty": true,
+    "SceneMissingScripts": 0,
+    "SkillAssets": 164,
+    "EffectEntries": 118,
+    "EmotionAugments": 63,
+    "GoldenCount": 10,
+    "SnapshotAssets": 603,
+    "EvidenceLines": 41,
+    "KeywordMissing": 5,
+    "PolicyUndecided": 10,
+    "ManualReviewEffects": 20,
+    "AuthoredWeightedSkills": 0,
+    "Pass": 10,
+    "Fail": 0,
+    "Failures": [],
+    "PendingForR1ToR6": [
+        "K: verify per-Part Bleed and BloodPrice ownership; do not infer implementations from token names.",
+        "I: Stepwise & reaction scheduler runtime integration plus UI chronological replay are R6 work.",
+        "W: zero authored weight>1 cards; synthetic fixtures are separate from shipped cards.",
+        "Policy decisions and manual-review effect rows are pending in G0 exports."
+    ]
+}

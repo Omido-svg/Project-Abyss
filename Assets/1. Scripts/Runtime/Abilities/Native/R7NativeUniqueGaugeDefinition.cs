@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace ProjectAbyss.Abilities
 {
-    public enum R7UniqueGaugeKind { OlafMadness = 1, YujinSense = 2 }
+    public enum UniqueGaugeKind { OlafMadness = 1, YujinSense = 2 }
 
     /// <summary>R7 native unique resource authoring. Runtime never reads
     /// SkillEffectEntry, TempBalance proxy or upgrade profile.</summary>
@@ -15,7 +15,7 @@ namespace ProjectAbyss.Abilities
         public string StableId;
         public string SourceAssetGuid;
         public string SourceAssetName;
-        public R7UniqueGaugeKind Kind;
+        public UniqueGaugeKind Kind;
         public AbilityEventKind Trigger;
         public int Level0Amount=1;
         public int Level1Amount=1;
@@ -28,8 +28,8 @@ namespace ProjectAbyss.Abilities
             !string.IsNullOrWhiteSpace(StableId)&&
             !string.IsNullOrWhiteSpace(SourceAssetGuid)&&
             !string.IsNullOrWhiteSpace(SourceAssetName)&&
-            (Kind==R7UniqueGaugeKind.OlafMadness||
-             Kind==R7UniqueGaugeKind.YujinSense)&&
+            (Kind==UniqueGaugeKind.OlafMadness||
+             Kind==UniqueGaugeKind.YujinSense)&&
             Level0Amount>0&&Level1Amount>0&&Level2Amount>0&&RollNumber>=1;
     }
 }

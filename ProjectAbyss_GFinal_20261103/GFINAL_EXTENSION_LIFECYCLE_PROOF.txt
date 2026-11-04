@@ -1,0 +1,35 @@
+PROOF_VERSION=2
+UTC=2026-11-04T05:53:12.5410353Z
+SOURCE_FINGERPRINT=B3FB8C63E3240ADA34F62FFD2E9280594142837BB7A003548D35ABDD000462AB
+P05_PASS=12
+P05_FAIL=0
+P06_PASS=13
+P06_FAIL=0
+P06_EVENT_BASELINE=268
+P06_EVENT_AFTER=268
+PASS Olaf_Test idempotent registration
+PASS Olaf_Test dispose restores delegates
+PASS Yujin_Test idempotent registration
+PASS Yujin_Test dispose restores delegates
+PASS Hifumi_Test idempotent registration
+PASS Hifumi_Test dispose restores delegates
+PASS NormalEnemy_Test idempotent registration
+PASS NormalEnemy_Test dispose restores delegates
+PASS EliteEnemy_Test idempotent registration
+PASS EliteEnemy_Test dispose restores delegates
+PASS BossEnemy_Test idempotent registration
+PASS BossEnemy_Test dispose restores delegates
+P05 DETAIL PASS=12 FAIL=0 ; PASS | P05 conditional passive creates mechanic without core edits ; PASS | P05 new normal skill 1 can be created and displayed ; PASS | P05 new normal skill 2 can be created and displayed ; PASS | P05 new normal skill 3 can be created and displayed ; PASS | P04 representative authored SlotWeighted card ; PASS | P05 conditional passive registers in battle scope ; PASS | P05 conditional event only fires for matched turn ; PASS | P06 passive unsubscribes cleanly on battle exit ; PASS | P05 compound graph schema matches new emotion asset ; PASS | P05 compound augment invokes energy and prestige effects ; PASS | P05 compound augment installs independent roll modifier ; PASS | P05 no saved skill or emotion asset introduced
+PASS overall event subscription balance 268 => 268
+BUILD_STATUS=Succeeded
+BUILD_ERRORS=0
+BUILD_WARNINGS=1
+BUILD_TIME_UTC=2026-11-03T20:48:48.8455870Z
+SMOKE_MISSING_SCRIPTS=0
+SMOKE_EXCEPTIONS=0
+SMOKE_AI_PLAN_COMMITS=3
+SMOKE_NOTE=Headless smoke used manual close; successful natural game exit is not claimed.
+P06_LOADOUT_SWAP=PASS
+P06_LOADOUT_DETAIL=UNEQUIP=True EQUIP=True EVENTS=2 MECHANICS=3->3 REASON=
+P06_SCENE_UNLOAD=PASS
+P06_SCENE_DETAIL=before=268 during=296 after=268 sceneGone=True

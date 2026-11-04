@@ -1,0 +1,6 @@
+Kind,Meaning,IndependentAction
+"HifumiCounterRoll","Original Hifumi counter roll","false"
+"EnemyCounterRoll","Enemy counter roll","false"
+"SecondaryHit","Attack weight secondary hit","false"
+"FollowUpRoll","Roll within current action","false"
+"TriggeredSkillAction","New action with independent ID","true"

@@ -24,10 +24,10 @@ public class NormalEnemy : Enemy, ICharacterAuthoringTarget
     {
         var role=GetMechanic<NormalEnemy0922RoleMechanic>();
         if(role?.RoleAssigned!=true||
-            role.Species==R7EnemySpecies1029.Unknown||
+            role.Species==EnemySpecies1029.Unknown||
             context?.Services?.SpeedManager==null)
             return base.DecideSlots(context);
-        var definition=R7EnemyStage1SkillCatalog20261103.Get(
+        var definition=EnemyStageOneSkillCatalog.Get(
             role.Species,role.PlannedAction);
         if(definition==null)
             return base.DecideSlots(context);
@@ -98,7 +98,7 @@ public class NormalEnemy : Enemy, ICharacterAuthoringTarget
         // 같은 NormalEnemy prefab을 사용하더라도 3인 조우는 135, 4인 조우는 101.
         // 혼합/비정본 테스트 조우는 기존 serialized 값을 보존한다.
         int resolvedMaxHp =
-            Canonical0922EnemyEncounterRules.ResolveNormalEnemyHp(
+            EnemyEncounterRules.ResolveNormalEnemyHp(
                 BattleContext,
                 singleMaxHP);
 
@@ -127,8 +127,8 @@ public class NormalEnemy : Enemy, ICharacterAuthoringTarget
         get
         {
             var p=GetMechanic<NormalEnemy0922RoleMechanic>()?.PlannedAction;
-            return p==R7EnemyAction1029.HealPreparation||
-                   p==R7EnemyAction1029.SupplyPreparation;
+            return p==EnemyAction1029.HealPreparation||
+                   p==EnemyAction1029.SupplyPreparation;
         }
     }
 
@@ -214,7 +214,7 @@ internal static class NormalEnemyRuntimeSkill
     {
         // 1029 counter soldier's 6-power retaliation is FIXED, not D8.
         // Never override its native authored zero-variance roll with 1..8.
-        if(definition.SkillId==R7EnemyCounterReaction20261103.CounterSkillId)
+        if(definition.SkillId==EnemyCounterReaction.CounterSkillId)
             return definition.CreateResolver();
 
         // Normal enemy attacks otherwise still use the canonical D8.

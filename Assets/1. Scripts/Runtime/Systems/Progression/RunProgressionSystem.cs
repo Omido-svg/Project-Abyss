@@ -71,7 +71,7 @@ public enum HifumiEngraveBranch
 
 /// <summary>Serializable save boundary for Hifumi's run-persistent Engrave track.</summary>
 [Serializable]
-public sealed class HifumiEngraveRunSnapshot20261103
+public sealed class HifumiEngraveRunSnapshot
 {
     public int SchemaVersion=1;
     public int Stage=1;
@@ -102,8 +102,8 @@ public sealed class HifumiEngraveRunProgression
     }
 
     /// <summary>Explicit, versioned run-save snapshot. Pure read, no mutation.</summary>
-    public HifumiEngraveRunSnapshot20261103 CaptureSnapshot() =>
-        new HifumiEngraveRunSnapshot20261103
+    public HifumiEngraveRunSnapshot CaptureSnapshot() =>
+        new HifumiEngraveRunSnapshot
         {
             SchemaVersion=1,
             Stage=Stage,
@@ -117,7 +117,7 @@ public sealed class HifumiEngraveRunProgression
     /// an instruction to reset a live run; caller decides when to Reset().
     /// No arbitrary stage thresholds are inferred from the saved progress.
     /// </summary>
-    public bool TryRestoreSnapshot(HifumiEngraveRunSnapshot20261103 snapshot)
+    public bool TryRestoreSnapshot(HifumiEngraveRunSnapshot snapshot)
     {
         if(snapshot==null||snapshot.SchemaVersion!=1||
             snapshot.Stage<1||snapshot.Stage>4||
@@ -225,10 +225,10 @@ public sealed class RunProgressionState
     public RunInventory Inventory { get; } = new();
     public HifumiEngraveRunProgression HifumiEngrave { get; } = new();
 
-    public HifumiEngraveRunSnapshot20261103 CaptureHifumiEngrave() =>
+    public HifumiEngraveRunSnapshot CaptureHifumiEngrave() =>
         HifumiEngrave.CaptureSnapshot();
 
-    public bool TryRestoreHifumiEngrave(HifumiEngraveRunSnapshot20261103 snapshot) =>
+    public bool TryRestoreHifumiEngrave(HifumiEngraveRunSnapshot snapshot) =>
         HifumiEngrave.TryRestoreSnapshot(snapshot);
 
     public void Reset(int startingGold = 0, int startingStage = 1)

@@ -598,9 +598,9 @@ public sealed class BattleTestScenarioSwitcher : MonoBehaviour
             case BattleTestEncounterMode.NormalBattle:
                 // 0922 §12.3: normal encounter size is rolled encounter-wide,
                 // 3 enemies 25% / 4 enemies 75%. The role composition itself
-                // is assigned later by Canonical0922EnemyTurnCoordinator.
+                // is assigned later by CanonicalEnemyTurnCoordinator.
                 int normalCount =
-                    Canonical0922EnemyEncounterRules.RollEnemyCount(
+                    EnemyEncounterRules.RollEnemyCount(
                         Random.value);
                 AddRepeated(result, normalEnemyPrefab, normalCount);
                 break;

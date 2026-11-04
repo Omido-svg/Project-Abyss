@@ -33,8 +33,8 @@ public sealed class RunFlowTestHarness : MonoBehaviour
     private static string NativeItemPendingLabel(RunItemDefinition source)
     {
         if(source!=null &&
-           R7NativeRunItemCatalog20261103.TryResolve(source,out var graph)&&
-           graph.State==R7NativeRunItemState20261103.CanonicalEffectPending)
+           NativeRunItemCatalog.TryResolve(source,out var graph)&&
+           graph.State==NativeRunItemState.CanonicalEffectPending)
             return " [효과 미정 · 전투 보너스 없음]";
         return string.Empty;
     }

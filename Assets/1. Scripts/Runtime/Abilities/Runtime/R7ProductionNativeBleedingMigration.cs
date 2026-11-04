@@ -12,7 +12,7 @@ namespace ProjectAbyss.Abilities
     public sealed class R7ProductionNativeBleedingMigration : IDisposable
     {
         private static Dictionary<string,R7NativeStatusAbilityDefinition> catalog;
-        private readonly R7NativeStatusAbilityEngine engine;
+        private readonly NativeStatusAbilityEngine engine;
         private bool disposed;
         public bool Enabled {get;set;}=true;
         public int NativeAttempts=>engine.Attempts;
@@ -20,7 +20,7 @@ namespace ProjectAbyss.Abilities
         public static int ApprovedSkillCount=>Catalog.Count;
         public R7ProductionNativeBleedingMigration(BattleContext battle)
         {
-            engine=new R7NativeStatusAbilityEngine(battle);
+            engine=new NativeStatusAbilityEngine(battle);
         }
 
         private static Dictionary<string,R7NativeStatusAbilityDefinition> Catalog

@@ -608,7 +608,7 @@ public sealed class HifumiMechanic :
             int burned = SpendableBone;
             ConsumeAllBonePaymentResources();
             owner?.AddTurnClashPowerBonus(
-                R7HifumiNativeRules20261103.GamblingPowerFromBoneBurned(burned));
+                HifumiNativeRules.GamblingPowerFromBoneBurned(burned));
         }
         else if (id == HifumiSkillIds.AllIn)
         {
@@ -1045,7 +1045,7 @@ public sealed class HifumiMechanic :
 
         // Hifumi-only Blood Price N/T applies solely to genuine received
         // HP injury, after shields and damage reduction.
-        AddBone(R7HifumiNativeRules20261103.BoneFromReceivedHit(
+        AddBone(HifumiNativeRules.BoneFromReceivedHit(
             finalHpDamage,bloodPriceThisTurn));
     }
 
@@ -1182,7 +1182,7 @@ public sealed class HifumiMechanic :
         if (owner == null || owner.IsDead)
             return;
 
-        AddBone(R7HifumiNativeRules20261103.CatastropheDirectBone);
+        AddBone(HifumiNativeRules.CatastropheDirectBone);
         catastropheSelfDamageDepth++;
         try
         {
@@ -1540,7 +1540,7 @@ public sealed class HifumiMechanic :
 
             if(canGoldanBreak)
                 request.BreakMode =
-                    R7HifumiNativeRules20261103.GoldanBreakMode(bloomSnapshot);
+                    HifumiNativeRules.GoldanBreakMode(bloomSnapshot);
 
             DamageContext counterDamage =
                 battleContext?.Services?.DamageManager

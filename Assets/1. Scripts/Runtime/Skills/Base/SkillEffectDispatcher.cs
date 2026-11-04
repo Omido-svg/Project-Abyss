@@ -63,14 +63,14 @@ internal sealed class SkillEffectDispatcher
             // R7-12: historical parity only, strictly one GUID-bound test
             // invocation at a time. NEVER available in player builds and
             // NEVER an implicit fallback for a missing production graph.
-            if(R7HistoricalParityScope20261103.Matches(definition))
+            if(HistoricalParityScope.Matches(definition))
                 return ExecuteEntries(definition,context,timing);
 #endif
             // R7-5 canonical Olaf must take priority over stale resource/
             // unique-gauge pilot graphs with matching IDs (D04/D07).
             // The event-owned 3 prestige cards run from OlafMadnessMechanic
             // exactly once; never also execute their TEMP proxy/native gauge.
-            if(ProjectAbyss.Abilities.R7ProductionOlafNativeMigration20261103
+            if(ProjectAbyss.Abilities.OlafNativeAbilityRuntimeBinding
                 .IsNativePrestigeSource(definition))
                 return Array.Empty<SkillEffectResult>();
             var olaf=context.BattleContext?.Services?.R7OlafNativeMigration;
@@ -103,16 +103,16 @@ internal sealed class SkillEffectDispatcher
                 return generic.Execute(definition,context,timing);
             // R7-5 standard/single-cut explosion is executed by the Olaf
             // native event mechanic, not the stale TempBalance TargetBleeding.
-            if(ProjectAbyss.Abilities.R7ProductionOlafNativeMigration20261103
+            if(ProjectAbyss.Abilities.OlafNativeAbilityRuntimeBinding
                 .IsNativeExplosionSource(definition) ||
-                ProjectAbyss.Abilities.R7ProductionOlafNativeMigration20261103
+                ProjectAbyss.Abilities.OlafNativeAbilityRuntimeBinding
                     .IsNativePrestigeSource(definition))
                 return Array.Empty<SkillEffectResult>();
             // R7-8: seven known enemy skill sources must NEVER fall back to
             // the legacy entry dispatcher when a native graph/service is
             // missing. This also rejects a mismatched name/entry count under
             // a known stable ID, preventing silent save-identity collisions.
-            if(R7Enemy1029NativeContract20261103.HasKnownSkillId(
+            if(EnemyCombatNativeContract.HasKnownSkillId(
                 definition.SkillId))
                 throw new InvalidOperationException(
                     "R7-8 enemy native route missing or mismatched; legacy fallback forbidden.");
@@ -124,10 +124,10 @@ internal sealed class SkillEffectDispatcher
                     "R7-1 Preparation native route unavailable; refusing legacy fallback.");
             // An authored native graph must never become a legacy migration
             // simply because its runtime route or data is unavailable.
-            if(ProjectAbyss.Abilities.R7ProductionYujinNativeMigration20261103
+            if(ProjectAbyss.Abilities.YujinNativeAbilityRuntimeBinding
                     .IsKnownSource(definition) ||
                IsRegisteredNativeSource(definition) ||
-               ProjectAbyss.Abilities.R7ProductionOlafNativeMigration20261103
+               ProjectAbyss.Abilities.OlafNativeAbilityRuntimeBinding
                    .IsApprovedSource(definition))
                 throw new InvalidOperationException(
                     "R7-1 production native graph unavailable; refusing legacy fallback.");
@@ -181,7 +181,7 @@ internal sealed class SkillEffectDispatcher
 
             // Approved enemy source graphs have no owner-lifecycle entries.
             // Never run their retained legacy EffectEntry.TryApply on owners.
-            if(R7Enemy1029NativeContract20261103.HasKnownSkillId(
+            if(EnemyCombatNativeContract.HasKnownSkillId(
                 definition.SkillId))
                 return Array.Empty<SkillEffectResult>();
             // Owner-lifecycle events have no Action/Slot. The approved R7-1
@@ -189,11 +189,11 @@ internal sealed class SkillEffectDispatcher
             // its retained legacy entries through owner-level TryApply.
             if(ProjectAbyss.Abilities.R7ProductionPreparationStatusMigration
                     .IsAuthoredSource(definition) || IsRegisteredNativeSource(definition) ||
-                ProjectAbyss.Abilities.R7ProductionOlafNativeMigration20261103
+                ProjectAbyss.Abilities.OlafNativeAbilityRuntimeBinding
                     .IsApprovedSource(definition) ||
-                ProjectAbyss.Abilities.R7ProductionOlafNativeMigration20261103
+                ProjectAbyss.Abilities.OlafNativeAbilityRuntimeBinding
                     .IsNativeExplosionSource(definition) ||
-                ProjectAbyss.Abilities.R7ProductionYujinNativeMigration20261103
+                ProjectAbyss.Abilities.YujinNativeAbilityRuntimeBinding
                     .IsKnownSource(definition))
                 return Array.Empty<SkillEffectResult>();
 #if UNITY_EDITOR
@@ -249,19 +249,19 @@ internal sealed class SkillEffectDispatcher
                     "ProjectAbyss/NativeUniqueGauges"))
                 Add(x.StableId,x.SourceAssetName);
             foreach(var x in UnityEngine.Resources.LoadAll<
-                ProjectAbyss.Abilities.R7NativeSingleEffectDefinition20261102>(
+                ProjectAbyss.Abilities.NativeSingleEffectDefinition>(
                     "ProjectAbyss/NativeSingles"))
                 Add(x.StableId,x.SourceAssetName);
             foreach(var x in UnityEngine.Resources.LoadAll<
-                ProjectAbyss.Abilities.R7NativeOlafAbilityDefinition20261103>(
+                ProjectAbyss.Abilities.OlafNativeAbilityDefinition>(
                     "ProjectAbyss/NativeOlaf"))
                 Add(x.StableId,x.SourceAssetName);
             foreach(var x in UnityEngine.Resources.LoadAll<
-                ProjectAbyss.Abilities.R7NativeOlafAbilityDefinition20261103>(
+                ProjectAbyss.Abilities.OlafNativeAbilityDefinition>(
                     "ProjectAbyss/NativeOlafCanon"))
                 Add(x.StableId,x.SourceAssetName);
             foreach(var x in UnityEngine.Resources.LoadAll<
-                ProjectAbyss.Abilities.R7NativeYujinAbilityDefinition20261103>(
+                ProjectAbyss.Abilities.YujinNativeAbilityDefinition>(
                     "ProjectAbyss/NativeYujin"))
                 Add(x.StableId,x.SourceAssetName);
             return keys;

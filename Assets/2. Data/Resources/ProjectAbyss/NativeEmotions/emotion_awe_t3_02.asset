@@ -11,7 +11,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: f7b7cddcc35023a4fa484fb3c1fe2ac1, type: 3}
   m_Name: emotion_awe_t3_02
-  m_EditorClassIdentifier: ProjectAbyss.Runtime::R7NativeEmotionRulebreakerGraph20261103
+  m_EditorClassIdentifier: ProjectAbyss.Runtime::NativeEmotionRulebreakerGraph
   SchemaVersion: 1
   StableId: emotion.awe.t3.02
   SourceGuid: 6a6c98ada107aaa40b33a01e42b83043

@@ -40,7 +40,7 @@ public sealed class CharacterSkillLoadoutRuntime
                 if (definition != null && type != ActionType.Prestige)
                 {
                     ownedSkillIds.Add(definition.SkillId);
-                    string guid=R7SkillIdentityContract20261102.GuidFor(definition);
+                    string guid=SkillIdentityContract.GuidFor(definition);
                     if(!string.IsNullOrEmpty(guid))
                         ownedCollisionGuids.Add(guid);
                 }
@@ -75,9 +75,9 @@ public sealed class CharacterSkillLoadoutRuntime
     {
         if(definition==null||!ownedSkillIds.Contains(definition.SkillId))
             return false;
-        if(!R7SkillIdentityContract20261102.IsDuplicateId(definition.SkillId))
+        if(!SkillIdentityContract.IsDuplicateId(definition.SkillId))
             return true;
-        string guid=R7SkillIdentityContract20261102.GuidFor(definition);
+        string guid=SkillIdentityContract.GuidFor(definition);
         return !string.IsNullOrEmpty(guid) && ownedCollisionGuids.Contains(guid);
     }
 
@@ -96,8 +96,8 @@ public sealed class CharacterSkillLoadoutRuntime
         }
         if (!ValidateCandidate(definition, out reason))
             return false;
-        var collisionGuid=R7SkillIdentityContract20261102.GuidFor(definition);
-        if(R7SkillIdentityContract20261102.IsDuplicateId(definition.SkillId) &&
+        var collisionGuid=SkillIdentityContract.GuidFor(definition);
+        if(SkillIdentityContract.IsDuplicateId(definition.SkillId) &&
            string.IsNullOrWhiteSpace(collisionGuid))
         {
             reason="등록되지 않은 중복 SkillId GUID입니다.";
@@ -336,8 +336,8 @@ public sealed class CharacterSkillLoadoutRuntime
                 if(string.IsNullOrWhiteSpace(guid))continue;
                 var matches=available.Where(x=>x!=null &&
                     ownedIds.Contains(x.SkillId) &&
-                    R7SkillIdentityContract20261102.IsDuplicateId(x.SkillId) &&
-                    string.Equals(R7SkillIdentityContract20261102.GuidFor(x),
+                    SkillIdentityContract.IsDuplicateId(x.SkillId) &&
+                    string.Equals(SkillIdentityContract.GuidFor(x),
                         guid,StringComparison.OrdinalIgnoreCase)).ToArray();
                 if(matches.Length!=1)
                 {reason="저장된 소유 스킬 GUID를 후보에서 찾을 수 없습니다: "+guid;return false;}
@@ -346,16 +346,16 @@ public sealed class CharacterSkillLoadoutRuntime
         }
         foreach(var id in ownedIds)
         {
-            if(!R7SkillIdentityContract20261102.IsDuplicateId(id) ||
+            if(!SkillIdentityContract.IsDuplicateId(id) ||
                available.Any(x=>x!=null&&x.SkillId==id &&
-                   ownedGuids.Contains(R7SkillIdentityContract20261102.GuidFor(x))))
+                   ownedGuids.Contains(SkillIdentityContract.GuidFor(x))))
                 continue;
             // Old save: ID-only. Select the unique local candidate or the
             // explicitly recorded PhaseE default, never collection order.
-            if(!R7SkillIdentityContract20261102.TryResolve(id,"",available,
+            if(!SkillIdentityContract.TryResolve(id,"",available,
                 out var selected,out reason))
                 return false;
-            ownedGuids.Add(R7SkillIdentityContract20261102.GuidFor(selected));
+            ownedGuids.Add(SkillIdentityContract.GuidFor(selected));
         }
         foreach(var pair in staged)
         {
@@ -363,8 +363,8 @@ public sealed class CharacterSkillLoadoutRuntime
             foreach(var d in pair.Value)
             {
                 ownedIds.Add(d.SkillId);
-                var guid=R7SkillIdentityContract20261102.GuidFor(d);
-                if(R7SkillIdentityContract20261102.IsDuplicateId(d.SkillId) &&
+                var guid=SkillIdentityContract.GuidFor(d);
+                if(SkillIdentityContract.IsDuplicateId(d.SkillId) &&
                    string.IsNullOrEmpty(guid))
                 {reason="장착 스킬 GUID 레지스트리가 누락됐습니다: "+d.name;return false;}
                 if(!string.IsNullOrEmpty(guid))ownedGuids.Add(guid);
@@ -401,7 +401,7 @@ public sealed class CharacterSkillLoadoutRuntime
         for(int i=0;i<count;i++)
         {
             var guid=guids!=null&&guids.Count==count?guids[i]:null;
-            if(!R7SkillIdentityContract20261102.TryResolve(ids[i],guid,
+            if(!SkillIdentityContract.TryResolve(ids[i],guid,
                 candidates,out var definition,out reason))
                 return false;
             if(definition.ActionType!=actionType)
@@ -463,7 +463,7 @@ public sealed class CharacterSkillLoadoutRuntime
         {
             if(definition==null)continue;
             ids.Add(definition.SkillId);
-            guids.Add(R7SkillIdentityContract20261102.GuidFor(definition));
+            guids.Add(SkillIdentityContract.GuidFor(definition));
         }
     }
 

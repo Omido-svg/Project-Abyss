@@ -95,10 +95,11 @@ public sealed class BattleSkillCardButtonUI : MonoBehaviour, IBeginDragHandler, 
         CaptureVisual();
 
         if (titleText != null)
-            titleText.text = skill?.SkillName ?? "스킬 없음";
+            titleText.text = skill == null ? "스킬 없음" :
+                BattleSkillDescriptionFormatter.GetDisplayName(skill);
 
         if (rollText != null)
-            rollText.text = BattleSkillUiText.BuildRollSummary(skill);
+            rollText.text = BattleSkillUiText.BuildCompactRollSummary(skill);
 
         if (costText != null)
         {

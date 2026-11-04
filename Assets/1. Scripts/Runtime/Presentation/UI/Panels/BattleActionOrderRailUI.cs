@@ -1367,7 +1367,7 @@ public sealed class BattleActionOrderRailUI : MonoBehaviour
         BuildClashSet(
             slots);
         hifumiPreviewTargets =
-            R7HifumiProvocationTargeting20261103.PreviewTargetParts(slots);
+            HifumiProvocationTargeting.PreviewTargetParts(slots);
 
         HashSet<ActionSlot> consumed =
             new HashSet<ActionSlot>();
@@ -1600,7 +1600,7 @@ public sealed class BattleActionOrderRailUI : MonoBehaviour
         bool hoveredTarget =
             slot != null && !playerSide &&
             BattleWorldActionSlotCellUI.HoveredCell != null &&
-            BattleMvpSlotHoverRelations20261103.IsRelated(
+            BattleSlotHoverRelations.IsRelated(
                 BattleWorldActionSlotCellUI.HoveredCell, slot, uiManager);
 
         long hoveredActionId =
@@ -1612,7 +1612,7 @@ public sealed class BattleActionOrderRailUI : MonoBehaviour
         bool hoveredPlayer =
             slot != null && playerSide &&
             BattleWorldActionSlotCellUI.HoveredCell != null &&
-            BattleMvpSlotHoverRelations20261103.IsRelated(
+            BattleSlotHoverRelations.IsRelated(
                 BattleWorldActionSlotCellUI.HoveredCell, slot, uiManager);
 
         GameObject row =
@@ -1813,9 +1813,9 @@ public sealed class BattleActionOrderRailUI : MonoBehaviour
         {
             // The enemy attacking a hovered part and its player clash partner
             // must illuminate the SAME rail row.
-            bool relatedFirst=BattleMvpSlotHoverRelations20261103.IsRelated(
+            bool relatedFirst=BattleSlotHoverRelations.IsRelated(
                 BattleWorldActionSlotCellUI.HoveredCell, first, uiManager);
-            bool relatedSecond=BattleMvpSlotHoverRelations20261103.IsRelated(
+            bool relatedSecond=BattleSlotHoverRelations.IsRelated(
                 BattleWorldActionSlotCellUI.HoveredCell, second, uiManager);
             if (relatedFirst || relatedSecond)
                 hoveredPlayer = true;

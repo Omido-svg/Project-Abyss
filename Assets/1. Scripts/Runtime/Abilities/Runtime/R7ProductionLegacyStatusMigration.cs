@@ -13,7 +13,7 @@ namespace ProjectAbyss.Abilities
     public sealed class R7ProductionLegacyStatusMigration : IDisposable
     {
         private static Dictionary<string,R7NativeMixedAbilityDefinition> catalog;
-        private readonly R7NativeMixedAbilityEngine engine;
+        private readonly NativeMixedAbilityEngine engine;
         private bool disposed;
         public bool Enabled {get;set;}=true;
         public int NativeDamageAttempts => engine.DamageAttempts;
@@ -24,7 +24,7 @@ namespace ProjectAbyss.Abilities
 
         public R7ProductionLegacyStatusMigration(BattleContext battle)
         {
-            engine=new R7NativeMixedAbilityEngine(battle);
+            engine=new NativeMixedAbilityEngine(battle);
         }
         private static Dictionary<string,R7NativeMixedAbilityDefinition> Catalog
         {
@@ -79,13 +79,13 @@ namespace ProjectAbyss.Abilities
                     results.Add(SkillEffectResult.NotScheduled(diagnostic,timing));
                     continue;
                 }
-                var gate=R7NativeMixedGate20261102.Evaluate(operation,context);
-                if(gate==R7MixedGateVerdict20261102.NotScheduled)
+                var gate=MixedAbilityConditionGate.Evaluate(operation,context);
+                if(gate==MixedAbilityGateVerdict.NotScheduled)
                 {
                     results.Add(SkillEffectResult.NotScheduled(diagnostic,timing));
                     continue;
                 }
-                if(gate==R7MixedGateVerdict20261102.ConditionFailed)
+                if(gate==MixedAbilityGateVerdict.ConditionFailed)
                 {
                     results.Add(SkillEffectResult.ConditionFailed(diagnostic,
                         timing,context,"R7-4 native predicate was not met."));

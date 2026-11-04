@@ -1,6 +1,6 @@
 using UnityEngine;
 
-public enum TempBalanceSkillProxyOperation
+public enum ProvisionalBalanceSkillProxyOperation
 {
     GainBlock = 0,
     GainEnergy = 1,
@@ -24,7 +24,7 @@ public enum TempBalanceSkillProxyOperation
     fileName = "TempBalanceSkillProxyEffect")]
 public sealed class TempBalanceSkillProxyEffectDefinition : SkillEffectDefinition
 {
-    public TempBalanceSkillProxyOperation Operation;
+    public ProvisionalBalanceSkillProxyOperation Operation;
     public int BaseAmount = 1;
     [Min(1)] public int DurationTurns = 3;
     [Min(1)] public int Multiplier = 2;
@@ -52,23 +52,23 @@ public sealed class TempBalanceSkillProxyEffectDefinition : SkillEffectDefinitio
 
         switch (Operation)
         {
-            case TempBalanceSkillProxyOperation.GainBlock:
+            case ProvisionalBalanceSkillProxyOperation.GainBlock:
                 owner?.AddBlock(amount);
                 break;
 
-            case TempBalanceSkillProxyOperation.GainEnergy:
+            case ProvisionalBalanceSkillProxyOperation.GainEnergy:
                 owner?.AddEnergy(amount);
                 break;
 
-            case TempBalanceSkillProxyOperation.GainPrestige:
+            case ProvisionalBalanceSkillProxyOperation.GainPrestige:
                 owner?.AddPrestige(amount);
                 break;
 
-            case TempBalanceSkillProxyOperation.OlafMadness:
+            case ProvisionalBalanceSkillProxyOperation.OlafMadness:
                 owner?.GetMechanic<OlafMadnessMechanic>()?.AddMadness(amount);
                 break;
 
-            case TempBalanceSkillProxyOperation.TargetBleeding:
+            case ProvisionalBalanceSkillProxyOperation.TargetBleeding:
                 if (target == null || amount <= 0)
                     break;
                 if (targetPart != null)
@@ -77,21 +77,21 @@ public sealed class TempBalanceSkillProxyEffectDefinition : SkillEffectDefinitio
                     target.AddStatus(new Bleeding(amount), owner);
                 break;
 
-            case TempBalanceSkillProxyOperation.YujinSense:
+            case ProvisionalBalanceSkillProxyOperation.YujinSense:
                 owner?.GetMechanic<YujinMechanic>()?.GrantSense(amount);
                 break;
 
-            case TempBalanceSkillProxyOperation.YujinMark:
+            case ProvisionalBalanceSkillProxyOperation.YujinMark:
                 owner?.GetMechanic<YujinMechanic>()
                     ?.GrantMark(target, targetPart, amount, context.Action);
                 break;
 
-            case TempBalanceSkillProxyOperation.YujinMarkTrap:
+            case ProvisionalBalanceSkillProxyOperation.YujinMarkTrap:
                 owner?.GetMechanic<YujinMechanic>()
                     ?.RegisterMarkTrap(target, targetPart, amount, context.Action);
                 break;
 
-            case TempBalanceSkillProxyOperation.YujinMarkDeadline:
+            case ProvisionalBalanceSkillProxyOperation.YujinMarkDeadline:
                 owner?.GetMechanic<YujinMechanic>()
                     ?.RegisterMarkDeadline(
                         target,
@@ -101,7 +101,7 @@ public sealed class TempBalanceSkillProxyEffectDefinition : SkillEffectDefinitio
                         context.Action);
                 break;
 
-            case TempBalanceSkillProxyOperation.TurnClashPowerBonus:
+            case ProvisionalBalanceSkillProxyOperation.TurnClashPowerBonus:
                 owner?.AddTurnClashPowerBonus(amount);
                 break;
         }

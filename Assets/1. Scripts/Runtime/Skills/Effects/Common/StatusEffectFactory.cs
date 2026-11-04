@@ -197,7 +197,7 @@ public static class StatusEffectFactory
             StatusEffectId.Swift =>
                 new SwiftStatus(safeValue, safeDuration),
             StatusEffectId.Bind =>
-                new R7EnemyBindStatus20261103(safeValue,safeDuration),
+                new EnemyBindStatus(safeValue,safeDuration),
             StatusEffectId.Regeneration =>
                 new RegenerationStatus(
                     safeDuration,
@@ -303,7 +303,7 @@ public static class StatusEffectFactory
             StatusEffectId.Stun =>
                 effect is Stun,
             StatusEffectId.Strength =>
-                effect is StrengthStatus or R7EnemyCommanderStrengthAura20261103,
+                effect is StrengthStatus or EnemyCommanderStrengthAura,
             StatusEffectId.Weakness =>
                 effect is WeaknessStatus,
             StatusEffectId.Sturdy =>
@@ -325,9 +325,9 @@ public static class StatusEffectFactory
             StatusEffectId.Pain =>
                 effect is PainStatus,
             StatusEffectId.Swift =>
-                effect is SwiftStatus or R7EnemyCommanderSwiftAura20261103,
+                effect is SwiftStatus or EnemyCommanderSwiftAura,
             StatusEffectId.Bind =>
-                effect is R7EnemyBindStatus20261103,
+                effect is EnemyBindStatus,
             StatusEffectId.Designation =>
                 effect is YujinDesignationStatus,
             StatusEffectId.Fear =>

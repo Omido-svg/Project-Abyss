@@ -11,7 +11,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: f7b7cddcc35023a4fa484fb3c1fe2ac1, type: 3}
   m_Name: emotion_longing_t3_01
-  m_EditorClassIdentifier: ProjectAbyss.Runtime::R7NativeEmotionRulebreakerGraph20261103
+  m_EditorClassIdentifier: ProjectAbyss.Runtime::NativeEmotionRulebreakerGraph
   SchemaVersion: 1
   StableId: emotion.longing.t3.01
   SourceGuid: 99992dfa22936374a9324c10993e76bc

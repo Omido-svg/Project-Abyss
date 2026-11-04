@@ -430,7 +430,7 @@ public sealed class StaggerGaugeMechanic : ReactiveCombatMechanic,
         if(action?.Owner?.Mechanics==null)return 0;
         int value=0;
         foreach(var mechanic in action.Owner.Mechanics)
-            if(mechanic is IAdditionalFinalStaggerDamageProvider20261103 rule)
+            if(mechanic is IAdditionalFinalStaggerDamageProvider rule)
                 value+=Mathf.Max(0,rule.GetAdditionalFinalStaggerDamage(action,target));
         return Mathf.Max(0,value);
     }

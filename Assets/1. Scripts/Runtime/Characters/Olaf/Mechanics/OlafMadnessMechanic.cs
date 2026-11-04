@@ -233,17 +233,17 @@ public sealed class OlafMadnessMechanic : CombatMechanic, ICharacterUniqueGaugeP
 
         // BLUE NORMAL '승리시' is a real won exchange. A one-sided hit
         // still applies passive Bleeding above, but grants no win-only Madness.
-        if(R7FixedPassiveContract20261103.IsOlafBlueNormalWin(exchange,myAction))
+        if(CharacterFixedPassiveContract.IsOlafBlueNormalWin(exchange,myAction))
             AddMadness(1);
 
-        if(R7FixedPassiveContract20261103.IsOlafDuelLoss(
+        if(CharacterFixedPassiveContract.IsOlafDuelLoss(
             exchange,myAction,opponentAction))
             AddMadness(1);
 
         // The first winning ATTACK Duel exchange may explode Bleeding once
         // if the canonical source carries the explosion privilege.
         if(exchange.IsDuelExchange&&!exchange.IsOneSided&&
-           R7FixedPassiveContract20261103.IsOlafAttackHit(
+           CharacterFixedPassiveContract.IsOlafAttackHit(
                exchange,myAction,exchange.DamageContext))
             TryExplodeBleeding(myAction);
     }
@@ -252,7 +252,7 @@ public sealed class OlafMadnessMechanic : CombatMechanic, ICharacterUniqueGaugeP
         ClashExchangeResult exchange,BattleAction action,
         DamageContext hit,int amount)
     {
-        if(!R7FixedPassiveContract20261103.IsOlafAttackHit(
+        if(!CharacterFixedPassiveContract.IsOlafAttackHit(
             exchange,action,hit)||!passiveHitContexts.Add(hit))return;
         ApplyBleeding(hit.Target,hit.TargetPart,amount,
             action,exchange.ExchangeIndex);
@@ -266,7 +266,7 @@ public sealed class OlafMadnessMechanic : CombatMechanic, ICharacterUniqueGaugeP
 
     private void OnBodyPartBreakResolved(BodyPartBreakEventContext context)
     {
-        if(R7FixedPassiveContract20261103.IsOlafRelevantPartBreak(
+        if(CharacterFixedPassiveContract.IsOlafRelevantPartBreak(
             context,owner,battleContext)&&
            passiveCountedBreakEvents.Add(context))
             AddMadness(PartBreakMadnessGain);

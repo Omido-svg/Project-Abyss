@@ -60,14 +60,14 @@ namespace ProjectAbyss.Abilities
         }
 
         private static R7ExclusiveEntryMigrationScope active;
-        private readonly Dictionary<SkillDefinition,R7SkillAssetRef> selected =
-            new Dictionary<SkillDefinition,R7SkillAssetRef>();
+        private readonly Dictionary<SkillDefinition,SkillAssetRef> selected =
+            new Dictionary<SkillDefinition,SkillAssetRef>();
         private readonly Dictionary<(long,int,string),AbilityInstance> instances =
             new Dictionary<(long,int,string),AbilityInstance>();
         private readonly List<Receipt> history=new List<Receipt>();
         private readonly AbilityRunner runner=new AbilityRunner();
-        private readonly R7NativeResourceCommandExecutor native =
-            new R7NativeResourceCommandExecutor();
+        private readonly NativeResourceCommandExecutor native =
+            new NativeResourceCommandExecutor();
         public int NativeAttempts=>native.NativeAttemptCount;
         public int NativeCommitted=>native.NativeCommittedCount;
         private readonly MatchAny matcher=new MatchAny();
@@ -83,7 +83,7 @@ namespace ProjectAbyss.Abilities
         public static R7ExclusiveEntryMigrationScope Active=>active;
 
         private R7ExclusiveEntryMigrationScope(
-            IEnumerable<R7SkillAssetRef> assets)
+            IEnumerable<SkillAssetRef> assets)
         {
             if(active!=null)
                 throw new InvalidOperationException("R7 scope already active.");
@@ -108,7 +108,7 @@ namespace ProjectAbyss.Abilities
             active=this;
         }
         public static R7ExclusiveEntryMigrationScope Begin(
-            IEnumerable<R7SkillAssetRef> assets)=>
+            IEnumerable<SkillAssetRef> assets)=>
             new R7ExclusiveEntryMigrationScope(assets);
 
         public bool CanRoute(SkillDefinition definition) =>
@@ -147,7 +147,7 @@ namespace ProjectAbyss.Abilities
                     context?.Action?.DuelEffectsEligible??false,
                     context?.IsOneSided??false);
                 bool nativeEntry =
-                    R7NativeResourceCommandExecutor.IsNative(entry.Definition) &&
+                    NativeResourceCommandExecutor.IsNative(entry.Definition) &&
                     context?.Action!=null && context.Action.ActionId>0;
                 int plannedCount=0;
                 SkillEffectResult result;

@@ -32,7 +32,7 @@ public static class Canonical0922EmotionRuntimeHooks
 
     public static void NotifyHealingResolved(
         Character owner,
-        Canonical0922HealingResult result)
+        CanonicalHealingResult result)
     {
         if (owner?.Mechanics == null || result == null)
             return;
@@ -268,7 +268,7 @@ public static class Canonical0922EmotionRuntimeHooks
     }
 }
 
-public sealed class Canonical0922HealingResult
+public sealed class CanonicalHealingResult
 {
     public int RequestedAmount;
     public int ModifiedAmount;
@@ -279,7 +279,7 @@ public sealed class Canonical0922HealingResult
 public interface ICanonical0922HealingRule
 {
     int ModifyHealing(Character owner, int amount);
-    void OnHealingResolved(Character owner, Canonical0922HealingResult result);
+    void OnHealingResolved(Character owner, CanonicalHealingResult result);
 }
 
 public interface ICanonical0922BlockGainRule

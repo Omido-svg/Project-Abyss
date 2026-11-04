@@ -23,16 +23,16 @@ public sealed class BattleRuntimeServices
     public BattleReactionScheduler ReactionScheduler { get; set; }
     public R6ReactionActionRegistry ReactionActionRegistry { get; set; }
 
-    public R6ReactionLifetimeRegistry20261102 ReactionLifetimeRegistry { get; set; }
+    public ReactionLifetimeRegistry ReactionLifetimeRegistry { get; set; }
     public R6SpecialistReactionRegistry SpecialistReactionRegistry { get; set; }
     public R7ProductionNativeResourceMigration R7NativeResourceMigration { get; set; }
     public R7ProductionNativeBleedingMigration R7NativeBleedingMigration { get; set; }
     public R7ProductionNativeUniqueGaugeMigration R7NativeUniqueGaugeMigration { get; set; }
     public R7ProductionLegacyStatusMigration R7LegacyStatusMigration { get; set; }
     public R7ProductionPreparationStatusMigration R7PreparationStatusMigration { get; set; }
-    public R7ProductionSingleEffectMigration20261102 R7SingleEffectMigration { get; set; }
-    public R7ProductionOlafNativeMigration20261103 R7OlafNativeMigration { get; set; }
-    public R7ProductionYujinNativeMigration20261103 R7YujinNativeMigration { get; set; }
+    public SingleEffectRuntimeBinding R7SingleEffectMigration { get; set; }
+    public OlafNativeAbilityRuntimeBinding R7OlafNativeMigration { get; set; }
+    public YujinNativeAbilityRuntimeBinding R7YujinNativeMigration { get; set; }
     public ClashBuilder ClashBuilder { get; set; }
     public AIManager AIManager { get; set; }
     public TurnManager TurnManager { get; set; }

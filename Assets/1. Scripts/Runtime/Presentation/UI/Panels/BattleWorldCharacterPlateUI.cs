@@ -169,10 +169,10 @@ public sealed class BattleWorldCharacterPlateUI : MonoBehaviour
         // A single child Canvas isolates status glyph rebuilds from HP animation.
         if (character != null)
         {
-            BattleMvpWorldStatusStrip20261103 statusStrip =
-                GetComponent<BattleMvpWorldStatusStrip20261103>();
+            BattleWorldStatusStrip statusStrip =
+                GetComponent<BattleWorldStatusStrip>();
             if (statusStrip == null)
-                statusStrip = gameObject.AddComponent<BattleMvpWorldStatusStrip20261103>();
+                statusStrip = gameObject.AddComponent<BattleWorldStatusStrip>();
             statusStrip.Configure(character, nameText);
         }
 gauges.Configure(character);

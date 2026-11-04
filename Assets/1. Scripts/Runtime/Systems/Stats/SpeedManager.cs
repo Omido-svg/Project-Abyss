@@ -107,7 +107,7 @@ public class SpeedManager
         // remain separate maximum-speed changes below.
         if(character is NormalEnemy &&
            character.GetMechanic<NormalEnemy0922RoleMechanic>()?.Species==
-               R7EnemySpecies1029.Corrosion)
+               EnemySpecies1029.Corrosion)
         {
             minSpeed=4;
             maxSpeed=6;

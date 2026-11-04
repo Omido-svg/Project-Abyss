@@ -5,12 +5,12 @@ namespace ProjectAbyss.Abilities
 {
     // R7 data-only snapshot for the seven legacy-authored bleeding cards.
     // Runtime activation deliberately remains disabled until parity is proved.
-    public enum R7MixedOperationKind { RolledPartDamage = 1, ApplyBleeding = 2 }
+    public enum MixedOperationKind { RolledPartDamage = 1, ApplyBleeding = 2 }
 
     [Serializable]
-    public sealed class R7MixedOperationEntry
+    public sealed class MixedOperationEntry
     {
-        public R7MixedOperationKind Kind;
+        public MixedOperationKind Kind;
         public AbilityEventKind Trigger;
         public int EntryIndex;
         public int StackAmount;
@@ -28,7 +28,7 @@ public int Duration;
         // Existing schema-2 assets remain unrestricted by default.
         public bool RestrictToRoll;
         [Min(1)] public int RollNumber=1;
-        public R7MixedConditionKind20261102 Condition;
+        public MixedAbilityConditionKind Condition;
         public StatusEffectId RequiredStatus=StatusEffectId.Strength;
         [Min(1)] public int RequiredNumericValue=1;
     }
@@ -43,7 +43,7 @@ public int Duration;
         
         public bool SourceCanBreakPart;
 public string SourceAssetName;
-        public R7MixedOperationEntry[] Operations = Array.Empty<R7MixedOperationEntry>();
+        public MixedOperationEntry[] Operations = Array.Empty<MixedOperationEntry>();
 
         public bool IsValid
         {
@@ -57,10 +57,10 @@ public string SourceAssetName;
                 {
                     var e = Operations[i];
                     if (e == null || e.EntryIndex != i ||
-                        !R7NativeMixedGate20261102.IsValid(e) ||
-                        (e.Kind != R7MixedOperationKind.ApplyBleeding &&
-                         e.Kind != R7MixedOperationKind.RolledPartDamage) ||
-                        (e.Kind == R7MixedOperationKind.ApplyBleeding &&
+                        !MixedAbilityConditionGate.IsValid(e) ||
+                        (e.Kind != MixedOperationKind.ApplyBleeding &&
+                         e.Kind != MixedOperationKind.RolledPartDamage) ||
+                        (e.Kind == MixedOperationKind.ApplyBleeding &&
                          (e.StackAmount <= 0 || e.Duration <= 0))) return false;
                 }
                 return true;

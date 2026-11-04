@@ -13,8 +13,8 @@ public class ActionResolver
     private BattleReactionScheduler reactionScheduler;
     private R6ReactionActionRegistry reactionRegistry;
 
-    private R6ReactionLifetimeRegistry20261102 reactionLifetime;
-    public void EnableR6ReactionLifetime(R6ReactionLifetimeRegistry20261102 lifetime)
+    private ReactionLifetimeRegistry reactionLifetime;
+    public void EnableR6ReactionLifetime(ReactionLifetimeRegistry lifetime)
     {
         reactionLifetime = lifetime ?? throw new System.ArgumentNullException(nameof(lifetime));
     }

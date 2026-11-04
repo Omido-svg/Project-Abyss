@@ -101,7 +101,7 @@ public sealed class EmotionAugmentManager
 
         // R7-10 is fail-closed: the selected original SO must have its
         // exact native source graph. Never execute an old TEMP proxy.
-        if(!R7NativeEmotionCatalog20261103.TryResolve(selected,out _))
+        if(!NativeEmotionCatalog.TryResolve(selected,out _))
         {
             Debug.LogError("[R7-10] Emotion graph missing/mismatched: "+
                 selected.AugmentId);
@@ -195,7 +195,7 @@ public sealed class EmotionAugmentManager
     {
         Character owner=context?.Player;
         if(owner==null||augment==null)return;
-        if(!R7NativeEmotionCatalog20261103.TryResolve(augment,out var graph))
+        if(!NativeEmotionCatalog.TryResolve(augment,out var graph))
             throw new InvalidOperationException(
                 "[R7-10] Emotion native source mismatch: "+
                 augment.AugmentId);

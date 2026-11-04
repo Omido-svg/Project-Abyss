@@ -485,7 +485,7 @@ public abstract class Skill
             return;
 
         // R7-8 stage1 native enemy first-roll effects: actual roll consumption.
-        R7EnemyStage1Effect20261103.OnRollUsing(action,rollIndex);
+        EnemyStageOneEffect.OnRollUsing(action,rollIndex);
 
         ExecuteDefinitionEffects(
             action,

@@ -112,7 +112,7 @@ public static class BattleRuntimeFactory
         services.ReactionScheduler = new BattleReactionScheduler();
         services.ReactionActionRegistry = new R6ReactionActionRegistry();
 
-        services.ReactionLifetimeRegistry = new R6ReactionLifetimeRegistry20261102();
+        services.ReactionLifetimeRegistry = new ReactionLifetimeRegistry();
         services.ActionResolver.EnableR6ReactionLifetime(
             services.ReactionLifetimeRegistry);
         services.SpecialistReactionRegistry = new R6SpecialistReactionRegistry();
@@ -140,11 +140,11 @@ public static class BattleRuntimeFactory
         services.R7PreparationStatusMigration =
             new R7ProductionPreparationStatusMigration(context);
         services.R7SingleEffectMigration =
-            new R7ProductionSingleEffectMigration20261102(context);
+            new SingleEffectRuntimeBinding(context);
         services.R7OlafNativeMigration =
-            new R7ProductionOlafNativeMigration20261103();
+            new OlafNativeAbilityRuntimeBinding();
         services.R7YujinNativeMigration =
-            new R7ProductionYujinNativeMigration20261103();
+            new YujinNativeAbilityRuntimeBinding();
         services.ActionResolver.EnableR6ReactionExecution(
             services.ReactionScheduler,services.ReactionActionRegistry);
         services.ActionResolver.EnableR6SpecialistReactions(

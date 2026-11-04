@@ -61,32 +61,6 @@ public sealed class SkillUpgradeStep
     public List<SkillUpgradeEffectPayload> EffectPayloads = new();
 }
 
-[CreateAssetMenu(menuName = "Battle/Progression/Skill Upgrade Profile", fileName = "NewSkillUpgradeProfile")]
-public sealed class SkillUpgradeProfile : ScriptableObject
-{
-    [Min(0)] public int BaseCostOverride;
-    public SkillUpgradeStep Upgrade1 = new();
-    public SkillUpgradeStep Upgrade2 = new();
-
-    public int GetBaseCost(ActionType type) => BaseCostOverride > 0
-        ? BaseCostOverride
-        : type switch
-        {
-            ActionType.NormalAttack => 50,
-            ActionType.Preparation => 100,
-            ActionType.Duel => 125,
-            ActionType.Prestige => 150,
-            _ => 0
-        };
-
-    public SkillUpgradeStep GetStep(int targetLevel) => targetLevel switch
-    {
-        1 => Upgrade1,
-        2 => Upgrade2,
-        _ => null
-    };
-}
-
 public sealed class SkillUpgradeState
 {
     private readonly Dictionary<string, int> levels =
@@ -97,7 +71,7 @@ public sealed class SkillUpgradeState
         if (definition == null)
             return 0;
 
-        string key = R7SkillIdentityContract20261102.UniqueKey(definition);
+        string key = SkillIdentityContract.UniqueKey(definition);
         return !string.IsNullOrWhiteSpace(key) &&
                levels.TryGetValue(key, out int level)
             ? level
@@ -118,7 +92,7 @@ public sealed class SkillUpgradeState
     public int GetLevel(string stableDefinitionId,string assetGuid)
     {
         if(string.IsNullOrWhiteSpace(stableDefinitionId))return 0;
-        if(!R7SkillIdentityContract20261102.IsDuplicateId(stableDefinitionId))
+        if(!SkillIdentityContract.IsDuplicateId(stableDefinitionId))
             return GetLevel(stableDefinitionId);
         if(string.IsNullOrWhiteSpace(assetGuid))return 0;
         return levels.TryGetValue("guid:"+assetGuid.ToLowerInvariant(),out int level)
@@ -134,7 +108,7 @@ public sealed class SkillUpgradeState
         if (current >= Mathf.Max(0, maximumLevel))
             return false;
 
-        string key = R7SkillIdentityContract20261102.UniqueKey(definition);
+        string key = SkillIdentityContract.UniqueKey(definition);
         if (string.IsNullOrWhiteSpace(key))
             return false;
 
@@ -147,7 +121,7 @@ public sealed class SkillUpgradeState
         if (definition == null)
             return false;
 
-        string key = R7SkillIdentityContract20261102.UniqueKey(definition);
+        string key = SkillIdentityContract.UniqueKey(definition);
         if (string.IsNullOrWhiteSpace(key))
             return false;
 

@@ -8,11 +8,11 @@ using UnityEngine;
 /// requested Duel quota. Species-specific extra content is authoring-dependent.
 /// Tank cover requires a dedicated authored cover skill before activation.
 /// </summary>
-public sealed class NormalEnemy0922RoleMechanic : CombatMechanic, IAdditionalFinalStaggerDamageProvider20261103
+public sealed class NormalEnemy0922RoleMechanic : CombatMechanic, IAdditionalFinalStaggerDamageProvider
 {
     private EnemyRole0922 role = EnemyRole0922.Attacker;
-    private R7EnemySpecies1029 species=R7EnemySpecies1029.Unknown;
-    private R7EnemyAction1029 plannedAction=R7EnemyAction1029.Normal;
+    private EnemySpecies1029 species=EnemySpecies1029.Unknown;
+    private EnemyAction1029 plannedAction=EnemyAction1029.Normal;
     private int coverExpireTurn=-1;
     private int lastCoverAppliedTurn=-1;
     private int lastOneSidedCounterTurn=-1;
@@ -21,12 +21,12 @@ public sealed class NormalEnemy0922RoleMechanic : CombatMechanic, IAdditionalFin
     private SkillColor preferredColor = SkillColor.Unset;
     private Character coverTarget;
     private Character pendingCoverTarget;
-    private readonly Dictionary<Character,(R7EnemyCommanderStrengthAura20261103 strength,
-        R7EnemyCommanderSwiftAura20261103 swift)> commanderAura=new();
+    private readonly Dictionary<Character,(EnemyCommanderStrengthAura strength,
+        EnemyCommanderSwiftAura swift)> commanderAura=new();
 
     public EnemyRole0922 Role => role;
-    public R7EnemySpecies1029 Species=>species;
-    public R7EnemyAction1029 PlannedAction=>plannedAction;
+    public EnemySpecies1029 Species=>species;
+    public EnemyAction1029 PlannedAction=>plannedAction;
     public int CoverExpireTurn=>coverExpireTurn;
     public int GetAdditionalFinalStaggerDamage(BattleAction action,Character target)
     {
@@ -35,8 +35,8 @@ public sealed class NormalEnemy0922RoleMechanic : CombatMechanic, IAdditionalFin
         // including one-sided attacks; never for allies or non-RED.
         return owner!=null&&action?.Owner==owner&&
             action.Skill?.IsRed==true&&target!=null&&!target.IsDead&&
-            (species==R7EnemySpecies1029.Bind||
-             species==R7EnemySpecies1029.Corrosion)?10:0;
+            (species==EnemySpecies1029.Bind||
+             species==EnemySpecies1029.Corrosion)?10:0;
     }
     public bool RoleAssigned => roleAssigned;
     public bool DuelAssignedThisTurn => duelAssignedThisTurn;
@@ -53,7 +53,7 @@ public sealed class NormalEnemy0922RoleMechanic : CombatMechanic, IAdditionalFin
     public bool RequiresCoverDuel =>
         role==EnemyRole0922.Tank&&CoverTarget==null&&
         pendingCoverTarget!=null&&HasAuthoredSkill(
-            ActionType.Duel,1,R7EnemyStage1Effect20261103.IsCoverDuelId);
+            ActionType.Duel,1,EnemyStageOneEffect.IsCoverDuelId);
 
     public override string MechanicName => "0922 Normal Enemy Role";
 
@@ -90,8 +90,8 @@ public sealed class NormalEnemy0922RoleMechanic : CombatMechanic, IAdditionalFin
     {
         ClearCommanderAura();
         role = EnemyRole0922.Attacker;
-        species=R7EnemySpecies1029.Unknown;
-        plannedAction=R7EnemyAction1029.Normal;
+        species=EnemySpecies1029.Unknown;
+        plannedAction=EnemyAction1029.Normal;
         coverExpireTurn=-1;lastCoverAppliedTurn=-1;
         lastOneSidedCounterTurn=-1;
         roleAssigned = false;
@@ -110,7 +110,7 @@ public sealed class NormalEnemy0922RoleMechanic : CombatMechanic, IAdditionalFin
             coverExpireTurn=-1;
         }
         if(CoverTarget==null)coverTarget=null;
-        Canonical0922EnemyTurnCoordinator.PrepareTurn(battleContext,turn);
+        CanonicalEnemyTurnCoordinator.PrepareTurn(battleContext,turn);
         MaintainCommanderAura();
     }
 
@@ -118,20 +118,20 @@ public sealed class NormalEnemy0922RoleMechanic : CombatMechanic, IAdditionalFin
     {
         if(action?.Owner==owner)
         {
-            if(species==R7EnemySpecies1029.Healer)
-                R7EnemyStage1Effect20261103.ApplyHealerPreparation(action);
-            if(species==R7EnemySpecies1029.Commander)
-                R7EnemyStage1Effect20261103.ApplyCommanderSupply(action);
+            if(species==EnemySpecies1029.Healer)
+                EnemyStageOneEffect.ApplyHealerPreparation(action);
+            if(species==EnemySpecies1029.Commander)
+                EnemyStageOneEffect.ApplyCommanderSupply(action);
         }
         if(action?.Owner!=owner||role!=EnemyRole0922.Tank||
            CoverTarget!=null||pendingCoverTarget==null||
-           !R7EnemyStage1Effect20261103.IsCoverDuelId(
+           !EnemyStageOneEffect.IsCoverDuelId(
                action.Skill?.Definition?.SkillId))return;
         int now=battleContext?.Services?.TurnManager?.CurrentTurn??1;
         if(now==lastCoverAppliedTurn)return;
         // The canonical target is chosen when the Duel ACTUALLY starts,
         // not from a stale prediction made at this turn's planning phase.
-        var selected=Canonical0922EnemyTurnCoordinator
+        var selected=CanonicalEnemyTurnCoordinator
             .SelectCoverCandidate(owner,battleContext);
         if(!IsValidCoverTarget(selected))
         {
@@ -142,12 +142,12 @@ public sealed class NormalEnemy0922RoleMechanic : CombatMechanic, IAdditionalFin
         coverExpireTurn=now+2; // skill turn + next two turns = 3
         lastCoverAppliedTurn=now;
         pendingCoverTarget=null;
-        R7EnemyStage1Effect20261103.ApplyCoverProtection(owner,action);
+        EnemyStageOneEffect.ApplyCoverProtection(owner,action);
     }
 
     private void OnClashResolved(ClashResultContext result)
     {
-        if(species!=R7EnemySpecies1029.CounterGuard||
+        if(species!=EnemySpecies1029.CounterGuard||
            owner is not NormalEnemy counter||
            result?.Exchanges==null||result.Exchanges.Count==0)
             return;
@@ -155,13 +155,13 @@ public sealed class NormalEnemy0922RoleMechanic : CombatMechanic, IAdditionalFin
         {
             var loser=exchange?.LoserAction;
             if(loser?.Owner!=owner || exchange.IsOneSided ||
-               !R7EnemyCounterReaction20261103.IsCounterTaggedSkill(
+               !EnemyCounterReaction.IsCounterTaggedSkill(
                    loser.Skill?.Definition?.SkillId) ||
-               R7EnemyCounterReaction20261103.IsCounterReaction(loser))
+               EnemyCounterReaction.IsCounterReaction(loser))
                 continue;
             var attacker=exchange.WinnerAction?.Owner;
             if(attacker==null||attacker.IsDead)continue;
-            R7EnemyCounterReaction20261103.TryQueue(counter,loser,attacker,
+            EnemyCounterReaction.TryQueue(counter,loser,attacker,
                 ProjectAbyss.Abilities.ReactionTimingCheckpoint.AfterClashCompleted);
         }
     }
@@ -169,34 +169,34 @@ public sealed class NormalEnemy0922RoleMechanic : CombatMechanic, IAdditionalFin
     private void OnExchangeResolved(ClashExchangeResult exchange)
     {
         if(exchange?.WinnerAction?.Owner!=owner||
-           species==R7EnemySpecies1029.Unknown)return;
-        R7EnemyStage1Effect20261103.OnExchangeWon(exchange,species);
+           species==EnemySpecies1029.Unknown)return;
+        EnemyStageOneEffect.OnExchangeWon(exchange,species);
     }
 
     private void OnDamageResolved(DamageContext damage)
     {
-        if(species==R7EnemySpecies1029.CounterGuard&&
+        if(species==EnemySpecies1029.CounterGuard&&
            owner is NormalEnemy counter&&
            damage?.Target==owner&&damage.Attacker!=null&&
            damage.Action!=null&&damage.Action.Target==owner&&
            !damage.IsClashDamage&&damage.WasApplied&&
-           !R7EnemyCounterReaction20261103.IsCounterReaction(damage.Action))
+           !EnemyCounterReaction.IsCounterReaction(damage.Action))
         {
             int turn=battleContext?.Services?.TurnManager?.CurrentTurn??1;
             if(lastOneSidedCounterTurn!=turn&&
-               R7EnemyCounterReaction20261103.TryQueue(counter,
+               EnemyCounterReaction.TryQueue(counter,
                    damage.Action,damage.Attacker,
                    ProjectAbyss.Abilities.ReactionTimingCheckpoint.AfterActionCompleted))
                 lastOneSidedCounterTurn=turn;
         }
-        if(species!=R7EnemySpecies1029.Healer||
+        if(species!=EnemySpecies1029.Healer||
            damage?.Attacker!=owner||damage.Target==null||
            damage.Target.IsDead||
            (!damage.WasApplied||damage.RawPower<=0)||
-           !R7EnemyStage1Effect20261103.IsHealerAttackId(
+           !EnemyStageOneEffect.IsHealerAttackId(
                damage.Action?.Skill?.Definition?.SkillId))
             return;
-        R7EnemyStage1Effect20261103.ScheduleHealerLightPenalty(
+        EnemyStageOneEffect.ScheduleHealerLightPenalty(
             owner,damage.Target);
     }
 
@@ -217,7 +217,7 @@ public sealed class NormalEnemy0922RoleMechanic : CombatMechanic, IAdditionalFin
 
     private void MaintainCommanderAura()
     {
-        if(species!=R7EnemySpecies1029.Commander||owner==null||
+        if(species!=EnemySpecies1029.Commander||owner==null||
            owner.IsDead||battleContext?.Enemies==null)return;
         var resolver=battleContext.EffectResolver;
         if(resolver==null)return;
@@ -236,9 +236,9 @@ public sealed class NormalEnemy0922RoleMechanic : CombatMechanic, IAdditionalFin
                     target.RemoveStatus(old.swift,StatusEffectRemoveReason.Manual);
                 commanderAura.Remove(target);
             }
-            var strength=new R7EnemyCommanderStrengthAura20261103(
+            var strength=new EnemyCommanderStrengthAura(
                 owner.GetInstanceID());
-            var swift=new R7EnemyCommanderSwiftAura20261103(owner.GetInstanceID());
+            var swift=new EnemyCommanderSwiftAura(owner.GetInstanceID());
             bool a=resolver.ApplyCharacterStatus(
                 EffectRequest.CharacterStatus(owner,target,strength));
             bool b=resolver.ApplyCharacterStatus(
@@ -267,28 +267,28 @@ public sealed class NormalEnemy0922RoleMechanic : CombatMechanic, IAdditionalFin
             return true;
 
         bool hasLivingAlly =
-            Canonical0922EnemyTurnCoordinator.HasLivingAlly(owner, battleContext);
+            CanonicalEnemyTurnCoordinator.HasLivingAlly(owner, battleContext);
 
         // Normal mobs in 0922 are Normal / Duel / Preparation role actors.
         // Old Prestige content is legacy and must not leak into canonical role planning.
         if (skill.ActionType == ActionType.Prestige)
             return false;
 
-        if(species!=R7EnemySpecies1029.Unknown)
+        if(species!=EnemySpecies1029.Unknown)
         {
             bool matches=plannedAction switch
             {
-                R7EnemyAction1029.Normal=>skill.ActionType==ActionType.NormalAttack,
-                R7EnemyAction1029.BasicDuel=>skill.ActionType==ActionType.Duel&&
+                EnemyAction1029.Normal=>skill.ActionType==ActionType.NormalAttack,
+                EnemyAction1029.BasicDuel=>skill.ActionType==ActionType.Duel&&
                     skill.EnergyCost==1,
-                R7EnemyAction1029.StrongDuel=>skill.ActionType==ActionType.Duel&&
+                EnemyAction1029.StrongDuel=>skill.ActionType==ActionType.Duel&&
                     skill.EnergyCost==2,
-                R7EnemyAction1029.CoverDuel=>skill.ActionType==ActionType.Duel&&
-                    R7EnemyStage1Effect20261103.IsCoverDuelId(skill.Definition?.SkillId),
-                R7EnemyAction1029.HealPreparation=>skill.ActionType==ActionType.Preparation&&
-                    R7EnemyStage1Effect20261103.IsHealId(skill.Definition?.SkillId),
-                R7EnemyAction1029.SupplyPreparation=>skill.ActionType==ActionType.Preparation&&
-                    R7EnemyStage1Effect20261103.IsSupplyId(skill.Definition?.SkillId),
+                EnemyAction1029.CoverDuel=>skill.ActionType==ActionType.Duel&&
+                    EnemyStageOneEffect.IsCoverDuelId(skill.Definition?.SkillId),
+                EnemyAction1029.HealPreparation=>skill.ActionType==ActionType.Preparation&&
+                    EnemyStageOneEffect.IsHealId(skill.Definition?.SkillId),
+                EnemyAction1029.SupplyPreparation=>skill.ActionType==ActionType.Preparation&&
+                    EnemyStageOneEffect.IsSupplyId(skill.Definition?.SkillId),
                 _=>false
             };
             if(!matches)return false;
@@ -332,7 +332,7 @@ public sealed class NormalEnemy0922RoleMechanic : CombatMechanic, IAdditionalFin
         }
 
         pendingCoverTarget =
-            Canonical0922EnemyTurnCoordinator
+            CanonicalEnemyTurnCoordinator
                 .SelectCoverCandidate(owner,battleContext);
     }
 
@@ -372,21 +372,21 @@ public sealed class NormalEnemy0922RoleMechanic : CombatMechanic, IAdditionalFin
         // HP depends on ROLE, never whether 3 or 4 enemies spawned.
         if(owner is NormalEnemy normal)
             normal.SetMaxCombatHpForDebug(
-                R7Enemy1029NativeContract20261103.RoleHp(role),
+                EnemyCombatNativeContract.RoleHp(role),
                 preserveCurrentHpRatio:true);
     }
 
-    internal void ConfigureSpecies(R7EnemySpecies1029 value)
+    internal void ConfigureSpecies(EnemySpecies1029 value)
     {
         species=value;
     }
 
-    internal void ConfigureCanonicalAction(R7EnemyAction1029 choice)
+    internal void ConfigureCanonicalAction(EnemyAction1029 choice)
     {
         plannedAction=choice;
-        duelAssignedThisTurn=choice==R7EnemyAction1029.BasicDuel||
-            choice==R7EnemyAction1029.StrongDuel||
-            choice==R7EnemyAction1029.CoverDuel;
+        duelAssignedThisTurn=choice==EnemyAction1029.BasicDuel||
+            choice==EnemyAction1029.StrongDuel||
+            choice==EnemyAction1029.CoverDuel;
         preferredColor=SkillColor.Red;
     }
 
@@ -402,8 +402,8 @@ public sealed class NormalEnemy0922RoleMechanic : CombatMechanic, IAdditionalFin
                 return true;
         // Stage1 native authored cards are stored in their own Resources
         // catalog, not mixed into original CharacterData/CombatLoadout.
-        return species!=R7EnemySpecies1029.Unknown&&
-            R7EnemyStage1SkillCatalog20261103.HasAffordable(
+        return species!=EnemySpecies1029.Unknown&&
+            EnemyStageOneSkillCatalog.HasAffordable(
                 species,type,cost,identity,owner?.CurrentEnergy??0);
     }
 
@@ -411,7 +411,7 @@ public sealed class NormalEnemy0922RoleMechanic : CombatMechanic, IAdditionalFin
     {
         duelAssignedThisTurn=assignedDuel;
         plannedAction=assignedDuel?
-            R7EnemyAction1029.BasicDuel:R7EnemyAction1029.Normal;
+            EnemyAction1029.BasicDuel:EnemyAction1029.Normal;
         preferredColor=color;
     }
 
@@ -437,7 +437,7 @@ public sealed class NormalEnemy0922RoleMechanic : CombatMechanic, IAdditionalFin
     }
 }
 
-public static class Canonical0922EnemyTurnCoordinator
+public static class CanonicalEnemyTurnCoordinator
 {
     private sealed class EncounterState
     {
@@ -494,24 +494,24 @@ public static class Canonical0922EnemyTurnCoordinator
             if(mechanic==null)continue;
             bool normal=mechanic.HasAuthoredSkill(ActionType.NormalAttack,0);
             bool basic=mechanic.HasAuthoredSkill(ActionType.Duel,1,
-                id=>!R7EnemyStage1Effect20261103.IsCoverDuelId(id));
+                id=>!EnemyStageOneEffect.IsCoverDuelId(id));
             bool strong=mechanic.HasAuthoredSkill(ActionType.Duel,2);
             bool cover=mechanic.HasAuthoredSkill(ActionType.Duel,1,
-                R7EnemyStage1Effect20261103.IsCoverDuelId);
+                EnemyStageOneEffect.IsCoverDuelId);
             bool heal=mechanic.HasAuthoredSkill(ActionType.Preparation,1,
-                R7EnemyStage1Effect20261103.IsHealId);
+                EnemyStageOneEffect.IsHealId);
             bool supply=mechanic.HasAuthoredSkill(ActionType.Preparation,1,
-                R7EnemyStage1Effect20261103.IsSupplyId);
-            var choice=R7EnemySpeciesPolicy20261103.ChooseAvailable(
+                EnemyStageOneEffect.IsSupplyId);
+            var choice=EnemySpeciesPolicy.ChooseAvailable(
                 mechanic.Species,enemy.CurrentEnergy,UnityEngine.Random.value,
                 normal,basic,strong,mechanic.HasActiveCover,
                 cover,mechanic.PendingCoverTarget!=null,heal,
-                R7EnemyStage1Effect20261103.HasHealerTarget(enemy,context),
-                supply,R7EnemyStage1Effect20261103.HasSupplyTarget(enemy,context));
+                EnemyStageOneEffect.HasHealerTarget(enemy,context),
+                supply,EnemyStageOneEffect.HasSupplyTarget(enemy,context));
             mechanic.ConfigureCanonicalAction(choice);
-            if(choice==R7EnemyAction1029.BasicDuel||
-               choice==R7EnemyAction1029.StrongDuel||
-               choice==R7EnemyAction1029.CoverDuel)actualDuels++;
+            if(choice==EnemyAction1029.BasicDuel||
+               choice==EnemyAction1029.StrongDuel||
+               choice==EnemyAction1029.CoverDuel)actualDuels++;
         }
         // Legacy read-only API remains for verification consumers, but
         // Requested=0 means no global quota exists under 1029.
@@ -535,11 +535,11 @@ public static class Canonical0922EnemyTurnCoordinator
                 allNormal = false;
         }
 
-        if (!allNormal || !Canonical0922EnemyEncounterRules.IsCanonicalNormalEncounterCount(normals.Count))
+        if (!allNormal || !EnemyEncounterRules.IsCanonicalNormalEncounterCount(normals.Count))
             return;
 
-        Canonical0922EnemyEncounterEntry composition =
-            Canonical0922EnemyEncounterRules.GetComposition(
+        CanonicalEnemyEncounterEntry composition =
+            EnemyEncounterRules.GetComposition(
                 normals.Count,
                 Random.value);
 
@@ -551,11 +551,11 @@ public static class Canonical0922EnemyTurnCoordinator
         {
             var role=composition.Roles[i];
             if(role==EnemyRole0922.DealerSlot)
-                role=Canonical0922EnemyEncounterRules.ResolveDealerSlot(
+                role=EnemyEncounterRules.ResolveDealerSlot(
                     UnityEngine.Random.value);
-            var species=R7EnemySpeciesPolicy20261103.ChooseSpecies(
+            var species=EnemySpeciesPolicy.ChooseSpecies(
                 role,UnityEngine.Random.value,commanderChosen);
-            if(species==R7EnemySpecies1029.Commander)commanderChosen=true;
+            if(species==EnemySpecies1029.Commander)commanderChosen=true;
             var enemy=normals[i];
             state.Roles[enemy]=role;
             var mechanic=enemy.GetMechanic<NormalEnemy0922RoleMechanic>();

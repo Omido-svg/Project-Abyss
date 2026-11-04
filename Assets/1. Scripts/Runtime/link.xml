@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<linker>
+  <assembly fullname="ProjectAbyss.Runtime">
+    <type fullname="SkillUpgradeProfile" preserve="all" />
+    <type fullname="EmotionAugmentCatalog" preserve="all" />
+  </assembly>
+</linker>

@@ -11,8 +11,8 @@ namespace ProjectAbyss.Abilities
     /// </summary>
     public sealed class R7ProductionNativeUniqueGaugeMigration : IDisposable
     {
-        private readonly R7NativeUniqueGaugeEngine engine=
-            new R7NativeUniqueGaugeEngine();
+        private readonly NativeUniqueGaugeEngine engine=
+            new NativeUniqueGaugeEngine();
         private static Dictionary<string,R7NativeUniqueGaugeDefinition> catalog;
         private bool disposed;
         public bool Enabled {get;set;}=true;

@@ -14,7 +14,7 @@ namespace ProjectAbyss.Abilities
         public string SourceAssetGuid;
         public string SourceAssetName;
         public AbilityEventKind Trigger;
-        public R7NativeResourceKind Operation;
+        public NativeResourceKind Operation;
         [Min(0)] public int Level0Amount;
         [Min(0)] public int Level1Amount;
         [Min(0)] public int Level2Amount;
@@ -29,8 +29,8 @@ namespace ProjectAbyss.Abilities
             !string.IsNullOrWhiteSpace(SourceAssetGuid) &&
             !string.IsNullOrWhiteSpace(SourceAssetName) &&
             Level0Amount>0&&Level1Amount>0&&Level2Amount>0 &&
-            (Operation==R7NativeResourceKind.Block ||
-             Operation==R7NativeResourceKind.Prestige ||
-             Operation==R7NativeResourceKind.TurnClashPower);
+            (Operation==NativeResourceKind.Block ||
+             Operation==NativeResourceKind.Prestige ||
+             Operation==NativeResourceKind.TurnClashPower);
     }
 }

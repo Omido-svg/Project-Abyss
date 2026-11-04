@@ -1,4 +1,4 @@
-﻿#if UNITY_EDITOR
+#if UNITY_EDITOR
 using System.Collections.Generic;
 using System.Linq;
 using UnityEditor;
@@ -39,7 +39,7 @@ public sealed class GameSystemVerificationWindow : EditorWindow
         EditorGUILayout.LabelField("Project Abyss · Game System Verification", EditorStyles.boldLabel);
         // [0922_CANONICAL_WINDOW]
         EditorGUILayout.HelpBox(
-            $"Current Canonical = {Canonical0922BaselineSpec.CanonicalVersion}. " +
+            $"Current Canonical = {CombatRulesBaselineSpec.CanonicalVersion}. " +
             "기존 Phase A~F Gate와 CanonicalGameSystemVerificationSpec은 0922 이전 구현을 추적하는 Legacy Regression Oracle입니다. " +
             "0922 신규 구현의 정답 판정은 Game System Verification > 0922 Canonical 아래 Gate를 기준으로 합니다.",
             MessageType.Info);
@@ -47,7 +47,7 @@ public sealed class GameSystemVerificationWindow : EditorWindow
         using (new EditorGUILayout.HorizontalScope())
         {
             EditorGUILayout.LabelField(
-                $"Canonical: {Canonical0922BaselineSpec.CanonicalVersion}",
+                $"Canonical: {CombatRulesBaselineSpec.CanonicalVersion}",
                 GUILayout.Width(150f));
 
             EditorGUILayout.LabelField(
@@ -150,7 +150,7 @@ public sealed class GameSystemVerificationWindow : EditorWindow
             using (new EditorGUI.DisabledScope(Application.isPlaying))
             {
                 if (GUILayout.Button("Phase F Completion Gate", GUILayout.Height(30f), GUILayout.Width(170f)))
-                    Run(PhaseFCompletionGate.Run());
+                    Run(ContentCompletionVerification.Run());
             }
 
             if (GUILayout.Button("Find Manager", GUILayout.Height(30f), GUILayout.Width(110f)))

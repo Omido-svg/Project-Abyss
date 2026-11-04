@@ -555,7 +555,7 @@ private bool RepresentsIncomingAttackTo(
         // Include direct incoming attacks, their clash/attack partners,
         // and an unassigned player-part cell that receives the hovered
         // enemy's outgoing attack. Read-only UI focus only.
-        return BattleMvpSlotHoverRelations20261103.IsRelatedCell(
+        return BattleSlotHoverRelations.IsRelatedCell(
             hovered, this, manager);
     }
 

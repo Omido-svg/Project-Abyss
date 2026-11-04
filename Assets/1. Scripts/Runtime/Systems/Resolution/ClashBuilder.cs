@@ -63,7 +63,7 @@ public sealed class ClashBuilder
         // R7-7 Hifumi's provocation is resolved on hostile attack ACTIONS
         // before pairing, and never on individual rolls. This is the only
         // mutating integration point; BuildClashPreview stays read-only.
-        R7HifumiProvocationTargeting20261103.ApplyToExecutionSlots(combatSlots);
+        HifumiProvocationTargeting.ApplyToExecutionSlots(combatSlots);
 
         // O-05 「일기토」는 속도순 해결보다 먼저 계획 전체를 보고
         // 같은 상대 슬롯을 노린 다른 아군 슬롯의 '일방타격'을 포기시켜야 한다.

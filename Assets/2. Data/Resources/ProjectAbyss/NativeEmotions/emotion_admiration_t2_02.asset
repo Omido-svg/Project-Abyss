@@ -11,7 +11,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: f9a069052a211d64c99cfbbfc43f02dc, type: 3}
   m_Name: emotion_admiration_t2_02
-  m_EditorClassIdentifier: ProjectAbyss.Runtime::R7NativeEmotionPrototypeGraph20261103
+  m_EditorClassIdentifier: ProjectAbyss.Runtime::NativeEmotionPrototypeGraph
   SchemaVersion: 1
   StableId: emotion.admiration.t2.02
   SourceGuid: 88c60e5951689df43a9bc1df3caf18be

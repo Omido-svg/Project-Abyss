@@ -70,8 +70,8 @@ public sealed class RunFlowLiveContentRegistry : ScriptableObject
         int count=0;
         foreach(var item in RunItemCatalog.Items)
             if(item!=null&&
-               R7NativeRunItemCatalog20261103.TryResolve(item,out var graph)&&
-               graph.State==R7NativeRunItemState20261103.NativeReady)
+               NativeRunItemCatalog.TryResolve(item,out var graph)&&
+               graph.State==NativeRunItemState.NativeReady)
                 count++;
         return count;
     }
@@ -82,9 +82,9 @@ public sealed class RunFlowLiveContentRegistry : ScriptableObject
         int count=0;
         foreach(var item in RunItemCatalog.Items)
             if(item!=null&&
-               R7NativeRunItemCatalog20261103.TryResolve(item,out var graph)&&
+               NativeRunItemCatalog.TryResolve(item,out var graph)&&
                graph.State==
-                   R7NativeRunItemState20261103.CanonicalEffectPending)
+                   NativeRunItemState.CanonicalEffectPending)
                 count++;
         return count;
     }

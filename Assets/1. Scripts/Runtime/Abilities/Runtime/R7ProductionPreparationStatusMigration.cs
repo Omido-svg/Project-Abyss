@@ -56,12 +56,12 @@ namespace ProjectAbyss.Abilities
             new Dictionary<ActionSlot,CombatCommandApplyService>();
         private readonly AbilityRunner runner=new AbilityRunner();
         private readonly Match matcher=new Match();
-        private readonly R7NativePreparationSetupEngine setup=new R7NativePreparationSetupEngine();
-        private static R7NativePreparationSetupDefinition SetupGraph=>
-            UnityEngine.Resources.Load<R7NativePreparationSetupDefinition>(
+        private readonly NativePreparationSetupEngine setup=new NativePreparationSetupEngine();
+        private static NativePreparationSetupDefinition SetupGraph=>
+            UnityEngine.Resources.Load<NativePreparationSetupDefinition>(
                 "ProjectAbyss/NativePreparations/EliteCombatStance_Setup");
-        private static R7NativePreparationStatusGraph20261102 StatusGraph=>
-            UnityEngine.Resources.Load<R7NativePreparationStatusGraph20261102>(
+        private static NativePreparationStatusGraph StatusGraph=>
+            UnityEngine.Resources.Load<NativePreparationStatusGraph>(
                 "ProjectAbyss/NativePreparations/EliteCombatStance_Statuses");
         public int NativeSetupCommits=>setup.CommandCommits;
         private readonly Dictionary<(ActionSlot,int),AbilityInstance> identities=
@@ -186,7 +186,7 @@ namespace ProjectAbyss.Abilities
 
         private bool ApplyNative(AbilityInstance ability,AbilityEventContext cause,
             SkillEffectContext ctx,
-            R7NativePreparationStatusGraph20261102.StatusOperation operation,int index)
+            NativePreparationStatusGraph.StatusOperation operation,int index)
         {
             if(ctx?.Resolver==null||ctx.Owner==null||ctx.Target==null||
                ctx.Action==null||ctx.Target.IsDead ||

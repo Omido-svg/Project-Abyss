@@ -692,9 +692,9 @@ public sealed class EmotionAugmentChoiceUI : MonoBehaviour
                     : choice.DisplayName;
 
             bool nativeResolved=
-                R7NativeEmotionCatalog20261103.TryResolve(choice,out var graph);
+                NativeEmotionCatalog.TryResolve(choice,out var graph);
             bool canonicalPending=nativeResolved&&
-                graph.State==R7NativeEmotionGraphState20261103.CanonicalValuesPending;
+                graph.State==NativeEmotionGraphState.CanonicalValuesPending;
             card.Body.text =
                 $"TIER {Mathf.Clamp(choice.Tier, 1, 3)}\n\n" +
                 (string.IsNullOrWhiteSpace(choice.Description)

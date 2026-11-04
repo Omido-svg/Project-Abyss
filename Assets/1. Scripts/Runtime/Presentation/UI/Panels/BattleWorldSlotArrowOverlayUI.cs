@@ -855,7 +855,7 @@ public sealed class BattleWorldSlotArrowOverlayUI : MonoBehaviour
 
             bool hoverRelated =
                 hoveredCell != null &&
-                BattleMvpSlotHoverRelations20261103.IsRelated(
+                BattleSlotHoverRelations.IsRelated(
                     hoveredCell, source, uiManager);
 
             float alphaMultiplier =
@@ -888,7 +888,7 @@ public sealed class BattleWorldSlotArrowOverlayUI : MonoBehaviour
     {
         if (!showEnemyIntentArrows || slots == null)
             return used;
-        var forcedParts=R7HifumiProvocationTargeting20261103
+        var forcedParts=HifumiProvocationTargeting
             .PreviewTargetParts(slots);
 
         foreach (ActionSlot source in slots)
@@ -944,7 +944,7 @@ public sealed class BattleWorldSlotArrowOverlayUI : MonoBehaviour
 
             bool hoverRelated =
                 hoveredCell != null &&
-                BattleMvpSlotHoverRelations20261103.IsRelated(
+                BattleSlotHoverRelations.IsRelated(
                     hoveredCell, source, uiManager);
 
             float alphaMultiplier =
@@ -1046,9 +1046,9 @@ public sealed class BattleWorldSlotArrowOverlayUI : MonoBehaviour
 
             bool hoverRelated =
                 hoveredCell != null &&
-                (BattleMvpSlotHoverRelations20261103.IsRelated(
+                (BattleSlotHoverRelations.IsRelated(
                     hoveredCell, playerSlot, uiManager) ||
-                 BattleMvpSlotHoverRelations20261103.IsRelated(
+                 BattleSlotHoverRelations.IsRelated(
                     hoveredCell, enemySlot, uiManager));
 
             float alphaMultiplier =

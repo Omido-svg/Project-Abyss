@@ -1,5 +1,7 @@
 using System.Collections.Generic;
 using System.Text;
+
+using ProjectAbyss.Abilities;
 using UnityEngine;
 
 public static class BattleSkillUiText
@@ -105,223 +107,68 @@ public static class BattleSkillUiText
             : $"{skill.ExchangeRollCount} Roll";
     }
 
-    public static string BuildDescription(
-        Skill skill)
+public static string BuildDescription(Skill skill)
     {
         if (skill == null)
             return "선택한 스킬이 없습니다.";
 
-        SkillDefinition definition =
-            skill.Definition;
+        SkillDefinition definition = skill.Definition;
+        // The original keyword colorizer performs substring replacement.
+        // It can colorize the syllable "합" inside "합니다".
+        // Keep prose intact; keyword chips below remain interactive.
 
-        StringBuilder builder =
-            new();
+        string overview = BattleSkillDescriptionFormatter.GetOverview(skill);
+        var builder = new StringBuilder(400);
+        builder.Append("<b><color=#E6C68A>핵심 효과</color></b>\n");
+        builder.Append(overview);
 
-        if (definition != null &&
-            !string.IsNullOrWhiteSpace(
-                definition.Description))
+        builder.Append("\n\n<b><color=#AFCBF1>전투 정보</color></b>\n");
+        builder.Append(GetActionTypeName(skill.ActionType));
+        builder.Append("  ·  빛 ");
+        builder.Append(skill.EnergyCost);
+        if (BattleSkillDescriptionFormatter.HasUnconfirmedDetails(skill))
+            builder.Append(" (현재 설정)");
+
+        if (skill.CanClash)
         {
-            List<string> declaredKeywords =
-                new List<string>();
+            int count = definition?.Rolls?.Count > 0
+                ? definition.Rolls.Count
+                : Mathf.Max(1, skill.ExchangeRollCount);
+            builder.Append("  ·  합 ");
+            builder.Append(count);
+            builder.Append("굴림");
 
-            if (definition.Keywords != null)
-            {
-                foreach (SkillKeywordEntry keyword
-                         in definition.Keywords)
-                {
-                    if (keyword != null &&
-                        !string.IsNullOrWhiteSpace(keyword.Name))
-                    {
-                        declaredKeywords.Add(keyword.Name);
-                    }
-                }
-            }
-
-            builder.AppendLine(
-                BattleKeywordGlossary.ColorizeText(
-                    definition.Description.Trim(),
-                    declaredKeywords));
-
-            builder.AppendLine();
-        }
-
-        builder.AppendLine(
-            $"행동 종류: " +
-            $"{GetActionTypeName(skill.ActionType)}");
-
-        builder.AppendLine(
-            $"빛 비용: {skill.EnergyCost}");
-
-        if (skill.ActionType == ActionType.NormalAttack ||
-            skill.ActionType == ActionType.Duel ||
-            (skill.ActionType == ActionType.Prestige && skill.CanClash))
-        {
-            PhysicalDamageType physical =
-                ResolveBasePhysicalType(
-                    skill,
-                    definition);
-
-            builder.AppendLine(
-                $"기본 물리 속성: " +
-                $"{GetPhysicalTypeSymbol(physical)} {GetPhysicalTypeName(physical)}");
-
-            if (definition?.Rolls != null &&
-                definition.Rolls.Count > 0 &&
-                skill.CanClash)
-            {
-                builder.Append("굴림별 물리: ");
-
-                bool appendedPhysical = false;
-
-                for (int i = 0; i < definition.Rolls.Count; i++)
-                {
-                    SkillRollData roll = definition.Rolls[i];
-                    if (roll == null)
-                        continue;
-
-                    if (appendedPhysical)
-                        builder.Append(" / ");
-
-                    builder.Append(i + 1);
-                    builder.Append(' ');
-                    PhysicalDamageType rollPhysical =
-                        ResolveRollPhysicalType(
-                            skill,
-                            definition,
-                            roll);
-
-                    builder.Append(GetPhysicalTypeSymbol(rollPhysical));
-                    builder.Append(' ');
-                    builder.Append(GetPhysicalTypeName(rollPhysical));
-
-                    appendedPhysical = true;
-                }
-
-                if (!appendedPhysical)
-                    builder.Append(GetPhysicalTypeName(physical));
-
-                builder.AppendLine();
-            }
-        }
-
-        builder.AppendLine(
-            $"합 가능: " +
-            $"{(skill.CanClash ? "가능" : "불가")}");
-
-        if (skill.AttackWeight > 1)
-        {
-            builder.AppendLine(
-                $"공격 가중치: {skill.AttackWeight} " +
-                "(메인 1 + 무작위 추가 타깃)");
-        }
-
-        if (ShouldShowClashRollPattern(skill))
-        {
-            builder.AppendLine(
-                $"합 굴림: {BuildRollSummary(skill)}");
+            PhysicalDamageType type = ResolveBasePhysicalType(skill, definition);
+            builder.Append("\n공격 속성: ");
+            builder.Append(GetPhysicalTypeSymbol(type));
+            builder.Append(' ');
+            builder.Append(GetPhysicalTypeName(type));
         }
         else
         {
-            builder.AppendLine(
-                "합 굴림: 없음");
+            builder.Append("\n합 없음");
         }
 
-        if (definition?.MultiRollPenalty?.Enabled == true &&
-            skill.CanClash)
+        if (skill.AttackWeight > 1)
         {
-            builder.AppendLine(
-                "다굴림 페널티가 적용됩니다.");
+            builder.Append("\n공격 가중치: ");
+            builder.Append(skill.AttackWeight);
+            builder.Append(skill.AttackWeightTargetingModel ==
+                AttackWeightTargetingModel.SlotWeighted
+                ? " (슬롯별 대상 배분)"
+                : " (기존 대상 선정 규칙)");
         }
 
-        if (definition != null)
-        {
-            bool hasEffects = false;
-            foreach (SkillEffectEntry entry in definition.EnumerateEffectEntries())
-            {
-                if (entry?.Definition != null)
-                {
-                    hasEffects = true;
-                    break;
-                }
-            }
+        if (definition?.CanBreakPart == true)
+            builder.Append("\n부위 파괴 가능");
 
-            if (hasEffects)
-            {
-                builder.Append("효과: ");
-                bool appended = false;
+        if (definition?.MultiRollPenalty?.Enabled == true && skill.CanClash)
+            builder.Append("\n연속 굴림 페널티 적용");
 
-                foreach (SkillEffectEntry entry in definition.EnumerateEffectEntries())
-                {
-                    SkillEffectDefinition effect = entry?.Definition;
-                    if (effect == null)
-                        continue;
+        if (BattleSkillDescriptionFormatter.HasUnconfirmedDetails(skill))
+            builder.Append("\n\n<color=#C8BA8B>※ 일부 세부 수치·효과는 아직 미정입니다.</color>");
 
-                    if (appended)
-                        builder.Append(", ");
-
-                    builder.Append(
-                        BuildEffectTimingPrefix(entry));
-                    builder.Append(' ');
-                    builder.Append(
-                        BattleKeywordGlossary.ColorizeText(
-                            BuildEffectDisplayName(entry)));
-                    appended = true;
-                }
-
-                if (!appended)
-                    builder.Append("없음");
-
-                builder.AppendLine();
-            }
-        }
-
-        if (definition?.Rolls != null)
-        {
-            bool wroteHeader = false;
-
-            for (int rollIndex = 0;
-                 rollIndex < definition.Rolls.Count;
-                 rollIndex++)
-            {
-                SkillRollData roll = definition.Rolls[rollIndex];
-                if (roll?.EffectEntries == null)
-                    continue;
-
-                foreach (SkillEffectEntry entry in roll.EffectEntries)
-                {
-                    if (entry?.Definition == null)
-                        continue;
-
-                    if (!wroteHeader)
-                    {
-                        builder.AppendLine("굴림 효과:");
-                        wroteHeader = true;
-                    }
-
-                    PhysicalDamageType rollPhysical =
-                        ResolveRollPhysicalType(
-                            skill,
-                            definition,
-                            roll);
-
-                    builder.Append("  ");
-                    builder.Append(rollIndex + 1);
-                    builder.Append("굴림 ");
-                    builder.Append(GetPhysicalTypeSymbol(rollPhysical));
-                    builder.Append(' ');
-                    builder.Append(BuildEffectTimingPrefix(entry));
-                    builder.Append(' ');
-                    builder.Append(
-                        BattleKeywordGlossary.ColorizeText(
-                            BuildEffectDisplayName(entry)));
-                    builder.AppendLine();
-                }
-            }
-        }
-
-        return builder
-            .ToString()
-            .TrimEnd();
+        return builder.ToString();
     }
 
     public static List<SkillKeywordEntry> BuildKeywords(
@@ -745,5 +592,23 @@ public static class BattleSkillUiText
                             name)
                         : description
             });
+    }
+
+
+public static string BuildCompactRollSummary(Skill skill)
+    {
+        if (skill == null)
+            return "스킬 없음";
+        if (!skill.CanClash)
+            return "합 없음";
+
+        SkillDefinition definition = skill.Definition;
+        int rolls = definition?.Rolls?.Count > 0
+            ? definition.Rolls.Count
+            : Mathf.Max(1, skill.ExchangeRollCount);
+
+        PhysicalDamageType physical =
+            ResolveBasePhysicalType(skill, definition);
+        return $"합 {rolls}굴림 · {GetPhysicalTypeName(physical)}";
     }
 }

@@ -158,7 +158,7 @@ public sealed class AIActionPlanner
             var nativeRole=canonicalNormal
                 .GetMechanic<NormalEnemy0922RoleMechanic>();
             if(nativeRole?.RoleAssigned==true&&
-                nativeRole.Species!=R7EnemySpecies1029.Unknown)
+                nativeRole.Species!=EnemySpecies1029.Unknown)
                 return canonicalNormal.DecideSlots(context);
         }
 

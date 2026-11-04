@@ -401,7 +401,7 @@ public class TargetArrowUI : MonoBehaviour
         if (slots == null)
             return arrowIndex;
 
-        var forcedParts=R7HifumiProvocationTargeting20261103
+        var forcedParts=HifumiProvocationTargeting
             .PreviewTargetParts(slots);
 
         foreach (ActionSlot slot in slots)

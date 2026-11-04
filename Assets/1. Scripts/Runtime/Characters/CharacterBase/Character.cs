@@ -1044,25 +1044,25 @@ public abstract class Character : MonoBehaviour
             case TurnStartEnergyPolicy.RefillToMaximum:
                 // R7-8: only natural gain is blocked; existing light stays.
                 resourceController?.AddEnergy(
-                    R7EnemyStage1Effect20261103.AdjustNaturalTurnRefill(
+                    EnemyStageOneEffect.AdjustNaturalTurnRefill(
                         this,Mathf.Max(0,MaxEnergy-CurrentEnergy)),
                     CombatResourceChangeReason.TurnRefill);
                 break;
 
             case TurnStartEnergyPolicy.GainFlat:
                 resourceController?.AddEnergy(
-                    R7EnemyStage1Effect20261103.AdjustNaturalTurnRefill(
+                    EnemyStageOneEffect.AdjustNaturalTurnRefill(
                         this,Data?.TurnStartEnergyAmount??0),
                     CombatResourceChangeReason.TurnRefill);
                 break;
 
             case TurnStartEnergyPolicy.None:
-                R7EnemyStage1Effect20261103.AdjustNaturalTurnRefill(this,0);
+                EnemyStageOneEffect.AdjustNaturalTurnRefill(this,0);
                 break;
 
             default:
                 resourceController?.AddEnergy(
-                    R7EnemyStage1Effect20261103.AdjustNaturalTurnRefill(
+                    EnemyStageOneEffect.AdjustNaturalTurnRefill(
                         this,battleContext?.Rules?.Energy?.TurnStartGain??1),
                     CombatResourceChangeReason.TurnRefill);
                 break;
@@ -1222,7 +1222,7 @@ public abstract class Character : MonoBehaviour
 
         Canonical0922EmotionRuntimeHooks.NotifyHealingResolved(
             this,
-            new Canonical0922HealingResult
+            new CanonicalHealingResult
             {
                 RequestedAmount = amount,
                 ModifiedAmount = modified,

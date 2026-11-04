@@ -1179,7 +1179,7 @@ public sealed class YujinMechanic : CombatMechanic,
         MaterializePendingMarks();
 
         weaponSwitchUsedThisTurn = false;
-        AddSense(R7FixedPassiveContract20261103.YujinTurnSenseGain);
+        AddSense(CharacterFixedPassiveContract.YujinTurnSenseGain);
     }
 
     private void OnTurnEnd(int turn)

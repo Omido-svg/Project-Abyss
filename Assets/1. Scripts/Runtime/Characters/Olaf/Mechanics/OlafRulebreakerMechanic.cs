@@ -73,10 +73,10 @@ public sealed class OlafRulebreakerMechanic :
         if(action?.Owner!=owner)return roll;
         int modifier=turnPowerBonus;
         if(action.CurrentRollIndex==2 &&
-           ProjectAbyss.Abilities.R7ProductionOlafNativeMigration20261103
+           ProjectAbyss.Abilities.OlafNativeAbilityRuntimeBinding
                .HasThirdRollDebuffPower(action.Skill?.Definition))
             modifier+=CountTargetNegativeStatusKinds(action.Target,action.TargetPart);
-        if(ProjectAbyss.Abilities.R7ProductionOlafNativeMigration20261103
+        if(ProjectAbyss.Abilities.OlafNativeAbilityRuntimeBinding
                .HasNoRetreatWeakenPower(action.Skill?.Definition) &&
            owner.BodyParts!=null)
             foreach(var part in owner.BodyParts)

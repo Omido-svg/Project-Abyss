@@ -13,8 +13,8 @@ namespace ProjectAbyss.Abilities
     /// </summary>
     public sealed class R7ProductionNativeResourceMigration : IDisposable
     {
-        private readonly R7NativeResourceAbilityEngine engine=
-            new R7NativeResourceAbilityEngine();
+        private readonly NativeResourceAbilityEngine engine=
+            new NativeResourceAbilityEngine();
         private bool disposed;
         private static Dictionary<string,R7NativeAbilityDefinition> catalog;
 

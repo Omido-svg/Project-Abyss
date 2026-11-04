@@ -687,13 +687,12 @@ public sealed class BattleCharacterDetailPanelUI : MonoBehaviour
                 continue;
 
             string clashSummary =
-                BattleSkillUiText.BuildRollSummary(
-                    skill);
+                BattleSkillUiText.BuildCompactRollSummary(skill);
 
             Button item =
                 CreateListButton(
                     $"{BattleSkillUiText.GetActionTypeName(skill.ActionType)}  ·  " +
-                    $"{skill.SkillName}\n" +
+                    $"{BattleSkillDescriptionFormatter.GetDisplayName(skill)}\n" +
                     $"{clashSummary}  ·  빛 {skill.EnergyCost}");
 
             if (item == null)
@@ -786,7 +785,7 @@ public sealed class BattleCharacterDetailPanelUI : MonoBehaviour
         selectedSkill = skill;
 
         if (detailTitleText != null)
-            detailTitleText.text = skill?.SkillName ?? "스킬";
+            detailTitleText.text = BattleSkillDescriptionFormatter.GetDisplayName(skill);
 
         if (detailBodyText != null)
             detailBodyText.text = BattleSkillUiText.BuildDescription(skill);
@@ -797,47 +796,72 @@ public sealed class BattleCharacterDetailPanelUI : MonoBehaviour
         ResetDetailScroll();
     }
 
-    private void BuildPassiveList()
+private void BuildPassiveList()
     {
         if (character == null)
             return;
 
-        IReadOnlyList<CombatMechanic> mechanics =
-            character.Mechanics;
+        List<BattlePassiveDescriptionFormatter.Entry> entries =
+            BattlePassiveDescriptionFormatter.Build(character);
 
-        if (mechanics == null || mechanics.Count == 0)
+        if (entries.Count == 0)
         {
-            SetDetailText("패시브", "등록된 전투 패시브가 없습니다.");
+            SetDetailText("패시브",
+                "현재 적용된 고유 패시브나 추가 능력 효과가 없습니다.");
             return;
         }
 
-        foreach (CombatMechanic mechanic in mechanics)
+        foreach (BattlePassiveDescriptionFormatter.Entry entry in entries)
         {
-            if (mechanic == null)
-                continue;
-
-            Button item =
-                CreateListButton(mechanic.MechanicName);
-
+            Button item = CreateListButton(entry.ListLabel);
             if (item == null)
                 continue;
 
-            CombatMechanic captured = mechanic;
+            BattlePassiveDescriptionFormatter.Entry captured = entry;
             item.onClick.AddListener(
-                () => SetDetailText(
-                    captured.MechanicName,
-                    BuildMechanicDescription(captured)));
+                () => SetDetailText(captured.Title, captured.Description));
         }
 
-        CombatMechanic first = mechanics[0];
-
-        if (first != null)
+        // First resolve the actual list width; measuring TMP before the
+        // layout pass overestimates line count and wastes vertical space.
+        Canvas.ForceUpdateCanvases();
+        foreach (GameObject item in generatedListItems)
         {
-            SetDetailText(
-                first.MechanicName,
-                BuildMechanicDescription(first));
+            if (item != null)
+                FitPassiveRowHeight(item.GetComponent<Button>());
         }
+        if (listContent != null)
+            LayoutRebuilder.ForceRebuildLayoutImmediate(listContent);
+
+        SetDetailText(entries[0].Title, entries[0].Description);
     }
+
+private static void FitPassiveRowHeight(Button item)
+    {
+        if (item == null)
+            return;
+
+        TMP_Text text = item.GetComponentInChildren<TMP_Text>(true);
+        if (text == null)
+            return;
+
+        // Dynamic descriptions must never be clipped by the fixed-height
+        // template. This is evaluated only when opening the Passives tab.
+        float width = text.rectTransform.rect.width;
+        if (width < 80f)
+            width = 240f;
+
+        float preferredTextHeight = text.GetPreferredValues(
+            text.text, width, 10000f).y;
+        float height = Mathf.Ceil(Mathf.Max(58f, preferredTextHeight + 18f));
+        LayoutElement layout = item.GetComponent<LayoutElement>();
+        if (layout == null)
+            layout = item.gameObject.AddComponent<LayoutElement>();
+
+        layout.minHeight = Mathf.Max(layout.minHeight, height);
+        layout.preferredHeight = Mathf.Max(layout.preferredHeight, height);
+    }
+
 
     private void BuildStatusList()
     {
@@ -882,7 +906,7 @@ public sealed class BattleCharacterDetailPanelUI : MonoBehaviour
 
             // Preserve the existing Status tab's independent status rows,
             // sources, locations and descriptions. Add only an icon badge.
-            BattleMvpDetailStatusBadge20261103.Attach(
+            BattleDetailStatusBadge.Attach(
                 item, effect, character);
             
 StatusEffect captured = effect;
@@ -1419,17 +1443,7 @@ StatusEffect captured = effect;
         ResetDetailScroll();
     }
 
-    private static string BuildMechanicDescription(
-        CombatMechanic mechanic)
-    {
-        if (mechanic == null)
-            return "설명이 없습니다.";
 
-        return
-            $"런타임 타입: {mechanic.GetType().Name}\n" +
-            $"등록 상태: {(mechanic.IsRegistered ? "활성" : "비활성")}\n" +
-            "구체적인 수치와 발동 조건은 해당 CombatMechanic 구현 및 캐릭터 데이터에 따릅니다.";
-    }
 
     private static string BuildStatusDescription(
         StatusEffect effect,
