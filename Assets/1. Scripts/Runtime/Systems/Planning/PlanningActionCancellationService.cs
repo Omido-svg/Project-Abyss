@@ -75,6 +75,17 @@ public sealed class PlanningActionCancellationService
         }
 
         Character owner = live.Owner;
+        if (live.ImmediateEnergyGranted > owner.CurrentEnergy)
+        {
+            failureReason = "도사림이 준 빛을 사용한 카드를 먼저 취소하세요.";
+            return false;
+        }
+        string weaponFailure = owner.GetMechanic<YujinMechanic>()?.GetWeaponRollbackBlockReason(live);
+        if (!string.IsNullOrEmpty(weaponFailure))
+        {
+            failureReason = weaponFailure;
+            return false;
+        }
 
         // 먼저 live plan에서 제거한다.
         // 이후 undo 중 UI/validator가 같은 슬롯을 다시 선택된 것으로 보지 않는다.
@@ -87,8 +98,7 @@ public sealed class PlanningActionCancellationService
 
         bool wasImmediatePreparation =
             live.PlanningEffectCommitted &&
-            live.Skill?.ActionType ==
-                ActionType.Preparation;
+            (live.Skill?.ActionType == ActionType.Preparation || live.Skill is StageOneTemporarySkill1112);
 
         if (wasImmediatePreparation)
         {

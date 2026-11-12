@@ -136,7 +136,7 @@ namespace ProjectAbyss.Abilities
                     damage?.WasKilled==true||context?.KillContext?.Victim!=null,
                 YujinCondition.ThisHitWeakenedOrBroke=>
                     damage?.WasWeakened==true||damage?.WasBroken==true||
-                    damage?.BrokePart==true,
+                    damage?.BrokePart==true || (context?.Target?.IsSingleHpTarget==true && damage?.WasKilled==true),
                 YujinCondition.Critical=>
                     context?.RollResult?.IsCritical==true||damage?.WasCritical==true,
                 _=>false
@@ -234,8 +234,7 @@ namespace ProjectAbyss.Abilities
                     if(amount<=0)return false;
                     y.GrantSense(amount);return true;
                 case YujinNativeOperation.CutThroatMark:
-                    if(target==null||amount<=0)return false;
-                    y.GrantMark(target,part,amount,c.Action);return true;
+                    return y.TransferTargetMark(target,part,c.Action);
                 case YujinNativeOperation.SpreadRumorMark:
                     bool spread=false;
                     foreach(var enemy in Enemies(c))

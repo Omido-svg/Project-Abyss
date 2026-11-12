@@ -58,6 +58,8 @@ public class CharacterData : ScriptableObject
     public int minSpeed = 3;
     public int maxSpeed = 8;
 
+    public YujinMarkRuleSettings YujinMarkRules = new();
+
     [Header("Initial Custom Resources")]
     public List<CombatResourceDefinition> InitialResources = new();
 

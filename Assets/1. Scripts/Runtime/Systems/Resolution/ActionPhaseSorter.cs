@@ -56,6 +56,15 @@ public sealed class ActionPhaseSorter
                 return speedCompare;
         }
 
+        // 1112 §2: resolving player preparations run legs before head,
+        // independent of speed and assignment order.
+        if (a.Phase == ActionPhase.FORESIGHT && a.Owner == b.Owner)
+        {
+            int aOrder = a.Part?.Type == PartType.LEGS ? 0 : 1;
+            int bOrder = b.Part?.Type == PartType.LEGS ? 0 : 1;
+            if (aOrder != bOrder) return aOrder.CompareTo(bOrder);
+        }
+
         int actionIndexCompare =
             a.ActionIndex.CompareTo(
                 b.ActionIndex);

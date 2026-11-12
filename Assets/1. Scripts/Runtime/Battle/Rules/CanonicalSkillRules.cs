@@ -44,6 +44,7 @@ public static class PowerFormulaService
         if (definition == null)
             return 0;
 
+        if (YujinMechanic.IsHwanhyeongSkill(definition.SkillId)) return 0;
         if (definition.OverrideEnergyCost)
             return Mathf.Max(0, definition.EnergyCost);
 

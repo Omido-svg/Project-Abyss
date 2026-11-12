@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -152,6 +152,7 @@ public class TurnManager
         // 2) TurnStart observer에서 예약 표식/캐릭터 예약 효과 materialize
         // 3) 그 뒤 속도 굴림
         // 예약 신속과 예약 표식이 모두 그 턴의 speed phase보다 먼저 확정되어야 한다.
+        battleContext?.TurnStartEffects.Drain();
         RunCharacterTurnStart();
 
         battleContext?._battleEvent?
@@ -590,6 +591,8 @@ public class TurnManager
         }
 
         lifecycleGuard?.EndBattle();
+        battleContext?.TurnStartEffects.Clear();
+        battleContext?.TemporaryCards1112.Clear();
         actionManager?.Clear();
     }
 

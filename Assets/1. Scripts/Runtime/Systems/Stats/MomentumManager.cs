@@ -102,7 +102,7 @@ public class MomentumManager
         {
             foreach (Character enemy in battleContext.Enemies)
             {
-                if (enemy?.SupportsLastStand == true && !enemy.IsDead)
+                if (enemy != null && !enemy.IsDead)
                     enemy.AddEnergy(1, CombatResourceChangeReason.TurnRefill);
             }
         }

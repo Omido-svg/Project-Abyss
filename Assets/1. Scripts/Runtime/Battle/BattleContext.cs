@@ -10,6 +10,8 @@ public interface IBattleRule
 
 public class BattleContext
 {
+    public StageOneTemporaryCards1112 TemporaryCards1112 { get; } = new();
+    public TurnStartEffectQueue TurnStartEffects { get; } = new();
     public Character Player;
 
     public List<Character> Enemies = new();

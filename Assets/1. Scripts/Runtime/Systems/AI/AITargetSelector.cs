@@ -68,7 +68,8 @@ public sealed class AITargetSelector
             target.GetTargetPoints(includeBrokenParts);
 
         CharacterSlotConfig slotConfig = source.GetSlotConfig(actionIndex);
-        if (slotConfig?.TargetingPolicy == AITargetingPolicy.RandomValid)
+        if (state.Owner?.Data?.CombatantTier != CombatantTier.Boss ||
+            slotConfig?.TargetingPolicy == AITargetingPolicy.RandomValid)
             return SelectRandomValidTarget(targetPoints, includeBrokenParts);
 
         TargetPoint bestPoint = default;
@@ -110,11 +111,7 @@ public sealed class AITargetSelector
         if (skill == null)
             return false;
 
-        // 파괴 부위 재공격은 직접 HP 피해이므로 일반/결투 공격에는 유효하다.
-        // 위세는 약화 부위 파괴나 조건부 효과를 노리는 경우가 많아서
-        // 이미 파괴된 부위를 기본 후보에서 제외한다.
-        return skill.ActionType == ActionType.NormalAttack ||
-               skill.ActionType == ActionType.Duel;
+        return false;
     }
 
     private AITargetSelection SelectRandomValidTarget(
@@ -207,6 +204,7 @@ public sealed class AITargetSelector
             return false;
         }
 
+        if (YujinStealthStatus.IsHidden(point.Part)) return false;
         return point.Character.IsValidTargetPart(
             point.Part,
             allowBrokenPart);

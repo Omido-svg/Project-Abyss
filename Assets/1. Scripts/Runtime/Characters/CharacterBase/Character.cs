@@ -912,9 +912,8 @@ public abstract class Character : MonoBehaviour
                 probe,
                 characterSkills);
 
-        return BodyPartSkillAccessPolicy.Filter(
-            part,
-            selectable);
+        var filtered = BodyPartSkillAccessPolicy.Filter(part, selectable);
+        return battleContext?.TemporaryCards1112.ForSlot(this, part, filtered) ?? filtered;
     }
 
     public IReadOnlyList<Skill> GetSelectablePrestigeSkills()
@@ -1027,6 +1026,8 @@ public abstract class Character : MonoBehaviour
     {
         if (!IsInitialized || IsDead)
             return;
+
+        battleContext?.TurnStartEffects.Drain();
 
         // 도사림의 그 턴 한정 합 보정은 다음 턴 시작 전에 초기화한다.
         combatState?.ClearTurnModifiers();
@@ -2175,6 +2176,7 @@ public abstract class Character : MonoBehaviour
         BodyPart part,
         Skill skill)
     {
+        if (battleContext?.TemporaryCards1112.IsBlocked(skill) == true) return false;
         if (skill == null)
             return false;
 
@@ -2303,6 +2305,7 @@ public abstract class Character : MonoBehaviour
         if (modified <= 0)
             return;
 
+        modified = GetMechanic<StageOneEnemy1112Mechanic>()?.ModifyBlockGain(modified) ?? modified;
         resourceController.AddBlock(modified);
 
         Canonical0922EmotionRuntimeHooks.NotifyBlockGainResolved(

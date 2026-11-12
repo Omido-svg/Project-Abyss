@@ -44,11 +44,16 @@ public sealed class YujinMechanic : CombatMechanic,
     IExchangePreResolutionRule,
     IAdditionalStaggerDamageProvider
 {
+    public YujinMarkRuleSettings MarkRules => owner?.Data?.YujinMarkRules ?? unconfiguredMarkRules;
+    private readonly YujinMarkRuleSettings unconfiguredMarkRules = new();
+
     public const int MarkIgnitionThreshold = YujinWeapons.MarkIgnitionThreshold;
-    public const int WeaponSwitchEnergyCost = 1;
+    public const int WeaponSwitchEnergyCost = 0;
 
     private readonly Dictionary<CombatStatusAnchor, int>
         marks = new();
+
+    private readonly Dictionary<long, Dictionary<CombatStatusAnchor, int>> removedMarkSnapshots = new();
 
     private readonly HashSet<string>
         freeRetrialRerolls = new();
@@ -86,6 +91,14 @@ public sealed class YujinMechanic : CombatMechanic,
     private readonly HashSet<long>
         sentencingPlanningActions = new();
 
+    private sealed class WeaponPlan
+    {
+        public long ActionId;
+        public YujinWeaponType Previous;
+        public YujinWeaponType Next;
+    }
+    private readonly List<WeaponPlan> weaponPlans = new();
+    private YujinWeaponType planningOriginalWeapon;
     private YujinWeaponType currentWeapon;
     private YujinWeaponType pendingWeapon;
     private bool hasPendingWeapon;
@@ -105,7 +118,6 @@ public sealed class YujinMechanic : CombatMechanic,
     private bool weaponSwitchUsedThisTurn;
     private bool weaponChangedThisTurn;
     private int hwanhyeongAttackBonus;
-    private int hwanhyeongDefenseBonus;
 
     /// <summary>
     /// 무기 변경이 실제로 완료된 직후 호출된다.
@@ -156,7 +168,8 @@ public sealed class YujinMechanic : CombatMechanic,
     public float CurrentFrontChance =>
         Mathf.Clamp01(
             CurrentWeaponProfile.FrontChance +
-            (captureActive ? 0.10f : 0f));
+            (captureActive ? currentWeapon switch
+            { YujinWeaponType.Baeku => 0.12f, YujinWeaponType.Jeokseol => 0.08f, _ => 0.02f } : 0f));
 
     public override string MechanicName =>
         "Yujin Weapon / Mark / Sense";
@@ -169,6 +182,8 @@ public sealed class YujinMechanic : CombatMechanic,
 
     public override void OnRegister()
     {
+        if (battleContext?.RunProgression?.LastYujinWeapon is YujinWeaponType saved)
+            currentWeapon = saved;
         SubscribeToBattleEvent(
             () => battleEvent.OnTurnStart += OnTurnStart,
             () => battleEvent.OnTurnStart -= OnTurnStart,
@@ -195,6 +210,11 @@ public sealed class YujinMechanic : CombatMechanic,
             "OnKillResolved");
 
         SubscribeToBattleEvent(
+            () => battleEvent.OnActionEnd += ClearRemovedMarkSnapshot,
+            () => battleEvent.OnActionEnd -= ClearRemovedMarkSnapshot,
+            "OnActionEnd");
+
+        SubscribeToBattleEvent(
             () => battleEvent.OnBattleEnded += OnBattleEnded,
             () => battleEvent.OnBattleEnded -= OnBattleEnded,
             "OnBattleEnded");
@@ -202,6 +222,8 @@ public sealed class YujinMechanic : CombatMechanic,
 
     public override void OnUnregister()
     {
+        removedMarkSnapshots.Clear();
+        weaponPlans.Clear();
         marks.Clear();
         pendingMarks.Clear();
         freeRetrialRerolls.Clear();
@@ -222,19 +244,9 @@ public sealed class YujinMechanic : CombatMechanic,
     /// 아직 환형을 예약하지 않은 상태에서 새 무기 전환을 시작할 수 있는지 검사한다.
     /// 이미 예약된 환형의 "선택 수정"은 CanSelectHwanhyeongWeapon을 사용한다.
     /// </summary>
-    public bool CanSwitchWeapon(
-        YujinWeaponType weapon)
+    public bool CanSwitchWeapon(YujinWeaponType weapon)
     {
-        if (IsWeaponSwitchLocked ||
-            weaponSwitchUsedThisTurn ||
-            owner == null ||
-            hasPendingWeapon ||
-            weapon == currentWeapon)
-        {
-            return false;
-        }
-
-        return true;
+        return owner != null && !IsWeaponSwitchLocked && weapon != currentWeapon;
     }
 
     /// <summary>
@@ -243,24 +255,9 @@ public sealed class YujinMechanic : CombatMechanic,
     /// 이미 환형이 예약된 뒤에는 다른 환형으로 무료 교체하거나
     /// 현재 무기를 선택해 예약을 취소할 수 있다.
     /// </summary>
-    public bool CanSelectHwanhyeongWeapon(
-        YujinWeaponType weapon)
+    public bool CanSelectHwanhyeongWeapon(YujinWeaponType weapon)
     {
-        if (IsWeaponSwitchLocked ||
-            owner == null)
-        {
-            return false;
-        }
-
-        if (hasPendingWeapon)
-        {
-            // 같은 예약을 다시 누르는 것만 막는다.
-            // currentWeapon 선택은 "예약 취소"로 취급한다.
-            return weapon != pendingWeapon;
-        }
-
-        return !weaponSwitchUsedThisTurn &&
-               weapon != currentWeapon;
+        return CanSwitchWeapon(weapon);
     }
 
     /// <summary>
@@ -283,33 +280,15 @@ public sealed class YujinMechanic : CombatMechanic,
     }
 
     public bool QueueWeaponSwitchFromPreparation(
-        YujinWeaponType weapon,
-        int paidEnergyCost = WeaponSwitchEnergyCost)
+        YujinWeaponType weapon, int paidEnergyCost = WeaponSwitchEnergyCost)
     {
-        // 이 메서드는 ActionResolver가 FORESIGHT를 실제 해결하는 동안 호출된다.
-        // 따라서 UI/계획 입력용 잠금(IsWeaponSwitchLocked)을 검사하면 안 된다.
-        // 기존 구현은 CanSwitchWeapon()을 재사용해 IsResolving=true인 순간
-        // 모든 환형 실행을 조용히 거절하고 있었다.
-        if (!CanQueueResolvedWeaponSwitch(weapon))
-        {
-            Debug.LogWarning(
-                $"[유진][환형] 예약 실패 / " +
-                $"Current={currentWeapon}, Requested={weapon}, " +
-                $"Pending={hasPendingWeapon}, UsedThisTurn={weaponSwitchUsedThisTurn}, " +
-                $"Resolving={IsWeaponSwitchLocked}");
-            return false;
-        }
-
-        pendingWeapon = weapon;
-        hasPendingWeapon = true;
-        pendingWeaponEnergyPaid =
-            Mathf.Max(0, paidEnergyCost);
+        if (owner == null || weapon == currentWeapon) return false;
+        planningOriginalWeapon = currentWeapon;
+        SetWeapon(weapon);
+        weaponChangedThisTurn = true;
         weaponSwitchUsedThisTurn = true;
-
-        Debug.Log(
-            $"[유진][환형] {currentWeapon} -> {pendingWeapon} 예약 / " +
-            $"적용=다음 턴 / 지불한 빛={pendingWeaponEnergyPaid}");
-
+        hasPendingWeapon = false;
+        pendingWeaponEnergyPaid = 0;
         return true;
     }
 
@@ -377,31 +356,11 @@ public sealed class YujinMechanic : CombatMechanic,
         return true;
     }
 
-    public string GetHwanhyeongSelectionReason(
-        YujinWeaponType weapon)
+    public string GetHwanhyeongSelectionReason(YujinWeaponType weapon)
     {
-        if (owner == null)
-            return "유진 메커니즘 미연결";
-
-        if (IsWeaponSwitchLocked)
-            return "전투 해결 중에는 환형 변경 불가";
-
-        if (hasPendingWeapon)
-        {
-            if (weapon == pendingWeapon)
-                return $"이미 {pendingWeapon} 전환 예약됨";
-
-            // 다른 무기 또는 현재 무기(예약 취소)는 선택 가능.
-            return string.Empty;
-        }
-
-        if (weaponSwitchUsedThisTurn)
-            return "이번 턴 환형 사용됨";
-
-        if (weapon == currentWeapon)
-            return "현재 무기와 동일";
-
-        return string.Empty;
+        if (owner == null) return "명성 메커니즘 미연결";
+        if (IsWeaponSwitchLocked) return "전투 해결 중에는 환형 변경 불가";
+        return weapon == currentWeapon ? "현재 무기와 동일" : string.Empty;
     }
 
     private enum HwanhyeongMode
@@ -423,7 +382,7 @@ public sealed class YujinMechanic : CombatMechanic,
         return HwanhyeongMode.None;
     }
 
-    private static bool IsHwanhyeongSkill(string skillId) =>
+    public static bool IsHwanhyeongSkill(string skillId) =>
         GetHwanhyeongMode(skillId) != HwanhyeongMode.None;
 
     private static bool TryParseWeaponChoice(string choiceId, out YujinWeaponType weapon)
@@ -461,63 +420,37 @@ public sealed class YujinMechanic : CombatMechanic,
     bool IActionPlanningCommitRule.TryCommitPlannedSlot(ActionSlot slot, out string failureReason)
     {
         failureReason = string.Empty;
-        if (slot?.Owner != owner || !IsHwanhyeongSkill(slot.Skill?.Definition?.SkillId))
-            return true;
-        if (slot.PlanningEffectCommitted)
-            return true;
-        if (!TryParseWeaponChoice(slot.PlanningChoiceId, out YujinWeaponType targetWeapon) ||
-            targetWeapon == currentWeapon)
+        if (slot?.Owner != owner || !IsHwanhyeongSkill(slot.Skill?.Definition?.SkillId)) return true;
+        if (slot.PlanningEffectCommitted) return true;
+        if (!TryParseWeaponChoice(slot.PlanningChoiceId, out var next) || next == currentWeapon)
         {
-            failureReason = "환형은 현재 들지 않은 무기 2개 중 하나를 선택해야 합니다.";
+            failureReason = "현재 들지 않은 무기를 선택하세요.";
             return false;
         }
-        if (hasPendingWeapon || weaponSwitchUsedThisTurn)
-        {
-            failureReason = "이번 턴 환형이 이미 지정되었습니다.";
-            return false;
-        }
-
-        pendingWeapon = targetWeapon;
-        hasPendingWeapon = true;
-        pendingWeaponEnergyPaid = 0;
+        planningOriginalWeapon = currentWeapon;
+        weaponPlans.Add(new WeaponPlan { ActionId = slot.ActionId,
+            Previous = currentWeapon, Next = next });
+        SetWeapon(next);
+        weaponChangedThisTurn = true;
         weaponSwitchUsedThisTurn = true;
-
-        HwanhyeongMode mode = GetHwanhyeongMode(slot.Skill.Definition?.SkillId);
-        if (mode == HwanhyeongMode.Attack)
-        {
-            hwanhyeongAttackBonus = currentWeapon switch
-            {
-                YujinWeaponType.Nakil => 8,
-                YujinWeaponType.Jeokseol => 4,
-                _ => 2
-            };
-        }
-        else if (mode == HwanhyeongMode.Defense)
-        {
-            hwanhyeongDefenseBonus = 30;
-            owner.AddBlock(hwanhyeongDefenseBonus);
-        }
-
+        hasPendingWeapon = false;
+        pendingWeaponEnergyPaid = 0;
         slot.PlanningEffectCommitted = true;
-        Debug.Log($"[유진][환형] 계획 즉시 적용 / mode={mode}, current={currentWeapon}, next={pendingWeapon}");
         return true;
     }
 
     void IActionPlanningCommitRule.RollbackPlannedSlot(ActionSlot slot)
     {
         if (slot?.Owner != owner || !slot.PlanningEffectCommitted ||
-            !IsHwanhyeongSkill(slot.Skill?.Definition?.SkillId))
-            return;
-
-        if (hwanhyeongDefenseBonus > 0)
-            owner?.RemoveBlock(hwanhyeongDefenseBonus);
-
-        hwanhyeongAttackBonus = 0;
-        hwanhyeongDefenseBonus = 0;
+            !IsHwanhyeongSkill(slot.Skill?.Definition?.SkillId)) return;
+        var plan = weaponPlans.FindLast(x => x.ActionId == slot.ActionId);
+        if (plan == null) return;
+        SetWeapon(plan.Previous, notifyChanged: false);
+        weaponPlans.Remove(plan);
+        weaponChangedThisTurn = false;
+        weaponSwitchUsedThisTurn = false;
         hasPendingWeapon = false;
         pendingWeapon = currentWeapon;
-        pendingWeaponEnergyPaid = 0;
-        weaponSwitchUsedThisTurn = false;
         slot.PlanningEffectCommitted = false;
     }
 
@@ -530,42 +463,20 @@ public sealed class YujinMechanic : CombatMechanic,
         string selectedSkillId = context.Skill.Definition?.SkillId;
 
         if (selectedSkillId == YujinSkillIds.FamiliarHand && !weaponChangedThisTurn)
-            return "지난 턴 환형이 완료되어 이번 턴 새 무기가 활성화된 상태에서만 사용할 수 있습니다.";
-
-        if (selectedSkillId == YujinSkillIds.AceInTheHole && sense < GetAceInTheHoleSenseCost())
-            return $"살수의 감이 부족합니다. 필요 {GetAceInTheHoleSenseCost()}, 현재 {sense}.";
-
-        if (selectedSkillId == YujinSkillIds.LedgerCleanup && !HasAnyMarkAtLeast(20))
-            return "사용 조건: 표식 20 이상인 대상이 필요합니다.";
-
-        if ((selectedSkillId == YujinSkillIds.HoldBreath || selectedSkillId == YujinSkillIds.Sharpen) &&
-            !HasAnyMarkAtLeast(10))
-            return "소모할 표식 10이 없습니다.";
+            return "이번 턴 환형으로 무기를 바꾼 뒤 사용할 수 있습니다.";
 
         if (!IsHwanhyeongSkill(selectedSkillId))
             return string.Empty;
 
-        ActionSlot existing =
-            FindPlannedHwanhyeongSlot(
-                context.PlannedSlots);
+        return string.Empty;
+    }
 
-        bool editingSameSlot = existing != null &&
-            IsSamePart(existing.Part, context.Part) &&
-            existing.ActionIndex == context.ActionIndex;
-
-        if (existing != null && !editingSameSlot)
-            return "이번 턴 환형 이미 지정됨";
-
-        if (!string.IsNullOrWhiteSpace(context.ChoiceId) &&
-            (!TryParseWeaponChoice(context.ChoiceId, out YujinWeaponType selectedWeapon) ||
-             selectedWeapon == currentWeapon))
-        {
-            return "현재 들지 않은 무기 2개 중 하나를 선택해야 합니다.";
-        }
-
-        return !editingSameSlot && (weaponSwitchUsedThisTurn || hasPendingWeapon)
-            ? "이번 턴 환형 이미 지정됨"
-            : string.Empty;
+    public string GetWeaponRollbackBlockReason(ActionSlot slot)
+    {
+        if (!IsHwanhyeongSkill(slot?.Skill?.Definition?.SkillId)) return string.Empty;
+        if (weaponPlans.Count > 0 && weaponPlans[weaponPlans.Count - 1].ActionId != slot.ActionId)
+            return "나중에 사용한 환형을 먼저 취소하세요.";
+        return string.Empty;
     }
 
     bool IActionPlanningRule.IsEnergyReservationExempt(
@@ -740,15 +651,15 @@ public sealed class YujinMechanic : CombatMechanic,
     {
         // Legacy callers can still ask by ID, but the runtime contract is
         // action-category based: every NormalAttack/Duel slot may reserve Sense.
-        return !string.IsNullOrWhiteSpace(skillId);
+        return !string.IsNullOrWhiteSpace(skillId) &&
+            skillId.StartsWith("yujin.duel.", StringComparison.Ordinal);
     }
 
     public static bool IsSenseEligibleAction(
         Skill skill)
     {
         return skill != null &&
-               (skill.ActionType == ActionType.NormalAttack ||
-                skill.ActionType == ActionType.Duel);
+               skill.ActionType == ActionType.Duel;
     }
 
     int IExchangeContinuationRule.ModifyOpponentRemainingRollCount(
@@ -806,7 +717,7 @@ public sealed class YujinMechanic : CombatMechanic,
 
         return Mathf.Max(
             0,
-            CurrentWeaponProfile.AdditionalStaggerDamagePerHit);
+            CurrentWeapon == YujinWeaponType.Baeku ? MarkRules.BaekuHitStagger : 0);
     }
 
     public int GetMark(
@@ -919,39 +830,19 @@ public sealed class YujinMechanic : CombatMechanic,
             return false;
         }
 
-        pendingMarks.Add(
-            new PendingMarkGain(
-                anchor,
-                safeAmount,
-                sourceAction));
+        var pending = new PendingMarkGain(anchor, safeAmount, sourceAction);
+        pendingMarks.Add(pending);
+        battleContext.TurnStartEffects.Enqueue(() =>
+        {
+            if (!pendingMarks.Remove(pending) || !anchor.IsValid ||
+                anchor.IsBroken || anchor.Character.IsDead) return;
+            ApplyMarkGain(anchor, safeAmount, sourceAction);
+        });
 
         return true;
     }
 
-    private void MaterializePendingMarks()
-    {
-        if (pendingMarks.Count == 0)
-            return;
 
-        // ApplyMarkGain 내부에서 발화/리더가 다시 예약을 만들더라도
-        // 현재 TurnStart 배치에 섞이지 않도록 먼저 snapshot + clear 한다.
-        List<PendingMarkGain> snapshot =
-            new List<PendingMarkGain>(
-                pendingMarks);
-
-        pendingMarks.Clear();
-
-        foreach (PendingMarkGain pending in snapshot)
-        {
-            if (pending == null)
-                continue;
-
-            ApplyMarkGain(
-                pending.Anchor,
-                pending.Amount,
-                pending.SourceAction);
-        }
-    }
 
     public int GetSkillPower(
         Skill skill,
@@ -1154,6 +1045,7 @@ public sealed class YujinMechanic : CombatMechanic,
     {
         if(lastProcessedTurnStart==turn)return;
         lastProcessedTurnStart=turn;
+        weaponPlans.Clear();
         capturePlanningActions.Clear();
         sentencingPlanningActions.Clear();
 
@@ -1176,7 +1068,7 @@ public sealed class YujinMechanic : CombatMechanic,
         // TurnManager가 Character.TurnStart(예약 공용 상태) 뒤에 이 observer를 호출한다.
         // 따라서 예약 표식도 speed roll 전에 여기서 실제 AddMark 경로로 확정된다.
         // 환형은 "이번 턴부터 새 무기"이므로 새 무기 적용 뒤에 발화 판정을 수행한다.
-        MaterializePendingMarks();
+        battleContext.TurnStartEffects.Drain();
 
         weaponSwitchUsedThisTurn = false;
         AddSense(CharacterFixedPassiveContract.YujinTurnSenseGain);
@@ -1192,8 +1084,11 @@ public sealed class YujinMechanic : CombatMechanic,
 
     private void OnBattleEnded()
     {
+        if (battleContext?.RunProgression != null)
+            battleContext.RunProgression.LastYujinWeapon = currentWeapon;
         sense = 0;
         lastProcessedTurnStart=int.MinValue;
+        removedMarkSnapshots.Clear();
         marks.Clear();
         pendingMarks.Clear();
         delayedTriggers.Clear();
@@ -1214,7 +1109,6 @@ public sealed class YujinMechanic : CombatMechanic,
         forcedFrontCharges = 0;
         jointLiabilityGranted = 0;
         hwanhyeongAttackBonus = 0;
-        hwanhyeongDefenseBonus = 0;
     }
 
     private void OnExchangeResolved(
@@ -1240,8 +1134,7 @@ public sealed class YujinMechanic : CombatMechanic,
                 : exchange.FirstAction;
 
         if (action == null ||
-            exchange.WinnerAction != action ||
-            action.CurrentRollType != CombatRollType.Attack)
+            exchange.WinnerAction != action)
         {
             return;
         }
@@ -1259,12 +1152,14 @@ public sealed class YujinMechanic : CombatMechanic,
         // Duel exchange grants DuelMarkAmount; a RED Normal grants its
         // NormalMarkAmount. BLUE 'catch breath' never grants Nakjeom.
         // A one-sided hit is not a won exchange (1029 §18.2).
+        if (CurrentWeapon == YujinWeaponType.Baeku && MarkRules.BaekuHitMomentum > 0)
+            battleContext.ResolveMomentumManager()?.ApplySkillShift(owner, MarkRules.BaekuHitMomentum);
         bool actualWin = !exchange.IsOneSided;
         if (actualWin && action.ActionType == ActionType.Duel)
             AddMarkToAnchors(hitAnchors,
                 CurrentWeaponProfile.DuelMarkAmount,action);
         else if (actualWin && action.ActionType == ActionType.NormalAttack &&
-                 action.Skill?.IsRed == true)
+                 skillId != YujinSkillIds.Breakfast)
             AddMarkToAnchors(hitAnchors,
                 CurrentWeaponProfile.NormalMarkAmount,action);
 
@@ -1276,8 +1171,7 @@ public sealed class YujinMechanic : CombatMechanic,
         if (actualWin && brandActive)
             AddMarkToAnchors(hitAnchors,3,action);
 
-        if (actualWin)
-            TryExecuteNakil(action,hitAnchors);
+
 
         if (skillId == YujinSkillIds.Pursuit &&
             opponent?.ActionType == ActionType.Duel &&
@@ -1537,15 +1431,16 @@ public sealed class YujinMechanic : CombatMechanic,
         int fixedDamage,
         BattleAction sourceAction = null)
     {
+        if (MarkRules.TrapLifetimeTurns <= 0 || MarkRules.ExplosionDamagePerTrap <= 0) return 0;
         CombatStatusAnchor anchor = CombatStatusAnchor.Resolve(target, part);
         return delayedTriggers.Schedule(
             anchor,
             YujinDelayedTriggerKeys.MarkIgnited,
-            durationTurns: 0,
+            durationTurns: MarkRules.TrapLifetimeTurns,
             autoTriggerAfterTurns: 0,
             payload: new YujinMarkRiderPayload(
                 YujinMarkRiderType.Trap,
-                Mathf.Max(0, fixedDamage)),
+                MarkRules.ExplosionDamagePerTrap),
             sourceAction: sourceAction);
     }
 
@@ -1556,15 +1451,16 @@ public sealed class YujinMechanic : CombatMechanic,
         int ignitionMultiplier,
         BattleAction sourceAction = null)
     {
+        if (MarkRules.TrapLifetimeTurns <= 0) return 0;
         CombatStatusAnchor anchor = CombatStatusAnchor.Resolve(target, part);
         return delayedTriggers.Schedule(
             anchor,
             YujinDelayedTriggerKeys.MarkIgnited,
-            durationTurns: Mathf.Max(1, durationTurns),
+            durationTurns: MarkRules.TrapLifetimeTurns,
             autoTriggerAfterTurns: 0,
             payload: new YujinMarkRiderPayload(
                 YujinMarkRiderType.Deadline,
-                Mathf.Max(1, ignitionMultiplier)),
+                1),
             sourceAction: sourceAction);
     }
 
@@ -1581,73 +1477,52 @@ public sealed class YujinMechanic : CombatMechanic,
                 anchor,
                 YujinDelayedTriggerKeys.MarkIgnited);
 
-        int ignitionMultiplier = 1;
+        bool enhanced = false;
+        int explosionDamage = 0;
         if (riders != null)
-        {
-            foreach (DelayedEffectTriggerEntry rider in riders)
-            {
-                if (rider?.Payload is YujinMarkRiderPayload payload &&
-                    payload.Type == YujinMarkRiderType.Deadline)
+            foreach (var rider in riders)
+                if (rider?.Payload is YujinMarkRiderPayload payload)
                 {
-                    ignitionMultiplier = Mathf.Max(
-                        ignitionMultiplier,
-                        payload.Value);
+                    enhanced |= payload.Type == YujinMarkRiderType.Deadline;
+                    if (payload.Type == YujinMarkRiderType.Trap) explosionDamage += payload.Value;
                 }
-            }
-        }
 
-        YujinWeaponProfile profile = CurrentWeaponProfile;
-
-        switch (profile.MarkIgnition)
+        switch (CurrentWeapon)
         {
-            case YujinMarkIgnitionType.MomentumPush:
-                battleContext?.ResolveMomentumManager()
-                    ?.ApplySkillShift(
-                        owner,
-                        50 * ignitionMultiplier);
+            case YujinWeaponType.Baeku:
+                var stagger = target.GetMechanic<StaggerGaugeMechanic>();
+                bool wasOpen = stagger?.IsVulnerabilityWindowOpen == true;
+                if (MarkRules.BaekuIgnitionStagger > 0)
+                    stagger?.SacrificeGauge(MarkRules.BaekuIgnitionStagger);
+                if (enhanced && !wasOpen && stagger?.IsVulnerabilityWindowOpen == true)
+                    stagger.ExtendNewlyOpenedWindow(1);
                 break;
-
-            case YujinMarkIgnitionType.Seal:
-                ApplySeal(
-                    anchor,
-                    Mathf.Max(1, ignitionMultiplier),
-                    sourceAction);
-                break;
-
-            case YujinMarkIgnitionType.Weaken:
-                if (anchor.IsPartAnchor)
+            case YujinWeaponType.Jeokseol:
+                ApplySeal(anchor, 1, sourceAction);
+                if (enhanced && MarkRules.ResonanceWeakness > 0)
                 {
-                    target.WeakenPart(
-                        anchor.Part,
-                        owner,
-                        sourceAction);
-
-                    WeakenAdditionalParts(
-                        target,
-                        anchor.Part,
-                        ignitionMultiplier - 1,
-                        sourceAction);
+                    var weak = StatusEffectFactory.CreateCanonical0922(
+                        StatusEffectId.Weakness, MarkRules.ResonanceWeakness, 1);
+                    if (anchor.Part != null) target.AddPartStatus(anchor.Part, weak, owner);
+                    else target.AddStatus(weak, owner);
+                }
+                break;
+            case YujinWeaponType.Nakil:
+                int damage = MarkRules.NakilIgnitionDamage;
+                if (damage > 0)
+                {
+                    if (enhanced) damage += MarkRules.ResonanceNakilExtraDamage;
+                    var request = DamageRequest.Custom(anchor.IsPartAnchor ? DamageType.SkillPart : DamageType.Direct,
+                        owner, target, anchor.Part, damage, 1f, canBreakPart: true,
+                        applyMomentum: false, applyGuard: true, sourceAction: sourceAction);
+                    request.BreakMode = PartBreakMode.IgnoreWeakenedPrerequisite;
+                    battleContext.ResolveDamageManager()?.ApplyDamageContext(request);
                 }
                 break;
         }
-
-        if (riders == null)
-            return;
-
-        foreach (DelayedEffectTriggerEntry rider in riders)
-        {
-            if (rider?.Payload is not YujinMarkRiderPayload payload ||
-                payload.Type != YujinMarkRiderType.Trap ||
-                payload.Value <= 0)
-            {
-                continue;
-            }
-
-            ApplyMarkTrapDamage(
-                anchor,
-                payload.Value,
-                rider.SourceAction ?? sourceAction);
-        }
+        // All live explosion traps form ONE damage event.
+        if (explosionDamage > 0) ApplyMarkTrapDamage(anchor, explosionDamage, sourceAction);
+        return;
     }
 
     private void ApplySeal(
@@ -1686,32 +1561,7 @@ public sealed class YujinMechanic : CombatMechanic,
         }
     }
 
-    private void WeakenAdditionalParts(
-        Character target,
-        BodyPart primary,
-        int count,
-        BattleAction sourceAction)
-    {
-        if (target?.BodyParts == null || count <= 0)
-            return;
 
-        foreach (BodyPart part in target.BodyParts)
-        {
-            if (count <= 0)
-                break;
-
-            if (part == null ||
-                part == primary ||
-                part.IsBroken ||
-                part.IsWeakened)
-            {
-                continue;
-            }
-
-            target.WeakenPart(part, owner, sourceAction);
-            count--;
-        }
-    }
 
     private void ApplyMarkTrapDamage(
         CombatStatusAnchor anchor,
@@ -1740,34 +1590,7 @@ public sealed class YujinMechanic : CombatMechanic,
             ?.ApplyDamageContext(request);
     }
 
-    private void TryExecuteNakil(
-        BattleAction action,
-        IEnumerable<CombatStatusAnchor> hitAnchors)
-    {
-        if (!CurrentWeaponProfile.CanExecute ||
-            action?.LastRollResult?.IsCritical != true ||
-            hitAnchors == null)
-        {
-            return;
-        }
 
-        foreach (CombatStatusAnchor anchor in hitAnchors)
-        {
-            if (!anchor.IsPartAnchor ||
-                anchor.Part?.IsWeakened != true ||
-                anchor.Part.IsBroken)
-            {
-                continue;
-            }
-
-            anchor.Character?.ForceBreakPart(
-                anchor.Part,
-                owner,
-                action);
-
-            TriggerJointLiability();
-        }
-    }
 
     private void ResolvePursuitExtraCoins(
         BattleAction action)
@@ -1926,6 +1749,7 @@ public sealed class YujinMechanic : CombatMechanic,
         if (context?.Target == null || context.Part == null)
             return;
 
+        CaptureRemovedMarks(context.Target, context.Part, context.SourceAction);
         // Y-07 common cleanup: a rider/mark anchored to a destroyed part cannot fire later.
         RemoveAnchoredState(context.Target, context.Part);
 
@@ -1944,6 +1768,7 @@ public sealed class YujinMechanic : CombatMechanic,
         if (context?.Victim == null)
             return;
 
+        CaptureRemovedMarks(context.Victim, null, context.SourceAction);
         // Y-07 common cleanup: dead targets cannot retain delayed riders or marks.
         RemoveAnchoredState(context.Victim);
 
@@ -1952,6 +1777,63 @@ public sealed class YujinMechanic : CombatMechanic,
 
         AddSense(1);
         TriggerJointLiability();
+    }
+
+    private void ClearRemovedMarkSnapshot(BattleAction action)
+    {
+        if (action?.Owner == owner) removedMarkSnapshots.Remove(action.ActionId);
+    }
+
+    private void CaptureRemovedMarks(Character target, BodyPart part, BattleAction action)
+    {
+        if (action?.Owner != owner) return;
+        if (!removedMarkSnapshots.TryGetValue(action.ActionId, out var snapshot))
+            removedMarkSnapshots[action.ActionId] = snapshot = new Dictionary<CombatStatusAnchor, int>();
+        foreach (var entry in marks)
+            if (entry.Key.Character == target && (part == null || entry.Key.Part == part) && !snapshot.ContainsKey(entry.Key))
+                snapshot[entry.Key] = entry.Value;
+    }
+
+    public bool TransferTargetMark(Character target, BodyPart part, BattleAction action)
+    {
+        if (target == null) return false;
+        var anchor = CombatStatusAnchor.Resolve(target, part);
+        int amount = GetMark(target, part);
+        if (removedMarkSnapshots.TryGetValue(action?.ActionId ?? 0, out var snapshot))
+        {
+            // Resolve intentionally normalizes a broken part to a character
+            // anchor. A post-damage transfer must retain the ORIGINAL part key.
+            foreach (var entry in snapshot)
+                if (entry.Key.Character == target && entry.Key.Part == part)
+                { anchor = entry.Key; amount = entry.Value; break; }
+            snapshot.Remove(anchor);
+        }
+        marks.Remove(anchor);
+        if (amount <= 0) return false;
+        var candidates = new List<CombatStatusAnchor>();
+        if (target.IsSingleHpTarget)
+        {
+            foreach (var other in battleContext.Enemies)
+                if (other != null && other != target && !other.IsDead)
+                {
+                    if (other.IsSingleHpTarget) candidates.Add(CombatStatusAnchor.Resolve(other, null));
+                    else foreach (var p in other.BodyParts) if (!p.IsBroken) candidates.Add(CombatStatusAnchor.Resolve(other, p));
+                }
+        }
+        else foreach (var p in target.BodyParts)
+            if (p != part && !p.IsBroken && !target.IsDead) candidates.Add(CombatStatusAnchor.Resolve(target, p));
+        if (candidates.Count == 0) return true; // removed marks expire without another target
+        int min = int.MaxValue;
+        var tied = new List<CombatStatusAnchor>();
+        foreach (var c in candidates)
+        {
+            int n = GetMark(c.Character, c.Part);
+            if (n < min) { min = n; tied.Clear(); }
+            if (n == min) tied.Add(c);
+        }
+        var chosen = tied[UnityEngine.Random.Range(0, tied.Count)];
+        ApplyMarkGain(chosen.Character, chosen.Part, amount, action);
+        return true;
     }
 
     private void RemoveAnchoredState(

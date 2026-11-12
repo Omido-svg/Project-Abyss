@@ -32,13 +32,13 @@ public static class HifumiProvocationTargeting
             var active=mechanic?.GetActiveProvocationSnapshot();
             if(active==null||active.Count==0)continue;
             var valid=active.Where(x=>x.Key!=null&&x.Value>0&&
-                    x.Key.Owner==defender&&!x.Key.IsBroken&&
+                    x.Key.Owner==defender&&!x.Key.IsBroken&&!YujinStealthStatus.IsHidden(x.Key)&&
                     defender.IsValidTargetPart(x.Key))
                 .OrderBy(x=>x.Key.PartId,StringComparer.Ordinal).ToArray();
             if(valid.Length==0)continue;
 
             var attackers=slots.Where(x=>x!=null&&x.Phase==ActionPhase.COMBAT&&
-                    x.ActionId>0&&x.TargetCharacter==defender&&
+                    x.ActionId>0&&!x.TargetLockedAtPublication&&x.TargetCharacter==defender&&
                     x.Owner!=null&&x.Owner!=defender&&!x.Owner.IsDead&&
                     x.Part?.IsBroken!=true&&x.Skill!=null&&
                     (x.Skill.ActionType==ActionType.Duel ||

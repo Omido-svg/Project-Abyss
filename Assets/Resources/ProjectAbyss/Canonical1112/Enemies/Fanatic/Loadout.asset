@@ -1,0 +1,37 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8e03ed514d788a244870e9d951986ee3, type: 3}
+  m_Name: Loadout
+  m_EditorClassIdentifier: 
+  NormalSkills:
+  - {fileID: 11400000, guid: 04a3c5de6b42f6442b9ececc4df3b908, type: 2}
+  - {fileID: 11400000, guid: bc445f433efd0b4488a1deeaf375a07b, type: 2}
+  DuelSkills:
+  - {fileID: 11400000, guid: 70f647f097126b44ba3aac3f2e0b1c66, type: 2}
+  - {fileID: 11400000, guid: e9280e610f4351a4db0dd2beff6bd48f, type: 2}
+  - {fileID: 11400000, guid: 95dc88ece0ec12346ac12489c542f552, type: 2}
+  PreparationSkills:
+  - {fileID: 11400000, guid: c94c670e352249b4a84a3af2dc24e4d0, type: 2}
+  PrestigeSkills: []
+  Catalog: {fileID: 0}
+  IncludeCatalogCandidates: 0
+  NormalSkillPool:
+  - {fileID: 11400000, guid: 04a3c5de6b42f6442b9ececc4df3b908, type: 2}
+  - {fileID: 11400000, guid: bc445f433efd0b4488a1deeaf375a07b, type: 2}
+  DuelSkillPool:
+  - {fileID: 11400000, guid: 70f647f097126b44ba3aac3f2e0b1c66, type: 2}
+  - {fileID: 11400000, guid: e9280e610f4351a4db0dd2beff6bd48f, type: 2}
+  - {fileID: 11400000, guid: 95dc88ece0ec12346ac12489c542f552, type: 2}
+  PrestigeSkillPool: []
+  CommonPreparationPool: []
+  CharacterPreparationPool:
+  - {fileID: 11400000, guid: c94c670e352249b4a84a3af2dc24e4d0, type: 2}

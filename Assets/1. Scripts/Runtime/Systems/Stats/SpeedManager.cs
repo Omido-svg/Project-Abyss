@@ -113,6 +113,9 @@ public class SpeedManager
             maxSpeed=6;
         }
 
+        int canonicalRangePenalty = character.GetMechanic<StageOneEnemy1112Mechanic>()?.SpeedRangePenalty ?? 0;
+        minSpeed = Mathf.Max(1, minSpeed - canonicalRangePenalty);
+        maxSpeed = Mathf.Max(minSpeed, maxSpeed - canonicalRangePenalty);
         int weakenedSpeedMaxPenalty = 0;
         bool suppressSingleWeakenedPenalty =
             Canonical0922EmotionRuntimeHooks

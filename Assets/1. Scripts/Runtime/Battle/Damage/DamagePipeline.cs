@@ -271,6 +271,12 @@ public sealed class DamagePipeline
 
     private static void FinalizeDamage(DamageContext context)
     {
+        if (context.Action?.Owner?.GetMechanic<StageOneEnemy1112Mechanic>()?.NegateConfessionDamage(context.Action) == true)
+        {
+            context.DamageAfterGuard = 0;
+            context.GuardAbsorbed = 0;
+            context.GuardAfter = context.GuardBefore;
+        }
         context.FinalDamage = Mathf.Max(0, context.DamageAfterGuard);
         context.RecordStage(DamageStage.Finalized, context.FinalDamage);
     }

@@ -84,6 +84,9 @@ public class AIManager
         // 동일 표시 이름의 다중 일반 적처럼 개별 AI loop에서 commit 로그가 누락되는
         // 경로가 생겨도 Resolution 직전 invariant를 한 번 더 강제한다.
         EnsureAllEnemySlotsCommitted();
+        HifumiProvocationTargeting.ApplyToExecutionSlots(actionManager.Slots);
+        foreach (var slot in actionManager.Slots)
+            if (slot?.Owner is Enemy) slot.TargetLockedAtPublication = true;
     }
 
 

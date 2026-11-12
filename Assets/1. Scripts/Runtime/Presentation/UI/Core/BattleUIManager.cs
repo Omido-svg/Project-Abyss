@@ -826,7 +826,7 @@ public partial class BattleUIManager : MonoBehaviour
         // 현재 슬롯 교체 기준으로 즉시 미리 보여준다.
         selection.SelectSkill(skill);
 
-        if (skill.ActionType == ActionType.Preparation)
+        if (skill.ActionType == ActionType.Preparation || skill is StageOneTemporarySkill1112)
         {
             ActionPlanningSkillContext choiceContext = new(
                 selectedOwner,
@@ -863,7 +863,7 @@ public partial class BattleUIManager : MonoBehaviour
                     $"Choices={choices.Count}");
 
                 planningChoiceOverlay.Show(
-                    $"{skill.SkillName} — 교체할 무기 선택",
+                    skill is StageOneTemporarySkill1112 ? $"{skill.SkillName} — 대상 부위 선택" : $"{skill.SkillName} — 교체할 무기 선택",
                     choices,
                     choiceId =>
                     {
@@ -1303,6 +1303,11 @@ public partial class BattleUIManager : MonoBehaviour
             out Character resolvedTarget,
             out BodyPart resolvedTargetPart);
 
+        if (skill is StageOneTemporarySkill1112)
+        {
+            resolvedTarget = selectedOwner;
+            resolvedTargetPart = selectedOwnerPart;
+        }
         BattleActionPlanCommandService commands =
             PlanCommands;
 

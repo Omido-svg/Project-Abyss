@@ -4,6 +4,8 @@ using UnityEngine;
 public class EliteEnemy : Enemy, ICharacterAuthoringTarget
 {
 
+    public StageOneEnemyKind1112 CanonicalStageOneKind;
+
     [Header("Posture")]
     [SerializeField]
     private bool usePostureRotation = true;
@@ -85,6 +87,8 @@ public class EliteEnemy : Enemy, ICharacterAuthoringTarget
 
     private IReadOnlyList<EnemyBodyPartDefinition> GetEffectiveBodyPartDefinitions()
     {
+        if (CanonicalStageOneKind != StageOneEnemyKind1112.None)
+            return StageOneEnemy1112Profiles.BodyParts(CanonicalStageOneKind);
         if (bodyPartDefinitions != null && bodyPartDefinitions.Count == 5)
             return bodyPartDefinitions;
 
@@ -124,6 +128,12 @@ public class EliteEnemy : Enemy, ICharacterAuthoringTarget
     protected override void BuildMechanics()
     {
         base.BuildMechanics();
+        if (CanonicalStageOneKind != StageOneEnemyKind1112.None)
+        {
+            AddMechanic(new EnemyPostureMechanic(postureSettings));
+            AddMechanic(new StageOneEnemy1112Mechanic(CanonicalStageOneKind));
+            return;
+        }
 
         // 0916 정본: Stage 1 Canonical Boss에는 구형 "엘리트 본능"
         // (합 승리 +10/혈상, 자기 부위 약화 +15, 파괴 +25) 규칙이 없다.
@@ -151,7 +161,7 @@ public class EliteEnemy : Enemy, ICharacterAuthoringTarget
         EnemyPostureMechanic posture =
             GetMechanic<EnemyPostureMechanic>();
 
-        return posture?.CurrentAttackSlotLimit ?? 3;
+        return GetMechanic<StageOneEnemy1112Mechanic>()?.AttackSlots ?? posture?.CurrentAttackSlotLimit ?? 3;
     }
 
     //--------------------------------

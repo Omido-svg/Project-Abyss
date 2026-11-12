@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using UnityEngine;
 
 public enum Yujin0916EffectOperation
@@ -104,7 +104,7 @@ public sealed class Yujin0916SkillEffectDefinition : SkillEffectDefinition
                 break;
 
             case Yujin0916EffectOperation.CutThroatMark:
-                mechanic.GrantMark(context.Target, context.TargetPart, 20, context.Action);
+                mechanic.TransferTargetMark(context.Target, context.TargetPart, context.Action);
                 break;
 
             case Yujin0916EffectOperation.SpreadRumorMark:

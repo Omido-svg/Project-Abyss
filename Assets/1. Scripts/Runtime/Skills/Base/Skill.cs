@@ -60,6 +60,12 @@ public abstract class Skill
         BattleAction action,
         BodyPart targetPart)
     {
+        // 1112 §18.1: every Nakil hit, including tails and extra hits,
+        // carries execution. The damage pipeline still requires lethal damage.
+        if (owner?.GetMechanic<YujinMechanic>()?.CurrentWeaponProfile.CanExecute == true &&
+            (ActionType == ActionType.NormalAttack || ActionType == ActionType.Duel))
+            return PartBreakMode.IgnoreWeakenedPrerequisite;
+
         SkillDefinition definition = RuntimeDefinition;
 
         if (definition != null &&
@@ -481,11 +487,13 @@ public abstract class Skill
             return;
 
         if (action.ActionType == ActionType.Duel &&
-            !action.DuelEffectsEligible)
+            !action.DuelEffectsEligible &&
+            action.Owner?.GetMechanic<StageOneEnemy1112Mechanic>()?.BypassDuelGate(action) != true)
             return;
 
         // R7-8 stage1 native enemy first-roll effects: actual roll consumption.
         EnemyStageOneEffect.OnRollUsing(action,rollIndex);
+        action.Owner?.GetMechanic<StageOneEnemy1112Mechanic>()?.RollUsing(action, rollIndex);
 
         ExecuteDefinitionEffects(
             action,

@@ -182,23 +182,19 @@ public sealed class DeferredStatusEffect : StatusEffect
         Duration = 1;
     }
 
-    public override bool CanMergeWith(
-        StatusEffect other)
+    public override bool CanMergeWith(StatusEffect other) => false;
+
+    internal bool HasQueuedMaterialization { get; private set; }
+
+    internal void ScheduleMaterialization(CharacterStatusController controller)
     {
-        if (other is not DeferredStatusEffect deferred ||
-            deferred.statusEffectId != statusEffectId)
+        if (HasQueuedMaterialization || owner?.BattleContext == null) return;
+        HasQueuedMaterialization = true;
+        owner.BattleContext.TurnStartEffects.Enqueue(() =>
         {
-            return false;
-        }
-
-        if (IsNumericReservation)
-            return false;
-
-        if (IsPresenceReservation)
-            return true;
-
-        return statusEffectId != StatusEffectId.Regeneration ||
-               deferred.regenerationChannel == regenerationChannel;
+            HasQueuedMaterialization = false;
+            controller.MaterializeDeferredStatus(this, ownerPart);
+        });
     }
 
     public override void OnTurnStart(

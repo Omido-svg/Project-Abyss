@@ -10,6 +10,8 @@ public class ActionSlot
     public CharacterSlotConfig SlotConfig;
     public ActionPhase Phase;
     public Character TargetCharacter;
+    public int ImmediateEnergyGranted;
+    public bool TargetLockedAtPublication;
     public BodyPart TargetPart;
     public BodyPart SecondaryTargetPart;
     public ActionSlot TargetSlot;

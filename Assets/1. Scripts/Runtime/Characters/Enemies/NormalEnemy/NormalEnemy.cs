@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 public class NormalEnemy : Enemy, ICharacterAuthoringTarget
@@ -26,21 +27,22 @@ public class NormalEnemy : Enemy, ICharacterAuthoringTarget
         if(role?.RoleAssigned!=true||
             role.Species==EnemySpecies1029.Unknown||
             context?.Services?.SpeedManager==null)
-            return base.DecideSlots(context);
+            return CanonicalFallback(context);
         var definition=EnemyStageOneSkillCatalog.Get(
             role.Species,role.PlannedAction);
         if(definition==null)
-            return base.DecideSlots(context);
+            return CanonicalFallback(context);
         var skill=NormalEnemyRuntimeSkill.Create(definition);
-        if(skill==null)return base.DecideSlots(context);
+        if(skill==null)return CanonicalFallback(context);
         skill.Initialize(this,BattleEvent);
         if(!skill.CanUseByResource(this)||!IsSkillUsable(null,skill))
-            return base.DecideSlots(context);
+            return CanonicalFallback(context);
         var target=ChooseTarget(context);
         if(target==null||target.IsDead)return new List<ActionSlot>();
-        var point=BattleTargetValidator.ChooseWeightedTargetPoint(
-            target,TargetSelectionRule.StandardAttack,brokenPartWeight:.7f);
-        if(!point.IsValid)return base.DecideSlots(context);
+        var candidates = BattleTargetValidator.GetTargetPoints(target, TargetSelectionRule.StandardAttack)
+            .Where(p => p.Part?.IsBroken != true && !YujinStealthStatus.IsHidden(p.Part)).ToArray();
+        if (candidates.Length == 0) return new List<ActionSlot>();
+        var point = candidates[Random.Range(0, candidates.Length)];
         return new List<ActionSlot>
         {
             new ActionSlot
@@ -55,6 +57,23 @@ public class NormalEnemy : Enemy, ICharacterAuthoringTarget
                 ActionIndex=0
             }
         };
+    }
+
+    private List<ActionSlot> CanonicalFallback(BattleContext context)
+    {
+        var slots = base.DecideSlots(context);
+        var points = BattleTargetValidator.GetTargetPoints(context?.Player, TargetSelectionRule.LivingPartOnly)
+            .Where(p => !YujinStealthStatus.IsHidden(p.Part)).ToArray();
+        var valid = new List<ActionSlot>();
+        foreach (var slot in slots)
+        {
+            if (slot.Skill?.ActionType == ActionType.Preparation) { valid.Add(slot); continue; }
+            if (points.Length == 0) continue;
+            var point = points[Random.Range(0, points.Length)];
+            slot.TargetCharacter = point.Character; slot.TargetPart = point.Part;
+            valid.Add(slot);
+        }
+        return valid;
     }
 
     public override int GetMaxCombatActionSlots() => 1;

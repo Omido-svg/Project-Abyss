@@ -10,20 +10,6 @@ internal static class YujinSkillRollUtility
         string skillId =
             skill?.Definition?.SkillId;
 
-        // 0917 O/P are explicit one-roll cards even though ordinary Yujin
-        // cards take their coin count from the current weapon.
-        if (string.Equals(
-                skillId,
-                YujinSkillIds.AdvanceTiming,
-                StringComparison.Ordinal) ||
-            string.Equals(
-                skillId,
-                YujinSkillIds.FinishIt,
-                StringComparison.Ordinal))
-        {
-            return 1;
-        }
-
         YujinMechanic mechanic =
             owner?.GetMechanic<YujinMechanic>();
 
@@ -148,66 +134,16 @@ public sealed class YujinDuelRuntimeSkill :
         }
     }
 
-    public override bool CanUseByResource(
-        Character character)
+    public override bool CanUseByResource(Character character)
     {
-        if (Definition != null &&
-            string.Equals(
-                Definition.SkillId,
-                YujinSkillIds.AdvanceTiming,
-                StringComparison.Ordinal))
-        {
-            YujinMechanic mechanic =
-                character
-                    ?.GetMechanic<YujinMechanic>();
-
-            // 0917 문서의 "감 4 소모"를 기존 자원 문법에 맞춰 사용 게이트로 해석한다.
-            if (mechanic == null ||
-                mechanic.Sense < 4)
-            {
-                return false;
-            }
-        }
-
-        return base.CanUseByResource(
-            character);
+        // Current-turn Sense is checked by the roll's OnUse effect, not planning.
+        return base.CanUseByResource(character);
     }
 
-    public override bool TryConsumeResource(
-        Character character,
-        BattleAction sourceAction = null)
+    public override bool TryConsumeResource(Character character, BattleAction sourceAction = null)
     {
-        if (!base.TryConsumeResource(
-                character,
-                sourceAction))
-        {
-            return false;
-        }
-
-        if (Definition != null &&
-            string.Equals(
-                Definition.SkillId,
-                YujinSkillIds.AdvanceTiming,
-                StringComparison.Ordinal))
-        {
-            // O의 감 4는 빛과 같은 계획 commit 시점에 지불하여
-            // 같은 턴 O 여러 장 예약으로 자원 초과예약하는 구멍을 막는다.
-            YujinMechanic mechanic =
-                character
-                    ?.GetMechanic<YujinMechanic>();
-
-            if (mechanic == null ||
-                !mechanic.TrySpendSense(4))
-            {
-                return false;
-            }
-        }
-
-        character
-            ?.GetMechanic<Yujin0917Mechanic>()
-            ?.RecordCommittedUse(
-                Definition);
-
+        if (!base.TryConsumeResource(character, sourceAction)) return false;
+        character?.GetMechanic<Yujin0917Mechanic>()?.RecordCommittedUse(Definition);
         return true;
     }
 
@@ -232,15 +168,19 @@ public sealed class YujinDuelRuntimeSkill :
 public sealed class YujinPreparationRuntimeSkill :
     DataPreparationSkill
 {
+    public override int EnergyCost => YujinMechanic.IsHwanhyeongSkill(Definition?.SkillId)
+        ? 0 : base.EnergyCost;
     public YujinPreparationRuntimeSkill(
         SkillDefinition definition)
         : base(definition)
     {
+        if (YujinMechanic.IsHwanhyeongSkill(definition?.SkillId)) SkillName = "환형";
     }
 
     public override void Execute(
         BattleAction action)
     {
+        if (YujinMechanic.IsHwanhyeongSkill(Definition?.SkillId)) return;
         base.Execute(action);
 
         action?.Owner

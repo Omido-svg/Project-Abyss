@@ -13,7 +13,7 @@ public readonly struct TargetSelectionRule
 
     public static TargetSelectionRule StandardAttack =>
         new TargetSelectionRule(
-            allowBrokenParts: true);
+            allowBrokenParts: false);
 
     public static TargetSelectionRule LivingPartOnly =>
         new TargetSelectionRule(

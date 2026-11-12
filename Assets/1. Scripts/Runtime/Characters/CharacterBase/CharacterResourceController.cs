@@ -1,4 +1,4 @@
-﻿
+
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -180,6 +180,8 @@ public sealed class CharacterResourceController
         BattleAction sourceAction = null,
         Skill sourceSkill = null)
     {
+        if (amount > 0 && reason != CombatResourceChangeReason.Restore)
+            amount = owner.GetMechanic<StageOneEnemy1112Mechanic>()?.ModifyEnergyGain(amount) ?? amount;
         SetEnergy(
             CurrentEnergy + amount,
             reason,

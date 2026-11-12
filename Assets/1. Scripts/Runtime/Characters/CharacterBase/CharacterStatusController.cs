@@ -201,6 +201,8 @@ public class CharacterStatusController
 
         effect.OnApply();
         part.AddStatus(effect);
+        if (effect is DeferredStatusEffect queuedPart)
+            queuedPart.ScheduleMaterialization(this);
 
         StatusEffectApplyResult result =
             CreateAppliedResult(effect, part, false);
@@ -272,6 +274,8 @@ public class CharacterStatusController
 
         effect.OnApply();
         characterStatuses.Add(effect);
+        if (effect is DeferredStatusEffect queuedCharacter)
+            queuedCharacter.ScheduleMaterialization(this);
 
         StatusEffectApplyResult result =
             CreateAppliedResult(
@@ -452,6 +456,13 @@ public class CharacterStatusController
         }
     }
 
+    internal void MaterializeDeferredStatus(DeferredStatusEffect effect, BodyPart part)
+    {
+        if (owner == null || owner.IsDead || part?.IsBroken == true) return;
+        if (part == null ? !characterStatuses.Contains(effect) : !part.StatusEffects.Contains(effect)) return;
+        TickEffect(effect, part, StatusEffectTickTiming.TurnStart);
+    }
+
     public void OnTurnStart()
     {
         TickCharacterStatuses(
@@ -603,6 +614,8 @@ public class CharacterStatusController
         BodyPart part,
         StatusEffectTickTiming timing)
     {
+        if (timing == StatusEffectTickTiming.TurnStart &&
+            effect is DeferredStatusEffect deferred && deferred.HasQueuedMaterialization) return;
         StatusEffectTickContext context =
             new StatusEffectTickContext(
                 owner,

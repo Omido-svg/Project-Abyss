@@ -148,10 +148,13 @@ public sealed class BattleActionPlanCommandService
         slot.CommittedEnergyCost = committedEnergyCost;
 
         // C-03: 도사림은 누르는 순간 사용시 효과까지 실행하고 Resolution에서 다시 실행하지 않는다.
-        if (slot.Skill.ActionType == ActionType.Preparation)
+        if (PreparationActivationPolicy.IsImmediate(slot.Skill))
         {
             request.Owner.BattleEvent?.RaiseActionStart(planningAction);
+            int beforeEffectEnergy = request.Owner.CurrentEnergy;
             slot.Skill.Execute(planningAction);
+            slot.ImmediateEnergyGranted = System.Math.Max(0,
+                request.Owner.CurrentEnergy - beforeEffectEnergy);
             request.Owner.BattleEvent?.RaiseActionEnd(planningAction);
             slot.PlanningEffectCommitted = true;
             slot.SkipResolution = true;

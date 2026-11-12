@@ -122,6 +122,8 @@ public sealed class EnemyPostureMechanic : CombatMechanic
         if (owner == null || owner.IsDead)
             return;
 
+        if (owner.GetMechanic<StageOneEnemy1112Mechanic>()?.ShouldPauseBasePosture == true) return;
+        if (turn <= 1) return;
         turnsRemaining--;
         if (turnsRemaining > 0)
             return;

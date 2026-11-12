@@ -466,6 +466,11 @@ public sealed class StaggerGaugeMechanic : ReactiveCombatMechanic,
         pendingVulnerabilityOpen = false;
     }
 
+    public void ExtendNewlyOpenedWindow(int turns)
+    {
+        if (vulnerabilityWindowOpen && turns > 0) recoverAfterTurn += turns;
+    }
+
     private void OpenVulnerabilityWindow()
     {
         vulnerabilityWindowOpen = true;

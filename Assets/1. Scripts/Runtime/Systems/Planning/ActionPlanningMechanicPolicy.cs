@@ -90,6 +90,7 @@ public static class ActionPlanningMechanicPolicy
     public static IReadOnlyList<ActionPlanningChoiceOption> GetPlanningChoices(
         ActionPlanningSkillContext context)
     {
+        if (context.Skill is StageOneTemporarySkill1112 temporary) return temporary.Choices();
         IReadOnlyList<CombatMechanic> mechanics =
             context.Owner?.Mechanics;
 
@@ -125,6 +126,18 @@ public static class ActionPlanningMechanicPolicy
         out string failureReason)
     {
         failureReason = string.Empty;
+        if (slot?.Skill is StageOneTemporarySkill1112 temporary)
+        {
+            bool valid = false;
+            foreach (var option in temporary.Choices())
+                if (option.Id == slot.PlanningChoiceId) { valid = true; break; }
+            if (!valid)
+            {
+                failureReason = "냉각/고해의 유효한 대상 부위를 선택하세요.";
+                return false;
+            }
+        }
+
 
         IReadOnlyList<CombatMechanic> mechanics =
             owner?.Mechanics;

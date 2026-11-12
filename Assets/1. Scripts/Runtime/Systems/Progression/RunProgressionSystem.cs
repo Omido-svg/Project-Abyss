@@ -212,6 +212,8 @@ public sealed class HifumiEngraveRunProgression
 /// </summary>
 public sealed class RunProgressionState
 {
+    public int Seed { get; set; } = System.Guid.NewGuid().GetHashCode();
+    public YujinWeaponType? LastYujinWeapon { get; set; }
     public int Stage { get; private set; } = 1;
     public int Gold { get; private set; }
 
@@ -233,11 +235,13 @@ public sealed class RunProgressionState
 
     public void Reset(int startingGold = 0, int startingStage = 1)
     {
+        Seed = System.Guid.NewGuid().GetHashCode();
         Stage = Mathf.Max(1, startingStage);
         Gold = Mathf.Max(0, startingGold);
         MaximumHpBonus = 0;
         SkillUpgrades.Clear();
         Inventory.Clear();
+        LastYujinWeapon = null;
         HifumiEngrave.Reset();
     }
 

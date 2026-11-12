@@ -72,6 +72,7 @@ public class SkillDefinition : ScriptableObject
     public bool CanClashValue;
 
     [Header("Preparation")]
+    public PreparationActivationTiming PreparationTiming = PreparationActivationTiming.Resolution;
     public PreparationTier PreparationTier = PreparationTier.Weak;
 
     [Header("Legacy/default RNG source")]

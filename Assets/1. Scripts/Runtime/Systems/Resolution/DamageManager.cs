@@ -199,7 +199,8 @@ public class DamageManager
         // 게이지는 HP 계산 전에 소모하지만, 창은 이 타격의 HP/부위/처치 결과가
         // 확정된 뒤에 연다. 따라서 창을 여는 그 타격은 기존 HP 내성을 받는다.
         StaggerGaugeMechanic stagger =
-            context.Action?.Skill?.IsRed == true
+            context.Action?.Skill?.IsRed == true &&
+            context.Action.Owner?.GetMechanic<StageOneEnemy1112Mechanic>()?.NegateConfessionDamage(context.Action) != true
                 ? context.Target?.GetMechanic<StaggerGaugeMechanic>()
                 : null;
 
