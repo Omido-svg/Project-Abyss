@@ -181,7 +181,9 @@ public sealed class CharacterResourceController
         Skill sourceSkill = null)
     {
         if (amount > 0 && reason != CombatResourceChangeReason.Restore)
-            amount = owner.GetMechanic<StageOneEnemyMechanic>()?.ModifyEnergyGain(amount) ?? amount;
+            amount = CombatRuleHooks.ModifyEnergyGain(owner,amount);
+        if(amount>0 && reason!=CombatResourceChangeReason.Restore)
+            amount=System.Math.Max(0,owner.BattleContext?.Abilities.Modifiers.Apply(ProjectAbyss.Abilities.CombatModifierStage.EnergyGain,owner,amount,sourceAction)??amount);
         SetEnergy(
             CurrentEnergy + amount,
             reason,

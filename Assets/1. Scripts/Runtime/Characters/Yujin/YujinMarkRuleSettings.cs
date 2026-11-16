@@ -14,4 +14,5 @@ public sealed class YujinMarkRuleSettings
     [Min(0)] public int ResonanceWeakness;
     [Min(0)] public int ResonanceNakilExtraDamage;
     [Min(0)] public int ContagionMarkAmount;
+    [Min(0)] public int SharpenMarkBonus;
 }

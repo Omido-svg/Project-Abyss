@@ -71,6 +71,7 @@ namespace ProjectAbyss.Abilities
             SkillDefinition oldIdentity,SkillEffectContext context,
             SkillEffectTiming timing)
         {
+            if(context?.Action==null||context.Owner==null)throw new ArgumentException("Native ability requires an action and owner");
             if(!CanRoute(oldIdentity))
                 throw new InvalidOperationException(
                     "Native mixed ability asset not available.");
@@ -90,7 +91,10 @@ namespace ProjectAbyss.Abilities
                     results.Add(SkillEffectResult.NotScheduled(diagnostic,timing));
                     continue;
                 }
-                var gate=MixedAbilityConditionGate.Evaluate(operation,context);
+                var identity=new AbilityIdentity(graph.StableId,LiveSlotQuery.ActorRuntimeId(context.Owner),context.Action?.Slot?.SlotId??"",i);
+                var frame=MixedAbilityConditionCompiler.Capture(identity,operation.Trigger,context,operation,graph.Rules);
+                var gate=operation.RestrictToRoll && context.RollNumber!=operation.RollNumber?MixedAbilityGateVerdict.NotScheduled:
+                    MixedAbilityConditionCompiler.Compile(operation).Evaluate(context.BattleContext.Abilities.ReadView(frame),default)?MixedAbilityGateVerdict.Execute:MixedAbilityGateVerdict.ConditionFailed;
                 if(gate==MixedAbilityGateVerdict.NotScheduled)
                 {
                     results.Add(SkillEffectResult.NotScheduled(diagnostic,timing));

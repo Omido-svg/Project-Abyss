@@ -87,6 +87,7 @@ namespace ProjectAbyss.Abilities
                LiveSlotQuery.ActorRuntimeId(context.Owner))
                 throw new InvalidOperationException("R7-3 action identity conflict");
 
+            evt=context.Owner.BattleContext.Abilities.CaptureFrame(ability.Identity,action,evt,graph.Rules,context).ToEventContext();
             var plan=runner.Plan(ability,evt,new Match(graph.Trigger),null,
                 new Target(target,part),new IEffectOperation[]{
                     new Operation(status,part!=null,graph.Amount)});

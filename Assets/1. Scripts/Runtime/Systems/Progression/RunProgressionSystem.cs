@@ -214,6 +214,8 @@ public sealed class RunProgressionState
 {
     public int Seed { get; set; } = System.Guid.NewGuid().GetHashCode();
     public ProjectAbyss.Abilities.AbilityStateStore AbilityState { get; } = new();
+    public ProjectAbyss.Abilities.AbilityRunStateSnapshot CaptureAbilityState()=>AbilityState.CaptureRunSnapshot();
+    public bool TryRestoreAbilityState(ProjectAbyss.Abilities.AbilityRunStateSnapshot snapshot)=>AbilityState.TryRestoreRunSnapshot(snapshot);
     public string YujinWeaponInstanceId(YujinWeaponType weapon) => Seed.ToString(System.Globalization.CultureInfo.InvariantCulture)+"/yujin/"+weapon;
     public YujinWeaponType? LastYujinWeapon { get; set; }
     public int Stage { get; private set; } = 1;

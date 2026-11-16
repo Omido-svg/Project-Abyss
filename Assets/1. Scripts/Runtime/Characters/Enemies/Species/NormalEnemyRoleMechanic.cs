@@ -8,7 +8,7 @@ using UnityEngine;
 /// requested Duel quota. Species-specific extra content is authoring-dependent.
 /// Tank cover requires a dedicated authored cover skill before activation.
 /// </summary>
-public sealed class NormalEnemyRoleMechanic : CombatMechanic, IAdditionalFinalStaggerDamageProvider
+public sealed class NormalEnemyRoleMechanic : CombatMechanic, IAdditionalFinalStaggerDamageProvider, ICombatSpeedRangeRule
 {
     private EnemyRole role = EnemyRole.Attacker;
     private EnemySpecies species=EnemySpecies.Unknown;
@@ -24,6 +24,8 @@ public sealed class NormalEnemyRoleMechanic : CombatMechanic, IAdditionalFinalSt
     private readonly Dictionary<Character,(EnemyCommanderStrengthAura strength,
         EnemyCommanderSwiftAura swift)> commanderAura=new();
 
+    public void ModifySpeedRange(ref int minimum,ref int maximum)
+    {if(species==EnemySpecies.Corrosion){minimum=4;maximum=6;}}
     public EnemyRole Role => role;
     public EnemySpecies Species=>species;
     public EnemyActionPattern PlannedAction=>plannedAction;

@@ -23,7 +23,7 @@ public sealed class DamagePipeline
         CalculateBaseDamage(context);
         ApplyPhysicalResistance(context);
         ApplyFlatTargetModifiers(context);
-        ApplyCharacterSpecificModifiers(context);
+        ApplyCombatRuleModifiers(context);
         ApplyMinimumDamage(context);
         ApplyCanonicalPreGuardHooks(context);
         ApplyGuard(context);
@@ -99,6 +99,7 @@ public sealed class DamagePipeline
         int damage =
             context.TargetModifiedDamage;
 
+        damage=context.Attacker?.BattleContext?.Abilities.Modifiers.Apply(ProjectAbyss.Abilities.CombatModifierStage.HpDamageDealt,context.Attacker,damage,context.Action,context.Action?.OwnerPart)??damage;
         if (context.Request.ApplyTargetModifiers &&
             context.Target != null)
         {
@@ -167,7 +168,7 @@ public sealed class DamagePipeline
     /// 캐릭터 고유 Mechanic/공격자 damage modifier. 구 Hifumi 발악 반감 같은 legacy 경로도
     /// 이 단계에 남아 있으면 Verification에서 검출된다.
     /// </summary>
-    private static void ApplyCharacterSpecificModifiers(DamageContext context)
+    private static void ApplyCombatRuleModifiers(DamageContext context)
     {
         int damage = context.TargetModifiedDamage;
 
@@ -207,6 +208,8 @@ public sealed class DamagePipeline
             }
         }
 
+        damage=context.Target?.BattleContext?.Abilities.Modifiers.Apply(ProjectAbyss.Abilities.CombatModifierStage.HpDamageTaken,context.Target,damage,context.Action,context.TargetPart)??damage;
+        damage=Mathf.Max(0,damage);
         context.AttackerModifiedDamage = damage;
         context.TargetModifiedDamage = damage;
         context.RecordStage(DamageStage.AttackerModifiers, damage);
@@ -271,7 +274,7 @@ public sealed class DamagePipeline
 
     private static void FinalizeDamage(DamageContext context)
     {
-        if (context.Action?.Owner?.GetMechanic<StageOneEnemyMechanic>()?.NegateConfessionDamage(context.Action) == true)
+        if (CombatRuleHooks.NegatesDamage(context))
         {
             context.DamageAfterGuard = 0;
             context.GuardAbsorbed = 0;

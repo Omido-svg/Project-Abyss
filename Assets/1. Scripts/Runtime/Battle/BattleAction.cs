@@ -13,6 +13,8 @@ public enum ActionType
 public class BattleAction
 {
     public ActionSlot Slot;
+    public long ClashExecutionId { get; internal set; }
+    public CounterExecutionContext CounterExecution { get; internal set; }
     public EffectCause GetEffectCause(AbilityEventKind kind,int rollIndex)
     {
         var sequence=Owner?.BattleContext?.EventSequence;
@@ -21,11 +23,12 @@ public class BattleAction
         long start=sequence.Boundary(ActionId,AbilityEventKind.AttackResolutionStarting,-1);
         long eventId=sequence.Boundary(ActionId,kind,rollIndex);
         bool isReaction=reaction.OriginKind==EffectOriginKind.Reaction;
-        return new EffectCause(isReaction?reaction.RootActionId:ActionId,
+        var cause=new EffectCause(isReaction?reaction.RootActionId:ActionId,
             kind==AbilityEventKind.AttackResolutionStarting?(isReaction?reaction.ParentEventId:0):start,
             eventId,Skill?.Definition?.SkillId??Skill?.SkillName,
             LiveSlotQuery.ActorRuntimeId(Owner),rollIndex,
             isReaction?EffectOriginKind.Reaction:EffectOriginKind.DirectRoll);
+        sequence.Record(cause);return cause;
     }
 
 
@@ -410,6 +413,7 @@ public class BattleAction
         LastRollResult.ClearClashModifiers();
         LastRollResult.WasReused = reuse;
 
+        LastRollResult.FinalPower=Owner?.BattleContext?.Abilities.Modifiers.Apply(CombatModifierStage.RollPower,Owner,LastRollResult.FinalPower,this)??LastRollResult.FinalPower;
         SetPurePower(LastRollResult.FinalPower);
 
         RollModification modification =

@@ -8,6 +8,7 @@ public sealed class TurnStartEffectQueue
     private sealed class Entry
     {
         public long Sequence;
+        public int DueTurn;
         public Action Apply;
         public Character Target;
         public BodyPart Part;
@@ -17,6 +18,7 @@ public sealed class TurnStartEffectQueue
     private readonly Queue<Entry> pending=new();
     private long sequence;
     private bool draining;
+    public Func<int> CurrentTurn { get; set; }
     public int Count=>pending.Count;
     public bool IsFaulted { get; private set; }
     public long LastFailedSequence { get; private set; }
@@ -26,11 +28,11 @@ public sealed class TurnStartEffectQueue
     {
         if(apply!=null)pending.Enqueue(new Entry{Sequence=checked(++sequence),Apply=apply});
     }
-    public void EnqueueLocked(Character target,BodyPart part,Action apply,EffectCause cause=default)
+    public void EnqueueLocked(Character target,BodyPart part,Action apply,EffectCause cause=default,int dueTurn=0)
     {
         if(target==null || apply==null || part!=null && part.Owner!=target)return;
         pending.Enqueue(new Entry{Sequence=checked(++sequence),Apply=apply,Target=target,
-            Part=part,TargetLocked=true,Cause=cause});
+            Part=part,TargetLocked=true,Cause=cause,DueTurn=dueTurn});
     }
     public void Clear()
     {
@@ -44,9 +46,12 @@ public sealed class TurnStartEffectQueue
         draining=true;
         try
         {
-            while(pending.Count>0)
+            int skipped=0;
+            while(pending.Count>0 && skipped<pending.Count)
             {
                 var entry=pending.Dequeue();
+                if(entry.DueTurn>0 && (CurrentTurn?.Invoke()??0)<entry.DueTurn){pending.Enqueue(entry);skipped++;continue;}
+                skipped=0;
                 if(entry.TargetLocked && (entry.Target==null || entry.Target.IsDead ||
                     entry.Part!=null && (entry.Part.IsBroken || entry.Part.Owner!=entry.Target)))
                 {ExpiredCount++;continue;}

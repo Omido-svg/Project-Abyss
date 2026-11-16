@@ -89,9 +89,9 @@ namespace ProjectAbyss.Abilities
             }
             if(instance.Identity.OwnerActorRuntimeId!=owner)
                 throw new InvalidOperationException("Native mixed action/actor identity conflict");
-            var frame=MixedAbilityConditionCompiler.Capture(instance.Identity,op.Trigger,context,op);
+            var frame=MixedAbilityConditionCompiler.Capture(instance.Identity,op.Trigger,context,op,graph.Rules);
             var evt=frame.ToEventContext();
-            if(!MixedAbilityConditionGate.Evaluate(op,context).Equals(MixedAbilityGateVerdict.Execute))return false;
+            if(!MixedAbilityConditionCompiler.Compile(op).Evaluate(battle.Abilities.ReadView(frame),default))return false;
             var backend=new CombatSpecialistBackend(battle);
             string kind;
             int amount;

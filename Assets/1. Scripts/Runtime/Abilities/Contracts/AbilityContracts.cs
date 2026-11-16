@@ -18,7 +18,11 @@ namespace ProjectAbyss.Abilities
         TurnStarting,
         TurnEnding,
         GlobalBattleStarted,
-        GlobalBattleEnded
+        GlobalBattleEnded,
+        MarkApplied,
+        MarkBurst,
+        CounterStarting,
+        CounterCompleted
     }
 
     [Serializable]

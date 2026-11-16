@@ -15,6 +15,7 @@ namespace ProjectAbyss.Abilities
         fileName="R7NativeSingleEffect")]
     public sealed class NativeSingleEffectDefinition : ScriptableObject
     {
+        public AbilityRuleMetadata Rules=new();
         public int SchemaVersion=1;
         public string StableId;
         public string SourceAssetGuid;

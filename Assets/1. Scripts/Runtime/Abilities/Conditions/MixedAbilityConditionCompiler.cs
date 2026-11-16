@@ -23,11 +23,13 @@ namespace ProjectAbyss.Abilities
             public bool Evaluate(IReadOnlyAbilityContext context,CombatTargetRef candidate)
             {
                 if(!(context is IConditionSnapshotContext read) || read.Snapshot==null)return false;
-                var scope=string.IsNullOrEmpty(read.Snapshot.ActualDamageTarget.PartId)?ConditionScope.Actor:ConditionScope.Part;
-                return new FactCondition(ConditionSubject.ActualDamageTarget,scope,
-                    numeric?ConditionFact.StatusNumericTotal:ConditionFact.TimedStatusPresent,
-                    status.ToString(),numeric?FactComparison.AtLeast:FactComparison.Present,
-                    numeric?threshold:1).Evaluate(context,candidate);
+                var subject=read.Snapshot.ActualDamageTarget;
+                var fact=numeric?ConditionFact.StatusNumericTotal:ConditionFact.TimedStatusPresent;
+                read.Snapshot.TryGet(new SubjectRef(subject.ActorId),ConditionScope.Actor,fact,status.ToString(),out int actorValue);
+                int partValue=0;
+                if(!string.IsNullOrEmpty(subject.PartId))read.Snapshot.TryGet(subject,ConditionScope.Part,fact,status.ToString(),out partValue);
+                // The legacy gate observes an actor's common statuses together with the aimed part's statuses.
+                return numeric?(long)actorValue+partValue>=threshold:actorValue>0||partValue>0;
             }
         }
         private sealed class ReadView : IReadOnlyAbilityExecutionContext, IConditionSnapshotContext
@@ -60,36 +62,12 @@ namespace ProjectAbyss.Abilities
         }
 
         public static AbilityExecutionFrame Capture(AbilityIdentity ability,AbilityEventKind trigger,
-            SkillEffectContext context,MixedOperationEntry op)
+            SkillEffectContext context,MixedOperationEntry op,AbilityRuleMetadata policy=null)
         {
             if(context?.Action==null)throw new ArgumentException("Action is required for condition capture.");
-            long owner=LiveSlotQuery.ActorRuntimeId(context.Owner);
-            var actual=new SubjectRef(LiveSlotQuery.ActorRuntimeId(context.Target),context.TargetPart?.PartId);
-            var observations=new Dictionary<FactKey,int>();
-            if(op.Condition==MixedAbilityConditionKind.TargetHasStatus ||
-               op.Condition==MixedAbilityConditionKind.TargetNumericStatusAtLeast)
-            {
-                var fact=op.Condition==MixedAbilityConditionKind.TargetHasStatus
-                    ?ConditionFact.TimedStatusPresent:ConditionFact.StatusNumericTotal;
-                int value=op.Condition==MixedAbilityConditionKind.TargetHasStatus
-                    ?(StatusEffectFactory.HasStatus(context.Target,context.TargetPart,op.RequiredStatus)?1:0)
-                    :StatusEffectFactory.GetNumericTotal(context.Target,context.TargetPart,op.RequiredStatus);
-                observations[new FactKey(actual.ActorId,string.IsNullOrEmpty(actual.PartId)?ConditionScope.Actor:ConditionScope.Part,
-                    fact,op.RequiredStatus.ToString(),actual.PartId)]=value;
-            }
-            var action=context.Action;
-            var aimed=new SubjectRef(LiveSlotQuery.ActorRuntimeId(action.DeclaredTarget),action.DeclaredTargetPart?.PartId);
-            var snapshot=new ConditionSnapshot(new SubjectRef(owner,action.OwnerPart?.PartId),aimed,actual,
-                new SubjectRef(owner),0,observations);
-            var cause=action.GetEffectCause(trigger,context.RollIndex);
-            return new AbilityExecutionFrame(ability,trigger,action.ActionId,cause,
-                new CombatTargetRef(owner,action.OwnerPart?.PartId,ability.SourceSlotId),
-                new CombatTargetRef(aimed.ActorId,aimed.PartId,""),
-                new CombatTargetRef(actual.ActorId,actual.PartId,""),
-                new AbilityEventFacts(context.RollNumber,context.RollSucceeded,context.RollResult?.IsCritical==true,
-                    context.IsClash,context.IsOneSided),action.DuelEffectsEligible,snapshot:snapshot,
-                unit:AbilityExecutionUnit.RollUse,turnId:context.BattleContext?.Services?.TurnManager?.CurrentTurn??0,
-                skillExecutionId:action.ActionId,legacyProjection:false);
+            var evt=new AbilityEventContext(trigger,context.Action.ActionId,0,ability.OwnerActorRuntimeId,
+                context.RollIndex,context.Action.DuelEffectsEligible,context.IsOneSided);
+            return context.BattleContext.Abilities.CaptureFrame(ability,context.Action,evt,policy,context);
         }
         public static bool Evaluate(MixedOperationEntry op,SkillEffectContext context)
         {

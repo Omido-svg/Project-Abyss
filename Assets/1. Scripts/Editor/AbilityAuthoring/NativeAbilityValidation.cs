@@ -94,13 +94,20 @@ public static class NativeAbilityValidation
         foreach(var graph in Resources.LoadAll<NativeMixedAbilityDefinition>("ProjectAbyss/NativeMixed"))
             if(graph!=null && !graph.SupportsRulePolicies)
                 result.Add(Severity.Blocker,"UNSUPPORTED_ADAPTER_POLICY",AssetDatabase.GetAssetPath(graph),
-                    "Mixed adapter requires LiveAtTrigger / Actor; use an explicitly captured execution frame for other policies.");
+                    "Invalid snapshot or owner-scope policy.");
         foreach(var graph in Resources.LoadAll<NativeMixedAbilityDefinition>("ProjectAbyss/NativeMixed"))
             if(graph!=null && graph.Operations!=null)
                 foreach(var op in graph.Operations)
                     if(op!=null && graph.Rules!=null)
                         foreach(var issue in graph.Rules.Validate(op.Trigger))
                             result.Add(Severity.Blocker,"RULE_METADATA",AssetDatabase.GetAssetPath(graph),issue);
+        var registry=new AbilityRuleRegistry();AbilityRuleModules.Configure(registry);
+        foreach(var guid in AssetDatabase.FindAssets("t:AbilityRuleSetDefinition"))
+        {
+            var path=AssetDatabase.GUIDToAssetPath(guid);var definition=AssetDatabase.LoadAssetAtPath<AbilityRuleSetDefinition>(path);
+            foreach(var issue in AbilityRuleSetEditor.ValidateAsset(definition,registry))
+                result.Add(definition.Enabled?Severity.Blocker:Severity.Info,definition.Enabled?"INVALID_COMPOSABLE_RULE":"DRAFT_RULE",path,issue);
+        }
         result.NativeCount=native.Count;
         foreach(var x in native)
         {

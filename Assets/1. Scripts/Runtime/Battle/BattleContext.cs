@@ -10,6 +10,9 @@ public interface IBattleRule
 
 public class BattleContext
 {
+    private ProjectAbyss.Abilities.BattleAbilityRuntime abilities;
+    public ProjectAbyss.Abilities.BattleAbilityRuntime Abilities=>abilities??=new(this);
+    public void DisposeAbilities(){abilities?.Dispose();abilities=null;}
     public ProjectAbyss.Abilities.CombatEventSequence EventSequence { get; } = new();
     public StageOneTemporaryCards TemporaryCards { get; } = new();
     public TurnStartEffectQueue TurnStartEffects { get; } = new();

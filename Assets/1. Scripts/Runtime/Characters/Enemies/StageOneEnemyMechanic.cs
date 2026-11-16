@@ -6,7 +6,7 @@ using UnityEngine;
 public enum StageOneEnemyKind { None, Fanatic, MachineElite, Inquisitor, MachineBoss }
 
 /// <summary>1112 §12.5–12.6. Only confirmed stage-one rules and numbers.</summary>
-public sealed class StageOneEnemyMechanic : CombatMechanic
+public sealed class StageOneEnemyMechanic : CombatMechanic, ICombatDamageNegationRule, ICombatEnergyGainRule, ICombatBlockGainRule, ICombatSpeedRangeRule
 {
     public const string ResourcePath = "ProjectAbyss/Canonical1112/Enemies";
     private readonly StageOneEnemyKind kind;
@@ -50,6 +50,11 @@ public sealed class StageOneEnemyMechanic : CombatMechanic
     private int Level => Impaired(Human ? 0 : 4) ? 0 :
         battleContext?.Services?.FervorManager?.GetFervorLevel(owner) ?? 0;
     public int SpeedRangePenalty => Impaired(Human ? 4 : 1) ? 1 : 0;
+    public bool NegatesDamage(DamageContext context)=>NegateConfessionDamage(context.Action);
+    public int ModifyBlockGain(Character actor,int amount)=>ModifyBlockGain(amount);
+    public void OnBlockGainResolved(Character actor,int requested,int applied){}
+    public void ModifySpeedRange(ref int minimum,ref int maximum)
+    {minimum=Mathf.Max(1,minimum-SpeedRangePenalty);maximum=Mathf.Max(minimum,maximum-SpeedRangePenalty);}
     public int ModifyBlockGain(int n) => Human && Impaired(1) ? Mathf.Max(0, n - 5) : n;
     public int ModifyEnergyGain(int n) => n > 0 && Human && Level >= 2 &&
         (kind == StageOneEnemyKind.Fanatic ? HasStigma : brands.Count > 0) ? n + 1 : n;

@@ -1269,12 +1269,9 @@ public abstract class Skill
         // A derived hit carries its own result; it cannot wake the source card's post-damage effects.
         var cause=context.Request.SourceCause;
         if(cause.IsKnown && !cause.IsDirectResultOf(action.GetEffectCause(
-            ProjectAbyss.Abilities.AbilityEventKind.RollUsing,action.CurrentRollIndex)))return;
+            ProjectAbyss.Abilities.AbilityEventKind.RollUsing,cause.SourceRollIndex)))return;
 
-        int rollIndex =
-            Mathf.Max(
-                0,
-                action.CurrentRollIndex);
+        int rollIndex = Mathf.Max(0,cause.EventId>0?cause.SourceRollIndex:action.CurrentRollIndex);
 
         RollResult rollResult =
             action.LastRollResult?.Clone();
@@ -1376,7 +1373,7 @@ public abstract class Skill
             return;
         var transitionCause=damageContext.Request.SourceCause;
         if(transitionCause.IsKnown && !transitionCause.IsDirectResultOf(action.GetEffectCause(
-            ProjectAbyss.Abilities.AbilityEventKind.RollUsing,action.CurrentRollIndex)))return;
+            ProjectAbyss.Abilities.AbilityEventKind.RollUsing,transitionCause.SourceRollIndex)))return;
 
         int rollIndex =
             Mathf.Max(0, action.CurrentRollIndex);
@@ -1421,7 +1418,7 @@ public abstract class Skill
             context.DamageContext;
         var killCause=damageContext?.Request.SourceCause??default;
         if(killCause.IsKnown && !killCause.IsDirectResultOf(action.GetEffectCause(
-            ProjectAbyss.Abilities.AbilityEventKind.RollUsing,action.CurrentRollIndex)))return;
+            ProjectAbyss.Abilities.AbilityEventKind.RollUsing,killCause.SourceRollIndex)))return;
         int rollIndex =
             Mathf.Max(0, action.CurrentRollIndex);
         bool isClash =

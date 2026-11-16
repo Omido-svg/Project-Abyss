@@ -1183,9 +1183,8 @@ public abstract class Character : MonoBehaviour
 
     public int ModifyHealingAmount(int amount)
     {
-        return CommonStatusAlgebra.ApplyHealingModifiers(
-            StatusEffects,
-            amount);
+        int canonical=CommonStatusAlgebra.ApplyHealingModifiers(StatusEffects,amount);
+        return Mathf.Max(0,BattleContext?.Abilities.Modifiers.Apply(ProjectAbyss.Abilities.CombatModifierStage.Healing,this,canonical)??canonical);
     }
 
     public void RestoreCurrentHP(int amount)
@@ -2305,7 +2304,6 @@ public abstract class Character : MonoBehaviour
         if (modified <= 0)
             return;
 
-        modified = GetMechanic<StageOneEnemyMechanic>()?.ModifyBlockGain(modified) ?? modified;
         resourceController.AddBlock(modified);
 
         EmotionAugmentRuntimeHooks.NotifyBlockGainResolved(

@@ -1,3 +1,4 @@
+using System.Linq;
 using ProjectAbyss.Abilities;
 using System;
 using System.Collections.Generic;
@@ -38,18 +39,32 @@ public readonly struct YujinMarkGainResult
 /// 유진의 무기, 살수의 감, 표식, 봉인, 처형, 재굴림, 위세를 통합한다.
 /// 표식과 결투 효과는 개별 교환 결과가 공개되는 즉시 처리한다.
 /// </summary>
-public sealed class YujinMechanic : CombatMechanic,
+public sealed partial class YujinMechanic : CombatMechanic,
     ICharacterUniqueGaugeProvider,
     IActionPlanningRule,
     IActionPlanningChoiceRule,
     IActionPlanningCommitRule,
     IExchangeContinuationRule,
     IExchangePreResolutionRule,
-    IAdditionalStaggerDamageProvider
+    IAdditionalStaggerDamageProvider, IAbilityExecutionScopeProvider
 {
     public YujinMarkRuleSettings MarkRules => owner?.Data?.YujinMarkRules ?? unconfiguredMarkRules;
     private readonly YujinMarkRuleSettings unconfiguredMarkRules = new();
 
+    public YujinGrowthProgress Growth=>new(owner==battleContext.Player?battleContext.Abilities.RunState:battleContext.Abilities.State,owner==battleContext.Player?"player/yujin":"battle/yujin/"+LiveSlotQuery.ActorRuntimeId(owner));
+    public YujinMarkBurstResult LastMarkBurst { get; private set; }
+    public string WeaponInstanceId=>battleContext?.RunProgression?.YujinWeaponInstanceId(CurrentWeapon) ?? LiveSlotQuery.ActorRuntimeId(owner)+"/yujin/"+CurrentWeapon;
+    public void CaptureAbilityFacts(BattleAction action,IDictionary<FactKey,int> facts)
+    {
+        foreach(var actor in battleContext.AllCharacters)
+        {
+            if(actor==null)continue;long id=LiveSlotQuery.ActorRuntimeId(actor);
+            if(actor.IsSingleHpTarget)facts[new FactKey(id,ConditionScope.Actor,ConditionFact.KeywordStack,"yujin.mark")]=GetMark(actor,null);
+            else foreach(var part in actor.BodyParts)
+                facts[new FactKey(id,ConditionScope.Part,ConditionFact.KeywordStack,"yujin.mark",part.PartId)]=GetMark(actor,part);
+        }
+        facts[new FactKey(LiveSlotQuery.ActorRuntimeId(owner),ConditionScope.Actor,ConditionFact.ResourceAmount,"yujin.sense")]=sense;
+    }
     public SkillExecutionFacts CurrentSkillFacts(BattleAction action) =>
         action!=null && skillFacts.TryGetValue(action.ActionId,out var facts)?facts:null;
     private readonly Dictionary<long,SkillExecutionFacts> skillFacts=new();
@@ -85,6 +100,7 @@ public sealed class YujinMechanic : CombatMechanic,
         public CombatStatusAnchor Anchor;
         public int Amount;
         public BattleAction SourceAction;
+        public EffectCause Cause;
 
         public PendingMarkGain(
             CombatStatusAnchor anchor,
@@ -722,7 +738,7 @@ public sealed class YujinMechanic : CombatMechanic,
         if (decision != YujinPeekDecision.Fold)
             return false;
 
-        sense--;
+        TrySpendSense(1);
         reason = "Yujin Sense Peek/Fold";
         return true;
     }
@@ -782,14 +798,14 @@ public sealed class YujinMechanic : CombatMechanic,
         Character target,
         BodyPart part,
         int baseAmount,
-        BattleAction sourceAction = null)
+        BattleAction sourceAction = null,EffectCause sourceCause=default)
     {
         return ApplyMarkGain(
             CombatStatusAnchor.Resolve(
                 target,
                 part),
             baseAmount,
-            sourceAction);
+            sourceAction,sourceCause);
     }
 
     /// <summary>
@@ -850,12 +866,13 @@ public sealed class YujinMechanic : CombatMechanic,
         }
 
         var pending = new PendingMarkGain(anchor, safeAmount, sourceAction);
+        pending.Cause=battleContext.Abilities.CurrentCause.IsKnown?battleContext.Abilities.CurrentCause:sourceAction?.GetEffectCause(AbilityEventKind.RollUsing,sourceAction.CurrentRollIndex)??default;
         pendingMarks.Add(pending);
         battleContext.TurnStartEffects.EnqueueLocked(anchor.Character,anchor.Part,() =>
         {
             if (!pendingMarks.Remove(pending) || !anchor.IsValid ||
                 anchor.IsBroken || anchor.Character.IsDead) return;
-            ApplyMarkGain(anchor, safeAmount, sourceAction);
+            ApplyMarkGain(anchor, safeAmount, sourceAction,pending.Cause);
         });
 
         return true;
@@ -969,7 +986,7 @@ public sealed class YujinMechanic : CombatMechanic,
             return false;
         }
 
-        sense--;
+        TrySpendSense(1);
         return true;
     }
 
@@ -1176,11 +1193,11 @@ public sealed class YujinMechanic : CombatMechanic,
         bool actualWin = !exchange.IsOneSided;
         if (actualWin && action.ActionType == ActionType.Duel)
             AddMarkToAnchors(hitAnchors,
-                CurrentWeaponProfile.DuelMarkAmount,action);
+                CurrentWeaponProfile.DuelMarkAmount+SharpenBonus,action,WeaponMarkCause(action));
         else if (actualWin && action.ActionType == ActionType.NormalAttack &&
-                 skillId != YujinSkillIds.Breakfast)
+                 action.Skill?.IsRed==true)
             AddMarkToAnchors(hitAnchors,
-                CurrentWeaponProfile.NormalMarkAmount,action);
+                CurrentWeaponProfile.NormalMarkAmount+SharpenBonus,action,WeaponMarkCause(action));
 
         // Older Yujin_N_02 is still the BLUE catch-breath data source.
         // Its +1 sense is historical PhaseE balance until 1029 value is set.
@@ -1246,7 +1263,7 @@ public sealed class YujinMechanic : CombatMechanic,
     private void AddMarkToAnchors(
         IEnumerable<CombatStatusAnchor> anchors,
         int amount,
-        BattleAction sourceAction)
+        BattleAction sourceAction,EffectCause cause=default)
     {
         if (anchors == null)
             return;
@@ -1256,7 +1273,7 @@ public sealed class YujinMechanic : CombatMechanic,
             ApplyMarkGain(
                 anchor,
                 amount,
-                sourceAction);
+                sourceAction,cause);
         }
     }
 
@@ -1291,7 +1308,7 @@ public sealed class YujinMechanic : CombatMechanic,
     private YujinMarkGainResult ApplyMarkGain(
         CombatStatusAnchor anchor,
         int baseAmount,
-        BattleAction sourceAction, EffectCause sourceCause=default)
+        BattleAction sourceAction, EffectCause sourceCause=default,YujinMarkGainPolicy policy=default)
     {
         int safeBaseAmount =
             Mathf.Max(
@@ -1306,9 +1323,11 @@ public sealed class YujinMechanic : CombatMechanic,
             return default;
         }
 
+        if(!sourceCause.IsKnown && battleContext.Abilities.CurrentCause.IsKnown && battleContext.Abilities.CurrentCause.SourceActorId==LiveSlotQuery.ActorRuntimeId(owner))sourceCause=battleContext.Abilities.CurrentCause;
         if(!sourceCause.IsKnown && sourceAction!=null)
             sourceCause=sourceAction.GetEffectCause(AbilityEventKind.RollUsing,sourceAction.CurrentRollIndex);
         if(sourceCause.IsKnown)sourceCause=sourceCause.Derive(battleContext.EventSequence.Next(),sourceCause.OriginKind);
+        battleContext.EventSequence.Record(sourceCause);
         int designationBonus =
             GetDesignationTotal(
                 anchor);
@@ -1357,13 +1376,15 @@ public sealed class YujinMechanic : CombatMechanic,
 
         // 0922: 44 이상이 되는 즉시 발화하고 표식을 전량 소비한다.
         // 초과분은 이월하지 않는다.
-        marks[anchor] = 0;
-
-        IgniteMark(
-            anchor,
-            sourceAction,sourceCause);
+        marks[anchor] = policy.PreserveOverflow?(int)System.Math.Min(int.MaxValue,combined-MarkIgnitionThreshold):0;
+        var burst=IgniteMark(anchor,sourceAction,sourceCause);
+        if(policy.RepeatIgnition && burst.Cause.IsKnown)
+            ApplyIgnitionProfile(anchor,sourceAction,burst.Profile,burst.Cause.Derive(battleContext.EventSequence.Next(),EffectOriginKind.Reaction));
+        if(policy.ReapplyAfterBurst>0 && burst.Cause.IsKnown)
+            ApplyMarkGain(anchor,policy.ReapplyAfterBurst,sourceAction,burst.Cause.Derive(battleContext.EventSequence.Next(),EffectOriginKind.Reaction));
 
         TriggerJointLiability();
+        battleContext.Abilities.DrainEffects();
 
         return new YujinMarkGainResult(
             applied: true,
@@ -1372,7 +1393,7 @@ public sealed class YujinMechanic : CombatMechanic,
             designationBonus: designationBonus,
             actualGain: actualGain,
             previousMark: previous,
-            markAfter: 0,sourceCause:sourceCause);
+            markAfter: GetMark(anchor.Character,anchor.Part),sourceCause:sourceCause);
     }
 
     public bool HasAnyMarkAtLeast(int amount)
@@ -1431,6 +1452,7 @@ public sealed class YujinMechanic : CombatMechanic,
         if (sense < cost)
             return false;
         sense -= cost;
+        Growth.Record(YujinGrowthAxis.Judgment,cost);
         return true;
     }
 
@@ -1486,14 +1508,16 @@ public sealed class YujinMechanic : CombatMechanic,
             sourceAction: sourceAction);
     }
 
-    private void IgniteMark(
+    private YujinMarkBurstResult IgniteMark(
         CombatStatusAnchor anchor,
         BattleAction sourceAction, EffectCause sourceCause)
     {
-        LastMarkIgnitionCause=sourceCause.IsKnown
+        var ignitionCause=sourceCause.IsKnown
             ?sourceCause.Derive(battleContext.EventSequence.Next(),sourceCause.OriginKind):default;
+        LastMarkIgnitionCause=ignitionCause;
+        battleContext.EventSequence.Record(ignitionCause);
         Character target = anchor.Character;
-        if (target == null) return;
+        if (target == null) return default;
         IReadOnlyList<DelayedEffectTriggerEntry> riders =
             delayedTriggers.ConsumeTriggered(
                 anchor,
@@ -1501,51 +1525,68 @@ public sealed class YujinMechanic : CombatMechanic,
 
         bool enhanced = false;
         int explosionDamage = 0;
+        var contagions=new List<DelayedEffectTriggerEntry>();
         if (riders != null)
             foreach (var rider in riders)
                 if (rider?.Payload is YujinMarkRiderPayload payload)
                 {
                     enhanced |= payload.Type == YujinMarkRiderType.Deadline;
-                    if (payload.Type == YujinMarkRiderType.Trap) explosionDamage += payload.Value;
+                    if (payload.Type == YujinMarkRiderType.Trap) explosionDamage=checked(explosionDamage+payload.Value);
+                    if(payload.Type==YujinMarkRiderType.Contagion)contagions.Add(rider);
                 }
 
-        switch (CurrentWeapon)
+        var profile=new YujinIgnitionProfile(CurrentWeapon,enhanced,MarkRules);
+        var result=new YujinMarkBurstResult(ignitionCause,sourceCause,BattleAbilityRuntime.Reference(anchor.Character,anchor.Part),profile);
+        LastMarkBurst=result;
+        ApplyIgnitionProfile(anchor,sourceAction,profile,ignitionCause);
+        if(explosionDamage>0)ApplyMarkTrapDamage(anchor,explosionDamage,sourceAction,ignitionCause,riders);
+        Growth.Record(YujinGrowthAxis.Execution,1);
+        if(sourceAction!=null)battleContext.Abilities.PublishCommitted(AbilityEventKind.MarkBurst,sourceAction,ignitionCause,sourceCause,result.Target);
+        foreach(var contagion in contagions)
+        {
+            var entry=contagion;
+            battleContext.Abilities.Effects.Enqueue(ignitionCause,()=>SpreadContagion(anchor,entry,sourceAction,ignitionCause));
+        }
+        return result;
+    }
+
+    private void ApplyIgnitionProfile(CombatStatusAnchor anchor,BattleAction sourceAction,YujinIgnitionProfile profile,EffectCause ignitionCause)
+    {
+        Character target=anchor.Character;
+        if(target==null||target.IsDead||anchor.IsBroken)return;
+        switch (profile.Weapon)
         {
             case YujinWeaponType.Baeku:
                 var stagger = target.GetMechanic<StaggerGaugeMechanic>();
                 bool wasOpen = stagger?.IsVulnerabilityWindowOpen == true;
-                if (MarkRules.BaekuIgnitionStagger > 0)
-                    stagger?.SacrificeGauge(MarkRules.BaekuIgnitionStagger);
-                if (enhanced && !wasOpen && stagger?.IsVulnerabilityWindowOpen == true)
+                if (profile.StaggerDamage > 0)
+                    stagger?.SacrificeGauge(profile.StaggerDamage);
+                if (profile.Enhanced && !wasOpen && stagger?.IsVulnerabilityWindowOpen == true)
                     stagger.ExtendNewlyOpenedWindow(1);
                 break;
             case YujinWeaponType.Jeokseol:
                 ApplySeal(anchor, 1, sourceAction);
-                if (enhanced && MarkRules.ResonanceWeakness > 0)
+                if (profile.Enhanced && profile.Weakness > 0)
                 {
                     var weak = StatusEffectFactory.CreateCanonical0922(
-                        StatusEffectId.Weakness, MarkRules.ResonanceWeakness, 1);
+                        StatusEffectId.Weakness, profile.Weakness, 1);
                     if (anchor.Part != null) target.AddPartStatus(anchor.Part, weak, owner);
                     else target.AddStatus(weak, owner);
                 }
                 break;
             case YujinWeaponType.Nakil:
-                int damage = MarkRules.NakilIgnitionDamage;
+                int damage = profile.HpDamage;
                 if (damage > 0)
                 {
-                    if (enhanced) damage += MarkRules.ResonanceNakilExtraDamage;
                     var request = DamageRequest.Custom(anchor.IsPartAnchor ? DamageType.SkillPart : DamageType.Direct,
                         owner, target, anchor.Part, damage, 1f, canBreakPart: true,
                         applyMomentum: false, applyGuard: true, sourceAction: sourceAction);
-                    request.SourceCause=LastMarkIgnitionCause;
+                    request.SourceCause=ignitionCause;
                     request.BreakMode = PartBreakMode.IgnoreWeakenedPrerequisite;
                     battleContext.ResolveDamageManager()?.ApplyDamageContext(request);
                 }
                 break;
         }
-        // All live explosion traps form ONE damage event.
-        if (explosionDamage > 0) ApplyMarkTrapDamage(anchor, explosionDamage, sourceAction);
-        return;
     }
 
     private void ApplySeal(
@@ -1589,7 +1630,7 @@ public sealed class YujinMechanic : CombatMechanic,
     private void ApplyMarkTrapDamage(
         CombatStatusAnchor anchor,
         int damage,
-        BattleAction sourceAction)
+        BattleAction sourceAction,EffectCause ignitionCause,IReadOnlyList<DelayedEffectTriggerEntry> riders)
     {
         Character target = anchor.Character;
         if (target == null || target.IsDead || damage <= 0)
@@ -1609,8 +1650,11 @@ public sealed class YujinMechanic : CombatMechanic,
             applyGuard: true,
             sourceAction: sourceAction);
 
-        request.SourceCause=LastMarkIgnitionCause.IsKnown
-            ?LastMarkIgnitionCause.Derive(battleContext.EventSequence.Next(),EffectOriginKind.Trap):default;
+        request.SourceCause=ignitionCause.IsKnown?new EffectCause(ignitionCause.RootActionId,ignitionCause.EventId,
+            battleContext.EventSequence.Next(),"yujin.trap.explosion",LiveSlotQuery.ActorRuntimeId(owner),ignitionCause.SourceRollIndex,EffectOriginKind.Trap):default;
+        battleContext.EventSequence.Record(request.SourceCause);
+        if(request.SourceCause.EventId>0)battleContext.EventSequence.RecordContributors(request.SourceCause.EventId,
+            riders.Where(r=>r?.Payload is YujinMarkRiderPayload p && p.Type==YujinMarkRiderType.Trap).Select(r=>r.SourceCause));
         battleContext?.ResolveDamageManager()
             ?.ApplyDamageContext(request);
     }

@@ -48,7 +48,7 @@ public string SourceAssetName;
         public MixedOperationEntry[] Operations = Array.Empty<MixedOperationEntry>();
 
         public bool SupportsRulePolicies => Rules==null ||
-            Rules.Snapshot==AbilitySnapshotPolicy.LiveAtTrigger && Rules.OwnerScope==AbilityOwnerScope.Actor;
+            System.Enum.IsDefined(typeof(AbilitySnapshotPolicy),Rules.Snapshot) && System.Enum.IsDefined(typeof(AbilityOwnerScope),Rules.OwnerScope);
 
         public bool IsValid
         {

@@ -14,40 +14,6 @@ namespace ProjectAbyss.Abilities
     public sealed class OlafNativeAbilityRuntimeBinding : IDisposable
     {
         private static Dictionary<string,OlafNativeAbilityDefinition> catalog;
-        private static readonly HashSet<string> approvedGuids=new HashSet<string>(
-            StringComparer.OrdinalIgnoreCase)
-        {
-            "bc09ab10e9afa2945a34d422441e647e", // D02
-            "9e93fab440e48294cb184588a4f2e9d1", // D05
-            "a8bb7b1ceb09d084395e7c7ea88b38d2", // D11
-            "0fb4c392cd50a4547adfc852c934c1f5", // D12
-            "78d15429a8e99f6489a5c464de0c4d80", // D14
-            "47a2fe6af1581a94ebaa12be5b727898", // D15
-            "b69cc12447cfd154995ce6525ab5fa65", // D16
-            "8d36ea252e9b77048a3f3782221187ce", // D17
-            "10e00c86a15bc59429d6c376fb80607d", // D19
-            "87b77b20013e7f54f9ed7113454ae450", // N01
-            "318da5529382900449c8dc37169b108f", // N11
-            "25a5e287c9914aa48a25a674b8684384", // N13
-            "e9563d3d13d91be4bbda1bdadcc71a98", // N16
-            "df26a5c142a37e044aaafae9c21bde0b", // P02
-            "81f9a22a9097f324eb6a55014054e5ba", // N02
-            "8058cfe6fb011f34294f3e3abd8d203c", // N04
-            "0ccd4e460d9ad4142a73432b46c320c0", // N05
-            "c4c19befd70a20d4591d5000990287b2", // N07
-            "a49339629c1382f41936cea19629fe41", // N08
-            "1ecdb0f93b9ad3e4a921d7534ba253c5", // D04
-            "c870a452bdc56294ab616730fb329c09", // D07
-            "6cbaebefc3fa7744b8a5e45d09de0c67", // D08
-            "3d1ed9490a24613499ef57d2638343d2", // P03
-            "b5db1d965d47c1f4194171f654a26d50", // P04
-            "0807b31f4b2fcda46bc9037e2b5af04f", // P05
-            "858496a7d4d0b7742b15c3f86703c801", // P06
-            "6b081b4a77b26e04a8d89ff2c4daeed9", // N10
-            "78ae264f7be5e81478fc11a8de548904", // N12
-            "99837cafaea66dd4ea77de4b1a3e703a", // P07
-            "ec186728b972c2f40a7c7ae15aaa18f9"  // D21
-        };
         private static readonly HashSet<string> duplicates=new HashSet<string>(
             StringComparer.Ordinal);
         private bool disposed;
@@ -72,7 +38,7 @@ namespace ProjectAbyss.Abilities
                     Resources.LoadAll<OlafNativeAbilityDefinition>(
                         "ProjectAbyss/NativeOlafCanon")))
                 {
-                    if(g==null||!g.IsValid||!approvedGuids.Contains(g.SourceAssetGuid))
+                    if(g==null||!g.IsValid)
                         continue;
                     if(!found.TryAdd(g.StableId,g))duplicates.Add(g.StableId);
                 }
@@ -84,16 +50,7 @@ namespace ProjectAbyss.Abilities
         public static int RegisteredCount=>Catalog.Count;
         public static void ResetCatalogCache(){catalog=null;duplicates.Clear();}
         public static bool IsApprovedSource(SkillDefinition d) =>
-            d!=null && Catalog.TryGetValue(d.SkillId,out var g) &&
-            d.name==g.SourceAssetName &&
-            (g.Operations.Length==d.EffectEntries?.Count ||
-             (d.SkillId=="olaf.duel.fortify" && g.Operations.Length==3 &&
-              d.EffectEntries?.Count==1) ||
-             (d.SkillId=="olaf.normal.aim_weakness" &&
-              g.Operations.Length==3 && d.EffectEntries?.Count==2) ||
-             (d.SkillId.StartsWith("olaf.",StringComparison.Ordinal) &&
-              approvedGuids.Contains(g.SourceAssetGuid) &&
-              g.Operations.Length>=1));
+            d!=null && Catalog.TryGetValue(d.SkillId,out var graph) && graph.SourceAssetName==d.name;
 
         // Two canonical bleed-explosion duel cards are handled by
         // OlafMadnessMechanic.OnExchangeResolved. Their old TempBalance
@@ -178,7 +135,7 @@ namespace ProjectAbyss.Abilities
                     results.Add(SkillEffectResult.NotScheduled(diagnostic,timing));
                     continue;
                 }
-                bool applied=Apply(op,context);
+                bool applied=context.BattleContext.Abilities.ExecuteSpecialist(graph.StableId,graph.SourceAssetGuid,i,context,true,_=>Apply(op,context));
                 if(applied)
                 {
                     completed.Add(token);

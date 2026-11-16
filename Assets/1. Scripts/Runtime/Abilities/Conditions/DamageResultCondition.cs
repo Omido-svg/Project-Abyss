@@ -13,6 +13,7 @@ namespace ProjectAbyss.Abilities
         public readonly long OriginHitId;
         public readonly bool IsAdditionalHit;
         public readonly int AppliedHpDamage;
+        public readonly CombatAppliedValues Values;
         public readonly bool WeakenedPart;
         public readonly bool BrokePart;
         public readonly bool KilledActor;
@@ -20,8 +21,9 @@ namespace ProjectAbyss.Abilities
         public readonly string TargetPartId;
         public AppliedDamageEvidence(long cause, long rollUseId, long hitId, bool additional,
             int appliedHp, bool weakened, bool broken, bool killed,
-            long targetActorRuntimeId = 0, string targetPartId = null)
+            long targetActorRuntimeId = 0, string targetPartId = null, CombatAppliedValues values=default)
         {
+            Values=values;
             CauseEventId = cause;
             OriginRollUseId = rollUseId;
             OriginHitId = hitId;
@@ -47,7 +49,7 @@ KilledActor = killed;
         AppliedHpAtLeast,
         WeakenedPart,
         BrokePart,
-        KilledActor
+        KilledActor, HpZero, StaggerAtLeast, OpenedWindow
     }
 
     /// <summary>
@@ -92,6 +94,9 @@ KilledActor = killed;
                     return d.WeakenedPart;
                 case DamageEvidenceTest.BrokePart:
                     return d.BrokePart;
+                case DamageEvidenceTest.HpZero:return d.AppliedHpDamage==0;
+                case DamageEvidenceTest.StaggerAtLeast:return d.Values.AppliedStagger>=Threshold;
+                case DamageEvidenceTest.OpenedWindow:return d.Values.OpenedVulnerabilityWindow;
                 case DamageEvidenceTest.KilledActor:
                     return d.KilledActor;
                 default:

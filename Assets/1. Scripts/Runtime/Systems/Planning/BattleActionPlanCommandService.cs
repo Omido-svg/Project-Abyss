@@ -162,6 +162,7 @@ public sealed class BattleActionPlanCommandService
 
         OlafSingleCombatAimLock.ApplyExclusiveAssignment(
             actionManager,slot);
+        slot.Owner?.BattleContext?.Abilities.CaptureBoundary(new BattleAction{Slot=slot},ProjectAbyss.Abilities.AbilitySnapshotPolicy.LockAtTargetReveal,true);
         result.Success = true;
         result.Slot = slot;
         return result;

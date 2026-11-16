@@ -182,6 +182,8 @@ public partial class ClashManager
             return;
         }
 
+        long clashId=System.Math.Min(first.ActionId,second.ActionId);
+        first.ClashExecutionId=clashId;second.ClashExecutionId=clashId;
         first.BindClashOpponent(second);
         second.BindClashOpponent(first);
     }

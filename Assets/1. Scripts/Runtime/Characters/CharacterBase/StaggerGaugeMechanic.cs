@@ -91,12 +91,14 @@ public sealed class StaggerGaugeMechanic : ReactiveCombatMechanic,
 
         // [0917_CONFIRMED_GAP:STAGGER_RED_PATH]
         // 내성 적용 후 견고/무장해제 flat 보정을 적용한다.
+        staggerDamage=action.Owner?.BattleContext?.Abilities.Modifiers.Apply(ProjectAbyss.Abilities.CombatModifierStage.StaggerDamageDealt,action.Owner,staggerDamage,action,action.OwnerPart)??staggerDamage;
         staggerDamage = ApplyTargetStaggerDamageFlatModifiers(
             action,
             owner,
             action.TargetPart,
             staggerDamage);
 
+        staggerDamage=owner.BattleContext?.Abilities.Modifiers.Apply(ProjectAbyss.Abilities.CombatModifierStage.StaggerDamageTaken,owner,staggerDamage,action,action.TargetPart)??staggerDamage;
         if (staggerDamage <= 0)
             return;
 

@@ -56,6 +56,7 @@ namespace ProjectAbyss.Abilities
                 plannedOps.Add(new ChangeResourceOperation(clash));
                 kinds.Add(NativeResourceKind.TurnClashPower);
             }
+            cause=context.Owner.BattleContext.Abilities.CaptureFrame(instance.Identity,context.Action,cause,data.Rules,context).ToEventContext();
             var plan=runner.Plan(instance,cause,match,null,
                 new FixedTarget(owner),plannedOps);
             if(plan.Commands.Count!=kinds.Count || plan.Result.AppliedCommands!=0)

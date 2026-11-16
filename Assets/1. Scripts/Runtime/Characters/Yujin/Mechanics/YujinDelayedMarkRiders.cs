@@ -6,7 +6,8 @@ public static class YujinDelayedTriggerKeys
 public enum YujinMarkRiderType
 {
     Trap = 0,
-    Deadline = 1
+    Deadline = 1,
+    Contagion = 2
 }
 
 public sealed class YujinMarkRiderPayload

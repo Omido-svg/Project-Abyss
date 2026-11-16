@@ -65,6 +65,8 @@ internal sealed class SkillEffectDispatcher
             if(HistoricalParityScope.Matches(definition))
                 return ExecuteEntries(definition,context,timing);
 #endif
+            var rules=context.BattleContext?.Abilities;
+            if(rules!=null && rules.CanRoute(definition))return rules.Execute(definition,context,timing);
             // R7-5 canonical Olaf must take priority over stale resource/
             // unique-gauge pilot graphs with matching IDs (D04/D07).
             // The event-owned 3 prestige cards run from OlafMadnessMechanic

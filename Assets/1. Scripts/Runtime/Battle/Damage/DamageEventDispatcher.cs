@@ -41,6 +41,7 @@ public sealed class DamageEventDispatcher
             return result;
 
         // 공통 피해 결과를 먼저 알린다.
+        battleContext?.Abilities.CaptureDamageResult(context);
         battleEvent.RaiseDamageResolved(context);
         battleEvent.RaiseDamageEventResolved(result);
 
@@ -105,6 +106,8 @@ public sealed class DamageEventDispatcher
                 result.Kill);
         }
 
+        battleContext?.Abilities.DamageCommitted(context);
+        battleContext?.Abilities.DrainEffects();
         return result;
     }
 }

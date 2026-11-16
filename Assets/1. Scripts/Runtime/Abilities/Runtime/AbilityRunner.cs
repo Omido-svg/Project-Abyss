@@ -10,11 +10,12 @@ namespace ProjectAbyss.Abilities
     public sealed class AbilityRunner
     {
         private sealed class ReadContext :
-            IConditionSnapshotContext, IReadOnlyDamageAbilityContext, IReadOnlyAbilityExecutionContext
+            IConditionSnapshotContext, IReadOnlyDamageAbilityContext, IReadOnlyScopedAbilityContext
         {
             public AbilityEventContext Event { get; }
             public AbilityIdentity Ability { get; }
             public AbilityExecutionFrame Frame { get; }
+            public IReadOnlyScopedAbilityState State=>Frame.State;
             public ConditionSnapshot Snapshot { get; }
             public bool HasCommittedDamageResult { get; }
             public AppliedDamageEvidence DamageEvidence { get; }
@@ -94,7 +95,7 @@ namespace ProjectAbyss.Abilities
                context.CauseId<=0 ||
                committedEvidence.CauseEventId!=context.CauseId ||
                committedEvidence.OriginHitId<=0 ||
-               committedEvidence.OriginRollUseId<=0)
+               committedEvidence.OriginRollUseId<=0 && !(context.ExecutionFrame?.DamageResolutionId==committedEvidence.OriginHitId && context.ExecutionFrame.ObservedCause.EventId>0))
                 return Fail("Uncommitted or unrelated damage evidence");
             if(snapshot==null)
                 return Fail("Missing committed R3 snapshot");
@@ -132,6 +133,7 @@ namespace ProjectAbyss.Abilities
             IReadOnlyList<IEffectOperation> operations,ConditionSnapshot snapshot,
             bool hasCommittedDamage,AppliedDamageEvidence committedDamage)
         {
+            snapshot??=context.ExecutionFrame?.Snapshot;
             if(instance==null||matcher==null||selector==null)
                 return Fail("Invalid contracts");
             if(context.ExecutionFrame!=null && (!context.ExecutionFrame.Ability.Equals(instance.Identity) ||

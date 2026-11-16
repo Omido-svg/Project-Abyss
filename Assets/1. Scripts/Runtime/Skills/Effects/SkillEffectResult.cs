@@ -3,7 +3,8 @@ public enum SkillEffectResultState
     NotScheduled,
     ConditionFailed,
     Applied,
-    Failed
+    Failed,
+    Scheduled
 }
 
 public sealed class SkillEffectResult
@@ -59,6 +60,11 @@ public sealed class SkillEffectResult
             context?.Target,
             context?.TargetPart,
             message);
+
+    public static SkillEffectResult Scheduled(SkillEffectDefinition definition,SkillEffectTiming timing,SkillEffectContext context)
+    {
+        return new SkillEffectResult(definition,timing,SkillEffectResultState.Scheduled,context?.Target,context?.TargetPart,"예약됨");
+    }
 
     public static SkillEffectResult Applied(
         SkillEffectDefinition effect,

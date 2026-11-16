@@ -124,6 +124,7 @@ namespace ProjectAbyss.Abilities
             if(instance.Identity.OwnerActorRuntimeId!=
                 LiveSlotQuery.ActorRuntimeId(owner))
                 throw new InvalidOperationException("Native gauge identity collision");
+            evt=owner.BattleContext.Abilities.CaptureFrame(instance.Identity,action,evt,graph.Rules).ToEventContext();
             var plan=runner.Plan(instance,evt,new Match(graph.Trigger),null,
                 new OwnerSelector(owner),new IEffectOperation[]{
                     new ChangeResourceOperation(amount)

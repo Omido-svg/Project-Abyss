@@ -7,6 +7,7 @@ namespace ProjectAbyss.Abilities
         fileName="NativePreparationSetup")]
     public sealed class NativePreparationSetupDefinition : ScriptableObject
     {
+        public AbilityRuleMetadata Rules=new();
         public int SchemaVersion=1;
         public string StableId,SourceAssetGuid,SourceAssetName;
         public AbilityEventKind Trigger=AbilityEventKind.RollUsing;

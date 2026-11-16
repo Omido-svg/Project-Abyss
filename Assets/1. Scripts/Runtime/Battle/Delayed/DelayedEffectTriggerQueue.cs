@@ -18,6 +18,7 @@ public sealed class DelayedEffectTriggerEntry
     public int ElapsedTurns { get; internal set; }
     public object Payload { get; internal set; }
     public BattleAction SourceAction { get; internal set; }
+    public ProjectAbyss.Abilities.EffectCause SourceCause { get; internal set; }
 }
 
 public sealed class DelayedEffectTriggerQueue
@@ -26,6 +27,7 @@ public sealed class DelayedEffectTriggerQueue
     private long nextId = 1;
 
     public int Count => entries.Count;
+    public int CountFor(CombatStatusAnchor anchor,System.Func<object,bool> predicate)=>entries.FindAll(e=>e.Anchor.Equals(anchor)&&predicate(e.Payload)).Count;
 
     public long Schedule(
         CombatStatusAnchor anchor,
@@ -33,7 +35,7 @@ public sealed class DelayedEffectTriggerQueue
         int durationTurns,
         int autoTriggerAfterTurns,
         object payload,
-        BattleAction sourceAction = null)
+        BattleAction sourceAction = null,ProjectAbyss.Abilities.EffectCause sourceCause=default)
     {
         if (!anchor.IsValid || string.IsNullOrWhiteSpace(triggerKey))
             return 0;
@@ -47,7 +49,8 @@ public sealed class DelayedEffectTriggerQueue
             AutoTriggerAfterTurns = Math.Max(0, autoTriggerAfterTurns),
             ElapsedTurns = 0,
             Payload = payload,
-            SourceAction = sourceAction
+            SourceAction = sourceAction,
+            SourceCause=sourceCause.IsKnown?sourceCause:sourceAction?.GetEffectCause(ProjectAbyss.Abilities.AbilityEventKind.RollUsing,sourceAction.CurrentRollIndex)??default
         };
 
         entries.Add(entry);

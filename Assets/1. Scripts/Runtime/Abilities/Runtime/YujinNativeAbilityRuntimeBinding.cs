@@ -15,30 +15,7 @@ namespace ProjectAbyss.Abilities
     public sealed class YujinNativeAbilityRuntimeBinding:IDisposable
     {
         private static Dictionary<string,YujinNativeAbilityDefinition> catalog;
-        private static readonly HashSet<string> knownKeys=new HashSet<string>(
-            new[]{
-                "yujin.duel.designate_target|Yujin_D_03",
-                "yujin.duel.into_shadows|Yujin_D_04",
-                "yujin.duel.shake_up|Yujin_D_05",
-                "yujin.duel.cut_throat|Yujin_D_06",
-                "yujin.duel.spread_rumor|Yujin_D_07",
-                "yujin.duel.probe_weakness|Yujin_D_08",
-                "yujin.duel.trap|Yujin_D_11",
-                "yujin.duel.deadline|Yujin_D_12",
-                "yujin.duel.all_targets|Yujin_D_13",
-                "yujin.duel.period|Yujin_D_14",
-                "yujin.duel.o.advance_timing|Yujin_D_15",
-                "yujin.duel.p.finish_it|Yujin_D_16",
-                "yujin.normal.ledger_cleanup|Yujin_N_03",
-                "yujin.normal.aim|Yujin_N_05",
-                "yujin.normal.confirm_kill|Yujin_N_06",
-                "yujin.normal.familiar_hand|Yujin_N_07",
-                "yujin.normal.ace_in_the_hole|Yujin_N_08",
-                "yujin.normal.wanted|Yujin_N_09",
-                "yujin.preparation.wait_chance|Yujin_P_05",
-                "yujin.preparation.hold_breath|Yujin_P_06",
-                "yujin.preparation.sharpen|Yujin_P_07"
-            },StringComparer.Ordinal);
+        private static readonly HashSet<string> declaredSources=new(StringComparer.Ordinal);
         private readonly HashSet<string> committed=new HashSet<string>(StringComparer.Ordinal);
         private bool disposed;
         public bool Enabled{get;set;}=true;
@@ -55,20 +32,22 @@ namespace ProjectAbyss.Abilities
                 foreach(var graph in Resources.LoadAll<YujinNativeAbilityDefinition>(
                     "ProjectAbyss/NativeYujin"))
                 {
-                    if(graph==null||!graph.IsValid||
-                       !knownKeys.Contains(graph.StableId+"|"+graph.SourceAssetName))continue;
+                    if(graph==null)continue;
+                    declaredSources.Add(graph.StableId+"|"+graph.SourceAssetName);
+                    if(!graph.IsValid)continue;
                     if(!found.TryAdd(graph.StableId,graph))duplicates.Add(graph.StableId);
                 }
                 foreach(var duplicate in duplicates)found.Remove(duplicate);
                 catalog=found;return found;
             }
         }
-        public static void ResetCatalogCache()=>catalog=null;
+        public static void ResetCatalogCache(){catalog=null;declaredSources.Clear();}
         public static bool IsKnownSource(SkillDefinition d) =>
-            d!=null&&knownKeys.Contains(d.SkillId+"|"+d.name);
+            d!=null && IsDeclared(d);
+        private static bool IsDeclared(SkillDefinition d){_=Catalog;return declaredSources.Contains(d.SkillId+"|"+d.name);}
         public static bool IsRegisteredNativeSource(SkillDefinition d) =>
             IsKnownSource(d)&&Catalog.TryGetValue(d.SkillId,out var graph)&&
-            graph.SourceAssetName==d.name&&graph.Operations.Length==d.EffectEntries?.Count;
+            graph.SourceAssetName==d.name;
         public bool CanRoute(SkillDefinition d) =>
             Enabled&&!disposed&&IsRegisteredNativeSource(d);
 
@@ -83,7 +62,7 @@ namespace ProjectAbyss.Abilities
             for(int i=0;i<graph.Operations.Length;i++)
             {
                 var op=graph.Operations[i];
-                var diagnostic=d.EffectEntries[i]?.Definition;
+                var diagnostic=d.EffectEntries!=null && i<d.EffectEntries.Count?d.EffectEntries[i]?.Definition:null;
                 if(op.Timing!=timing||(op.RestrictToRoll&&
                     context?.RollNumber!=op.RollNumber)||
                     (context?.IsOneSided==true&&
@@ -113,7 +92,7 @@ namespace ProjectAbyss.Abilities
                     list.Add(SkillEffectResult.NotScheduled(diagnostic,timing));
                     continue;
                 }
-                bool applied=Apply(op,context);
+                bool applied=context.BattleContext.Abilities.ExecuteSpecialist(graph.StableId,graph.SourceAssetGuid,i,context,true,_=>Apply(op,context));
                 if(applied){committed.Add(token);AppliedCount++;}
                 list.Add(applied?SkillEffectResult.Applied(diagnostic,timing,context):
                     SkillEffectResult.ConditionFailed(diagnostic,timing,context,
@@ -287,8 +266,7 @@ namespace ProjectAbyss.Abilities
                     if(amount<=0||!y.TryConsumeAnyMarkForPreparation(amount))return false;
                     owner.AddBlock(20);return true;
                 case YujinNativeOperation.ConsumeMarkForSwift:
-                    return amount>0&&y.TryConsumeAnyMarkForPreparation(amount)&&
-                        Defer(c,owner,null,StatusEffectId.Swift,1);
+                    return y.SharpenWeapon(y.MarkRules.SharpenMarkBonus);
                 case YujinNativeOperation.ForceMarkIgnition:
                     return target!=null&&y.ForceMarkIgnition(
                         target,part,c.Action).Applied;

@@ -1,3 +1,4 @@
+using ProjectAbyss.Abilities;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -54,8 +55,18 @@ public sealed class HifumiMechanic :
     IFervorTurnEndGainModifier,
     IForcedRollFailureRule,
     IForcedRollJudgmentRule,
-    IExchangeContinuationRule
+    IExchangeContinuationRule, IAbilityExecutionScopeProvider
 {
+    public HifumiCounterExecutionContext CurrentCounterExecution { get; private set; }
+    public string WeaponInstanceId=>string.Empty;
+    public void CaptureAbilityFacts(BattleAction action,IDictionary<FactKey,int> facts)
+    {
+        long id=LiveSlotQuery.ActorRuntimeId(owner);
+        facts[new FactKey(id,ConditionScope.Actor,ConditionFact.ResourceAmount,"hifumi.bone")]=bone;
+        facts[new FactKey(id,ConditionScope.Actor,ConditionFact.ResourceAmount,"hifumi.advance")]=advanceBone;
+        if(CurrentCounterExecution!=null)foreach(var fact in CurrentCounterExecution.StartFacts)
+            facts[new FactKey(id,ConditionScope.Actor,ConditionFact.ResourceAmount,"counter.start/"+fact.Key)]=(int)fact.Value;
+    }
     public const int MaxBone = 500;
     public const int BonePerTier = 100;
     public const int MaxBoneTier = 5;
@@ -673,6 +684,7 @@ public sealed class HifumiMechanic :
         int before=bone;
         int requested=Mathf.Max(0,amount);
         bone=(int)System.Math.Min(MaxBone,(long)bone+requested);
+        if(CurrentCounterExecution!=null)CurrentCounterExecution.NewlyGrantedResources+=bone-before;
         return LastBoneGrant=new BoneGrantResult(requested,before,bone,reason,cause);
     }
 
@@ -1425,6 +1437,15 @@ public sealed class HifumiMechanic :
             return;
         }
 
+        var parent=sourceAction.GetEffectCause(AbilityEventKind.ClashCompleted,-1);
+        var cause=new EffectCause(parent.RootActionId,parent.EventId,battleContext.EventSequence.Next(),
+            sourceAction.Skill?.Definition?.SkillId??"hifumi.counter",LiveSlotQuery.ActorRuntimeId(owner),-1,EffectOriginKind.Reaction);
+        var counter=new HifumiCounterExecutionContext(battleContext.EventSequence.Next(),initialCounterCount,cause,bone,advanceBone);
+        var previous=sourceAction.CounterExecution;var previousMechanic=CurrentCounterExecution;
+        sourceAction.CounterExecution=counter;CurrentCounterExecution=counter;bool completed=false;
+        try
+        {
+        battleContext.Abilities.CaptureBoundary(sourceAction,AbilitySnapshotPolicy.LockAtReactionStart,true);
         string skillId =
             sourceAction.Skill?.Definition?.SkillId;
 
@@ -1436,17 +1457,12 @@ public sealed class HifumiMechanic :
         bool isYukcham=skillId==HifumiSkillIds.Yukcham;
         bool isGoldan=skillId==HifumiSkillIds.Goldan;
 
-        int boneSnapshot = bone;
-        int tierSnapshot =
-            Mathf.Clamp(
-                boneSnapshot / BonePerTier,
-                0,
-                MaxBoneTier);
-
-        bool bloomSnapshot =
-            boneSnapshot + advanceBone >= BloomThreshold;
+        int tierSnapshot=counter.BoneTier;
+        bool bloomSnapshot=counter.Bloom;
         // Snapshot first, then spend once. Bone earned during this sequence belongs to the next action.
         if(isGoldan)ConsumeAllBonePaymentResources();
+        battleContext.Abilities.PublishCommitted(AbilityEventKind.CounterStarting,sourceAction,counter.Cause,parent,BattleAbilityRuntime.Reference(target,targetPart));
+        battleContext.Abilities.DrainEffects();
 
         int baseCounterPower =
             (isNormalCounter
@@ -1456,15 +1472,15 @@ public sealed class HifumiMechanic :
                   HifumiBasePowerBonus) +
             Mathf.Max(0, counterPowerBonus);
 
-        int pending = initialCounterCount;
-        int sequenceIndex = 0;
-        int attempted = 0;
 
-        while (pending > 0 &&
-               attempted < CounterSafetyLimit)
+
+
+
+        while (counter.PendingRolls > 0 &&
+               counter.AttemptedRolls < CounterSafetyLimit)
         {
-            pending--;
-            attempted++;
+            counter.PendingRolls--;
+            counter.AttemptedRolls++;
 
             if (owner.IsDead ||
                 sourceAction.OwnerPart == null ||
@@ -1498,7 +1514,7 @@ public sealed class HifumiMechanic :
                     RollType = CombatRollType.Attack,
                     PhysicalType =
                         PhysicalDamageResolver.Resolve(sourceAction),
-                    SequenceIndex = sequenceIndex,
+                    SequenceIndex = counter.ProcessedRolls,
                     SequenceCount = initialCounterCount,
                     Power = catastrophe
                         ? 0
@@ -1519,9 +1535,9 @@ public sealed class HifumiMechanic :
 
                 ApplyCatastropheSelfDamage();
                 if (owner != null && !owner.IsDead)
-                    pending++;
+                    counter.PendingRolls++;
 
-                sequenceIndex++;
+                counter.ProcessedRolls++;
                 continue;
             }
 
@@ -1543,7 +1559,7 @@ public sealed class HifumiMechanic :
                     applyGuard: true,
                     sourceAction: sourceAction);
 
-            var counterParent=sourceAction.GetEffectCause(ProjectAbyss.Abilities.AbilityEventKind.RollUsing,sourceAction.CurrentRollIndex);
+            var counterParent=counter.Cause;
             if(counterParent.IsKnown)request.SourceCause=counterParent.Derive(battleContext.EventSequence.Next(),ProjectAbyss.Abilities.EffectOriginKind.Reaction);
             if(canGoldanBreak)
                 request.BreakMode =
@@ -1557,13 +1573,13 @@ public sealed class HifumiMechanic :
             battleEvent?.RaiseReactiveRollResolved(
                 reactiveRoll);
 
-            sequenceIndex++;
+            counter.ProcessedRolls++;
         }
 
-        if(pending>0 && attempted>=CounterSafetyLimit)
+        if(counter.PendingRolls>0 && counter.AttemptedRolls>=CounterSafetyLimit)
             throw new System.InvalidOperationException("Counter processing budget exceeded after partial commit: action="+
-                sourceAction.ActionId+",pending="+pending+",seed="+battleContext?.RunProgression?.Seed);
-        if (attempted <= 0)
+                sourceAction.ActionId+",counter.PendingRolls="+counter.PendingRolls+",seed="+battleContext?.RunProgression?.Seed);
+        if (counter.ProcessedRolls <= 0)
             return;
 
         if (isYukcham)
@@ -1584,6 +1600,26 @@ public sealed class HifumiMechanic :
             }
 
             // The starting pool was paid before the first counter roll; preserve newly earned Bone.
+        }
+        completed=true;
+        }
+        finally
+        {
+            try
+            {
+            if(completed)
+            {
+                var result=counter.Cause.Derive(battleContext.EventSequence.Next(),EffectOriginKind.Reaction);
+                battleContext.Abilities.PublishCommitted(AbilityEventKind.CounterCompleted,sourceAction,result,counter.Cause,BattleAbilityRuntime.Reference(target,targetPart));
+                battleContext.Abilities.DrainEffects();
+            }
+            }
+            finally
+            {
+            battleContext.Abilities.State.Release(new AbilityScopeKey(AbilityOwnerScope.CounterExecution,LiveSlotQuery.ActorRuntimeId(owner),executionId:counter.ExecutionId));
+            battleContext.Abilities.Modifiers.ReleaseExecution(counter.ExecutionId,AbilityOwnerScope.CounterExecution);
+            sourceAction.CounterExecution=previous;CurrentCounterExecution=previousMechanic;
+            }
         }
     }
 

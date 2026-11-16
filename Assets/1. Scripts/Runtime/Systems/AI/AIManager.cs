@@ -86,7 +86,11 @@ public class AIManager
         EnsureAllEnemySlotsCommitted();
         HifumiProvocationTargeting.ApplyToExecutionSlots(actionManager.Slots);
         foreach (var slot in actionManager.Slots)
-            if (slot?.Owner is Enemy) slot.TargetLockedAtPublication = true;
+            if (slot?.Owner is Enemy)
+            {
+                slot.TargetLockedAtPublication = true;
+                slot.Owner.BattleContext?.Abilities.CaptureBoundary(new BattleAction{Slot=slot},ProjectAbyss.Abilities.AbilitySnapshotPolicy.LockAtTargetReveal,true);
+            }
     }
 
 

@@ -44,8 +44,8 @@ namespace ProjectAbyss.Abilities
             var f=read.Frame.Facts;
             return fact switch
             {
-                CombatEventFact.RollSucceeded=>f.RollSucceeded,
-                CombatEventFact.RollFailed=>f.RollNumber>0 && !f.RollSucceeded,
+                CombatEventFact.RollSucceeded=>f.RollOutcomeKnown && f.RollSucceeded,
+                CombatEventFact.RollFailed=>f.RollOutcomeKnown && f.RollNumber>0 && !f.RollSucceeded,
                 CombatEventFact.CriticalRoll=>f.CriticalRoll,
                 CombatEventFact.ClashOnly=>f.IsClash,
                 CombatEventFact.OneSidedOnly=>f.IsOneSided,

@@ -73,6 +73,7 @@ public class BattleEvent : IDisposable
         if (IsDisposed)
             return;
 
+        action?.Owner?.BattleContext?.Abilities.ActionStarting(action);
         InvokeSafely(
             OnActionStart,
             action,
@@ -88,6 +89,7 @@ public class BattleEvent : IDisposable
             OnActionEnd,
             action,
             nameof(OnActionEnd));
+        action?.Owner?.BattleContext?.Abilities.ActionEnded(action);
     }
 
     //-----------------------------------
@@ -586,6 +588,7 @@ public class BattleEvent : IDisposable
             OnClashResolved,
             context,
             nameof(OnClashResolved));
+        (context?.FirstAction?.Owner??context?.SecondAction?.Owner)?.BattleContext?.Abilities.ClashCompleted(context);
     }
 
     //-----------------------------------

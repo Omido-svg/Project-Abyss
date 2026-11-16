@@ -12,6 +12,8 @@ public enum TurnStartEnergyPolicy
 [CreateAssetMenu(menuName = "Character/Character Data")]
 public class CharacterData : ScriptableObject
 {
+    [Header("Composable ability rules")]
+    public ProjectAbyss.Abilities.AbilityRuleSetDefinition[] AbilityRules=System.Array.Empty<ProjectAbyss.Abilities.AbilityRuleSetDefinition>();
     [Header("Character")]
     public string CharacterName;
     public CombatantTier CombatantTier = CombatantTier.Player;

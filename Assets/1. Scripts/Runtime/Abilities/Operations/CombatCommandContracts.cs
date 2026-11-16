@@ -19,7 +19,8 @@ namespace ProjectAbyss.Abilities
         RestoreHp = 6,
         ChangeSkillSlot = 7,
         ScheduleAbility = 8,
-        RequestReactionAction = 9
+        RequestReactionAction = 9,
+        RegisteredEffect = 10
     }
 
     public enum CombatCommandOutcome

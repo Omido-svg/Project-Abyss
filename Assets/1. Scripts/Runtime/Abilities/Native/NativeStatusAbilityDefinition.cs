@@ -10,6 +10,7 @@ namespace ProjectAbyss.Abilities
     [UnityEngine.Scripting.APIUpdating.MovedFrom(true, "ProjectAbyss.Abilities", null, "R7NativeStatusAbilityDefinition")]
     public sealed class NativeStatusAbilityDefinition : ScriptableObject
     {
+        public AbilityRuleMetadata Rules=new();
         public int SchemaVersion=1;
         public string StableId;
         public string SourceAssetGuid;

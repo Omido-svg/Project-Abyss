@@ -16,6 +16,7 @@ public static class CombatRulesVerification
         UnityEngine.Random.InitState(1112);
         int passed = 0, failed = 0;
         var lines = new List<string>();
+        long fixtureActionId=100000;
         var objects = new List<UnityEngine.Object>();
         var preview = UnityEditor.SceneManagement.EditorSceneManager.NewPreviewScene();
         var ctx = new BattleContext { SuppressPresentation = true, RunProgression = new RunProgressionState() };
@@ -208,7 +209,7 @@ public static class CombatRulesVerification
                 int hits = 0;
                 foreach (var plannedSlot in planned)
                 {
-                    plannedSlot.ActionId = 1000 + hits;
+                    plannedSlot.ActionId = ++fixtureActionId;
                     var r = clash.ResolvePair(new ClashPair(plannedSlot));
                     hits += r?.Exchanges?.Count ?? 0;
                     victim.RestoreCurrentHP(10000);
@@ -225,9 +226,9 @@ public static class CombatRulesVerification
                 loseDef.ExchangeRollCount = 1;
                 var loseSkill = new DataDuelSkill(loseDef); loseSkill.Initialize(victim, ctx._battleEvent);
                 var victimPart = victim.BodyParts.First(p => !p.IsBroken);
-                var a = new ActionSlot { ActionId = 2001, Owner = enemy, Part = enemyPart, Skill = enemySkill,
+                var a = new ActionSlot { ActionId = ++fixtureActionId, Owner = enemy, Part = enemyPart, Skill = enemySkill,
                     TargetCharacter = victim, TargetPart = victimPart, Phase = ActionPhase.COMBAT };
-                var b = new ActionSlot { ActionId = 2002, Owner = victim, Part = victimPart, Skill = loseSkill,
+                var b = new ActionSlot { ActionId = ++fixtureActionId, Owner = victim, Part = victimPart, Skill = loseSkill,
                     TargetCharacter = enemy, TargetPart = enemyPart, Phase = ActionPhase.COMBAT };
                 var paired = clash.ResolvePair(new ClashPair(a, b));
                 Check("X02 " + rule.Kind + " 실제 결투 게이트 해결", paired?.Exchanges?.Any(e => e.IsDuelExchange) == true);

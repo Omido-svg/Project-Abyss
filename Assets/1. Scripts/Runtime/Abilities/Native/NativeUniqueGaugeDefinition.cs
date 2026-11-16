@@ -12,6 +12,7 @@ namespace ProjectAbyss.Abilities
     [UnityEngine.Scripting.APIUpdating.MovedFrom(true, "ProjectAbyss.Abilities", null, "R7NativeUniqueGaugeDefinition")]
     public sealed class NativeUniqueGaugeDefinition : ScriptableObject
     {
+        public AbilityRuleMetadata Rules=new();
         public int SchemaVersion=1;
         public string StableId;
         public string SourceAssetGuid;

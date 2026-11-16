@@ -188,8 +188,12 @@ public class DamageManager
             return null;
 
         var parentCause=request.SourceCause;
+        battleContext.EventSequence.Record(parentCause);
         if(parentCause.IsKnown)
             request.SourceCause=parentCause.Derive(battleContext.EventSequence.Next(),parentCause.OriginKind);
+        else request.SourceCause=new ProjectAbyss.Abilities.EffectCause(parentCause.RootActionId,parentCause.EventId,battleContext.EventSequence.Next(),
+            parentCause.SourceAbilityId,parentCause.SourceActorId,parentCause.SourceRollIndex,ProjectAbyss.Abilities.EffectOriginKind.Unknown);
+        battleContext.EventSequence.Record(request.SourceCause);
         DamageContext context =
             new DamageContext(request);
 
@@ -203,7 +207,7 @@ public class DamageManager
         // 확정된 뒤에 연다. 따라서 창을 여는 그 타격은 기존 HP 내성을 받는다.
         StaggerGaugeMechanic stagger =
             context.Action?.Skill?.IsRed == true &&
-            context.Action.Owner?.GetMechanic<StageOneEnemyMechanic>()?.NegateConfessionDamage(context.Action) != true
+            !CombatRuleHooks.NegatesDamage(context)
                 ? context.Target?.GetMechanic<StaggerGaugeMechanic>()
                 : null;
 

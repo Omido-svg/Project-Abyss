@@ -105,17 +105,7 @@ public class SpeedManager
         // 1029 §12.3: corrosion soldier leads with base speed 4..6,
         // while other stage-1 mobs use the normal 1..6 range. Swift/Bind
         // remain separate maximum-speed changes below.
-        if(character is NormalEnemy &&
-           character.GetMechanic<NormalEnemyRoleMechanic>()?.Species==
-               EnemySpecies.Corrosion)
-        {
-            minSpeed=4;
-            maxSpeed=6;
-        }
-
-        int canonicalRangePenalty = character.GetMechanic<StageOneEnemyMechanic>()?.SpeedRangePenalty ?? 0;
-        minSpeed = Mathf.Max(1, minSpeed - canonicalRangePenalty);
-        maxSpeed = Mathf.Max(minSpeed, maxSpeed - canonicalRangePenalty);
+        CombatRuleHooks.ModifySpeedRange(character,ref minSpeed,ref maxSpeed);
         int weakenedSpeedMaxPenalty = 0;
         bool suppressSingleWeakenedPenalty =
             EmotionAugmentRuntimeHooks
@@ -162,6 +152,7 @@ public class SpeedManager
             maxSpeed+CommonStatusSpeedRules.GetSpeedMaximumIncrease(character,part));
         // Bind may reduce Corrosion's base 4..6 maximum below its old
         // minimum. Keep a legal roll interval, preserving global floor 1.
+        maxSpeed=Mathf.Max(1,character.BattleContext?.Abilities.Modifiers.Apply(ProjectAbyss.Abilities.CombatModifierStage.Speed,character,maxSpeed,null,part)??maxSpeed);
         minSpeed=Mathf.Clamp(minSpeed,1,maxSpeed);
 
         return (minSpeed,maxSpeed);

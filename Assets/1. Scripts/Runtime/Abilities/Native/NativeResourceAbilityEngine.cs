@@ -62,6 +62,7 @@ namespace ProjectAbyss.Abilities
             if(instance.Identity.OwnerActorRuntimeId!=
                 LiveSlotQuery.ActorRuntimeId(owner))
                 throw new InvalidOperationException("Native ability action/actor identity conflict");
+            evt=owner.BattleContext.Abilities.CaptureFrame(instance.Identity,action,evt,data.Rules).ToEventContext();
             var planned=planner.Plan(instance,evt,new Matcher(data.Trigger),
                 null,new OwnerTarget(owner),
                 new IEffectOperation[]{new ChangeResourceOperation(amount)});

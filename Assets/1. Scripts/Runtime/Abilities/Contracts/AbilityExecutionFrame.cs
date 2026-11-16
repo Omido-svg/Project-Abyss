@@ -45,10 +45,10 @@ namespace ProjectAbyss.Abilities
     public readonly struct AbilityEventFacts
     {
         public readonly int RollNumber;
-        public readonly bool RollSucceeded, CriticalRoll, IsClash, IsOneSided;
-        public AbilityEventFacts(int rollNumber,bool succeeded,bool critical,bool clash,bool oneSided)
+        public readonly bool RollSucceeded, CriticalRoll, IsClash, IsOneSided, RollOutcomeKnown;
+        public AbilityEventFacts(int rollNumber,bool succeeded,bool critical,bool clash,bool oneSided,bool rollOutcomeKnown=true)
         {
-            RollNumber=rollNumber; RollSucceeded=succeeded; CriticalRoll=critical;
+            RollOutcomeKnown=rollOutcomeKnown;RollNumber=rollNumber; RollSucceeded=succeeded; CriticalRoll=critical;
             IsClash=clash; IsOneSided=oneSided;
         }
     }
@@ -56,6 +56,12 @@ namespace ProjectAbyss.Abilities
     /// <summary>Immutable execution envelope. Unavailable legacy IDs stay zero rather than being invented.</summary>
     public sealed class AbilityExecutionFrame
     {
+        public EffectCause ObservedCause { get; }
+        public EffectCause ObservedParent { get; }
+        public IReadOnlyCombatProvenance Provenance { get; internal set; }
+        public IReadOnlyScopedAbilityState State { get; private set; }
+        internal void AttachState(IReadOnlyScopedAbilityState state)
+        {if(State!=null)throw new InvalidOperationException("Execution state already attached");State=state;}
         public AbilityExecutionUnit Unit { get; }
         public long TurnId { get; }
         public long ActionId { get; }
@@ -84,8 +90,9 @@ namespace ProjectAbyss.Abilities
             ConditionSnapshot snapshot=null, AbilityExecutionUnit unit=AbilityExecutionUnit.Action,
             long turnId=0,long clashId=0,long exchangeId=0,long rollUseId=0,
             long damageResolutionId=0,long skillExecutionId=0,long counterExecutionId=0,
-            string weaponInstanceId=null,bool legacyProjection=false)
+            string weaponInstanceId=null,bool legacyProjection=false, EffectCause observedCause=default, EffectCause observedParent=default)
         {
+            ObservedCause=observedCause;ObservedParent=observedParent;
             Ability=ability; EventKind=kind; ActionId=actionId; Cause=cause;
             Source=source; AimedTarget=aimed; ActualDamageTarget=actual; Facts=facts;
             DuelEffectsEligible=duelEligible; SnapshotPolicy=snapshotPolicy; Snapshot=snapshot;

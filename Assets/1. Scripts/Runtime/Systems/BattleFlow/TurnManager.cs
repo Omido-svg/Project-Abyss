@@ -79,6 +79,7 @@ public class TurnManager
 
             battleContext?._battleEvent?
                 .RaiseBattleStarted();
+            battleContext?.Abilities.BattleStarted();
 
             StartTurnInternal();
         }
@@ -134,6 +135,7 @@ public class TurnManager
         }
 
         // Gameplay v5: 모든 턴은 기세 0에서 시작한다. 직전 턴 발악 예약은 여기서 활성화된다.
+        battleContext?.Abilities.BeginTurn(CurrentTurn);
         momentumManager?.BeginTurn();
 
         Debug.Log(
@@ -157,6 +159,7 @@ public class TurnManager
 
         battleContext?._battleEvent?
             .RaiseTurnStart(CurrentTurn);
+        battleContext?.Abilities.Lifecycle(ProjectAbyss.Abilities.AbilityEventKind.TurnStarting);
 
         speedManager?.RollAllSpeed();
         speedManager?.PrintSpeeds();
@@ -472,6 +475,7 @@ public class TurnManager
 
         battleContext?._battleEvent?
             .RaiseTurnEnd(CurrentTurn);
+        battleContext?.Abilities.Lifecycle(ProjectAbyss.Abilities.AbilityEventKind.TurnEnding);
 
         // 턴 최종 기세를 먼저 고조로 환산한 뒤, 다음 턴 발악 상태를 예약한다.
         battleContext?.Services?.FervorManager?
@@ -593,6 +597,8 @@ public class TurnManager
         lifecycleGuard?.EndBattle();
         battleContext?.TurnStartEffects.Clear();
         battleContext?.TemporaryCards.Clear();
+        battleContext?.Abilities.Lifecycle(ProjectAbyss.Abilities.AbilityEventKind.GlobalBattleEnded);
+        battleContext?.DisposeAbilities();
         actionManager?.Clear();
     }
 
