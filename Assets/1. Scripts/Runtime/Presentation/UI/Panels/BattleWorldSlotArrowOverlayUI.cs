@@ -689,7 +689,7 @@ public sealed class BattleWorldSlotArrowOverlayUI : MonoBehaviour
                 if (battle.Enemies != null)
                     foreach (var enemy in battle.Enemies)
                         if (enemy != null &&
-                            ProjectAbyss.Abilities.R4LiveSlotQuery.ActorRuntimeId(enemy)
+                            ProjectAbyss.Abilities.LiveSlotQuery.ActorRuntimeId(enemy)
                                 == hit.ActorRuntimeId)
                         { actor = enemy; break; }
                 if (actor == null || actor.IsDead) continue;

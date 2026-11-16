@@ -30,7 +30,7 @@ public static class EnemyNativeContentVerification
         Check(EnemyCombatNativeContract.All.Count==7,
             "E02 seven GUID-approved skill identities");
 
-        var graphs=Resources.LoadAll<R7NativeMixedAbilityDefinition>(
+        var graphs=Resources.LoadAll<NativeMixedAbilityDefinition>(
             "ProjectAbyss/NativeMixed");
         Check(graphs.Length>=7,"E03 R7-4 source-native mixed graph catalog available");
         Check(EnemyCombatNativeContract.All.Count(x=>x.Preparation)==1,
@@ -76,8 +76,8 @@ public static class EnemyNativeContentVerification
               "E06 elite Preparation source-locked native graph pair");
 
         var battle=new BattleContext();
-        var mixed=new R7ProductionLegacyStatusMigration(battle);
-        var preparation=new R7ProductionPreparationStatusMigration(battle);
+        var mixed=new MixedAbilityBinding(battle);
+        var preparation=new PreparationStatusAbilityBinding(battle);
         try
         {
             Check(sources.Where(x=>x.skill.ActionType!=ActionType.Preparation)
@@ -109,11 +109,11 @@ public static class EnemyNativeContentVerification
         Check(EnemyCombatNativeContract.ChooseIndependentDuel(
             0f,1f,true,false,false),
             "E13 when only an affordable Duel exists choose that skill");
-        Check(EnemyCombatNativeContract.RoleHp(EnemyRole0922.Buffer)==70&&
-              EnemyCombatNativeContract.RoleHp(EnemyRole0922.Debuffer)==80&&
-              EnemyCombatNativeContract.RoleHp(EnemyRole0922.Attacker)==90&&
-              EnemyCombatNativeContract.RoleHp(EnemyRole0922.Duelist)==90&&
-              EnemyCombatNativeContract.RoleHp(EnemyRole0922.Tank)==105,
+        Check(EnemyCombatNativeContract.RoleHp(EnemyRole.Buffer)==70&&
+              EnemyCombatNativeContract.RoleHp(EnemyRole.Debuffer)==80&&
+              EnemyCombatNativeContract.RoleHp(EnemyRole.Attacker)==90&&
+              EnemyCombatNativeContract.RoleHp(EnemyRole.Duelist)==90&&
+              EnemyCombatNativeContract.RoleHp(EnemyRole.Tank)==105,
               "E14 1029 normal enemy role-specific HP");
         Check(EnemyEncounterRules.RollEnemyCount(.249f)==3&&
               EnemyEncounterRules.RollEnemyCount(.251f)==4,
@@ -147,7 +147,7 @@ public static class EnemyNativeContentVerification
         string Read(string n)=>File.ReadAllText(sourceFiles.Single(
             x=>Path.GetFileName(x)==n));
         string dispatcher=Read("SkillEffectDispatcher.cs");
-        string coordinator=Read("NormalEnemy0922RoleMechanic.cs");
+        string coordinator=Read("NormalEnemyRoleMechanic.cs");
         string normal=Read("NormalEnemy.cs");
         Check(dispatcher.Contains(
             "EnemyCombatNativeContract.HasKnownSkillId(")&&
@@ -155,7 +155,7 @@ public static class EnemyNativeContentVerification
             "E17 native enemy route cannot fall back to legacy TryApply");
         Check(!coordinator.Contains("RollDuelQuota(Random.value)")&&
               coordinator.Contains("EnemySpeciesPolicy.ChooseAvailable(")&&
-              coordinator.Contains("new EnemyDuelQuotaPlan0922(0,actualDuels,false)"),
+              coordinator.Contains("new EnemyDuelQuotaPlan(0,actualDuels,false)"),
               "E18 actual normal-enemy coordinator has no global duel allocation");
         Check(normal.Contains("skill.CanUseByResource(this)")&&
               coordinator.Contains("x.CanUseByResource(enemy)"),

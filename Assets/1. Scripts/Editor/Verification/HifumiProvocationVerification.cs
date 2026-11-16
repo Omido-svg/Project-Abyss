@@ -23,16 +23,16 @@ public static class HifumiProvocationVerification
         var second=new CombatSlotRef(201,"TAUNT-LEG","LEG",0);
         var attacks=new[]
         {
-            new R4IncomingAim(31,12,5,original),
-            new R4IncomingAim(32,8,1,original),
-            new R4IncomingAim(33,10,3,original),
-            new R4IncomingAim(34,4,2,original)
+            new IncomingAim(31,12,5,original),
+            new IncomingAim(32,8,1,original),
+            new IncomingAim(33,10,3,original),
+            new IncomingAim(34,4,2,original)
         };
         var taunts=new[]{
-            new R4TauntTarget(first,2,true),
-            new R4TauntTarget(second,1,true)
+            new TauntTarget(first,2,true),
+            new TauntTarget(second,1,true)
         };
-        var result=R4TauntAimPlanner.Plan(attacks,taunts,20261103);
+        var result=TauntAimPlanner.Plan(attacks,taunts,20261103);
         Check("N=2 redirects 2 ATTACK ACTIONS, not rolls",
             result.Count(x=>x.WasForced&&x.ResolvedSlot.Equals(first))==2);
         Check("highest speeds 12,10 consume highest taunt first",
@@ -44,16 +44,16 @@ public static class HifumiProvocationVerification
         Check("surplus attack remains originally aimed",
             result.Single(x=>x.ActionId==34).ResolvedSlot.Equals(original)&&
             !result.Single(x=>x.ActionId==34).WasForced);
-        var reversed=R4TauntAimPlanner.Plan(attacks.Reverse(),
+        var reversed=TauntAimPlanner.Plan(attacks.Reverse(),
             taunts.Reverse(),20261103);
         Check("stable seeded tie selection independent from input order",
             result.Select(x=>x.ActionId+":"+x.ResolvedSlot.PartId)
               .SequenceEqual(reversed.Select(x=>x.ActionId+":"+x.ResolvedSlot.PartId)));
-        var invalid=R4TauntAimPlanner.Plan(attacks,
-            new[]{new R4TauntTarget(first,99,false)},42);
+        var invalid=TauntAimPlanner.Plan(attacks,
+            new[]{new TauntTarget(first,99,false)},42);
         Check("invalid/untargetable part cannot steal attack",
             invalid.All(x=>!x.WasForced&&x.ResolvedSlot.Equals(original)));
-        var nulls=R4TauntAimPlanner.Plan(Array.Empty<R4IncomingAim>(),taunts,3);
+        var nulls=TauntAimPlanner.Plan(Array.Empty<IncomingAim>(),taunts,3);
         Check("no attacking actions means no forced targets",nulls.Count==0);
         var paths=Directory.GetFiles(Application.dataPath,"*.cs",SearchOption.AllDirectories);
         var builder=File.ReadAllText(paths.Single(p=>Path.GetFileName(p)=="ClashBuilder.cs"));
@@ -62,7 +62,7 @@ public static class HifumiProvocationVerification
         Check("real execution queue calls native provocation",
             builder.Contains("HifumiProvocationTargeting.ApplyToExecutionSlots(combatSlots)"));
         Check("runtime reuses R4 planner and redirects TargetPart",
-            router.Contains("R4TauntAimPlanner.Plan(")&&
+            router.Contains("TauntAimPlanner.Plan(")&&
             router.Contains("pair.Key.TargetPart=pair.Value;")&&
             router.Contains("PreviewTargetParts("));
         Check("no reassignment of unrelated targets",

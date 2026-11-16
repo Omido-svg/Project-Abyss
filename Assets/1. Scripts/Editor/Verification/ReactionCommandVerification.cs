@@ -31,9 +31,9 @@ public static class ReactionCommandVerification
             else{fail++;Debug.LogError("[R5-Reaction] FAIL "+id+" | "+detail);}
         }
         var scheduler=new BattleReactionScheduler();
-        var reactions=new R5ReactionRequestCommandBackend(scheduler);
+        var reactions=new ReactionRequestCommandBackend(scheduler);
         var damage=new DamageBackend();
-        var composite=new R5CompositeCommandBackend(damage,reactions);
+        var composite=new CompositeCommandBackend(damage,reactions);
         var ability=new AbilityInstance(new AbilityDefinitionRef("R5-REACTION-PROBE","none"),
             new AbilityIdentity("R5-REACTION-PROBE",101,"SLOT",0));
         var e=new AbilityEventContext(AbilityEventKind.RollUsing,50001,60001,101,0,false,false);
@@ -134,7 +134,7 @@ public static class ReactionCommandVerification
             mixed.Records[1].Receipt.AppliedAmount==0 &&
             mixed.Records[1].Receipt.AbsorbedAmount==0 &&
             ability.RuntimeState.SuccessfulActivationCount==1);
-        var ambiguous=new R5CompositeCommandBackend(damage,new DamageBackend());
+        var ambiguous=new CompositeCommandBackend(damage,new DamageBackend());
         Check("I12 two providers for same command type reject routing",
             !ambiguous.CanApply(CombatCommandKind.DealDamage) &&
             ambiguous.Apply(d4).Outcome==CombatCommandOutcome.Rejected);

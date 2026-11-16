@@ -30,7 +30,7 @@ public static class PreparationNativeUndoParity
         if(!Application.isPlaying)
             throw new InvalidOperationException("Requires Play Mode.");
         var battle=UnityEngine.Object.FindFirstObjectByType<BattleManager>()?.BattleContext;
-        var router=battle?.Services?.R7PreparationStatusMigration;
+        var router=battle?.Services?.PreparationStatusAbilities;
         var prefab=AssetDatabase.LoadAssetAtPath<GameObject>(
             "Assets/2. Data/TestEncounters/Prefabs/Hifumi_Test.prefab");
         var d=AssetDatabase.LoadAssetAtPath<SkillDefinition>(
@@ -55,7 +55,7 @@ public static class PreparationNativeUndoParity
         try
         {
             Check("P01 approved native preparation default enabled",
-                router.Enabled&&R7ProductionPreparationStatusMigration.SkillId==d.SkillId);
+                router.Enabled&&PreparationStatusAbilityBinding.SkillId==d.SkillId);
             router.Enabled=false;
             Check("P02 starting status identical",Status(a)==Status(b));
             var before=Status(a);

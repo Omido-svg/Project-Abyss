@@ -27,10 +27,10 @@ public static class NativeSOStatusParityVerification
         var actor=c?.Player;
         var targets=c?.Enemies?.Where(x=>x!=null&&!x.IsDead&&!x.UsesBodyParts)
             .Take(2).ToArray();
-        var router=c?.Services?.R7NativeBleedingMigration;
+        var router=c?.Services?.StatusAbilities;
         if(router==null||actor==null||targets?.Length!=2||c.SkillUpgrades==null)
             throw new InvalidOperationException("Two targets / native router required");
-        var graphs=Resources.LoadAll<R7NativeStatusAbilityDefinition>(
+        var graphs=Resources.LoadAll<NativeStatusAbilityDefinition>(
             "ProjectAbyss/NativeStatuses").OrderBy(x=>x.StableId).ToArray();
         var catalog=AssetDatabase.FindAssets("t:SkillDefinition")
             .Select(g=>AssetDatabase.LoadAssetAtPath<SkillDefinition>(
@@ -65,9 +65,9 @@ public static class NativeSOStatusParityVerification
                     graph.SourceAssetGuid==AssetDatabase.AssetPathToGUID(
                         AssetDatabase.GetAssetPath(d)));
                 Check("S03 compiled upgrade levels "+graph.StableId,
-                    graph.Level0Stacks==NativeStatusAssetMigration.ResolveStacks(d,0)&&
-                    graph.Level1Stacks==NativeStatusAssetMigration.ResolveStacks(d,1)&&
-                    graph.Level2Stacks==NativeStatusAssetMigration.ResolveStacks(d,2));
+                    graph.Level0Stacks==NativeStatusUpgradeValues.ResolveStacks(d,0)&&
+                    graph.Level1Stacks==NativeStatusUpgradeValues.ResolveStacks(d,1)&&
+                    graph.Level2Stacks==NativeStatusUpgradeValues.ResolveStacks(d,2));
                 if(HistoricalParityScope.IsSupersededSource(d))
                 {
                     Check("S03b final native/event owner "+graph.StableId,

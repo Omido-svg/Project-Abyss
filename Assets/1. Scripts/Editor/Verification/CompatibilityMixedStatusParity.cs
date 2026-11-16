@@ -36,7 +36,7 @@ public static class CompatibilityMixedStatusParity
     {
         if(!Application.isPlaying)throw new InvalidOperationException("Play Mode only");
         var battle=UnityEngine.Object.FindFirstObjectByType<BattleManager>()?.BattleContext;
-        var router=battle?.Services?.R7LegacyStatusMigration;
+        var router=battle?.Services?.MixedAbilities;
         var owner=battle?.Player;
         var prefab=AssetDatabase.LoadAssetAtPath<GameObject>(
             "Assets/2. Data/TestEncounters/Prefabs/Hifumi_Test.prefab");
@@ -77,7 +77,7 @@ public static class CompatibilityMixedStatusParity
             Check("M00 factory enables seven legacy-status native assets",
                 original);
             Check("M01 exactly seven approved skill asset IDs",
-                R7ProductionLegacyStatusMigration.ApprovedSkillCount==7);
+                MixedAbilityBinding.ApprovedSkillCount==7);
             Check("M02 two identical test targets",
                 left.CurrentHP==right.CurrentHP&&
                 (left.GetPartStatus<Bleeding>(partA)?.Stack??0)==

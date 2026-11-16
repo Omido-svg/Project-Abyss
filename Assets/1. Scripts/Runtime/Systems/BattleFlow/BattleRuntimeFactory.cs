@@ -52,14 +52,14 @@ public static class BattleRuntimeFactory
 
         services.ReactionLifetimeRegistry?.ClearForBattleEnd();
         services.SpecialistReactionRegistry?.ClearForBattleEnd();
-        services.R7NativeResourceMigration?.Dispose();
-        services.R7NativeBleedingMigration?.Dispose();
-        services.R7NativeUniqueGaugeMigration?.Dispose();
-        services.R7LegacyStatusMigration?.Dispose();
-        services.R7PreparationStatusMigration?.Dispose();
-        services.R7SingleEffectMigration?.Dispose();
-        services.R7OlafNativeMigration?.Dispose();
-        services.R7YujinNativeMigration?.Dispose();
+        services.ResourceAbilities?.Dispose();
+        services.StatusAbilities?.Dispose();
+        services.UniqueGaugeAbilities?.Dispose();
+        services.MixedAbilities?.Dispose();
+        services.PreparationStatusAbilities?.Dispose();
+        services.SingleEffectAbilities?.Dispose();
+        services.OlafAbilities?.Dispose();
+        services.YujinAbilities?.Dispose();
 
         services.CoroutineHost =
             new UnityBattleCoroutineHost(coroutineOwner);
@@ -110,44 +110,44 @@ public static class BattleRuntimeFactory
         // is auto-registered. Hifumi's existing OnClashResolved handler remains
         // the only executor until that content is explicitly migrated.
         services.ReactionScheduler = new BattleReactionScheduler();
-        services.ReactionActionRegistry = new R6ReactionActionRegistry();
+        services.ReactionActionRegistry = new ReactionActionRegistry();
 
         services.ReactionLifetimeRegistry = new ReactionLifetimeRegistry();
-        services.ActionResolver.EnableR6ReactionLifetime(
+        services.ActionResolver.EnableReactionLifetime(
             services.ReactionLifetimeRegistry);
-        services.SpecialistReactionRegistry = new R6SpecialistReactionRegistry();
+        services.SpecialistReactionRegistry = new SpecialistReactionRegistry();
         // R7 first production cohort: 15 uniquely identified, single-resource
         // effect cards. Each executes native R5 commands; all others legacy.
         // Per-battle Enabled toggle allows safe rollback without asset edits.
-        services.R7NativeResourceMigration =
-            new R7ProductionNativeResourceMigration();
+        services.ResourceAbilities =
+            new ResourceAbilityBinding();
         // R7 production blood wound native cohort: nine unique stable
         // single-effect skills, status resolved only by R5/BattleEffectResolver.
         // Per-battle Enabled=false instantly restores the legacy path.
-        services.R7NativeBleedingMigration =
-            new R7ProductionNativeBleedingMigration(context);
-        services.R7NativeUniqueGaugeMigration =
-            new R7ProductionNativeUniqueGaugeMigration();
+        services.StatusAbilities =
+            new StatusAbilityBinding(context);
+        services.UniqueGaugeAbilities =
+            new UniqueGaugeAbilityBinding();
         // Seven verified non-Preparation legacy/mixed status cards:
         // only Bleeding status entry uses native R5 command; mixed damage
         // entries retain exactly their original dispatch order.
         // Per-battle Enabled=false reverts this cohort to legacy.
-        services.R7LegacyStatusMigration =
-            new R7ProductionLegacyStatusMigration(context);
+        services.MixedAbilities =
+            new MixedAbilityBinding(context);
         // R7 first native Preparation cohort; two status entries run via
         // typed R5 commands with exact PlanningUndoJournal merge/new undo.
         // Third setup entry remains on the original specialist.
-        services.R7PreparationStatusMigration =
-            new R7ProductionPreparationStatusMigration(context);
-        services.R7SingleEffectMigration =
+        services.PreparationStatusAbilities =
+            new PreparationStatusAbilityBinding(context);
+        services.SingleEffectAbilities =
             new SingleEffectRuntimeBinding(context);
-        services.R7OlafNativeMigration =
+        services.OlafAbilities =
             new OlafNativeAbilityRuntimeBinding();
-        services.R7YujinNativeMigration =
+        services.YujinAbilities =
             new YujinNativeAbilityRuntimeBinding();
-        services.ActionResolver.EnableR6ReactionExecution(
+        services.ActionResolver.EnableReactionExecution(
             services.ReactionScheduler,services.ReactionActionRegistry);
-        services.ActionResolver.EnableR6SpecialistReactions(
+        services.ActionResolver.EnableSpecialistReactions(
             services.SpecialistReactionRegistry);
 
         services.ClashBuilder =

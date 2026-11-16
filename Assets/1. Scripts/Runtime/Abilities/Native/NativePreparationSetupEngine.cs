@@ -20,7 +20,7 @@ namespace ProjectAbyss.Abilities
         {
             private readonly CombatTargetRef target;
             public FixedTarget(Character c)=>target=new CombatTargetRef(
-                R4LiveSlotQuery.ActorRuntimeId(c),"","");
+                LiveSlotQuery.ActorRuntimeId(c),"","");
             public IReadOnlyList<CombatTargetRef> Select(IReadOnlyAbilityContext _)=>
                 new[]{target};
         }
@@ -60,7 +60,7 @@ namespace ProjectAbyss.Abilities
                 new FixedTarget(owner),plannedOps);
             if(plan.Commands.Count!=kinds.Count || plan.Result.AppliedCommands!=0)
                 return false;
-            var commands=R5PlannedCommandBridge.Materialize(
+            var commands=PlannedCommandBridge.Materialize(
                 instance,cause,plan,
                 "NativePrepSetup:"+data.SourceAssetGuid+":"+cause.ActionId+
                     ":"+cause.Kind+":"+cause.RollUseIndex,

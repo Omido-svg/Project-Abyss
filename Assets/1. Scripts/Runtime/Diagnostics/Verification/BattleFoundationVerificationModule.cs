@@ -544,4 +544,4 @@ public sealed class BattleFoundationVerificationModule : IGameSystemVerification
         return ok ? GameSystemVerificationProbeResult.Pass("Fallback=1..8")
                   : GameSystemVerificationProbeResult.Fail($"Fallback={NormalEnemyRuntimeSkill.FallbackDiceMin}..{NormalEnemyRuntimeSkill.FallbackDiceMax}");
     }
-}
+}

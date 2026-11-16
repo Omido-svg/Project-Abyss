@@ -71,7 +71,7 @@ namespace ProjectAbyss.Abilities
                 return new[]{SkillEffectResult.Failed(diagnostic,timing,context,
                     "R7-3 requires a valid action, slot and owner.")};
             var evt=new AbilityEventContext(kind,action.ActionId,action.ActionId,
-                R4LiveSlotQuery.ActorRuntimeId(context.Owner),
+                LiveSlotQuery.ActorRuntimeId(context.Owner),
                 context.RollIndex,action.DuelEffectsEligible,context.IsOneSided);
             bool applied=engine.Execute(graph,context,evt);
             return new[]{applied

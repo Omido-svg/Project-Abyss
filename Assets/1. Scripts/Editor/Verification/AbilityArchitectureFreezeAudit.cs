@@ -59,7 +59,7 @@ public static class AbilityArchitectureFreezeAudit
             "DamagePipeline.cs", "CombatMechanic.cs", "ReactiveCombatMechanic.cs",
             "DelayedEffectTriggerQueue.cs", "CharacterEventBinder.cs",
             "AbilityRunner.cs", "BattleReactionScheduler.cs",
-            "R5SlotWeightedTargetBridge.cs"
+            "SlotWeightedTargetBridge.cs"
         };
         var scriptNames=Directory.GetFiles(Path.Combine(Application.dataPath,"1. Scripts"),
             "*.cs",SearchOption.AllDirectories)

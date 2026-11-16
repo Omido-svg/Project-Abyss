@@ -55,9 +55,9 @@ public static class SkillCorpusVerification
            stage.Select(x=>x.Data.SkillId)
                .Distinct(StringComparer.Ordinal).Count()!=Stage1NewSkillCount||
            stageResources.Any(x=>!stage.Any(s=>ReferenceEquals(s.Data,x)))||
-           original.Count(x=>ProjectAbyss.Abilities.SkillMigrationObserver
+           original.Count(x=>ProjectAbyss.Abilities.SkillAbilityObserver
                .IsMetadataOnlyNormal(x.Data))!=OriginalMetadataOnlyCount||
-           stage.Count(x=>ProjectAbyss.Abilities.SkillMigrationObserver
+           stage.Count(x=>ProjectAbyss.Abilities.SkillAbilityObserver
                .IsMetadataOnlyNormal(x.Data))!=NewStage1MetadataOnlyCount)
             return false;
         var collisions=all.GroupBy(x=>x.Data.SkillId,StringComparer.Ordinal)

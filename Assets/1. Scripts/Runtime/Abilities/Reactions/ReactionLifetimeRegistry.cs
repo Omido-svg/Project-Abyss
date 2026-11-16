@@ -30,7 +30,7 @@ namespace ProjectAbyss.Abilities
         {
             public ReactionRequest Request;
             public AbilityLifetimeEvent Cause;
-            public R3ReactionConsumeOn ConsumeOn;
+            public ReactionConsumeOn ConsumeOn;
             public Func<ClashResultContext,bool> HasAppliedEffect;
             public Group Group;
             public bool Started;
@@ -51,7 +51,7 @@ private readonly HashSet<long> completed = new HashSet<long>();
 
         public bool TryBindAccepted(ReactionSchedulingDecision queued,
             AbilityLifetimeRules rules,AbilityLifetimeEvent cause,
-            R3ReactionConsumeOn consumeOn,
+            ReactionConsumeOn consumeOn,
             Func<ClashResultContext,bool> hasAppliedEffect,
             out string reason)
         {
@@ -62,7 +62,7 @@ private readonly HashSet<long> completed = new HashSet<long>();
                string.IsNullOrWhiteSpace(r.SkillDefinitionId) ||
                cause.CauseEventId!=r.CauseEventId || cause.TurnId<0)
                 reason="A successfully scheduled, cause-matched request is required.";
-            else if(consumeOn==R3ReactionConsumeOn.Applied &&
+            else if(consumeOn==ReactionConsumeOn.Applied &&
                     hasAppliedEffect==null)
                 reason="Applied consumption requires factual applied-result evidence.";
             else if(completed.Contains(r.RequestId) ||
@@ -90,7 +90,7 @@ private readonly HashSet<long> completed = new HashSet<long>();
             }
             // The scheduler has ALREADY accepted this request. Requested
             // consumption therefore cannot charge a rejected intent.
-            if(consumeOn==R3ReactionConsumeOn.Requested &&
+            if(consumeOn==ReactionConsumeOn.Requested &&
                !group.Memory.CommitIfApplied(cause,
                    new AbilityExecutionResult(1,1,null)))
             {
@@ -140,7 +140,7 @@ private readonly HashSet<long> completed = new HashSet<long>();
                 reason="Bound reaction provenance was altered.";
             else if(entry.Started)
                 reason="Reaction already started.";
-            else if(entry.ConsumeOn!=R3ReactionConsumeOn.Requested &&
+            else if(entry.ConsumeOn!=ReactionConsumeOn.Requested &&
                     !entry.Group.Memory.CanActivate(entry.Cause))
                 reason="Lifetime cooldown or once-per-identity rule denied start.";
             return reason==null;
@@ -172,9 +172,9 @@ private readonly HashSet<long> completed = new HashSet<long>();
                 diagnostic="No valid reaction exchange occurred.";
                 return false;
             }
-            if(entry.ConsumeOn==R3ReactionConsumeOn.Requested)
+            if(entry.ConsumeOn==ReactionConsumeOn.Requested)
                 return true;
-            if(entry.ConsumeOn==R3ReactionConsumeOn.Applied &&
+            if(entry.ConsumeOn==ReactionConsumeOn.Applied &&
                 !entry.HasAppliedEffect(result))
             {
                 diagnostic="No attested gameplay effect committed.";
@@ -208,8 +208,8 @@ private readonly HashSet<long> completed = new HashSet<long>();
                 diagnostic="Specialist callback not executed.";
                 return false;
             }
-            if(entry.ConsumeOn==R3ReactionConsumeOn.Requested)return true;
-            if(entry.ConsumeOn==R3ReactionConsumeOn.Applied)
+            if(entry.ConsumeOn==ReactionConsumeOn.Requested)return true;
+            if(entry.ConsumeOn==ReactionConsumeOn.Applied)
             {
                 diagnostic="No factual specialist effect result attested; Applied not consumed.";
                 return false;

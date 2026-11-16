@@ -10,7 +10,8 @@ public interface IBattleRule
 
 public class BattleContext
 {
-    public StageOneTemporaryCards1112 TemporaryCards1112 { get; } = new();
+    public ProjectAbyss.Abilities.CombatEventSequence EventSequence { get; } = new();
+    public StageOneTemporaryCards TemporaryCards { get; } = new();
     public TurnStartEffectQueue TurnStartEffects { get; } = new();
     public Character Player;
 

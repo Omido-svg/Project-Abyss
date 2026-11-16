@@ -94,12 +94,10 @@ namespace ProjectAbyss.Abilities
                 status=ReactionScheduleStatus.InvalidRequest;
                 note="Invalid request/parent/root/cause/chain/owner/skill identity.";
             }
-            else if(request.Checkpoint!=ReactionTimingCheckpoint.AfterExchangeSettled &&
-                    request.Checkpoint!=ReactionTimingCheckpoint.AfterClashCompleted &&
-                    request.Checkpoint!=ReactionTimingCheckpoint.AfterActionCompleted)
+            else if(!CanonicalEventPolicy.IsPostCommitCheckpoint(request.Checkpoint))
             {
                 status=ReactionScheduleStatus.UnsupportedCheckpoint;
-                note="Supported checkpoints: AfterExchangeSettled, AfterClashCompleted, AfterActionCompleted.";
+                note="Checkpoint is not a canonical post-commit boundary.";
             }
             else if(knownIds.Contains(request.RequestId))
             {
@@ -159,9 +157,7 @@ namespace ProjectAbyss.Abilities
             out ReactionRequest request)
         {
             request=default;
-            if(checkpoint!=ReactionTimingCheckpoint.AfterExchangeSettled &&
-               checkpoint!=ReactionTimingCheckpoint.AfterClashCompleted &&
-               checkpoint!=ReactionTimingCheckpoint.AfterActionCompleted)
+            if(!CanonicalEventPolicy.IsPostCommitCheckpoint(checkpoint))
                 return false;
             int best=-1;
             for(int i=0;i<pending.Count;i++)

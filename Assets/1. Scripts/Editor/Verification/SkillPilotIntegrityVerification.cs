@@ -46,7 +46,7 @@ public static void Run()
 
         var candidates = assets
             .Where(x => !ambiguous.Contains(x.Skill.SkillId) &&
-                        SkillMigrationObserver.IsMetadataOnlyNormal(x.Skill))
+                        SkillAbilityObserver.IsMetadataOnlyNormal(x.Skill))
             .OrderBy(x => x.Path, StringComparer.Ordinal)
             .ToArray();
 
@@ -96,7 +96,7 @@ public static void Run()
         Check("B10 no ScriptableObject marked dirty",
             assets.All(x => !EditorUtility.IsDirty(x.Skill)));
         Check("B11 metadata-only routing invariant",
-            candidates.All(x => SkillMigrationObserver.IsMetadataOnlyNormal(x.Skill)));
+            candidates.All(x => SkillAbilityObserver.IsMetadataOnlyNormal(x.Skill)));
         Check("B12 all asset GUIDs are distinct",
             candidates.Select(x => x.Guid).Distinct(StringComparer.OrdinalIgnoreCase)
                 .Count() == candidates.Length);

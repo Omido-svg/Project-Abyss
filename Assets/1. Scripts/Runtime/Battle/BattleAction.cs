@@ -1,3 +1,4 @@
+using ProjectAbyss.Abilities;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -12,6 +13,21 @@ public enum ActionType
 public class BattleAction
 {
     public ActionSlot Slot;
+    public EffectCause GetEffectCause(AbilityEventKind kind,int rollIndex)
+    {
+        var sequence=Owner?.BattleContext?.EventSequence;
+        if(sequence==null || ActionId<=0)return default;
+        var reaction=Slot.ReactionCause;
+        long start=sequence.Boundary(ActionId,AbilityEventKind.AttackResolutionStarting,-1);
+        long eventId=sequence.Boundary(ActionId,kind,rollIndex);
+        bool isReaction=reaction.OriginKind==EffectOriginKind.Reaction;
+        return new EffectCause(isReaction?reaction.RootActionId:ActionId,
+            kind==AbilityEventKind.AttackResolutionStarting?(isReaction?reaction.ParentEventId:0):start,
+            eventId,Skill?.Definition?.SkillId??Skill?.SkillName,
+            LiveSlotQuery.ActorRuntimeId(Owner),rollIndex,
+            isReaction?EffectOriginKind.Reaction:EffectOriginKind.DirectRoll);
+    }
+
 
     private Character resolutionTarget;
     private BodyPart resolutionTargetPart;

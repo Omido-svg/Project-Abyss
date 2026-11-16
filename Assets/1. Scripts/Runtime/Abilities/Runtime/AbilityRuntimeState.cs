@@ -61,6 +61,7 @@ namespace ProjectAbyss.Abilities
     public sealed class AbilityRuntimeState : IAbilityRuntimeState
     {
         private readonly HashSet<ActivationKey> committed = new HashSet<ActivationKey>();
+        public AbilityStateStore ScopedState { get; } = new AbilityStateStore();
         public int SuccessfulActivationCount => committed.Count;
         public bool CanActivate(ActivationKey key) => !committed.Contains(key);
         public void Commit(ActivationKey key, AbilityExecutionResult result)
@@ -69,6 +70,7 @@ namespace ProjectAbyss.Abilities
         }
         public void ResetAt(AbilityLifetimeBoundary boundary)
         {
+            ScopedState.ResetAt(boundary);
             if (boundary == AbilityLifetimeBoundary.Battle || boundary == AbilityLifetimeBoundary.Run)
                 committed.Clear();
         }

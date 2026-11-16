@@ -40,7 +40,7 @@ public static class HifumiQueueGuardVerification
                 ProductionReactionActivation.Activate(fixture.Context));
             scheduler.MaxPendingRequests=1;
             var fill=new ReactionRequest(182001,180001,180001,180002,
-                180001,R4LiveSlotQuery.ActorRuntimeId(h),"FILLER",
+                180001,LiveSlotQuery.ActorRuntimeId(h),"FILLER",
                 ReactionTimingCheckpoint.AfterClashCompleted,0,1);
             Check("Q03 one unrelated request fills pending capacity",
                 scheduler.Queue(fill).Accepted&&scheduler.PendingCount==1);

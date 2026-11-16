@@ -70,6 +70,7 @@ namespace ProjectAbyss.Abilities
 
     public readonly struct AbilityEventContext
     {
+        public readonly AbilityExecutionFrame ExecutionFrame;
         public readonly AbilityEventKind Kind;
         public readonly long ActionId;
         public readonly long CauseId;
@@ -78,8 +79,9 @@ namespace ProjectAbyss.Abilities
         public readonly bool DuelEffectsEligible;
         public readonly bool IsOneSided;
         public AbilityEventContext(AbilityEventKind kind, long actionId, long causeId,
-            long ownerId, int rollUseIndex, bool duelEligible, bool oneSided)
+            long ownerId, int rollUseIndex, bool duelEligible, bool oneSided, AbilityExecutionFrame executionFrame = null)
         {
+            ExecutionFrame = executionFrame;
             Kind = kind; ActionId = actionId; CauseId = causeId;
             OwnerActorRuntimeId = ownerId; RollUseIndex = rollUseIndex;
             DuelEffectsEligible = duelEligible; IsOneSided = oneSided;

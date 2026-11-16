@@ -261,7 +261,7 @@ public sealed class StaggerGaugeMechanic : ReactiveCombatMechanic,
             owner?.ModifyHealingAmount(amount) ?? amount;
 
         modified =
-            Canonical0922EmotionRuntimeHooks.ModifyHealing(
+            EmotionAugmentRuntimeHooks.ModifyHealing(
                 owner,
                 modified);
 

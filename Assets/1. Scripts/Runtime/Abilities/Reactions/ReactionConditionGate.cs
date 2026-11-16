@@ -2,23 +2,23 @@ using System;
 
 namespace ProjectAbyss.Abilities
 {
-    public enum R3ReactionCostPolicy { Free, PayNormalSkillCost, CustomCost }
-    public enum R3ReactionConsumeOn { Requested, Started, Applied }
+    public enum ReactionCostPolicy { Free, PayNormalSkillCost, CustomCost }
+    public enum ReactionConsumeOn { Requested, Started, Applied }
 
-    public readonly struct R3ReactionRequestSnapshot
+    public readonly struct ReactionRequestSnapshot
     {
         public readonly ReactionRequest Request;
         public readonly AbilityEventContext CauseEvent;
         public readonly AppliedDamageEvidence HistoricalDamage;
         public readonly bool HasHistoricalDamage;
-        public readonly R3ReactionCostPolicy CostPolicy;
-        public readonly R3ReactionConsumeOn ConsumeOn;
+        public readonly ReactionCostPolicy CostPolicy;
+        public readonly ReactionConsumeOn ConsumeOn;
         public readonly int RequiredCost;
 
-        internal R3ReactionRequestSnapshot(ReactionRequest request,
+        internal ReactionRequestSnapshot(ReactionRequest request,
             AbilityEventContext causeEvent, AppliedDamageEvidence historical,
-            bool hasDamage, R3ReactionCostPolicy costPolicy,
-            R3ReactionConsumeOn consumeOn, int requiredCost)
+            bool hasDamage, ReactionCostPolicy costPolicy,
+            ReactionConsumeOn consumeOn, int requiredCost)
         {
             Request=request;CauseEvent=causeEvent;
             HistoricalDamage=historical;HasHistoricalDamage=hasDamage;
@@ -33,14 +33,14 @@ namespace ProjectAbyss.Abilities
     /// At execution, current survival, part, skill and cost are revalidated.
     /// R5/R6 perform any actual resource transaction or action execution.
     /// </summary>
-    public sealed class R3ReactionConditionGate
+    public sealed class ReactionConditionGate
     {
         public bool TryCaptureRequest(ReactionRequest request,
             AbilityEventContext causeEvent,bool eventConditionPassed,
-            bool lifetimeMayRequest,R3ReactionCostPolicy costPolicy,
-            R3ReactionConsumeOn consumeOn,int requiredCost,
+            bool lifetimeMayRequest,ReactionCostPolicy costPolicy,
+            ReactionConsumeOn consumeOn,int requiredCost,
             bool hasCommittedDamage,AppliedDamageEvidence historicalDamage,
-            out R3ReactionRequestSnapshot snapshot,out string error)
+            out ReactionRequestSnapshot snapshot,out string error)
         {
             snapshot=default;error=null;
             if(request.RequestId<=0 || request.OwnerActorRuntimeId<=0 ||
@@ -51,7 +51,7 @@ namespace ProjectAbyss.Abilities
             else if(!eventConditionPassed||!lifetimeMayRequest)
                 error="Trigger or lifetime request condition rejected";
             else if(requiredCost<0 ||
-                    costPolicy==R3ReactionCostPolicy.Free&&requiredCost!=0)
+                    costPolicy==ReactionCostPolicy.Free&&requiredCost!=0)
                 error="Invalid cost contract";
             else if(causeEvent.Kind==AbilityEventKind.DamageSettled &&
                     (!hasCommittedDamage||
@@ -60,12 +60,12 @@ namespace ProjectAbyss.Abilities
                      historicalDamage.OriginRollUseId<=0))
                 error="A committed matching result is required";
             if(error!=null)return false;
-            snapshot=new R3ReactionRequestSnapshot(request,causeEvent,historicalDamage,
+            snapshot=new ReactionRequestSnapshot(request,causeEvent,historicalDamage,
                 hasCommittedDamage,costPolicy,consumeOn,requiredCost);
             return true;
         }
 
-        public bool ValidateAtExecution(in R3ReactionRequestSnapshot snapshot,
+        public bool ValidateAtExecution(in ReactionRequestSnapshot snapshot,
             Character owner,Character target,BodyPart ownerPart,BodyPart targetPart,
             bool requestedSkillAvailable,int currentlyAvailableResource,
             out string reason)
@@ -75,7 +75,7 @@ namespace ProjectAbyss.Abilities
                 reason="Missing captured request";
             else if(owner==null || owner.IsDead || target==null || target.IsDead)
                 reason="Owner or target dead/missing";
-            else if(R4LiveSlotQuery.ActorRuntimeId(owner)!=snapshot.Request.OwnerActorRuntimeId)
+            else if(LiveSlotQuery.ActorRuntimeId(owner)!=snapshot.Request.OwnerActorRuntimeId)
                 reason="Wrong reaction owner";
             else if(!requestedSkillAvailable)
                 reason="Skill no longer available";
@@ -85,7 +85,7 @@ namespace ProjectAbyss.Abilities
             else if(targetPart!=null &&
                     (targetPart.Owner!=target||!target.IsValidTargetPart(targetPart)))
                 reason="Target part no longer available";
-            else if(snapshot.CostPolicy!=R3ReactionCostPolicy.Free &&
+            else if(snapshot.CostPolicy!=ReactionCostPolicy.Free &&
                     currentlyAvailableResource<snapshot.RequiredCost)
                 reason="Insufficient resource at action start";
             return reason==null;

@@ -106,19 +106,19 @@ public class SpeedManager
         // while other stage-1 mobs use the normal 1..6 range. Swift/Bind
         // remain separate maximum-speed changes below.
         if(character is NormalEnemy &&
-           character.GetMechanic<NormalEnemy0922RoleMechanic>()?.Species==
-               EnemySpecies1029.Corrosion)
+           character.GetMechanic<NormalEnemyRoleMechanic>()?.Species==
+               EnemySpecies.Corrosion)
         {
             minSpeed=4;
             maxSpeed=6;
         }
 
-        int canonicalRangePenalty = character.GetMechanic<StageOneEnemy1112Mechanic>()?.SpeedRangePenalty ?? 0;
+        int canonicalRangePenalty = character.GetMechanic<StageOneEnemyMechanic>()?.SpeedRangePenalty ?? 0;
         minSpeed = Mathf.Max(1, minSpeed - canonicalRangePenalty);
         maxSpeed = Mathf.Max(minSpeed, maxSpeed - canonicalRangePenalty);
         int weakenedSpeedMaxPenalty = 0;
         bool suppressSingleWeakenedPenalty =
-            Canonical0922EmotionRuntimeHooks
+            EmotionAugmentRuntimeHooks
                 .SuppressSingleWeakenedPenalty(character);
 
         if (!suppressSingleWeakenedPenalty)

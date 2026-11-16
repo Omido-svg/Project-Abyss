@@ -181,7 +181,7 @@ public sealed class CharacterResourceController
         Skill sourceSkill = null)
     {
         if (amount > 0 && reason != CombatResourceChangeReason.Restore)
-            amount = owner.GetMechanic<StageOneEnemy1112Mechanic>()?.ModifyEnergyGain(amount) ?? amount;
+            amount = owner.GetMechanic<StageOneEnemyMechanic>()?.ModifyEnergyGain(amount) ?? amount;
         SetEnergy(
             CurrentEnergy + amount,
             reason,

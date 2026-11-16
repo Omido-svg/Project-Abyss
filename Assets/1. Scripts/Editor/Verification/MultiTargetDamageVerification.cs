@@ -40,7 +40,7 @@ public static class MultiTargetDamageVerification
         };
         var action=new BattleAction{Slot=slot};
         var identity=new AbilityIdentity("R5-MULTI-NATIVE",
-            R4LiveSlotQuery.ActorRuntimeId(player),"R5-BATCH-ONLY",0);
+            LiveSlotQuery.ActorRuntimeId(player),"R5-BATCH-ONLY",0);
         var ability=new AbilityInstance(new AbilityDefinitionRef("R5-MULTI-NATIVE","VIRTUAL"),
             identity);
         var e=new AbilityEventContext(AbilityEventKind.RollUsing,980001,990001,
@@ -56,7 +56,7 @@ public static class MultiTargetDamageVerification
                 canBreakPart:false,applyMomentum:false,applyGuard:true,sourceAction:action);
         var beforeHp=targets.Select(t=>t.TargetCharacter.CurrentHP).ToArray();
         var beforeRandom=JsonUtility.ToJson(UnityEngine.Random.state);
-        var service=new R5MultiTargetDamageBatchService();
+        var service=new MultiTargetDamageBatchService();
         bool accepted=service.TryExecute(ability,e,action,targets,Request,
             "R5-BATCH-RUNTIME",out var result,out var reason);
         Check("B01 all three commands validated before mutation",

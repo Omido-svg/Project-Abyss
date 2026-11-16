@@ -126,7 +126,7 @@ public sealed class YujinDuelRuntimeSkill :
             int baseCost = base.EnergyCost;
 
             return owner
-                ?.GetMechanic<Yujin0917Mechanic>()
+                ?.GetMechanic<YujinCommittedSkillCostMechanic>()
                 ?.ResolveEnergyCost(
                     Definition,
                     baseCost)
@@ -143,14 +143,14 @@ public sealed class YujinDuelRuntimeSkill :
     public override bool TryConsumeResource(Character character, BattleAction sourceAction = null)
     {
         if (!base.TryConsumeResource(character, sourceAction)) return false;
-        character?.GetMechanic<Yujin0917Mechanic>()?.RecordCommittedUse(Definition);
+        character?.GetMechanic<YujinCommittedSkillCostMechanic>()?.RecordCommittedUse(Definition);
         return true;
     }
 
     protected override void OnPlanningUseRolledBack()
     {
         owner
-            ?.GetMechanic<Yujin0917Mechanic>()
+            ?.GetMechanic<YujinCommittedSkillCostMechanic>()
             ?.RollbackCommittedUse(
                 Definition);
     }

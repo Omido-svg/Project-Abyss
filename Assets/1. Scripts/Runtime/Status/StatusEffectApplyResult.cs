@@ -96,4 +96,4 @@ public sealed class StatusEffectApplyResult
             };
         }
     }
-}
+}

@@ -9,7 +9,7 @@ using ProjectAbyss.Abilities;
 /// <summary>R4-K pure taunt action budgets and stealth slot eligibility.</summary>
 public static class TargetPolicyVerification
 {
-    private sealed class Visibility : IR4TargetVisibilityQuery
+    private sealed class Visibility : ITargetVisibilityQuery
     {
         private readonly HashSet<string> blocked=new HashSet<string>();
         public void Block(CombatSlotRef slot)=>blocked.Add(Key(slot));
@@ -30,16 +30,16 @@ public static class TargetPolicyVerification
         var taunted=new CombatSlotRef(201,"HIFUMI-TAUNT","ARM",0);
         var secondary=new CombatSlotRef(202,"LOW-TAUNT","LEG",0);
         var attacks=new[]{
-            new R4IncomingAim(11,8,5,source), // 5 rolls still one action charge
-            new R4IncomingAim(12,12,1,source),
-            new R4IncomingAim(13,10,3,source),
-            new R4IncomingAim(14,4,1,source)
+            new IncomingAim(11,8,5,source), // 5 rolls still one action charge
+            new IncomingAim(12,12,1,source),
+            new IncomingAim(13,10,3,source),
+            new IncomingAim(14,4,1,source)
         };
         var priority=new[]{
-            new R4TauntTarget(taunted,2,true),
-            new R4TauntTarget(secondary,1,true)
+            new TauntTarget(taunted,2,true),
+            new TauntTarget(secondary,1,true)
         };
-        var plan=R4TauntAimPlanner.Plan(attacks,priority,554433);
+        var plan=TauntAimPlanner.Plan(attacks,priority,554433);
         Check("K01 taunt N=2 consumes two enemy ACTIONS, not 5-roll card count",
             plan.Count==4 && plan.Count(p=>p.WasForced && p.ResolvedSlot.Equals(taunted))==2,
             "two attack actions redirected to taunted part");
@@ -57,28 +57,28 @@ public static class TargetPolicyVerification
         Check("K05 taunt query does not write to original ActionSlot",
             attacks.All(x=>x.OriginalTargetSlot.Equals(source)));
         var before=JsonUtility.ToJson(UnityEngine.Random.state);
-        var reversed=R4TauntAimPlanner.Plan(attacks.Reverse(),priority.Reverse(),554433);
+        var reversed=TauntAimPlanner.Plan(attacks.Reverse(),priority.Reverse(),554433);
         Check("K06 reversed input produces exactly same seeded assignment",
             string.Join("|",plan.Select(p=>p.ActionId+":"+p.ResolvedSlot.SlotId))==
             string.Join("|",reversed.Select(p=>p.ActionId+":"+p.ResolvedSlot.SlotId)));
         Check("K07 seeded taunt tie selection does not consume Unity RNG",
             before==JsonUtility.ToJson(UnityEngine.Random.state));
-        var ineligible=R4TauntAimPlanner.Plan(attacks,
-            new[]{new R4TauntTarget(taunted,20,false)},5);
+        var ineligible=TauntAimPlanner.Plan(attacks,
+            new[]{new TauntTarget(taunted,20,false)},5);
         Check("K08 invalid/stealthed taunt candidate never redirects",
             ineligible.All(p=>!p.WasForced&&p.ResolvedSlot.Equals(source)));
-        var none=R4TauntAimPlanner.Plan(Array.Empty<R4IncomingAim>(),priority,5);
+        var none=TauntAimPlanner.Plan(Array.Empty<IncomingAim>(),priority,5);
         Check("K09 no enemy slots returns empty assignment",none.Count==0);
 
         var visible=new Visibility();visible.Block(taunted);
-        var rule=new R4VisibilityPlanningRule(visible);
-        var ctx=new R4TargetPlanningContext(777,101,201,3);
+        var rule=new VisibilityPlanningRule(visible);
+        var ctx=new TargetPlanningContext(777,101,201,3);
         var slotA=new WeightedTargetSlot(taunted,new HitTargetKey(201,"ARM"),1,0,0,0);
         var slotB=new WeightedTargetSlot(secondary,new HitTargetKey(202,"LEG"),1,0,0,1);
         Check("K10 snapshot visibility filters blocked part, not owner action",
             !rule.Allows(in ctx,slotA) && rule.Allows(in ctx,slotB));
-        var chosen=R4DeterministicTargetQuery.Select(
-            new[]{slotA,slotB},2,R4TargetSelectionMode.StableFirst,5,rule,ctx);
+        var chosen=DeterministicTargetQuery.Select(
+            new[]{slotA,slotB},2,TargetSelectionMode.StableFirst,5,rule,ctx);
         Check("K11 visibility must filter BEFORE target budgeting",
             chosen.Count==1&&chosen[0].Slot.Equals(secondary));
         Check("K12 source visibility query preserves different PartIds",

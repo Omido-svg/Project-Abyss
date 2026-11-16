@@ -232,7 +232,7 @@ public sealed class DamagePipeline
         DamageContext context)
     {
         context.TargetModifiedDamage =
-            Canonical0922EmotionRuntimeHooks.ModifyDamageBeforeGuard(
+            EmotionAugmentRuntimeHooks.ModifyDamageBeforeGuard(
                 context,
                 context.TargetModifiedDamage);
 
@@ -260,7 +260,7 @@ public sealed class DamagePipeline
         DamageContext context)
     {
         context.DamageAfterGuard =
-            Canonical0922EmotionRuntimeHooks.ModifyDamageAfterGuard(
+            EmotionAugmentRuntimeHooks.ModifyDamageAfterGuard(
                 context,
                 context.DamageAfterGuard);
 
@@ -271,7 +271,7 @@ public sealed class DamagePipeline
 
     private static void FinalizeDamage(DamageContext context)
     {
-        if (context.Action?.Owner?.GetMechanic<StageOneEnemy1112Mechanic>()?.NegateConfessionDamage(context.Action) == true)
+        if (context.Action?.Owner?.GetMechanic<StageOneEnemyMechanic>()?.NegateConfessionDamage(context.Action) == true)
         {
             context.DamageAfterGuard = 0;
             context.GuardAbsorbed = 0;

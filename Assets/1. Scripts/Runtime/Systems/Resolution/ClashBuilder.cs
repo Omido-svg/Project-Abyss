@@ -111,7 +111,7 @@ public sealed class ClashBuilder
     /// skill definitions, or any RNG state. UI and R5-W share a battle-local
     /// frozen allocation for the same planned source action.
     /// </summary>
-    public ProjectAbyss.Abilities.R4WeightPlanningPreview BuildAttackWeightPreview(
+    public ProjectAbyss.Abilities.WeightPlanningPreview BuildAttackWeightPreview(
         BattleContext battle, ActionSlot source, IReadOnlyList<ActionSlot> plans)
     {
         if (battle == null || source?.Skill == null ||
@@ -128,7 +128,7 @@ public sealed class ClashBuilder
             hostileSide = new Character[]{battle.Player};
         if (hostileSide == null)
             return null;
-        return ProjectAbyss.Abilities.R4BattlePlanningSession.Preview(
+        return ProjectAbyss.Abilities.BattlePlanningSession.Preview(
             battle,source,hostileSide,plans);
     }
 

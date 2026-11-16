@@ -11,7 +11,7 @@ public static class PreparationActivationPolicy
 {
     public static bool IsImmediate(Skill skill)
     {
-        if (skill is StageOneTemporarySkill1112) return true;
+        if (skill is StageOneTemporarySkill) return true;
         if (skill?.ActionType != ActionType.Preparation) return false;
         var definition = skill.Definition;
         return skill.Owner is Enemy ||

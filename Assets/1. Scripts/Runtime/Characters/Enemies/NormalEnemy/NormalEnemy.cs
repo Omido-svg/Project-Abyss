@@ -23,9 +23,9 @@ public class NormalEnemy : Enemy, ICharacterAuthoringTarget
     /// </summary>
     public override List<ActionSlot> DecideSlots(BattleContext context)
     {
-        var role=GetMechanic<NormalEnemy0922RoleMechanic>();
+        var role=GetMechanic<NormalEnemyRoleMechanic>();
         if(role?.RoleAssigned!=true||
-            role.Species==EnemySpecies1029.Unknown||
+            role.Species==EnemySpecies.Unknown||
             context?.Services?.SpeedManager==null)
             return CanonicalFallback(context);
         var definition=EnemyStageOneSkillCatalog.Get(
@@ -133,7 +133,7 @@ public class NormalEnemy : Enemy, ICharacterAuthoringTarget
         // Role is assigned only when the roster is a canonical 3/4-normal encounter;
         // mixed/legacy fixtures retain their old AI behavior.
         AddMechanic(
-            new NormalEnemy0922RoleMechanic());
+            new NormalEnemyRoleMechanic());
 
         AddMechanic(
             new NormalEnemyBloodScentMechanic());
@@ -145,9 +145,9 @@ public class NormalEnemy : Enemy, ICharacterAuthoringTarget
     {
         get
         {
-            var p=GetMechanic<NormalEnemy0922RoleMechanic>()?.PlannedAction;
-            return p==EnemyAction1029.HealPreparation||
-                   p==EnemyAction1029.SupplyPreparation;
+            var p=GetMechanic<NormalEnemyRoleMechanic>()?.PlannedAction;
+            return p==EnemyActionPattern.HealPreparation||
+                   p==EnemyActionPattern.SupplyPreparation;
         }
     }
 

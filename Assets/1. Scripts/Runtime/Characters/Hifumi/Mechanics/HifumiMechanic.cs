@@ -181,7 +181,7 @@ public sealed class HifumiMechanic :
             source.Skill?.SkillName ?? "HifumiCounterSequence";
         var request=new ProjectAbyss.Abilities.ReactionRequest(
             id,source.ActionId,source.ActionId,id,source.ActionId,
-            ProjectAbyss.Abilities.R4LiveSlotQuery.ActorRuntimeId(owner),
+            ProjectAbyss.Abilities.LiveSlotQuery.ActorRuntimeId(owner),
             skillId,checkpoint,0,id);
         bool registered=registry.TryRegister(request,
             () => IsRegistered && owner!=null && !owner.IsDead &&
@@ -665,12 +665,15 @@ public sealed class HifumiMechanic :
         return true;
     }
 
-    public void AddBone(int amount)
+    public BoneGrantResult LastBoneGrant { get; private set; }
+    public void AddBone(int amount) => GrantBone(amount,BoneGrantReason.DirectCard);
+    public BoneGrantResult GrantBone(int amount,BoneGrantReason reason,
+        ProjectAbyss.Abilities.EffectCause cause=default)
     {
-        if (amount <= 0)
-            return;
-
-        bone = Mathf.Clamp(bone + amount, 0, MaxBone);
+        int before=bone;
+        int requested=Mathf.Max(0,amount);
+        bone=(int)System.Math.Min(MaxBone,(long)bone+requested);
+        return LastBoneGrant=new BoneGrantResult(requested,before,bone,reason,cause);
     }
 
     public void AddAdvanceBone(int amount)
@@ -1045,8 +1048,8 @@ public sealed class HifumiMechanic :
 
         // Hifumi-only Blood Price N/T applies solely to genuine received
         // HP injury, after shields and damage reduction.
-        AddBone(HifumiNativeRules.BoneFromReceivedHit(
-            finalHpDamage,bloodPriceThisTurn));
+        GrantBone(HifumiNativeRules.BoneFromReceivedHit(
+            finalHpDamage,bloodPriceThisTurn),BoneGrantReason.ReceivedHit,context.Request.SourceCause);
     }
 
     private void OnExchangeResolved(ClashExchangeResult exchange)
@@ -1182,7 +1185,7 @@ public sealed class HifumiMechanic :
         if (owner == null || owner.IsDead)
             return;
 
-        AddBone(HifumiNativeRules.CatastropheDirectBone);
+        GrantBone(HifumiNativeRules.CatastropheDirectBone,BoneGrantReason.Catastrophe);
         catastropheSelfDamageDepth++;
         try
         {
@@ -1442,6 +1445,8 @@ public sealed class HifumiMechanic :
 
         bool bloomSnapshot =
             boneSnapshot + advanceBone >= BloomThreshold;
+        // Snapshot first, then spend once. Bone earned during this sequence belongs to the next action.
+        if(isGoldan)ConsumeAllBonePaymentResources();
 
         int baseCounterPower =
             (isNormalCounter
@@ -1538,6 +1543,8 @@ public sealed class HifumiMechanic :
                     applyGuard: true,
                     sourceAction: sourceAction);
 
+            var counterParent=sourceAction.GetEffectCause(ProjectAbyss.Abilities.AbilityEventKind.RollUsing,sourceAction.CurrentRollIndex);
+            if(counterParent.IsKnown)request.SourceCause=counterParent.Derive(battleContext.EventSequence.Next(),ProjectAbyss.Abilities.EffectOriginKind.Reaction);
             if(canGoldanBreak)
                 request.BreakMode =
                     HifumiNativeRules.GoldanBreakMode(bloomSnapshot);
@@ -1553,6 +1560,9 @@ public sealed class HifumiMechanic :
             sequenceIndex++;
         }
 
+        if(pending>0 && attempted>=CounterSafetyLimit)
+            throw new System.InvalidOperationException("Counter processing budget exceeded after partial commit: action="+
+                sourceAction.ActionId+",pending="+pending+",seed="+battleContext?.RunProgression?.Seed);
         if (attempted <= 0)
             return;
 
@@ -1573,8 +1583,7 @@ public sealed class HifumiMechanic :
                         25);
             }
 
-            // 0922: Goldan tagged counter consumes the whole spendable Bone pool.
-            ConsumeAllBonePaymentResources();
+            // The starting pool was paid before the first counter roll; preserve newly earned Bone.
         }
     }
 

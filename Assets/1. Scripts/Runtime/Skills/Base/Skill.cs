@@ -488,12 +488,12 @@ public abstract class Skill
 
         if (action.ActionType == ActionType.Duel &&
             !action.DuelEffectsEligible &&
-            action.Owner?.GetMechanic<StageOneEnemy1112Mechanic>()?.BypassDuelGate(action) != true)
+            action.Owner?.GetMechanic<StageOneEnemyMechanic>()?.BypassDuelGate(action) != true)
             return;
 
         // R7-8 stage1 native enemy first-roll effects: actual roll consumption.
         EnemyStageOneEffect.OnRollUsing(action,rollIndex);
-        action.Owner?.GetMechanic<StageOneEnemy1112Mechanic>()?.RollUsing(action, rollIndex);
+        action.Owner?.GetMechanic<StageOneEnemyMechanic>()?.RollUsing(action, rollIndex);
 
         ExecuteDefinitionEffects(
             action,
@@ -683,7 +683,7 @@ public abstract class Skill
         // Canonical exchange victory/defeat requires TWO actually opposed rolls.
         // One-sided hits are tracked separately and must not grant win effects.
         bool canonicalOutcomeAllowed =
-            R1CanonicalEventPolicy.AllowsExchangeOutcome(
+            CanonicalEventPolicy.AllowsExchangeOutcome(
                 action, opponentAction, isClash, isOneSided);
 
         if (canonicalOutcomeAllowed)
@@ -1266,6 +1266,11 @@ public abstract class Skill
         if (action?.Skill != this)
             return;
 
+        // A derived hit carries its own result; it cannot wake the source card's post-damage effects.
+        var cause=context.Request.SourceCause;
+        if(cause.IsKnown && !cause.IsDirectResultOf(action.GetEffectCause(
+            ProjectAbyss.Abilities.AbilityEventKind.RollUsing,action.CurrentRollIndex)))return;
+
         int rollIndex =
             Mathf.Max(
                 0,
@@ -1279,7 +1284,7 @@ public abstract class Skill
         bool isOneSided =
             !isClash;
 
-        if (context.GetDisplayDamage() > 0)
+        if (context.WasApplied || context.GuardAbsorbed>0 || context.StaggerDamageApplied>0)
         {
             ExecuteDefinitionEffects(
                 action,
@@ -1369,6 +1374,9 @@ public abstract class Skill
     {
         if (action == null || damageContext == null)
             return;
+        var transitionCause=damageContext.Request.SourceCause;
+        if(transitionCause.IsKnown && !transitionCause.IsDirectResultOf(action.GetEffectCause(
+            ProjectAbyss.Abilities.AbilityEventKind.RollUsing,action.CurrentRollIndex)))return;
 
         int rollIndex =
             Mathf.Max(0, action.CurrentRollIndex);
@@ -1411,6 +1419,9 @@ public abstract class Skill
 
         DamageContext damageContext =
             context.DamageContext;
+        var killCause=damageContext?.Request.SourceCause??default;
+        if(killCause.IsKnown && !killCause.IsDirectResultOf(action.GetEffectCause(
+            ProjectAbyss.Abilities.AbilityEventKind.RollUsing,action.CurrentRollIndex)))return;
         int rollIndex =
             Mathf.Max(0, action.CurrentRollIndex);
         bool isClash =

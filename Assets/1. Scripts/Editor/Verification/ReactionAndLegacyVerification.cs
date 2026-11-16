@@ -41,18 +41,18 @@ public static class ReactionAndLegacyVerification
             var target=fixture.Enemy;
             BodyPart part=owner.BodyParts.FirstOrDefault(p=>p!=null&&!p.IsBroken);
             BodyPart targetPart=target.BodyParts.FirstOrDefault(p=>p!=null&&!p.IsBroken);
-            long ownerId=R4LiveSlotQuery.ActorRuntimeId(owner);
+            long ownerId=LiveSlotQuery.ActorRuntimeId(owner);
             var request=new ReactionRequest(63001,60001,60000,90001,50001,
                 ownerId,"r3:react",ReactionTimingCheckpoint.AfterExchangeSettled,0,1);
             var cause=new AbilityEventContext(AbilityEventKind.DamageSettled,
                 60001,90001,ownerId,0,true,false);
             var evidence=new AppliedDamageEvidence(90001,70001,80001,false,
-                17,true,false,false,R4LiveSlotQuery.ActorRuntimeId(target),
+                17,true,false,false,LiveSlotQuery.ActorRuntimeId(target),
                 targetPart?.PartId);
-            var gate=new R3ReactionConditionGate();
+            var gate=new ReactionConditionGate();
 
             bool captured=gate.TryCaptureRequest(request,cause,true,true,
-                R3ReactionCostPolicy.PayNormalSkillCost,R3ReactionConsumeOn.Started,
+                ReactionCostPolicy.PayNormalSkillCost,ReactionConsumeOn.Started,
                 3,true,evidence,out var ticket,out var reason);
             Check("I01 committed origin result captured once",captured &&
                 ticket.HistoricalDamage.AppliedHpDamage==17 &&
@@ -76,35 +76,35 @@ public static class ReactionAndLegacyVerification
                 "wrong body part actor");
 
             var unrelated=new AppliedDamageEvidence(90002,70001,80001,false,
-                99,true,false,false,R4LiveSlotQuery.ActorRuntimeId(target),
+                99,true,false,false,LiveSlotQuery.ActorRuntimeId(target),
                 targetPart?.PartId);
             Check("I07 different cause cannot be recorded",
                 !gate.TryCaptureRequest(request,cause,true,true,
-                    R3ReactionCostPolicy.Free,R3ReactionConsumeOn.Applied,0,
+                    ReactionCostPolicy.Free,ReactionConsumeOn.Applied,0,
                     true,unrelated,out _,out _),
                 "unrelated damage 99 ignored");
             Check("I08 uncommitted damage cannot be recorded",
                 !gate.TryCaptureRequest(request,cause,true,true,
-                    R3ReactionCostPolicy.Free,R3ReactionConsumeOn.Applied,0,
+                    ReactionCostPolicy.Free,ReactionConsumeOn.Applied,0,
                     false,evidence,out _,out _),
                 "requires committed DamageResult");
             Check("I09 initial trigger and lifetime rejection",
                 !gate.TryCaptureRequest(request,cause,false,true,
-                    R3ReactionCostPolicy.Free,R3ReactionConsumeOn.Applied,0,
+                    ReactionCostPolicy.Free,ReactionConsumeOn.Applied,0,
                     true,evidence,out _,out _) &&
                 !gate.TryCaptureRequest(request,cause,true,false,
-                    R3ReactionCostPolicy.Free,R3ReactionConsumeOn.Applied,0,
+                    ReactionCostPolicy.Free,ReactionConsumeOn.Applied,0,
                     true,evidence,out _,out _),
                 "Request not created when origin gate rejects");
             Check("I10 Free policy cannot hide a nonzero custom cost",
                 !gate.TryCaptureRequest(request,cause,true,true,
-                    R3ReactionCostPolicy.Free,R3ReactionConsumeOn.Started,100,
+                    ReactionCostPolicy.Free,ReactionConsumeOn.Started,100,
                     true,evidence,out _,out _),
                 "explicit cost descriptor required");
             Check("I11 result snapshot remains immutable across current checks",
                 ticket.HistoricalDamage.AppliedHpDamage==17 &&
-                ticket.CostPolicy==R3ReactionCostPolicy.PayNormalSkillCost &&
-                ticket.ConsumeOn==R3ReactionConsumeOn.Started &&
+                ticket.CostPolicy==ReactionCostPolicy.PayNormalSkillCost &&
+                ticket.ConsumeOn==ReactionConsumeOn.Started &&
                 ticket.RequiredCost==3,
                 "request 17 damage not reconstructed from HP");
 

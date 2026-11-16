@@ -34,7 +34,7 @@ public sealed class AttackWeightTargetResolver
             ProjectAbyss.Abilities.AttackWeightTargetingModel.SlotWeighted)
         {
             action.SetAttackWeightTargets(
-                ProjectAbyss.Abilities.R5SlotWeightedTargetBridge.Resolve(
+                ProjectAbyss.Abilities.SlotWeightedTargetBridge.Resolve(
                     battleContext, action));
             return action.AttackWeightTargets;
         }

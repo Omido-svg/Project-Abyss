@@ -1380,7 +1380,7 @@ public partial class ClashManager
         // from an already-established clash keep their original clash target.
         if (!cameFromClash)
         {
-            EnemyCover0922Resolver.TryRedirectOneSided(
+            EnemyCoverResolver.TryRedirectOneSided(
                 action,
                 battleContext);
         }

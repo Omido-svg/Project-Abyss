@@ -90,11 +90,11 @@ public static class IbRealExchangeInsertionVerification
         }
 
         var scheduler=new BattleReactionScheduler();
-        var registry=new R6ReactionActionRegistry();
+        var registry=new ReactionActionRegistry();
         var playback=new Playback();
         var resolver=new ActionResolver(context,context.Services.ClashManager,null,playback);
-        resolver.EnableR6ReactionExecution(scheduler,registry);
-        resolver.EnableR6StepwiseClashes();
+        resolver.EnableReactionExecution(scheduler,registry);
+        resolver.EnableStepwiseClashes();
 
         const long originalId=986020;
         const long opposingId=986021;
@@ -103,7 +103,7 @@ public static class IbRealExchangeInsertionVerification
         var second=Make(enemy,player,opposingId,"R6Ib-OPPONENT",1,3,context);
         var reaction=Make(enemy,player,reactionId,"R6Ib-REACT",2,1,context);
         var request=new ReactionRequest(98501,originalId,originalId,
-            98502,originalId,R4LiveSlotQuery.ActorRuntimeId(enemy),
+            98502,originalId,LiveSlotQuery.ActorRuntimeId(enemy),
             "R6Ib-REACT",ReactionTimingCheckpoint.AfterExchangeSettled,0,98503);
         var domainTrace=new List<string>();
         var enemyHpBefore=enemy.CurrentHP;
@@ -113,7 +113,7 @@ public static class IbRealExchangeInsertionVerification
         bool scheduled=false;
         bool checkpointCondition=false;
         bool reactionExecutedBeforeThird=false;
-        resolver.R6ExchangeSettled += exchange =>
+        resolver.ExchangeSettled += exchange =>
         {
             if(exchange.ExchangeIndex==2)
             {
@@ -183,12 +183,12 @@ public static class IbRealExchangeInsertionVerification
         if(!enemy.IsDead)
         {
             var killQueue=new BattleReactionScheduler();
-            var killRegistry=new R6ReactionActionRegistry();
+            var killRegistry=new ReactionActionRegistry();
             var killPlayback=new Playback();
             var killResolver=new ActionResolver(
                 context,context.Services.ClashManager,null,killPlayback);
-            killResolver.EnableR6ReactionExecution(killQueue,killRegistry);
-            killResolver.EnableR6StepwiseClashes();
+            killResolver.EnableReactionExecution(killQueue,killRegistry);
+            killResolver.EnableStepwiseClashes();
             const long killRootId=986030;
             const long killOtherId=986031;
             const long killReactionId=986032;
@@ -196,12 +196,12 @@ public static class IbRealExchangeInsertionVerification
             var killB=Make(enemy,player,killOtherId,"R6Ib-KILL-OTHER",1,3,context);
             var killer=Make(player,enemy,killReactionId,"R6Ib-KILL-REACT",999,1,context);
             var req=new ReactionRequest(98511,killRootId,killRootId,
-                98512,killRootId,R4LiveSlotQuery.ActorRuntimeId(player),
+                98512,killRootId,LiveSlotQuery.ActorRuntimeId(player),
                 "R6Ib-KILL-REACT",
                 ReactionTimingCheckpoint.AfterExchangeSettled,0,98513);
             int committedOriginal=0;
             bool scheduledKill=false;
-            killResolver.R6ExchangeSettled += exchange =>
+            killResolver.ExchangeSettled += exchange =>
             {
                 committedOriginal++;
                 if(exchange.ExchangeIndex==1)

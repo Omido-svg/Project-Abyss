@@ -17,7 +17,7 @@ namespace ProjectAbyss.Abilities
             private readonly CombatTargetRef reference;
             public Target(Character actor,BodyPart part)
             {
-                reference=new CombatTargetRef(R4LiveSlotQuery.ActorRuntimeId(actor),
+                reference=new CombatTargetRef(LiveSlotQuery.ActorRuntimeId(actor),
                     part?.PartId??string.Empty,"");
             }
             public IReadOnlyList<CombatTargetRef> Select(IReadOnlyAbilityContext _) =>
@@ -79,12 +79,12 @@ namespace ProjectAbyss.Abilities
                 ability=new AbilityInstance(
                     new AbilityDefinitionRef(graph.StableId,graph.SourceAssetGuid),
                     new AbilityIdentity(graph.StableId,
-                        R4LiveSlotQuery.ActorRuntimeId(context.Owner),
+                        LiveSlotQuery.ActorRuntimeId(context.Owner),
                         action.Slot.SlotId??string.Empty,0));
                 identities.Add(key,ability);
             }
             if(ability.Identity.OwnerActorRuntimeId!=
-               R4LiveSlotQuery.ActorRuntimeId(context.Owner))
+               LiveSlotQuery.ActorRuntimeId(context.Owner))
                 throw new InvalidOperationException("R7-3 action identity conflict");
 
             var plan=runner.Plan(ability,evt,new Match(graph.Trigger),null,
@@ -94,7 +94,7 @@ namespace ProjectAbyss.Abilities
                 return false;
             string batchId="R7-3:"+graph.SourceAssetGuid+":"+evt.ActionId+
                 ":"+evt.CauseId+":"+evt.Kind+":"+evt.RollUseIndex;
-            var commands=R5PlannedCommandBridge.Materialize(
+            var commands=PlannedCommandBridge.Materialize(
                 ability,evt,plan,batchId,0);
             ICombatCommandBackend backend;
             if(status)
@@ -104,7 +104,7 @@ namespace ProjectAbyss.Abilities
                     :StatusEffectFactory.CreateCanonical0922(
                         graph.Status,graph.Amount,graph.Duration);
                 if(effect==null)return false;
-                var service=new R5CombatSpecialistBackend(battle);
+                var service=new CombatSpecialistBackend(battle);
                 var req=part==null
                     ?EffectRequest.CharacterStatus(context.Owner,target,effect,
                         action,context.RollIndex,context.Timing,true)

@@ -33,11 +33,11 @@ public static class NativeUniqueGaugeParity
     {
         if(!Application.isPlaying)throw new InvalidOperationException("PlayMode required");
         var battle=UnityEngine.Object.FindFirstObjectByType<BattleManager>()?.BattleContext;
-        var route=battle?.Services?.R7NativeUniqueGaugeMigration;
+        var route=battle?.Services?.UniqueGaugeAbilities;
         var enemy=battle?.Enemies?.FirstOrDefault(e=>e!=null&&!e.IsDead&&!e.UsesBodyParts);
         if(route==null||enemy==null||battle.SkillUpgrades==null)
             throw new InvalidOperationException("Required production graph unavailable");
-        var assets=Resources.LoadAll<R7NativeUniqueGaugeDefinition>(
+        var assets=Resources.LoadAll<NativeUniqueGaugeDefinition>(
             "ProjectAbyss/NativeUniqueGauges").OrderBy(x=>x.StableId).ToArray();
         var type=typeof(Skill).Assembly.GetType("SkillEffectDispatcher",true);
         var dispatcher=Activator.CreateInstance(type,true);

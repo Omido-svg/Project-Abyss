@@ -21,7 +21,7 @@ namespace ProjectAbyss.Abilities
             public SingleTarget(Character owner,BodyPart part)
             {
                 target=new CombatTargetRef(
-                    R4LiveSlotQuery.ActorRuntimeId(owner),
+                    LiveSlotQuery.ActorRuntimeId(owner),
                     part?.PartId??string.Empty,"");
             }
             public IReadOnlyList<CombatTargetRef> Select(IReadOnlyAbilityContext _) =>
@@ -94,11 +94,11 @@ namespace ProjectAbyss.Abilities
                 ability.Definition.SourceAssetGuid+":"+
                 cause.ActionId+":"+index+":"+cause.Kind+":"+
                 cause.RollUseIndex+":"+cause.CauseId;
-            var cmds=R5PlannedCommandBridge.Materialize(
+            var cmds=PlannedCommandBridge.Materialize(
                 ability,cause,planned,commandId,0);
             var request=EffectRequest.BodyPartStatus(context.Owner,target,part,
                 status,context.Action,context.RollIndex,context.Timing,true);
-            var backend=new R5CombatSpecialistBackend(battle);
+            var backend=new CombatSpecialistBackend(battle);
             if(part==null)
                 backend.RegisterCharacterStatus(cmds[0],request);
             else

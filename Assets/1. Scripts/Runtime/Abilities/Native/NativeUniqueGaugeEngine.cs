@@ -20,7 +20,7 @@ namespace ProjectAbyss.Abilities
         {
             if(owner==null || owner.IsDead ||
                command.Kind!=CombatCommandKind.ChangeResource ||
-               command.Target.ActorRuntimeId!=R4LiveSlotQuery.ActorRuntimeId(owner) ||
+               command.Target.ActorRuntimeId!=LiveSlotQuery.ActorRuntimeId(owner) ||
                !string.IsNullOrEmpty(command.Target.PartId) ||
                command.RequestedAmount<=0 || bound.ContainsKey(command.CommandId))
                 throw new InvalidOperationException("Invalid native unique gauge binding");
@@ -39,7 +39,7 @@ namespace ProjectAbyss.Abilities
             bound.Remove(command.CommandId);
             var owner=payload.owner;
             if(owner==null||owner.IsDead||
-               command.Target.ActorRuntimeId!=R4LiveSlotQuery.ActorRuntimeId(owner)||
+               command.Target.ActorRuntimeId!=LiveSlotQuery.ActorRuntimeId(owner)||
                command.RequestedAmount<=0)
                 return CombatCommandReceipt.Reject("Unique gauge owner no longer valid");
 
@@ -88,7 +88,7 @@ namespace ProjectAbyss.Abilities
         {
             private readonly CombatTargetRef target;
             public OwnerSelector(Character owner)=>
-                target=new CombatTargetRef(R4LiveSlotQuery.ActorRuntimeId(owner),"","");
+                target=new CombatTargetRef(LiveSlotQuery.ActorRuntimeId(owner),"","");
             public IReadOnlyList<CombatTargetRef> Select(IReadOnlyAbilityContext _)=>
                 new[]{target};
         }
@@ -101,7 +101,7 @@ namespace ProjectAbyss.Abilities
         public int Attempts {get;private set;}
         public int Commits {get;private set;}
 
-        public bool Execute(R7NativeUniqueGaugeDefinition graph,
+        public bool Execute(NativeUniqueGaugeDefinition graph,
             BattleAction action,Character owner,AbilityEventContext evt,int level)
         {
             if(disposed||graph==null||!graph.IsValid||
@@ -117,12 +117,12 @@ namespace ProjectAbyss.Abilities
                 instance=new AbilityInstance(
                     new AbilityDefinitionRef(graph.StableId,graph.SourceAssetGuid),
                     new AbilityIdentity(graph.StableId,
-                        R4LiveSlotQuery.ActorRuntimeId(owner),
+                        LiveSlotQuery.ActorRuntimeId(owner),
                         action.Slot?.SlotId??string.Empty,0));
                 instances.Add(key,instance);
             }
             if(instance.Identity.OwnerActorRuntimeId!=
-                R4LiveSlotQuery.ActorRuntimeId(owner))
+                LiveSlotQuery.ActorRuntimeId(owner))
                 throw new InvalidOperationException("Native gauge identity collision");
             var plan=runner.Plan(instance,evt,new Match(graph.Trigger),null,
                 new OwnerSelector(owner),new IEffectOperation[]{
@@ -131,7 +131,7 @@ namespace ProjectAbyss.Abilities
             if(plan.Commands.Count!=1||plan.Result.AppliedCommands!=0)return false;
             var id="NativeGauge:"+graph.SourceAssetGuid+":"+
                 evt.ActionId+":"+evt.Kind+":"+evt.RollUseIndex+":"+evt.CauseId;
-            var commands=R5PlannedCommandBridge.Materialize(
+            var commands=PlannedCommandBridge.Materialize(
                 instance,evt,plan,id,0);
             backend.Register(commands[0],owner,graph.Kind);
             Attempts++;

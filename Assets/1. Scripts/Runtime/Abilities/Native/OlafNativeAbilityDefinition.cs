@@ -4,7 +4,7 @@ using UnityEngine;
 namespace ProjectAbyss.Abilities
 {
     // Gameplay operations authored directly into native SOs. The enum is NOT
-    // the deprecated Olaf0922Phase7EffectOperation serialized type.
+    // the deprecated OlafMadnessOperation serialized type.
     public enum OlafNativeOperation
     {
         RandomTargetDebuffNextTurn=1, TargetStatusNextTurn=2,

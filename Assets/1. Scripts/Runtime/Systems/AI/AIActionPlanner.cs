@@ -153,14 +153,14 @@ public sealed class AIActionPlanner
         // action selection must therefore execute HERE in production.
         // Keep every noncanonical/test/boss/elite enemy on the normal
         // AIActionPlanner route; do not alter their slot rules.
-        var stageOne = enemy.GetMechanic<StageOneEnemy1112Mechanic>();
+        var stageOne = enemy.GetMechanic<StageOneEnemyMechanic>();
         if (stageOne != null) return stageOne.Plan();
         if(enemy is NormalEnemy canonicalNormal)
         {
             var nativeRole=canonicalNormal
-                .GetMechanic<NormalEnemy0922RoleMechanic>();
+                .GetMechanic<NormalEnemyRoleMechanic>();
             if(nativeRole?.RoleAssigned==true&&
-                nativeRole.Species!=EnemySpecies1029.Unknown)
+                nativeRole.Species!=EnemySpecies.Unknown)
                 return canonicalNormal.DecideSlots(context);
         }
 

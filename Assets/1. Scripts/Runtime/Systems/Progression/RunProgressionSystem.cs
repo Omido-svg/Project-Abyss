@@ -213,6 +213,8 @@ public sealed class HifumiEngraveRunProgression
 public sealed class RunProgressionState
 {
     public int Seed { get; set; } = System.Guid.NewGuid().GetHashCode();
+    public ProjectAbyss.Abilities.AbilityStateStore AbilityState { get; } = new();
+    public string YujinWeaponInstanceId(YujinWeaponType weapon) => Seed.ToString(System.Globalization.CultureInfo.InvariantCulture)+"/yujin/"+weapon;
     public YujinWeaponType? LastYujinWeapon { get; set; }
     public int Stage { get; private set; } = 1;
     public int Gold { get; private set; }
@@ -242,6 +244,7 @@ public sealed class RunProgressionState
         SkillUpgrades.Clear();
         Inventory.Clear();
         LastYujinWeapon = null;
+        AbilityState.ResetAt(ProjectAbyss.Abilities.AbilityLifetimeBoundary.Run);
         HifumiEngrave.Reset();
     }
 

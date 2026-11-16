@@ -93,4 +93,4 @@ MonoBehaviour:
   ConsumeAllCustomResource: 0
   OverridePrestigeUsePolicy: 0
   PrestigeUsePolicy: 1
-  presentationAsset: {fileID: 0}
+  presentationAsset: {fileID: 11400000, guid: bf9f9ec9355e57c4994350f0d6422dfb, type: 2}

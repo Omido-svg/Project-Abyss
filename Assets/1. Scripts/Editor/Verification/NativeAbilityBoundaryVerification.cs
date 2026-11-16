@@ -23,10 +23,10 @@ public static class NativeAbilityBoundaryVerification
             "ProjectAbyss/NativePreparations/EliteCombatStance_Setup");
         var original=AssetDatabase.LoadAssetAtPath<SkillDefinition>(
             AssetDatabase.GUIDToAssetPath(
-                NativePreparationStatusAssetMigration.SourceGuid));
+                NativePreparationStatusAssetVerification.SourceGuid));
         var a=Application.dataPath;
         var script=File.ReadAllText(Path.Combine(a,
-            "1. Scripts/Runtime/Abilities/Runtime/R7ProductionPreparationStatusMigration.cs"));
+            "1. Scripts/Runtime/Abilities/Runtime/PreparationStatusAbilityBinding.cs"));
         var dispatcher=File.ReadAllText(Path.Combine(a,
             "1. Scripts/Runtime/Skills/Base/SkillEffectDispatcher.cs"));
         var boundaries=File.ReadAllLines(Path.Combine(
@@ -61,10 +61,10 @@ public static class NativeAbilityBoundaryVerification
         Check("B08 native status constructor and typed R5 service",
             script.Contains("new Bleeding(value,operation.Duration)") &&
             script.Contains("new Burn(value,operation.Duration)") &&
-            script.Contains("R5CombatSpecialistBackend"));
+            script.Contains("CombatSpecialistBackend"));
         var nativeBranch=dispatcher.IndexOf("var native = context.BattleContext",StringComparison.Ordinal);
         var prepBranch=dispatcher.IndexOf("var prep=context.BattleContext",StringComparison.Ordinal);
-        var legacyScope=dispatcher.IndexOf("var migration = ProjectAbyss.Abilities.R7ExclusiveEntryMigrationScope.Active",StringComparison.Ordinal);
+        var legacyScope=dispatcher.IndexOf("var migration = ProjectAbyss.Abilities.ExclusiveAbilityBindingScope.Active",StringComparison.Ordinal);
         Check("B09 production R7 routes outrank opt-in legacy adapter scope",
             nativeBranch>=0&&prepBranch>nativeBranch&&legacyScope>prepBranch);
         Check("B10 unmigrated legacy fallback not removed prematurely",
@@ -75,14 +75,14 @@ public static class NativeAbilityBoundaryVerification
             original!=null&&!EditorUtility.IsDirty(original));
         Check("B12 legacy boundary source sites explicitly inventoried",
             boundaries.Length>=2 &&
-            boundaries.Any(x=>x.Contains("R7ExclusiveEntryMigrationScope")) &&
+            boundaries.Any(x=>x.Contains("ExclusiveAbilityBindingScope")) &&
             boundaries.Any(x=>x.Contains("SkillEffectDispatcher")));
         // R7-1 final closure: production-native source is denied every
         // legacy/adapter fallback if its runtime service is unavailable.
         Check("B13 source identity explicitly recognized",
-            R7ProductionPreparationStatusMigration.IsAuthoredSource(original));
+            PreparationStatusAbilityBinding.IsAuthoredSource(original));
         Check("B14 source identity rejects unrelated skills",
-            !R7ProductionPreparationStatusMigration.IsAuthoredSource(null));
+            !PreparationStatusAbilityBinding.IsAuthoredSource(null));
         var guard=dispatcher.IndexOf(
             "R7-1 Preparation native route unavailable; refusing legacy fallback.",
             StringComparison.Ordinal);
@@ -106,13 +106,13 @@ public static class NativeAbilityBoundaryVerification
         var nativeSignatureCheck=runtimeType?.GetMethod("IsRegisteredNativeSource",
             System.Reflection.BindingFlags.Static |
             System.Reflection.BindingFlags.NonPublic);
-        var sourceGuids=Resources.LoadAll<R7NativeAbilityDefinition>(
+        var sourceGuids=Resources.LoadAll<NativeAbilityDefinition>(
                 "ProjectAbyss/NativeAbilities").Select(x=>x.SourceAssetGuid)
-            .Concat(Resources.LoadAll<R7NativeStatusAbilityDefinition>(
+            .Concat(Resources.LoadAll<NativeStatusAbilityDefinition>(
                 "ProjectAbyss/NativeStatuses").Select(x=>x.SourceAssetGuid))
-            .Concat(Resources.LoadAll<R7NativeMixedAbilityDefinition>(
+            .Concat(Resources.LoadAll<NativeMixedAbilityDefinition>(
                 "ProjectAbyss/NativeMixed").Select(x=>x.SourceAssetGuid))
-            .Concat(Resources.LoadAll<R7NativeUniqueGaugeDefinition>(
+            .Concat(Resources.LoadAll<NativeUniqueGaugeDefinition>(
                 "ProjectAbyss/NativeUniqueGauges").Select(x=>x.SourceAssetGuid))
             .Distinct().ToArray();
         var nativeSources=sourceGuids.Select(g=>AssetDatabase.LoadAssetAtPath<

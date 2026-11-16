@@ -157,7 +157,7 @@ public Snapshot Build(BattleManager manager,BattleUIManager ui,string lastEvent)
                 {
                     // Same pure projection as the R4 live bridge; never call a
                     // model mutation or pretend a failed selection is valid.
-                    var preview=R4LiveSlotQuery.Capture(
+                    var preview=LiveSlotQuery.Capture(
                         slot,hostileSide,plans,0,weight);
                     if(preview?.Selection?.Success==true &&
                        preview.HasUnambiguousMain)

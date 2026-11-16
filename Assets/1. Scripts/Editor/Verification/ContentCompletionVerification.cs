@@ -653,7 +653,7 @@ public static class ContentCompletionVerification
     private static ContentDefinitionManifest LoadPhaseEManifest()
     {
         ContentDefinitionManifest manifest = AssetDatabase.LoadAssetAtPath<ContentDefinitionManifest>(
-            ContentDefinitionMigration.ManifestPath);
+            ContentCatalogAudit.ManifestPath);
         if (manifest != null)
             return manifest;
 

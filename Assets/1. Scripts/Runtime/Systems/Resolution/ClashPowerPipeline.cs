@@ -66,7 +66,7 @@ public sealed class ClashPowerPipeline
                 action,
                 opponent);
 
-        if (Canonical0922EmotionRuntimeHooks
+        if (EmotionAugmentRuntimeHooks
                 .TryResolveClashSpeedModifierOverride(
                     action,
                     out int canonicalSpeedOverride))

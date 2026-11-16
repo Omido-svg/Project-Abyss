@@ -57,16 +57,16 @@ public static class NativeContentIntegrationVerification
             UnityEngine.Object graph)=>
             rows.Add((fam,id,guid,name,valid,graph));
 
-        foreach(var x in Resources.LoadAll<R7NativeAbilityDefinition>(
+        foreach(var x in Resources.LoadAll<NativeAbilityDefinition>(
             "ProjectAbyss/NativeAbilities"))
             Add("Resource",x.StableId,x.SourceAssetGuid,x.SourceAssetName,x.IsValid,x);
-        foreach(var x in Resources.LoadAll<R7NativeStatusAbilityDefinition>(
+        foreach(var x in Resources.LoadAll<NativeStatusAbilityDefinition>(
             "ProjectAbyss/NativeStatuses"))
             Add("Status",x.StableId,x.SourceAssetGuid,x.SourceAssetName,x.IsValid,x);
-        foreach(var x in Resources.LoadAll<R7NativeMixedAbilityDefinition>(
+        foreach(var x in Resources.LoadAll<NativeMixedAbilityDefinition>(
             "ProjectAbyss/NativeMixed"))
             Add("Mixed",x.StableId,x.SourceAssetGuid,x.SourceAssetName,x.IsValid,x);
-        foreach(var x in Resources.LoadAll<R7NativeUniqueGaugeDefinition>(
+        foreach(var x in Resources.LoadAll<NativeUniqueGaugeDefinition>(
             "ProjectAbyss/NativeUniqueGauges"))
             Add("Gauge",x.StableId,x.SourceAssetGuid,x.SourceAssetName,x.IsValid,x);
         foreach(var x in Resources.LoadAll<NativeSingleEffectDefinition>(
@@ -108,7 +108,7 @@ public static class NativeContentIntegrationVerification
             Script("SkillEffectDispatcher.cs").IndexOf(
                 "OlafNativeAbilityRuntimeBinding",StringComparison.Ordinal)<
             Script("SkillEffectDispatcher.cs").IndexOf(
-                "R7NativeResourceMigration",StringComparison.Ordinal));
+                "ResourceAbilities",StringComparison.Ordinal));
 
         var collisions=skills.GroupBy(x=>x.SkillId,StringComparer.Ordinal)
             .Where(x=>x.Count()>1).ToArray();
@@ -184,7 +184,7 @@ public static class NativeContentIntegrationVerification
                 "enemy native route missing or mismatched"));
 
         var gatedNames=new[]{"LegacySkillEffectEntryAdapter.cs",
-            "R7ExclusiveEntryMigrationScope.cs","SkillMigrationObserver.cs"};
+            "ExclusiveAbilityBindingScope.cs","SkillAbilityObserver.cs"};
         Check("F30 three legacy-only classes excluded from player build",
             gatedNames.All(n=>Script(n).TrimStart().StartsWith(
                 "#if UNITY_EDITOR",StringComparison.Ordinal)));
@@ -195,7 +195,7 @@ public static class NativeContentIntegrationVerification
             },StringSplitOptions.None).Length-1==2);
         Check("F32 legacy fallback retained for still-unmigrated source skills",
             dispatcher.Contains("return ExecuteEntries(")&&
-            Script("R7ExclusiveEntryMigrationScope.cs").Contains(
+            Script("ExclusiveAbilityBindingScope.cs").Contains(
                 "LegacySkillEffectEntryAdapter(entry)"));
         Check("F33 player build cannot construct legacy adapter in dispatcher",
             !dispatcher.Contains("new LegacySkillEffectEntryAdapter("));

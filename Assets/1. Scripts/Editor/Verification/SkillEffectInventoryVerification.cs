@@ -43,7 +43,7 @@ public static void Run()
             .ToHashSet(StringComparer.Ordinal);
 
         SkillAssetRef[] eligible;
-        using (var scope = R7ExclusiveEntryMigrationScope.Begin(catalog))
+        using (var scope = ExclusiveAbilityBindingScope.Begin(catalog))
             eligible = catalog.Where(x => scope.CanRoute(x.Definition))
                 .OrderBy(x => AssetDatabase.GetAssetPath(x.Definition),
                     StringComparer.Ordinal)
@@ -94,7 +94,7 @@ public static void Run()
         Check("B09 no source SkillDefinition marked dirty",
             eligible.All(x => !EditorUtility.IsDirty(x.Definition)));
         Check("B10 scoped legacy bridge fully released",
-            R7ExclusiveEntryMigrationScope.Active == null);
+            ExclusiveAbilityBindingScope.Active == null);
 
         Debug.Log("[R8-Effect-Inventory] SUMMARY eligible=" + eligible.Length +
                   " effects=" + entryCount + " filesHashed=" + sources.Count +

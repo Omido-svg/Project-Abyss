@@ -34,13 +34,13 @@ public static class LiveSlotQueryVerification
         var points=elite.GetTargetPoints(false).Where(p=>p.IsValid).ToArray();
         var first=points.First().Part;
         var second=points.Skip(1).First().Part;
-        long eliteId=R4LiveSlotQuery.ActorRuntimeId(elite);
-        long normalId=R4LiveSlotQuery.ActorRuntimeId(normal);
+        long eliteId=LiveSlotQuery.ActorRuntimeId(elite);
+        long normalId=LiveSlotQuery.ActorRuntimeId(normal);
         var source=new ActionSlot {ActionId=92100, Owner=battle.Player,
             TargetCharacter=elite,TargetPart=first,Phase=ActionPhase.COMBAT};
         var planned=new List<ActionSlot>{source};
         var beforeRandom=UnityEngine.JsonUtility.ToJson(UnityEngine.Random.state);
-        var snapshot=R4LiveSlotQuery.Capture(source,battle.Enemies,planned,7,3);
+        var snapshot=LiveSlotQuery.Capture(source,battle.Enemies,planned,7,3);
         var afterRandom=UnityEngine.JsonUtility.ToJson(UnityEngine.Random.state);
 
         Check("L01 real elite actor ID scoped to runtime",eliteId>0 && eliteId!=normalId);
@@ -63,14 +63,14 @@ public static class LiveSlotQueryVerification
             snapshot.Candidates.Any(c=>c.Slot.ActorRuntimeId==eliteId &&
                 c.HitTarget.PartId==first.PartId && c.OccupiedMainTargetCount==1));
         Check("L09 preview does not consume Unity Random",beforeRandom==afterRandom);
-        var repeat=R4LiveSlotQuery.Capture(source,battle.Enemies,planned,7,3);
+        var repeat=LiveSlotQuery.Capture(source,battle.Enemies,planned,7,3);
         var seq=snapshot.Selection.Allocation.SelectedSlots.Select(s=>s.Slot.ActorRuntimeId+":"+s.Slot.SlotId).ToArray();
         var seq2=repeat.Selection.Allocation.SelectedSlots.Select(s=>s.Slot.ActorRuntimeId+":"+s.Slot.SlotId).ToArray();
         Check("L10 exact-repeat deterministic",seq.SequenceEqual(seq2));
 
         var twoPlans=new List<ActionSlot>{source,new ActionSlot{ActionId=92101,
             Owner=battle.Player,TargetCharacter=elite,TargetPart=first,Phase=ActionPhase.COMBAT}};
-        var occupied=R4LiveSlotQuery.Capture(source,battle.Enemies,twoPlans,8,2);
+        var occupied=LiveSlotQuery.Capture(source,battle.Enemies,twoPlans,8,2);
         Check("L11 two main plans occupy same target",occupied.Candidates.Any(c=>
             c.HitTarget.ActorRuntimeId==eliteId &&
             c.HitTarget.PartId==first.PartId && c.OccupiedMainTargetCount==2));
@@ -79,7 +79,7 @@ public static class LiveSlotQueryVerification
             Part=first,Phase=ActionPhase.COMBAT};
         var cross=new ActionSlot{Owner=battle.Player,ActionId=92102,
             TargetCharacter=elite,TargetPart=second,TargetSlot=explicitTargetSlot,Phase=ActionPhase.COMBAT};
-        var redirected=R4LiveSlotQuery.Capture(cross,battle.Enemies,new[]{cross},9,2);
+        var redirected=LiveSlotQuery.Capture(cross,battle.Enemies,new[]{cross},9,2);
         Check("L12 selected clash slot independent of damage part",
             redirected.HasUnambiguousMain &&
             redirected.Primary.Slot.SlotId==explicitTargetSlot.SlotId &&
@@ -87,15 +87,15 @@ public static class LiveSlotQueryVerification
 
         var noPart=new ActionSlot {Owner=battle.Player,ActionId=92103,
             TargetCharacter=elite,TargetPart=null,TargetSlot=explicitTargetSlot,Phase=ActionPhase.COMBAT};
-        var badPart=R4LiveSlotQuery.Capture(noPart,battle.Enemies,new[]{noPart},10,2);
+        var badPart=LiveSlotQuery.Capture(noPart,battle.Enemies,new[]{noPart},10,2);
         Check("L13 bodypart actor requires explicit valid hit part",!badPart.HasUnambiguousMain);
 
-        var wrongSide=R4LiveSlotQuery.Capture(source,new[]{normal},planned,11,2);
+        var wrongSide=LiveSlotQuery.Capture(source,new[]{normal},planned,11,2);
         Check("L14 cross-faction/invalid-side primary rejected",!wrongSide.HasUnambiguousMain);
 
         var normalSource=new ActionSlot{Owner=battle.Player,ActionId=92104,
             TargetCharacter=normal,TargetPart=null,Phase=ActionPhase.COMBAT};
-        var noParts=R4LiveSlotQuery.Capture(normalSource,battle.Enemies,new[]{normalSource},12,2);
+        var noParts=LiveSlotQuery.Capture(normalSource,battle.Enemies,new[]{normalSource},12,2);
         Check("L15 real partless normal resolves without fake body part",
             noParts.HasUnambiguousMain && noParts.Primary.HitTarget.PartId=="");
 

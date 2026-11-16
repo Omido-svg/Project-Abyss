@@ -98,7 +98,7 @@ public sealed class PlanningActionCancellationService
 
         bool wasImmediatePreparation =
             live.PlanningEffectCommitted &&
-            (live.Skill?.ActionType == ActionType.Preparation || live.Skill is StageOneTemporarySkill1112);
+            (live.Skill?.ActionType == ActionType.Preparation || live.Skill is StageOneTemporarySkill);
 
         if (wasImmediatePreparation)
         {

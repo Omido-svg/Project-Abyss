@@ -35,7 +35,7 @@ namespace ProjectAbyss.Abilities
             if(owner==null || owner.IsDead ||
                 command.Kind!=CombatCommandKind.ChangeResource ||
                 command.RequestedAmount<=0 ||
-                command.Target.ActorRuntimeId!=R4LiveSlotQuery.ActorRuntimeId(owner) ||
+                command.Target.ActorRuntimeId!=LiveSlotQuery.ActorRuntimeId(owner) ||
                 !string.IsNullOrEmpty(command.Target.PartId) ||
                 string.IsNullOrWhiteSpace(command.CommandId) ||
                 bound.ContainsKey(command.CommandId))
@@ -53,7 +53,7 @@ namespace ProjectAbyss.Abilities
             if(owner==null || owner.IsDead ||
                request.Kind!=CombatCommandKind.ChangeResource ||
                request.RequestedAmount<=0 ||
-               request.Target.ActorRuntimeId!=R4LiveSlotQuery.ActorRuntimeId(owner) ||
+               request.Target.ActorRuntimeId!=LiveSlotQuery.ActorRuntimeId(owner) ||
                !string.IsNullOrEmpty(request.Target.PartId))
                 return CombatCommandReceipt.Reject("Owner or target became invalid.");
             int before;
@@ -82,7 +82,7 @@ namespace ProjectAbyss.Abilities
             return new CombatCommandReceipt(
                 applied>0 ? CombatCommandOutcome.Applied : CombatCommandOutcome.Rejected,
                 applied,0,applied>0,
-                "R7 native "+payload.Kind+"; before="+before+",after="+after);
+                "Native "+payload.Kind+"; before="+before+",after="+after,CombatAppliedValues.FromResource(before,after));
         }
 
         public void Clear() => bound.Clear();
@@ -102,7 +102,7 @@ namespace ProjectAbyss.Abilities
             public FixedOwnerSelector(Character character)
             {
                 owner=new CombatTargetRef(
-                    R4LiveSlotQuery.ActorRuntimeId(character),"","");
+                    LiveSlotQuery.ActorRuntimeId(character),"","");
             }
             public IReadOnlyList<CombatTargetRef> Select(IReadOnlyAbilityContext context)=>
                 new[]{owner};
@@ -159,7 +159,7 @@ namespace ProjectAbyss.Abilities
                 return false;
             string id=ability.Identity.DefinitionId+":native:"+
                 cause.ActionId+":"+entryIndex+":"+cause.Kind+":"+cause.RollUseIndex;
-            var commands=R5PlannedCommandBridge.Materialize(ability,cause,plan,id,0);
+            var commands=PlannedCommandBridge.Materialize(ability,cause,plan,id,0);
             backend.Register(commands[0],context.Owner,kind);
             NativeAttemptCount++;
             var applied=service.Apply(ability,cause,commands,backend);

@@ -25,7 +25,7 @@ public static class CompatibilityMixedActualClashVerification
         if(!Application.isPlaying)throw new InvalidOperationException("Play Mode required");
         var ctx=UnityEngine.Object.FindFirstObjectByType<BattleManager>()?.BattleContext;
         var owner=ctx?.Player;
-        var router=ctx?.Services?.R7LegacyStatusMigration;
+        var router=ctx?.Services?.MixedAbilities;
         var prefab=AssetDatabase.LoadAssetAtPath<GameObject>(
             "Assets/2. Data/TestEncounters/Prefabs/Hifumi_Test.prefab");
         if(ctx==null||owner==null||router==null||prefab==null)

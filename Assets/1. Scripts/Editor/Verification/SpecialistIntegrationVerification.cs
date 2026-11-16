@@ -16,13 +16,13 @@ public static class SpecialistIntegrationVerification
         long action, long cause, Character target, BodyPart part, int amount)
     {
         return new CombatCommandEnvelope(id,ability.Identity,kind,action,cause,
-            new CombatTargetRef(R4LiveSlotQuery.ActorRuntimeId(target),
+            new CombatTargetRef(LiveSlotQuery.ActorRuntimeId(target),
                 part?.PartId, null),amount,0,0,0,0);
     }
 
     private static AbilityEventContext Ev(long action, long cause, Character owner) =>
         new AbilityEventContext(AbilityEventKind.RollUsing,action,cause,
-            R4LiveSlotQuery.ActorRuntimeId(owner),0,false,false);
+            LiveSlotQuery.ActorRuntimeId(owner),0,false,false);
 
     public static void Run()
     {
@@ -44,12 +44,12 @@ public static class SpecialistIntegrationVerification
             if(ok){pass++;Debug.Log("[R5-Real] PASS "+name+" "+detail);}
             else{fail++;Debug.LogError("[R5-Real] FAIL "+name+" "+detail);}
         }
-        var backend=new R5CombatSpecialistBackend(ctx);
+        var backend=new CombatSpecialistBackend(ctx);
         var svc=new CombatCommandApplyService();
         AbilityInstance NewAbility() => new AbilityInstance(
             new AbilityDefinitionRef("R5-REAL-VERIFY","runtime-test"),
             new AbilityIdentity("R5-REAL-VERIFY",
-                R4LiveSlotQuery.ActorRuntimeId(player),"SLOT",0));
+                LiveSlotQuery.ActorRuntimeId(player),"SLOT",0));
 
         Check("S01 services available and unsupported kind rejected",
             backend.CanApply(CombatCommandKind.DealDamage) &&

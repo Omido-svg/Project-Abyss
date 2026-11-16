@@ -215,7 +215,7 @@ public class MomentumManager
         Character owner = null)
     {
         int advantageThreshold =
-            Canonical0922EmotionRuntimeHooks
+            EmotionAugmentRuntimeHooks
                 .ResolveMomentumAdvantageThreshold(
                     owner,
                     settings.AdvantageThreshold);

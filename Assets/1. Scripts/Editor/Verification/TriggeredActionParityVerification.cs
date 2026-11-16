@@ -30,7 +30,7 @@ public static class TriggeredActionParityVerification
             {
                 var owner=fixture.Player;
                 var target=fixture.Enemy;
-                long ownerId=R4LiveSlotQuery.ActorRuntimeId(owner);
+                long ownerId=LiveSlotQuery.ActorRuntimeId(owner);
                 var def=ScriptableObject.CreateInstance<SkillDefinition>();
                 created.Add(def);
                 def.name="R2_REACTION_TEST_ONLY";
@@ -53,7 +53,7 @@ public static class TriggeredActionParityVerification
                 var requestB=new ReactionRequest(
                     5002,9001,9000,7001,8800,ownerId,def.SkillId,
                     ReactionTimingCheckpoint.AfterExchangeSettled,0,2);
-                var factory=new R2TriggeredActionFactory();
+                var factory=new TriggeredActionFactory();
                 BodyPart ownPart=owner.BodyParts?.FirstOrDefault(p=>p!=null&&!p.IsBroken);
                 BodyPart targetPart=target.BodyParts?.FirstOrDefault(p=>p!=null&&!p.IsBroken);
                 bool createdA=factory.TryCreate(requestA,9101,owner,target,def,

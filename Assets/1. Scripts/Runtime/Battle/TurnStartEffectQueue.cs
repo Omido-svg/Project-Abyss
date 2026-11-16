@@ -1,19 +1,64 @@
 using System;
 using System.Collections.Generic;
+using ProjectAbyss.Abilities;
 
-/// <summary>1112 §2/18.2: one FIFO for all turn-start reservations.</summary>
+/// <summary>Single FIFO application authority for turn-start reservations; trigger traps have a separate lifecycle.</summary>
 public sealed class TurnStartEffectQueue
 {
-    private readonly Queue<Action> pending = new();
+    private sealed class Entry
+    {
+        public long Sequence;
+        public Action Apply;
+        public Character Target;
+        public BodyPart Part;
+        public bool TargetLocked;
+        public EffectCause Cause;
+    }
+    private readonly Queue<Entry> pending=new();
+    private long sequence;
     private bool draining;
-    public int Count => pending.Count;
-    public void Enqueue(Action apply) { if (apply != null) pending.Enqueue(apply); }
-    public void Clear() => pending.Clear();
+    public int Count=>pending.Count;
+    public bool IsFaulted { get; private set; }
+    public long LastFailedSequence { get; private set; }
+    public long AppliedCount { get; private set; }
+    public long ExpiredCount { get; private set; }
+    public void Enqueue(Action apply)
+    {
+        if(apply!=null)pending.Enqueue(new Entry{Sequence=checked(++sequence),Apply=apply});
+    }
+    public void EnqueueLocked(Character target,BodyPart part,Action apply,EffectCause cause=default)
+    {
+        if(target==null || apply==null || part!=null && part.Owner!=target)return;
+        pending.Enqueue(new Entry{Sequence=checked(++sequence),Apply=apply,Target=target,
+            Part=part,TargetLocked=true,Cause=cause});
+    }
+    public void Clear()
+    {
+        // Battle-end cancellation may clear pending work from inside the current reservation.
+        pending.Clear();IsFaulted=false;LastFailedSequence=0;AppliedCount=0;ExpiredCount=0;sequence=0;
+    }
     public void Drain()
     {
-        if (draining) return;
-        draining = true;
-        try { while (pending.Count > 0) pending.Dequeue().Invoke(); }
-        finally { draining = false; }
+        if(draining)return;
+        if(IsFaulted)throw new InvalidOperationException("Reservation commit is indeterminate; reconcile before continuing.");
+        draining=true;
+        try
+        {
+            while(pending.Count>0)
+            {
+                var entry=pending.Dequeue();
+                if(entry.TargetLocked && (entry.Target==null || entry.Target.IsDead ||
+                    entry.Part!=null && (entry.Part.IsBroken || entry.Part.Owner!=entry.Target)))
+                {ExpiredCount++;continue;}
+                try{entry.Apply();AppliedCount++;}
+                catch(Exception e)
+                {
+                    IsFaulted=true;LastFailedSequence=entry.Sequence;
+                    throw new InvalidOperationException("Reservation commit unknown: sequence="+entry.Sequence+
+                        ",cause="+entry.Cause.EventId+",root="+entry.Cause.RootActionId+". Reconciliation required.",e);
+                }
+            }
+        }
+        finally{draining=false;}
     }
 }

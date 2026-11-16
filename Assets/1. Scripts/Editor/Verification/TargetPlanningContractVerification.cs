@@ -9,11 +9,11 @@ using ProjectAbyss.Abilities;
 /// <summary>R4 deterministic candidate selection and immutable target boundaries.</summary>
 public static class TargetPlanningContractVerification
 {
-    private sealed class Exclude : IR4TargetPlanningRule
+    private sealed class Exclude : ITargetPlanningRule
     {
         private readonly long actor;
         public Exclude(long actor){this.actor=actor;}
-        public bool Allows(in R4TargetPlanningContext ctx,WeightedTargetSlot slot)=>
+        public bool Allows(in TargetPlanningContext ctx,WeightedTargetSlot slot)=>
             slot.Slot.ActorRuntimeId!=actor;
     }
     private static WeightedTargetSlot S(long id,string slot,string part,
@@ -35,45 +35,45 @@ public static class TargetPlanningContractVerification
         }
         var values=new[]{S(403,"Z","arm"),S(401,"A",""),S(402,"X","head"),
             S(403,"A","leg"),S(404,"N","",eligible:false)};
-        var ctx=new R4TargetPlanningContext(9801,1,401,7);
+        var ctx=new TargetPlanningContext(9801,1,401,7);
         var original=values.ToArray();
-        var sorted=R4DeterministicTargetQuery.Select(values,10,
-            R4TargetSelectionMode.StableFirst,1,null,ctx);
+        var sorted=DeterministicTargetQuery.Select(values,10,
+            TargetSelectionMode.StableFirst,1,null,ctx);
         Check("Q01 stable actor/slot/part sorting",
             Key(sorted)=="401:A:|402:X:head|403:A:leg|403:Z:arm",
             Key(sorted));
-        var reversed=R4DeterministicTargetQuery.Select(values.Reverse(),10,
-            R4TargetSelectionMode.StableFirst,1,null,ctx);
+        var reversed=DeterministicTargetQuery.Select(values.Reverse(),10,
+            TargetSelectionMode.StableFirst,1,null,ctx);
         Check("Q02 candidate input enumeration does not change order",
             Key(sorted)==Key(reversed));
         Check("Q03 ineligible slots removed without changing source collection",
             sorted.Count==4 && values.Length==5 &&
             values.SequenceEqual(original));
-        var rule=new R4TargetPlanningRules(new IR4TargetPlanningRule[]{new Exclude(402),null});
-        var filtered=R4DeterministicTargetQuery.Select(values,10,
-            R4TargetSelectionMode.StableFirst,17,rule,ctx);
+        var rule=new TargetPlanningRules(new ITargetPlanningRule[]{new Exclude(402),null});
+        var filtered=DeterministicTargetQuery.Select(values,10,
+            TargetSelectionMode.StableFirst,17,rule,ctx);
         Check("Q04 read-only eligibility policy excludes actor before selection",
             filtered.Count==3&&filtered.All(v=>v.Slot.ActorRuntimeId!=402));
         var randomBefore=JsonUtility.ToJson(UnityEngine.Random.state);
-        var seeded=R4DeterministicTargetQuery.Select(values,3,
-            R4TargetSelectionMode.SeededRandom,7654321,null,ctx);
+        var seeded=DeterministicTargetQuery.Select(values,3,
+            TargetSelectionMode.SeededRandom,7654321,null,ctx);
         string expected=Key(seeded);
         bool identical=true;
         for(int i=0;i<1000;i++)
-            if(Key(R4DeterministicTargetQuery.Select(
+            if(Key(DeterministicTargetQuery.Select(
                     i%2==0?values:values.Reverse(),3,
-                    R4TargetSelectionMode.SeededRandom,7654321,null,ctx))!=expected)
+                    TargetSelectionMode.SeededRandom,7654321,null,ctx))!=expected)
             {identical=false;break;}
         Check("Q05 1000 fixed-seed picks stable independent of candidate order",
             identical,"seed=7654321 "+expected);
         Check("Q06 query does not consume Unity Random",
             randomBefore==JsonUtility.ToJson(UnityEngine.Random.state));
         Check("Q07 no candidates fail safely",
-            R4DeterministicTargetQuery.Select(Array.Empty<WeightedTargetSlot>(),2,
-                R4TargetSelectionMode.StableFirst,0,null,ctx).Count==0);
+            DeterministicTargetQuery.Select(Array.Empty<WeightedTargetSlot>(),2,
+                TargetSelectionMode.StableFirst,0,null,ctx).Count==0);
         Check("Q08 take zero yields zero without spinning RNG",
-            R4DeterministicTargetQuery.Select(values,0,
-                R4TargetSelectionMode.StableFirst,0,null,ctx).Count==0);
+            DeterministicTargetQuery.Select(values,0,
+                TargetSelectionMode.StableFirst,0,null,ctx).Count==0);
         var main=S(500,"MAIN","HEAD",2);
         var sub=S(501,"SECOND","ARM",3);
         var p=SlotWeightedTargetPlanner.Plan(901,7,3,main,new[]{sub});

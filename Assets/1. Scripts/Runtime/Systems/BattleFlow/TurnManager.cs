@@ -592,7 +592,7 @@ public class TurnManager
 
         lifecycleGuard?.EndBattle();
         battleContext?.TurnStartEffects.Clear();
-        battleContext?.TemporaryCards1112.Clear();
+        battleContext?.TemporaryCards.Clear();
         actionManager?.Clear();
     }
 

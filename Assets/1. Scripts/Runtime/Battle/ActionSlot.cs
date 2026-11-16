@@ -1,5 +1,6 @@
 public class ActionSlot
 {
+    public ProjectAbyss.Abilities.EffectCause ReactionCause;
     public long ActionId;
     public Character Owner;
     public BodyPart Part;

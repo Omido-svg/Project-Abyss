@@ -50,23 +50,7 @@ namespace ProjectAbyss.Abilities
             if(op.Condition==MixedAbilityConditionKind.None)
                 return MixedAbilityGateVerdict.Execute;
             if(context==null)return MixedAbilityGateVerdict.ConditionFailed;
-            bool meets=op.Condition switch
-            {
-                MixedAbilityConditionKind.RollSucceeded=>context.RollSucceeded,
-                MixedAbilityConditionKind.RollFailed=>
-                    context.RollNumber>0&&!context.RollSucceeded,
-                MixedAbilityConditionKind.CriticalRoll=>
-                    context.RollResult?.IsCritical==true,
-                MixedAbilityConditionKind.ClashOnly=>context.IsClash,
-                MixedAbilityConditionKind.OneSidedOnly=>context.IsOneSided,
-                MixedAbilityConditionKind.TargetHasStatus=>
-                    StatusEffectFactory.HasStatus(context.Target,context.TargetPart,
-                        op.RequiredStatus),
-                MixedAbilityConditionKind.TargetNumericStatusAtLeast=>
-                    StatusEffectFactory.GetNumericTotal(context.Target,
-                        context.TargetPart,op.RequiredStatus)>=op.RequiredNumericValue,
-                _=>false
-            };
+            bool meets=MixedAbilityConditionCompiler.Evaluate(op,context);
             return meets?MixedAbilityGateVerdict.Execute:
                 MixedAbilityGateVerdict.ConditionFailed;
         }

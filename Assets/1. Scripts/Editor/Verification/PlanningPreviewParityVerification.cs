@@ -28,20 +28,20 @@ public static class PlanningPreviewParityVerification
         public override void Execute(BattleAction a){}
     }
 
-    private sealed class ExcludeActor : IR4TargetPlanningRule
+    private sealed class ExcludeActor : ITargetPlanningRule
     {
         private readonly long id;
         public ExcludeActor(long id){this.id=id;}
-        public bool Allows(in R4TargetPlanningContext ctx,WeightedTargetSlot target)=>
+        public bool Allows(in TargetPlanningContext ctx,WeightedTargetSlot target)=>
             target.Slot.ActorRuntimeId!=id;
     }
 
     
     private static string Key(HitTargetKey t)=>t.ActorRuntimeId+":"+t.PartId;
     private static string Key(AttackWeightTarget t)=>
-        R4LiveSlotQuery.ActorRuntimeId(t.TargetCharacter)+":"+
+        LiveSlotQuery.ActorRuntimeId(t.TargetCharacter)+":"+
         (t.TargetPart?.PartId??string.Empty);
-    private static string Key(R4WeightPlanningPreview p)=>
+    private static string Key(WeightPlanningPreview p)=>
         string.Join("|",p.DistinctHitTargets.Select(Key));
 
     public static void Run()
@@ -83,7 +83,7 @@ public static class PlanningPreviewParityVerification
         Check("P02 primary planned physical hit is originally aimed enemy",
             preview!=null&&preview.DistinctHitTargets.Count>=1&&
             preview.DistinctHitTargets[0].ActorRuntimeId==
-                R4LiveSlotQuery.ActorRuntimeId(normal),
+                LiveSlotQuery.ActorRuntimeId(normal),
             preview==null?"null":Key(preview));
         Check("P03 weighted budget picks distinct secondary physical targets",
             preview!=null&&preview.DistinctHitTargets.Count==3&&
@@ -103,11 +103,11 @@ public static class PlanningPreviewParityVerification
             "pair count="+pairBefore.Length);
 
         var action=new BattleAction{Slot=source};
-        bool frozen=R4BattlePlanningSession.TryGetFrozen(battle,action,out var locked);
+        bool frozen=BattlePlanningSession.TryGetFrozen(battle,action,out var locked);
         Check("P07 frozen snapshot published for execution",
             frozen&&locked.Selection.Allocation.ActionId==source.ActionId &&
             locked.Selection.Allocation.PlanningRevision==preview.PlanningRevision);
-        bool exec=R5SlotWeightedTargetBridge.TryResolve(battle,action,
+        bool exec=SlotWeightedTargetBridge.TryResolve(battle,action,
             out var actual,out string reason);
         Check("P08 actual R5 opt-in targets match preview in exact order",
             exec&&preview!=null&&actual.Count==preview.DistinctHitTargets.Count &&
@@ -125,8 +125,8 @@ public static class PlanningPreviewParityVerification
         };
         plans.Add(other);
         var kept=mgr.ClashBuilder.BuildAttackWeightPreview(battle,source,plans);
-        R4BattlePlanningSession.NotifyMutation(battle,source.ActionId,
-            R4PlanMutationKind.OtherActionAimChanged);
+        BattlePlanningSession.NotifyMutation(battle,source.ActionId,
+            PlanMutationKind.OtherActionAimChanged);
         other.TargetCharacter=normal;
         var keptAgain=mgr.ClashBuilder.BuildAttackWeightPreview(battle,source,plans);
         Check("P10 unrelated allied aim change keeps frozen target allocation",
@@ -143,12 +143,12 @@ public static class PlanningPreviewParityVerification
             newPreview!=null&&newPreview.Success&&
             newPreview.PlanningRevision>preview.PlanningRevision&&
             newPreview.DistinctHitTargets[0].ActorRuntimeId==
-                R4LiveSlotQuery.ActorRuntimeId(another),
-            "new primary target actor="+R4LiveSlotQuery.ActorRuntimeId(another));
+                LiveSlotQuery.ActorRuntimeId(another),
+            "new primary target actor="+LiveSlotQuery.ActorRuntimeId(another));
         var updatedAction=new BattleAction{Slot=source};
         Check("P12 new source preview is frozen and old main not reused",
-            R4BattlePlanningSession.TryGetFrozen(battle,updatedAction,out var renewed) &&
-            renewed.Primary.HitTarget.ActorRuntimeId==R4LiveSlotQuery.ActorRuntimeId(another),
+            BattlePlanningSession.TryGetFrozen(battle,updatedAction,out var renewed) &&
+            renewed.Primary.HitTarget.ActorRuntimeId==LiveSlotQuery.ActorRuntimeId(another),
             "changed source target");
 
         source.Skill=new WeightedProbe(2,AttackWeightTargetingModel.SlotWeighted);
@@ -158,10 +158,10 @@ public static class PlanningPreviewParityVerification
             newSkillPreview.PlanningRevision>newPreview.PlanningRevision &&
             newSkillPreview.EffectiveWeight==2,
             "weight="+newSkillPreview?.EffectiveWeight);
-        R4BattlePlanningSession.NotifyMutation(battle,source.ActionId,
-            R4PlanMutationKind.ExplicitReplan);
+        BattlePlanningSession.NotifyMutation(battle,source.ActionId,
+            PlanMutationKind.ExplicitReplan);
         Check("P14 explicit replan drops current frozen selection",
-            !R4BattlePlanningSession.TryGetFrozen(battle,
+            !BattlePlanningSession.TryGetFrozen(battle,
                 new BattleAction{Slot=source},out _),
             "explicit replan notification");
         var recaptured=mgr.ClashBuilder.BuildAttackWeightPreview(battle,source,plans);
@@ -170,42 +170,42 @@ public static class PlanningPreviewParityVerification
         source.Skill=new WeightedProbe(3,AttackWeightTargetingModel.LegacyCharacterRandom);
         Check("P16 default/legacy targeting never activates dotted preview",
             mgr.ClashBuilder.BuildAttackWeightPreview(battle,source,plans)==null);
-        R4BattlePlanningSession.Clear(battle);
+        BattlePlanningSession.Clear(battle);
         Check("P17 battle cleanup drops action freeze",
-            !R4BattlePlanningSession.TryGetFrozen(battle,updatedAction,out _));
+            !BattlePlanningSession.TryGetFrozen(battle,updatedAction,out _));
         Check("P18 query remained RNG-free throughout",
             before==JsonUtility.ToJson(UnityEngine.Random.state));
         // R4-K policy registration invalidates this battle's allocation,
         // and the UI preview uses the same eligibility filter as execution.
         source.Skill=new WeightedProbe(3,AttackWeightTargetingModel.SlotWeighted);
         source.TargetCharacter=another;
-        long forbiddenId=R4LiveSlotQuery.ActorRuntimeId(normal);
-        R4BattlePlanningSession.RegisterTargetRule(battle,new ExcludeActor(forbiddenId));
+        long forbiddenId=LiveSlotQuery.ActorRuntimeId(normal);
+        BattlePlanningSession.RegisterTargetRule(battle,new ExcludeActor(forbiddenId));
         var policyPreview=mgr.ClashBuilder.BuildAttackWeightPreview(battle,source,plans);
         Check("P19 registered target visibility applies before budgeting",
             policyPreview!=null&&policyPreview.Success &&
             policyPreview.DistinctHitTargets.All(h=>h.ActorRuntimeId!=forbiddenId),
             "normal actor excluded");
         var policyAction=new BattleAction{Slot=source};
-        bool policySelected=R5SlotWeightedTargetBridge.TryResolve(battle,policyAction,
+        bool policySelected=SlotWeightedTargetBridge.TryResolve(battle,policyAction,
             out var policyHits,out _);
         Check("P20 execution reuses filtered preview targets",
             policySelected && policyPreview!=null&&
             string.Join("|",policyHits.Select(Key))==Key(policyPreview),
             "no stale unfiltered execution");
-        R4BattlePlanningSession.RegisterTargetRule(battle,
-            new ExcludeActor(R4LiveSlotQuery.ActorRuntimeId(another)));
+        BattlePlanningSession.RegisterTargetRule(battle,
+            new ExcludeActor(LiveSlotQuery.ActorRuntimeId(another)));
         var deniedMain=mgr.ClashBuilder.BuildAttackWeightPreview(battle,source,plans);
         Check("P21 policy cannot silently bypass invalid primary",
             deniedMain!=null&&!deniedMain.Success,
             "forced target missing => no allocation");
-        R4BattlePlanningSession.RegisterTargetRule(battle,null);
+        BattlePlanningSession.RegisterTargetRule(battle,null);
         var restored=mgr.ClashBuilder.BuildAttackWeightPreview(battle,source,plans);
         Check("P22 policy removal restores deterministic preview",
             restored!=null&&restored.Success&&
             restored.DistinctHitTargets[0].ActorRuntimeId==
-                R4LiveSlotQuery.ActorRuntimeId(another));
-        R4BattlePlanningSession.Clear(battle);
+                LiveSlotQuery.ActorRuntimeId(another));
+        BattlePlanningSession.Clear(battle);
         
         Debug.Log("[R4-Preview] RESULT PASS="+pass+" FAIL="+fail);
         if(fail>0)throw new InvalidOperationException("R4 preview parity failed "+fail);

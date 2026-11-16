@@ -913,7 +913,7 @@ public abstract class Character : MonoBehaviour
                 characterSkills);
 
         var filtered = BodyPartSkillAccessPolicy.Filter(part, selectable);
-        return battleContext?.TemporaryCards1112.ForSlot(this, part, filtered) ?? filtered;
+        return battleContext?.TemporaryCards.ForSlot(this, part, filtered) ?? filtered;
     }
 
     public IReadOnlyList<Skill> GetSelectablePrestigeSkills()
@@ -1197,7 +1197,7 @@ public abstract class Character : MonoBehaviour
             ModifyHealingAmount(amount);
 
         modified =
-            Canonical0922EmotionRuntimeHooks.ModifyHealing(
+            EmotionAugmentRuntimeHooks.ModifyHealing(
                 this,
                 modified);
 
@@ -1221,7 +1221,7 @@ public abstract class Character : MonoBehaviour
 
         RestoreLowestBodyPartHpPreserveState(modified);
 
-        Canonical0922EmotionRuntimeHooks.NotifyHealingResolved(
+        EmotionAugmentRuntimeHooks.NotifyHealingResolved(
             this,
             new CanonicalHealingResult
             {
@@ -2176,7 +2176,7 @@ public abstract class Character : MonoBehaviour
         BodyPart part,
         Skill skill)
     {
-        if (battleContext?.TemporaryCards1112.IsBlocked(skill) == true) return false;
+        if (battleContext?.TemporaryCards.IsBlocked(skill) == true) return false;
         if (skill == null)
             return false;
 
@@ -2298,17 +2298,17 @@ public abstract class Character : MonoBehaviour
             return;
 
         int modified =
-            Canonical0922EmotionRuntimeHooks.ModifyBlockGain(
+            EmotionAugmentRuntimeHooks.ModifyBlockGain(
                 this,
                 amount);
 
         if (modified <= 0)
             return;
 
-        modified = GetMechanic<StageOneEnemy1112Mechanic>()?.ModifyBlockGain(modified) ?? modified;
+        modified = GetMechanic<StageOneEnemyMechanic>()?.ModifyBlockGain(modified) ?? modified;
         resourceController.AddBlock(modified);
 
-        Canonical0922EmotionRuntimeHooks.NotifyBlockGainResolved(
+        EmotionAugmentRuntimeHooks.NotifyBlockGainResolved(
             this,
             amount,
             modified);

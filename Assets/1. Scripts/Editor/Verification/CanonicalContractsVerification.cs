@@ -39,7 +39,7 @@ public static class CanonicalContractsVerification
         };
         Check("C01 exactly six canonical card triggers",
             canonical.SequenceEqual(SkillEffectTimingCatalog.AuthoringTimings) &&
-            canonical.All(R1CanonicalEventPolicy.IsCanonicalCardTrigger),
+            canonical.All(CanonicalEventPolicy.IsCanonicalCardTrigger),
             "6 expected; no event checkpoint in authoring");
 
         Check("C02 removed matched authoring, legacy enum numbers stable",
@@ -47,8 +47,8 @@ public static class CanonicalContractsVerification
             (int)SkillEffectTiming.OnBattleStart==16 &&
             (int)SkillEffectTiming.OnAttackResolutionStarting==35 &&
             (int)SkillEffectTiming.OnPreparationActivated==36 &&
-            !R1CanonicalEventPolicy.IsCanonicalCardTrigger(SkillEffectTiming.OnDuelMatched) &&
-            !R1CanonicalEventPolicy.IsCanonicalCardTrigger(SkillEffectTiming.AfterDamage),
+            !CanonicalEventPolicy.IsCanonicalCardTrigger(SkillEffectTiming.OnDuelMatched) &&
+            !CanonicalEventPolicy.IsCanonicalCardTrigger(SkillEffectTiming.AfterDamage),
             "31,16,35,36 compatibility");
 
         Check("C03 global start does not become attack start",
@@ -67,30 +67,30 @@ public static class CanonicalContractsVerification
             duel.SetDuelEffectsEligible(true);
             duelOpponent.SetDuelEffectsEligible(true);
             Check("C04 matched duel can win/loss",
-                R1CanonicalEventPolicy.AllowsExchangeOutcome(duel,duelOpponent,true,false),
+                CanonicalEventPolicy.AllowsExchangeOutcome(duel,duelOpponent,true,false),
                 "dual eligible original duel");
 
             Check("C05 non-opposed call cannot fabricate victory",
-                !R1CanonicalEventPolicy.AllowsExchangeOutcome(duel,duelOpponent,false,false) &&
-                !R1CanonicalEventPolicy.AllowsExchangeOutcome(duel,null,true,false),
+                !CanonicalEventPolicy.AllowsExchangeOutcome(duel,duelOpponent,false,false) &&
+                !CanonicalEventPolicy.AllowsExchangeOutcome(duel,null,true,false),
                 "isClash false and opponent null");
 
             Check("C06 leftover one-sided roll cannot win/loss",
-                !R1CanonicalEventPolicy.AllowsExchangeOutcome(duel,duelOpponent,true,true),
+                !CanonicalEventPolicy.AllowsExchangeOutcome(duel,duelOpponent,true,true),
                 "original duel eligibility remains true");
 
             duel.SetDuelEffectsEligible(false);
             Check("C07 unqualified duel is fully gated",
-                !R1CanonicalEventPolicy.AllowsExchangeOutcome(duel,duelOpponent,true,false),
+                !CanonicalEventPolicy.AllowsExchangeOutcome(duel,duelOpponent,true,false),
                 "duel eligibility false");
             duel.SetDuelEffectsEligible(true);
             second.ActionType=ActionType.NormalAttack;
             duelOpponent=new BattleAction{Slot=new ActionSlot{ActionId=60103,Skill=second.CreateRuntimeSkill()}};
             Check("C08 duel vs normal cannot publish duel outcome",
-                !R1CanonicalEventPolicy.AllowsExchangeOutcome(duel,duelOpponent,true,false),
+                !CanonicalEventPolicy.AllowsExchangeOutcome(duel,duelOpponent,true,false),
                 "opponent NormalAttack");
             Check("C09 ordinary opposed normal attack is eligible",
-                R1CanonicalEventPolicy.AllowsExchangeOutcome(duelOpponent,duel,true,false),
+                CanonicalEventPolicy.AllowsExchangeOutcome(duelOpponent,duel,true,false),
                 "normal paired exchange; no duel card gate");
         }
         finally
@@ -102,7 +102,7 @@ public static class CanonicalContractsVerification
         var checkpoints=(ReactionTimingCheckpoint[])Enum.GetValues(typeof(ReactionTimingCheckpoint));
         Check("C10 reaction checkpoints are post-commit not card triggers",
             checkpoints.Length==4 &&
-            checkpoints.All(R1CanonicalEventPolicy.IsPostCommitCheckpoint) &&
+            checkpoints.All(CanonicalEventPolicy.IsPostCommitCheckpoint) &&
             checkpoints.Contains(ReactionTimingCheckpoint.AfterExchangeSettled) &&
             checkpoints.Contains(ReactionTimingCheckpoint.AfterClashCompleted) &&
             checkpoints.Contains(ReactionTimingCheckpoint.AfterActionCompleted) &&

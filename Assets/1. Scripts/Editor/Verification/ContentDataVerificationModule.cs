@@ -42,11 +42,11 @@ public sealed class ContentDataVerificationModule : IGameSystemVerificationModul
         new(id, req, name, category, GameSystemVerificationExecutionMode.StaticContract, expected, probe, true);
 
     private static ContentDefinitionManifest Manifest() =>
-        AssetDatabase.LoadAssetAtPath<ContentDefinitionManifest>(ContentDefinitionMigration.ManifestPath);
+        AssetDatabase.LoadAssetAtPath<ContentDefinitionManifest>(ContentCatalogAudit.ManifestPath);
 
     private static GameSystemVerificationProbeResult VerifyC31(GameSystemVerificationContext _)
     {
-        EnemyContentCatalog c = AssetDatabase.LoadAssetAtPath<EnemyContentCatalog>(ContentDefinitionMigration.EnemyCatalogPath);
+        EnemyContentCatalog c = AssetDatabase.LoadAssetAtPath<EnemyContentCatalog>(ContentCatalogAudit.EnemyCatalogPath);
         if (c?.NormalEncounters == null) return GameSystemVerificationProbeResult.Fail("EnemyContentCatalog missing");
         bool ok = c.NormalEncounters.Count == 6;
         for (int stage=1; stage<=3; stage++)
@@ -65,7 +65,7 @@ public sealed class ContentDataVerificationModule : IGameSystemVerificationModul
 
     private static GameSystemVerificationProbeResult VerifyC32(GameSystemVerificationContext _)
     {
-        var c=AssetDatabase.LoadAssetAtPath<EmotionAugmentCatalog>(ContentDefinitionMigration.EmotionCatalogPath);
+        var c=AssetDatabase.LoadAssetAtPath<EmotionAugmentCatalog>(ContentCatalogAudit.EmotionCatalogPath);
         if (c?.Entries == null) return GameSystemVerificationProbeResult.Fail("EmotionAugmentCatalog missing");
         int total=c.Entries.Count(x=>x!=null), connected=c.Entries.Count(x=>x!=null && x.RuntimeReadiness==EmotionAugmentRuntimeReadiness.RuntimeConnected);
         int dataOnly=c.Entries.Count(x=>x!=null && x.RuntimeReadiness==EmotionAugmentRuntimeReadiness.DataOnlyPendingRuntime);
@@ -89,7 +89,7 @@ public sealed class ContentDataVerificationModule : IGameSystemVerificationModul
 
     private static GameSystemVerificationProbeResult VerifyC33(GameSystemVerificationContext _)
     {
-        var c=AssetDatabase.LoadAssetAtPath<RunItemCatalog>(ContentDefinitionMigration.RunItemCatalogPath);
+        var c=AssetDatabase.LoadAssetAtPath<RunItemCatalog>(ContentCatalogAudit.RunItemCatalogPath);
         if(c?.Items==null) return GameSystemVerificationProbeResult.Fail("RunItemCatalog missing");
         var econ=new ItemEconomySettings();
         bool economy=Mathf.Approximately(econ.Tier1Weight,.40f)&&Mathf.Approximately(econ.Tier2Weight,.25f)&&Mathf.Approximately(econ.Tier3Weight,.15f)&&Mathf.Approximately(econ.Tier4Weight,.08f)&&Mathf.Approximately(econ.Tier5Weight,.04f)&&Mathf.Approximately(econ.ClassWeight,.08f)
@@ -160,7 +160,7 @@ public sealed class ContentDataVerificationModule : IGameSystemVerificationModul
 
     private static GameSystemVerificationProbeResult VerifyC40(GameSystemVerificationContext _)
     {
-        var c=AssetDatabase.LoadAssetAtPath<EnemyContentCatalog>(ContentDefinitionMigration.EnemyCatalogPath);
+        var c=AssetDatabase.LoadAssetAtPath<EnemyContentCatalog>(ContentCatalogAudit.EnemyCatalogPath);
         if(c==null) return GameSystemVerificationProbeResult.Fail("enemy catalog missing");
         bool ok=c.BossPartCount==5&&c.BossPartHp==150&&c.BossWholeHp==1500&&c.BossStaggerMax==400&&c.BossStartingEnergy==2&&c.NormalPostureSequence=="A,A,B"&&c.RandomTarget&&c.FallbackBToNormalWhenEnergyInsufficient
             && c.SkillA!=null&&c.SkillA.RollCount==3&&c.SkillA.BasePower==13&&c.SkillA.Duel&&!c.SkillA.CanBreakPart
@@ -172,7 +172,7 @@ public sealed class ContentDataVerificationModule : IGameSystemVerificationModul
     {
         var m=Manifest();
         if(m==null) return GameSystemVerificationProbeResult.Fail("manifest missing");
-        ContentDefinitionMigration.AuditRollTextures(m); EditorUtility.SetDirty(m); AssetDatabase.SaveAssets();
+        ContentCatalogAudit.AuditRollTextures(m); EditorUtility.SetDirty(m); AssetDatabase.SaveAssets();
         string details=m.RollTextureIssues!=null && m.RollTextureIssues.Count>0
             ? string.Join("\n", m.RollTextureIssues.Take(40))
             : null;
@@ -271,20 +271,20 @@ public sealed class ContentDataVerificationModule : IGameSystemVerificationModul
         bool profiles = loadout.EnumerateAllDefinitions().All(x => x != null && x.UpgradeProfile != null);
         bool secondCostsUnset = SecondUpgradeCostsUnset(loadout);
 
-        var requiredEffects = new (string id, Yujin0916EffectOperation operation)[]
+        var requiredEffects = new (string id, YujinRiderOperation operation)[]
         {
-            (YujinSkillIds.LedgerCleanup, Yujin0916EffectOperation.LedgerCleanup),
-            (YujinSkillIds.Aim, Yujin0916EffectOperation.AimCriticalRider),
-            (YujinSkillIds.ConfirmKill, Yujin0916EffectOperation.ConfirmKillMomentum),
-            (YujinSkillIds.FamiliarHand, Yujin0916EffectOperation.FamiliarHand),
-            (YujinSkillIds.AceInTheHole, Yujin0916EffectOperation.AceInTheHole),
-            (YujinSkillIds.Wanted, Yujin0916EffectOperation.Wanted),
-            (YujinSkillIds.Trap, Yujin0916EffectOperation.Trap),
-            (YujinSkillIds.Deadline, Yujin0916EffectOperation.Deadline),
-            (YujinSkillIds.AllTargets, Yujin0916EffectOperation.DesignateAll),
-            (YujinSkillIds.Period, Yujin0916EffectOperation.Period),
-            (YujinSkillIds.HoldBreath, Yujin0916EffectOperation.HoldBreath),
-            (YujinSkillIds.Sharpen, Yujin0916EffectOperation.Sharpen)
+            (YujinSkillIds.LedgerCleanup, YujinRiderOperation.LedgerCleanup),
+            (YujinSkillIds.Aim, YujinRiderOperation.AimCriticalRider),
+            (YujinSkillIds.ConfirmKill, YujinRiderOperation.ConfirmKillMomentum),
+            (YujinSkillIds.FamiliarHand, YujinRiderOperation.FamiliarHand),
+            (YujinSkillIds.AceInTheHole, YujinRiderOperation.AceInTheHole),
+            (YujinSkillIds.Wanted, YujinRiderOperation.Wanted),
+            (YujinSkillIds.Trap, YujinRiderOperation.Trap),
+            (YujinSkillIds.Deadline, YujinRiderOperation.Deadline),
+            (YujinSkillIds.AllTargets, YujinRiderOperation.DesignateAll),
+            (YujinSkillIds.Period, YujinRiderOperation.Period),
+            (YujinSkillIds.HoldBreath, YujinRiderOperation.HoldBreath),
+            (YujinSkillIds.Sharpen, YujinRiderOperation.Sharpen)
         };
 
         List<string> effectMissing = requiredEffects
@@ -444,7 +444,7 @@ public sealed class ContentDataVerificationModule : IGameSystemVerificationModul
     private static bool HasCanonicalEffect(
         CharacterCombatLoadout loadout,
         string skillId,
-        Yujin0916EffectOperation operation)
+        YujinRiderOperation operation)
     {
         SkillDefinition skill = loadout?.EnumerateAllDefinitions()
             .FirstOrDefault(x => x != null &&
@@ -453,7 +453,7 @@ public sealed class ContentDataVerificationModule : IGameSystemVerificationModul
             return false;
 
         return skill.EffectEntries.Any(entry =>
-            entry?.Definition is Yujin0916SkillEffectDefinition effect &&
+            entry?.Definition is YujinRiderEffectDefinition effect &&
             effect.Operation == operation);
     }
 

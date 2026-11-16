@@ -8,14 +8,14 @@ using ProjectAbyss.Abilities;
 /// <summary>R3 advanced pure snapshot + phase + candidate/result binding gates.</summary>
 public static class AdvancedConditionVerification
 {
-    private sealed class View : IR3ConditionSnapshotContext, IReadOnlyDamageAbilityContext
+    private sealed class View : IConditionSnapshotContext, IReadOnlyDamageAbilityContext
     {
         public AbilityEventContext Event {get;}
         public AbilityIdentity Ability {get;}
-        public R3ConditionSnapshot Snapshot {get;}
+        public ConditionSnapshot Snapshot {get;}
         public bool HasCommittedDamageResult {get;}
         public AppliedDamageEvidence DamageEvidence {get;}
-        public View(AbilityEventContext e,R3ConditionSnapshot snap,
+        public View(AbilityEventContext e,ConditionSnapshot snap,
             bool committed=false,AppliedDamageEvidence evidence=default)
         {
             Event=e;Snapshot=snap;HasCommittedDamageResult=committed;
@@ -69,43 +69,43 @@ public static class AdvancedConditionVerification
             else{fail++;Debug.LogError("[R3-Advanced] FAIL "+id+" | "+detail);}
         }
 
-        var owner=new R3SubjectRef(101);
-        var original=new R3SubjectRef(201,"LEFT");
-        var actual=new R3SubjectRef(302,"RIGHT");
-        var source=new R3SubjectRef(101);
-        var facts=new Dictionary<R3FactKey,int>{
-            [new R3FactKey(101,R3ConditionScope.Actor,R3ConditionFact.ResourceAmount,"olaf.madness")]=3,
-            [new R3FactKey(101,R3ConditionScope.Actor,R3ConditionFact.CharacterContent,"olaf")]=1,
-            [new R3FactKey(101,R3ConditionScope.Actor,R3ConditionFact.GameplayTag,"player")]=1,
-            [new R3FactKey(201,R3ConditionScope.Part,R3ConditionFact.KeywordStack,"olaf.bleed","LEFT")]=3,
-            [new R3FactKey(201,R3ConditionScope.Part,R3ConditionFact.KeywordStack,"yujin.mark","LEFT")]=43,
-            [new R3FactKey(201,R3ConditionScope.Part,R3ConditionFact.KeywordStack,"yujin.mark","RIGHT")]=10,
-            [new R3FactKey(201,R3ConditionScope.Actor,R3ConditionFact.TimedStatusPresent,"olaf.fear")]=1,
-            [new R3FactKey(201,R3ConditionScope.Actor,R3ConditionFact.StatusNumericTotal,"fear")]=5,
-            [new R3FactKey(201,R3ConditionScope.Actor,R3ConditionFact.StatusEffectiveAxis,"rollshift")]=2,
-            [new R3FactKey(201,R3ConditionScope.Actor,R3ConditionFact.KeywordPresent,"olaf.fear")]=1,
-            [new R3FactKey(302,R3ConditionScope.Part,R3ConditionFact.PartStatusPresent,"broken","RIGHT")]=1,
-            [new R3FactKey(302,R3ConditionScope.Part,R3ConditionFact.KeywordStack,"yujin.mark","RIGHT")]=44
+        var owner=new SubjectRef(101);
+        var original=new SubjectRef(201,"LEFT");
+        var actual=new SubjectRef(302,"RIGHT");
+        var source=new SubjectRef(101);
+        var facts=new Dictionary<FactKey,int>{
+            [new FactKey(101,ConditionScope.Actor,ConditionFact.ResourceAmount,"olaf.madness")]=3,
+            [new FactKey(101,ConditionScope.Actor,ConditionFact.CharacterContent,"olaf")]=1,
+            [new FactKey(101,ConditionScope.Actor,ConditionFact.GameplayTag,"player")]=1,
+            [new FactKey(201,ConditionScope.Part,ConditionFact.KeywordStack,"olaf.bleed","LEFT")]=3,
+            [new FactKey(201,ConditionScope.Part,ConditionFact.KeywordStack,"yujin.mark","LEFT")]=43,
+            [new FactKey(201,ConditionScope.Part,ConditionFact.KeywordStack,"yujin.mark","RIGHT")]=10,
+            [new FactKey(201,ConditionScope.Actor,ConditionFact.TimedStatusPresent,"olaf.fear")]=1,
+            [new FactKey(201,ConditionScope.Actor,ConditionFact.StatusNumericTotal,"fear")]=5,
+            [new FactKey(201,ConditionScope.Actor,ConditionFact.StatusEffectiveAxis,"rollshift")]=2,
+            [new FactKey(201,ConditionScope.Actor,ConditionFact.KeywordPresent,"olaf.fear")]=1,
+            [new FactKey(302,ConditionScope.Part,ConditionFact.PartStatusPresent,"broken","RIGHT")]=1,
+            [new FactKey(302,ConditionScope.Part,ConditionFact.KeywordStack,"yujin.mark","RIGHT")]=44
         };
-        var snapshot=new R3ConditionSnapshot(owner,original,actual,source,9002,facts);
+        var snapshot=new ConditionSnapshot(owner,original,actual,source,9002,facts);
         var e=new AbilityEventContext(AbilityEventKind.RollUsing,3001,77,101,0,true,false);
         var ctx=new View(e,snapshot);
         var candidate=new CombatTargetRef(201,"LEFT","S1");
         var other=new CombatTargetRef(202,"RIGHT","S2");
 
-        R3FactCondition Fact(R3ConditionSubject subject,R3ConditionScope scope,
-            R3ConditionFact kind,string name,int minimum=1,
-            R3FactComparison compare=R3FactComparison.AtLeast)=>
-            new R3FactCondition(subject,scope,kind,name,compare,minimum);
+        FactCondition Fact(ConditionSubject subject,ConditionScope scope,
+            ConditionFact kind,string name,int minimum=1,
+            FactComparison compare=FactComparison.AtLeast)=>
+            new FactCondition(subject,scope,kind,name,compare,minimum);
 
-        var resource=Fact(R3ConditionSubject.AbilityOwner,R3ConditionScope.Actor,
-            R3ConditionFact.ResourceAmount,"olaf.madness",3);
-        var bleed=Fact(R3ConditionSubject.SelectedTarget,R3ConditionScope.Part,
-            R3ConditionFact.KeywordStack,"olaf.bleed",3);
-        var fear=Fact(R3ConditionSubject.OriginalTarget,R3ConditionScope.Actor,
-            R3ConditionFact.TimedStatusPresent,"olaf.fear");
-        var broken=Fact(R3ConditionSubject.SelectedTarget,R3ConditionScope.Part,
-            R3ConditionFact.PartStatusPresent,"broken");
+        var resource=Fact(ConditionSubject.AbilityOwner,ConditionScope.Actor,
+            ConditionFact.ResourceAmount,"olaf.madness",3);
+        var bleed=Fact(ConditionSubject.SelectedTarget,ConditionScope.Part,
+            ConditionFact.KeywordStack,"olaf.bleed",3);
+        var fear=Fact(ConditionSubject.OriginalTarget,ConditionScope.Actor,
+            ConditionFact.TimedStatusPresent,"olaf.fear");
+        var broken=Fact(ConditionSubject.SelectedTarget,ConditionScope.Part,
+            ConditionFact.PartStatusPresent,"broken");
 
         var complex=CombatConditionNode.All(
             CombatConditionNode.Leaf(resource),
@@ -121,8 +121,8 @@ public static class AdvancedConditionVerification
             "candidate 202 != original 201");
         Check("C03 targetless part predicate never yields default true",
             !bleed.Evaluate(ctx,default)&&
-            !Fact(R3ConditionSubject.SelectedTarget,R3ConditionScope.Part,
-                R3ConditionFact.KeywordStack,"yujin.mark",0).Evaluate(ctx,default),
+            !Fact(ConditionSubject.SelectedTarget,ConditionScope.Part,
+                ConditionFact.KeywordStack,"yujin.mark",0).Evaluate(ctx,default),
             "missing actor/part fails even threshold=0");
 
         int size=facts.Count;
@@ -132,41 +132,41 @@ public static class AdvancedConditionVerification
             "snapshot deep copies numeric observations");
 
         Check("C05 owner character content and gameplay tags distinct",
-            Fact(R3ConditionSubject.AbilityOwner,R3ConditionScope.Actor,
-                R3ConditionFact.CharacterContent,"olaf").Evaluate(ctx,candidate)&&
-            Fact(R3ConditionSubject.AbilityOwner,R3ConditionScope.Actor,
-                R3ConditionFact.GameplayTag,"player").Evaluate(ctx,candidate)&&
-            !Fact(R3ConditionSubject.AbilityOwner,R3ConditionScope.Actor,
-                R3ConditionFact.CharacterContent,"player").Evaluate(ctx,candidate),
+            Fact(ConditionSubject.AbilityOwner,ConditionScope.Actor,
+                ConditionFact.CharacterContent,"olaf").Evaluate(ctx,candidate)&&
+            Fact(ConditionSubject.AbilityOwner,ConditionScope.Actor,
+                ConditionFact.GameplayTag,"player").Evaluate(ctx,candidate)&&
+            !Fact(ConditionSubject.AbilityOwner,ConditionScope.Actor,
+                ConditionFact.CharacterContent,"player").Evaluate(ctx,candidate),
             "OwnerCharacterIs != ActorHasGameplayTag");
         Check("C06 status presence, numeric N total, effective axis independent",
             fear.Evaluate(ctx,candidate) &&
-            Fact(R3ConditionSubject.OriginalTarget,R3ConditionScope.Actor,
-                R3ConditionFact.StatusNumericTotal,"fear",5).Evaluate(ctx,candidate) &&
-            !Fact(R3ConditionSubject.OriginalTarget,R3ConditionScope.Actor,
-                R3ConditionFact.StatusEffectiveAxis,"rollshift",3).Evaluate(ctx,candidate),
+            Fact(ConditionSubject.OriginalTarget,ConditionScope.Actor,
+                ConditionFact.StatusNumericTotal,"fear",5).Evaluate(ctx,candidate) &&
+            !Fact(ConditionSubject.OriginalTarget,ConditionScope.Actor,
+                ConditionFact.StatusEffectiveAxis,"rollshift",3).Evaluate(ctx,candidate),
             "presence=1 N=5 effectiveRollShift=2");
 
         Check("C07 character keyword ID not automatically a gameplay tag",
-            Fact(R3ConditionSubject.OriginalTarget,R3ConditionScope.Actor,
-                R3ConditionFact.KeywordPresent,"olaf.fear").Evaluate(ctx,candidate) &&
-            !Fact(R3ConditionSubject.OriginalTarget,R3ConditionScope.Actor,
-                R3ConditionFact.GameplayTag,"olaf.fear").Evaluate(ctx,candidate),
+            Fact(ConditionSubject.OriginalTarget,ConditionScope.Actor,
+                ConditionFact.KeywordPresent,"olaf.fear").Evaluate(ctx,candidate) &&
+            !Fact(ConditionSubject.OriginalTarget,ConditionScope.Actor,
+                ConditionFact.GameplayTag,"olaf.fear").Evaluate(ctx,candidate),
             "keyword != tag, even with same display name");
         Check("C08 selected Part mark 43 vs distinct right 10",
-            Fact(R3ConditionSubject.SelectedTarget,R3ConditionScope.Part,
-                R3ConditionFact.KeywordStack,"yujin.mark",43).Evaluate(ctx,candidate) &&
-            !Fact(R3ConditionSubject.SelectedTarget,R3ConditionScope.Part,
-                R3ConditionFact.KeywordStack,"yujin.mark",44).Evaluate(ctx,candidate) &&
-            Fact(R3ConditionSubject.SelectedTarget,R3ConditionScope.Part,
-                R3ConditionFact.KeywordStack,"yujin.mark",10).Evaluate(ctx,
+            Fact(ConditionSubject.SelectedTarget,ConditionScope.Part,
+                ConditionFact.KeywordStack,"yujin.mark",43).Evaluate(ctx,candidate) &&
+            !Fact(ConditionSubject.SelectedTarget,ConditionScope.Part,
+                ConditionFact.KeywordStack,"yujin.mark",44).Evaluate(ctx,candidate) &&
+            Fact(ConditionSubject.SelectedTarget,ConditionScope.Part,
+                ConditionFact.KeywordStack,"yujin.mark",10).Evaluate(ctx,
                     new CombatTargetRef(201,"RIGHT","S1")),
             "part stack, not N/T accumulation");
         Check("C09 actual damage target != original selected",
-            Fact(R3ConditionSubject.ActualDamageTarget,R3ConditionScope.Part,
-                R3ConditionFact.PartStatusPresent,"broken").Evaluate(ctx,candidate)&&
-            !Fact(R3ConditionSubject.OriginalTarget,R3ConditionScope.Part,
-                R3ConditionFact.PartStatusPresent,"broken").Evaluate(ctx,candidate),
+            Fact(ConditionSubject.ActualDamageTarget,ConditionScope.Part,
+                ConditionFact.PartStatusPresent,"broken").Evaluate(ctx,candidate)&&
+            !Fact(ConditionSubject.OriginalTarget,ConditionScope.Part,
+                ConditionFact.PartStatusPresent,"broken").Evaluate(ctx,candidate),
             "actual actor 302/right");
 
         var seenFalse=new Count(false);var after=new Count(true);
@@ -201,8 +201,8 @@ public static class AdvancedConditionVerification
 
         var rejected=runner.PlanWithSnapshot(instance,e,
             new Matcher(AbilityEventKind.RollUsing),resource,
-            CombatConditionNode.Leaf(Fact(R3ConditionSubject.SelectedTarget,
-                R3ConditionScope.Part,R3ConditionFact.KeywordStack,"nonexistent",1)),
+            CombatConditionNode.Leaf(Fact(ConditionSubject.SelectedTarget,
+                ConditionScope.Part,ConditionFact.KeywordStack,"nonexistent",1)),
             pre,new[]{(IEffectOperation)op},snapshot);
         Check("C13 no eligible targets does not submit targetless commands",
             rejected.Commands.Count==0&&op.Calls==1 &&
@@ -221,12 +221,12 @@ public static class AdvancedConditionVerification
             12,true,false,false,302,"RIGHT");
         var actualSelector=new Selector(new CombatTargetRef(302,"RIGHT","D1"));
         var afterRule=CombatConditionNode.All(
-            CombatConditionNode.Leaf(new R3DamageOriginCondition(77,9002)),
+            CombatConditionNode.Leaf(new DamageOriginCondition(77,9002)),
             CombatConditionNode.Leaf(new CombatDamageResultCondition(
                 DamageEvidenceTest.AppliedHpAtLeast,10)),
             CombatConditionNode.Leaf(Fact(
-                R3ConditionSubject.ActualDamageTarget,R3ConditionScope.Part,
-                R3ConditionFact.KeywordStack,"yujin.mark",44)));
+                ConditionSubject.ActualDamageTarget,ConditionScope.Part,
+                ConditionFact.KeywordStack,"yujin.mark",44)));
         var appliedPlan=runner.PlanCommittedDamage(instance,settled,
             new Matcher(AbilityEventKind.DamageSettled),null,afterRule,
             actualSelector,new[]{(IEffectOperation)op},snapshot,evidence);

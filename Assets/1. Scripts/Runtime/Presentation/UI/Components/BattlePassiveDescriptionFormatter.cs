@@ -160,7 +160,7 @@ public static class BattlePassiveDescriptionFormatter
         return mechanic is StaggerGaugeMechanic ||
                mechanic is OlafRulebreakerMechanic ||
                mechanic is OlafImmortalFuryMechanic ||
-               mechanic is Yujin0917Mechanic ||
+               mechanic is YujinCommittedSkillCostMechanic ||
                mechanic is YujinHwanhyeongFlowPassiveMechanic;
     }
 

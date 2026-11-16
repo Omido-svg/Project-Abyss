@@ -44,7 +44,7 @@ public static class AbilityRuntimeBaselineFreeze
         ("I-STEP",A+"Abilities/Reactions/BattleReactionScheduler.cs","TryDequeue(","Reaction intent queue"),
         ("I-UI",A+"Presentation/UI/Core/BattleUIEventBinder.cs","OnDamageEventResolved","UI observes settled result"),
         ("W-DOMAIN",A+"Battle/Targeting/AttackWeightTargetResolver.cs","SlotWeighted","Opt-in selection route"),
-        ("W-DOMAIN",A+"Abilities/Targeting/R5SlotWeightedTargetBridge.cs","Resolve(","Weight bridge"),
+        ("W-DOMAIN",A+"Abilities/Targeting/SlotWeightedTargetBridge.cs","Resolve(","Weight bridge"),
         ("W-RESULT",A+"Systems/Resolution/ClashManager.cs","SecondaryDamageContexts","Settled secondary damage"),
         ("W-RESULT",A+"Battle/BattleAction.cs","AttackWeightHitResults","Damage result target grouping"),
         ("W-LEGACY",A+"Battle/Targeting/AttackWeightTargetResolver.cs","SecondaryTargetPart","Protected legacy part selection")

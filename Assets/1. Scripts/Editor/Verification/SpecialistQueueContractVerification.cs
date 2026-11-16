@@ -20,7 +20,7 @@ public static class SpecialistQueueContractVerification
             else{fail++;Debug.LogError("[R6-Specialist] FAIL "+id);}
         }
         var scheduler=new BattleReactionScheduler();
-        var registry=new R6SpecialistReactionRegistry();
+        var registry=new SpecialistReactionRegistry();
         int calls=0;
         var id=scheduler.AllocateRequestId();
         var req=R(id);

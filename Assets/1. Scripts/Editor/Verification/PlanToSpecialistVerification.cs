@@ -56,7 +56,7 @@ public static class PlanToSpecialistVerification
         }
 
         var identity=new AbilityIdentity("R5-ENDTOEND",
-            R4LiveSlotQuery.ActorRuntimeId(player),"R5-VIRTUAL",0);
+            LiveSlotQuery.ActorRuntimeId(player),"R5-VIRTUAL",0);
         var instance=new AbilityInstance(new AbilityDefinitionRef("R5-ENDTOEND","TEST"),identity);
         var event1=new AbilityEventContext(AbilityEventKind.RollUsing,
             990100,990101,identity.OwnerActorRuntimeId,0,false,false);
@@ -70,7 +70,7 @@ public static class PlanToSpecialistVerification
             plan.Result.AppliedCommands==0 &&
             instance.RuntimeState.SuccessfulActivationCount==0);
 
-        var cmd=R5PlannedCommandBridge.Materialize(instance,event1,
+        var cmd=PlannedCommandBridge.Materialize(instance,event1,
             plan,"R5-BATCH-1",phase:1);
         Check("E02 bridge preserves cause/action/typed command",
             cmd.Count==1 &&
@@ -78,7 +78,7 @@ public static class PlanToSpecialistVerification
             cmd[0].ActionId==990100 && cmd[0].CauseEventId==990101 &&
             cmd[0].RequestedAmount==2 && cmd[0].CommandId=="R5-BATCH-1:0000");
 
-        var backend=new R5CombatSpecialistBackend(battle);
+        var backend=new CombatSpecialistBackend(battle);
         var service=new CombatCommandApplyService();
         const string resource="R5_ENDTOEND_TEST_ONLY";
         SkillResourceAccess.Set(player,resource,2);
@@ -107,7 +107,7 @@ public static class PlanToSpecialistVerification
         var planNext=runner.Plan(instance,event2,new Matcher(),null,new Selector(target),op);
         Check("E07 different cause from same action/roll can plan separately",
             planNext.Commands.Count==1);
-        var newCmd=R5PlannedCommandBridge.Materialize(instance,event2,
+        var newCmd=PlannedCommandBridge.Materialize(instance,event2,
             planNext,"R5-BATCH-2",phase:1);
         backend.RegisterResourceChange(newCmd[0],player,resource);
         var committedNext=service.Apply(instance,event2,newCmd,backend);
@@ -121,7 +121,7 @@ public static class PlanToSpecialistVerification
             event2,new Matcher(),null,new Selector(target),
             new IEffectOperation[]{new BadOperation()});
         bool invalidRejected=false;
-        try{R5PlannedCommandBridge.Materialize(instance,event2,
+        try{PlannedCommandBridge.Materialize(instance,event2,
             unsupported,"BAD",phase:1);}
         catch(InvalidOperationException){invalidRejected=true;}
         Check("E09 unknown string operation rejected before execution",invalidRejected);
@@ -130,7 +130,7 @@ public static class PlanToSpecialistVerification
         try{
             var wrong=new AbilityEventContext(AbilityEventKind.RollUsing,
                 990103,990104,999999,0,false,false);
-            R5PlannedCommandBridge.Materialize(instance,wrong,planNext,"BADOWNER",phase:1);
+            PlannedCommandBridge.Materialize(instance,wrong,planNext,"BADOWNER",phase:1);
         }catch(InvalidOperationException){invalidOwner=true;}
         Check("E10 mismatched owner provenance rejected",invalidOwner);
 

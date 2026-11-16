@@ -1,9 +1,11 @@
+using ProjectAbyss.Abilities;
 using System;
 using System.Collections.Generic;
 using UnityEngine;
 
 public readonly struct YujinMarkGainResult
 {
+    public EffectCause SourceCause { get; }
     public bool Applied { get; }
     public bool Ignited { get; }
     public int BaseAmount { get; }
@@ -19,8 +21,9 @@ public readonly struct YujinMarkGainResult
         int designationBonus,
         int actualGain,
         int previousMark,
-        int markAfter)
+        int markAfter, EffectCause sourceCause=default)
     {
+        SourceCause=sourceCause;
         Applied = applied;
         Ignited = ignited;
         BaseAmount = Mathf.Max(0, baseAmount);
@@ -47,6 +50,17 @@ public sealed class YujinMechanic : CombatMechanic,
     public YujinMarkRuleSettings MarkRules => owner?.Data?.YujinMarkRules ?? unconfiguredMarkRules;
     private readonly YujinMarkRuleSettings unconfiguredMarkRules = new();
 
+    public SkillExecutionFacts CurrentSkillFacts(BattleAction action) =>
+        action!=null && skillFacts.TryGetValue(action.ActionId,out var facts)?facts:null;
+    private readonly Dictionary<long,SkillExecutionFacts> skillFacts=new();
+    public EffectCause LastMarkIgnitionCause { get; private set; }
+    private void CaptureSkillFacts(BattleAction action)
+    {
+        if(action?.Owner!=owner || action.ActionId<=0 || skillFacts.ContainsKey(action.ActionId))return;
+        skillFacts.Add(action.ActionId,new SkillExecutionFacts(action.ActionId,
+            new CombatTargetRef(LiveSlotQuery.ActorRuntimeId(action.Target),action.TargetPart?.PartId,""),
+            battleContext?.RunProgression?.YujinWeaponInstanceId(CurrentWeapon) ?? LiveSlotQuery.ActorRuntimeId(owner)+"/yujin/"+CurrentWeapon,new Dictionary<string,long>{{"yujin.mark.at_start",GetMark(action.Target,action.TargetPart)}}));
+    }
     public const int MarkIgnitionThreshold = YujinWeapons.MarkIgnitionThreshold;
     public const int WeaponSwitchEnergyCost = 0;
 
@@ -185,6 +199,10 @@ public sealed class YujinMechanic : CombatMechanic,
         if (battleContext?.RunProgression?.LastYujinWeapon is YujinWeaponType saved)
             currentWeapon = saved;
         SubscribeToBattleEvent(
+            () => battleEvent.OnActionStart += CaptureSkillFacts,
+            () => battleEvent.OnActionStart -= CaptureSkillFacts,
+            "OnActionStart");
+        SubscribeToBattleEvent(
             () => battleEvent.OnTurnStart += OnTurnStart,
             () => battleEvent.OnTurnStart -= OnTurnStart,
             "OnTurnStart");
@@ -222,6 +240,7 @@ public sealed class YujinMechanic : CombatMechanic,
 
     public override void OnUnregister()
     {
+        skillFacts.Clear();
         removedMarkSnapshots.Clear();
         weaponPlans.Clear();
         marks.Clear();
@@ -832,7 +851,7 @@ public sealed class YujinMechanic : CombatMechanic,
 
         var pending = new PendingMarkGain(anchor, safeAmount, sourceAction);
         pendingMarks.Add(pending);
-        battleContext.TurnStartEffects.Enqueue(() =>
+        battleContext.TurnStartEffects.EnqueueLocked(anchor.Character,anchor.Part,() =>
         {
             if (!pendingMarks.Remove(pending) || !anchor.IsValid ||
                 anchor.IsBroken || anchor.Character.IsDead) return;
@@ -1272,7 +1291,7 @@ public sealed class YujinMechanic : CombatMechanic,
     private YujinMarkGainResult ApplyMarkGain(
         CombatStatusAnchor anchor,
         int baseAmount,
-        BattleAction sourceAction)
+        BattleAction sourceAction, EffectCause sourceCause=default)
     {
         int safeBaseAmount =
             Mathf.Max(
@@ -1287,6 +1306,9 @@ public sealed class YujinMechanic : CombatMechanic,
             return default;
         }
 
+        if(!sourceCause.IsKnown && sourceAction!=null)
+            sourceCause=sourceAction.GetEffectCause(AbilityEventKind.RollUsing,sourceAction.CurrentRollIndex);
+        if(sourceCause.IsKnown)sourceCause=sourceCause.Derive(battleContext.EventSequence.Next(),sourceCause.OriginKind);
         int designationBonus =
             GetDesignationTotal(
                 anchor);
@@ -1330,7 +1352,7 @@ public sealed class YujinMechanic : CombatMechanic,
                 designationBonus: designationBonus,
                 actualGain: actualGain,
                 previousMark: previous,
-                markAfter: next);
+                markAfter: next,sourceCause:sourceCause);
         }
 
         // 0922: 44 이상이 되는 즉시 발화하고 표식을 전량 소비한다.
@@ -1339,7 +1361,7 @@ public sealed class YujinMechanic : CombatMechanic,
 
         IgniteMark(
             anchor,
-            sourceAction);
+            sourceAction,sourceCause);
 
         TriggerJointLiability();
 
@@ -1350,7 +1372,7 @@ public sealed class YujinMechanic : CombatMechanic,
             designationBonus: designationBonus,
             actualGain: actualGain,
             previousMark: previous,
-            markAfter: 0);
+            markAfter: 0,sourceCause:sourceCause);
     }
 
     public bool HasAnyMarkAtLeast(int amount)
@@ -1466,12 +1488,12 @@ public sealed class YujinMechanic : CombatMechanic,
 
     private void IgniteMark(
         CombatStatusAnchor anchor,
-        BattleAction sourceAction)
+        BattleAction sourceAction, EffectCause sourceCause)
     {
+        LastMarkIgnitionCause=sourceCause.IsKnown
+            ?sourceCause.Derive(battleContext.EventSequence.Next(),sourceCause.OriginKind):default;
         Character target = anchor.Character;
-        if (target == null)
-            return;
-
+        if (target == null) return;
         IReadOnlyList<DelayedEffectTriggerEntry> riders =
             delayedTriggers.ConsumeTriggered(
                 anchor,
@@ -1515,6 +1537,7 @@ public sealed class YujinMechanic : CombatMechanic,
                     var request = DamageRequest.Custom(anchor.IsPartAnchor ? DamageType.SkillPart : DamageType.Direct,
                         owner, target, anchor.Part, damage, 1f, canBreakPart: true,
                         applyMomentum: false, applyGuard: true, sourceAction: sourceAction);
+                    request.SourceCause=LastMarkIgnitionCause;
                     request.BreakMode = PartBreakMode.IgnoreWeakenedPrerequisite;
                     battleContext.ResolveDamageManager()?.ApplyDamageContext(request);
                 }
@@ -1586,6 +1609,8 @@ public sealed class YujinMechanic : CombatMechanic,
             applyGuard: true,
             sourceAction: sourceAction);
 
+        request.SourceCause=LastMarkIgnitionCause.IsKnown
+            ?LastMarkIgnitionCause.Derive(battleContext.EventSequence.Next(),EffectOriginKind.Trap):default;
         battleContext?.ResolveDamageManager()
             ?.ApplyDamageContext(request);
     }
@@ -1625,9 +1650,23 @@ public sealed class YujinMechanic : CombatMechanic,
             });
     }
 
+    public int ResolvePursuitExtraHitsForVerification(BattleAction action,
+        IReadOnlyList<bool> activationFaces,IReadOnlyList<bool> damageFaces)
+    {
+        int activation=0,damage=0;
+        return ResolvePursuitExtraCoinsCore(action,
+            () => activationFaces!=null && activation<activationFaces.Count && activationFaces[activation++],
+            () =>
+            {
+                bool front=damageFaces!=null && damage<damageFaces.Count && damageFaces[damage++];
+                return new RollResult{ResolverType=SkillResolverType.Coin,
+                    FinalPower=GetSkillPower(action.Skill,front),IsCritical=front};
+            });
+    }
+
     private int ResolvePursuitExtraCoinsCore(
         BattleAction action,
-        Func<bool> resolveFront)
+        Func<bool> resolveFront, Func<RollResult> rollExtraHit=null)
     {
         if (action?.Owner != owner ||
             action.Target == null ||
@@ -1652,60 +1691,26 @@ public sealed class YujinMechanic : CombatMechanic,
 
         int appliedHits = 0;
 
-        for (int i = 0;
-             i < limit && sense > 0;
-             i++)
+        for (int i=0;i<limit;i++)
         {
-            sense--;
-
-            bool front = resolveFront();
-
-            if (!front)
-                break;
-
-            int power =
-                GetSkillPower(
-                    action.Skill,
-                    true);
-
-            DamageRequest request =
-                DamageRequest.Custom(
-                    action.TargetPart == null
-                        ? DamageType.Direct
-                        : DamageType.SkillPart,
-                    owner,
-                    action.Target,
-                    action.TargetPart,
-                    power,
-                    1f,
-                    canBreakPart: false,
-                    applyMomentum: false,
-                    applyGuard: true,
-                    sourceAction: action);
-
-            request.WasCritical = true;
-
-            DamageContext result =
-                battleContext?.ResolveDamageManager()
-                    ?.ApplyDamageContext(request);
-
-            if (result != null &&
-                result.GetDisplayDamage() > 0)
-            {
-                appliedHits++;
-            }
-
-            if (CurrentWeapon == YujinWeaponType.Nakil &&
-                action.TargetPart?.IsWeakened == true &&
-                action.TargetPart.IsBroken == false)
-            {
-                action.Target.ForceBreakPart(
-                    action.TargetPart,
-                    owner,
-                    action);
-
-                TriggerJointLiability();
-            }
+            if(action.Target.IsDead || action.TargetPart?.IsBroken==true)break;
+            // The first activation check is free; only failed checks spend sense to retry.
+            bool activated=resolveFront();
+            while(!activated && TrySpendSense(1))activated=resolveFront();
+            if(!activated)break;
+            // Activation success never supplies the damage coin face.
+            var roll=rollExtraHit?.Invoke() ?? YujinSkillRollUtility.Roll(owner,action.Skill);
+            if(roll==null)throw new InvalidOperationException("Extra-hit roll was not produced.");
+            var request=DamageRequest.Custom(action.TargetPart==null?DamageType.Direct:DamageType.SkillPart,
+                owner,action.Target,action.TargetPart,Mathf.Max(0,roll.FinalPower),1f,
+                canBreakPart:CurrentWeapon==YujinWeaponType.Nakil,applyMomentum:false,
+                applyGuard:true,sourceAction:action);
+            request.WasCritical=roll.IsCritical;
+            if(CurrentWeapon==YujinWeaponType.Nakil)request.BreakMode=PartBreakMode.IgnoreWeakenedPrerequisite;
+            var parent=action.GetEffectCause(AbilityEventKind.RollUsing,action.CurrentRollIndex);
+            request.SourceCause=parent.IsKnown?parent.Derive(battleContext.EventSequence.Next(),EffectOriginKind.ExtraHit):default;
+            var result=battleContext?.ResolveDamageManager()?.ApplyDamageContext(request);
+            if(result!=null && (result.WasApplied || result.GuardAbsorbed>0))appliedHits++;
         }
 
         return appliedHits;
@@ -1781,6 +1786,7 @@ public sealed class YujinMechanic : CombatMechanic,
 
     private void ClearRemovedMarkSnapshot(BattleAction action)
     {
+        if(action!=null)skillFacts.Remove(action.ActionId);
         if (action?.Owner == owner) removedMarkSnapshots.Remove(action.ActionId);
     }
 

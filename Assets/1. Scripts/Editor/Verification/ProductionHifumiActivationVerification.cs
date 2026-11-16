@@ -47,21 +47,21 @@ public static class ProductionHifumiActivationVerification
                 services.ReactionLifetimeRegistry!=null);
             bool activated=ProductionReactionActivation.Activate(fixture.Context);
             Check("H03 production startup actually enables stepwise clash coordinator",
-                activated&&services.ActionResolver.IsR6StepwiseActive);
+                activated&&services.ActionResolver.IsStepwiseActive);
             Check("H04 production startup switches Hifumi to deferred ONLY",
                 Deferred() && services.SpecialistReactionRegistry.PendingCount==0 &&
                 services.ReactionScheduler.PendingCount==0,
                 "synchronous legacy counter bypassed after registration");
             var id=services.ReactionScheduler.AllocateRequestId();
             var request=new ReactionRequest(id,9001,9001,9002,9001,
-                R4LiveSlotQuery.ActorRuntimeId(h),
+                LiveSlotQuery.ActorRuntimeId(h),
                 "R6_HIFUMI_VALID",ReactionTimingCheckpoint.AfterClashCompleted,0,id);
             var queued=services.ReactionScheduler.Queue(request);
             Check("H05 live scheduler receives isolated Hifumi intent",
                 queued.Accepted && services.ReactionScheduler.PendingCount==1);
             ProductionReactionActivation.Deactivate(fixture.Context);
             Check("H06 battle end deactivates stepwise and deferred mode",
-                !services.ActionResolver.IsR6StepwiseActive && !Deferred());
+                !services.ActionResolver.IsStepwiseActive && !Deferred());
             Check("H07 clears queues, registrations, lifetime and specialist state",
                 services.ReactionScheduler.PendingCount==0 &&
                 services.ReactionActionRegistry.PendingBindings==0 &&
@@ -69,7 +69,7 @@ public static class ProductionHifumiActivationVerification
                 services.ReactionLifetimeRegistry.PendingBindings==0);
             ProductionReactionActivation.Deactivate(fixture.Context);
             Check("H08 battle cleanup is idempotent",
-                !services.ActionResolver.IsR6StepwiseActive &&
+                !services.ActionResolver.IsStepwiseActive &&
                 services.ReactionScheduler.PendingCount==0);
         }
         Debug.Log("[R6-HifumiStartup] RESULT PASS="+pass+" FAIL="+fail);

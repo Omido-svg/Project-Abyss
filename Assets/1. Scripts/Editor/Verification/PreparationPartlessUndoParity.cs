@@ -28,7 +28,7 @@ public static class PreparationPartlessUndoParity
         if(!Application.isPlaying)
             throw new InvalidOperationException("Play Mode required.");
         var battle=UnityEngine.Object.FindFirstObjectByType<BattleManager>()?.BattleContext;
-        var router=battle?.Services?.R7PreparationStatusMigration;
+        var router=battle?.Services?.PreparationStatusAbilities;
         var enemies=battle?.Enemies?.Where(x=>x!=null&&!x.IsDead&&!x.UsesBodyParts)
             .Take(2).ToArray();
         var d=AssetDatabase.LoadAssetAtPath<SkillDefinition>(

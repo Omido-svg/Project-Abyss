@@ -24,13 +24,13 @@ public static class ContentFamilyInventory
         var item=AssetDatabase.FindAssets("t:RunItemDefinition")
             .Select(g=>AssetDatabase.LoadAssetAtPath<RunItemDefinition>(
                 AssetDatabase.GUIDToAssetPath(g))).Where(x=>x!=null).ToArray();
-        var nativeResource=Resources.LoadAll<R7NativeAbilityDefinition>(
+        var nativeResource=Resources.LoadAll<NativeAbilityDefinition>(
             "ProjectAbyss/NativeAbilities");
-        var nativeStatus=Resources.LoadAll<R7NativeStatusAbilityDefinition>(
+        var nativeStatus=Resources.LoadAll<NativeStatusAbilityDefinition>(
             "ProjectAbyss/NativeStatuses");
-        var nativeMixed=Resources.LoadAll<R7NativeMixedAbilityDefinition>(
+        var nativeMixed=Resources.LoadAll<NativeMixedAbilityDefinition>(
             "ProjectAbyss/NativeMixed");
-        var nativeGauge=Resources.LoadAll<R7NativeUniqueGaugeDefinition>(
+        var nativeGauge=Resources.LoadAll<NativeUniqueGaugeDefinition>(
             "ProjectAbyss/NativeUniqueGauges");
         var tempItem=item.Count(x=>x.CombatItem is ProvisionalBalanceRunItem);
         var linked=item.Count(x=>x.CombatItem!=null);

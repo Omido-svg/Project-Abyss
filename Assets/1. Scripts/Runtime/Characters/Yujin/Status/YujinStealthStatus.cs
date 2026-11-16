@@ -38,7 +38,7 @@ public sealed class YujinStealthStatus : StatusEffect, IUniqueKeywordStatus
     public static void Reserve(Character target, BodyPart part, int actions, Character source)
     {
         if (target == null || part == null || part.IsBroken || actions <= 0) return;
-        target.BattleContext.TurnStartEffects.Enqueue(() =>
+        target.BattleContext.TurnStartEffects.EnqueueLocked(target,part,() =>
         {
             if (!target.IsDead && !part.IsBroken)
                 target.AddPartStatus(part, new YujinStealthStatus(actions), source);

@@ -595,7 +595,7 @@ public sealed class BattleTestScenarioSwitcher : MonoBehaviour
         if (run != null && run.Stage != 1) return null;
         int choice = run != null ? new System.Random(run.Seed ^ (boss ? 1112 : 1212)).Next(2) : Random.Range(0, 2);
         string key = boss ? (choice == 0 ? "Inquisitor" : "MachineBoss") : (choice == 0 ? "Fanatic" : "MachineElite");
-        var prefab = Resources.Load<GameObject>(StageOneEnemy1112Mechanic.ResourcePath + "/" + key + "/" + key);
+        var prefab = Resources.Load<GameObject>(StageOneEnemyMechanic.ResourcePath + "/" + key + "/" + key);
         return prefab?.GetComponent<Character>();
     }
 

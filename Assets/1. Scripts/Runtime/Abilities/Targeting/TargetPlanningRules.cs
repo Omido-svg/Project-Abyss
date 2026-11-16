@@ -9,33 +9,33 @@ namespace ProjectAbyss.Abilities
     /// faction and locking rules participate here BEFORE budget allocation.
     /// Nothing may create ActionSlots, mutate the combat plan, or draw RNG.
     /// </summary>
-    public interface IR4TargetPlanningRule
+    public interface ITargetPlanningRule
     {
-        bool Allows(in R4TargetPlanningContext context, WeightedTargetSlot candidate);
+        bool Allows(in TargetPlanningContext context, WeightedTargetSlot candidate);
     }
 
-    public readonly struct R4TargetPlanningContext
+    public readonly struct TargetPlanningContext
     {
         public readonly long SourceActionId;
         public readonly long OwnerActorId;
         public readonly long PrimaryActorId;
         public readonly int Revision;
-        public R4TargetPlanningContext(long actionId,long ownerId,long primaryActorId,int revision)
+        public TargetPlanningContext(long actionId,long ownerId,long primaryActorId,int revision)
         {
             SourceActionId=actionId;OwnerActorId=ownerId;
             PrimaryActorId=primaryActorId;Revision=revision;
         }
     }
 
-    public sealed class R4TargetPlanningRules : IR4TargetPlanningRule
+    public sealed class TargetPlanningRules : ITargetPlanningRule
     {
-        private readonly IR4TargetPlanningRule[] rules;
-        public R4TargetPlanningRules(IEnumerable<IR4TargetPlanningRule> rules)
+        private readonly ITargetPlanningRule[] rules;
+        public TargetPlanningRules(IEnumerable<ITargetPlanningRule> rules)
         {
-            this.rules=(rules??Array.Empty<IR4TargetPlanningRule>())
+            this.rules=(rules??Array.Empty<ITargetPlanningRule>())
                 .Where(x=>x!=null).ToArray();
         }
-        public bool Allows(in R4TargetPlanningContext context,WeightedTargetSlot candidate)
+        public bool Allows(in TargetPlanningContext context,WeightedTargetSlot candidate)
         {
             foreach(var rule in rules)
                 if(!rule.Allows(in context,candidate))return false;
@@ -43,7 +43,7 @@ namespace ProjectAbyss.Abilities
         }
     }
 
-    public enum R4TargetSelectionMode
+    public enum TargetSelectionMode
     {
         StableFirst,
         SeededRandom
@@ -54,7 +54,7 @@ namespace ProjectAbyss.Abilities
     /// never consume UnityEngine.Random or the battle RNG during previews.
     /// Stable ID ordering is required before seeded selection.
     /// </summary>
-    public static class R4DeterministicTargetQuery
+    public static class DeterministicTargetQuery
     {
         private sealed class SlotIdentityComparer : IComparer<WeightedTargetSlot>
         {
@@ -72,8 +72,8 @@ namespace ProjectAbyss.Abilities
 
         public static IReadOnlyList<WeightedTargetSlot> Select(
             IEnumerable<WeightedTargetSlot> candidates,int take,
-            R4TargetSelectionMode mode,int seed,
-            IR4TargetPlanningRule rule,R4TargetPlanningContext context)
+            TargetSelectionMode mode,int seed,
+            ITargetPlanningRule rule,TargetPlanningContext context)
         {
             var list=new List<WeightedTargetSlot>();
             if(candidates!=null)
@@ -83,7 +83,7 @@ namespace ProjectAbyss.Abilities
                         (rule==null||rule.Allows(in context,candidate)))
                         list.Add(candidate);
             list.Sort(new SlotIdentityComparer());
-            if(mode==R4TargetSelectionMode.SeededRandom)
+            if(mode==TargetSelectionMode.SeededRandom)
             {
                 var rng=new Random(seed);
                 for(int i=list.Count-1;i>0;i--)

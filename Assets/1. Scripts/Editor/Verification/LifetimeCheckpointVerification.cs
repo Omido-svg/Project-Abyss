@@ -35,7 +35,7 @@ public static class LifetimeCheckpointVerification
         Check("L01 Request accepted by actual R6 scheduler",accepted.Accepted);
         Check("L02 Requested phase commits once after successful Queue",
             memory.TryBindAccepted(accepted,once,E(7,99011),
-                R3ReactionConsumeOn.Requested,null,out _)
+                ReactionConsumeOn.Requested,null,out _)
             && memory.TryGetMemory(101,"R6_LIVE_REQUEST",out var m) &&
             m.SuccessfulCauseCount==1 && m.ReadyTurn==10);
         Check("L03 consumed Requested can still start its own bound request",
@@ -49,7 +49,7 @@ public static class LifetimeCheckpointVerification
         Check("L05 rejected lifetime binding cannot bypass via queued request",
             nextDecision.Accepted &&
             !memory.TryBindAccepted(nextDecision,once,E(8,99012),
-                R3ReactionConsumeOn.Requested,null,out _) &&
+                ReactionConsumeOn.Requested,null,out _) &&
             !memory.MayStart(next,out _));
         memory.Cancel(next);
         var ready=Request(99003,99013,101,"R6_LIVE_REQUEST");
@@ -57,7 +57,7 @@ public static class LifetimeCheckpointVerification
         Check("L06 cooldown blocks exactly two FULL turns 8 and 9, allows 10",
             readyDecision.Accepted &&
             memory.TryBindAccepted(readyDecision,once,E(10,99013),
-                R3ReactionConsumeOn.Requested,null,out _) &&
+                ReactionConsumeOn.Requested,null,out _) &&
             memory.TryGetMemory(101,"R6_LIVE_REQUEST",out var readyMem) &&
             readyMem.ReadyTurn==13);
         memory.Complete(ready,Completed(),out _);
@@ -68,7 +68,7 @@ public static class LifetimeCheckpointVerification
         AbilityLifetimeMemory startMem=null;
         Check("L07 Started phase does not consume at queue time",
             memory.TryBindAccepted(started,startedRules,E(8,99111),
-                R3ReactionConsumeOn.Started,null,out _) &&
+                ReactionConsumeOn.Started,null,out _) &&
             memory.TryGetMemory(102,"R6_LIVE_START",out startMem)&&
             startMem.SuccessfulCauseCount==0);
         Check("L08 execution may start after valid lifetime check",
@@ -80,13 +80,13 @@ public static class LifetimeCheckpointVerification
         var retryDecision=scheduler.Queue(retry);
         Check("L10 actual committed exchange consumes Started once",
             memory.TryBindAccepted(retryDecision,startedRules,E(8,99112),
-                R3ReactionConsumeOn.Started,null,out _) &&
+                ReactionConsumeOn.Started,null,out _) &&
             memory.Complete(retry,Completed(),out _) &&
             startMem.SuccessfulCauseCount==1);
         var sameClash=Request(99103,99113,102,"R6_LIVE_START");
         Check("L11 once-per-Clash holds even when new RequestId appears",
             !memory.TryBindAccepted(scheduler.Queue(sameClash),
-                startedRules,E(8,99113),R3ReactionConsumeOn.Started,
+                startedRules,E(8,99113),ReactionConsumeOn.Started,
                 null,out _) && !memory.MayStart(sameClash,out _));
         memory.Cancel(sameClash);
 
@@ -94,7 +94,7 @@ public static class LifetimeCheckpointVerification
         var condition=new AbilityLifetimeRules(oncePerOriginHit:true);
         Check("L12 Applied requires a factual applied-effect predicate",
             !memory.TryBindAccepted(scheduler.Queue(applied),condition,
-                E(9,99211),R3ReactionConsumeOn.Applied,null,out _) &&
+                E(9,99211),ReactionConsumeOn.Applied,null,out _) &&
             !memory.MayStart(applied,out _));
         memory.Cancel(applied);
         var rejectedEffect=Request(99202,99212,103,"R6_LIVE_APPLIED");
@@ -102,7 +102,7 @@ public static class LifetimeCheckpointVerification
         AbilityLifetimeMemory appliedMemory=null;
         Check("L13 result object alone cannot fake Applied",
             memory.TryBindAccepted(outcome,condition,E(9,99212),
-                R3ReactionConsumeOn.Applied,_=>false,out _) &&
+                ReactionConsumeOn.Applied,_=>false,out _) &&
             !memory.Complete(rejectedEffect,Completed(),out _) &&
             memory.TryGetMemory(103,"R6_LIVE_APPLIED",out appliedMemory) &&
             appliedMemory.SuccessfulCauseCount==0);
@@ -110,7 +110,7 @@ public static class LifetimeCheckpointVerification
         var acceptedEffect=scheduler.Queue(actualEffect);
         Check("L14 attested actual applied effect consumes one origin hit",
             memory.TryBindAccepted(acceptedEffect,condition,E(9,99213),
-                R3ReactionConsumeOn.Applied,
+                ReactionConsumeOn.Applied,
                 result=>result?.Exchanges?.Count==1 &&
                     result.Exchanges[0].DamageContext?.WasApplied==true,
                 out _) &&
@@ -120,20 +120,20 @@ public static class LifetimeCheckpointVerification
         var another=Request(99204,99214,104,"R6_LIVE_APPLIED");
         Check("L15 different actor with same skill has independent lifetime",
             memory.TryBindAccepted(scheduler.Queue(another),condition,
-                E(9,99214),R3ReactionConsumeOn.Applied,_=>true,out _) &&
+                E(9,99214),ReactionConsumeOn.Applied,_=>true,out _) &&
             memory.Complete(another,Completed(),out _));
         var unknown=Request(99301,99311,105,"R6_UNKNOWN",chain:7711);
         Check("L16 registered intent can be quarantined against replay",
             memory.TryBindAccepted(scheduler.Queue(unknown),
                 new AbilityLifetimeRules(),E(3,99311),
-                R3ReactionConsumeOn.Started,null,out _));
+                ReactionConsumeOn.Started,null,out _));
         memory.QuarantineUnknownCommit(unknown);
         var later=Request(99302,99312,105,"R6_UNKNOWN",chain:7711);
         Check("L17 unknown commit blocks future requests in same chain",
             memory.QuarantinedChainCount==1 &&
             !memory.TryBindAccepted(scheduler.Queue(later),
                 new AbilityLifetimeRules(),E(3,99312),
-                R3ReactionConsumeOn.Started,null,out _) &&
+                ReactionConsumeOn.Started,null,out _) &&
             !memory.MayStart(later,out _));
         memory.ClearForBattleEnd();
         Check("L18 battle end clears runtime memory and chain quarantine",

@@ -23,7 +23,7 @@ namespace ProjectAbyss.Abilities
             public OwnerTarget(Character character)
             {
                 target=new CombatTargetRef(
-                    R4LiveSlotQuery.ActorRuntimeId(character),"","");
+                    LiveSlotQuery.ActorRuntimeId(character),"","");
             }
             public IReadOnlyList<CombatTargetRef> Select(IReadOnlyAbilityContext _) =>
                 new[]{target};
@@ -38,7 +38,7 @@ namespace ProjectAbyss.Abilities
         public int Attempts {get;private set;}
         public int Commits {get;private set;}
 
-        public bool Execute(R7NativeAbilityDefinition data,BattleAction action,
+        public bool Execute(NativeAbilityDefinition data,BattleAction action,
             Character owner,AbilityEventContext evt,int upgradeLevel)
         {
             if(disposed||data==null||!data.IsValid||
@@ -52,7 +52,7 @@ namespace ProjectAbyss.Abilities
             if(!instances.TryGetValue(key,out var instance))
             {
                 var identity=new AbilityIdentity(data.StableId,
-                    R4LiveSlotQuery.ActorRuntimeId(owner),
+                    LiveSlotQuery.ActorRuntimeId(owner),
                     action.Slot?.SlotId??string.Empty,0);
                 instance=new AbilityInstance(
                     new AbilityDefinitionRef(data.StableId,data.SourceAssetGuid),
@@ -60,7 +60,7 @@ namespace ProjectAbyss.Abilities
                 instances.Add(key,instance);
             }
             if(instance.Identity.OwnerActorRuntimeId!=
-                R4LiveSlotQuery.ActorRuntimeId(owner))
+                LiveSlotQuery.ActorRuntimeId(owner))
                 throw new InvalidOperationException("Native ability action/actor identity conflict");
             var planned=planner.Plan(instance,evt,new Matcher(data.Trigger),
                 null,new OwnerTarget(owner),
@@ -69,7 +69,7 @@ namespace ProjectAbyss.Abilities
                 return false;
             var commandId="NativeAbility:"+data.SourceAssetGuid+":"+
                 evt.ActionId+":"+evt.Kind+":"+evt.RollUseIndex+":"+evt.CauseId;
-            var commands=R5PlannedCommandBridge.Materialize(
+            var commands=PlannedCommandBridge.Materialize(
                 instance,evt,planned,commandId,0);
             backend.Register(commands[0],owner,data.Operation);
             Attempts++;

@@ -4,7 +4,7 @@ using UnityEngine;
 public class EliteEnemy : Enemy, ICharacterAuthoringTarget
 {
 
-    public StageOneEnemyKind1112 CanonicalStageOneKind;
+    public StageOneEnemyKind CanonicalStageOneKind;
 
     [Header("Posture")]
     [SerializeField]
@@ -87,8 +87,8 @@ public class EliteEnemy : Enemy, ICharacterAuthoringTarget
 
     private IReadOnlyList<EnemyBodyPartDefinition> GetEffectiveBodyPartDefinitions()
     {
-        if (CanonicalStageOneKind != StageOneEnemyKind1112.None)
-            return StageOneEnemy1112Profiles.BodyParts(CanonicalStageOneKind);
+        if (CanonicalStageOneKind != StageOneEnemyKind.None)
+            return StageOneEnemyProfiles.BodyParts(CanonicalStageOneKind);
         if (bodyPartDefinitions != null && bodyPartDefinitions.Count == 5)
             return bodyPartDefinitions;
 
@@ -128,10 +128,10 @@ public class EliteEnemy : Enemy, ICharacterAuthoringTarget
     protected override void BuildMechanics()
     {
         base.BuildMechanics();
-        if (CanonicalStageOneKind != StageOneEnemyKind1112.None)
+        if (CanonicalStageOneKind != StageOneEnemyKind.None)
         {
             AddMechanic(new EnemyPostureMechanic(postureSettings));
-            AddMechanic(new StageOneEnemy1112Mechanic(CanonicalStageOneKind));
+            AddMechanic(new StageOneEnemyMechanic(CanonicalStageOneKind));
             return;
         }
 
@@ -161,7 +161,7 @@ public class EliteEnemy : Enemy, ICharacterAuthoringTarget
         EnemyPostureMechanic posture =
             GetMechanic<EnemyPostureMechanic>();
 
-        return GetMechanic<StageOneEnemy1112Mechanic>()?.AttackSlots ?? posture?.CurrentAttackSlotLimit ?? 3;
+        return GetMechanic<StageOneEnemyMechanic>()?.AttackSlots ?? posture?.CurrentAttackSlotLimit ?? 3;
     }
 
     //--------------------------------

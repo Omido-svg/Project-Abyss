@@ -1,5 +1,6 @@
 public struct DamageRequest
 {
+    public ProjectAbyss.Abilities.EffectCause SourceCause;
     public DamageType Type;
 
     public Character SourceCharacter;
@@ -46,6 +47,7 @@ public struct DamageRequest
         return new DamageRequest
         {
             Type = damageType,
+            SourceCause = action?.GetEffectCause(ProjectAbyss.Abilities.AbilityEventKind.RollUsing,action.CurrentRollIndex) ?? default,
 
             SourceCharacter = action?.Owner,
             SourceAction = action,

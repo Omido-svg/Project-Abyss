@@ -244,86 +244,86 @@ public static class BattleSkillDescriptionFormatter
                     return "이번 턴 합 위력 " + amount + " 증가";
             }
         }
-        if (effect is Yujin0916SkillEffectDefinition yujin)
+        if (effect is YujinRiderEffectDefinition yujin)
         {
             switch (yujin.Operation)
             {
-                case Yujin0916EffectOperation.LedgerCleanup:
+                case YujinRiderOperation.LedgerCleanup:
                     return "대상 표식 20을 소비해 빛 1 회복";
-                case Yujin0916EffectOperation.StepBackBlock:
+                case YujinRiderOperation.StepBackBlock:
                     return "방어도 10 획득";
-                case Yujin0916EffectOperation.AimCriticalRider:
+                case YujinRiderOperation.AimCriticalRider:
                     return "치명타 시 현재 무기에 따른 추가 효과";
-                case Yujin0916EffectOperation.ConfirmKillMomentum:
+                case YujinRiderOperation.ConfirmKillMomentum:
                     return null; // Old operation is disabled in runtime.
-                case Yujin0916EffectOperation.FamiliarHand:
+                case YujinRiderOperation.FamiliarHand:
                     return "이번 턴 무기를 교체했다면 살수의 감 1 획득";
-                case Yujin0916EffectOperation.AceInTheHole:
+                case YujinRiderOperation.AceInTheHole:
                     return "살수의 감을 소비해 다음 코인을 확정 앞면으로 변경";
-                case Yujin0916EffectOperation.Wanted:
+                case YujinRiderOperation.Wanted:
                     return "모든 적에게 무기별 약화 효과 예약";
-                case Yujin0916EffectOperation.DesignateCurrent:
+                case YujinRiderOperation.DesignateCurrent:
                     return "대상에게 지정 2를 3턴 부여";
-                case Yujin0916EffectOperation.IntoShadowsBlock:
+                case YujinRiderOperation.IntoShadowsBlock:
                     return "방어도 15 획득";
-                case Yujin0916EffectOperation.GainSense:
+                case YujinRiderOperation.GainSense:
                     return "살수의 감 " + Math.Max(1,yujin.Amount) + " 획득";
-                case Yujin0916EffectOperation.CutThroatMark:
+                case YujinRiderOperation.CutThroatMark:
                     return "대상 부위에 표식 20 부여";
-                case Yujin0916EffectOperation.SpreadRumorMark:
+                case YujinRiderOperation.SpreadRumorMark:
                     return "모든 적에게 표식 8 부여";
-                case Yujin0916EffectOperation.ProbeWeakness:
+                case YujinRiderOperation.ProbeWeakness:
                     return "대상에게 무기별 약화 효과 예약";
-                case Yujin0916EffectOperation.Trap:
+                case YujinRiderOperation.Trap:
                     return "대상 표식에 함정 20 설정";
-                case Yujin0916EffectOperation.Deadline:
+                case YujinRiderOperation.Deadline:
                     return "대상 표식에 발동 기한 설정";
-                case Yujin0916EffectOperation.DesignateAll:
+                case YujinRiderOperation.DesignateAll:
                     return "모든 적에게 지정 2를 3턴 부여";
-                case Yujin0916EffectOperation.Period:
+                case YujinRiderOperation.Period:
                     return "표식을 이용해 추가 효과 발동";
-                case Yujin0916EffectOperation.HoldBreath:
+                case YujinRiderOperation.HoldBreath:
                     return "표식 10을 소비해 방어도 20 획득";
-                case Yujin0916EffectOperation.Sharpen:
+                case YujinRiderOperation.Sharpen:
                     return "표식 10을 소비해 다음 턴 신속 1 획득";
             }
         }
-        if (effect is Olaf0922Phase7SkillEffectDefinition olaf)
+        if (effect is OlafMadnessEffectDefinition olaf)
         {
             string statusName = BattleKeywordGlossary.GetStatusEffectDisplayName(
                 olaf.StatusId);
             switch (olaf.Operation)
             {
-                case Olaf0922Phase7EffectOperation.RandomTargetDebuffNextTurn:
+                case OlafMadnessOperation.RandomTargetDebuffNextTurn:
                     return "교환 승리 시 다음 턴 무작위 약화 효과 예약";
-                case Olaf0922Phase7EffectOperation.TargetStatusNextTurn:
+                case OlafMadnessOperation.TargetStatusNextTurn:
                     return "다음 턴 대상에게 " + statusName +
                            " " + olaf.Amount + " 부여";
-                case Olaf0922Phase7EffectOperation.OwnerStatusNextTurn:
+                case OlafMadnessOperation.OwnerStatusNextTurn:
                     return "다음 턴 자신에게 " + statusName +
                            " " + olaf.Amount + " 부여";
-                case Olaf0922Phase7EffectOperation.OwnerStatusImmediate:
+                case OlafMadnessOperation.OwnerStatusImmediate:
                     return "자신에게 " + statusName + " " + olaf.Amount + " 부여";
-                case Olaf0922Phase7EffectOperation.TargetBleeding:
+                case OlafMadnessOperation.TargetBleeding:
                     return "대상에게 출혈 " + olaf.Amount + " 부여";
-                case Olaf0922Phase7EffectOperation.OwnerBleeding:
+                case OlafMadnessOperation.OwnerBleeding:
                     return "자신에게 출혈 " + olaf.Amount + " 부여";
-                case Olaf0922Phase7EffectOperation.OwnerBlock:
+                case OlafMadnessOperation.OwnerBlock:
                     return "방어도 " + olaf.Amount + " 획득";
-                case Olaf0922Phase7EffectOperation.ClearTargetBlock:
+                case OlafMadnessOperation.ClearTargetBlock:
                     return "대상의 방어도 제거";
-                case Olaf0922Phase7EffectOperation.BloodPriceStrengthByOwnerBleeding:
+                case OlafMadnessOperation.BloodPriceStrengthByOwnerBleeding:
                     return "자신의 출혈에 따라 힘 획득";
-                case Olaf0922Phase7EffectOperation.ConsumeTargetBleedingForEnergy:
+                case OlafMadnessOperation.ConsumeTargetBleedingForEnergy:
                     return "대상 출혈을 소비해 빛 회복";
-                case Olaf0922Phase7EffectOperation.PrepareBloodOathDuel:
-                case Olaf0922Phase7EffectOperation.ResolveBloodOathDuelWin:
+                case OlafMadnessOperation.PrepareBloodOathDuel:
+                case OlafMadnessOperation.ResolveBloodOathDuelWin:
                     return "출혈 구간에 따른 결투 추가 효과";
-                case Olaf0922Phase7EffectOperation.AddMadness:
+                case OlafMadnessOperation.AddMadness:
                     return "광기 " + olaf.Amount + " 획득";
-                case Olaf0922Phase7EffectOperation.StrengthByTargetBleedingBandNextTurn:
+                case OlafMadnessOperation.StrengthByTargetBleedingBandNextTurn:
                     return "대상 출혈 구간에 따라 다음 턴 힘 획득";
-                case Olaf0922Phase7EffectOperation.TargetStatusNextTurnIfBleedingAtLeast:
+                case OlafMadnessOperation.TargetStatusNextTurnIfBleedingAtLeast:
                     return "출혈 조건을 만족하면 다음 턴 " + statusName + " 부여";
             }
         }

@@ -17,7 +17,7 @@ namespace ProjectAbyss.Abilities
             public FixedTarget(Character owner,BodyPart part)
             {
                 target=new CombatTargetRef(
-                    R4LiveSlotQuery.ActorRuntimeId(owner),
+                    LiveSlotQuery.ActorRuntimeId(owner),
                     part?.PartId??string.Empty,"");
             }
             public IReadOnlyList<CombatTargetRef> Select(IReadOnlyAbilityContext context)=>
@@ -83,10 +83,10 @@ namespace ProjectAbyss.Abilities
             string commandId="R7-BLEED:"+ability.Definition.SourceAssetGuid+":"+
                 cause.ActionId+":"+entryIndex+":"+cause.Kind+":"+
                 cause.RollUseIndex+":"+cause.CauseId;
-            var commands=R5PlannedCommandBridge.Materialize(
+            var commands=PlannedCommandBridge.Materialize(
                 ability,cause,plan,commandId,0);
             var command=commands[0];
-            var backend=new R5CombatSpecialistBackend(battle);
+            var backend=new CombatSpecialistBackend(battle);
             var effect=new Bleeding(stacks);
             if(part==null)
                 backend.RegisterCharacterStatus(command,

@@ -119,7 +119,7 @@ public static class HifumiDeferredParityVerification
                 ReactionTimingCheckpoint.AfterClashCompleted,out var req);
             Check("H06 real Hifumi request has exact owner/root provenance",
                 has && req.RootActionId==996200 &&
-                req.OwnerActorRuntimeId==R4LiveSlotQuery.ActorRuntimeId(hB));
+                req.OwnerActorRuntimeId==LiveSlotQuery.ActorRuntimeId(hB));
             bool executed=has && ctx.Services.SpecialistReactionRegistry.TryExecute(
                 req,out var _);
             int damageDeferred=beforeB-normals[1].CurrentHP;
@@ -149,9 +149,9 @@ public static class HifumiDeferredParityVerification
                 ctx.Services.SpecialistReactionRegistry.PendingCount==1);
             var coordinator=new ActionResolver(
                 ctx,ctx.Services.ClashManager,null,null);
-            coordinator.EnableR6ReactionExecution(
+            coordinator.EnableReactionExecution(
                 ctx.Services.ReactionScheduler,ctx.Services.ReactionActionRegistry);
-            coordinator.EnableR6SpecialistReactions(
+            coordinator.EnableSpecialistReactions(
                 ctx.Services.SpecialistReactionRegistry);
             var probe=new ActionSlot{
                 ActionId=996350,Owner=ctx.Player,TargetCharacter=normals[1],

@@ -45,7 +45,7 @@ internal static class SkillCostService
             if (definition.RequireFullPrestige)
             {
                 int overrideRequiredPrestige =
-                    Canonical0922EmotionRuntimeHooks
+                    EmotionAugmentRuntimeHooks
                         .TryGetPrestigeStockpileThreshold(
                             character,
                             out int overrideStockpileThreshold)
@@ -91,7 +91,7 @@ internal static class SkillCostService
         }
 
         int requiredPrestige =
-            Canonical0922EmotionRuntimeHooks
+            EmotionAugmentRuntimeHooks
                 .TryGetPrestigeStockpileThreshold(
                     character,
                     out int stockpileThreshold)
@@ -152,7 +152,7 @@ internal static class SkillCostService
             {
                 if (definition.ConsumeAllPrestige)
                 {
-                    if (Canonical0922EmotionRuntimeHooks
+                    if (EmotionAugmentRuntimeHooks
                             .TryGetPrestigeStockpileThreshold(
                                 character,
                                 out int overrideStockpileThreshold))
@@ -205,7 +205,7 @@ internal static class SkillCostService
         if (skill.ActionType == ActionType.Prestige &&
             character.RuntimeStatus != null)
         {
-            if (Canonical0922EmotionRuntimeHooks
+            if (EmotionAugmentRuntimeHooks
                     .TryGetPrestigeStockpileThreshold(
                         character,
                         out int normalStockpileThreshold))

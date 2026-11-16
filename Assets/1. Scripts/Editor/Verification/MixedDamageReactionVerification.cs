@@ -24,26 +24,26 @@ public static class MixedDamageReactionVerification
             else{fail++;Debug.LogError("[R5-Mixed] FAIL "+id+" | "+info);}
         }
         var ability=new AbilityInstance(new AbilityDefinitionRef("R5-MIXED","TEST"),
-            new AbilityIdentity("R5-MIXED",R4LiveSlotQuery.ActorRuntimeId(player),"S",0));
+            new AbilityIdentity("R5-MIXED",LiveSlotQuery.ActorRuntimeId(player),"S",0));
         var cause=new AbilityEventContext(AbilityEventKind.RollUsing,
-            980301,980302,R4LiveSlotQuery.ActorRuntimeId(player),0,false,false);
+            980301,980302,LiveSlotQuery.ActorRuntimeId(player),0,false,false);
         var damage=new CombatCommandEnvelope("R5-MIX-DAMAGE",ability.Identity,
             CombatCommandKind.DealDamage,cause.ActionId,cause.CauseId,
-            new CombatTargetRef(R4LiveSlotQuery.ActorRuntimeId(target),"",null),
+            new CombatTargetRef(LiveSlotQuery.ActorRuntimeId(target),"",null),
             4,phase:1,priority:0,registrationOrder:0,commandSequence:0);
         var react=new CombatCommandEnvelope("R5-MIX-REACTION",ability.Identity,
             CombatCommandKind.RequestReactionAction,cause.ActionId,cause.CauseId,
-            new CombatTargetRef(R4LiveSlotQuery.ActorRuntimeId(player),"",null),
+            new CombatTargetRef(LiveSlotQuery.ActorRuntimeId(player),"",null),
             0,phase:2,priority:0,registrationOrder:0,commandSequence:1);
         var request=new ReactionRequest(980303,cause.ActionId,cause.ActionId,cause.CauseId,
-            980304,R4LiveSlotQuery.ActorRuntimeId(player),"R5_MIXED_COUNTER",
+            980304,LiveSlotQuery.ActorRuntimeId(player),"R5_MIXED_COUNTER",
             ReactionTimingCheckpoint.AfterActionCompleted,0,1);
-        var backend=new R5CombatSpecialistBackend(battle);
+        var backend=new CombatSpecialistBackend(battle);
         var scheduler=new BattleReactionScheduler();
-        var reactionBackend=new R5ReactionRequestCommandBackend(scheduler);
+        var reactionBackend=new ReactionRequestCommandBackend(scheduler);
         backend.RegisterDamage(damage,DamageRequest.Direct(player,target,4));
         reactionBackend.RegisterRequest(react,request);
-        var mixed=new R5CompositeCommandBackend(backend,reactionBackend);
+        var mixed=new CompositeCommandBackend(backend,reactionBackend);
         var service=new CombatCommandApplyService();
         int hpBefore=target.CurrentHP;
         var result=service.Apply(ability,cause,new[]{react,damage},mixed);

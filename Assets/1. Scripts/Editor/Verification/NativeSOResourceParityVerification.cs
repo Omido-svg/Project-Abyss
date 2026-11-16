@@ -32,13 +32,13 @@ public static class NativeSOResourceParityVerification
         if(!Application.isPlaying)
             throw new InvalidOperationException("Play Mode only");
         var ctx=UnityEngine.Object.FindFirstObjectByType<BattleManager>()?.BattleContext;
-        var router=ctx?.Services?.R7NativeResourceMigration;
+        var router=ctx?.Services?.ResourceAbilities;
         var enemy=ctx?.Enemies?.FirstOrDefault(x=>x!=null&&!x.IsDead&&!x.UsesBodyParts);
         var prefab=AssetDatabase.LoadAssetAtPath<GameObject>(
             "Assets/2. Data/TestEncounters/Prefabs/Hifumi_Test.prefab");
         if(router==null||enemy==null||prefab==null||ctx.SkillUpgrades==null)
             throw new InvalidOperationException("Missing live test scene");
-        var graphs=Resources.LoadAll<R7NativeAbilityDefinition>(
+        var graphs=Resources.LoadAll<NativeAbilityDefinition>(
             "ProjectAbyss/NativeAbilities").OrderBy(x=>x.StableId).ToArray();
         var source=AssetDatabase.FindAssets("t:SkillDefinition").Select(g=>
             AssetDatabase.LoadAssetAtPath<SkillDefinition>(
@@ -64,7 +64,7 @@ public static class NativeSOResourceParityVerification
         var restore=new List<(SkillDefinition Data,int Level)>();
         Check("G01 15 native SOs loaded",graphs.Length==15);
         Check("G02 router source is native SO catalog",
-            R7ProductionNativeResourceMigration.ApprovedSkillCount==15);
+            ResourceAbilityBinding.ApprovedSkillCount==15);
         try
         {
             long id=991000;
@@ -78,9 +78,9 @@ public static class NativeSOResourceParityVerification
                     graph.SourceAssetGuid==AssetDatabase.AssetPathToGUID(
                         AssetDatabase.GetAssetPath(data)));
                 Check("G04 upgrade amounts compiled from source "+graph.StableId,
-                    graph.Level0Amount==NativeResourceAssetMigration.ResolveAmount(data,0)&&
-                    graph.Level1Amount==NativeResourceAssetMigration.ResolveAmount(data,1)&&
-                    graph.Level2Amount==NativeResourceAssetMigration.ResolveAmount(data,2));
+                    graph.Level0Amount==NativeResourceUpgradeValues.ResolveAmount(data,0)&&
+                    graph.Level1Amount==NativeResourceUpgradeValues.ResolveAmount(data,1)&&
+                    graph.Level2Amount==NativeResourceUpgradeValues.ResolveAmount(data,2));
                 if(HistoricalParityScope.IsSupersededSource(data))
                 {
                     Check("G04b final authoritative rule owner "+graph.StableId,

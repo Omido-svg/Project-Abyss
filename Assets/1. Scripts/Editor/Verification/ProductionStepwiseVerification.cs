@@ -70,7 +70,7 @@ public static class ProductionStepwiseVerification
             else{fail++;Debug.LogError("[R6-Production] FAIL "+id+" | "+description);}
         }
         Check("P01 real scene startup enables production stepwise path",
-            services.ActionResolver.IsR6StepwiseActive &&
+            services.ActionResolver.IsStepwiseActive &&
             services.ReactionScheduler!=null &&
             services.ReactionActionRegistry!=null &&
             services.ReactionLifetimeRegistry!=null,
@@ -86,7 +86,7 @@ public static class ProductionStepwiseVerification
         var counter=Slot(enemy,battle.Player,reactionId,"R6-PROD-COUNTER",1,1,battle);
         counter.ResourceCostCommitted=false;
         var request=new ReactionRequest(1176110,firstId,firstId,1176120,
-            firstId,R4LiveSlotQuery.ActorRuntimeId(enemy),"R6-PROD-COUNTER",
+            firstId,LiveSlotQuery.ActorRuntimeId(enemy),"R6-PROD-COUNTER",
             ReactionTimingCheckpoint.AfterExchangeSettled,0,1176130);
         bool bound=false,queued=false, lifetimeBound=false;
         int exchanges=0, resumes=0;
@@ -108,11 +108,11 @@ public static class ProductionStepwiseVerification
                     lifetime.TryBindAccepted(decision,
                         new AbilityLifetimeRules(oncePerTurn:true),
                         new AbilityLifetimeEvent(17,firstId,1,1,request.CauseEventId),
-                        R3ReactionConsumeOn.Started,null,out _);
+                        ReactionConsumeOn.Started,null,out _);
             }
         };
         int oldHp=enemy.CurrentHP;
-        resolver.R6ExchangeSettled+=observer;
+        resolver.ExchangeSettled+=observer;
         BattleSimulationRuntime.BeginBatch(true);
         try
         {
@@ -123,7 +123,7 @@ public static class ProductionStepwiseVerification
         finally
         {
             BattleSimulationRuntime.EndBatch();
-            resolver.R6ExchangeSettled-=observer;
+            resolver.ExchangeSettled-=observer;
         }
         Check("P02 all original exchanges performed in original order",
             exchanges==3 && observed.SequenceEqual(new[]{0,1,2}));
@@ -136,32 +136,32 @@ public static class ProductionStepwiseVerification
         Check("P05 execution queue and one-shot binding drained",
             requests.PendingCount==0&&registry.PendingBindings==0);
         Check("P06 registered Started lifetime committed exactly one activation",
-            lifetime.TryGetMemory(R4LiveSlotQuery.ActorRuntimeId(enemy),
+            lifetime.TryGetMemory(LiveSlotQuery.ActorRuntimeId(enemy),
                 "R6-PROD-COUNTER",out var stored) &&
             stored.SuccessfulCauseCount==1);
-        var kinds=resolver.R6StepTrace.Select(x=>x.Kind).ToArray();
+        var kinds=resolver.StepTrace.Select(x=>x.Kind).ToArray();
         var expected=new[]{
-            R6StepTraceKind.ExchangeCommitted,R6StepTraceKind.ExchangeVisualCompleted,
-            R6StepTraceKind.ExchangeCommitted,R6StepTraceKind.ExchangeVisualCompleted,
-            R6StepTraceKind.ReactionCommitted,R6StepTraceKind.ReactionVisualCompleted,
-            R6StepTraceKind.ExchangeCommitted,R6StepTraceKind.ExchangeVisualCompleted,
-            R6StepTraceKind.OriginalActionCompleted
+            StepTraceKind.ExchangeCommitted,StepTraceKind.ExchangeVisualCompleted,
+            StepTraceKind.ExchangeCommitted,StepTraceKind.ExchangeVisualCompleted,
+            StepTraceKind.ReactionCommitted,StepTraceKind.ReactionVisualCompleted,
+            StepTraceKind.ExchangeCommitted,StepTraceKind.ExchangeVisualCompleted,
+            StepTraceKind.OriginalActionCompleted
         };
         Check("P07 real production trace contains no replayed root visual",
             kinds.SequenceEqual(expected),
             string.Join("|",kinds.Select(k=>k.ToString())));
         Check("P08 R6 actual battle state only receives permitted damage",
             enemy.CurrentHP<=oldHp &&
-            resolver.IsR6StepwiseActive &&
+            resolver.IsStepwiseActive &&
             !BattleSimulationRuntime.IsBatchSimulation);
         var nextRequest=new ReactionRequest(1176111,firstId,firstId,1176121,
-            firstId,R4LiveSlotQuery.ActorRuntimeId(enemy),"R6-PROD-COUNTER",
+            firstId,LiveSlotQuery.ActorRuntimeId(enemy),"R6-PROD-COUNTER",
             ReactionTimingCheckpoint.AfterExchangeSettled,0,1176131);
         var nextDecision=requests.Queue(nextRequest);
         bool rejected=!lifetime.TryBindAccepted(nextDecision,
             new AbilityLifetimeRules(oncePerTurn:true),
             new AbilityLifetimeEvent(17,firstId,2,2,nextRequest.CauseEventId),
-            R3ReactionConsumeOn.Started,null,out _);
+            ReactionConsumeOn.Started,null,out _);
         Check("P09 new RequestId cannot bypass same-turn cooldown",
             nextDecision.Accepted&&rejected&&!lifetime.MayStart(nextRequest,out _));
         // R6 production memory/queue is battle-local; this test does not
@@ -171,7 +171,7 @@ public static class ProductionStepwiseVerification
         services.ReactionLifetimeRegistry.ClearForBattleEnd();
         Check("P10 empty testing queues, production mode remains enabled",
             requests.PendingCount==0 && registry.PendingBindings==0 &&
-            lifetime.PendingBindings==0 && resolver.IsR6StepwiseActive);
+            lifetime.PendingBindings==0 && resolver.IsStepwiseActive);
         Debug.Log("[R6-Production] RESULT PASS="+pass+" FAIL="+fail);
         if(fail>0)throw new InvalidOperationException("R6 production integration failed "+fail);
     }

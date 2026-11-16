@@ -11,30 +11,30 @@ public class ActionResolver
     private readonly IBattleActionReporter actionReporter;
     private readonly IBattleActionPresentation actionPresentation;
     private BattleReactionScheduler reactionScheduler;
-    private R6ReactionActionRegistry reactionRegistry;
+    private ReactionActionRegistry reactionRegistry;
 
     private ReactionLifetimeRegistry reactionLifetime;
-    public void EnableR6ReactionLifetime(ReactionLifetimeRegistry lifetime)
+    public void EnableReactionLifetime(ReactionLifetimeRegistry lifetime)
     {
         reactionLifetime = lifetime ?? throw new System.ArgumentNullException(nameof(lifetime));
     }
-    private R6SpecialistReactionRegistry specialistReactionRegistry;
-    public void EnableR6SpecialistReactions(R6SpecialistReactionRegistry registry)
+    private SpecialistReactionRegistry specialistReactionRegistry;
+    public void EnableSpecialistReactions(SpecialistReactionRegistry registry)
     {
         specialistReactionRegistry=registry ?? throw new System.ArgumentNullException(nameof(registry));
     }
 
-    public bool IsR6StepwiseActive => useR6StepwiseClashes;
-    private bool useR6StepwiseClashes;
+    public bool IsStepwiseActive => useStepwiseClashes;
+    private bool useStepwiseClashes;
 
     /// <summary>
     /// R6-Ib opt-in observation of a fully committed exchange, emitted
     /// AFTER damage/events and BEFORE reaction checkpoint pumping.
     /// Subscribers may enqueue requests only, not recursively resolve damage.
     /// </summary>
-    public event System.Action<ClashExchangeResult> R6ExchangeSettled;
+    public event System.Action<ClashExchangeResult> ExchangeSettled;
 
-    public void EnableR6StepwiseClashes()
+    public void EnableStepwiseClashes()
     {
         if(reactionScheduler==null || reactionRegistry==null)
             throw new System.InvalidOperationException(
@@ -42,43 +42,43 @@ public class ActionResolver
         if(!(actionPresentation is IBattleActionStepPresentation))
             throw new System.InvalidOperationException(
                 "R6-Ic requires a step presenter to prevent duplicated/out-of-order playback.");
-        r6StepTrace.Clear();
-        useR6StepwiseClashes=true;
+        stepTrace.Clear();
+        useStepwiseClashes=true;
     }
 
-    public void DisableR6StepwiseClashes() => useR6StepwiseClashes=false;
-    private readonly List<R6ReactionExecutionRecord> reactionExecutionTrace =
-        new List<R6ReactionExecutionRecord>();
-    private readonly List<R6StepTraceRecord> r6StepTrace =
-        new List<R6StepTraceRecord>();
+    public void DisableStepwiseClashes() => useStepwiseClashes=false;
+    private readonly List<ReactionExecutionRecord> reactionExecutionTrace =
+        new List<ReactionExecutionRecord>();
+    private readonly List<StepTraceRecord> stepTrace =
+        new List<StepTraceRecord>();
 
-    public IReadOnlyList<R6StepTraceRecord> R6StepTrace =>
-        r6StepTrace.AsReadOnly();
+    public IReadOnlyList<StepTraceRecord> StepTrace =>
+        stepTrace.AsReadOnly();
 
-    private void Trace(R6StepTraceKind kind, long actionId,
+    private void Trace(StepTraceKind kind, long actionId,
         long rootActionId, long causeEventId, int exchangeIndex)
     {
-        r6StepTrace.Add(new R6StepTraceRecord(
-            r6StepTrace.Count, kind, actionId, rootActionId,
+        stepTrace.Add(new StepTraceRecord(
+            stepTrace.Count, kind, actionId, rootActionId,
             causeEventId, exchangeIndex));
     }
 
-    public IReadOnlyList<R6ReactionExecutionRecord> ReactionExecutionTrace =>
+    public IReadOnlyList<ReactionExecutionRecord> ReactionExecutionTrace =>
         reactionExecutionTrace.AsReadOnly();
 
     /// <summary>
     /// R6-Ia opt-in only. Existing BattleRuntimeFactory does not bind this
     /// automatically, preventing duplicate legacy Hifumi counter execution.
     /// </summary>
-    public void EnableR6ReactionExecution(
-        BattleReactionScheduler scheduler,R6ReactionActionRegistry registry)
+    public void EnableReactionExecution(
+        BattleReactionScheduler scheduler,ReactionActionRegistry registry)
     {
         reactionScheduler=scheduler ?? throw new System.ArgumentNullException(nameof(scheduler));
         reactionRegistry=registry ?? throw new System.ArgumentNullException(nameof(registry));
         reactionExecutionTrace.Clear();
     }
 
-    public void DisableR6ReactionExecution()
+    public void DisableReactionExecution()
     {
         reactionScheduler=null;
         reactionRegistry=null;
@@ -86,7 +86,7 @@ public class ActionResolver
         reactionLifetime=null;
         specialistReactionRegistry=null;
         reactionExecutionTrace.Clear();
-        useR6StepwiseClashes=false;
+        useStepwiseClashes=false;
     }
 
     public ActionResolver(
@@ -168,8 +168,10 @@ public class ActionResolver
 
             // Standalone RaiseActionEnd is finalized in finally above.
             if(reactionScheduler!=null && reactionRegistry!=null)
-                yield return PumpR6ReactionCheckpoint(
-                    ReactionTimingCheckpoint.AfterActionCompleted);
+            {
+                yield return PumpReactionCheckpoint(ReactionTimingCheckpoint.AfterDamageResultCommitted);
+                yield return PumpReactionCheckpoint(ReactionTimingCheckpoint.AfterActionCompleted);
+            }
         }
     }
 
@@ -185,7 +187,7 @@ public class ActionResolver
                 clashQueue.Dequeue();
 
             ClashResultContext result;
-            bool streamed = useR6StepwiseClashes &&
+            bool streamed = useStepwiseClashes &&
                 reactionScheduler!=null && reactionRegistry!=null;
             if(streamed)
             {
@@ -201,17 +203,19 @@ public class ActionResolver
                             break;
                         // This is a new *notification*, not a new gameplay
                         // ExchangeResolved event or additional damage.
-                        R6ExchangeSettled?.Invoke(exchange);
+                        ExchangeSettled?.Invoke(exchange);
                         long originalId=session.RootActionId;
-                        Trace(R6StepTraceKind.ExchangeCommitted,originalId,
+                        Trace(StepTraceKind.ExchangeCommitted,originalId,
                             originalId,0,exchange?.ExchangeIndex ?? -1);
                         // Timeline must display this factual exchange BEFORE
                         // any reaction and BEFORE a future original exchange.
                         yield return ((IBattleActionStepPresentation)actionPresentation)
                             .PlayCommittedExchange(session.Result,exchange);
-                        Trace(R6StepTraceKind.ExchangeVisualCompleted,originalId,
+                        Trace(StepTraceKind.ExchangeVisualCompleted,originalId,
                             originalId,0,exchange?.ExchangeIndex ?? -1);
-                        yield return PumpR6ReactionCheckpoint(
+                        yield return PumpReactionCheckpoint(
+                            ReactionTimingCheckpoint.AfterDamageResultCommitted);
+                        yield return PumpReactionCheckpoint(
                             ReactionTimingCheckpoint.AfterExchangeSettled);
                         session.ResumeAfterCheckpoint();
                     }
@@ -232,7 +236,7 @@ public class ActionResolver
                     .PlayClash(result);
             }
             if(streamed)
-                Trace(R6StepTraceKind.OriginalActionCompleted,
+                Trace(StepTraceKind.OriginalActionCompleted,
                     result.FirstAction?.ActionId ?? 0, result.FirstAction?.ActionId ?? 0,
                     0,-1);
 
@@ -241,15 +245,18 @@ public class ActionResolver
             // inserted reaction presentation. NEVER pump in event handlers.
             if(reactionScheduler!=null && reactionRegistry!=null)
             {
-                yield return PumpR6ReactionCheckpoint(
+                if(!streamed)
+                    yield return PumpReactionCheckpoint(
+                        ReactionTimingCheckpoint.AfterDamageResultCommitted);
+                yield return PumpReactionCheckpoint(
                     ReactionTimingCheckpoint.AfterClashCompleted);
-                yield return PumpR6ReactionCheckpoint(
+                yield return PumpReactionCheckpoint(
                     ReactionTimingCheckpoint.AfterActionCompleted);
             }
         }
     }
 
-    private IEnumerator PumpR6ReactionCheckpoint(
+    private IEnumerator PumpReactionCheckpoint(
         ReactionTimingCheckpoint checkpoint)
     {
         if(reactionScheduler==null || reactionRegistry==null)
@@ -265,14 +272,14 @@ public class ActionResolver
                 !reactionLifetime.MayStart(request,out var lifetimeReason))
             {
                 reactionLifetime.Cancel(request);
-                reactionExecutionTrace.Add(new R6ReactionExecutionRecord(
+                reactionExecutionTrace.Add(new ReactionExecutionRecord(
                     request,0,false,"R6 lifetime blocked: "+lifetimeReason));
                 continue;
             }
             if(specialistReactionRegistry?.IsChainQuarantined(request.ChainId)==true)
             {
                 reactionLifetime?.Cancel(request);
-                reactionExecutionTrace.Add(new R6ReactionExecutionRecord(
+                reactionExecutionTrace.Add(new ReactionExecutionRecord(
                     request,0,false,"Origin chain quarantined after unknown specialist commit."));
                 continue;
             }
@@ -281,7 +288,7 @@ public class ActionResolver
             {
                 bool applied=specialistReactionRegistry.TryExecute(request,out var problem);
                 reactionLifetime?.CompleteSpecialist(request,applied,out _);
-                reactionExecutionTrace.Add(new R6ReactionExecutionRecord(
+                reactionExecutionTrace.Add(new ReactionExecutionRecord(
                     request,0,applied,applied ?
                     "Original specialist reactive sequence executed." : problem));
                 if(!applied)
@@ -292,7 +299,7 @@ public class ActionResolver
             if(!reactionRegistry.TryTake(request,out var slot,out var diagnostic))
             {
                 reactionLifetime?.Cancel(request);
-                reactionExecutionTrace.Add(new R6ReactionExecutionRecord(
+                reactionExecutionTrace.Add(new ReactionExecutionRecord(
                     request,0,false,diagnostic));
                 Debug.LogWarning("[R6-Exec] Unbound reaction "+
                     request.RequestId+" / "+diagnostic);
@@ -312,7 +319,7 @@ public class ActionResolver
                 slot.TargetCharacter==slot.Owner || idCollision || !hostileSide)
             {
                 reactionLifetime?.Cancel(request);
-                reactionExecutionTrace.Add(new R6ReactionExecutionRecord(
+                reactionExecutionTrace.Add(new ReactionExecutionRecord(
                     request,slot.ActionId,false,
                     "Reaction owner, target or action slot invalid at execution."));
                 continue;
@@ -334,7 +341,7 @@ public class ActionResolver
             if(resolved==null)
             {
                 reactionLifetime?.Cancel(request);
-                reactionExecutionTrace.Add(new R6ReactionExecutionRecord(
+                reactionExecutionTrace.Add(new ReactionExecutionRecord(
                     request,slot.ActionId,false,
                     "ClashManager returned no executable reaction result."));
                 continue;
@@ -345,17 +352,17 @@ public class ActionResolver
                !string.IsNullOrEmpty(lifetimeCommitProblem))
                 Debug.Log("[R6-Lifetime] "+request.RequestId+": "+
                     lifetimeCommitProblem);
-            reactionExecutionTrace.Add(new R6ReactionExecutionRecord(
+            reactionExecutionTrace.Add(new ReactionExecutionRecord(
                 request,slot.ActionId,true,
                 "Independent one-sided reaction resolved by ClashManager."));
 
-            if(useR6StepwiseClashes)
-                Trace(R6StepTraceKind.ReactionCommitted,slot.ActionId,
+            if(useStepwiseClashes)
+                Trace(StepTraceKind.ReactionCommitted,slot.ActionId,
                     request.RootActionId,request.CauseEventId,-1);
             if(actionPresentation!=null)
                 yield return actionPresentation.PlayClash(resolved);
-            if(useR6StepwiseClashes)
-                Trace(R6StepTraceKind.ReactionVisualCompleted,slot.ActionId,
+            if(useStepwiseClashes)
+                Trace(StepTraceKind.ReactionVisualCompleted,slot.ActionId,
                     request.RootActionId,request.CauseEventId,-1);
         }
     }

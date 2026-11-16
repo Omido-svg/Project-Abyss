@@ -10,27 +10,31 @@ namespace ProjectAbyss.Abilities
     public sealed class AbilityRunner
     {
         private sealed class ReadContext :
-            IR3ConditionSnapshotContext, IReadOnlyDamageAbilityContext
+            IConditionSnapshotContext, IReadOnlyDamageAbilityContext, IReadOnlyAbilityExecutionContext
         {
             public AbilityEventContext Event { get; }
             public AbilityIdentity Ability { get; }
-            public R3ConditionSnapshot Snapshot { get; }
+            public AbilityExecutionFrame Frame { get; }
+            public ConditionSnapshot Snapshot { get; }
             public bool HasCommittedDamageResult { get; }
             public AppliedDamageEvidence DamageEvidence { get; }
             public ReadContext(AbilityIdentity identity, AbilityEventContext e,
-                R3ConditionSnapshot snapshot, bool committed, AppliedDamageEvidence damage)
+                ConditionSnapshot snapshot, bool committed, AppliedDamageEvidence damage)
             {
                 Ability=identity;Event=e;Snapshot=snapshot;
+                Frame=e.ExecutionFrame ?? AbilityExecutionFrame.FromLegacy(identity,e,snapshot);
                 HasCommittedDamageResult=committed;DamageEvidence=damage;
             }
         }
 
         public sealed class PlannedExecution
         {
+            public AbilityExecutionFrame Frame { get; }
             public AbilityExecutionResult Result { get; }
             public IReadOnlyList<CombatCommandIntent> Commands { get; }
-            internal PlannedExecution(List<CombatCommandIntent> commands,string failure)
+            internal PlannedExecution(List<CombatCommandIntent> commands,string failure,AbilityExecutionFrame frame=null)
             {
+                Frame=frame;
                 Commands=commands.AsReadOnly();
                 Result=new AbilityExecutionResult(commands.Count,0,failure);
             }
@@ -67,7 +71,7 @@ namespace ProjectAbyss.Abilities
             AbilityEventContext context,IAbilityTriggerMatcher matcher,
             ICombatCondition preTargetCondition,ICombatCondition candidateCondition,
             ICombatTargetSelector selector,IReadOnlyList<IEffectOperation> operations,
-            R3ConditionSnapshot snapshot)
+            ConditionSnapshot snapshot)
         {
             if(snapshot==null)
                 return Fail("Missing R3 condition snapshot");
@@ -84,7 +88,7 @@ namespace ProjectAbyss.Abilities
             AbilityEventContext context,IAbilityTriggerMatcher matcher,
             ICombatCondition preTargetCondition,ICombatCondition candidateCondition,
             ICombatTargetSelector selector,IReadOnlyList<IEffectOperation> operations,
-            R3ConditionSnapshot snapshot,AppliedDamageEvidence committedEvidence)
+            ConditionSnapshot snapshot,AppliedDamageEvidence committedEvidence)
         {
             if(context.Kind!=AbilityEventKind.DamageSettled ||
                context.CauseId<=0 ||
@@ -109,17 +113,37 @@ namespace ProjectAbyss.Abilities
                 candidateCondition,selector,operations,snapshot,true,committedEvidence);
         }
 
+        public PlannedExecution PlanWithFrame(AbilityInstance instance, AbilityExecutionFrame frame,
+            IAbilityTriggerMatcher matcher, ICombatCondition preTargetCondition,
+            ICombatCondition candidateCondition, ICombatTargetSelector selector,
+            IReadOnlyList<IEffectOperation> operations)
+        {
+            if(frame==null)return Fail("Missing execution frame");
+            return PlanCore(instance,frame.ToEventContext(),matcher,preTargetCondition,
+                candidateCondition,selector,operations,frame.Snapshot,false,default);
+        }
+
         private static PlannedExecution Fail(string message)=>
             new PlannedExecution(new List<CombatCommandIntent>(),message);
 
         private PlannedExecution PlanCore(AbilityInstance instance,AbilityEventContext context,
             IAbilityTriggerMatcher matcher,ICombatCondition preTargetCondition,
             ICombatCondition candidateCondition,ICombatTargetSelector selector,
-            IReadOnlyList<IEffectOperation> operations,R3ConditionSnapshot snapshot,
+            IReadOnlyList<IEffectOperation> operations,ConditionSnapshot snapshot,
             bool hasCommittedDamage,AppliedDamageEvidence committedDamage)
         {
             if(instance==null||matcher==null||selector==null)
                 return Fail("Invalid contracts");
+            if(context.ExecutionFrame!=null && (!context.ExecutionFrame.Ability.Equals(instance.Identity) ||
+                context.ExecutionFrame.ActionId!=context.ActionId || context.ExecutionFrame.Cause.EventId!=context.CauseId ||
+                context.ExecutionFrame.EventKind!=context.Kind ||
+                context.ExecutionFrame.Cause.SourceActorId!=context.OwnerActorRuntimeId ||
+                context.ExecutionFrame.Cause.SourceAbilityId!=instance.Identity.DefinitionId ||
+                context.ExecutionFrame.Cause.SourceRollIndex!=context.RollUseIndex ||
+                context.ExecutionFrame.Source.ActorRuntimeId!=context.OwnerActorRuntimeId ||
+                context.ExecutionFrame.SnapshotPolicy==AbilitySnapshotPolicy.AfterCommittedDamage && !hasCommittedDamage ||
+                context.ExecutionFrame.SnapshotPolicy!=AbilitySnapshotPolicy.LiveAtTrigger && context.ExecutionFrame.Snapshot==null))
+                return Fail("Execution frame identity or snapshot boundary mismatch");
             if(!matcher.Matches(in context))
                 return Fail("Trigger mismatch");
             var key=new ActivationKey(context.ActionId,context.Kind,
@@ -150,7 +174,7 @@ namespace ProjectAbyss.Abilities
             if(operations!=null)
                 foreach(var op in operations)
                     op?.Plan(view,valid.AsReadOnly(),buffer);
-            return new PlannedExecution(buffer.Commands,string.Empty);
+            return new PlannedExecution(buffer.Commands,string.Empty,view.Frame);
         }
     }
 }

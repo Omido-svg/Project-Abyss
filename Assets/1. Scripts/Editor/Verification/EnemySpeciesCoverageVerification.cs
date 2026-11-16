@@ -27,11 +27,11 @@ public static class EnemySpeciesCoverageVerification
         Assert(all.Length==12,"12 distinct stage1 species defined");
         Assert(all.Select(s=>s.Species).Distinct().Count()==12,
             "species identity collision-free");
-        Assert(all.Count(s=>s.Role==EnemyRole0922.Attacker)==3&&
-               all.Count(s=>s.Role==EnemyRole0922.Duelist)==3&&
-               all.Count(s=>s.Role==EnemyRole0922.Buffer)==2&&
-               all.Count(s=>s.Role==EnemyRole0922.Tank)==2&&
-               all.Count(s=>s.Role==EnemyRole0922.Debuffer)==2,
+        Assert(all.Count(s=>s.Role==EnemyRole.Attacker)==3&&
+               all.Count(s=>s.Role==EnemyRole.Duelist)==3&&
+               all.Count(s=>s.Role==EnemyRole.Buffer)==2&&
+               all.Count(s=>s.Role==EnemyRole.Tank)==2&&
+               all.Count(s=>s.Role==EnemyRole.Debuffer)==2,
             "canonical species counts per role");
         foreach(var s in all)
         {
@@ -45,80 +45,80 @@ public static class EnemySpeciesCoverageVerification
                 "canonical known strong-roll range "+s.Species);
         }
         Assert(EnemySpeciesPolicy.ChooseSpecies(
-            EnemyRole0922.Buffer,.9f,false)==EnemySpecies1029.Commander,
+            EnemyRole.Buffer,.9f,false)==EnemySpecies.Commander,
             "one commander may be selected");
         Assert(EnemySpeciesPolicy.ChooseSpecies(
-            EnemyRole0922.Buffer,.9f,true)==EnemySpecies1029.Healer,
+            EnemyRole.Buffer,.9f,true)==EnemySpecies.Healer,
             "second commander is forbidden");
         Assert(EnemySpeciesPolicy.ChooseSpecies(
-            EnemyRole0922.Attacker,.1f)==EnemySpecies1029.Charge&&
+            EnemyRole.Attacker,.1f)==EnemySpecies.Charge&&
             EnemySpeciesPolicy.ChooseSpecies(
-                EnemyRole0922.Attacker,.5f)==EnemySpecies1029.HeavyHit&&
+                EnemyRole.Attacker,.5f)==EnemySpecies.HeavyHit&&
             EnemySpeciesPolicy.ChooseSpecies(
-                EnemyRole0922.Attacker,.9f)==EnemySpecies1029.Flurry,
+                EnemyRole.Attacker,.9f)==EnemySpecies.Flurry,
             "three attacker species independently assigned");
         Assert(EnemySpeciesPolicy.ChooseAction(
-            EnemySpecies1029.Charge,0,.99f,false,false,false,false)==
-            EnemyAction1029.Normal,
+            EnemySpecies.Charge,0,.99f,false,false,false,false)==
+            EnemyActionPattern.Normal,
             "light0 always chooses normal");
         Assert(EnemySpeciesPolicy.ChooseAction(
-            EnemySpecies1029.Charge,2,.05f,false,false,false,false)==
-            EnemyAction1029.Normal&&
+            EnemySpecies.Charge,2,.05f,false,false,false,false)==
+            EnemyActionPattern.Normal&&
             EnemySpeciesPolicy.ChooseAction(
-            EnemySpecies1029.Charge,2,.25f,false,false,false,false)==
-            EnemyAction1029.BasicDuel&&
+            EnemySpecies.Charge,2,.25f,false,false,false,false)==
+            EnemyActionPattern.BasicDuel&&
             EnemySpeciesPolicy.ChooseAction(
-            EnemySpecies1029.Charge,2,.75f,false,false,false,false)==
-            EnemyAction1029.StrongDuel,
+            EnemySpecies.Charge,2,.75f,false,false,false,false)==
+            EnemyActionPattern.StrongDuel,
             "charge species 15/35/50 full-light distribution");
         Assert(EnemySpeciesPolicy.ChooseAction(
-            EnemySpecies1029.Commander,1,.59f,false,false,false,true)==
-            EnemyAction1029.SupplyPreparation&&
+            EnemySpecies.Commander,1,.59f,false,false,false,true)==
+            EnemyActionPattern.SupplyPreparation&&
             EnemySpeciesPolicy.ChooseAction(
-            EnemySpecies1029.Commander,1,.95f,false,false,false,true)!=
-            EnemyAction1029.SupplyPreparation,
+            EnemySpecies.Commander,1,.95f,false,false,false,true)!=
+            EnemyActionPattern.SupplyPreparation,
             "commander uses supply 60 percent when possible");
         Assert(EnemySpeciesPolicy.ChooseAvailable(
-            EnemySpecies1029.Healer,1,.98f,true,true,false,
+            EnemySpecies.Healer,1,.98f,true,true,false,
             false,false,false,true,true,false,false)==
-            EnemyAction1029.HealPreparation,
+            EnemyActionPattern.HealPreparation,
             "healer priority at <=50% ally with authored support");
         Assert(EnemySpeciesPolicy.ChooseAvailable(
-            EnemySpecies1029.HeavyGuard,1,.5f,true,false,false,
+            EnemySpecies.HeavyGuard,1,.5f,true,false,false,
             false,true,true,false,false,false,false)==
-            EnemyAction1029.CoverDuel,
+            EnemyActionPattern.CoverDuel,
             "uncovered tank chooses authored cover Duel");
         Assert(EnemySpeciesPolicy.ChooseAvailable(
-            EnemySpecies1029.HeavyGuard,1,.5f,true,false,false,
+            EnemySpecies.HeavyGuard,1,.5f,true,false,false,
             true,true,true,false,false,false,false)!=
-            EnemyAction1029.CoverDuel,
+            EnemyActionPattern.CoverDuel,
             "active cover forbids reinstallation");
         Assert(EnemySpeciesPolicy.ChooseAvailable(
-            EnemySpecies1029.Charge,0,.99f,true,false,true,
+            EnemySpecies.Charge,0,.99f,true,false,true,
             false,false,false,false,false,false,false)==
-            EnemyAction1029.Normal,
+            EnemyActionPattern.Normal,
             "no unaffordable strong Duel at light0");
         Assert(EnemySpeciesPolicy.ChooseAvailable(
-            EnemySpecies1029.Charge,1,.99f,true,true,true,
+            EnemySpecies.Charge,1,.99f,true,true,true,
             false,false,false,false,false,false,false)!=
-            EnemyAction1029.StrongDuel,
+            EnemyActionPattern.StrongDuel,
             "no unaffordable strong Duel at light1");
         Assert(EnemySpeciesPolicy.ChooseAvailable(
-            EnemySpecies1029.Charge,2,.99f,true,true,false,
+            EnemySpecies.Charge,2,.99f,true,true,false,
             false,false,false,false,false,false,false)==
-            EnemyAction1029.BasicDuel,
+            EnemyActionPattern.BasicDuel,
             "missing strong card redistributes among existing cards");
         Assert(EnemySpeciesPolicy.ActionEnergyCost(
-            EnemyAction1029.Normal)==0&&
+            EnemyActionPattern.Normal)==0&&
             EnemySpeciesPolicy.ActionEnergyCost(
-            EnemyAction1029.BasicDuel)==1&&
+            EnemyActionPattern.BasicDuel)==1&&
             EnemySpeciesPolicy.ActionEnergyCost(
-            EnemyAction1029.StrongDuel)==2&&
+            EnemyActionPattern.StrongDuel)==2&&
             EnemySpeciesPolicy.ActionEnergyCost(
-            EnemyAction1029.CoverDuel)==1,
+            EnemyActionPattern.CoverDuel)==1,
             "per-action light budget 0/1/2/cover1");
 
-        EnemyStage1SkillAssetMigration.Verify();
+        EnemySkillAssetVerification.Verify();
         Assert(EnemyStageOneSkillCatalog.AuthoredCount==19,
             "18 fixed-roll cards plus 1 retaliation card");
         var newSources=Resources.LoadAll<SkillDefinition>(
@@ -136,7 +136,7 @@ public static class EnemySpeciesCoverageVerification
                 def.EffectEntries.Count==0&&def.Effects.Count==0,
                 "new source GUID + native-only effects + unmodified "+def.SkillId);
         }
-        EnemyCounterSkillMigration.Verify();
+        EnemyCounterAssetVerification.Verify();
         Assert(EnemyCounterReaction.CounterDefinition!=null&&
             EnemyCounterReaction.CounterDefinition.EffectiveRollCount==1,
             "R6 separate counter reaction authored");
@@ -177,10 +177,10 @@ public static class EnemySpeciesCoverageVerification
             SearchOption.AllDirectories);
         string Content(string name)=>File.ReadAllText(
             files.Single(x=>Path.GetFileName(x)==name));
-        var role=Content("NormalEnemy0922RoleMechanic.cs");
+        var role=Content("NormalEnemyRoleMechanic.cs");
         var target=Content("NormalEnemy.cs");
         var effects=Content("EnemyStageOneEffect.cs");
-        var registry=Content("R6ReactionActionRegistry.cs");
+        var registry=Content("ReactionActionRegistry.cs");
         var slot=Content("EnemyCounterReaction.cs");
         var stagger=Content("StaggerGaugeMechanic.cs");
         Assert(role.Contains("OnActionStart(BattleAction action)")&&
@@ -206,7 +206,7 @@ public static class EnemySpeciesCoverageVerification
                stagger.Contains("ResolveFinalAdditionalStaggerDamage(action,owner)")&&
                stagger.Contains("ResolveFinalAdditionalStaggerDamage(action,target)"),
             "debuffer +10 AFTER resistance on both stagger paths");
-        Assert(effects.Contains("rollIndex==0&&Eligible(action,EnemySpecies1029.Bind)")&&
+        Assert(effects.Contains("rollIndex==0&&Eligible(action,EnemySpecies.Bind)")&&
                effects.Contains("ApplyCanonical(action,StatusEffectId.Bind,1,1,true)"),
             "bind first-use only next-turn speed debuff");
         Assert(effects.Contains("!exchange.IsDuelExchange")&&
@@ -238,7 +238,7 @@ public static class EnemySpeciesCoverageVerification
             "EnemyStageOneEffect.OnRollUsing(action,rollIndex)")&&
             role.Contains("EnemyStageOneEffect.OnExchangeWon("),
             "native card effects hooked to actual roll/exchange events");
-        Assert(!Content("NormalEnemy0922RoleMechanic.cs")
+        Assert(!Content("NormalEnemyRoleMechanic.cs")
             .Contains("RollDuelQuota(Random.value)"),
             "encounter-wide Duel quota never used");
         Assert(UnityEngine.SceneManagement.SceneManager.GetActiveScene().name==

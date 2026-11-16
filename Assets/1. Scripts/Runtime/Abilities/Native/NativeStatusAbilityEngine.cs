@@ -17,7 +17,7 @@ namespace ProjectAbyss.Abilities
         {
             private readonly CombatTargetRef single;
             public Target(Character c,BodyPart p)=>single=new CombatTargetRef(
-                R4LiveSlotQuery.ActorRuntimeId(c),p?.PartId??string.Empty,"");
+                LiveSlotQuery.ActorRuntimeId(c),p?.PartId??string.Empty,"");
             public IReadOnlyList<CombatTargetRef> Select(IReadOnlyAbilityContext _)=>
                 new[]{single};
         }
@@ -49,7 +49,7 @@ namespace ProjectAbyss.Abilities
         public NativeStatusAbilityEngine(BattleContext ctx)=>
             battle=ctx??throw new ArgumentNullException(nameof(ctx));
 
-        public bool Execute(R7NativeStatusAbilityDefinition graph,
+        public bool Execute(NativeStatusAbilityDefinition graph,
             BattleAction action,Character owner,Character target,BodyPart part,
             AbilityEventContext evt,int level)
         {
@@ -67,12 +67,12 @@ namespace ProjectAbyss.Abilities
                 instance=new AbilityInstance(
                     new AbilityDefinitionRef(graph.StableId,graph.SourceAssetGuid),
                     new AbilityIdentity(graph.StableId,
-                        R4LiveSlotQuery.ActorRuntimeId(owner),
+                        LiveSlotQuery.ActorRuntimeId(owner),
                         action.Slot?.SlotId??string.Empty,0));
                 instances.Add(key,instance);
             }
             if(instance.Identity.OwnerActorRuntimeId!=
-                R4LiveSlotQuery.ActorRuntimeId(owner))
+                LiveSlotQuery.ActorRuntimeId(owner))
                 throw new InvalidOperationException("Native status identity conflict");
             var plan=planner.Plan(instance,evt,new Match(graph.Trigger),null,
                 new Target(target,part),
@@ -81,7 +81,7 @@ namespace ProjectAbyss.Abilities
                 return false;
             string id="NativeStatus:"+graph.SourceAssetGuid+":"+
                 evt.ActionId+":"+evt.Kind+":"+evt.RollUseIndex+":"+evt.CauseId;
-            var commands=R5PlannedCommandBridge.Materialize(
+            var commands=PlannedCommandBridge.Materialize(
                 instance,evt,plan,id,0);
             var status=new Bleeding(stacks);
             var request=part==null
@@ -89,7 +89,7 @@ namespace ProjectAbyss.Abilities
                     evt.RollUseIndex,ToTiming(evt.Kind),true)
                 :EffectRequest.BodyPartStatus(owner,target,part,status,action,
                     evt.RollUseIndex,ToTiming(evt.Kind),true);
-            var backend=new R5CombatSpecialistBackend(battle);
+            var backend=new CombatSpecialistBackend(battle);
             if(part==null)backend.RegisterCharacterStatus(commands[0],request);
             else backend.RegisterPartStatus(commands[0],request);
             Attempts++;

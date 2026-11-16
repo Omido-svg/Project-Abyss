@@ -8,7 +8,7 @@ namespace ProjectAbyss.Abilities
     /// constructs, consumes, executes or damages a reaction. R6 coordinator
     /// alone drains the queue at a permitted post-commit checkpoint.
     /// </summary>
-    public sealed class R5ReactionRequestCommandBackend : ICombatCommandBackend
+    public sealed class ReactionRequestCommandBackend : ICombatCommandBackend
     {
         private readonly BattleReactionScheduler scheduler;
         private readonly Dictionary<string, ReactionRequest> payloads =
@@ -16,7 +16,7 @@ namespace ProjectAbyss.Abilities
         private readonly Dictionary<string, ReactionSchedulingDecision> decisions =
             new Dictionary<string, ReactionSchedulingDecision>(StringComparer.Ordinal);
 
-        public R5ReactionRequestCommandBackend(BattleReactionScheduler scheduler)
+        public ReactionRequestCommandBackend(BattleReactionScheduler scheduler)
         {
             this.scheduler = scheduler ?? throw new ArgumentNullException(nameof(scheduler));
         }
@@ -75,10 +75,10 @@ namespace ProjectAbyss.Abilities
     /// A reaction intent can share a batch with damage but is never
     /// accidentally routed to DamageManager or legacy SkillEffectDispatcher.
     /// </summary>
-    public sealed class R5CompositeCommandBackend : ICombatCommandBackend
+    public sealed class CompositeCommandBackend : ICombatCommandBackend
     {
         private readonly ICombatCommandBackend[] providers;
-        public R5CompositeCommandBackend(params ICombatCommandBackend[] providers)
+        public CompositeCommandBackend(params ICombatCommandBackend[] providers)
         {
             if (providers == null || providers.Length == 0)
                 throw new ArgumentException("At least one backend required.");

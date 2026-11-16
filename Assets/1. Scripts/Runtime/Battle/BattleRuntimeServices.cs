@@ -21,18 +21,18 @@ public sealed class BattleRuntimeServices
     public ClashManager ClashManager { get; set; }
     public ActionResolver ActionResolver { get; set; }
     public BattleReactionScheduler ReactionScheduler { get; set; }
-    public R6ReactionActionRegistry ReactionActionRegistry { get; set; }
+    public ReactionActionRegistry ReactionActionRegistry { get; set; }
 
     public ReactionLifetimeRegistry ReactionLifetimeRegistry { get; set; }
-    public R6SpecialistReactionRegistry SpecialistReactionRegistry { get; set; }
-    public R7ProductionNativeResourceMigration R7NativeResourceMigration { get; set; }
-    public R7ProductionNativeBleedingMigration R7NativeBleedingMigration { get; set; }
-    public R7ProductionNativeUniqueGaugeMigration R7NativeUniqueGaugeMigration { get; set; }
-    public R7ProductionLegacyStatusMigration R7LegacyStatusMigration { get; set; }
-    public R7ProductionPreparationStatusMigration R7PreparationStatusMigration { get; set; }
-    public SingleEffectRuntimeBinding R7SingleEffectMigration { get; set; }
-    public OlafNativeAbilityRuntimeBinding R7OlafNativeMigration { get; set; }
-    public YujinNativeAbilityRuntimeBinding R7YujinNativeMigration { get; set; }
+    public SpecialistReactionRegistry SpecialistReactionRegistry { get; set; }
+    public ResourceAbilityBinding ResourceAbilities { get; set; }
+    public StatusAbilityBinding StatusAbilities { get; set; }
+    public UniqueGaugeAbilityBinding UniqueGaugeAbilities { get; set; }
+    public MixedAbilityBinding MixedAbilities { get; set; }
+    public PreparationStatusAbilityBinding PreparationStatusAbilities { get; set; }
+    public SingleEffectRuntimeBinding SingleEffectAbilities { get; set; }
+    public OlafNativeAbilityRuntimeBinding OlafAbilities { get; set; }
+    public YujinNativeAbilityRuntimeBinding YujinAbilities { get; set; }
     public ClashBuilder ClashBuilder { get; set; }
     public AIManager AIManager { get; set; }
     public TurnManager TurnManager { get; set; }
@@ -59,14 +59,14 @@ public sealed class BattleRuntimeServices
 
             ReactionLifetimeRegistry = ReactionLifetimeRegistry,
             SpecialistReactionRegistry = SpecialistReactionRegistry,
-            R7NativeResourceMigration = R7NativeResourceMigration,
-            R7NativeBleedingMigration = R7NativeBleedingMigration,
-            R7NativeUniqueGaugeMigration = R7NativeUniqueGaugeMigration,
-            R7LegacyStatusMigration = R7LegacyStatusMigration,
-            R7PreparationStatusMigration = R7PreparationStatusMigration,
-            R7SingleEffectMigration = R7SingleEffectMigration,
-            R7OlafNativeMigration = R7OlafNativeMigration,
-            R7YujinNativeMigration = R7YujinNativeMigration,
+            ResourceAbilities = ResourceAbilities,
+            StatusAbilities = StatusAbilities,
+            UniqueGaugeAbilities = UniqueGaugeAbilities,
+            MixedAbilities = MixedAbilities,
+            PreparationStatusAbilities = PreparationStatusAbilities,
+            SingleEffectAbilities = SingleEffectAbilities,
+            OlafAbilities = OlafAbilities,
+            YujinAbilities = YujinAbilities,
             ClashBuilder = ClashBuilder,
             AIManager = AIManager,
             TurnManager = TurnManager,

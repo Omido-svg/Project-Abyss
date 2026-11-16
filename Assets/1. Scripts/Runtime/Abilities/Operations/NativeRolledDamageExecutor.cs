@@ -18,7 +18,7 @@ namespace ProjectAbyss.Abilities
             private readonly CombatTargetRef target;
             public Target(Character character,BodyPart part)
             {
-                target=new CombatTargetRef(R4LiveSlotQuery.ActorRuntimeId(character),
+                target=new CombatTargetRef(LiveSlotQuery.ActorRuntimeId(character),
                     part?.PartId??string.Empty,"");
             }
             public IReadOnlyList<CombatTargetRef> Select(IReadOnlyAbilityContext _) =>
@@ -65,9 +65,9 @@ namespace ProjectAbyss.Abilities
                 return false;
             string commandId="R7-MIXED-DAMAGE:"+instance.Definition.SourceAssetGuid+
                 ":"+cause.ActionId+":"+index+":"+cause.Kind+":"+cause.RollUseIndex;
-            var commands=R5PlannedCommandBridge.Materialize(
+            var commands=PlannedCommandBridge.Materialize(
                 instance,cause,plan,commandId,0);
-            var backend=new R5CombatSpecialistBackend(battle);
+            var backend=new CombatSpecialistBackend(battle);
             backend.RegisterDamage(commands[0],damage.Value);
             Attempts++;
             var outcome=apply.Apply(instance,cause,commands,backend);

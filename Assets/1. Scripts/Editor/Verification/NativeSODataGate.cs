@@ -20,9 +20,9 @@ public static class NativeSODataGate
         var duplicates=all.GroupBy(x=>x.Data.SkillId,StringComparer.Ordinal)
             .Where(x=>x.Count()>1).Select(x=>x.Key)
             .ToHashSet(StringComparer.Ordinal);
-        var resources=Resources.LoadAll<R7NativeAbilityDefinition>(
+        var resources=Resources.LoadAll<NativeAbilityDefinition>(
             "ProjectAbyss/NativeAbilities");
-        var statuses=Resources.LoadAll<R7NativeStatusAbilityDefinition>(
+        var statuses=Resources.LoadAll<NativeStatusAbilityDefinition>(
             "ProjectAbyss/NativeStatuses");
         int pass=0,fail=0;
         void Check(string id,bool yes,string detail="")
@@ -54,9 +54,9 @@ public static class NativeSODataGate
                 n.SourceAssetName==src.Data.name&&n.Operation==kind&&
                 n.Trigger==(e.EffectiveTiming==SkillEffectTiming.OnExecute
                     ?AbilityEventKind.RollUsing:AbilityEventKind.ExchangeWon)&&
-                n.Level0Amount==NativeResourceAssetMigration.ResolveAmount(src.Data,0)&&
-                n.Level1Amount==NativeResourceAssetMigration.ResolveAmount(src.Data,1)&&
-                n.Level2Amount==NativeResourceAssetMigration.ResolveAmount(src.Data,2);
+                n.Level0Amount==NativeResourceUpgradeValues.ResolveAmount(src.Data,0)&&
+                n.Level1Amount==NativeResourceUpgradeValues.ResolveAmount(src.Data,1)&&
+                n.Level2Amount==NativeResourceUpgradeValues.ResolveAmount(src.Data,2);
         });
         Check("D06 all 15 compiled resource values/timing/GUID match",resourceValid);
         bool statusValid=statuses.All(n=>
@@ -67,26 +67,26 @@ public static class NativeSODataGate
                 n.SourceAssetName==src.Data.name&&
                 n.Trigger==(e.EffectiveTiming==SkillEffectTiming.OnExecute
                     ?AbilityEventKind.RollUsing:AbilityEventKind.ExchangeWon)&&
-                n.Level0Stacks==NativeStatusAssetMigration.ResolveStacks(src.Data,0)&&
-                n.Level1Stacks==NativeStatusAssetMigration.ResolveStacks(src.Data,1)&&
-                n.Level2Stacks==NativeStatusAssetMigration.ResolveStacks(src.Data,2);
+                n.Level0Stacks==NativeStatusUpgradeValues.ResolveStacks(src.Data,0)&&
+                n.Level1Stacks==NativeStatusUpgradeValues.ResolveStacks(src.Data,1)&&
+                n.Level2Stacks==NativeStatusUpgradeValues.ResolveStacks(src.Data,2);
         });
         Check("D07 all 9 compiled status stacks/timing/GUID match",statusValid);
         Check("D08 native graphs have no SkillDefinition fields",
-            typeof(R7NativeAbilityDefinition).GetFields(
+            typeof(NativeAbilityDefinition).GetFields(
                 System.Reflection.BindingFlags.Instance|
                 System.Reflection.BindingFlags.Public|
                 System.Reflection.BindingFlags.NonPublic)
                 .All(f=>f.FieldType!=typeof(SkillDefinition)) &&
-            typeof(R7NativeStatusAbilityDefinition).GetFields(
+            typeof(NativeStatusAbilityDefinition).GetFields(
                 System.Reflection.BindingFlags.Instance|
                 System.Reflection.BindingFlags.Public|
                 System.Reflection.BindingFlags.NonPublic)
                 .All(f=>f.FieldType!=typeof(SkillDefinition)));
         Check("D09 native graph runtime Resource count",
-            R7ProductionNativeResourceMigration.ApprovedSkillCount==15);
+            ResourceAbilityBinding.ApprovedSkillCount==15);
         Check("D10 native graph runtime Bleeding count",
-            R7ProductionNativeBleedingMigration.ApprovedSkillCount==9);
+            StatusAbilityBinding.ApprovedSkillCount==9);
 
         var csv=new StringBuilder("StableId,NativeAssetPath,SourceAssetPath,SourceGuid,Operation,Trigger,Level0,Level1,Level2\n");
         string Q(string s)=>"\""+(s??"").Replace("\"","\"\"")+"\"";

@@ -190,7 +190,7 @@ public sealed class DeferredStatusEffect : StatusEffect
     {
         if (HasQueuedMaterialization || owner?.BattleContext == null) return;
         HasQueuedMaterialization = true;
-        owner.BattleContext.TurnStartEffects.Enqueue(() =>
+        owner.BattleContext.TurnStartEffects.EnqueueLocked(owner,ownerPart,() =>
         {
             HasQueuedMaterialization = false;
             controller.MaterializeDeferredStatus(this, ownerPart);

@@ -57,12 +57,12 @@ public static class SpecialistLiveDispatcherVerification
         if(owner==null||target==null||battle.Services?.ClashManager==null)
             throw new InvalidOperationException("Battle Test Scene runtime missing");
         var scheduler=new BattleReactionScheduler();
-        var registry=new R6ReactionActionRegistry();
-        var specialists=new R6SpecialistReactionRegistry();
+        var registry=new ReactionActionRegistry();
+        var specialists=new SpecialistReactionRegistry();
         var coordinator=new ActionResolver(battle,battle.Services.ClashManager,
             null,new NoVisuals());
-        coordinator.EnableR6ReactionExecution(scheduler,registry);
-        coordinator.EnableR6SpecialistReactions(specialists);
+        coordinator.EnableReactionExecution(scheduler,registry);
+        coordinator.EnableSpecialistReactions(specialists);
         var sequence=new List<string>();
         int pass=0,fail=0;
         void Check(string id,bool ok,string extra="")
@@ -73,9 +73,9 @@ public static class SpecialistLiveDispatcherVerification
 
         const long root=996400;
         var reqA=Request(scheduler.AllocateRequestId(),root,
-            R4LiveSlotQuery.ActorRuntimeId(owner),996401,1,"SPECIAL-A",root);
+            LiveSlotQuery.ActorRuntimeId(owner),996401,1,"SPECIAL-A",root);
         var reqB=Request(scheduler.AllocateRequestId(),root,
-            R4LiveSlotQuery.ActorRuntimeId(owner),996402,0,"SPECIAL-B",root);
+            LiveSlotQuery.ActorRuntimeId(owner),996402,0,"SPECIAL-B",root);
         int before=target.CurrentHP;
         bool bindA=specialists.TryRegister(reqA,()=>!target.IsDead,
             ()=>{sequence.Add("A");battle.ResolveDamageManager().ApplyDamageContext(
@@ -109,9 +109,9 @@ public static class SpecialistLiveDispatcherVerification
         // Exception after a partial specialist write poisons only this chain.
         const long poisonedRoot=996410;
         var bad=Request(scheduler.AllocateRequestId(),poisonedRoot,
-            R4LiveSlotQuery.ActorRuntimeId(owner),996411,0,"BAD",poisonedRoot);
+            LiveSlotQuery.ActorRuntimeId(owner),996411,0,"BAD",poisonedRoot);
         var later=Request(scheduler.AllocateRequestId(),poisonedRoot,
-            R4LiveSlotQuery.ActorRuntimeId(owner),996412,1,"BLOCKED-SKILL",poisonedRoot);
+            LiveSlotQuery.ActorRuntimeId(owner),996412,1,"BLOCKED-SKILL",poisonedRoot);
         int badCalls=0;
         specialists.TryRegister(bad,()=>true,()=>{
             badCalls++;

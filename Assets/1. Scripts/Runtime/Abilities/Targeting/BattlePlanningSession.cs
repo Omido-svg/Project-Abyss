@@ -5,14 +5,14 @@ using System.Runtime.CompilerServices;
 
 namespace ProjectAbyss.Abilities
 {
-    public readonly struct R4WeightPreviewTarget
+    public readonly struct WeightPreviewTarget
     {
         public readonly long ActorRuntimeId;
         public readonly string PartId;
         public readonly string SlotId;
         public readonly bool IsPrimary;
         public readonly int ConsumedBudget;
-        public R4WeightPreviewTarget(long actorId,string partId,string slotId,
+        public WeightPreviewTarget(long actorId,string partId,string slotId,
             bool primary,int consumed)
         {
             ActorRuntimeId=actorId;PartId=partId??string.Empty;
@@ -25,7 +25,7 @@ namespace ProjectAbyss.Abilities
     /// Read-only UI DTO. SelectedSlots consumes budget, distinct physical hits
     /// receive damage. UI must not draw secondary allocations as clashes.
     /// </summary>
-    public sealed class R4WeightPlanningPreview
+    public sealed class WeightPlanningPreview
     {
         public long ActionId {get;}
         public int PlanningRevision {get;}
@@ -33,9 +33,9 @@ namespace ProjectAbyss.Abilities
         public string Diagnostic {get;}
         public int EffectiveWeight {get;}
         public int UnspentBudget {get;}
-        public IReadOnlyList<R4WeightPreviewTarget> SelectedSlots {get;}
+        public IReadOnlyList<WeightPreviewTarget> SelectedSlots {get;}
         public IReadOnlyList<HitTargetKey> DistinctHitTargets {get;}
-        internal R4WeightPlanningPreview(R4LiveSlotSnapshot snapshot)
+        internal WeightPlanningPreview(LiveSlotSnapshot snapshot)
         {
             ActionId=snapshot.SourceActionId;
             PlanningRevision=snapshot.PlanningRevision;
@@ -43,11 +43,11 @@ namespace ProjectAbyss.Abilities
             Diagnostic=string.Join(" | ",snapshot.Diagnostics);
             EffectiveWeight=snapshot.Selection?.Allocation?.EffectiveWeight??0;
             UnspentBudget=snapshot.Selection?.UnspentBudget??0;
-            var slots=new List<R4WeightPreviewTarget>();
+            var slots=new List<WeightPreviewTarget>();
             var result=snapshot.Selection?.Allocation;
             if(result!=null)
                 foreach(var selected in result.SelectedSlots)
-                    slots.Add(new R4WeightPreviewTarget(selected.Slot.ActorRuntimeId,
+                    slots.Add(new WeightPreviewTarget(selected.Slot.ActorRuntimeId,
                         selected.Slot.PartId,selected.Slot.SlotId,
                         selected.IsPrimary,selected.ActuallyConsumedWeight));
             SelectedSlots=slots.AsReadOnly();
@@ -62,7 +62,7 @@ namespace ProjectAbyss.Abilities
     /// intentionally do not recompute a locked allocation. Source skill/target
     /// changes invalidate it; no scene or ActionSlot mutation is performed.
     /// </summary>
-    public static class R4BattlePlanningSession
+    public static class BattlePlanningSession
     {
         private sealed class SourceSignature
         {
@@ -73,16 +73,16 @@ namespace ProjectAbyss.Abilities
             public bool Matches(ActionSlot slot)
             {
                 return slot!=null&&ReferenceEquals(Skill,slot.Skill)&&
-                    OwnerId==R4LiveSlotQuery.ActorRuntimeId(slot.Owner)&&
-                    TargetId==R4LiveSlotQuery.ActorRuntimeId(slot.TargetCharacter)&&
+                    OwnerId==LiveSlotQuery.ActorRuntimeId(slot.Owner)&&
+                    TargetId==LiveSlotQuery.ActorRuntimeId(slot.TargetCharacter)&&
                     TargetPartId==(slot.TargetPart?.PartId??string.Empty)&&
                     TargetSlotId==(slot.TargetSlot?.SlotId??string.Empty)&&
                     Weight==(slot.Skill?.AttackWeight??0);
             }
             public static SourceSignature From(ActionSlot slot)=>new SourceSignature{
                 Skill=slot.Skill,
-                OwnerId=R4LiveSlotQuery.ActorRuntimeId(slot.Owner),
-                TargetId=R4LiveSlotQuery.ActorRuntimeId(slot.TargetCharacter),
+                OwnerId=LiveSlotQuery.ActorRuntimeId(slot.Owner),
+                TargetId=LiveSlotQuery.ActorRuntimeId(slot.TargetCharacter),
                 TargetPartId=slot.TargetPart?.PartId??string.Empty,
                 TargetSlotId=slot.TargetSlot?.SlotId??string.Empty,
                 Weight=slot.Skill?.AttackWeight??0
@@ -91,19 +91,19 @@ namespace ProjectAbyss.Abilities
 
         private sealed class BattleState
         {
-            public readonly R4PlanningAllocationCache Cache=new R4PlanningAllocationCache();
+            public readonly PlanningAllocationCache Cache=new PlanningAllocationCache();
             public readonly Dictionary<long,SourceSignature> Signatures=
                 new Dictionary<long,SourceSignature>();
             public int Revision;
-            public IR4TargetPlanningRule Rule;
+            public ITargetPlanningRule Rule;
         }
 
         private static readonly ConditionalWeakTable<BattleContext,BattleState> states=
             new ConditionalWeakTable<BattleContext,BattleState>();
 
-        public static R4WeightPlanningPreview Preview(BattleContext battle,
+        public static WeightPlanningPreview Preview(BattleContext battle,
             ActionSlot source,IReadOnlyList<Character> hostileSide,
-            IReadOnlyList<ActionSlot> plans,IR4TargetPlanningRule rules=null)
+            IReadOnlyList<ActionSlot> plans,ITargetPlanningRule rules=null)
         {
             if(battle==null||source==null||source.ActionId<=0)
                 return null;
@@ -120,18 +120,18 @@ namespace ProjectAbyss.Abilities
             if(state.Signatures.TryGetValue(source.ActionId,out var previous)&&
                 !previous.Matches(source))
             {
-                state.Cache.Invalidate(source.ActionId,R4PlanMutationKind.SourceTargetChanged);
+                state.Cache.Invalidate(source.ActionId,PlanMutationKind.SourceTargetChanged);
                 state.Signatures.Remove(source.ActionId);
             }
             var snapshot=state.Cache.GetOrCapture(source.ActionId,()=>
             {
                 int revision=++state.Revision;
-                var captured=R4LiveSlotQuery.Capture(source,hostileSide,plans,
+                var captured=LiveSlotQuery.Capture(source,hostileSide,plans,
                     revision,Math.Max(1,source.Skill?.AttackWeight??1));
                 if(activeRules==null)return captured;
-                var ruleContext=new R4TargetPlanningContext(source.ActionId,
-                    R4LiveSlotQuery.ActorRuntimeId(source.Owner),
-                    R4LiveSlotQuery.ActorRuntimeId(source.TargetCharacter),revision);
+                var ruleContext=new TargetPlanningContext(source.ActionId,
+                    LiveSlotQuery.ActorRuntimeId(source.Owner),
+                    LiveSlotQuery.ActorRuntimeId(source.TargetCharacter),revision);
                 var eligible=captured.Candidates.Where(c=>activeRules.Allows(in ruleContext,c))
                     .ToList();
                 var main=captured.Primary;
@@ -139,12 +139,12 @@ namespace ProjectAbyss.Abilities
                     main=null;
                 var selection=SlotWeightedTargetPlanner.Plan(source.ActionId,
                     revision,Math.Max(1,source.Skill?.AttackWeight??1),main,eligible);
-                return new R4LiveSlotSnapshot(source.ActionId,revision,eligible,
+                return new LiveSlotSnapshot(source.ActionId,revision,eligible,
                     main,captured.Diagnostics.ToList(),selection);
             });
             if(snapshot.Selection?.Success==true)
                 state.Signatures[source.ActionId]=signature;
-            return new R4WeightPlanningPreview(snapshot);
+            return new WeightPlanningPreview(snapshot);
         }
 
         /// <summary>
@@ -153,7 +153,7 @@ namespace ProjectAbyss.Abilities
         /// stale cached targets must not be used.
         /// </summary>
         public static bool TryGetFrozen(BattleContext battle,BattleAction action,
-            out R4LiveSlotSnapshot snapshot)
+            out LiveSlotSnapshot snapshot)
         {
             snapshot=null;
             if(battle==null||action?.Slot==null||action.ActionId<=0)
@@ -164,7 +164,7 @@ namespace ProjectAbyss.Abilities
                 !state.Cache.TryGet(action.ActionId,out snapshot)||
                 snapshot.Selection?.Success!=true ||
                 snapshot.Primary?.HitTarget.ActorRuntimeId!=
-                    R4LiveSlotQuery.ActorRuntimeId(action.Target) ||
+                    LiveSlotQuery.ActorRuntimeId(action.Target) ||
                 snapshot.Primary.HitTarget.PartId!=(action.TargetPart?.PartId??string.Empty))
             {
                 snapshot=null;
@@ -179,7 +179,7 @@ namespace ProjectAbyss.Abilities
         /// Character state is modified. Null removes the previous policy.
         /// </summary>
         public static void RegisterTargetRule(BattleContext battle,
-            IR4TargetPlanningRule rule)
+            ITargetPlanningRule rule)
         {
             if(battle==null)return;
             var state=states.GetOrCreateValue(battle);
@@ -190,10 +190,10 @@ namespace ProjectAbyss.Abilities
 
         
         public static void NotifyMutation(BattleContext battle,long actionId,
-            R4PlanMutationKind mutation)
+            PlanMutationKind mutation)
         {
             if(battle==null||!states.TryGetValue(battle,out var state))return;
-            if(mutation==R4PlanMutationKind.BattleEnded)
+            if(mutation==PlanMutationKind.BattleEnded)
             {
                 state.Cache.Clear();state.Signatures.Clear();state.Revision=0;
                 state.Rule=null;
@@ -204,6 +204,6 @@ namespace ProjectAbyss.Abilities
         }
 
         public static void Clear(BattleContext battle)=>
-            NotifyMutation(battle,0,R4PlanMutationKind.BattleEnded);
+            NotifyMutation(battle,0,PlanMutationKind.BattleEnded);
     }
 }

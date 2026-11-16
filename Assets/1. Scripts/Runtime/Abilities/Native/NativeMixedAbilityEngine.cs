@@ -23,7 +23,7 @@ namespace ProjectAbyss.Abilities
             public OneTarget(Character target,BodyPart part)
             {
                 reference=new CombatTargetRef(
-                    R4LiveSlotQuery.ActorRuntimeId(target),
+                    LiveSlotQuery.ActorRuntimeId(target),
                     part?.PartId??string.Empty, "");
             }
             public IReadOnlyList<CombatTargetRef> Select(IReadOnlyAbilityContext _) =>
@@ -51,6 +51,7 @@ namespace ProjectAbyss.Abilities
         private readonly Dictionary<(long,string,int),AbilityInstance> instances=
             new Dictionary<(long,string,int),AbilityInstance>();
         private bool disposed;
+        public CombatCommandBatchResult LastAppliedBatch { get; private set; }
         public int StatusAttempts {get;private set;}
         public int StatusCommits {get;private set;}
         public int DamageAttempts {get;private set;}
@@ -61,7 +62,7 @@ namespace ProjectAbyss.Abilities
             this.battle=battle??throw new ArgumentNullException(nameof(battle));
         }
 
-        public bool Execute(R7NativeMixedAbilityDefinition graph,int index,
+        public bool Execute(NativeMixedAbilityDefinition graph,int index,
             SkillEffectContext context)
         {
             if(disposed||graph==null||!graph.IsValid||
@@ -70,15 +71,13 @@ namespace ProjectAbyss.Abilities
                 context.Resolver==null||context.Action.ActionId<=0)
                 return false;
             var op=graph.Operations[index];
-            if(op==null||
-                MixedAbilityConditionGate.Evaluate(op,context)!=
-                    MixedAbilityGateVerdict.Execute)
+            if(op==null)
                 return false;
             if(op.Trigger!=AbilityEventKind.RollUsing||
                 context.Timing!=SkillEffectTiming.OnExecute)
                 return false;
             long actionId=context.Action.ActionId;
-            long owner=R4LiveSlotQuery.ActorRuntimeId(context.Owner);
+            long owner=LiveSlotQuery.ActorRuntimeId(context.Owner);
             var key=(actionId,graph.StableId,index);
             if(!instances.TryGetValue(key,out var instance))
             {
@@ -90,9 +89,10 @@ namespace ProjectAbyss.Abilities
             }
             if(instance.Identity.OwnerActorRuntimeId!=owner)
                 throw new InvalidOperationException("Native mixed action/actor identity conflict");
-            var evt=new AbilityEventContext(op.Trigger,actionId,actionId,owner,
-                context.RollIndex,context.Action.DuelEffectsEligible,context.IsOneSided);
-            var backend=new R5CombatSpecialistBackend(battle);
+            var frame=MixedAbilityConditionCompiler.Capture(instance.Identity,op.Trigger,context,op);
+            var evt=frame.ToEventContext();
+            if(!MixedAbilityConditionGate.Evaluate(op,context).Equals(MixedAbilityGateVerdict.Execute))return false;
+            var backend=new CombatSpecialistBackend(battle);
             string kind;
             int amount;
             Character target=context.Target;
@@ -121,14 +121,15 @@ namespace ProjectAbyss.Abilities
             }
             else return false;
 
-            var plan=runner.Plan(instance,evt,new TriggerMatch(op.Trigger),null,
+            var plan=runner.PlanWithFrame(instance,frame,new TriggerMatch(op.Trigger),
+                MixedAbilityConditionCompiler.Compile(op),null,
                 new OneTarget(target,part),
                 new IEffectOperation[]{new OneCommand(kind,amount)});
             if(plan.Commands.Count!=1 || plan.Result.AppliedCommands!=0)
                 return false;
             string id="R7-NATIVE-MIXED:"+graph.SourceAssetGuid+":"+actionId+
                 ":"+index+":"+op.Trigger+":"+evt.RollUseIndex+":"+evt.CauseId;
-            var commands=R5PlannedCommandBridge.Materialize(instance,evt,plan,id,0);
+            var commands=PlannedCommandBridge.Materialize(instance,evt,plan,id,0);
             if(op.Kind==MixedOperationKind.ApplyBleeding)
             {
                 var status=new Bleeding(amount,op.Duration);
@@ -149,10 +150,12 @@ namespace ProjectAbyss.Abilities
                     amount,1f,
                     op.UseSkillCanBreakPart?graph.SourceCanBreakPart:op.CanBreakPart,
                     op.ApplyMomentum,op.ApplyGuard,context.Action);
+                request.SourceCause=frame.Cause;
                 backend.RegisterDamage(commands[0],request);
                 DamageAttempts++;
             }
             var result=apply.Apply(instance,evt,commands,backend);
+            LastAppliedBatch=result;
             bool success=result.CommittedCount==1 && !result.HasUnknownCommit;
             if(success)
             {

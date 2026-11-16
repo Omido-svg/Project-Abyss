@@ -26,8 +26,7 @@ internal sealed class SkillEffectDispatcher
         ClashResultContext clashResult = null)
     {
         if (definition == null ||
-            action == null ||
-            !HasExecutableEffects(definition))
+            action == null)
         {
             return Array.Empty<SkillEffectResult>();
         }
@@ -73,32 +72,32 @@ internal sealed class SkillEffectDispatcher
             if(ProjectAbyss.Abilities.OlafNativeAbilityRuntimeBinding
                 .IsNativePrestigeSource(definition))
                 return Array.Empty<SkillEffectResult>();
-            var olaf=context.BattleContext?.Services?.R7OlafNativeMigration;
+            var olaf=context.BattleContext?.Services?.OlafAbilities;
             if(olaf!=null && olaf.CanRoute(definition))
                 return olaf.Execute(definition,context,timing);
-            var yujin=context.BattleContext?.Services?.R7YujinNativeMigration;
+            var yujin=context.BattleContext?.Services?.YujinAbilities;
             if(yujin!=null && yujin.CanRoute(definition))
                 return yujin.Execute(definition,context,timing);
             // R7 production cohort runs via a native typed R5 resource
             // command, not TempBalanceSkillProxyEffectDefinition.Apply.
-            var native = context.BattleContext?.Services?.R7NativeResourceMigration;
+            var native = context.BattleContext?.Services?.ResourceAbilities;
             if (native!=null && native.CanRoute(definition))
                 return native.Execute(definition,context,timing);
             // R7 single-effect Bleeding cohort, production active after
             // target/part/status/replay parity validation.
-            var bleeding = context.BattleContext?.Services?.R7NativeBleedingMigration;
+            var bleeding = context.BattleContext?.Services?.StatusAbilities;
             if(bleeding!=null && bleeding.CanRoute(definition))
                 return bleeding.Execute(definition,context,timing);
-            var nativeGauge=context.BattleContext?.Services?.R7NativeUniqueGaugeMigration;
+            var nativeGauge=context.BattleContext?.Services?.UniqueGaugeAbilities;
             if(nativeGauge!=null && nativeGauge.CanRoute(definition))
                 return nativeGauge.Execute(definition,context,timing);
-            var legacyStatus=context.BattleContext?.Services?.R7LegacyStatusMigration;
+            var legacyStatus=context.BattleContext?.Services?.MixedAbilities;
             if(legacyStatus!=null && legacyStatus.CanRoute(definition))
                 return legacyStatus.Execute(definition,context,timing);
-            var prep=context.BattleContext?.Services?.R7PreparationStatusMigration;
+            var prep=context.BattleContext?.Services?.PreparationStatusAbilities;
             if(prep!=null && prep.CanRoute(definition))
                 return prep.Execute(definition,context,timing);
-            var generic=context.BattleContext?.Services?.R7SingleEffectMigration;
+            var generic=context.BattleContext?.Services?.SingleEffectAbilities;
             if(generic!=null && generic.CanRoute(definition))
                 return generic.Execute(definition,context,timing);
             // R7-5 standard/single-cut explosion is executed by the Olaf
@@ -118,7 +117,7 @@ internal sealed class SkillEffectDispatcher
                     "R7-8 enemy native route missing or mismatched; legacy fallback forbidden.");
             // The approved Preparation cannot silently execute old Entry.TryApply
             // if a graph/service is missing or a native contract fails validation.
-            if(ProjectAbyss.Abilities.R7ProductionPreparationStatusMigration
+            if(ProjectAbyss.Abilities.PreparationStatusAbilityBinding
                     .IsAuthoredSource(definition))
                 throw new InvalidOperationException(
                     "R7-1 Preparation native route unavailable; refusing legacy fallback.");
@@ -136,7 +135,7 @@ internal sealed class SkillEffectDispatcher
 #if UNITY_EDITOR
             // R7-12: opt-in historical parity-only adapter.
             // Never compile this legacy entry hook into player builds.
-            var migration = ProjectAbyss.Abilities.R7ExclusiveEntryMigrationScope.Active;
+            var migration = ProjectAbyss.Abilities.ExclusiveAbilityBindingScope.Active;
             if (migration != null && migration.CanRoute(definition))
                 return migration.Execute(definition, context, timing);
 #endif
@@ -187,7 +186,7 @@ internal sealed class SkillEffectDispatcher
             // Owner-lifecycle events have no Action/Slot. The approved R7-1
             // Preparation only has on-activation operations: never dispatch
             // its retained legacy entries through owner-level TryApply.
-            if(ProjectAbyss.Abilities.R7ProductionPreparationStatusMigration
+            if(ProjectAbyss.Abilities.PreparationStatusAbilityBinding
                     .IsAuthoredSource(definition) || IsRegisteredNativeSource(definition) ||
                 ProjectAbyss.Abilities.OlafNativeAbilityRuntimeBinding
                     .IsApprovedSource(definition) ||
@@ -199,7 +198,7 @@ internal sealed class SkillEffectDispatcher
 #if UNITY_EDITOR
             // R7-12: opt-in historical parity-only adapter.
             // Never compile this legacy entry hook into player builds.
-            var migration = ProjectAbyss.Abilities.R7ExclusiveEntryMigrationScope.Active;
+            var migration = ProjectAbyss.Abilities.ExclusiveAbilityBindingScope.Active;
             if (migration != null && migration.CanRoute(definition))
                 return migration.Execute(definition, context, timing);
 #endif
@@ -233,19 +232,19 @@ internal sealed class SkillEffectDispatcher
                     keys.Add(id+"|"+name);
             }
             foreach(var x in UnityEngine.Resources.LoadAll<
-                ProjectAbyss.Abilities.R7NativeAbilityDefinition>(
+                ProjectAbyss.Abilities.NativeAbilityDefinition>(
                     "ProjectAbyss/NativeAbilities"))
                 Add(x.StableId,x.SourceAssetName);
             foreach(var x in UnityEngine.Resources.LoadAll<
-                ProjectAbyss.Abilities.R7NativeStatusAbilityDefinition>(
+                ProjectAbyss.Abilities.NativeStatusAbilityDefinition>(
                     "ProjectAbyss/NativeStatuses"))
                 Add(x.StableId,x.SourceAssetName);
             foreach(var x in UnityEngine.Resources.LoadAll<
-                ProjectAbyss.Abilities.R7NativeMixedAbilityDefinition>(
+                ProjectAbyss.Abilities.NativeMixedAbilityDefinition>(
                     "ProjectAbyss/NativeMixed"))
                 Add(x.StableId,x.SourceAssetName);
             foreach(var x in UnityEngine.Resources.LoadAll<
-                ProjectAbyss.Abilities.R7NativeUniqueGaugeDefinition>(
+                ProjectAbyss.Abilities.NativeUniqueGaugeDefinition>(
                     "ProjectAbyss/NativeUniqueGauges"))
                 Add(x.StableId,x.SourceAssetName);
             foreach(var x in UnityEngine.Resources.LoadAll<
@@ -270,14 +269,8 @@ internal sealed class SkillEffectDispatcher
         definition!=null && NativeSourceKeys.Value.Contains(
             definition.SkillId+"|"+definition.name);
 
-    private static bool HasExecutableEffects(
-        SkillDefinition definition)
-    {
-        return definition != null &&
-               (definition.HasEffectEntries ||
-                (definition.Effects != null &&
-                 definition.Effects.Count > 0));
-    }
+    private static bool HasExecutableEffects(SkillDefinition definition) =>
+        definition!=null && (definition.HasEffectEntries || definition.Effects?.Count>0);
 
     private static IReadOnlyList<SkillEffectResult>
         ExecuteEntries(

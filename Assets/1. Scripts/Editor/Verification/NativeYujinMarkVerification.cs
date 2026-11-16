@@ -35,9 +35,9 @@ public static class NativeYujinMarkVerification
             var a=goA.GetComponent<Yujin>();var b=goB.GetComponent<Yujin>();
             var target=goTarget.GetComponent<Yujin>();
             a.Initialize(ctx);b.Initialize(ctx);target.Initialize(ctx);
-            long aId=R4LiveSlotQuery.ActorRuntimeId(a);
-            long bId=R4LiveSlotQuery.ActorRuntimeId(b);
-            long targetId=R4LiveSlotQuery.ActorRuntimeId(target);
+            long aId=LiveSlotQuery.ActorRuntimeId(a);
+            long bId=LiveSlotQuery.ActorRuntimeId(b);
+            long targetId=LiveSlotQuery.ActorRuntimeId(target);
             var left=target.BodyParts.FirstOrDefault(p=>p?.Type==PartType.LEFT_HAND);
             var right=target.BodyParts.FirstOrDefault(p=>p?.Type==PartType.RIGHT_HAND);
             Check("M01 three runtime characters exist and carry separate actor IDs",
@@ -49,15 +49,15 @@ public static class NativeYujinMarkVerification
                 !string.Equals(left.PartId,right.PartId,StringComparison.Ordinal),
                 "left="+left?.PartId+" right="+right?.PartId);
             if(left==null||right==null)throw new InvalidOperationException("No left/right part.");
-            var source=new R2YujinMarkSnapshotSource();
+            var source=new YujinMarkSnapshotSource();
             Check("M03 read bridge registers each real owner and carrier once",
                 source.TryRegisterYujin(a)&&source.TryRegisterYujin(b)&&
                 source.TryRegisterCarrier(target)&&!source.TryRegisterCarrier(target),
                 "read-only integration into YujinMechanic");
-            var def=new R2KeywordDefinition(R2YujinMarkSnapshotSource.StableKeywordId,
-                "yujin","표식",R2KeywordStorageKind.PartStackLedger,R2KeywordCarrier.Part);
-            var features=new R2CharacterFeatureSet("yujin",new[]{def});
-            var registry=new R2CharacterFeatureRegistry(source,
+            var def=new KeywordDefinition(YujinMarkSnapshotSource.StableKeywordId,
+                "yujin","표식",KeywordStorageKind.PartStackLedger,KeywordCarrier.Part);
+            var features=new CharacterFeatureSet("yujin",new[]{def});
+            var registry=new CharacterFeatureRegistry(source,
                 id=>id==aId || id==bId ? "yujin" : null);
             Check("M04 feature set shared, actor binding independent",
                 registry.TryBind(aId,features)&&registry.TryBind(bId,features) &&
@@ -78,9 +78,9 @@ public static class NativeYujinMarkVerification
             Check("M06 second Yujin same ContentId stores 7 independently",
                 otherLeft==7 && directLeft==43,
                 "A left="+directLeft+" B left="+otherLeft);
-            var qLeft=new R2KeywordReadRequest(aId,targetId,def.KeywordId,left.PartId);
-            var qRight=new R2KeywordReadRequest(aId,targetId,def.KeywordId,right.PartId);
-            var qOther=new R2KeywordReadRequest(bId,targetId,def.KeywordId,left.PartId);
+            var qLeft=new KeywordReadRequest(aId,targetId,def.KeywordId,left.PartId);
+            var qRight=new KeywordReadRequest(aId,targetId,def.KeywordId,right.PartId);
+            var qOther=new KeywordReadRequest(bId,targetId,def.KeywordId,left.PartId);
             Check("M07 R2-K reads actual native stored left 43",
                 registry.TryRead(qLeft,out int fromLeft)&&fromLeft==directLeft,
                 "R2="+fromLeft+" native="+directLeft);
@@ -91,9 +91,9 @@ public static class NativeYujinMarkVerification
                 registry.TryRead(qOther,out int fromOther)&&fromOther==7,
                 "R2B="+fromOther+" nativeB="+otherLeft);
             Check("M10 foreign keyword/invalid part and unregistered source rejected",
-                !registry.TryRead(new R2KeywordReadRequest(aId,targetId,"olaf.bleed",left.PartId),out _) &&
-                !registry.TryRead(new R2KeywordReadRequest(aId,targetId,def.KeywordId,"NO_SUCH_PART"),out _) &&
-                !registry.TryRead(new R2KeywordReadRequest(999999,targetId,def.KeywordId,left.PartId),out _),
+                !registry.TryRead(new KeywordReadRequest(aId,targetId,"olaf.bleed",left.PartId),out _) &&
+                !registry.TryRead(new KeywordReadRequest(aId,targetId,def.KeywordId,"NO_SUCH_PART"),out _) &&
+                !registry.TryRead(new KeywordReadRequest(999999,targetId,def.KeywordId,left.PartId),out _),
                 "no false zero or cross-owner leakage");
             registry.ClearForBattleEnd();source.ClearForBattleEnd();
             Check("M11 lifecycle clearing does not mutate Yujin's actual marks",

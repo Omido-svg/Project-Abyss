@@ -187,6 +187,9 @@ public class DamageManager
         if (!IsValidRequest(request))
             return null;
 
+        var parentCause=request.SourceCause;
+        if(parentCause.IsKnown)
+            request.SourceCause=parentCause.Derive(battleContext.EventSequence.Next(),parentCause.OriginKind);
         DamageContext context =
             new DamageContext(request);
 
@@ -200,7 +203,7 @@ public class DamageManager
         // 확정된 뒤에 연다. 따라서 창을 여는 그 타격은 기존 HP 내성을 받는다.
         StaggerGaugeMechanic stagger =
             context.Action?.Skill?.IsRed == true &&
-            context.Action.Owner?.GetMechanic<StageOneEnemy1112Mechanic>()?.NegateConfessionDamage(context.Action) != true
+            context.Action.Owner?.GetMechanic<StageOneEnemyMechanic>()?.NegateConfessionDamage(context.Action) != true
                 ? context.Target?.GetMechanic<StaggerGaugeMechanic>()
                 : null;
 

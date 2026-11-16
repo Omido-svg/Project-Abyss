@@ -85,13 +85,13 @@ public static class ReactionActionExecutionVerification
             else {fail++;Debug.LogError("[R6-Exec] FAIL "+key+" "+detail);}
         }
 
-        long actorId=R4LiveSlotQuery.ActorRuntimeId(actor);
+        long actorId=LiveSlotQuery.ActorRuntimeId(actor);
         var scheduler=new BattleReactionScheduler();
-        var registry=new R6ReactionActionRegistry();
+        var registry=new ReactionActionRegistry();
         var presenter=new TracePresenter();
         var resolver=new ActionResolver(context,context.Services.ClashManager,
             null,presenter);
-        resolver.EnableR6ReactionExecution(scheduler,registry);
+        resolver.EnableReactionExecution(scheduler,registry);
 
         var main=Slot(actor,target,976010,"R6-MAIN",context);
         var react1=Slot(actor,target,976011,"R6-REACT-A",context);
@@ -145,7 +145,7 @@ public static class ReactionActionExecutionVerification
         Check("E08 no recursive game resolution inside enqueue",
             scheduler.DispatchTrace.Count==3 && registry.PendingBindings==0);
 
-        resolver.DisableR6ReactionExecution();
+        resolver.DisableReactionExecution();
         var last=Slot(actor,target,976014,"R6-DISABLED",context);
         var disabledQueue=new ActionExecutionQueue();
         disabledQueue.ClashQueue.Enqueue(new ClashPair(last));
@@ -169,7 +169,7 @@ public static class ReactionActionExecutionVerification
                 "R6-REACT-A",ReactionTimingCheckpoint.AfterActionCompleted,
                 cause:905),repeatedId,out var _));
 
-        var tamperRegistry=new R6ReactionActionRegistry();
+        var tamperRegistry=new ReactionActionRegistry();
         var trusted=Request(977,last.ActionId,actorId,"R6-REACT-A",
             ReactionTimingCheckpoint.AfterActionCompleted,cause:906);
         var tamperSlot=Slot(actor,target,976017,"R6-REACT-A",context);

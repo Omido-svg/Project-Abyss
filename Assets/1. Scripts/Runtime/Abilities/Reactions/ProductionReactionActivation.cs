@@ -24,7 +24,7 @@ public static class ProductionReactionActivation
         // The runtime factory already attached queue/registries. This switches
         // the ACTUAL ActionResolver.Resolve coroutine into exchange-by-exchange
         // commit/presentation/checkpoint handling.
-        services.ActionResolver.EnableR6StepwiseClashes();
+        services.ActionResolver.EnableStepwiseClashes();
 
         // Hifumi's legacy synchronous OnClashResolved callback MUST NOT run
         // in parallel with a deferred reaction. Only switch after its
@@ -40,7 +40,7 @@ public static class ProductionReactionActivation
 
         if(!EnsureHifumi(battle.Player))
         {
-            services.ActionResolver.DisableR6StepwiseClashes();
+            services.ActionResolver.DisableStepwiseClashes();
             throw new InvalidOperationException("R6 Hifumi deferred counter registration failed.");
         }
         if(battle.Enemies!=null)
@@ -50,7 +50,7 @@ public static class ProductionReactionActivation
                     Deactivate(battle);
                     throw new InvalidOperationException("R6 enemy Hifumi deferred counter registration failed.");
                 }
-        return services.ActionResolver.IsR6StepwiseActive;
+        return services.ActionResolver.IsStepwiseActive;
     }
 
     /// <summary>
@@ -60,7 +60,7 @@ public static class ProductionReactionActivation
     public static void Deactivate(BattleContext battle)
     {
         var services=battle?.Services;
-        services?.ActionResolver?.DisableR6StepwiseClashes();
+        services?.ActionResolver?.DisableStepwiseClashes();
         services?.ReactionScheduler?.ClearForBattleEnd();
         services?.ReactionActionRegistry?.ClearForBattleEnd();
 

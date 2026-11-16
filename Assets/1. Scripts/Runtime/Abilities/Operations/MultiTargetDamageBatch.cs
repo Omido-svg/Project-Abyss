@@ -4,7 +4,7 @@ using System.Linq;
 
 namespace ProjectAbyss.Abilities
 {
-    public sealed class R5DamageHitResult
+    public sealed class DamageHitResult
     {
         public CombatCommandEnvelope Command { get; }
         public CombatCommandReceipt Receipt { get; }
@@ -18,7 +18,7 @@ namespace ProjectAbyss.Abilities
         public bool Weakened => Damage?.WasWeakened == true;
         public bool Broken => Damage?.WasBroken == true;
         public bool Killed => Damage?.WasKilled == true;
-        internal R5DamageHitResult(CombatCommandEnvelope command,
+        internal DamageHitResult(CombatCommandEnvelope command,
             CombatCommandReceipt receipt, DamageContext result, bool primary)
         {
             Command=command;Receipt=receipt;Damage=result;IsPrimary=primary;
@@ -44,10 +44,10 @@ namespace ProjectAbyss.Abilities
         }
     }
 
-    public sealed class R5DamageBatchResult
+    public sealed class DamageBatchResult
     {
         public CombatCommandBatchResult CommandBatch { get; }
-        public IReadOnlyList<R5DamageHitResult> Hits { get; }
+        public IReadOnlyList<DamageHitResult> Hits { get; }
         public int RequestedHitCount { get; }
         public int ProcessedHitCount => Hits.Count;
         public int UnprocessedHitCount => Math.Max(0,RequestedHitCount-ProcessedHitCount);
@@ -55,8 +55,8 @@ namespace ProjectAbyss.Abilities
         public int TotalHpApplied => Hits.Sum(h=>h.ActualHpDamage);
         public int TotalPartApplied => Hits.Sum(h=>h.ActualPartDamage);
         public int TotalStaggerApplied => Hits.Sum(h=>h.ActualStaggerDamage);
-        internal R5DamageBatchResult(CombatCommandBatchResult applied,
-            IReadOnlyList<R5DamageHitResult> hits,int requested)
+        internal DamageBatchResult(CombatCommandBatchResult applied,
+            IReadOnlyList<DamageHitResult> hits,int requested)
         {
             CommandBatch=applied;RequestedHitCount=requested;
             Hits=Array.AsReadOnly(hits.ToArray());
@@ -70,7 +70,7 @@ namespace ProjectAbyss.Abilities
     /// Actual calculation/results are owned by DamageManager and R5 specialist.
     /// No replay after an unknown commit; never retry partial batches blindly.
     /// </summary>
-    public sealed class R5MultiTargetDamageBatchService
+    public sealed class MultiTargetDamageBatchService
     {
         private readonly CombatCommandApplyService apply =
             new CombatCommandApplyService();
@@ -78,7 +78,7 @@ namespace ProjectAbyss.Abilities
         public bool TryExecute(AbilityInstance ability,AbilityEventContext cause,
             BattleAction action,IReadOnlyList<AttackWeightTarget> physicalTargets,
             Func<AttackWeightTarget,DamageRequest> requestFactory,
-            string batchId,out R5DamageBatchResult result,out string error)
+            string batchId,out DamageBatchResult result,out string error)
         {
             result=null;error=null;
             if(ability==null || action?.Owner==null || physicalTargets==null ||
@@ -86,7 +86,7 @@ namespace ProjectAbyss.Abilities
                string.IsNullOrWhiteSpace(batchId) ||
                cause.ActionId<=0||cause.CauseId<=0 ||
                cause.ActionId!=action.ActionId ||
-               cause.OwnerActorRuntimeId!=R4LiveSlotQuery.ActorRuntimeId(action.Owner)||
+               cause.OwnerActorRuntimeId!=LiveSlotQuery.ActorRuntimeId(action.Owner)||
                cause.OwnerActorRuntimeId!=ability.Identity.OwnerActorRuntimeId)
             {
                 error="Invalid action/cause/owner/ability or target batch.";
@@ -111,7 +111,7 @@ namespace ProjectAbyss.Abilities
                 error="Original battle DamageManager unavailable.";
                 return false;
             }
-            var backend=new R5CombatSpecialistBackend(backendContext);
+            var backend=new CombatSpecialistBackend(backendContext);
             var commands=new List<CombatCommandEnvelope>();
             var seen=new HashSet<HitTargetKey>();
             try
@@ -128,7 +128,7 @@ namespace ProjectAbyss.Abilities
                         throw new ArgumentException("Invalid/broken/dead physical target at index "+i);
                     if(i>0 && t.IsPrimary)
                         throw new ArgumentException("Multiple primary targets are invalid.");
-                    var hit=new HitTargetKey(R4LiveSlotQuery.ActorRuntimeId(actor),part?.PartId);
+                    var hit=new HitTargetKey(LiveSlotQuery.ActorRuntimeId(actor),part?.PartId);
                     if(!seen.Add(hit))
                         throw new ArgumentException("Physical actor+part hit duplicated at index "+i);
                     var request=requestFactory(t);
@@ -156,15 +156,15 @@ namespace ProjectAbyss.Abilities
             // Single R5 application call for all actual physical targets.
             // It preserves stable order and commits one AbilityActivation only.
             var applied=apply.Apply(ability,cause,commands,backend);
-            var hits=new List<R5DamageHitResult>();
+            var hits=new List<DamageHitResult>();
             for(int i=0;i<applied.Records.Count;i++)
             {
                 var record=applied.Records[i];
                 backend.TryGetDamageContext(record.Request.CommandId,out var damage);
-                hits.Add(new R5DamageHitResult(record.Request,record.Receipt,
+                hits.Add(new DamageHitResult(record.Request,record.Receipt,
                     damage,i==0));
             }
-            result=new R5DamageBatchResult(applied,hits,commands.Count);
+            result=new DamageBatchResult(applied,hits,commands.Count);
             backend.ClearBindings();
             return !applied.HasUnknownCommit;
         }

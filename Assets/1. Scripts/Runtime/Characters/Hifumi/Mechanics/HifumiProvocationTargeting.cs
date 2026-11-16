@@ -45,13 +45,13 @@ public static class HifumiProvocationTargeting
                      x.Skill.ActionType==ActionType.NormalAttack))
                 .GroupBy(x=>x.ActionId).Select(x=>x.First()).ToArray();
             if(attackers.Length==0)continue;
-            long actorId=R4LiveSlotQuery.ActorRuntimeId(defender);
-            var aims=attackers.Select(x=>new R4IncomingAim(
+            long actorId=LiveSlotQuery.ActorRuntimeId(defender);
+            var aims=attackers.Select(x=>new IncomingAim(
                 x.ActionId,x.Speed,1,
                 new CombatSlotRef(actorId,
                     x.TargetSlot?.SlotId??x.SlotId??x.ActionId.ToString(),
                     x.TargetPart?.PartId??string.Empty,0))).ToArray();
-            var taunts=valid.Select(x=>new R4TauntTarget(
+            var taunts=valid.Select(x=>new TauntTarget(
                 new CombatSlotRef(actorId,
                     "R7_HIFUMI_TAUNT_"+x.Key.PartId,x.Key.PartId,0),
                 x.Value,true)).ToArray();
@@ -60,7 +60,7 @@ public static class HifumiProvocationTargeting
             foreach(var x in attackers.OrderBy(x=>x.ActionId))
                 seed=unchecked(seed*31+(int)(x.ActionId^(x.ActionId>>32)));
 
-            var plan=R4TauntAimPlanner.Plan(aims,taunts,seed);
+            var plan=TauntAimPlanner.Plan(aims,taunts,seed);
             var byId=attackers.ToDictionary(x=>x.ActionId);
             var byPart=valid.ToDictionary(x=>x.Key.PartId,x=>x.Key,
                 StringComparer.Ordinal);

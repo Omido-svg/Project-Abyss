@@ -45,7 +45,7 @@ public static class SlotWeightedIntegrationVerification
     }
 
     private static string Key(AttackWeightTarget t) =>
-        R4LiveSlotQuery.ActorRuntimeId(t.TargetCharacter)+":"+
+        LiveSlotQuery.ActorRuntimeId(t.TargetCharacter)+":"+
         (t.TargetPart?.PartId ?? "");
 
     public static void Run()
@@ -107,14 +107,14 @@ public static class SlotWeightedIntegrationVerification
             all.Length<=allEligible+normals.Length && all.Length>=5);
 
         var wrongPart=Action(player,elite,null,4,AttackWeightTargetingModel.SlotWeighted,94503);
-        bool okWrong=R5SlotWeightedTargetBridge.TryResolve(ctx,wrongPart,
+        bool okWrong=SlotWeightedTargetBridge.TryResolve(ctx,wrongPart,
             out var fallback, out var diagnosis);
         Check("W10 missing boss hit part is fail-closed to main only",
             !okWrong && fallback.Count==1 && fallback[0].IsPrimary &&
             !string.IsNullOrWhiteSpace(diagnosis));
 
         var allySide=Action(elite,normals[0],null,3,AttackWeightTargetingModel.SlotWeighted,94504);
-        bool okSide=R5SlotWeightedTargetBridge.TryResolve(ctx,allySide,
+        bool okSide=SlotWeightedTargetBridge.TryResolve(ctx,allySide,
             out var sideTargets,out _);
         Check("W11 same-side targeting does not splash to other enemies",
             !okSide && sideTargets.Count==1);
@@ -122,7 +122,7 @@ public static class SlotWeightedIntegrationVerification
         var enemyAttack=Action(elite,player,player.GetTargetPoints(false)
             .FirstOrDefault(p=>p.IsValid).Part,3,
             AttackWeightTargetingModel.SlotWeighted,94505);
-        bool okEnemy=R5SlotWeightedTargetBridge.TryResolve(ctx,enemyAttack,
+        bool okEnemy=SlotWeightedTargetBridge.TryResolve(ctx,enemyAttack,
             out var enemyTargets,out _);
         Check("W12 enemy attack only spreads into player-side target points",
             okEnemy && enemyTargets.All(t=>t.TargetCharacter==player));

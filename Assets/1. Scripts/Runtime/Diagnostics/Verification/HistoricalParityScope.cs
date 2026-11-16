@@ -59,10 +59,10 @@ public sealed class HistoricalParityScope : IDisposable
         if(d==null||battle==null)return false;
         if(ProjectAbyss.Abilities.OlafNativeAbilityRuntimeBinding
             .IsApprovedSource(d))
-            return battle.Services?.R7OlafNativeMigration?.CanRoute(d)==true;
+            return battle.Services?.OlafAbilities?.CanRoute(d)==true;
         if(ProjectAbyss.Abilities.YujinNativeAbilityRuntimeBinding
             .IsKnownSource(d))
-            return battle.Services?.R7YujinNativeMigration?.CanRoute(d)==true;
+            return battle.Services?.YujinAbilities?.CanRoute(d)==true;
         if(ProjectAbyss.Abilities.OlafNativeAbilityRuntimeBinding
             .IsNativePrestigeSource(d)||
            ProjectAbyss.Abilities.OlafNativeAbilityRuntimeBinding

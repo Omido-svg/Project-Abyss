@@ -897,7 +897,7 @@ public sealed class PlayerAutoPlanEstimator
                 opponentSpeed,
                 speedWeight);
 
-        if (Canonical0922EmotionRuntimeHooks
+        if (EmotionAugmentRuntimeHooks
                 .TryResolveClashSpeedModifierOverride(
                     preview,
                     out int canonicalSpeedOverride))
