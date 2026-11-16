@@ -15,6 +15,13 @@ namespace ProjectAbyss.Abilities
             public Selector(IReadOnlyList<CombatTargetRef> targets){this.targets=targets;}
             public IReadOnlyList<CombatTargetRef> Select(IReadOnlyAbilityContext context)=>targets;
         }
+        private sealed class CommittedResultCondition : ICombatCondition
+        {
+            private readonly ICombatCondition condition;
+            private readonly CombatTargetRef damageTarget;
+            public CommittedResultCondition(ICombatCondition condition,CombatTargetRef target){this.condition=condition;damageTarget=target;}
+            public bool Evaluate(IReadOnlyAbilityContext context,CombatTargetRef _)=>condition.Evaluate(context,damageTarget);
+        }
         private sealed class Operation : IEffectOperation,IAbilityRuleCommandSink
         {
             private readonly AbilityRuleReadContext view;
@@ -101,6 +108,7 @@ namespace ProjectAbyss.Abilities
         private readonly Dictionary<(AbilityIdentity,string),AbilityLifetimeMemory> lifetimes=new();
         private readonly Dictionary<long,CapturedAbilityBoundary> damageBoundaries=new();
         private readonly Dictionary<long,DamageContext> damageResults=new();
+        private readonly HashSet<long> exchangeWinningRolls=new();
         private readonly Dictionary<long,BattleAction> actions=new();
         public CombatCommandBatchResult LastAppliedBatch { get; private set; }
         private readonly Dictionary<(long,string,AbilityEventKind,int,long),EffectCause> ruleCauses=new();
@@ -233,7 +241,7 @@ namespace ProjectAbyss.Abilities
             var frame=new AbilityExecutionFrame(identity,evt.Kind,action.ActionId,cause,Reference(action.Owner,action.OwnerPart,action.Slot?.SlotId),boundary.AimedTarget,target,
                 new AbilityEventFacts(context?.RollNumber??(evt.RollUseIndex>=0?evt.RollUseIndex+1:0),context?.RollSucceeded??false,
                     context?.RollResult?.IsCritical??action.LastRollResult?.IsCritical==true,context?.IsClash??false,evt.IsOneSided,context!=null&&(context.RollResult!=null||context.RollSucceeded||evt.Kind==AbilityEventKind.ExchangeWon||evt.Kind==AbilityEventKind.ExchangeLost)),
-                evt.DuelEffectsEligible,mode,boundary.Snapshot(target,damage?.Request.SourceCause.EventId??0,Reference(action.Owner,action.OwnerPart,action.Slot?.SlotId)),
+                (damage!=null&&ReferenceEquals(damage.Request.SourceAction,action)?DamageGate(action,damage):evt.DuelEffectsEligible),mode,boundary.Snapshot(target,damage?.Request.SourceCause.EventId??0,Reference(action.Owner,action.OwnerPart,action.Slot?.SlotId)),
                 evt.Kind==AbilityEventKind.DamageSettled?AbilityExecutionUnit.DamageResolution:AbilityExecutionUnit.Action,
                 CurrentTurn,action.ClashExecutionId,0,rollUse,damage?.Request.SourceCause.EventId??0,action.ActionId,
                 action.CounterExecution?.ExecutionId??0,boundary.WeaponFor(identity.OwnerActorRuntimeId),observedCause:observed,observedParent:parent);
@@ -278,7 +286,7 @@ namespace ProjectAbyss.Abilities
                 throw new ArgumentException("Duplicate rule-set source identity");
             definitions[definition]=definition.Rules.Select((r,i)=>new CompiledRule{Definition=definition,StableId=definition.StableId,SourceGuid=definition.SourceAssetGuid,SourceName=definition.SourceAssetName,SourceKind=definition.SourceKind,Id=r.RuleId,Index=i,Trigger=r.Trigger,
                 Selector=r.TargetSelectorId,Policy=new AbilityRuleMetadata{Snapshot=r.Policy.Snapshot,OwnerScope=r.Policy.OwnerScope,
-                    CausePolicy=r.Policy.CausePolicy,ConditionPhase=r.Policy.ConditionPhase,CardAuthored=r.Policy.CardAuthored},
+                    CausePolicy=r.Policy.CausePolicy,ConditionPhase=r.Policy.ConditionPhase,CardAuthored=r.Policy.CardAuthored,DamageConditionOrigin=r.Policy.DamageConditionOrigin},
                 Condition=Registry.Compile(r.Condition),Operations=r.Operations.Select(o=>new AbilityOperationSpec(o)).ToArray(),
                 Lifetime=new AbilityRuleLifetime{OncePerBattle=r.Lifetime.OncePerBattle,OncePerTurn=r.Lifetime.OncePerTurn,
                     OncePerSkillExecution=r.Lifetime.OncePerSkillExecution,OncePerCounterExecution=r.Lifetime.OncePerCounterExecution,
@@ -295,7 +303,8 @@ namespace ProjectAbyss.Abilities
             foreach(var rule in definitions[source].OrderBy(r=>r.Phase).ThenBy(r=>r.Priority).ThenBy(r=>r.Index))
             {
                 if(rule.ScheduledOnly||rule.Trigger!=kind)continue;
-                if(rule.DuelGate&&context.Action.ActionType==ActionType.Duel&&!context.Action.DuelEffectsEligible)continue;
+                if(!AllowsSourceGate(rule,context.Action,DamageGate(context.Action,context.DamageContext)) ||
+                    !AllowsDamageEvaluation(rule,context.Action,context.DamageContext))continue;
                 if(context.IsOneSided&&(kind==AbilityEventKind.ExchangeWon||kind==AbilityEventKind.ExchangeLost))continue;
                 var identity=new AbilityIdentity(rule.StableId,LiveSlotQuery.ActorRuntimeId(context.Owner),"",rule.Index);
                 var frame=CaptureFrame(identity,context.Action,new AbilityEventContext(kind,context.Action.ActionId,0,identity.OwnerActorRuntimeId,
@@ -305,9 +314,29 @@ namespace ProjectAbyss.Abilities
             }
             return results;
         }
+        // Trigger validation (CardAuthored) does not change ownership: skill-owned internal rules retain the card gate.
+        private static bool AllowsSourceGate(CompiledRule rule,BattleAction action,bool duelEligible)=>
+            rule.SourceKind==AbilityRuleSourceKind.Passive || !rule.DuelGate ||
+            action!=null && (action.ActionType!=ActionType.Duel || duelEligible);
+        private bool DamageGate(BattleAction action,DamageContext damage)=>
+            damage!=null && ReferenceEquals(damage.Request.SourceAction,action) &&
+            damageBoundaries.TryGetValue(damage.Request.SourceCause.EventId,out var boundary)?boundary.DuelEffectsEligible:action?.DuelEffectsEligible==true;
+        private bool AllowsDamageEvaluation(CompiledRule rule,BattleAction action,DamageContext damage)
+        {
+            if(rule.Policy.DamageConditionOrigin==AbilityDamageConditionOrigin.Unspecified)return true;
+            if(action?.Owner==null || damage?.Result==null || !damage.WasDispatched ||
+               !ReferenceEquals(damage.Request.SourceAction,action))return false;
+            var cause=damage.Request.SourceCause;
+            var roll=action.GetEffectCause(AbilityEventKind.RollUsing,cause.SourceRollIndex);
+            if(!cause.IsDirectResultOf(roll))return false;
+            // The primary opposed hit attests the win; attack-weight hits retain that same original roll's win.
+            return rule.Policy.DamageConditionOrigin==AbilityDamageConditionOrigin.RollUsing || exchangeWinningRolls.Contains(roll.EventId);
+        }
         private bool ExecuteRule(CompiledRule rule,AbilityExecutionFrame frame,DamageContext damage=null,IReadOnlyList<CombatTargetRef> lockedTargets=null)
         {
             LastAppliedBatch=null;
+            var sourceAction=Action(frame.ActionId);
+            if(!AllowsSourceGate(rule,sourceAction,frame.DuelEffectsEligible) || !AllowsDamageEvaluation(rule,sourceAction,damage))return false;
             var replay=(frame.Ability.OwnerActorRuntimeId,rule.StableId+"/"+rule.Id,
                 frame.ObservedCause.EventId>0?frame.ObservedCause.EventId:frame.Cause.EventId);
             if(completed.ContainsKey(replay))return false;
@@ -335,8 +364,9 @@ namespace ProjectAbyss.Abilities
             AppliedDamageEvidence? evidence=null,Action<AbilityExecutionResult> committed=null,CombatConditionPhase conditionPhase=CombatConditionPhase.PreTarget)
         {
             var operation=new Operation(view,Registry,operations);
-            var pre=conditionPhase==CombatConditionPhase.PreTarget?condition:null;
-            var candidate=conditionPhase==CombatConditionPhase.PreTarget?null:condition;
+            ICombatCondition pre=conditionPhase==CombatConditionPhase.PreTarget?condition:
+                conditionPhase==CombatConditionPhase.PostDamageResult&&condition!=null?new CommittedResultCondition(condition,frame.ActualDamageTarget):null;
+            var candidate=conditionPhase==CombatConditionPhase.CandidateTarget?condition:null;
             var plan=evidence.HasValue?runner.PlanCommittedDamage(instance,frame.ToEventContext(),new Matcher(),pre,candidate,
                 new Selector(targets),new IEffectOperation[]{operation},frame.Snapshot,evidence.Value):
                 runner.PlanWithFrame(instance,frame,new Matcher(),pre,candidate,new Selector(targets),new IEffectOperation[]{operation});
@@ -440,6 +470,7 @@ namespace ProjectAbyss.Abilities
             foreach(var item in applicable.OrderBy(i=>i.Rule.Phase).ThenBy(i=>i.Rule.Priority).ThenBy(i=>i.Rule.StableId,StringComparer.Ordinal).ThenBy(i=>OwnerOrder(i.Owner)).ThenBy(i=>i.Rule.Index))
             {
                 var rule=item.Rule;var owner=item.Owner;
+                if(!AllowsSourceGate(rule,action,DamageGate(action,damage)) || !AllowsDamageEvaluation(rule,action,damage))continue;
                 if(rule.Policy.CardAuthored && kind==AbilityEventKind.DamageSettled &&
                     (!cause.IsDirectResultOf(action.GetEffectCause(AbilityEventKind.RollUsing,cause.SourceRollIndex))))continue;
                 // Passive reactions own a separate execution, correlated to the observed cause.
@@ -461,6 +492,11 @@ namespace ProjectAbyss.Abilities
         {
             if(damage==null||damage.Request.SourceCause.EventId<=0)return;
             var source=DamageSource(damage);
+            if(damage.IsClashDamage && damage.TargetLostClash && damage.Request.SourceAction!=null)
+            {
+                var roll=damage.Request.SourceAction.GetEffectCause(AbilityEventKind.RollUsing,damage.Request.SourceCause.SourceRollIndex);
+                if(damage.Request.SourceCause.IsDirectResultOf(roll))exchangeWinningRolls.Add(roll.EventId);
+            }
             if(source.ClashExecutionId>0&&damage.Target!=null)
             {
                 var scope=new AbilityScopeKey(AbilityOwnerScope.ClashExecution,LiveSlotQuery.ActorRuntimeId(damage.Target),executionId:source.ClashExecutionId);
@@ -495,6 +531,6 @@ namespace ProjectAbyss.Abilities
             }
         }
         public void Dispose()
-        {Battle.TurnStartEffects.Clear();Battle.TurnStartEffects.CurrentTurn=null;Effects.Cancel();Snapshots.Clear();passiveOwners.Clear();State.ResetAt(AbilityLifetimeBoundary.Run);Modifiers.Clear();ruleCauses.Clear();instances.Clear();lifetimes.Clear();completed.Clear();damageBoundaries.Clear();damageResults.Clear();actions.Clear();actors.Clear();}
+        {Battle.TurnStartEffects.Clear();Battle.TurnStartEffects.CurrentTurn=null;Effects.Cancel();Snapshots.Clear();passiveOwners.Clear();State.ResetAt(AbilityLifetimeBoundary.Run);Modifiers.Clear();ruleCauses.Clear();instances.Clear();lifetimes.Clear();completed.Clear();damageBoundaries.Clear();damageResults.Clear();exchangeWinningRolls.Clear();actions.Clear();actors.Clear();}
     }
 }

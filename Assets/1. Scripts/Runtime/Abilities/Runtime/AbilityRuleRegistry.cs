@@ -146,6 +146,13 @@ namespace ProjectAbyss.Abilities
                 if(rule.Policy?.Snapshot==AbilitySnapshotPolicy.LockAtScheduleCreation&&!rule.ScheduledOnly)issues.Add("SCHEDULE_SNAPSHOT_REQUIRES_SCHEDULED_RULE");
                 if(rule.Lifetime?.OncePerCounterExecution==true && rule.Policy?.OwnerScope!=AbilityOwnerScope.CounterExecution)issues.Add("COUNTER_LIFETIME_REQUIRES_COUNTER_SCOPE");
                 if(rule.Policy==null)issues.Add("MISSING_POLICY");else foreach(var issue in rule.Policy.Validate(rule.Trigger))issues.Add(rule.RuleId+": "+issue);
+                if(definition.SourceKind==AbilityRuleSourceKind.Skill && rule.Trigger==AbilityEventKind.DamageSettled && !rule.ScheduledOnly)
+                {
+                    if(rule.Policy?.DamageConditionOrigin==AbilityDamageConditionOrigin.Unspecified)issues.Add("DEFERRED_CARD_ORIGIN_REQUIRED: "+rule.RuleId);
+                    if(!rule.RequiresDuelGate)issues.Add("DEFERRED_CARD_REQUIRES_DUEL_GATE: "+rule.RuleId);
+                }
+                if(rule.Policy?.DamageConditionOrigin!=null && rule.Policy.DamageConditionOrigin!=AbilityDamageConditionOrigin.Unspecified &&
+                   (definition.SourceKind!=AbilityRuleSourceKind.Skill || rule.ScheduledOnly))issues.Add("DEFERRED_CARD_ORIGIN_REQUIRES_SKILL_RULE: "+rule.RuleId);
                 if(!HasSelector(rule.TargetSelectorId))issues.Add("UNKNOWN_SELECTOR: "+rule.TargetSelectorId);
                 try{Compile(rule.Condition);}catch(Exception e){issues.Add(e.Message);}
                 foreach(var op in rule.Operations??Array.Empty<AbilityOperationData>())

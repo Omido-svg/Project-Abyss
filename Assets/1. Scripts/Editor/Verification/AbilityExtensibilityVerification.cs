@@ -74,6 +74,132 @@ public static class AbilityExtensibilityVerification
         public override CombatCommandReceipt Commit(AbilityRuleCommitContext c,AbilityRuleCommand command)
         {Frames.Add(c.Frame);c.Target.AddBlock(command.Operation.Amount);return Applied(command.Operation.Amount,"Independent extension");}
     }
+    private static void VerifyCommittedDamageGates(Action<string,bool> check)
+    {
+        foreach(bool opponentIsDuel in new[]{false,true})
+        {
+            using var f=new Fixture();var runtime=f.Battle.Abilities;var skill=f.Skill("fixture.production.duel."+opponentIsDuel,ActionType.Duel);
+            skill.ExchangeRollCount=1;
+            var rule=AbilityRuleAuthoringTemplates.AfterDamageEvaluation("reward",AbilityDamageConditionOrigin.ExchangeWon,new AbilityOperationData{TypeId="resource.block",Amount=1});
+            rule.Condition=new AbilityConditionData();runtime.Register(f.Rules(skill,rule));
+            var passiveSkill=f.Skill("fixture.production.passive."+opponentIsDuel);var passive=f.Rules(passiveSkill,Rule("observe","resource.block",1,"self",AbilityEventKind.DamageSettled));
+            passive.SourceKind=AbilityRuleSourceKind.Passive;passive.Rules[0].Policy.CardAuthored=false;runtime.BindPassive(passive,f.Player);
+            var enemySkill=f.Skill("fixture.production.opponent."+opponentIsDuel,opponentIsDuel?ActionType.Duel:ActionType.NormalAttack);enemySkill.ExchangeRollCount=1;
+            var first=f.Action(skill);var second=f.Action(enemySkill,f.Enemy,f.Player,f.Player.GetBodyPart(PartType.LEFT_HAND));
+            runtime.Modifiers.Add(new AbilityScopeKey(AbilityOwnerScope.Actor,LiveSlotQuery.ActorRuntimeId(f.Player)),new CombatModifierSpec(CombatModifierStage.RollPower,CombatModifierKind.OverrideFinal,10,0,0),first.GetEffectCause(AbilityEventKind.RollUsing,0),1);
+            runtime.Modifiers.Add(new AbilityScopeKey(AbilityOwnerScope.Actor,LiveSlotQuery.ActorRuntimeId(f.Enemy)),new CombatModifierSpec(CombatModifierStage.RollPower,CombatModifierKind.OverrideFinal,1,0,0),second.GetEffectCause(AbilityEventKind.RollUsing,0),1);
+            var manager=new ClashManager(f.Battle,f.Battle.Services.DamageManager,f.Battle.Services.MomentumManager);
+            var result=manager.ResolvePair(new ClashPair(first.Slot,second.Slot));
+            var active=result.FirstAction.Owner==f.Player?result.FirstAction:result.SecondAction;
+            int cardCount=runtime.Trace.Count(t=>t.Request.Ability.DefinitionId==skill.SkillId&&t.Receipt.EffectCommitted);
+            int passiveCount=runtime.Trace.Count(t=>t.Request.Ability.DefinitionId==passiveSkill.SkillId&&t.Receipt.EffectCommitted);
+            check("production pair assigns canonical duel eligibility / "+opponentIsDuel,active.DuelEffectsEligible==opponentIsDuel);
+            check("production pair really commits damage / "+opponentIsDuel,result.Exchanges.Any(e=>e.DamageContext?.Result!=null&&e.DamageContext.AppliedHpDamage>0));
+            check("production pair gates internal card reward / "+opponentIsDuel,opponentIsDuel?cardCount>0:cardCount==0);
+            check("production pair preserves independent passive / "+opponentIsDuel,passiveCount>0);
+        }
+        foreach(var sample in new[]{
+            (Name:"duel disabled use",Type:ActionType.Duel,Eligible:false,Paired:false,Lost:false,Origin:AbilityDamageConditionOrigin.RollUsing,Expected:0),
+            (Name:"duel disabled win",Type:ActionType.Duel,Eligible:false,Paired:true,Lost:true,Origin:AbilityDamageConditionOrigin.ExchangeWon,Expected:0),
+            (Name:"duel enabled use",Type:ActionType.Duel,Eligible:true,Paired:true,Lost:true,Origin:AbilityDamageConditionOrigin.RollUsing,Expected:1),
+            (Name:"duel enabled win",Type:ActionType.Duel,Eligible:true,Paired:true,Lost:true,Origin:AbilityDamageConditionOrigin.ExchangeWon,Expected:1),
+            (Name:"duel leftover use",Type:ActionType.Duel,Eligible:true,Paired:false,Lost:false,Origin:AbilityDamageConditionOrigin.RollUsing,Expected:1),
+            (Name:"duel leftover is not win",Type:ActionType.Duel,Eligible:true,Paired:false,Lost:false,Origin:AbilityDamageConditionOrigin.ExchangeWon,Expected:0),
+            (Name:"normal one-sided use",Type:ActionType.NormalAttack,Eligible:false,Paired:false,Lost:false,Origin:AbilityDamageConditionOrigin.RollUsing,Expected:1),
+            (Name:"normal one-sided is not win",Type:ActionType.NormalAttack,Eligible:false,Paired:false,Lost:false,Origin:AbilityDamageConditionOrigin.ExchangeWon,Expected:0),
+            (Name:"paired damage without win",Type:ActionType.NormalAttack,Eligible:false,Paired:true,Lost:false,Origin:AbilityDamageConditionOrigin.ExchangeWon,Expected:0)})
+        {
+            using var f=new Fixture();var runtime=f.Battle.Abilities;var skill=f.Skill("fixture.postdamage."+sample.Name,sample.Type);
+            var card=AbilityRuleAuthoringTemplates.AfterDamageEvaluation("reward",sample.Origin,new AbilityOperationData{TypeId="resource.block",Amount=2});
+            card.Condition=new AbilityConditionData{Predicate=new AbilityPredicateData{TypeId="damage.hp_at_least",Value=1}};
+            runtime.Register(f.Rules(skill,card));
+            var passiveSkill=f.Skill("fixture.passive."+sample.Name);
+            var passive=f.Rules(passiveSkill,Rule("observe","resource.block",1,"self",AbilityEventKind.DamageSettled));
+            passive.SourceKind=AbilityRuleSourceKind.Passive;passive.Rules[0].Policy.CardAuthored=false;runtime.BindPassive(passive,f.Player);
+            var action=f.Action(skill);action.SetDuelEffectsEligible(sample.Eligible);action.RolledPower=2;
+            var damage=f.Battle.Services.DamageManager.ApplyDamageContext(DamageRequest.FromAction(action,DamageType.SkillPart,false,sample.Paired,sample.Lost));
+            int Count(string id)=>runtime.Trace.Count(t=>t.Request.Ability.DefinitionId==id&&t.Receipt.EffectCommitted);
+            check("committed card gate / "+sample.Name,damage.Result!=null&&damage.AppliedHpDamage>0&&Count(skill.SkillId)==sample.Expected);
+            check("pure passive remains independent / "+sample.Name,Count(passiveSkill.SkillId)==1);
+            runtime.DamageCommitted(damage);runtime.DrainEffects();
+            check("damage callback and publication do not duplicate / "+sample.Name,Count(skill.SkillId)==sample.Expected&&Count(passiveSkill.SkillId)==1);
+        }
+        using(var f=new Fixture())
+        {
+            var skill=f.Skill("fixture.postdamage.targets");
+            var rule=AbilityRuleAuthoringTemplates.AfterDamageEvaluation("self-reward",AbilityDamageConditionOrigin.RollUsing,new AbilityOperationData{TypeId="resource.block",Amount=3});
+            f.Battle.Abilities.Register(f.Rules(skill,rule));var action=f.Action(skill);action.RolledPower=120;f.Part.SetDebugState(100,100,false,false);
+            int before=f.Player.RuntimeStatus.currentBlock;
+            var damage=f.Battle.Services.DamageManager.ApplyDamageContext(DamageRequest.FromAction(action,DamageType.SkillPart,false,false,false));
+            check("post-damage condition checks enemy part and rewards self",damage.WasWeakened&&f.Player.RuntimeStatus.currentBlock==before+3);
+        }
+        foreach(var origin in new[]{AbilityDamageConditionOrigin.RollUsing,AbilityDamageConditionOrigin.ExchangeWon})
+        {
+            using var f=new Fixture();var runtime=f.Battle.Abilities;var skill=f.Skill("fixture.derived."+origin);
+            var rule=AbilityRuleAuthoringTemplates.AfterDamageEvaluation("reward",origin,new AbilityOperationData{TypeId="resource.block",Amount=1});
+            rule.Condition=new AbilityConditionData();runtime.Register(f.Rules(skill,rule));var action=f.Action(skill);action.RolledPower=2;
+            foreach(var kind in new[]{EffectOriginKind.Trap,EffectOriginKind.ExtraHit,EffectOriginKind.Reaction})
+            {
+                var request=DamageRequest.FromAction(action,DamageType.SkillPart,false,true,true);
+                request.SourceCause=request.SourceCause.Derive(f.Battle.EventSequence.Next(),kind);
+                f.Battle.Services.DamageManager.ApplyDamageContext(request);
+                check("derived damage cannot inherit original card / "+origin+" / "+kind,!runtime.Trace.Any(t=>t.Receipt.EffectCommitted));
+            }
+        }
+        using(var f=new Fixture())
+        {
+            var runtime=f.Battle.Abilities;var skill=f.Skill("fixture.late.gate",ActionType.Duel);
+            var rule=AbilityRuleAuthoringTemplates.AfterDamageEvaluation("reward",AbilityDamageConditionOrigin.RollUsing,new AbilityOperationData{TypeId="resource.block",Amount=1});
+            rule.Condition=new AbilityConditionData();runtime.Register(f.Rules(skill,rule));var action=f.Action(skill);action.SetDuelEffectsEligible(false);action.RolledPower=2;
+            Action<DamageContext> change=d=>action.SetDuelEffectsEligible(true);f.Battle._battleEvent.OnDamageResolved+=change;
+            try{f.Battle.Services.DamageManager.ApplyDamageContext(DamageRequest.FromAction(action,DamageType.SkillPart,false,false,false));}
+            finally{f.Battle._battleEvent.OnDamageResolved-=change;}
+            check("observer cannot revive the captured disabled card gate",!runtime.Trace.Any(t=>t.Receipt.EffectCommitted));
+        }
+        using(var f=new Fixture())
+        {
+            var runtime=f.Battle.Abilities;var skill=f.Skill("fixture.win.roll");var rule=AbilityRuleAuthoringTemplates.AfterDamageEvaluation("reward",AbilityDamageConditionOrigin.ExchangeWon,
+                new AbilityOperationData{TypeId="resource.block",Amount=1});rule.Condition=new AbilityConditionData();runtime.Register(f.Rules(skill,rule));
+            var action=f.Action(skill);action.RolledPower=2;f.Battle.Services.DamageManager.ApplyDamageContext(DamageRequest.FromAction(action,DamageType.SkillPart,false,true,true));
+            action.CurrentRollIndex=1;f.Battle.Services.DamageManager.ApplyDamageContext(DamageRequest.FromAction(action,DamageType.SkillPart,false,false,false));
+            check("earlier win does not turn later one-sided roll into victory",runtime.Trace.Count(t=>t.Receipt.EffectCommitted)==1);
+            action.CurrentRollIndex=0;var secondary=DamageRequest.FromAction(action,DamageType.SkillPart,false,false,false);secondary.TargetPart=f.Enemy.GetBodyPart(PartType.HEAD);
+            f.Battle.Services.DamageManager.ApplyDamageContext(secondary);
+            check("attack-weight damage retains the winning original roll",runtime.Trace.Count(t=>t.Receipt.EffectCommitted)==2);
+        }
+        using(var f=new Fixture())
+        {
+            var runtime=f.Battle.Abilities;var skill=f.Skill("fixture.uncommitted");var rule=AbilityRuleAuthoringTemplates.AfterDamageEvaluation("reward",AbilityDamageConditionOrigin.RollUsing,
+                new AbilityOperationData{TypeId="resource.block",Amount=1});rule.Condition=new AbilityConditionData();runtime.Register(f.Rules(skill,rule));var action=f.Action(skill);
+            var pending=new DamageContext(DamageRequest.FromAction(action,DamageType.SkillPart,false,false,false));
+            var context=new SkillEffectContext(action,skill,SkillEffectTiming.AfterDamage,null,pending,null,null,1,0,null,false,true,true);
+            runtime.Execute(skill,context,SkillEffectTiming.AfterDamage);
+            check("uncommitted damage cannot evaluate deferred card",!runtime.Trace.Any(t=>t.Receipt.EffectCommitted));
+        }
+        using(var f=new Fixture())
+        {
+            var runtime=f.Battle.Abilities;var skill=f.Skill("fixture.scheduled.disabled",ActionType.Duel);var delayed=Rule("later","resource.block",1,"self");delayed.ScheduledOnly=true;
+            var graph=f.Rules(skill,delayed);runtime.Register(graph);var action=f.Action(skill);action.SetDuelEffectsEligible(false);var frame=f.Frame(action);
+            runtime.Schedule(graph,"later",frame,BattleAbilityRuntime.Reference(f.Player));runtime.BeginTurn(2);f.Battle.TurnStartEffects.Drain();
+            check("scheduled skill rules also pass the common duel gate",!runtime.Trace.Any(t=>t.Receipt.EffectCommitted));
+        }
+        using(var f=new Fixture())
+        {
+            var registry=f.Battle.Abilities.Registry;var skill=f.Skill("fixture.authoring.damage");
+            var rule=AbilityRuleAuthoringTemplates.AfterDamageEvaluation("reward",AbilityDamageConditionOrigin.ExchangeWon,new AbilityOperationData{TypeId="resource.block",Amount=1});
+            var graph=f.Rules(skill,rule);check("post-damage template validates",registry.Validate(graph).Count==0);
+            rule.Policy.CardAuthored=true;check("internal damage is not a direct card trigger",registry.Validate(graph).Any(i=>i.Contains("INTERNAL_EVENT_IS_NOT_CARD_TRIGGER")));rule.Policy.CardAuthored=false;
+            rule.Policy.DamageConditionOrigin=AbilityDamageConditionOrigin.Unspecified;
+            check("skill internal damage needs an explicit canonical origin",registry.Validate(graph).Any(i=>i.Contains("DEFERRED_CARD_ORIGIN_REQUIRED")));
+            rule.Policy.DamageConditionOrigin=AbilityDamageConditionOrigin.ExchangeWon;rule.RequiresDuelGate=false;
+            check("deferred card authoring cannot opt out of duel gate",registry.Validate(graph).Any(i=>i.Contains("DEFERRED_CARD_REQUIRES_DUEL_GATE")));rule.RequiresDuelGate=true;
+            rule.Policy.Snapshot=AbilitySnapshotPolicy.LiveAtTrigger;
+            check("deferred card requires the committed snapshot and phase",registry.Validate(graph).Any(i=>i.Contains("INVALID_DEFERRED_CARD_DAMAGE_POLICY")));rule.Policy.Snapshot=AbilitySnapshotPolicy.AfterCommittedDamage;
+            graph.SourceKind=AbilityRuleSourceKind.Passive;
+            check("pure passive cannot pretend to be a deferred card origin",registry.Validate(graph).Any(i=>i.Contains("DEFERRED_CARD_ORIGIN_REQUIRES_SKILL_RULE")));
+        }
+    }
+
     private static AbilityRuleData Rule(string id,string op,int amount=1,string target="actual",AbilityEventKind trigger=AbilityEventKind.RollUsing)=>
         new(){RuleId=id,Trigger=trigger,TargetSelectorId=target,Operations=new[]{new AbilityOperationData{TypeId=op,Amount=amount}}};
     [MenuItem("Tools/Project Abyss/Verification/Ability Extensibility")]
@@ -82,6 +208,7 @@ public static class AbilityExtensibilityVerification
         var lines=new List<string>();int pass=0,fail=0;
         void Check(string name,bool ok){lines.Add((ok?"PASS ":"FAIL ")+name);if(ok)pass++;else fail++;}
         void Case(string name,Action body){try{body();}catch(Exception e){Check(name+" / "+e.GetBaseException().Message,false);}}
+        Case("committed damage card and passive gates",()=>VerifyCommittedDamageGates(Check));
         Case("serialized authoring assets",()=>
         {
             string folder="__AbilityVerification_"+Guid.NewGuid().ToString("N");string path="Assets/"+folder;

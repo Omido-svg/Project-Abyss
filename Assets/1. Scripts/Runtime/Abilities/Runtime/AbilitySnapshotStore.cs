@@ -19,10 +19,11 @@ namespace ProjectAbyss.Abilities
         public readonly CombatTargetRef Source, AimedTarget;
         public readonly string WeaponInstanceId;
         public readonly long SkillExecutionId,CounterExecutionId,ClashId;
+        public readonly bool DuelEffectsEligible;
         public readonly int TurnId;
         internal CapturedAbilityBoundary(BattleAbilityRuntime runtime,BattleAction action)
         {
-            SkillExecutionId=action.ActionId;CounterExecutionId=action.CounterExecution?.ExecutionId??0;ClashId=action.ClashExecutionId;TurnId=runtime.CurrentTurn;
+            DuelEffectsEligible=action.DuelEffectsEligible;SkillExecutionId=action.ActionId;CounterExecutionId=action.CounterExecution?.ExecutionId??0;ClashId=action.ClashExecutionId;TurnId=runtime.CurrentTurn;
             Source=BattleAbilityRuntime.Reference(action.Owner,action.OwnerPart,action.Slot?.SlotId);
             AimedTarget=BattleAbilityRuntime.Reference(action.DeclaredTarget,action.DeclaredTargetPart);
             var scope=action.Owner?.Mechanics?.OfType<IAbilityExecutionScopeProvider>().FirstOrDefault();

@@ -52,6 +52,7 @@ namespace ProjectAbyss.Abilities
             registry.RegisterPredicate("damage.hp_zero",d=>new CombatDamageResultCondition(DamageEvidenceTest.HpZero));
             registry.RegisterPredicate("damage.stagger_at_least",d=>new CombatDamageResultCondition(DamageEvidenceTest.StaggerAtLeast,d.Value));
             registry.RegisterPredicate("damage.opened_window",d=>new CombatDamageResultCondition(DamageEvidenceTest.OpenedWindow));
+            registry.RegisterPredicate("damage.weakened",d=>new CombatDamageResultCondition(DamageEvidenceTest.WeakenedPart));
             registry.RegisterPredicate("damage.broken",d=>new CombatDamageResultCondition(DamageEvidenceTest.BrokePart));
             registry.RegisterSelector("self",v=>new[]{new CombatTargetRef(v.Frame.Source.ActorRuntimeId,"","")});
             registry.RegisterSelector("source_part",v=>new[]{v.Frame.Source});

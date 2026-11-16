@@ -4,6 +4,7 @@ using System.Collections.Generic;
 namespace ProjectAbyss.Abilities
 {
     public enum AbilityCausePolicy { PreserveDirectParent, DerivedEvent }
+    public enum AbilityDamageConditionOrigin { Unspecified=0, RollUsing=1, ExchangeWon=2 }
     [Serializable]
     public sealed class AbilityRuleMetadata
     {
@@ -12,6 +13,7 @@ namespace ProjectAbyss.Abilities
         public CombatConditionPhase ConditionPhase=CombatConditionPhase.PreTarget;
         public AbilityCausePolicy CausePolicy=AbilityCausePolicy.PreserveDirectParent;
         public bool CardAuthored=true;
+        public AbilityDamageConditionOrigin DamageConditionOrigin;
         public bool RequiresConfiguredValue;
         public string PendingDesignReason;
 
@@ -21,13 +23,17 @@ namespace ProjectAbyss.Abilities
             if(!Enum.IsDefined(typeof(AbilitySnapshotPolicy),Snapshot) ||
                !Enum.IsDefined(typeof(AbilityOwnerScope),OwnerScope) ||
                !Enum.IsDefined(typeof(CombatConditionPhase),ConditionPhase) ||
-               !Enum.IsDefined(typeof(AbilityCausePolicy),CausePolicy))issues.Add("INVALID_RULE_POLICY");
+               !Enum.IsDefined(typeof(AbilityCausePolicy),CausePolicy) ||
+               !Enum.IsDefined(typeof(AbilityDamageConditionOrigin),DamageConditionOrigin))issues.Add("INVALID_RULE_POLICY");
             if(CardAuthored && !CanonicalEventPolicy.IsCanonicalAbilityCardTrigger(trigger))
                 issues.Add("INTERNAL_EVENT_IS_NOT_CARD_TRIGGER");
             if((Snapshot==AbilitySnapshotPolicy.AfterCommittedDamage || ConditionPhase==CombatConditionPhase.PostDamageResult) &&
                 trigger!=AbilityEventKind.DamageSettled)issues.Add("COMMITTED_DAMAGE_REQUIRED");
             if(Snapshot==AbilitySnapshotPolicy.TurnEndFinalSnapshot && trigger!=AbilityEventKind.TurnEnding)
                 issues.Add("FINAL_TURN_SNAPSHOT_REQUIRED");
+            if(DamageConditionOrigin!=AbilityDamageConditionOrigin.Unspecified &&
+               (CardAuthored || trigger!=AbilityEventKind.DamageSettled || Snapshot!=AbilitySnapshotPolicy.AfterCommittedDamage ||
+                ConditionPhase!=CombatConditionPhase.PostDamageResult))issues.Add("INVALID_DEFERRED_CARD_DAMAGE_POLICY");
             if(RequiresConfiguredValue)issues.Add("BLOCKED_BY_UNDECIDED_RULE: "+(PendingDesignReason??""));
             return issues.AsReadOnly();
         }

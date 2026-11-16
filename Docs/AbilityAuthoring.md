@@ -12,7 +12,7 @@
 
 규칙은 전투에 등록할 때 컴파일한다. 원본 SO의 조건·수치·식별자를 전투 도중 수정해도 이미 시작된 전투의 컴파일 결과는 바뀌지 않는다. 다음 전투에서 다시 로드한다. Settings SO는 `IAbilityRuleSettingsDefinition.CaptureSettings()`에서 불변 실행 설정을 반환해야 한다.
 
-일반 카드의 공식 발동 시점과 결투 게이트는 기존 정본 계약을 따른다. 내부 피해 확정·표식 발화·반격 시작/종료 등에 반응하는 패시브는 `CardAuthored=false`를 명시한다. 굴림 결과가 아직 없으면 실패 결과로 간주하지 않는다.
+일반 카드의 공식 발동 시점과 결투 게이트는 기존 정본 계약을 따른다. 내부 이벤트를 쓰는 카드 규칙도 `SourceKind=Skill` 소유권과 결투 게이트를 유지한다. 순수 패시브는 별도 `SourceKind=Passive` 정의로 바인딩하고 내부 이벤트를 저작할 때 `CardAuthored=false`를 명시한다. 이 값만 끈다고 카드 규칙이 패시브로 바뀌지 않는다. 굴림 결과가 아직 없으면 실패 결과로 간주하지 않는다.
 
 ## 실행과 판정 시점
 
@@ -77,3 +77,39 @@ OncePerTurn / SkillExecution / CounterExecution / RollUse / Battle와 FullCooldo
 ## 검증
 
 `Tools > Project Abyss > Verification`에서 `Ability Extensibility`, `Ability Interaction Contracts`, `Confirmed Combat Rules`를 실행한다. 결과는 프로젝트 `Logs`에 기록된다. 확장 검증은 실제 Skill 디스패처, 피해 서비스, 반격, 예약 큐, 독립 핸들러와 SO 저장/재로드를 사용하며 원본 콘텐츠 자산을 수정하지 않는다. 새 효과에는 실제 도메인 결과와 직접성·수명·재진입 조건을 확인하는 회귀 사례를 추가한다.
+
+
+## 피해 후 조건을 검사하는 카드 저작
+
+`SourceKind`는 규칙의 소유자, `CardAuthored`는 직접 카드 트리거의 저작 여부다. 두 값은 다른 의미다. `CardAuthored=false`로 내부 이벤트를 사용해도 `SourceKind=Skill`이면 스킬의 결투 게이트를 상속한다. 무기·캐릭터 등의 순수 패시브는 `SourceKind=Passive`인 별도 정의로 바인딩한다. 패시브는 관찰한 공격이 결투 효과 비활성 상태여도 자기 조건에 따라 반응할 수 있다.
+
+「사용시/승리시 효과지만 그 굴림의 피해 처리 후 약화·파괴 여부를 평가」하는 카드는 다음 구성을 사용한다.
+
+| 필드 | 값과 의미 |
+|---|---|
+| SourceKind | Skill: 원래 스킬에 귀속 |
+| Trigger | DamageSettled: 조건을 읽는 내부 실행 시점 |
+| Policy.CardAuthored | false: DamageSettled를 7번째 공식 카드 발동으로 추가하지 않음 |
+| Policy.DamageConditionOrigin | RollUsing(사용시) 또는 ExchangeWon(실제 교환 승리시) |
+| Policy.Snapshot | AfterCommittedDamage |
+| Policy.ConditionPhase | PostDamageResult |
+| RequiresDuelGate | true: 원래 결투 카드의 자격을 보존 |
+| Condition | 예: Any(damage.weakened, damage.broken) |
+| TargetSelectorId | 보상의 수령자. 자신에게 주려면 self |
+
+검사 대상은 실제로 피해를 받은 적의 부위이며, 보상 수령자는 별도다. 적을 약화시켰다는 조건을 자신에게 받은 피해로 검사하지 않는다. 판정 시점에 캡처한 결투 자격은 이후 관찰자가 행동 값을 바꿔도 되살아나지 않는다.
+
+RuleSet Inspector의 「피해 후 조건 판정 규칙 추가」에서 기본 구성을 생성할 수 있다. 생성 뒤 정의는 비활성 초안으로 돌아가므로 의도한 연산과 확정된 수치를 채운 후 검증한다. 코드 저작은 다음과 같다. `configuredAmount`는 기획에서 확정한 값을 전달하며, 예제가 기본 밸런스 값을 정하지 않는다.
+
+```csharp
+var reward = AbilityRuleAuthoringTemplates.AfterDamageEvaluation(
+    "weaken_or_break_reward",
+    AbilityDamageConditionOrigin.ExchangeWon,
+    new AbilityOperationData { TypeId = "resource.energy", Amount = configuredAmount });
+definition.SourceKind = AbilityRuleSourceKind.Skill;
+definition.Rules = new[] { reward };
+```
+
+템플릿 조건은 그 굴림이 적 부위를 약화시키거나 파괴했는지를 본다. 원하는 판정에 맞게 조건 트리와 보상 연산을 교체한다. `RollUsing`은 실제 사용에서 이어진 일방타격도 가능하다. `ExchangeWon`은 실제로 승리한 굴림만 인정하며 남은 일방타격을 승리로 취급하지 않는다. 같은 승리 굴림의 공격 가중치 보조 피해는 그 굴림의 승리를 유지한다. 덫·추가타·반격 등 파생 피해는 같은 RootActionId라는 이유로 원래 카드의 조건을 깨우지 않는다.
+
+선행 공식 발동을 지정하지 않은 Skill의 비예약 DamageSettled 규칙, 결투 게이트를 끈 피해 후 카드 규칙, 패시브에 카드 발동 원인을 선언한 정의, 확정 스냅샷·조건 단계를 빠뜨린 정의는 저작 검증에서 차단한다. 기존 자산에 이런 내부 카드 규칙이 있다면 원래 사용시/승리시 의미를 명시해야 한다. 순수 패시브는 DamageConditionOrigin=Unspecified를 유지한다. 예약 전용 역사적 피해 규칙은 카드의 즉시 피해 후 보상과 구분된다.
