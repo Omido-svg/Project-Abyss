@@ -266,7 +266,7 @@ public class BattleEffectResolver
             return characterResult?.Succeeded == true;
         }
 
-        if (request.TargetPart.IsBroken)
+        if (request.TargetPart.IsBroken && request.StatusEffect is not RegenerationStatus)
             return false;
 
         StatusEffectApplyResult partResult =

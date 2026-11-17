@@ -137,10 +137,9 @@ public enum RegenerationRecoveryChannel
 }
 
 /// <summary>
-/// 0922 재생 N·T.
+/// 1117 재생 N·T. 부여된 부위별로 합산하여 HP와 Stagger를 회복한다.
 /// Channel은 구 asset/생성자 호환용 metadata로만 보존한다.
-/// 실제 gameplay는 TurnEnd에서 모든 살아 있는 Regeneration N을 합산한 뒤
-/// HP와 Stagger를 각각 한 번 회복한다.
+/// 부위가 파괴돼도 항목과 남은 T는 유지하며, 회복 시 생존 부위로 대체한다.
 /// </summary>
 public sealed class RegenerationStatus : NumericTimedStatus
 {

@@ -105,8 +105,9 @@ namespace ProjectAbyss.Abilities
             public override CombatCommandReceipt Commit(AbilityRuleCommitContext c,AbilityRuleCommand command)
             {
                 var op=command.Operation;var status=StatusEffectFactory.CreateCanonical0922(Enum.Parse<StatusEffectId>(op.Key),op.Amount,op.Duration);
-                var request=c.Part==null?EffectRequest.CharacterStatus(c.Source,c.Target,status,null,-1,SkillEffectTiming.OnExecute,true):
-                    EffectRequest.BodyPartStatus(c.Source,c.Target,c.Part,status,null,-1,SkillEffectTiming.OnExecute,true);
+                var action=c.Runtime.Action(c.Frame.ActionId);
+                var request=c.Part==null?EffectRequest.CharacterStatus(c.Source,c.Target,status,action,-1,SkillEffectTiming.OnExecute,true):
+                    EffectRequest.BodyPartStatus(c.Source,c.Target,c.Part,status,action,-1,SkillEffectTiming.OnExecute,true);
                 bool applied=c.Part==null?c.Battle.EffectResolver.ApplyCharacterStatus(request):c.Battle.EffectResolver.ApplyBodyPartStatus(request);
                 return applied?Applied(op.Amount,"Status"):CombatCommandReceipt.Reject("Status rejected",CombatFailureReason.GateNotMet);
             }

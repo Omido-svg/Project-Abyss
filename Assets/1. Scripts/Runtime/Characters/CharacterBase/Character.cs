@@ -1189,6 +1189,16 @@ public abstract class Character : MonoBehaviour
 
     public void RestoreCurrentHP(int amount)
     {
+        RestoreCurrentHP(amount, null);
+    }
+
+    /// <summary>
+    /// 1117: 카드/도사림은 사용 부위, 재생은 부여된 부위를 전달한다.
+    /// 출처가 없거나 파괴됐으면 최저 체력 생존 부위를 선택한다.
+    /// 전신/부위의 회복량은 나누지 않으며 약화·파괴 상태를 해제하지 않는다.
+    /// </summary>
+    public void RestoreCurrentHP(int amount, BodyPart preferredPart)
+    {
         if (RuntimeStatus == null || amount <= 0)
             return;
 
@@ -1206,8 +1216,9 @@ public abstract class Character : MonoBehaviour
         int wholeHpBefore =
             RuntimeStatus.currentHP;
 
-        // P0 D-07 확정 규칙:
-        // 모든 체력 회복은 값을 나누지 않고 전체 HP +N 과 최저 비파괴 부위 +N에 동시에 들어간다.
+        BodyPart recoveryPart = ResolveHealingPart(preferredPart);
+
+        // 전체 체력과 선택한 부위에 동일한 보정 후 회복량을 각각 적용한다.
         RuntimeStatus.currentHP =
             Mathf.Min(
                 RuntimeStatus.currentHP + modified,
@@ -1218,7 +1229,7 @@ public abstract class Character : MonoBehaviour
                 0,
                 RuntimeStatus.currentHP - wholeHpBefore);
 
-        RestoreLowestBodyPartHpPreserveState(modified);
+        int appliedPartHp = recoveryPart?.RestoreHpPreserveState(modified) ?? 0;
 
         EmotionAugmentRuntimeHooks.NotifyHealingResolved(
             this,
@@ -1227,6 +1238,8 @@ public abstract class Character : MonoBehaviour
                 RequestedAmount = amount,
                 ModifiedAmount = modified,
                 AppliedWholeHp = appliedWholeHp,
+                TargetPart = recoveryPart,
+                AppliedPartHp = appliedPartHp,
                 OverhealAmount =
                     Mathf.Max(
                         0,
@@ -1234,10 +1247,18 @@ public abstract class Character : MonoBehaviour
             });
     }
 
-    private void RestoreLowestBodyPartHpPreserveState(int amount)
+    public BodyPart ResolveHealingPart(BodyPart preferredPart = null)
     {
-        if (amount <= 0 || BodyParts == null || BodyParts.Count == 0)
-            return;
+        if (BodyParts == null || BodyParts.Count == 0)
+            return null;
+
+        // 다른 캐릭터의 출처 부위를 대상의 회복 부위로 사용할 수 없다.
+        if (preferredPart != null && !preferredPart.IsBroken)
+        {
+            for (int i = 0; i < BodyParts.Count; i++)
+                if (BodyParts[i] == preferredPart)
+                    return preferredPart;
+        }
 
         BodyPart selected = null;
         float lowestHp = float.MaxValue;
@@ -1268,8 +1289,7 @@ public abstract class Character : MonoBehaviour
             selectedIsHead = isHead;
         }
 
-        // RestoreHpPreserveState는 Weakened를 Normal로 되돌리지 않는다.
-        selected?.RestoreHpPreserveState(amount);
+        return selected;
     }
 
     public bool SetMaxCombatHpForDebug(

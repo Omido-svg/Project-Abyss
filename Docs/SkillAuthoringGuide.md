@@ -162,3 +162,30 @@ rule.Lifetime.OncePerCounterExecution = true;
 - `Tools > Project Abyss > Verification > Skill Rule Authoring`: 이전 규칙의 모든 필드와 새 출력 비교, 고급 확장, GUID, 예약 저장·재로드, 잘못된 지정의 차단.
 - `Tools > Project Abyss > Examples > Verify Engraved Contract`: 실제 전투 디스패치, 직접성, 시작 스냅샷, 결투 게이트, 다음 턴 실행.
 - 기존 Ability Extensibility / Ability Interaction Contracts / Confirmed Combat Rules: 공통 회귀 검증.
+
+## 8. 회복과 재생의 부위 지정 (1117)
+
+자기 회복 카드·도사림·반격은 실제 사용 부위를 회복 API에 전달한다. 아이템·증강처럼 출처 부위가 없는 회복은 기존 한 인수 호출을 사용한다.
+
+```csharp
+// 카드/도사림의 자기 회복: 슬롯 부위와 전체 체력에 같은 보정 후 수치를 적용한다.
+action.Owner.RestoreCurrentHP(configuredAmount, action.OwnerPart);
+
+// 출처 부위가 없는 회복: 회복 시점의 최저 체력 생존 부위를 선택한다.
+owner.RestoreCurrentHP(configuredAmount);
+
+// 재생: 원본 행동을 넘기면, 부여 시점에 사용 부위로 귀속된다.
+battle.EffectResolver.ApplyCharacterStatus(EffectRequest.CharacterStatus(
+    action.Owner, action.Owner,
+    new RegenerationStatus(configuredTurns, configuredAmount), action));
+```
+
+`RestoreCurrentHP(amount, preferredPart)`는 전달된 부위가 수령자의 생존 부위일 때 우선한다. 없거나 파괴됐거나 다른 캐릭터의 부위이면 수령자의 최저 체력 생존 부위로 대체한다. 동점은 기존 인덱스 순으로, 머리는 마지막이다. 지정 부위가 만피라고 다른 부위에 넘겨 회복하지 않으며, 전신 체력과 부위 체력은 각자 상한까지만 회복한다. 회복으로 약화·파괴 상태를 해제하지 않는다.
+
+재생은 부여 시 부위가 고정된다. 원래 전신 상태용 AddStatus로 부여하더라도 재생은 부위 상태로 저장된다. 출처 없는 재생은 부여 당시 최저 부위를 고정하고, 매 턴 다른 부위로 옮기지 않는다. 걸린 부위가 파괴되면 항목과 남은 T를 유지하고, 이후 회복만 그때의 최저 생존 부위로 보낸다. 파괴 뒤에도 T가 감소하며 정상 만료된다. AddStatus로 등록한 객체는 RemoveStatus로 명시적으로 제거할 수 있다.
+
+같은 부위의 활성 재생 N은 합산해서 HP·흐트러짐 회복을 각각 처리하고, 서로 다른 부위의 회복 대상은 합치지 않는다. 고통·회복 보정과 도트 → 회복 → 사망 판정 순서는 기존 서비스를 따른다. 예약 재생은 아직 활성 재생이 아니며, 예약한 부위가 발동 전에 파괴되면 기존 예약 취소 규칙을 따른다.
+
+규칙 조합에서는 `AbilityEffects.AddStatus(StatusEffectId.Regeneration, amount, turns)`를 사용할 수 있다. 자기 대상의 사용/승리 규칙은 원본 행동의 사용 부위를 중앙 상태 처리기에 전달한다. 명시적으로 부위 대상을 선택한 경우 그 부위에 귀속된다. 부위가 없는 일반 몹은 전신 상태와 전신 회복 경로를 유지한다.
+
+`Tools > Project Abyss > Verification > Healing and Regeneration`에서 부위 선택·귀속·파괴·만료·도트 생존·실제 카드 경로를 검증한다. `CanonicalHealingResult.TargetPart`와 `AppliedPartHp`로 실제 수령 부위와 부위 회복량도 확인할 수 있다.

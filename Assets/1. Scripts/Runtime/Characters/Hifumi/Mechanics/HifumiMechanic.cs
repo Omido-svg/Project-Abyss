@@ -585,7 +585,7 @@ public sealed class HifumiMechanic :
                 }
 
                 ConsumeBone(100);
-                owner?.RestoreCurrentHP(70);
+                owner?.RestoreCurrentHP(70,action?.OwnerPart);
 
                 action?.Slot?.PlanningUndo?.Record(
                     () =>
@@ -1591,7 +1591,7 @@ public sealed class HifumiMechanic :
         {
             if (bloomSnapshot)
             {
-                owner.RestoreCurrentHP(350);
+                owner.RestoreCurrentHP(350,sourceAction.OwnerPart);
 
                 battleContext?.Services?.MomentumManager
                     ?.ApplySkillShift(

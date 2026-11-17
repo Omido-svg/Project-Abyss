@@ -141,9 +141,9 @@ namespace ProjectAbyss.Abilities
                     completed.Add(token);
                     AppliedCount++;
                     if(d.SkillId=="olaf.preparation.blood_oath" &&
-                       op.Operation==OlafNativeOperation.OwnerStatusImmediate)
+                       op.Operation==OlafNativeOperation.OwnerStatusImmediate && op.StatusId==StatusEffectId.Regeneration)
                         bloodOathRegen[context.Owner]=
-                            context.Owner.StatusEffects?.FirstOrDefault(
+                            (context.Owner.ResolveHealingPart(action.OwnerPart)?.StatusEffects ?? context.Owner.StatusEffects)?.LastOrDefault(
                                 x=>x is RegenerationStatus);
                 }
                 results.Add(applied?SkillEffectResult.Applied(diagnostic,timing,context):
@@ -159,8 +159,8 @@ namespace ProjectAbyss.Abilities
                (long)owner.CurrentHP*10>= (long)owner.MaxCombatHP*7)return false;
             if(!bloodOathRegen.TryGetValue(owner,out var status)||status==null)
                 return true;
-            if(owner.StatusEffects!=null &&
-               owner.StatusEffects.Contains(status) && !status.IsExpired)
+            var statuses=status.OwnerPart?.StatusEffects ?? owner.StatusEffects;
+            if(statuses!=null && statuses.Contains(status) && !status.IsExpired)
                 return false;
             bloodOathRegen.Remove(owner);
             return true;
@@ -191,7 +191,7 @@ namespace ProjectAbyss.Abilities
                     if(owner.MaxCombatHP<=0||
                         (long)owner.CurrentHP*10>=(long)owner.MaxCombatHP*7||
                         !madness.TryConsumeMadness(2))return false;
-                    owner.RestoreCurrentHP(30);
+                    owner.RestoreCurrentHP(30,action?.OwnerPart);
                     owner.AddPrestige(10);
                     return true;
                 case OlafNativeOperation.DevourStaggerHeal:
@@ -200,7 +200,7 @@ namespace ProjectAbyss.Abilities
                     var stagger=owner.GetMechanic<StaggerGaugeMechanic>();
                     if(stagger==null||stagger.CurrentGauge<20||
                         stagger.SacrificeGauge(20)!=20)return false;
-                    owner.RestoreCurrentHP(30);
+                    owner.RestoreCurrentHP(30,action?.OwnerPart);
                     return true;
                 case OlafNativeOperation.OwnerStaggerDamage:
                     var ownStagger=owner.GetMechanic<StaggerGaugeMechanic>();

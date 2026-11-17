@@ -157,7 +157,7 @@ public static class EnemyStageOneEffect
             action.Owner.BattleContext,true);
         if(target==null||target.CurrentHP*2>target.MaxCombatHP)return 0;
         int hp=target.CurrentHP;
-        target.RestoreCurrentHP(20);
+        target.RestoreCurrentHP(20,action.OwnerPart);
         return Mathf.Max(0,target.CurrentHP-hp);
     }
 

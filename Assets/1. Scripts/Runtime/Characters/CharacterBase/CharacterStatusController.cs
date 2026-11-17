@@ -159,6 +159,10 @@ public class CharacterStatusController
                 hasSourceEffectTiming);
         }
 
+        // 재생은 부여할 때 회복 부위를 고정한다. 예약도 같은 부위에 귀속시킨다.
+        if (IsRegeneration(effect))
+            part = owner.ResolveHealingPart(part ?? sourceAction?.OwnerPart);
+
         // Single HP 대상 또는 이미 파괴된 부위는 캐릭터 상태로 받는다.
         if (part == null || part.IsBroken)
         {
@@ -244,6 +248,14 @@ public class CharacterStatusController
                 hasSourceEffectTiming);
         }
 
+        if (IsRegeneration(effect))
+        {
+            BodyPart recoveryPart = owner.ResolveHealingPart(sourceAction?.OwnerPart ?? sourcePart);
+            if (recoveryPart != null)
+                return AddPartStatus(recoveryPart, effect, source, sourceAction, sourceExchangeIndex,
+                    sourceEffectTiming, hasSourceEffectTiming);
+        }
+
         effect.Initialize(owner, source, null, sourcePart);
 
         if (effect is DeferredStatusEffect deferredCharacter)
@@ -310,6 +322,13 @@ public class CharacterStatusController
         StatusEffect effect,
         StatusEffectRemoveReason reason)
     {
+        // AddStatus가 부위에 귀속시킨 재생도 원래 호출자가 같은 API로 정리할 수 있다.
+        if (effect?.Owner == owner && effect.OwnerPart != null && effect.OwnerPart.StatusEffects.Contains(effect))
+        {
+            RemovePartStatus(effect.OwnerPart, effect, reason);
+            return;
+        }
+
         if (effect == null ||
             !characterStatuses.Contains(effect))
         {
@@ -374,6 +393,9 @@ public class CharacterStatusController
             if (effect == null)
                 continue;
 
+            if (reason == StatusEffectRemoveReason.PartBroken && effect is RegenerationStatus)
+                continue;
+
             RemovePartStatus(
                 part,
                 effect,
@@ -430,7 +452,7 @@ public class CharacterStatusController
 
         foreach (StatusEffect effect in part.StatusEffects.ToArray())
         {
-            if (effect == null)
+            if (effect == null || effect is RegenerationStatus)
                 continue;
 
             RemovePartStatus(
@@ -477,8 +499,7 @@ public class CharacterStatusController
         // 1029 DMG-03: 턴 종료 정산 순서는 '도트 전부 → 회복 전부 → 사망 판정'이다.
         // 지속시간은 효과를 적용한 뒤 감소하므로, 회복 집계값은 도트 발동 전에
         // 고정해 두어야 마지막 턴의 재생도 이번 정산에 포함된다.
-        int regeneration =
-            GetActiveNumericTotal<RegenerationStatus>();
+        var regeneration = CaptureRegeneration();
 
         // Heat/Stagnation의 위세 보정 시점은 기존 계약을 유지한다.
         ApplyTurnEndPrestigeDelta();
@@ -514,22 +535,44 @@ public class CharacterStatusController
         }
     }
 
+    private readonly struct RegenerationRecovery
+    {
+        public readonly BodyPart Part;
+        public readonly int Amount;
+        public RegenerationRecovery(BodyPart part, int amount) { Part = part; Amount = amount; }
+    }
+
+    private static bool IsRegeneration(StatusEffect effect) => effect is RegenerationStatus ||
+        effect is DeferredStatusEffect deferred && deferred.DeferredStatusId == StatusEffectId.Regeneration;
+
+    private List<RegenerationRecovery> CaptureRegeneration()
+    {
+        var recoveries = new List<RegenerationRecovery>();
+        int whole = CommonStatusAlgebra.GetNumericTotal<RegenerationStatus>(characterStatuses);
+        if (whole > 0) recoveries.Add(new RegenerationRecovery(null, whole));
+        if (owner?.BodyParts != null)
+            foreach (BodyPart part in owner.BodyParts)
+            {
+                if (part == null) continue;
+                // 파괴된 부위의 활성 재생도 남은 T 동안 대체 부위를 회복한다.
+                int amount = CommonStatusAlgebra.GetNumericTotal<RegenerationStatus>(part.StatusEffects);
+                if (amount > 0) recoveries.Add(new RegenerationRecovery(part, amount));
+            }
+        return recoveries;
+    }
+
     private void ApplyTurnEndRegeneration(
-        int regeneration)
+        List<RegenerationRecovery> regeneration)
     {
         if (owner == null || owner.IsDead)
             return;
 
-        if (regeneration <= 0)
-            return;
-
-        // 0922 Regeneration: aggregate N을 만든 뒤
-        // HP +N과 Stagger +N을 각각 한 번만 적용한다.
-        owner.RestoreCurrentHP(
-            regeneration);
-
-        owner.GetMechanic<StaggerGaugeMechanic>()?
-            .Recover(regeneration);
+        foreach (var recovery in regeneration)
+        {
+            // 같은 부위의 N은 합산하고, 다른 부위의 회복 대상은 합치지 않는다.
+            owner.RestoreCurrentHP(recovery.Amount, recovery.Part);
+            owner.GetMechanic<StaggerGaugeMechanic>()?.Recover(recovery.Amount);
+        }
     }
 
     private int GetActiveNumericTotal<TStatus>()
@@ -587,7 +630,7 @@ public class CharacterStatusController
             if (owner.IsDead)
                 break;
 
-            if (part == null || part.IsBroken)
+            if (part == null)
                 continue;
 
             foreach (StatusEffect effect in part.StatusEffects.ToArray())
@@ -600,6 +643,10 @@ public class CharacterStatusController
                 {
                     continue;
                 }
+
+                // 재생의 T는 부위 파괴 뒤에도 정상적으로 감소한다. 다른 부위 상태는 정지한다.
+                if (part.IsBroken && effect is not RegenerationStatus)
+                    continue;
 
                 TickEffect(
                     effect,

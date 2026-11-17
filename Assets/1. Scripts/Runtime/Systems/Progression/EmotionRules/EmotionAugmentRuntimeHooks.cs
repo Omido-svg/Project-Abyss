@@ -273,6 +273,8 @@ public sealed class CanonicalHealingResult
     public int RequestedAmount;
     public int ModifiedAmount;
     public int AppliedWholeHp;
+    public BodyPart TargetPart;
+    public int AppliedPartHp;
     public int OverhealAmount;
 }
 
