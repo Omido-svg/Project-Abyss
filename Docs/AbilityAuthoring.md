@@ -2,6 +2,8 @@
 
 전투 규칙의 우선순위는 `전투 시스템 규칙(1112).md`다. 이 문서는 콘텐츠 수치를 정하지 않으며, 새 능력을 현재 런타임에 연결하는 방법을 설명한다.
 
+C#로 신규 스킬을 작성할 때는 [읽기 쉬운 스킬 작성 가이드](SkillAuthoringGuide.md)에서 시작한다. `SkillRules` / `AbilityConditions` / `AbilityEffects`는 아래의 상세 데이터를 만드는 작성 함수다. 기존 Inspector 저작·독립 Handler·상세 설정과 함께 사용할 수 있다. 「각인의 계약」은 이 방식으로 작성되어 있으며 같은 실행 규칙을 생성한다. Inspector에는 규칙 요약과 상세 데이터 편집이 함께 제공된다.
+
 ## 저작 경로
 
 1. Project 창에서 원본 `SkillDefinition`을 선택하고 `Assets > Project Abyss > Create Ability Rule Draft`를 실행한다.

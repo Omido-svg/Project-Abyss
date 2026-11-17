@@ -21,7 +21,7 @@ namespace ProjectAbyss.Abilities
     {
         public CombatConditionNodeKind Kind=CombatConditionNodeKind.Predicate;
         public AbilityPredicateData Predicate=new();
-        public AbilityConditionData[] Children=Array.Empty<AbilityConditionData>();
+        [SerializeReference] public AbilityConditionData[] Children=Array.Empty<AbilityConditionData>();
     }
     [Serializable]
     public sealed class AbilityOperationData
