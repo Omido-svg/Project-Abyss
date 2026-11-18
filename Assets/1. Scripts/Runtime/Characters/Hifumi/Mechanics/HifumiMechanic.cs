@@ -825,6 +825,19 @@ public sealed class HifumiMechanic :
         return lostExchanges == 0;
     }
 
+    public int EngraveVictoryProgressForVerification => EngraveProgress?.VictoryProgress ?? 0;
+    public int EngraveDefeatProgressForVerification => EngraveProgress?.DefeatProgress ?? 0;
+    public bool EngraveCompleteBlockTrackingForVerification => engraveCompleteBlockTracking;
+    public int EngraveTrackedHpDamageForVerification => engraveHpDamageTaken;
+    public int EngraveTrackedStaggerDamageForVerification => engraveStaggerDamageTaken;
+
+    public void ResetEngraveTrackingForVerification()
+    {
+        engraveCompleteBlockTracking = false;
+        engraveHpDamageTaken = 0;
+        engraveStaggerDamageTaken = 0;
+    }
+
     public bool BoldJudgmentTrackingForVerification => boldJudgmentTracking;
     public int BoldJudgmentTrackedHpDamageForVerification => boldJudgmentHpDamageTaken;
     public int BoldJudgmentTrackedStaggerDamageForVerification => boldJudgmentStaggerDamageTaken;
@@ -1055,8 +1068,9 @@ public sealed class HifumiMechanic :
             result?.DamageResult?.FinalHpDamage ??
             context.FinalHpDamage;
 
-        // §19.6 과감한 판단의 완전 차단 — 자해(대실패 자해 등 자기 자신이 출처인 피해)는
-        // 판정에 넣지 않는다(11-18 사용자). 진 교환 · 상대의 남은 일방타격 피해는 그대로 차단을 깬다.
+        // §19.1 완전 차단(과감한 판단 · 몸에 새기다 체득) — 자해(대실패 자해 등 자기 자신이
+        // 출처인 피해)는 판정에 넣지 않는다(11-18 사용자). 진 교환 · 상대의 남은 일방타격 피해는
+        // 그대로 차단을 깬다.
         bool selfInflicted =
             context.DamageType == DamageType.SelfCost ||
             context.Attacker == owner;
@@ -1064,17 +1078,23 @@ public sealed class HifumiMechanic :
         // A fully blocked exchange must also reject stagger-only damage.
         // Track effective StaggerDamage even when final HP loss is zero.
         int staggerDamage = Mathf.Max(0,context.StaggerDamageApplied);
-        if (boldJudgmentTracking && !selfInflicted)
-            boldJudgmentStaggerDamageTaken += staggerDamage;
-        if (engraveCompleteBlockTracking)
-            engraveStaggerDamageTaken += staggerDamage;
+        if (!selfInflicted)
+        {
+            if (boldJudgmentTracking)
+                boldJudgmentStaggerDamageTaken += staggerDamage;
+            if (engraveCompleteBlockTracking)
+                engraveStaggerDamageTaken += staggerDamage;
+        }
         if (finalHpDamage <= 0)
             return;
 
-        if (boldJudgmentTracking && !selfInflicted)
-            boldJudgmentHpDamageTaken += finalHpDamage;
-        if (engraveCompleteBlockTracking)
-            engraveHpDamageTaken += finalHpDamage;
+        if (!selfInflicted)
+        {
+            if (boldJudgmentTracking)
+                boldJudgmentHpDamageTaken += finalHpDamage;
+            if (engraveCompleteBlockTracking)
+                engraveHpDamageTaken += finalHpDamage;
+        }
 
         // The 1029 common catastrophe gives direct +60 Bone separately,
         // and its own SelfCost must not ALSO accrue received-hit Bone.

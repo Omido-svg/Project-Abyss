@@ -81,6 +81,14 @@ public sealed class HifumiContentVerificationModule : IGameSystemVerificationMod
             VerifyBoldJudgmentSelfDamageExcluded);
 
         yield return Runtime(
+            "phased.hifumi.h10.engrave_complete_block_self_damage",
+            "H-10",
+            "몸에 새기다 체득 완전 차단 — 자해 제외",
+            GameSystemVerificationCategory.Lifecycle,
+            "체득(4단계 · 승리 분기) 추적 중 자해(SelfCost)는 완전 차단을 깨지 않고, 적이 준 피해는 깬다 (§19.1, 11-18 사용자)",
+            VerifyEngraveCompleteBlockSelfDamageExcluded);
+
+        yield return Runtime(
             "phased.hifumi.h10.duel_governor",
             "H-10",
             "히후미 다음 턴 Duel 자기 거버너",
@@ -449,6 +457,75 @@ public sealed class HifumiContentVerificationModule : IGameSystemVerificationMod
             m.ResetBoldJudgmentTrackingForVerification();
             m.SetBoneForVerification(boneBefore);
             m.SetAdvanceBoneForVerification(advanceBefore);
+        }
+    }
+
+    private static GameSystemVerificationProbeResult VerifyEngraveCompleteBlockSelfDamageExcluded(
+        GameSystemVerificationContext context)
+    {
+        if (!Fixture(context, out GameSystemVerificationFixture f, out Hifumi hifumi, out HifumiMechanic m, out GameSystemVerificationProbeResult fail))
+            return fail;
+        if (f.DamageManager == null || f.Enemy == null)
+            return GameSystemVerificationProbeResult.Fail("DamageManager/Enemy missing");
+
+        // 몸에 새기다는 런 단위 영구 성장이라, 바꾼 진행도는 끝나면 되돌린다.
+        int stageBefore = m.EngraveStage;
+        HifumiEngraveBranch branchBefore = m.EngraveBranch;
+        int victoryBefore = m.EngraveVictoryProgressForVerification;
+        int defeatBefore = m.EngraveDefeatProgressForVerification;
+        int boneBefore = m.Bone;
+        int advanceBefore = m.AdvanceBone;
+
+        SkillDefinition definition = ScriptableObject.CreateInstance<SkillDefinition>();
+        definition.name = HifumiSkillIds.EngraveBody;
+        definition.ActionType = ActionType.Duel;
+
+        try
+        {
+            m.SetEngraveProgressForVerification(4, HifumiEngraveBranch.Victory);
+            Skill engrave = hifumi.CreateRuntimeSkillForLoadout(definition);
+            engrave.Initialize(hifumi, f.Context._battleEvent);
+            BattleAction action = new BattleAction
+            {
+                Slot = new ActionSlot
+                {
+                    ActionId = 950902,
+                    Owner = hifumi,
+                    Part = hifumi.BodyParts?.FirstOrDefault(part => part != null && !part.IsBroken),
+                    Skill = engrave,
+                    TargetCharacter = f.Enemy
+                }
+            };
+
+            f.Context._battleEvent.RaiseActionStart(action);
+            bool tracking = m.EngraveCompleteBlockTrackingForVerification;
+
+            f.DamageManager.ApplyDamageContext(DamageRequest.SelfCost(hifumi, 3));
+            int hpAfterSelf = m.EngraveTrackedHpDamageForVerification;
+            int staggerAfterSelf = m.EngraveTrackedStaggerDamageForVerification;
+
+            f.DamageManager.ApplyDamageContext(DamageRequest.Direct(f.Enemy, hifumi, 3));
+            int hpAfterEnemy = m.EngraveTrackedHpDamageForVerification;
+
+            bool ok =
+                tracking &&
+                hpAfterSelf == 0 &&
+                staggerAfterSelf == 0 &&
+                hpAfterEnemy > 0;
+
+            string actual =
+                $"Tracking={tracking}, AfterSelf HP/Stagger={hpAfterSelf}/{staggerAfterSelf}, AfterEnemy HP={hpAfterEnemy}";
+            return ok
+                ? GameSystemVerificationProbeResult.Pass(actual)
+                : GameSystemVerificationProbeResult.Fail(actual);
+        }
+        finally
+        {
+            m.ResetEngraveTrackingForVerification();
+            m.SetEngraveProgressForVerification(stageBefore, branchBefore, victoryBefore, defeatBefore);
+            m.SetBoneForVerification(boneBefore);
+            m.SetAdvanceBoneForVerification(advanceBefore);
+            UnityEngine.Object.DestroyImmediate(definition);
         }
     }
 
