@@ -3,8 +3,9 @@ using UnityEngine;
 
 /// <summary>
 /// 캐릭터 한 명과 동일 규격의 표적 한 명을 실제 BattleContext에 초기화하는
-/// 결정론적 검증 Fixture다. 실제 Scene BattleManager 없이도 동일 DamageManager와
-/// BattleEffectResolver를 사용한다.
+/// 결정론적 검증 Fixture다. 실제 Scene BattleManager 없이, Production
+/// BattleRuntimeFactory로 Manager · Ability 라우팅 서비스 graph를 그대로 조립한다
+/// (11-18: 최소 구성(Momentum · Damage만)이면 native 라우팅 스킬이 실행 불가였다).
 /// </summary>
 public sealed class CharacterVerificationFixture :
     IDisposable
@@ -12,6 +13,10 @@ public sealed class CharacterVerificationFixture :
     private GameObject sandboxRoot;
     private GameObject characterClone;
     private GameObject targetClone;
+    private GameSystemVerificationCoroutineHost coroutineOwner;
+    private BattleLifecycleGuard lifecycleGuard;
+
+    public BattleRuntimeComposition Runtime { get; private set; }
 
     public Character Character { get; private set; }
     public Character TargetCharacter { get; private set; }
@@ -85,25 +90,24 @@ public sealed class CharacterVerificationFixture :
         BattleContext.Enemies.Add(
             TargetCharacter);
 
-        MomentumManager verificationMomentum =
-            new MomentumManager(
-                BattleContext);
-
-        DamageManager verificationDamage =
-            new DamageManager(
-                BattleContext,
-                verificationMomentum);
-
-        BattleContext.Services =
-            new BattleRuntimeServices
-            {
-                MomentumManager = verificationMomentum,
-                DamageManager = verificationDamage
-            };
-
         BattleContext.EffectResolver =
             new BattleEffectResolver(
                 BattleContext);
+
+        coroutineOwner =
+            sandboxRoot.AddComponent<GameSystemVerificationCoroutineHost>();
+
+        lifecycleGuard =
+            new BattleLifecycleGuard();
+
+        // GameSystemVerificationFixture와 같은 Production Composition Root.
+        Runtime =
+            BattleRuntimeFactory.Create(
+                BattleContext,
+                coroutineOwner,
+                null,
+                lifecycleGuard,
+                exception => Debug.LogException(exception));
 
         Character.Initialize(
             BattleContext);
@@ -117,6 +121,8 @@ public sealed class CharacterVerificationFixture :
             throw new InvalidOperationException(
                 "격리된 Owner/Target Character.Initialize가 실패했습니다.");
         }
+
+        lifecycleGuard.MarkReady();
     }
 
     private GameObject CreateClone(
@@ -186,6 +192,11 @@ public sealed class CharacterVerificationFixture :
         {
             Debug.LogException(exception);
         }
+
+        lifecycleGuard?.Dispose();
+        lifecycleGuard = null;
+        Runtime = null;
+        coroutineOwner = null;
 
         Character = null;
         TargetCharacter = null;
