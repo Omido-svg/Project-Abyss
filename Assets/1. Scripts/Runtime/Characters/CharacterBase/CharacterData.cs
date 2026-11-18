@@ -62,6 +62,8 @@ public class CharacterData : ScriptableObject
 
     public YujinMarkRuleSettings YujinMarkRules = new();
 
+    public HifumiCardRuleSettings HifumiCardRules = new();
+
     [Header("Initial Custom Resources")]
     public List<CombatResourceDefinition> InitialResources = new();
 

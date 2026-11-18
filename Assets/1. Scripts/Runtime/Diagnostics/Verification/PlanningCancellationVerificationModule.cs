@@ -23,10 +23,10 @@ public sealed class PlanningCancellationVerificationModule :
         yield return new GameSystemVerificationCase(
             "planning.cancel.preparation_reselectable",
             "C-03",
-            "도사림 즉시 실행 후 취소·재선택 가능",
+            "도사림 배치 후 취소·재선택 가능 (§8)",
             GameSystemVerificationCategory.Planning,
             GameSystemVerificationExecutionMode.IsolatedRuntime,
-            "Preparation commit -> Cancel -> Energy/Usage 복원 -> 동일 도사림 재선택 가능",
+            "Preparation commit(즉시만 Usage+1) -> Cancel -> Energy/Usage 복원 -> 동일 도사림 재선택 가능",
             VerifyPreparationCancelAndReselect);
     }
 
@@ -240,17 +240,26 @@ public sealed class PlanningCancellationVerificationModule :
 
         // first.Slot은 Cancel 과정에서 PlanningEffectCommitted=false로 되므로
         // commit 여부는 usage/energy 변화로 검증한다.
+        // §8: 즉시 도사림만 계획 단계에서 실행돼 사용 횟수가 오른다.
+        // 해결 도사림은 해결 단계에서 발동하므로 계획 단계 사용 횟수는 그대로다.
+        bool immediate =
+            PreparationActivationPolicy.IsImmediate(skill);
+
+        int expectedUsageAfterCommit =
+            usageBefore + (immediate ? 1 : 0);
+
         bool pass =
             cancelled &&
             energyAfterCommit ==
                 energyBefore - skill.EnergyCost &&
             energyAfterCancel == energyBefore &&
-            usageAfterCommit == usageBefore + 1 &&
+            usageAfterCommit == expectedUsageAfterCommit &&
             usageAfterCancel == usageBefore &&
             reselected;
 
         string actual =
-            $"Skill={skill.SkillName}, Cancelled={cancelled}, Reselect={reselected}, " +
+            $"Skill={skill.SkillName}, Timing={(immediate ? "Immediate" : "Resolution")}, " +
+            $"Cancelled={cancelled}, Reselect={reselected}, " +
             $"Energy={energyBefore}->{energyAfterCommit}->{energyAfterCancel}, " +
             $"Usage={usageBefore}->{usageAfterCommit}->{usageAfterCancel}";
 

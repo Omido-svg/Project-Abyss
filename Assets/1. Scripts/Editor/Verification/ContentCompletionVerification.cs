@@ -118,7 +118,7 @@ public static class ContentCompletionVerification
         T(15, "스킬 강화", E(EvidenceKind.Olaf, EvidenceKind.PhaseE), R("C-36","C-37","C-38")),
         T(16, "아이템 · 런 경제", E(EvidenceKind.Olaf, EvidenceKind.PhaseE), R("C-33","C-39")),
         T(17, "올라프", E(EvidenceKind.Olaf, EvidenceKind.PhaseE), R("O-01","O-03","O-04","O-05","O-02")),
-        T(18, "유진", E(EvidenceKind.Yujin, EvidenceKind.PhaseE), R("Y-01","Y-02","Y-03","Y-05","Y-07","Y-06")),
+        T(18, "유진", E(EvidenceKind.Yujin, EvidenceKind.PhaseE), R("Y-01","Y-02","Y-03","Y-05","Y-07","Y-06","Y-08")),
         T(19, "히후미", E(EvidenceKind.Hifumi, EvidenceKind.PhaseE), R("H-01","H-02","H-03","H-05","H-06","H-07","H-09","H-10","H-08","C-21"))
     };
 
@@ -225,7 +225,7 @@ public static class ContentCompletionVerification
             R("O-01","O-03","O-04","O-05","O-02"), null,
             "광기/출혈/공포/파괴/블로토/룰브레이커 + 0916 전체 풀"));
         report.Results.Add(Gate("G-14", "Yujin", E(EvidenceKind.Yujin, EvidenceKind.PhaseE), evidence,
-            R("Y-01","Y-02","Y-03","Y-05","Y-07","Y-06"), null,
+            R("Y-01","Y-02","Y-03","Y-05","Y-07","Y-06","Y-08"), null,
             "무기/표식/환형/살수의 감/지연 K·L + 0916 전체 풀"));
         report.Results.Add(Gate("G-15", "Hifumi", E(EvidenceKind.Hifumi, EvidenceKind.PhaseE), evidence,
             R("H-01","H-02","H-03","H-05","H-06","H-07","H-09","H-10","H-08"), null,

@@ -44,7 +44,7 @@ public sealed class OlafContentVerificationModule : IGameSystemVerificationModul
             "O-04",
             "ShowOff → 블로토",
             GameSystemVerificationCategory.Status,
-            "강한 도사림/빛1, 최저 정상 부위 약화(동점 팔→다리→머리), 광기+1, 적 공포 3턴",
+            "강한 도사림/빛1, 최저 정상 부위 약화(동점 팔→다리→머리), 광기+2, 적 공포 3턴 (§17.4)",
             VerifyBloto);
 
         yield return Static(
@@ -60,7 +60,7 @@ public sealed class OlafContentVerificationModule : IGameSystemVerificationModul
             "O-05",
             "올라프 룰브레이커 런타임",
             GameSystemVerificationCategory.Planning,
-            "가변비용 최소1, 출혈 10+ 약화선행 면제, 현재 짓눌림 +6, 결투 매칭 강제교체, 공격슬롯 무한속도",
+            "가변비용 최소1, 출혈 10+ 약화선행 면제, 현재 짓눌림 +6, 결투 매칭 강제교체, 공격슬롯 속도 = 보정 후 최댓값(§17.4 최후의 저항)",
             VerifyRulebreakerRuntime);
 
         yield return Runtime(
@@ -363,7 +363,8 @@ public sealed class OlafContentVerificationModule : IGameSystemVerificationModul
             !right.IsWeakened &&
             !legs.IsWeakened &&
             !head.IsWeakened &&
-            olaf.MadnessMechanic.CurrentMadness == 1 &&
+            // §17.4 블로토 = 광기 2 획득.
+            olaf.MadnessMechanic.CurrentMadness == 2 &&
             fear != null &&
             fear.Stack == 1 &&
             fear.Duration == 3;
@@ -556,9 +557,14 @@ public sealed class OlafContentVerificationModule : IGameSystemVerificationModul
                 }
             };
             mechanic.Execute(infiniteAction);
+            // §17.4 최후의 저항: 속도 무한이 아니라 각 공격 슬롯의 보정 적용 후 속도 최댓값으로 덮어쓴다.
+            int expectedMaxSpeed =
+                f.SpeedManager != null
+                    ? f.SpeedManager.GetAdjustedMaximumSpeed(olaf, attackSlot.Part)
+                    : int.MinValue;
             bool infiniteSpeed =
                 mechanic.HasInfiniteAttackSpeedThisTurn &&
-                attackSlot.Speed == OlafRulebreakerMechanic.InfiniteAttackSpeed;
+                attackSlot.Speed == expectedMaxSpeed;
 
             bool costs = cost0 == 4 && cost1 == 3 && cost2 == 2 && cost3 == 1 && cost4 == 1;
             bool ok = costs && conditionalBreak && currentBandPower && mirrored && oneSidedSuppressed && infiniteSpeed;

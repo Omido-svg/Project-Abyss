@@ -82,7 +82,7 @@ public static class CanonicalGameSystemVerificationSpec
     public static readonly IReadOnlyList<string> PhaseDYujinRequirements =
         new[]
         {
-            "Y-01", "Y-02", "Y-03", "Y-05", "Y-07"
+            "Y-01", "Y-02", "Y-03", "Y-05", "Y-07", "Y-08"
         };
 
     public static readonly IReadOnlyList<string> PhaseDHifumiRequirements =

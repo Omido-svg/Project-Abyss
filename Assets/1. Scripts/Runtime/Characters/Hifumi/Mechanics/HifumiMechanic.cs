@@ -131,7 +131,7 @@ public sealed class HifumiMechanic :
 
     private bool pokerFaceActive;
     private bool engraveBoneActive;
-    private bool nextTurnSpeedPenalty;
+    private bool? lastBoldJudgmentPaid;
     private bool boldJudgmentTracking;
     private int boldJudgmentHpDamageTaken;
     private int boldJudgmentStaggerDamageTaken;
@@ -250,7 +250,11 @@ public sealed class HifumiMechanic :
 
     public bool GovernorQueued => governorQueued;
     public int ActiveGovernorPenalty => governorActivePenalty;
-    public bool NextTurnSpeedPenaltyQueued => nextTurnSpeedPenalty;
+    /// <summary>마지막 과감한 판단의 사용시 뼈 지불 결과. null = 이번 전투에 아직 안 씀.</summary>
+    public bool? LastBoldJudgmentPaid => lastBoldJudgmentPaid;
+
+    public HifumiCardRuleSettings CardRules => owner?.Data?.HifumiCardRules ?? unconfiguredCardRules;
+    private readonly HifumiCardRuleSettings unconfiguredCardRules = new();
 
     public string GaugeLabel => "뼈";
     public float GaugeNormalized => (float)bone / MaxBone;
@@ -311,7 +315,7 @@ public sealed class HifumiMechanic :
         localEngraveProgress.Reset();
         pokerFaceActive = false;
         engraveBoneActive = false;
-        nextTurnSpeedPenalty = false;
+        lastBoldJudgmentPaid = null;
         boldJudgmentTracking = false;
         boldJudgmentHpDamageTaken = 0;
         boldJudgmentStaggerDamageTaken = 0;
@@ -821,6 +825,17 @@ public sealed class HifumiMechanic :
         return lostExchanges == 0;
     }
 
+    public bool BoldJudgmentTrackingForVerification => boldJudgmentTracking;
+    public int BoldJudgmentTrackedHpDamageForVerification => boldJudgmentHpDamageTaken;
+    public int BoldJudgmentTrackedStaggerDamageForVerification => boldJudgmentStaggerDamageTaken;
+
+    public void ResetBoldJudgmentTrackingForVerification()
+    {
+        boldJudgmentTracking = false;
+        boldJudgmentHpDamageTaken = 0;
+        boldJudgmentStaggerDamageTaken = 0;
+    }
+
     public bool ApplyBoldJudgmentCompleteBlockForVerification(
         int hpDamageTaken,
         int staggerDamageTaken)
@@ -936,14 +951,6 @@ public sealed class HifumiMechanic :
         recklessBetIncomingDamagePenaltyQueued = 0;
 
         ActivateQueuedGovernor();
-
-        if (nextTurnSpeedPenalty)
-        {
-            owner.AddStatus(
-                new HifumiSpeedPenaltyStatus(),
-                owner);
-            nextTurnSpeedPenalty = false;
-        }
     }
 
     private void ActivateQueuedGovernor()
@@ -1005,11 +1012,21 @@ public sealed class HifumiMechanic :
     {
         if (id == HifumiSkillIds.BoldJudgment)
         {
-            if (!ConsumeBone(40))
-                AddBone(20);
+            // §19.6 사용시 — 뼈 지불 시도(가불 우선). 성공 = 페널티 없음 /
+            // 실패 = 아무것도 내지 않고 다음 턴 속박 N 1턴 예약. 카드 사용은 그대로 진행한다.
+            HifumiCardRuleSettings rules = CardRules;
+            bool paid = ConsumeBone(rules.BoldJudgmentBoneCost);
+            lastBoldJudgmentPaid = paid;
 
-            // 0916: both branches schedule next-turn speed -1.
-            nextTurnSpeedPenalty = true;
+            if (!paid && rules.BoldJudgmentBindOnFail > 0 && owner != null)
+            {
+                owner.AddStatus(
+                    new DeferredStatusEffect(
+                        StatusEffectId.Bind,
+                        rules.BoldJudgmentBindOnFail,
+                        1),
+                    owner);
+            }
         }
         else if (id == HifumiSkillIds.RecklessBet)
         {
@@ -1038,17 +1055,23 @@ public sealed class HifumiMechanic :
             result?.DamageResult?.FinalHpDamage ??
             context.FinalHpDamage;
 
+        // §19.6 과감한 판단의 완전 차단 — 자해(대실패 자해 등 자기 자신이 출처인 피해)는
+        // 판정에 넣지 않는다(11-18 사용자). 진 교환 · 상대의 남은 일방타격 피해는 그대로 차단을 깬다.
+        bool selfInflicted =
+            context.DamageType == DamageType.SelfCost ||
+            context.Attacker == owner;
+
         // A fully blocked exchange must also reject stagger-only damage.
         // Track effective StaggerDamage even when final HP loss is zero.
         int staggerDamage = Mathf.Max(0,context.StaggerDamageApplied);
-        if (boldJudgmentTracking)
+        if (boldJudgmentTracking && !selfInflicted)
             boldJudgmentStaggerDamageTaken += staggerDamage;
         if (engraveCompleteBlockTracking)
             engraveStaggerDamageTaken += staggerDamage;
         if (finalHpDamage <= 0)
             return;
 
-        if (boldJudgmentTracking)
+        if (boldJudgmentTracking && !selfInflicted)
             boldJudgmentHpDamageTaken += finalHpDamage;
         if (engraveCompleteBlockTracking)
             engraveHpDamageTaken += finalHpDamage;
@@ -1371,7 +1394,8 @@ public sealed class HifumiMechanic :
         if (hpDamageTaken > 0 || staggerDamageTaken > 0)
             return false;
 
-        AddBone(50);
+        // §19.6 합 종료시 — 완전 차단이면 지불 성공 · 실패와 무관하게 가불 획득.
+        AddAdvanceBone(CardRules.BoldJudgmentCompleteBlockAdvance);
         return true;
     }
 

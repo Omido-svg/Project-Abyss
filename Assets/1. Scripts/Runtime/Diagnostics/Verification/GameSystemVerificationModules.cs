@@ -13,8 +13,8 @@ public sealed class CanonicalContractVerificationModule : IGameSystemVerificatio
         yield return Static(
             "system.contract.timing.authoring_five",
             "C-42",
-            "Skill Timing Authoring 5종",
-            "OnExecute / OnDuelMatched / OnExchangeWin / OnExchangeLose / OnClashEnd",
+            "Skill Timing Authoring 6종 (§3.4)",
+            "OnAttackResolutionStarting / OnExecute / OnExchangeWin / OnExchangeLose / OnClashEnd / OnPreparationActivated (매칭시 없음)",
             VerifyTimingContract);
 
         yield return Static(
@@ -106,13 +106,16 @@ public sealed class CanonicalContractVerificationModule : IGameSystemVerificatio
     private static GameSystemVerificationProbeResult VerifyTimingContract(
         GameSystemVerificationContext _)
     {
+        // §3.4: 전투 시작시 · 사용시 · 승리시 · 패배시 · 합 종료시 · 도사림 발동시.
+        // 매칭시(OnDuelMatched)는 폐기 — 결투 성립은 §3.3 공통 게이트로만 처리한다.
         SkillEffectTiming[] expected =
         {
+            SkillEffectTiming.OnAttackResolutionStarting,
             SkillEffectTiming.OnExecute,
-            SkillEffectTiming.OnDuelMatched,
             SkillEffectTiming.OnExchangeWin,
             SkillEffectTiming.OnExchangeLose,
-            SkillEffectTiming.OnClashEnd
+            SkillEffectTiming.OnClashEnd,
+            SkillEffectTiming.OnPreparationActivated
         };
 
         IReadOnlyList<SkillEffectTiming> actual =
@@ -408,9 +411,9 @@ public sealed class PhaseARuntimeVerificationModule : IGameSystemVerificationMod
         yield return Runtime(
             "system.runtime.planning.preparation_immediate_commit",
             "C-03",
-            "도사림 계획 즉시 Commit",
+            "도사림 계획 Commit — 즉시 / 해결 (§8)",
             GameSystemVerificationCategory.Planning,
-            "성공 즉시 ResourceCostCommitted + PlanningEffectCommitted + SkipResolution",
+            "비용은 계획 시 차감. 즉시 도사림 = PlanningEffectCommitted + SkipResolution / 해결 도사림 = 둘 다 false(해결 단계에서 발동)",
             VerifyPreparationImmediateCommit,
             false);
 
@@ -644,16 +647,20 @@ public sealed class PhaseARuntimeVerificationModule : IGameSystemVerificationMod
                     TargetRule = TargetSelectionRule.LivingPartOnly
                 });
 
+        // §8: 빛을 주는 도사림 · 환형만 즉시, 나머지는 해결 단계 첫 합 전에 발동한다.
+        bool immediate = PreparationActivationPolicy.IsImmediate(skill);
+
         bool pass =
             result.Success &&
             result.Slot != null &&
             result.Slot.ResourceCostCommitted &&
-            result.Slot.PlanningEffectCommitted &&
-            result.Slot.SkipResolution &&
+            result.Slot.PlanningEffectCommitted == immediate &&
+            result.Slot.SkipResolution == immediate &&
             fixture.Player.CurrentEnergy ==
                 beforeEnergy - skill.EnergyCost;
 
         string actual =
+            $"Skill={skill.SkillName}, Timing={(immediate ? "Immediate" : "Resolution")}, " +
             $"Success={result.Success}, Cost={result.Slot?.ResourceCostCommitted}, " +
             $"Effect={result.Slot?.PlanningEffectCommitted}, Skip={result.Slot?.SkipResolution}, " +
             $"Energy={beforeEnergy}->{fixture.Player.CurrentEnergy}";

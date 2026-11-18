@@ -322,16 +322,21 @@ public sealed class HifumiCharacterVerificationCaseProvider :
         if (mechanic == null)
             return context.Fail("HifumiMechanic 존재", "NULL");
 
+        // §19.6 과감한 판단 — 지불 성공이면 C 소비, 실패면 아무것도 내지 않는다.
+        int boldCost = mechanic.CardRules.BoldJudgmentBoneCost;
+        mechanic.SetAdvanceBoneForVerification(0);
         mechanic.SetBoneForVerification(100);
         mechanic.ApplyActionStartCostForVerification(
             HifumiSkillIds.BoldJudgment);
         int boldPaid = mechanic.Bone;
-        bool speedQueued = mechanic.NextTurnSpeedPenaltyQueued;
+        bool boldPaidFlag = mechanic.LastBoldJudgmentPaid == true;
 
-        mechanic.SetBoneForVerification(20);
+        int boldShortStart = UnityEngine.Mathf.Max(0, boldCost - 1);
+        mechanic.SetBoneForVerification(boldShortStart);
         mechanic.ApplyActionStartCostForVerification(
             HifumiSkillIds.BoldJudgment);
         int boldShort = mechanic.Bone;
+        bool boldShortFlag = boldCost == 0 || mechanic.LastBoldJudgmentPaid == false;
 
         mechanic.SetBoneForVerification(80);
         mechanic.ApplyActionStartCostForVerification(
@@ -344,18 +349,19 @@ public sealed class HifumiCharacterVerificationCaseProvider :
         int recklessShort = mechanic.Bone;
 
         bool valid =
-            boldPaid == 60 &&
-            boldShort == 40 &&
-            speedQueued &&
+            boldPaid == 100 - boldCost &&
+            boldPaidFlag &&
+            boldShort == boldShortStart &&
+            boldShortFlag &&
             recklessPaid == 40 &&
             recklessShort == 160;
 
         return valid
             ? context.Pass(
-                "과감 100→60 / 부족20→40 / 무모80→40 / 부족60→160",
+                $"과감 100→{100 - boldCost} / 부족{boldShortStart}→{boldShortStart} / 무모80→40 / 부족60→160",
                 $"{boldPaid}/{boldShort}/{recklessPaid}/{recklessShort}")
             : context.Fail(
-                "과감 100→60 / 부족20→40 / 무모80→40 / 부족60→160",
+                $"과감 100→{100 - boldCost} / 부족{boldShortStart}→{boldShortStart} / 무모80→40 / 부족60→160",
                 $"{boldPaid}/{boldShort}/{recklessPaid}/{recklessShort}");
     }
 

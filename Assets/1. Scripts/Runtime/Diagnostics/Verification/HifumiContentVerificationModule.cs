@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 using UnityEngine;
 
@@ -68,8 +69,16 @@ public sealed class HifumiContentVerificationModule : IGameSystemVerificationMod
             "H-09",
             "과감한 판단 사용시 + 합종료시",
             GameSystemVerificationCategory.Lifecycle,
-            "사용시 뼈40 소비(부족시+20)+다음턴 속도-1; 합 종료 lost=0일 때만 뼈+50",
+            "사용시 뼈 C 지불 시도(가불 우선) — 성공=페널티 없음 / 실패=아무것도 안 내고 다음 턴 속박 N 1턴; 합 종료시 완전 차단이면 가불 A (§19.6)",
             VerifyBoldJudgment);
+
+        yield return Runtime(
+            "phased.hifumi.h09.bold_judgment_self_damage",
+            "H-09",
+            "과감한 판단 완전 차단 — 자해 제외",
+            GameSystemVerificationCategory.Lifecycle,
+            "추적 중 자해(SelfCost)는 완전 차단을 깨지 않고, 적이 준 피해는 깬다 (§19.6, 11-18 사용자)",
+            VerifyBoldJudgmentSelfDamageExcluded);
 
         yield return Runtime(
             "phased.hifumi.h10.duel_governor",
@@ -296,26 +305,151 @@ public sealed class HifumiContentVerificationModule : IGameSystemVerificationMod
     private static GameSystemVerificationProbeResult VerifyBoldJudgment(
         GameSystemVerificationContext context)
     {
-        if (!Fixture(context, out _, out _, out HifumiMechanic m, out GameSystemVerificationProbeResult fail))
+        if (!Fixture(context, out _, out Hifumi hifumi, out HifumiMechanic m, out GameSystemVerificationProbeResult fail))
             return fail;
 
+        HifumiCardRuleSettings rules = m.CardRules;
+        int cost = rules.BoldJudgmentBoneCost;
+        int bind = rules.BoldJudgmentBindOnFail;
+        int advance = rules.BoldJudgmentCompleteBlockAdvance;
+
+        int CountDeferredBinds() =>
+            hifumi.StatusEffects.Count(effect =>
+                effect is DeferredStatusEffect deferred &&
+                deferred.DeferredStatusId == StatusEffectId.Bind);
+
+        void ClearDeferredBinds()
+        {
+            foreach (StatusEffect effect in hifumi.StatusEffects
+                         .Where(effect =>
+                             effect is DeferredStatusEffect deferred &&
+                             deferred.DeferredStatusId == StatusEffectId.Bind)
+                         .ToList())
+            {
+                hifumi.RemoveStatus(effect, StatusEffectRemoveReason.Manual);
+            }
+        }
+
+        ClearDeferredBinds();
+
+        // ① 실제 뼈로 지불 성공 — 페널티 없음.
+        m.SetAdvanceBoneForVerification(0);
         m.SetBoneForVerification(100);
         m.ApplyActionStartCostForVerification(HifumiSkillIds.BoldJudgment);
-        bool paid = m.Bone == 60 && m.NextTurnSpeedPenaltyQueued;
+        bool paid =
+            m.LastBoldJudgmentPaid == true &&
+            m.Bone == 100 - cost &&
+            CountDeferredBinds() == 0;
 
-        m.SetBoneForVerification(20);
-        m.ApplyActionStartCostForVerification(HifumiSkillIds.BoldJudgment);
-        bool shortfall = m.Bone == 40 && m.NextTurnSpeedPenaltyQueued;
-
+        // ② 가불부터 낸다 — 가불 절반 + 실제 뼈로 나머지.
+        int halfAdvance = cost / 2;
+        m.SetAdvanceBoneForVerification(halfAdvance);
         m.SetBoneForVerification(100);
-        bool noReward = !m.ApplyBoldJudgmentClashEndForVerification(1) && m.Bone == 100;
-        bool reward = m.ApplyBoldJudgmentClashEndForVerification(0) && m.Bone == 150;
+        m.ApplyActionStartCostForVerification(HifumiSkillIds.BoldJudgment);
+        bool advanceFirst =
+            m.LastBoldJudgmentPaid == true &&
+            m.AdvanceBone == 0 &&
+            m.Bone == 100 - (cost - halfAdvance) &&
+            CountDeferredBinds() == 0;
 
-        bool ok = paid && shortfall && noReward && reward;
+        // ③ 모자라면 실패 — 아무것도 내지 않고 다음 턴 속박 N 1턴 예약.
+        bool shortfall = true;
+        if (cost > 0)
+        {
+            m.SetAdvanceBoneForVerification(0);
+            m.SetBoneForVerification(cost - 1);
+            m.ApplyActionStartCostForVerification(HifumiSkillIds.BoldJudgment);
+            DeferredStatusEffect queued = hifumi.StatusEffects
+                .OfType<DeferredStatusEffect>()
+                .FirstOrDefault(d => d.DeferredStatusId == StatusEffectId.Bind);
+            shortfall =
+                m.LastBoldJudgmentPaid == false &&
+                m.Bone == cost - 1 &&
+                (bind <= 0
+                    ? queued == null
+                    : queued != null && CountDeferredBinds() == 1 && queued.Stack == bind);
+        }
+        ClearDeferredBinds();
+
+        // ④ 합 종료시 — 완전 차단이면 가불 A(실제 뼈는 그대로), 아니면 보상 없음.
+        m.SetAdvanceBoneForVerification(0);
+        m.SetBoneForVerification(100);
+        bool noReward =
+            !m.ApplyBoldJudgmentCompleteBlockForVerification(1, 0) &&
+            !m.ApplyBoldJudgmentCompleteBlockForVerification(0, 1) &&
+            m.AdvanceBone == 0 && m.Bone == 100;
+        bool reward =
+            m.ApplyBoldJudgmentCompleteBlockForVerification(0, 0) &&
+            m.AdvanceBone == advance && m.Bone == 100;
+
+        m.SetAdvanceBoneForVerification(0);
+
+        bool ok = paid && advanceFirst && shortfall && noReward && reward;
+        string actual =
+            $"C={cost}/N={bind}/A={advance}; Paid={paid}, AdvanceFirst={advanceFirst}, " +
+            $"Short={shortfall}, NoReward={noReward}, Reward={reward}";
         return ok
-            ? GameSystemVerificationProbeResult.Pass("OnUse cost/fallback + speed queue; OnClashEnd perfect block +50 exactly")
-            : GameSystemVerificationProbeResult.Fail(
-                $"Paid={paid}, Short={shortfall}, NoReward={noReward}, Reward={reward}, Bone={m.Bone}");
+            ? GameSystemVerificationProbeResult.Pass(actual)
+            : GameSystemVerificationProbeResult.Fail(actual);
+    }
+
+    private static GameSystemVerificationProbeResult VerifyBoldJudgmentSelfDamageExcluded(
+        GameSystemVerificationContext context)
+    {
+        if (!Fixture(context, out GameSystemVerificationFixture f, out Hifumi hifumi, out HifumiMechanic m, out GameSystemVerificationProbeResult fail))
+            return fail;
+
+        Skill bold = hifumi.RuntimeSkills?.FirstOrDefault(skill =>
+            skill?.Definition?.SkillId == HifumiSkillIds.BoldJudgment);
+        if (bold == null)
+            return GameSystemVerificationProbeResult.Fail("과감한 판단 RuntimeSkill이 로드아웃에 없습니다.");
+        if (f.DamageManager == null || f.Enemy == null)
+            return GameSystemVerificationProbeResult.Fail("DamageManager/Enemy missing");
+
+        int boneBefore = m.Bone;
+        int advanceBefore = m.AdvanceBone;
+        BattleAction action = new BattleAction
+        {
+            Slot = new ActionSlot
+            {
+                ActionId = 950901,
+                Owner = hifumi,
+                Part = hifumi.BodyParts?.FirstOrDefault(part => part != null && !part.IsBroken),
+                Skill = bold,
+                TargetCharacter = f.Enemy
+            }
+        };
+
+        try
+        {
+            f.Context._battleEvent.RaiseActionStart(action);
+            bool tracking = m.BoldJudgmentTrackingForVerification;
+
+            f.DamageManager.ApplyDamageContext(DamageRequest.SelfCost(hifumi, 3));
+            int hpAfterSelf = m.BoldJudgmentTrackedHpDamageForVerification;
+            int staggerAfterSelf = m.BoldJudgmentTrackedStaggerDamageForVerification;
+
+            f.DamageManager.ApplyDamageContext(DamageRequest.Direct(f.Enemy, hifumi, 3));
+            int hpAfterEnemy = m.BoldJudgmentTrackedHpDamageForVerification;
+
+            bool ok =
+                tracking &&
+                hpAfterSelf == 0 &&
+                staggerAfterSelf == 0 &&
+                hpAfterEnemy > 0;
+
+            string actual =
+                $"Tracking={tracking}, AfterSelf HP/Stagger={hpAfterSelf}/{staggerAfterSelf}, AfterEnemy HP={hpAfterEnemy}";
+            return ok
+                ? GameSystemVerificationProbeResult.Pass(actual)
+                : GameSystemVerificationProbeResult.Fail(actual);
+        }
+        finally
+        {
+            m.ResetBoldJudgmentTrackingForVerification();
+            m.SetBoneForVerification(boneBefore);
+            m.SetAdvanceBoneForVerification(advanceBefore);
+        }
     }
 
     private static GameSystemVerificationProbeResult VerifyGovernor(

@@ -45,7 +45,7 @@ public sealed class YujinContentVerificationModule : IGameSystemVerificationModu
             "Y-03",
             "표식 44 발화 Profile",
             GameSystemVerificationCategory.Momentum,
-            "표식44 소비, 백우 바 +50; 적설 봉인1; 낙일 즉시약화 profile",
+            "표식44 즉시 발화·소비, 백우 발화는 기세 바를 밀지 않음(흐트러짐 피해 — §18.1); 적설 봉인 profile",
             VerifyMarkIgnition);
 
         yield return Runtime(
@@ -77,8 +77,81 @@ public sealed class YujinContentVerificationModule : IGameSystemVerificationModu
             "Y-07",
             "표식 발화 K/L rider 통합",
             GameSystemVerificationCategory.Momentum,
-            "같은 anchor의 덫+시한이 발화에 함께 소비되고 시한 배율이 발화효과에 적용",
+            "덫 수치 미정이면 설치 안 됨(효과 없음) / 설정되면 같은 부위의 폭발·공명 덫이 발화에 함께 소비, 발화는 바를 밀지 않음 (§18.4)",
             VerifyMarkRiderIntegration);
+
+        yield return Runtime(
+            "phased.yujin.y08.weapon_carry_over",
+            "Y-08",
+            "전투 종료 무기 → 다음 전투 시작 무기",
+            GameSystemVerificationCategory.Lifecycle,
+            "전투가 끝날 때 든 무기를 RunProgression에 저장 → 다음 전투가 그 무기로 시작, 런 리셋 시 시작 무기 (§18.2)",
+            VerifyWeaponCarryOver);
+    }
+
+    private static GameSystemVerificationProbeResult VerifyWeaponCarryOver(
+        GameSystemVerificationContext context)
+    {
+        if (!Fixture(context, out GameSystemVerificationFixture f, out Yujin yujin, out GameSystemVerificationProbeResult fail))
+            return fail;
+
+        RunProgressionState previousRun = f.Context.RunProgression;
+        RunProgressionState run = new RunProgressionState();
+        YujinMechanic first = null;
+        YujinMechanic next = null;
+        YujinMechanic fresh = null;
+
+        try
+        {
+            f.Context.RunProgression = run;
+
+            // 이번 전투 — 백우로 시작해 낙일로 바꾼 채 전투가 끝난다.
+            first = new YujinMechanic(YujinWeaponType.Baeku);
+            first.Initialize(yujin, f.Context);
+            bool firstRegistered = first.TryRegister();
+            YujinWeaponType firstStart = first.CurrentWeapon;
+            first.SetWeaponForVerification(YujinWeaponType.Nakil);
+            f.Context._battleEvent.RaiseBattleEnded();
+            YujinWeaponType? saved = run.LastYujinWeapon;
+            first.Unregister();
+
+            // 다음 전투 — 프리팹 시작 무기가 백우여도 저장된 무기로 시작한다.
+            next = new YujinMechanic(YujinWeaponType.Baeku);
+            next.Initialize(yujin, f.Context);
+            bool nextRegistered = next.TryRegister();
+            YujinWeaponType nextStart = next.CurrentWeapon;
+            next.Unregister();
+
+            // 새 런 — 저장값이 지워지고 시작 무기로 돌아간다.
+            run.Reset();
+            fresh = new YujinMechanic(YujinWeaponType.Baeku);
+            fresh.Initialize(yujin, f.Context);
+            bool freshRegistered = fresh.TryRegister();
+            YujinWeaponType freshStart = fresh.CurrentWeapon;
+
+            bool ok =
+                firstRegistered && nextRegistered && freshRegistered &&
+                firstStart == YujinWeaponType.Baeku &&
+                saved == YujinWeaponType.Nakil &&
+                nextStart == YujinWeaponType.Nakil &&
+                run.LastYujinWeapon == null &&
+                freshStart == YujinWeaponType.Baeku;
+
+            string actual =
+                $"Start={firstStart}, Saved={saved?.ToString() ?? "NULL"}, Next={nextStart}, " +
+                $"AfterReset={freshStart}";
+
+            return ok
+                ? GameSystemVerificationProbeResult.Pass(actual)
+                : GameSystemVerificationProbeResult.Fail(actual);
+        }
+        finally
+        {
+            first?.Unregister();
+            next?.Unregister();
+            fresh?.Unregister();
+            f.Context.RunProgression = previousRun;
+        }
     }
 
     private static GameSystemVerificationCase Runtime(
@@ -230,18 +303,20 @@ public sealed class YujinContentVerificationModule : IGameSystemVerificationModu
         int after = f.MomentumManager?.CurrentMomentum ?? 0;
 
         YujinWeaponProfile j = YujinWeapons.Get(YujinWeaponType.Jeokseol);
-        YujinWeaponProfile n = YujinWeapons.Get(YujinWeaponType.Nakil);
 
+        // §18.1: 백우 표식 발화 = 큰 흐트러짐 피해(체력 피해 없음, 수치 미정).
+        // 발화 자체는 기세 바를 밀지 않는다(바를 미는 것은 백우 적중 효과).
         bool ok =
             mechanic.GetMark(enemy) == 0 &&
-            after - before == 50 &&
-            j.MarkIgnition == YujinMarkIgnitionType.Seal &&
-            n.MarkIgnition == YujinMarkIgnitionType.Weaken;
+            after == before &&
+            j.MarkIgnition == YujinMarkIgnitionType.Seal;
 
         return ok
-            ? GameSystemVerificationProbeResult.Pass($"Mark44 -> 0, Baeku momentum {before}->{after} (+50)")
+            ? GameSystemVerificationProbeResult.Pass(
+                $"Mark44 -> 0, Baeku ignition momentum {before}->{after} (no push), " +
+                $"BaekuIgnitionStagger={mechanic.MarkRules.BaekuIgnitionStagger}")
             : GameSystemVerificationProbeResult.Fail(
-                $"Mark={mechanic.GetMark(enemy)}, Momentum={before}->{after}, J={j.MarkIgnition}, N={n.MarkIgnition}");
+                $"Mark={mechanic.GetMark(enemy)}, Momentum={before}->{after}, J={j.MarkIgnition}");
     }
 
     private static GameSystemVerificationProbeResult VerifySenseCore(
@@ -426,23 +501,49 @@ public sealed class YujinContentVerificationModule : IGameSystemVerificationModu
         YujinMechanic mechanic = yujin.YujinMechanic;
         mechanic.SetWeaponForVerification(YujinWeaponType.Baeku);
 
-        mechanic.RegisterMarkTrap(f.Enemy, null, 20);
-        mechanic.RegisterMarkDeadline(f.Enemy, null, 3, 2);
+        // §18.4 덫 수치(지속 · 스택당 피해)는 (미정). 0 = 미설정 → 덫을 설치하지 않는다.
+        // 설정값은 데이터 자산이라 검증에서 바꾸지 않고, 현재 설정에 맞는 쪽을 확인한다.
+        YujinMarkRuleSettings rules = mechanic.MarkRules;
+        bool trapConfigured =
+            rules.TrapLifetimeTurns > 0 &&
+            rules.ExplosionDamagePerTrap > 0;
+        bool resonanceConfigured =
+            rules.TrapLifetimeTurns > 0;
+
+        int pendingStart = mechanic.PendingDelayedTriggerCount;
+        long trapId = mechanic.RegisterMarkTrap(f.Enemy, null, 20);
+        long resonanceId = mechanic.RegisterMarkDeadline(f.Enemy, null, 3, 2);
         int pendingBefore = mechanic.PendingDelayedTriggerCount;
+        int expectedRegistered =
+            (trapConfigured ? 1 : 0) + (resonanceConfigured ? 1 : 0);
+
         int momentumBefore = f.MomentumManager.CurrentMomentum;
         mechanic.GrantMark(f.Enemy, null, 44);
         int momentumAfter = f.MomentumManager.CurrentMomentum;
 
+        bool registration =
+            (trapId != 0) == trapConfigured &&
+            (resonanceId != 0) == resonanceConfigured &&
+            pendingBefore - pendingStart == expectedRegistered;
+
         bool ok =
-            pendingBefore == 2 &&
-            mechanic.PendingDelayedTriggerCount == 0 &&
-            momentumAfter - momentumBefore == 100;
+            registration &&
+            mechanic.PendingDelayedTriggerCount == pendingStart &&
+            mechanic.GetMark(f.Enemy) == 0 &&
+            momentumAfter == momentumBefore;
+
+        string mode = expectedRegistered == 0
+            ? "UNSET(덫 수치 미정 → 설치 없음)"
+            : $"CONFIGURED(trap={trapConfigured}, resonance={resonanceConfigured})";
 
         return ok
             ? GameSystemVerificationProbeResult.Pass(
-                $"K+L consumed together; Baeku deadline doubled +50 -> +100 ({momentumBefore}->{momentumAfter})")
+                $"{mode}; Pending={pendingStart}->{pendingBefore}->{mechanic.PendingDelayedTriggerCount}, " +
+                $"Momentum={momentumBefore}->{momentumAfter}")
             : GameSystemVerificationProbeResult.Fail(
-                $"Pending={pendingBefore}->{mechanic.PendingDelayedTriggerCount}, Momentum={momentumBefore}->{momentumAfter}");
+                $"{mode}; TrapId={trapId}, ResonanceId={resonanceId}, " +
+                $"Pending={pendingStart}->{pendingBefore}->{mechanic.PendingDelayedTriggerCount}, " +
+                $"Mark={mechanic.GetMark(f.Enemy)}, Momentum={momentumBefore}->{momentumAfter}");
     }
 
     private static SkillDefinition CreateDefinition(
