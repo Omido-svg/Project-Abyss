@@ -1,0 +1,56 @@
+# Unity 구현 대기 — 규칙서 ↔ 코드 대조
+
+`Battle-Logic` 브랜치(맥 worktree `~/Project/Project-Abyss-Battle`)에서 할 구현 작업 목록. 11-18 첫 대조 기준. **끝난 항목은 지운다** — 남아 있는 항목 = 미결.
+
+- 정본은 규칙서. 코드가 규칙서와 다르면 코드를 고친다
+- 확인 도구 — 시스템 검증(`GameSystemVerificationRunner`, Phase A~F)은 Production `BattleRuntimeFactory`로 조립돼 정상. 캐릭터 검증(`CharacterVerificationRunner`)은 7번 개편 전까지 도사림 결과를 믿지 말 것
+- 구현 중 판단이 필요한 지점(규칙 해석 · 적용 범위 · (미정) 칸 임시값)은 구현 전에 사용자에게 묻는다
+
+## 진행 순서 (1층 플레이테스트 기준)
+
+### 1. 직접 플레이 확인 (사용자)
+- 동귀어진 — 계획 UI에서 배치 가능한지, 연출 데이터가 없어 해결 진행이 멈추지 않는지
+- `Run Flow Test` 전투 2연속 — 명성(유진) 무기가 다음 전투로 이어지는지(회귀 검증 `y08`은 통과, UI 흐름은 미확인)
+
+### 2. 히후미 남은 규칙
+- **C2 대실패 → 강화 반격(19.3)** — 코드는 대실패 시 자해 + 반격 굴림 +1을 뒤에 붙인다(`HifumiMechanic.cs` 반격 루프 · "0922" 주석). 규칙 = 그 굴림의 반격 굴림 하나를 시고로 확정 강화 반격으로, 따로 +1 없음. 반격 굴림에서 대실패 → 그 굴림 실패 + 강화 1(연쇄 끝)
+- **C3 속임수(19.8)** — 코드는 아라시 고정(`ChinchiroResolver.cs` "속임수 기본 고정 결과는 아라시"). 규칙 = 시고로 / 대실패 중 선택 · 반격 굴림 포함 · 강화 반격은 시고로. 선택 UI 필요
+
+### 3. 공용 규칙
+- **C4 침체(11.2)** — 코드는 위세 게이지만 깎는다(`CharacterStatusController.ApplyTurnEndPrestigeDelta`). 규칙 = 게이지 0이라 못 깎은 만큼 전체 체력 피해 · 게이지 없는 적은 늘 0 · 히후미는 피격 적립
+- **C7 플레이어 체력 내성(6.5)** — 코드에 없음. 빌야르 타 / 관 / 절 · 명성 관 / 절 / 타 · 히후미 절 / 타 / 관(저항 / 중립 / 약점)
+- **C8 잡몹 공격 유형(12.3)** — 잡몹 하나 = 유형 하나. 데이터 확인 필요
+
+### 4. 데이터 점검
+- **C10** — 시작 지급 세트(13.1) · 빌야르 굴림 유형(17.7) · 기계 보스 냉각 카드 = 해결 도사림(12.5)
+  - 히후미 로드아웃은 평타 3칸(동귀어진 추가함) 확인. 결투 · 도사림 칸은 미확인
+
+### 5. 일괄 정리 (영향 범위 넓음 — 따로 묶는다)
+- **C9 노려보기 삭제(8장 · 11-17)** — 코드 5곳 · 에셋 6개(`common.preparation.glare` · `Olaf_Glare` · TEMP_BALANCE `Common_Glare` 등). 히후미 · 올라프 · 유진 런타임 스킬 목록에 아직 있다
+- **C11 이름** — 올라프 → 빌야르, 유진 → 명성. 코드 · 표시 이름 · 검증 프로필 이름(`올라프_Verification` 등)
+
+### 6. 검증 도구 개편
+- **캐릭터 검증 강제 실행 커버리지** — 효과를 옛 Entry(`TempBalanceSkillProxyEffectDefinition`)로 하나씩 직접 실행해서, native 라우팅으로 도는 도사림 15건이 「지원하지 않는 Effect 계약」으로 실패(`CharacterVerificationForcedScenarioRunner.cs` `VerifyEffectEntry`). native 라우팅 스킬은 실제 경로(`SkillEffectDispatcher`)로 실행하고 결과(방어도 · 빛 · 상태)를 보는 방식으로
+  - 실패 목록 — 공용 웅크리기 · 노려보기(3캐릭터) / 빌야르 피의 서약 · 피로 사는 숨 · 광기를 가라앉히다 · 흐트러짐을 삼키다 · 상처를 지우다 · 최후의 저항 / 명성 숨을 죽이다 · 칼을 갈다 · 기회를 엿보다
+  - `coverage.manifest.closed_world`(미등록 Effect)도 같은 원인
+  - 5번 뒤에 두는 이유 — 노려보기 삭제 · 이름 변경이 검증 프로필과 스킬 목록을 건드린다
+- 11-18 — 캐릭터 검증 Fixture를 Production `BattleRuntimeFactory`로 바꿔 실행 오류 17 → 0(통과 → 실패 0건)
+
+### 7. 판단이 필요한 검증 (B)
+- **빌야르 평타 기본 잔효과(`phased.olaf.o01`)** — 코드(`OlafMadnessMechanic.OnExchangeResolved`)는 적중 출혈 1/2 · BLUE 평타 승리 광기 +1을 규칙대로 구현. 검증은 RED 0/0/0 · BLUE 광기 0 — 검증 Fixture가 피해 정보 없는 가짜 교환을 만드는 것으로 보인다. 실전 확인 필요
+- **살수의 감 재굴림(`phased.yujin.y05`)** — 규칙 = 결투 한정 · 진 교환에서 슬로우 → 「감 1로 다시 굴림 / 아낌」 선택. 검증은 옛 「공격 슬롯 예약 재굴림」을 기대. 슬로우 선택 UI까지 구현됐는지 확인
+
+### 8. 그 밖
+- 히후미 결투 3장(도발형 · 전체 정화 · 판을 엎다) — 캐릭터 검증에서 자원을 채워도 `CanUseByResource = false`. 6번 개편 뒤 다시 볼 것
+- 연출(`SkillVisualDefinition`) 없는 카드 9장 — 동귀어진 · 판돈을 올리다 · 곱절을 노리다 · 운명을 흔들다 · 몸에 새기다 · 굴림 도감 · 판을 엎다 · 도발형 · 전체 정화형
+- 굴림 텍스처 검증(Phase E) — 빌야르 결투 5 · 평타 10장의 위치별 평균이 기준과 0.1~2 어긋남(TEMP_BALANCE 데이터 · 「0917 authority pending」). Phase E 실행은 `PhaseEContentManifest.asset`을 덮어쓰므로 결과를 커밋하지 말 것
+
+## 기획 쪽 연결 항목
+- 명세 xlsx 재생성 — 윈도우에서 `spec_build.ps1`(11-18 `spec_data.ps1` 문구 갱신분)
+- sim_py HF-B03 동귀어진 — sim 20 · 빛 0 / Unity 10 · 빛 1(`작업/히후미.md` 수치 대기)
+- 규칙서 4.4 친치로 표 대실패 칸 「반격 굴림 +1」 — 19.3(강화 반격 굴림 1, 11-11)과 어긋남
+
+## 작업 메모
+- Unity를 플레이하면 TMP 동적 폰트 `Assets/7. Fonts/TheOneLord SDF.asset`이 채워진다 — 커밋 전에 되돌린다
+- 테스트 씬 캐릭터 선택 = PlayerPrefs `ProjectAbyss.TestEncounter.Player`(0 빌야르 · 1 명성 · 2 히후미)
+- `Battle Test Scene` 단독 실행은 RunProgression이 없다(런 단위 기능은 `Run Flow Test`에서)
