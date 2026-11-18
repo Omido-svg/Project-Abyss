@@ -1285,6 +1285,27 @@ public partial class ClashManager
             };
         }
 
+        // 굴림 없는 스킬(동귀어진 등): 굴림 · 교환 · 히트 · 기세 · 위세 충전 없이 효과만 한 번 처리한다.
+        if (action?.Skill is IRollessResolutionSkill rolless)
+        {
+            if (!skillExecuted)
+            {
+                skillExecuted = true;
+                rolless.ResolveWithoutRolls(action, battleContext);
+            }
+
+            return new ClashExchangeResult
+            {
+                ExchangeIndex = exchangeIndex,
+                FirstAction = action,
+                SecondAction = exhaustedOpponent,
+                IsOneSided = true,
+                WasCancelled = true,
+                MomentumBefore = momentumBefore,
+                MomentumAfter = momentumManager.CurrentMomentum
+            };
+        }
+
         bool executed = ExecuteSkillOnce(
             action,
             exhaustedOpponent,

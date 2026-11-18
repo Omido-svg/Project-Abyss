@@ -15,6 +15,7 @@ MonoBehaviour:
   NormalSkills:
   - {fileID: 11400000, guid: bb6c6e3bc462df449b153038e6cdae7c, type: 2}
   - {fileID: 11400000, guid: 44cda1bf6e35a8b458d31a0314e67802, type: 2}
+  - {fileID: 11400000, guid: c0d1217f7e96a481189cd04b20ed8bc1, type: 2}
   DuelSkills:
   - {fileID: 11400000, guid: 42d310614e662a145add939248651ade, type: 2}
   - {fileID: 11400000, guid: 93f76f7ee38b8c44c8e7825fdf0ca0a0, type: 2}
@@ -30,6 +31,7 @@ MonoBehaviour:
   NormalSkillPool:
   - {fileID: 11400000, guid: bb6c6e3bc462df449b153038e6cdae7c, type: 2}
   - {fileID: 11400000, guid: 44cda1bf6e35a8b458d31a0314e67802, type: 2}
+  - {fileID: 11400000, guid: c0d1217f7e96a481189cd04b20ed8bc1, type: 2}
   DuelSkillPool:
   - {fileID: 11400000, guid: 42d310614e662a145add939248651ade, type: 2}
   - {fileID: 11400000, guid: 93f76f7ee38b8c44c8e7825fdf0ca0a0, type: 2}

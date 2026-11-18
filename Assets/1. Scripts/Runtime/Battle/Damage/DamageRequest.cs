@@ -212,6 +212,38 @@ public struct DamageRequest
             applyGuard: false);
     }
 
+    /// <summary>
+    /// §10.2 고정 피해. 대상 부위가 있으면 부위 + 전체 이중 차감, 없으면 전체만.
+    /// 파괴 권한 없음(약화까지만 — 11-18 사용자). 기세 · 방어도 · 내성 · 상태 보정 전부 미적용.
+    /// </summary>
+    public static DamageRequest Fixed(
+        Character source,
+        Character target,
+        BodyPart targetPart,
+        int damage,
+        BattleAction sourceAction = null)
+    {
+        DamageRequest request =
+            CreateExternal(
+                DamageType.Fixed,
+                source,
+                target,
+                targetPart,
+                damage,
+                false,
+                null,
+                applyGuard: false);
+
+        request.SourceAction = sourceAction;
+        request.ApplyPhysicalResistance = false;
+        request.ApplyAttackerModifiers = false;
+        request.ApplyTargetModifiers = false;
+        request.ApplyMomentum = false;
+        request.CanBreakPart = false;
+        request.BreakMode = PartBreakMode.None;
+        return request;
+    }
+
     public static DamageRequest SelfCost(
         Character owner,
         int damage)

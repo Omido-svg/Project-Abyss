@@ -17,4 +17,8 @@ public sealed class HifumiCardRuleSettings
 
     [Tooltip("합 종료시 완전 차단이면 얻는 가불. 임시값 — sim HF-B02 40")]
     [Min(0)] public int BoldJudgmentCompleteBlockAdvance = 40;
+
+    [Header("평타③ 동귀어진 (§19.6)")]
+    [Tooltip("자신(이 카드를 쓴 슬롯 부위)과 조준한 상대 부위에 같은 값으로 주는 고정 피해 N. 임시값 — 작업/히후미.md 측정 추천 10 (11-18 사용자)")]
+    [Min(0)] public int MutualDestructionFixedDamage = 10;
 }

@@ -274,6 +274,64 @@ public sealed class HifumiNormalRuntimeSkill : DataNormalSkill
     }
 }
 
+/// <summary>
+/// §19.6 평타③ 동귀어진 — 굴림 없음 · 합 없음 · 태그 없음.
+/// 사용시 조준한 상대 부위와 자신(이 카드를 쓴 슬롯 부위)에 같은 값 N의 고정 피해(§10.2).
+/// 자기 피해는 실제 피해라 피격 적립 · 핏값이 그대로 붙는다. 파괴 권한 없음(약화까지만).
+/// </summary>
+public sealed class HifumiMutualDestructionRuntimeSkill : DataNormalSkill, IRollessResolutionSkill
+{
+    public HifumiMutualDestructionRuntimeSkill(SkillDefinition definition) : base(definition) { }
+
+    // 이 슬롯을 노린 적 공격은 받아 주지 못하고 맞는다(회피와 같은 처리).
+    public override bool CanClash => false;
+
+    public void ResolveWithoutRolls(BattleAction action, BattleContext battleContext)
+    {
+        Character self = action?.Owner;
+        DamageManager damage = battleContext?.Services?.DamageManager;
+        if (self == null || self.IsDead || damage == null)
+            return;
+
+        int amount = self is Hifumi hifumi
+            ? hifumi.HifumiMechanic?.CardRules.MutualDestructionFixedDamage ?? 0
+            : 0;
+        if (amount <= 0)
+            return;
+
+        Character target = action.Target;
+        BodyPart targetPart = action.TargetPart;
+        bool hitTarget = target != null && !target.IsDead && target != self;
+        if (targetPart != null && (targetPart.IsBroken || targetPart.Owner != target))
+            targetPart = null;
+
+        BodyPart ownPart = action.OwnerPart;
+        if (ownPart != null && ownPart.IsBroken)
+            ownPart = null;
+
+        // 상대가 먼저 맞고 그다음 히후미가 맞는다(11-18 사용자).
+        if (hitTarget)
+        {
+            damage.ApplyDamageContext(
+                DamageRequest.Fixed(self, target, targetPart, amount, action));
+        }
+
+        // 자기 피해는 전체 체력 1 아래로 내리지 않는다 — 막힌 만큼 부위 · 전체 피해 모두 줄고,
+        // 뼈는 실제 받은 피해 + 핏값 등 피격 적립 보너스. 0이 되면 핏값만 받는다(11-18 사용자).
+        int selfAmount = HifumiNativeRules.SelfDamageAboveFloor(self, amount);
+        if (selfAmount > 0)
+        {
+            damage.ApplyDamageContext(
+                DamageRequest.Fixed(self, self, ownPart, selfAmount, action));
+        }
+        else if (self is Hifumi owner)
+        {
+            owner.HifumiMechanic?.GrantBloodPriceOnlyReceivedHit(
+                action.GetEffectCause(ProjectAbyss.Abilities.AbilityEventKind.RollUsing, action.CurrentRollIndex));
+        }
+    }
+}
+
 public sealed class HifumiDuelRuntimeSkill : DataDuelSkill
 {
     public HifumiDuelRuntimeSkill(SkillDefinition definition) : base(definition) { }

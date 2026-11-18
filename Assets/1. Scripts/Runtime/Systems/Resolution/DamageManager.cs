@@ -207,6 +207,7 @@ public class DamageManager
         // 확정된 뒤에 연다. 따라서 창을 여는 그 타격은 기존 HP 내성을 받는다.
         StaggerGaugeMechanic stagger =
             context.Action?.Skill?.IsRed == true &&
+            request.Type != DamageType.Fixed && // §10.2 고정 피해는 흐트러짐 피해가 없다
             !CombatRuleHooks.NegatesDamage(context)
                 ? context.Target?.GetMechanic<StaggerGaugeMechanic>()
                 : null;

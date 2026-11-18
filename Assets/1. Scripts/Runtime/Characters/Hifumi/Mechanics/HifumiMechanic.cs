@@ -692,6 +692,15 @@ public sealed class HifumiMechanic :
         return LastBoneGrant=new BoneGrantResult(requested,before,bone,reason,cause);
     }
 
+    /// <summary>
+    /// 동귀어진 자기 피해가 체력 1 문턱에 막혀 0이 됐을 때 — 맞은 것으로 보고 핏값만 피격 적립으로 받는다(11-18 사용자).
+    /// </summary>
+    public void GrantBloodPriceOnlyReceivedHit(ProjectAbyss.Abilities.EffectCause cause = default)
+    {
+        if (bloodPriceThisTurn > 0)
+            GrantBone(bloodPriceThisTurn, BoneGrantReason.ReceivedHit, cause);
+    }
+
     public void AddAdvanceBone(int amount)
     {
         if (amount <= 0)
@@ -837,6 +846,9 @@ public sealed class HifumiMechanic :
         engraveHpDamageTaken = 0;
         engraveStaggerDamageTaken = 0;
     }
+
+    public void SetBloodPriceForVerification(int value) => bloodPriceThisTurn = Mathf.Max(0, value);
+    public void ApplyCatastropheSelfDamageForVerification() => ApplyCatastropheSelfDamage();
 
     public bool BoldJudgmentTrackingForVerification => boldJudgmentTracking;
     public int BoldJudgmentTrackedHpDamageForVerification => boldJudgmentHpDamageTaken;
@@ -1244,8 +1256,11 @@ public sealed class HifumiMechanic :
         catastropheSelfDamageDepth++;
         try
         {
-            battleContext?.Services?.DamageManager?.ApplyDamageContext(
-                DamageRequest.SelfCost(owner,HifumiSelfDamage));
+            // 자해 D는 전체 체력 1 아래로 내리지 않는다. 뼈 D(직접 지급)는 위에서 그대로 받는다.
+            int selfDamage=HifumiNativeRules.SelfDamageAboveFloor(owner,HifumiSelfDamage);
+            if(selfDamage>0)
+                battleContext?.Services?.DamageManager?.ApplyDamageContext(
+                    DamageRequest.SelfCost(owner,selfDamage));
         }
         finally
         {

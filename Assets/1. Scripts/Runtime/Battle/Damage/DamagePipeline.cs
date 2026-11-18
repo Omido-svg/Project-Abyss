@@ -20,6 +20,13 @@ public sealed class DamagePipeline
         if (context == null)
             return;
 
+        // §10.2 고정 피해 — 내성 · 창 · 균열 · 보호 · 고유 증감 · 최소 1 · 방어도를 전부 건너뛴다.
+        if (context.Request.Type == DamageType.Fixed)
+        {
+            ApplyFixedDamage(context);
+            return;
+        }
+
         CalculateBaseDamage(context);
         ApplyPhysicalResistance(context);
         ApplyFlatTargetModifiers(context);
@@ -29,6 +36,22 @@ public sealed class DamagePipeline
         ApplyGuard(context);
         ApplyCanonicalPostGuardHooks(context);
         FinalizeDamage(context);
+    }
+
+    private static void ApplyFixedDamage(DamageContext context)
+    {
+        int damage = Mathf.Max(0, context.RawPower);
+        context.MomentumMultiplier = 1f;
+        context.PhysicalResistanceMultiplier = 1f;
+        context.BaseDamage = damage;
+        context.TargetModifiedDamage = damage;
+        context.AttackerModifiedDamage = damage;
+        context.GuardBefore = 0;
+        context.GuardAbsorbed = 0;
+        context.GuardAfter = 0;
+        context.DamageAfterGuard = damage;
+        context.FinalDamage = damage;
+        context.RecordStage(DamageStage.Finalized, damage);
     }
 
     private static void CalculateBaseDamage(DamageContext context)

@@ -10,6 +10,16 @@ public static class HifumiNativeRules
     public const int BoneCap=500;
     public const int CatastropheDirectBone=60;
 
+    /// <summary>
+    /// 히후미 자해(동귀어진 자기 피해 · 대실패 자해)는 전체 체력을 1 아래로 내리지 않는다(11-18 사용자).
+    /// 실제로 깎을 수 있는 양(현재 전체 체력 − 1)까지로 줄인 값을 돌려준다.
+    /// </summary>
+    public static int SelfDamageAboveFloor(Character owner,int damage)
+    {
+        if(owner?.RuntimeStatus==null)return Mathf.Max(0,damage);
+        return Mathf.Clamp(damage,0,Mathf.Max(0,owner.CurrentHP-1));
+    }
+
     // Blood Price only augments actual HP-damage hit accrual.
     // Direct bone grants, such as catastrophe's +60, never call this.
     public static int BoneFromReceivedHit(int finalHpDamage,int bloodPrice)

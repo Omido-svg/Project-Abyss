@@ -33,6 +33,8 @@ public sealed class Hifumi : Character, ICharacterAuthoringTarget
 
         return definition.ActionType switch
         {
+            ActionType.NormalAttack when definition.SkillId == HifumiSkillIds.MutualDestruction =>
+                new HifumiMutualDestructionRuntimeSkill(definition),
             ActionType.NormalAttack => new HifumiNormalRuntimeSkill(definition),
             ActionType.Duel => new HifumiDuelRuntimeSkill(definition),
             ActionType.Preparation => new HifumiPreparationRuntimeSkill(definition),

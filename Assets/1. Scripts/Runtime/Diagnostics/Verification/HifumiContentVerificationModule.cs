@@ -89,6 +89,22 @@ public sealed class HifumiContentVerificationModule : IGameSystemVerificationMod
             VerifyEngraveCompleteBlockSelfDamageExcluded);
 
         yield return Runtime(
+            "phased.hifumi.h11.mutual_destruction",
+            "H-11",
+            "동귀어진 — 굴림·합 없음, 서로 고정 피해 N",
+            GameSystemVerificationCategory.Damage,
+            "합 불가 · 빛 1 · 상대(방어도 무시) · 자신(슬롯 부위 + 전체) 각 N, 흐트러짐 · 기세 · 위세 · 히트 없음, 자기 피해 피격 적립, 약화까지만 (§19.6 · §10.2)",
+            VerifyMutualDestruction);
+
+        yield return Runtime(
+            "phased.hifumi.h12.self_damage_floor",
+            "H-11",
+            "히후미 자해 — 전체 체력 1 문턱",
+            GameSystemVerificationCategory.Damage,
+            "동귀어진 자기 피해 · 대실패 자해는 전체 체력을 1 아래로 내리지 않음. 동귀어진: 막힌 만큼 부위 · 전체 피해 감소, 뼈 = 실제 피해 + 핏값, 0이면 핏값만 / 대실패: 뼈 D 그대로 (11-18 사용자)",
+            VerifySelfDamageFloor);
+
+        yield return Runtime(
             "phased.hifumi.h10.duel_governor",
             "H-10",
             "히후미 다음 턴 Duel 자기 거버너",
@@ -526,6 +542,174 @@ public sealed class HifumiContentVerificationModule : IGameSystemVerificationMod
             m.SetBoneForVerification(boneBefore);
             m.SetAdvanceBoneForVerification(advanceBefore);
             UnityEngine.Object.DestroyImmediate(definition);
+        }
+    }
+
+    private static GameSystemVerificationProbeResult VerifyMutualDestruction(
+        GameSystemVerificationContext context)
+    {
+        if (!Fixture(context, out GameSystemVerificationFixture f, out Hifumi hifumi, out HifumiMechanic m, out GameSystemVerificationProbeResult fail))
+            return fail;
+
+        Skill skill = hifumi.RuntimeSkills?.FirstOrDefault(s =>
+            s?.Definition?.SkillId == HifumiSkillIds.MutualDestruction);
+        if (skill == null)
+            return GameSystemVerificationProbeResult.Fail("동귀어진 RuntimeSkill이 로드아웃에 없습니다.");
+        if (f.ClashManager == null || f.Enemy == null || f.MomentumManager == null)
+            return GameSystemVerificationProbeResult.Fail("ClashManager/Enemy/Momentum missing");
+
+        int n = m.CardRules.MutualDestructionFixedDamage;
+        Character enemy = f.Enemy;
+        BodyPart enemyPart = enemy.BodyParts?.FirstOrDefault(p => p != null && !p.IsBroken);
+        BodyPart ownPart = hifumi.BodyParts?.FirstOrDefault(p => p != null && p.Type == PartType.LEFT_HAND && !p.IsBroken);
+        if (ownPart == null)
+            return GameSystemVerificationProbeResult.Fail("히후미 왼팔 부위 없음");
+
+        StaggerGaugeMechanic enemyStagger = enemy.GetMechanic<StaggerGaugeMechanic>();
+        StaggerGaugeMechanic ownStagger = hifumi.GetMechanic<StaggerGaugeMechanic>();
+
+        int enemyBlockBefore = enemy.RuntimeStatus.currentBlock;
+        int boneBefore = m.Bone;
+        int advanceBefore = m.AdvanceBone;
+        try
+        {
+            enemy.RuntimeStatus.currentBlock = 50;
+            m.SetAdvanceBoneForVerification(0);
+            m.SetBoneForVerification(0);
+
+            int eHp = enemy.CurrentHP;
+            float ePartHp = enemyPart?.PartHP ?? 0f;
+            int eStagger = enemyStagger?.CurrentGauge ?? 0;
+            int hHp = hifumi.CurrentHP;
+            float hPartHp = ownPart.PartHP;
+            int hStagger = ownStagger?.CurrentGauge ?? 0;
+            int bar = f.MomentumManager.CurrentMomentum;
+            int prestige = hifumi.RuntimeStatus.currentPrestige;
+
+            ActionSlot slot = new ActionSlot
+            {
+                ActionId = 950911, Owner = hifumi, Part = ownPart, Skill = skill,
+                TargetCharacter = enemy, TargetPart = enemyPart,
+                Phase = ActionPhase.COMBAT, Speed = 5, ResourceCostCommitted = true
+            };
+            ClashResultContext result = f.ClashManager.ResolvePair(new ClashPair(slot));
+
+            bool shape = !skill.CanClash && skill.EnergyCost == 1 && skill.IsRed;
+            bool enemyHit =
+                eHp - enemy.CurrentHP == n &&
+                (enemyPart == null || Mathf.Approximately(ePartHp - enemyPart.PartHP, n)) &&
+                enemy.RuntimeStatus.currentBlock == 50 &&
+                (enemyStagger?.CurrentGauge ?? 0) == eStagger;
+            bool selfHit =
+                hHp - hifumi.CurrentHP == n &&
+                Mathf.Approximately(hPartHp - ownPart.PartHP, n) &&
+                (ownStagger?.CurrentGauge ?? 0) == hStagger &&
+                m.Bone >= n;
+            bool noTempo =
+                f.MomentumManager.CurrentMomentum == bar &&
+                hifumi.RuntimeStatus.currentPrestige == prestige &&
+                result != null && !result.IsClash && result.OneSidedHitCount == 0;
+
+            // 약화까지만 — 이미 약화된 자기 부위도 파괴되지 않는다.
+            ownPart.SetDebugState(Mathf.Min(5, ownPart.MaxPartHP), ownPart.MaxPartHP, false, false);
+            f.ClashManager.ResolvePair(new ClashPair(new ActionSlot
+            {
+                ActionId = 950912, Owner = hifumi, Part = ownPart, Skill = skill,
+                TargetCharacter = enemy, TargetPart = enemyPart,
+                Phase = ActionPhase.COMBAT, Speed = 5, ResourceCostCommitted = true
+            }));
+            bool weakened = ownPart.IsWeakened && !ownPart.IsBroken;
+            f.ClashManager.ResolvePair(new ClashPair(new ActionSlot
+            {
+                ActionId = 950913, Owner = hifumi, Part = ownPart, Skill = skill,
+                TargetCharacter = enemy, TargetPart = enemyPart,
+                Phase = ActionPhase.COMBAT, Speed = 5, ResourceCostCommitted = true
+            }));
+            bool noBreak = ownPart.IsWeakened && !ownPart.IsBroken;
+
+            bool ok = n > 0 && shape && enemyHit && selfHit && noTempo && weakened && noBreak;
+            string actual =
+                $"N={n}; Shape={shape}, Enemy={enemyHit}({eHp}->{enemy.CurrentHP}, block {enemy.RuntimeStatus.currentBlock}), " +
+                $"Self={selfHit}({hHp}->{hifumi.CurrentHP}, part {hPartHp}->?, bone {m.Bone}), NoTempo={noTempo}, " +
+                $"Weaken={weakened}, NoBreak={noBreak}";
+            return ok
+                ? GameSystemVerificationProbeResult.Pass(actual)
+                : GameSystemVerificationProbeResult.Fail(actual);
+        }
+        finally
+        {
+            enemy.RuntimeStatus.currentBlock = enemyBlockBefore;
+            m.SetBoneForVerification(boneBefore);
+            m.SetAdvanceBoneForVerification(advanceBefore);
+        }
+    }
+
+    private static GameSystemVerificationProbeResult VerifySelfDamageFloor(
+        GameSystemVerificationContext context)
+    {
+        if (!Fixture(context, out GameSystemVerificationFixture f, out Hifumi hifumi, out HifumiMechanic m, out GameSystemVerificationProbeResult fail))
+            return fail;
+
+        Skill skill = hifumi.RuntimeSkills?.FirstOrDefault(s =>
+            s?.Definition?.SkillId == HifumiSkillIds.MutualDestruction);
+        if (skill == null || f.ClashManager == null || f.Enemy == null)
+            return GameSystemVerificationProbeResult.Fail("동귀어진/ClashManager/Enemy missing");
+
+        int n = m.CardRules.MutualDestructionFixedDamage;
+        BodyPart ownPart = hifumi.BodyParts?.FirstOrDefault(p => p != null && p.Type == PartType.HEAD && !p.IsBroken);
+        int hpBefore = hifumi.CurrentHP;
+        int boneBefore = m.Bone;
+        int bloodBefore = m.BloodPriceThisTurn;
+        const int blood = 4;
+
+        ActionSlot Slot(long id) => new ActionSlot
+        {
+            ActionId = id, Owner = hifumi, Part = ownPart, Skill = skill,
+            TargetCharacter = f.Enemy,
+            TargetPart = f.Enemy.BodyParts?.FirstOrDefault(p => p != null && !p.IsBroken),
+            Phase = ActionPhase.COMBAT, Speed = 5, ResourceCostCommitted = true
+        };
+
+        try
+        {
+            m.SetBloodPriceForVerification(blood);
+
+            // ① 전체 체력 N 남음 → 1에서 멈춤, 부위도 N−1만, 뼈 = (N−1) + 핏값.
+            hifumi.RuntimeStatus.currentHP = n;
+            float partBefore = ownPart.PartHP;
+            m.SetBoneForVerification(0);
+            f.ClashManager.ResolvePair(new ClashPair(Slot(950921)));
+            bool clamped =
+                hifumi.CurrentHP == 1 && !hifumi.IsDead &&
+                Mathf.Approximately(partBefore - ownPart.PartHP, n - 1) &&
+                m.Bone == (n - 1) + blood;
+
+            // ② 전체 체력 1 → 피해 0, 핏값만.
+            m.SetBoneForVerification(0);
+            f.ClashManager.ResolvePair(new ClashPair(Slot(950922)));
+            bool atOne = hifumi.CurrentHP == 1 && !hifumi.IsDead && m.Bone == blood;
+
+            // ③ 대실패 자해 60 — 체력 30에서 1까지만, 뼈 D(60)는 직접 지급 그대로.
+            hifumi.RuntimeStatus.currentHP = 30;
+            m.SetBoneForVerification(0);
+            m.ApplyCatastropheSelfDamageForVerification();
+            bool catastrophe =
+                hifumi.CurrentHP == 1 && !hifumi.IsDead &&
+                m.Bone >= HifumiNativeRules.CatastropheDirectBone;
+
+            bool ok = n > 1 && clamped && atOne && catastrophe;
+            string actual =
+                $"N={n}, Blood={blood}; Clamp={clamped}, AtOne={atOne}, Catastrophe={catastrophe} " +
+                $"(HP={hifumi.CurrentHP}, Bone={m.Bone})";
+            return ok
+                ? GameSystemVerificationProbeResult.Pass(actual)
+                : GameSystemVerificationProbeResult.Fail(actual);
+        }
+        finally
+        {
+            hifumi.RuntimeStatus.currentHP = hpBefore;
+            m.SetBoneForVerification(boneBefore);
+            m.SetBloodPriceForVerification(bloodBefore);
         }
     }
 

@@ -80,6 +80,7 @@ public sealed class CharacterDamageController
             case DamageType.Counter:
             case DamageType.Prestige:
             case DamageType.BleedExplosion:
+            case DamageType.Fixed:
                 ApplySkillPartDamage(request);
                 break;
 
