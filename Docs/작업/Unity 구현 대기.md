@@ -10,6 +10,13 @@
 
 ### 2. 히후미 남은 규칙
 - **C2 대실패 → 강화 반격(19.3)** — 코드는 대실패 시 자해 + 반격 굴림 +1을 뒤에 붙인다(`HifumiMechanic.cs` 반격 루프 · "0922" 주석). 규칙 = 그 굴림의 반격 굴림 하나를 시고로 확정 강화 반격으로, 따로 +1 없음. 반격 굴림에서 대실패 → 그 굴림 실패 + 강화 1(연쇄 끝)
+  - **⏸ 구현 전 결정 대기(11-18 논의)** — 사용자: 「반격도 굴림으로 위력을 정할 거면 반격 굴림에는 다른 판정을 주는 게 낫지 않나(규칙이 어려워지긴 함)」
+    1. 반격 굴림 판정 — 지금처럼 친치로 / 다른 판정. 바꾸면 같이 바뀌는 것: 속임수(반격 포함 고정) · 도사림 D 안정 상승형 · 친치로 양극화형 · 결투 J 굴림 도감(대실패당 반격 위력 +1) · 강화 반격(시고로 확정) · 아이템 14 이 갈기 · 33 떨어진 패. 아이템 34는 이미 반격 제외
+    2. 강화 반격 — 규칙서 정의는 「위력 보정된 반격 굴림」(새 스킬 아님, 반격 효과는 원 스킬 것). 강화 반격만의 효과를 줄지는 미정(지금은 아이템 14가 담당)
+    3. 일방 굴림에서 난 대실패의 강화 반격 — 그 합의 반격에 합칠지(제안: 합침 — 19.3 「모인 굴림으로 한 번」, 골단 뼈 소모 한 번) / 코드는 지금 별도 반격 1회
+    4. 일반 · 강화 굴림 순서 — 제안: 진 교환 순서대로, 반격 굴림에서 새로 생긴 강화는 맨 뒤
+    5. 33 떨어진 패(시고로 → 대실패)가 강화 반격에 걸리는가 — 걸리면 연쇄가 되살아난다(제안: 안 걸림, 친치로를 굴리지 않으므로)
+    - 「반격에는 히후미 보너스가 한 번만」이라는 기억 — 규칙서 · 0922 노트에는 없다(히후미 +1은 반격 굴림마다). 출처 확인 필요
 - **C3 속임수(19.8)** — 코드는 아라시 고정(`ChinchiroResolver.cs` "속임수 기본 고정 결과는 아라시"). 규칙 = 시고로 / 대실패 중 선택 · 반격 굴림 포함 · 강화 반격은 시고로. 선택 UI 필요
 
 ### 3. 공용 규칙
@@ -42,12 +49,21 @@
 - 연출(`SkillVisualDefinition`) 없는 카드 8장 — 판돈을 올리다 · 곱절을 노리다 · 운명을 흔들다 · 몸에 새기다 · 굴림 도감 · 판을 엎다 · 도발형 · 전체 정화형
 - 굴림 텍스처 검증(Phase E) — 빌야르 결투 5 · 평타 10장의 위치별 평균이 기준과 0.1~2 어긋남(TEMP_BALANCE 데이터 · 「0917 authority pending」). Phase E 실행은 `PhaseEContentManifest.asset`을 덮어쓰므로 결과를 커밋하지 말 것
 
+## 윈도우에서 할 것
+- **명세 xlsx 재생성** — `abyss-workspace/tools/spec/spec_build.ps1`(Excel COM). 11-18 `spec_data.ps1` 문구 갱신분(대실패 자해 문턱 · 과감한 판단 완전 차단 · 동귀어진 순서 · 파괴 권한)이 아직 xlsx에 없다
+- **Battle-Logic 작업 환경 세팅**(윈도우에서 구현을 이어갈 때)
+  - Unity **6000.0.56f1** 설치(다른 버전으로 열면 프로젝트가 업그레이드된다)
+  - worktree 생성 — `git worktree add <경로> Battle-Logic`(원 폴더는 Game-Design 유지)
+  - `.git/info/exclude`에 `CLAUDE.md` · `AGENTS.md` · `GameSystemVerification/` 추가(이 브랜치의 .gitignore는 안 막는다)
+  - `.vscode/settings.json` — worktree 폴더 이름으로 솔루션명이 바뀌면 `git update-index --skip-worktree .vscode/settings.json`
+  - MCP for Unity 연결 — Unity `Window → MCP for Unity`에서 Transport **Stdio** → Client Claude Code → Configure(uv 필요)
+- **sim_py 측정**이 필요하면 윈도우 쪽이 빠르다(쳇 번들 포함) — 지금 걸린 측정 없음
+
 ## 기획 쪽 연결 항목
-- 명세 xlsx 재생성 — 윈도우에서 `spec_build.ps1`(11-18 `spec_data.ps1` 문구 갱신분)
 - sim_py HF-B03 동귀어진 — sim 20 · 빛 0 / Unity 10 · 빛 1(`작업/히후미.md` 수치 대기)
 - 규칙서 4.4 친치로 표 대실패 칸 「반격 굴림 +1」 — 19.3(강화 반격 굴림 1, 11-11)과 어긋남
 
 ## 작업 메모
-- Unity를 플레이하면 TMP 동적 폰트 `Assets/7. Fonts/TheOneLord SDF.asset`이 채워진다 — 커밋 전에 되돌린다
+- Unity를 플레이하면 TMP 동적 폰트(`Assets/7. Fonts/TheOneLord SDF.asset` · `NotoSansKR-VariableFont_wght SDF.asset`)가 채워진다 — 커밋 전에 되돌린다
 - 테스트 씬 캐릭터 선택 = PlayerPrefs `ProjectAbyss.TestEncounter.Player`(0 빌야르 · 1 명성 · 2 히후미)
 - `Battle Test Scene` 단독 실행은 RunProgression이 없다(런 단위 기능은 `Run Flow Test`에서)
