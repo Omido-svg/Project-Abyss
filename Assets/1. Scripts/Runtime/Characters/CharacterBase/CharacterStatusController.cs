@@ -528,11 +528,41 @@ public class CharacterStatusController
             GetActiveNumericTotal<HeatStatus>() -
             GetActiveNumericTotal<StagnationStatus>();
 
-        if (prestigeDelta != 0)
-        {
+        if (prestigeDelta == 0)
+            return;
+
+        int actualDelta =
             owner.AdjustPrestige(
                 prestigeDelta);
+
+        // §11.2 침체(11-05): 게이지가 0이라 다 못 깎은 만큼 전체 체력 피해(부위 체력은 그대로).
+        // 위세 게이지가 없는 적은 게이지를 늘 0으로 본다 → 순 침체 전부가 피해.
+        // 도트와 같은 경로(방어도 · 균열 · 보호 미적용, 기세 없음) — 턴 종료 정산 범위 안이라
+        // 사망 판정은 도트 · 회복 뒤에 한 번(§2.2). 히후미는 실제 피해라 피격 적립이 붙는다.
+        int shortfall =
+            prestigeDelta < 0
+                ? (-prestigeDelta) - System.Math.Max(0, -actualDelta)
+                : 0;
+
+        if (shortfall <= 0)
+            return;
+
+        StatusEffect source = null;
+        foreach (StatusEffect effect in characterStatuses)
+        {
+            if (effect is StagnationStatus && !effect.IsExpired)
+            {
+                source = effect;
+                break;
+            }
         }
+
+        owner.BattleContext?.EffectResolver?.ApplyTrueDamage(
+            EffectRequest.TrueDamage(
+                null,
+                owner,
+                shortfall,
+                source));
     }
 
     private readonly struct RegenerationRecovery

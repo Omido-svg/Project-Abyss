@@ -48,6 +48,8 @@ public sealed class BattleFoundationVerificationModule : IGameSystemVerification
             "Strength/Weakness/Sturdy/Disarm = NumericTimed N/T, canonical factory duration 보존", VerifyCommonStatusSyntax);
         yield return Runtime("phaseb.c49.opposite_status_algebra", "C-49", "0922 반대 상태 저장 보존", GameSystemVerificationCategory.Status,
             "Strength3·3 + Weakness2·1은 둘 다 저장되고 계산 축에서만 +1", VerifyOppositeStatusAlgebra);
+        yield return Runtime("phaseb.c49.stagnation_overflow", "C-49", "침체 — 못 깎은 위세는 전체 체력 피해", GameSystemVerificationCategory.Status,
+            "턴 종료 게이지 −(침체 − 열기), 0 아래로 못 깎은 만큼 전체 체력 피해 · 부위 체력 그대로 (§11.2)", VerifyStagnationOverflow);
         yield return Static("phaseb.c48.regeneration_dimensions", "C-48", "0922 재생 aggregate", GameSystemVerificationCategory.Status,
             "Regeneration Entry N을 합산해 하나의 RegenTotal로 사용; legacy channel은 gameplay 축이 아님", VerifyRegenerationDimensions);
         yield return Static("phaseb.c41.elite_stagger_unset", "C-41", "Elite Stagger 미정=Unset", GameSystemVerificationCategory.Data,
@@ -78,6 +80,42 @@ public sealed class BattleFoundationVerificationModule : IGameSystemVerification
         }
         failure = GameSystemVerificationProbeResult.Fail(reason);
         return false;
+    }
+
+    private static GameSystemVerificationProbeResult VerifyStagnationOverflow(GameSystemVerificationContext context)
+    {
+        if (!Fixture(context, out GameSystemVerificationFixture f, out var fail))
+            return fail;
+
+        Character p = f.Player;
+        string Parts() => string.Join("/", p.BodyParts?.Select(part => part.PartHP.ToString("0")) ?? Enumerable.Empty<string>());
+
+        // ① 게이지 10 · 침체 30 → 게이지 0, 전체 −20, 부위 그대로
+        p.RuntimeStatus.currentPrestige = 10;
+        p.AddStatus(new StagnationStatus(30, 1), p);
+        int hp1 = p.CurrentHP; string parts1 = Parts();
+        p.TurnEnd();
+        bool overflow = p.RuntimeStatus.currentPrestige == 0 && hp1 - p.CurrentHP == 20 && Parts() == parts1;
+
+        // ② 게이지 50 · 침체 30 → 게이지 20, 피해 없음
+        p.RuntimeStatus.currentPrestige = 50;
+        p.AddStatus(new StagnationStatus(30, 1), p);
+        int hp2 = p.CurrentHP;
+        p.TurnEnd();
+        bool absorbed = p.RuntimeStatus.currentPrestige == 20 && p.CurrentHP == hp2;
+
+        // ③ 게이지 5 · 열기 10 · 침체 30 → 순 −20, 게이지 0, 전체 −15
+        p.RuntimeStatus.currentPrestige = 5;
+        p.AddStatus(new StagnationStatus(30, 1), p);
+        p.AddStatus(new HeatStatus(10, 1), p);
+        int hp3 = p.CurrentHP;
+        p.TurnEnd();
+        bool net = p.RuntimeStatus.currentPrestige == 0 && hp3 - p.CurrentHP == 15;
+
+        string actual = $"Overflow={overflow}(Δ{hp1 - p.CurrentHP}), Absorbed={absorbed}, Net={net}";
+        return overflow && absorbed && net
+            ? GameSystemVerificationProbeResult.Pass(actual)
+            : GameSystemVerificationProbeResult.Fail(actual);
     }
 
     private static BodyPart FirstPart(Character character) =>
