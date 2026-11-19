@@ -346,6 +346,10 @@ public partial class BattleUIManager : MonoBehaviour
         if (skillSelectPanel != null)
             skillSelectPanel.Hide();
 
+        // 11-19 임시 위세 발동 버튼(슬롯리스 위세 — §9). 모양 · 위치는 코더 UI로 대체 예정.
+        (GetComponent<BattlePrestigeButtonUI>() ?? gameObject.AddComponent<BattlePrestigeButtonUI>())
+            .Bind(this);
+
         if (bodyPartButtonRegistry != null &&
             bodyPartButtonRegistry.Buttons.Count == 0)
         {

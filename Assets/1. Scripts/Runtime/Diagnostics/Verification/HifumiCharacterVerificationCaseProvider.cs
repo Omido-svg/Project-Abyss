@@ -465,10 +465,11 @@ public sealed class HifumiCharacterVerificationCaseProvider :
         mechanic.ExecuteSkillForVerification(
             HifumiSkillIds.Trick);
 
+        // §19.8(11-19): 선택 없이 발동하면 시고로 고정(구 아라시).
         bool forcedArashi =
             mechanic.TryGetForcedChinchiro(
                 out ChinchiroCombination first) &&
-            first == ChinchiroCombination.Arashi;
+            first == ChinchiroCombination.Shigoro;
 
         mechanic.SetTrickOutcomeForTurn(true);
 
@@ -491,7 +492,7 @@ public sealed class HifumiCharacterVerificationCaseProvider :
             : context.Fail(
                 "도박수/올인/속임수 계약",
                 $"Gambler={gambler}, AllInBest={allInBest}, " +
-                $"AllInBust={allInBust}, TrickA={forcedArashi}, TrickH={forcedHifumi}");
+                $"AllInBust={allInBust}, TrickShigoro={forcedArashi}, TrickH={forcedHifumi}");
     }
 
     private static CharacterVerificationCaseResult VerifyGauge(

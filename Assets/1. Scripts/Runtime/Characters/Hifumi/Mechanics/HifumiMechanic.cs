@@ -55,6 +55,7 @@ public sealed class HifumiMechanic :
     IFervorTurnEndGainModifier,
     IForcedRollFailureRule,
     IForcedRollJudgmentRule,
+    IActionPlanningChoiceRule,
     IExchangeContinuationRule, IAbilityExecutionScopeProvider
 {
     public HifumiCounterExecutionContext CurrentCounterExecution { get; private set; }
@@ -632,8 +633,11 @@ public sealed class HifumiMechanic :
         }
         else if (id == HifumiSkillIds.Trick)
         {
+            // §19.8 속임수 — 발동할 때 고른 결과(시고로 / 대실패)로 그 턴 모든 친치로를 고정.
+            // 선택이 없으면(자동 계획 · 구 경로) 시고로(11-19 사용자 — 자동 선택 기준은 추후).
             trickActive = true;
-            forceTrickFailure = false;
+            forceTrickFailure =
+                action?.Slot?.PlanningChoiceId == TrickChoiceCatastrophe;
         }
         else if (id == HifumiSkillIds.CleanseAll)
         {
@@ -671,6 +675,26 @@ public sealed class HifumiMechanic :
         forceTrickFailure = false;
     }
 
+    public const string TrickChoiceShigoro = "hifumi.trick.shigoro";
+    public const string TrickChoiceCatastrophe = "hifumi.trick.catastrophe";
+
+    // §19.8 속임수 선택지 — 위세 발동 UI · TryExecutePrestige(planningChoiceId)가 쓴다.
+    IReadOnlyList<ActionPlanningChoiceOption> IActionPlanningChoiceRule.GetPlanningChoices(
+        ActionPlanningSkillContext context)
+    {
+        if (context.Owner != owner ||
+            context.Skill?.Definition?.SkillId != HifumiSkillIds.Trick)
+        {
+            return System.Array.Empty<ActionPlanningChoiceOption>();
+        }
+
+        return new[]
+        {
+            new ActionPlanningChoiceOption(TrickChoiceShigoro, "시고로 (4·5·6) — 이번 턴 친치로 +18"),
+            new ActionPlanningChoiceOption(TrickChoiceCatastrophe, "대실패 (1·2·3) — 이번 턴 친치로 −18 · 자해 60 · 뼈 60")
+        };
+    }
+
     public void SetTrickOutcomeForTurn(bool forceFailure)
     {
         if (!trickActive)
@@ -690,7 +714,7 @@ public sealed class HifumiMechanic :
 
         combination = forceTrickFailure
             ? ChinchiroCombination.Hifumi
-            : ChinchiroCombination.Arashi;
+            : ChinchiroCombination.Shigoro;
         return true;
     }
 

@@ -1162,14 +1162,15 @@ public sealed class PlayerAutoPlanEstimator
                 owner,
                 out ChinchiroCombination forced))
         {
+            // §19.8 속임수 — 대실패 1·2·3 / 시고로 4·5·6(11-19, 구 아라시 6·6·6).
             int a =
                 forced == ChinchiroCombination.Hifumi
                     ? 1
-                    : 6;
+                    : 4;
             int b =
                 forced == ChinchiroCombination.Hifumi
                     ? 2
-                    : 6;
+                    : 5;
             int c =
                 forced == ChinchiroCombination.Hifumi
                     ? 3
@@ -1277,7 +1278,7 @@ public sealed class PlayerAutoPlanEstimator
         ChinchiroCombination actualCombination =
             forced == ChinchiroCombination.Hifumi
                 ? ChinchiroCombination.Hifumi
-                : ChinchiroCombination.Arashi;
+                : ChinchiroCombination.Shigoro;
 
         int power;
 

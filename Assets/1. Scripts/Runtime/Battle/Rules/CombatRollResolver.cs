@@ -138,8 +138,9 @@ public static class CombatRollResolver
             }
             else
             {
-                a = 6;
-                b = 6;
+                // §19.8 속임수 — 시고로(4·5·6) 고정(11-19, 구 아라시).
+                a = 4;
+                b = 5;
                 c = 6;
             }
         }

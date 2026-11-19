@@ -108,7 +108,7 @@ public static class BattleSkillDescriptionFormatter
         ["hifumi.normal.small_change"] = "빛 없이 친치로로 공격하고 반격을 노리는 기술입니다.\n반격 굴림 대박(아라시·시고로) +10.\n대실패(1·2·3)는 친치로 값 −18 · 자해 60 · 뼈 60 — 합에서 지면 그 반격이 강화 반격(아라시 확정)이 됩니다.",
         ["hifumi.preparation.poker_face"] = "매 교환 받는 피해가 4 감소하고, 피격할 때마다 뼈 4를 얻습니다.",
         ["hifumi.prestige.all_in"] = "실제 뼈를 모두 걸고 친치로를 3회 굴립니다.\n대실패가 하나라도 나오면 뼈 0, 아라시·시고로는 500, 모쿠는 베팅한 뼈+100을 얻습니다.",
-        ["hifumi.prestige.trick"] = "이번 턴 히후미의 친치로 결과를 아라시 또는 1·2·3으로 고정합니다.\n1·2·3은 일반 대실패 규칙을 따릅니다."
+        ["hifumi.prestige.trick"] = "발동할 때 시고로(4·5·6) 또는 대실패(1·2·3)를 골라, 이번 턴 히후미의 모든 친치로(반격 포함)를 그 결과로 고정합니다.\n강화 반격은 그대로 아라시입니다."
     };
 
     private static readonly Dictionary<string, string> DisplayNames =
