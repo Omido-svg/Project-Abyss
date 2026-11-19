@@ -10,6 +10,12 @@ public static class HifumiChinchiroRuntime
 {
     public const int JackpotBonus = 18;
     public const int CatastropheSelfDamage = 60;
+    // §4.4 · §19.3 대실패의 친치로 값. 합 · 반격 굴림에서는 확정 패배 / 실패라 판정에 쓰이지 않고,
+    // 일방 굴림에서만 이 값으로 때린다(피해 최소 1은 피해 처리에서).
+    public const int CatastropheValue = -3;
+    // §19.3 반격 굴림의 아라시 · 시고로 값(합 굴림은 JackpotBonus 18).
+    public const int DuelCounterJackpot = 18;
+    public const int NormalCounterJackpot = 10;
 
     public static RollResult Roll(
         Skill skill,
@@ -84,7 +90,8 @@ public static class HifumiChinchiroRuntime
 
     public static RollResult RollStandalone(
         Character owner,
-        int basePower)
+        int basePower,
+        int jackpotBonus = JackpotBonus)
     {
         int a;
         int b;
@@ -125,7 +132,27 @@ public static class HifumiChinchiroRuntime
             0,
             a,
             b,
-            c);
+            c,
+            jackpotBonus);
+    }
+
+    /// <summary>
+    /// §19.3 강화 반격 굴림 — 친치로를 굴리지 않고 아라시로 확정. 눈은 1~6 무작위.
+    /// 속임수 등 결과 고정(ChinchiroOutcomeOverride)은 걸리지 않는다.
+    /// </summary>
+    public static RollResult RollEnhancedCounter(
+        int basePower,
+        int jackpotBonus)
+    {
+        int eye = UnityEngine.Random.Range(1, 7);
+        return BuildResultCore(
+            Mathf.Max(0, basePower),
+            null,
+            0,
+            eye,
+            eye,
+            eye,
+            jackpotBonus);
     }
 
     public static RollResult BuildResultForVerification(
@@ -167,7 +194,8 @@ public static class HifumiChinchiroRuntime
         int exchangeIndex,
         int a,
         int b,
-        int c)
+        int c,
+        int jackpotBonus = JackpotBonus)
     {
         int[] sorted = { a, b, c };
         Array.Sort(sorted);
@@ -178,23 +206,23 @@ public static class HifumiChinchiroRuntime
         if (a == b && b == c)
         {
             combination = ChinchiroCombination.Arashi;
-            value = JackpotBonus;
+            value = jackpotBonus;
         }
         else if (sorted[0] == 4 &&
                  sorted[1] == 5 &&
                  sorted[2] == 6)
         {
             combination = ChinchiroCombination.Shigoro;
-            value = JackpotBonus;
+            value = jackpotBonus;
         }
         else if (sorted[0] == 1 &&
                  sorted[1] == 2 &&
                  sorted[2] == 3)
         {
             combination = ChinchiroCombination.Hifumi;
-            // 판정값으로 이기지 못하게 하는 것은 IForcedRollFailureRule이 담당한다.
-            // 수치 자체는 0으로 두어 미정 penalty를 하드코딩하지 않는다.
-            value = 0;
+            // 합 · 반격 굴림의 확정 패배 / 실패는 IForcedRollFailureRule · 반격 루프가 담당한다.
+            // 일방 굴림은 실패하지 않고 이 값(−3)으로 때린다(§19.3, 11-19).
+            value = CatastropheValue;
         }
         else if (a == b || a == c || b == c)
         {

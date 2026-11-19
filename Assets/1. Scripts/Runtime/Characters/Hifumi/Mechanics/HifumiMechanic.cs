@@ -74,8 +74,8 @@ public sealed class HifumiMechanic :
     public const int HifumiSelfDamage = 60;
 
     private const int DuelCounterBasePower = 8;
-    private const int NormalCounterBasePower = 4;
-    private const int HifumiBasePowerBonus = 1;
+    public const int NormalCounterBasePower = 4;
+    public const int HifumiBasePowerBonus = 1;
     private const int CounterSafetyLimit = 64;
 
     private int bone;
@@ -152,7 +152,8 @@ public sealed class HifumiMechanic :
     private int governorActivePenalty;
     private int governorVerificationPenalty = -1;
 
-    private readonly Dictionary<long, int>
+    // §19.3(11-19): 합(맞붙은 교환)에서 나온 대실패의 교환 번호 — 그 교환의 반격 굴림이 강화 반격이 된다.
+    private readonly Dictionary<long, HashSet<int>>
         catastropheCounterBonusByAction = new();
 
     // J 굴림 도감: 같은 합에서 나온 대실패 하나당 그 합의 모든 반격 굴림 위력 +1.
@@ -177,7 +178,7 @@ public sealed class HifumiMechanic :
     public void DisableR6DeferredCounters() => deferCountersToR6=false;
 
     private bool TryQueueR6Counter(BattleAction source,Character target,
-        BodyPart part,int count,bool reward,int bonus,
+        BodyPart part,IReadOnlyList<bool> rolls,bool reward,int bonus,
         ProjectAbyss.Abilities.ReactionTimingCheckpoint checkpoint)
     {
         var service=battleContext?.Services;
@@ -185,7 +186,7 @@ public sealed class HifumiMechanic :
         var registry=service?.SpecialistReactionRegistry;
         if(!deferCountersToR6 || scheduler==null || registry==null ||
            source==null || source.ActionId<=0 || target==null ||
-           count<=0 || owner==null)
+           rolls==null || rolls.Count<=0 || owner==null)
             return false;
         long id=scheduler.AllocateRequestId();
         var skillId=source.Skill?.Definition?.SkillId ??
@@ -199,7 +200,7 @@ public sealed class HifumiMechanic :
                 source.OwnerPart!=null && !source.OwnerPart.IsBroken &&
                 target!=null && !target.IsDead &&
                 (part==null || part.Owner==target && !part.IsBroken),
-            () => ResolveCounterSequence(source,target,part,count,reward,bonus),
+            () => ResolveCounterSequence(source,target,part,rolls,reward,bonus),
             out var reason);
         if(!registered)
         {
@@ -420,6 +421,9 @@ public sealed class HifumiMechanic :
         reason = "Hifumi Chinchiro 1·2·3 catastrophe";
         return true;
     }
+
+    // §19.3(11-19): 일방 굴림의 대실패는 실패하지 않고 값 −3으로 때린다.
+    bool IForcedRollFailureRule.AppliesToOneSidedRoll(BattleAction action) => false;
 
     bool IForcedRollJudgmentRule.TryGetForcedRollJudgment(
         BattleAction action,
@@ -655,6 +659,19 @@ public sealed class HifumiMechanic :
                 }
             }
         }
+    }
+
+    public void ResolveCounterSequenceForVerification(
+        BattleAction sourceAction,
+        Character target,
+        BodyPart targetPart,
+        IReadOnlyList<bool> counterPool) =>
+        ResolveCounterSequence(sourceAction, target, targetPart, counterPool, false);
+
+    public void ClearTrickForVerification()
+    {
+        trickActive = false;
+        forceTrickFailure = false;
     }
 
     public void SetTrickOutcomeForTurn(bool forceFailure)
@@ -1221,30 +1238,21 @@ public sealed class HifumiMechanic :
         if (owner == null || owner.IsDead)
             return;
 
+        // §19.3(11-19): 일방 굴림의 대실패는 실패하지 않고 값 −3으로 때린다(ClashManager).
+        // 진 교환이 없으므로 강화 반격도 없다 — 자해 D · 뼈 D만.
         if (exchange.IsOneSided)
-        {
-            Character target = action.Target;
-            BodyPart targetPart = action.TargetPart;
-
-            if(deferCountersToR6)
-            {
-                // In production a rejected queue request cannot fall back to
-                // an immediate counter during the current exchange callback.
-                TryQueueR6Counter(action,target,targetPart,1,false,0,
-                    ProjectAbyss.Abilities.ReactionTimingCheckpoint.AfterClashCompleted);
-            }
-            else
-                ResolveCounterSequence(action,target,targetPart,1,
-                    applyTaggedSkillReward:false);
             return;
+
+        // 합의 대실패 — 그 교환의 반격 굴림 하나가 강화 반격이 된다(OnClashResolved에서 풀을 만든다).
+        if (!catastropheCounterBonusByAction.TryGetValue(
+                action.ActionId,
+                out HashSet<int> indices))
+        {
+            indices = new HashSet<int>();
+            catastropheCounterBonusByAction[action.ActionId] = indices;
         }
 
-        catastropheCounterBonusByAction.TryGetValue(
-            action.ActionId,
-            out int current);
-
-        catastropheCounterBonusByAction[action.ActionId] =
-            current + 1;
+        indices.Add(exchange.ExchangeIndex);
     }
 
     private void ApplyCatastropheSelfDamage()
@@ -1291,10 +1299,9 @@ public sealed class HifumiMechanic :
             clash,
             myAction);
 
-        int catastropheBonus = 0;
         catastropheCounterBonusByAction.TryGetValue(
             myAction.ActionId,
-            out catastropheBonus);
+            out HashSet<int> catastropheExchanges);
         catastropheCounterBonusByAction.Remove(
             myAction.ActionId);
 
@@ -1316,19 +1323,22 @@ public sealed class HifumiMechanic :
                 clash,
                 myAction);
 
-        int counterCount =
-            Mathf.Max(0, taggedLosses) +
-            Mathf.Max(0, catastropheBonus);
+        // §19.3(11-19): 반격 풀 = 진 교환 순서대로 일반 / 강화(true).
+        // 합에서 대실패로 진 교환은 그 반격 굴림이 강화 반격(따로 +1 없음), 태그 없는 스킬의 합 대실패도 강화 1.
+        List<bool> counterPool =
+            BuildCounterPool(
+                clash,
+                myAction,
+                catastropheExchanges);
 
         // 0917 §19 Goldan: Bloom(뼈 500) 상태의 골단 반격 풀은 x2.
-        // tagged loss + catastrophe bonus로 완성된 '이번 합의 반격 풀'을 두 배로 만든다.
         if (myAction.Skill?.Definition?.SkillId == HifumiSkillIds.Goldan &&
             IsBloom)
         {
-            counterCount *= 2;
+            counterPool.AddRange(counterPool.ToArray());
         }
 
-        if (counterCount <= 0)
+        if (counterPool.Count <= 0)
             return;
 
         BattleAction opponentAction =
@@ -1348,12 +1358,12 @@ public sealed class HifumiMechanic :
         {
             // Do not violate the post-commit checkpoint if the queue is full
             // or rejected. Old synchronous behavior stays only in legacy mode.
-            TryQueueR6Counter(myAction,target,targetPart,counterCount,
+            TryQueueR6Counter(myAction,target,targetPart,counterPool,
                 taggedLosses>0,counterPowerBonus,
                 ProjectAbyss.Abilities.ReactionTimingCheckpoint.AfterClashCompleted);
         }
         else
-            ResolveCounterSequence(myAction,target,targetPart,counterCount,
+            ResolveCounterSequence(myAction,target,targetPart,counterPool,
                 applyTaggedSkillReward:taggedLosses>0,
                 counterPowerBonus:counterPowerBonus);
     }
@@ -1434,6 +1444,57 @@ public sealed class HifumiMechanic :
         return true;
     }
 
+    private List<bool> BuildCounterPool(
+        ClashResultContext clash,
+        BattleAction myAction,
+        HashSet<int> catastropheExchanges)
+    {
+        var pool = new List<bool>();
+        string skillId = myAction?.Skill?.Definition?.SkillId;
+        bool normalCounter = HifumiSkillIds.IsNormalCounterSkill(skillId);
+        bool duelCounter = IsDuelCounterSkillForCurrentRun(skillId);
+
+        foreach (ClashExchangeResult exchange in clash.Exchanges)
+        {
+            if (exchange == null ||
+                exchange.WasCancelled ||
+                exchange.IsOneSided ||
+                exchange.IsTie)
+            {
+                continue;
+            }
+
+            if (catastropheExchanges != null &&
+                catastropheExchanges.Contains(exchange.ExchangeIndex))
+            {
+                pool.Add(true);
+                continue;
+            }
+
+            if (exchange.LoserAction != myAction)
+                continue;
+
+            if (normalCounter ||
+                (duelCounter && exchange.IsDuelExchange))
+            {
+                pool.Add(false);
+            }
+        }
+
+        return pool;
+    }
+
+    public List<bool> BuildCounterPoolForVerification(
+        ClashResultContext clash,
+        BattleAction myAction,
+        IEnumerable<int> catastropheExchangeIndices) =>
+        BuildCounterPool(
+            clash,
+            myAction,
+            catastropheExchangeIndices == null
+                ? null
+                : new HashSet<int>(catastropheExchangeIndices));
+
     private int CountTaggedCounterLosses(
         ClashResultContext clash,
         BattleAction myAction)
@@ -1482,10 +1543,11 @@ public sealed class HifumiMechanic :
         BattleAction sourceAction,
         Character target,
         BodyPart targetPart,
-        int initialCounterCount,
+        IReadOnlyList<bool> counterPool,
         bool applyTaggedSkillReward,
         int counterPowerBonus = 0)
     {
+        int initialCounterCount = counterPool?.Count ?? 0;
         if (sourceAction == null ||
             owner == null ||
             owner.IsDead ||
@@ -1495,6 +1557,11 @@ public sealed class HifumiMechanic :
         {
             return;
         }
+
+        // §19.3(11-19) 반격 풀 — false 일반(친치로) / true 강화(아라시 확정).
+        // 반격 굴림의 대실패는 그 굴림 실패 + 강화 1을 맨 뒤에 붙인다(강화는 대실패가 없어 연쇄 끝).
+        var queue = new List<bool>(counterPool);
+        int queueIndex = 0;
 
         var parent=sourceAction.GetEffectCause(AbilityEventKind.ClashCompleted,-1);
         var cause=new EffectCause(parent.RootActionId,parent.EventId,battleContext.EventSequence.Next(),
@@ -1535,9 +1602,15 @@ public sealed class HifumiMechanic :
 
 
 
-        while (counter.PendingRolls > 0 &&
+        int counterJackpot =
+            isNormalCounter
+                ? HifumiChinchiroRuntime.NormalCounterJackpot
+                : HifumiChinchiroRuntime.DuelCounterJackpot;
+
+        while (queueIndex < queue.Count &&
                counter.AttemptedRolls < CounterSafetyLimit)
         {
+            bool enhanced = queue[queueIndex++];
             counter.PendingRolls--;
             counter.AttemptedRolls++;
 
@@ -1550,11 +1623,17 @@ public sealed class HifumiMechanic :
             }
 
             RollResult roll =
-                HifumiChinchiroRuntime.RollStandalone(
-                    owner,
-                    baseCounterPower);
+                enhanced
+                    ? HifumiChinchiroRuntime.RollEnhancedCounter(
+                        baseCounterPower,
+                        counterJackpot)
+                    : HifumiChinchiroRuntime.RollStandalone(
+                        owner,
+                        baseCounterPower,
+                        counterJackpot);
 
             bool catastrophe =
+                !enhanced &&
                 roll?.ChinchiroCombination ==
                 ChinchiroCombination.Hifumi;
 
@@ -1562,9 +1641,11 @@ public sealed class HifumiMechanic :
                 new BattleReactiveRollEvent
                 {
                     SourceKind = BattleReactiveRollSourceKind.Counter,
-                    DisplayName = catastrophe
-                        ? "뼈 반격 · 대실패"
-                        : "뼈 반격",
+                    DisplayName = enhanced
+                        ? "강화 반격"
+                        : catastrophe
+                            ? "뼈 반격 · 대실패"
+                            : "뼈 반격",
                     SourceAction = sourceAction,
                     Owner = owner,
                     OwnerPart = sourceAction.OwnerPart,
@@ -1585,16 +1666,18 @@ public sealed class HifumiMechanic :
 
             if (catastrophe)
             {
-                // 0922: 반격 굴림 자체의 1·2·3도 공통 대실패를 그대로 적용한다.
-                // 현재 반격은 실패하고 자해60 -> 뼈 적립 -> 추가 반격 +1을
-                // 현재 큐의 뒤에 붙인다.
+                // §19.3(11-19): 반격 굴림의 대실패 — 그 굴림 실패(피해 없음) + 자해 D · 뼈 D
+                // + 강화 반격 굴림 1을 지금 반격 풀의 맨 뒤에 붙인다.
                 reactiveRoll.Complete(null);
                 battleEvent?.RaiseReactiveRollResolved(
                     reactiveRoll);
 
                 ApplyCatastropheSelfDamage();
                 if (owner != null && !owner.IsDead)
+                {
+                    queue.Add(true);
                     counter.PendingRolls++;
+                }
 
                 counter.ProcessedRolls++;
                 continue;

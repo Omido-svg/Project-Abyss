@@ -1359,7 +1359,7 @@ public partial class ClashManager
             action,
             exchangeIndex);
 
-        if (IsForcedRollFailure(action))
+        if (IsForcedRollFailure(action, oneSided: true))
         {
             action.Skill?.NotifyRollOutcome(
                 action,
@@ -1682,7 +1682,8 @@ public partial class ClashManager
     }
 
     private static bool IsForcedRollFailure(
-        BattleAction action)
+        BattleAction action,
+        bool oneSided = false)
     {
         if (action?.Owner?.Mechanics == null ||
             action.LastRollResult == null)
@@ -1693,6 +1694,7 @@ public partial class ClashManager
         foreach (CombatMechanic mechanic in action.Owner.Mechanics)
         {
             if (mechanic is IForcedRollFailureRule rule &&
+                (!oneSided || rule.AppliesToOneSidedRoll(action)) &&
                 rule.IsForcedRollFailure(
                     action,
                     action.LastRollResult,

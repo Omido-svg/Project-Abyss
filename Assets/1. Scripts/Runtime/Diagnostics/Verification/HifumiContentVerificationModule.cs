@@ -105,6 +105,14 @@ public sealed class HifumiContentVerificationModule : IGameSystemVerificationMod
             VerifySelfDamageFloor);
 
         yield return Runtime(
+            "phased.hifumi.h13.catastrophe_three_ways",
+            "H-07",
+            "대실패 세 갈래 · 강화 반격 아라시 · 반격 대박 값",
+            GameSystemVerificationCategory.Lifecycle,
+            "일방 = 값 −3(강제 실패 아님) / 합 대실패 교환 = 강화 반격(진 교환 순서) / 반격 굴림 대실패 = 실패 + 강화 1 맨 뒤 → 연쇄 끝 · 강화 = 아라시 확정 · 반격 대박 결투 18 / 평타 10 (§19.3, 11-19)",
+            VerifyCatastropheThreeWays);
+
+        yield return Runtime(
             "phased.hifumi.h10.duel_governor",
             "H-10",
             "히후미 다음 턴 Duel 자기 거버너",
@@ -712,6 +720,88 @@ public sealed class HifumiContentVerificationModule : IGameSystemVerificationMod
             m.SetBloodPriceForVerification(bloodBefore);
         }
     }
+
+    private static GameSystemVerificationProbeResult VerifyCatastropheThreeWays(
+        GameSystemVerificationContext context)
+    {
+        if (!Fixture(context, out GameSystemVerificationFixture f, out Hifumi hifumi, out HifumiMechanic m, out GameSystemVerificationProbeResult fail))
+            return fail;
+
+        // ① 값 — 대실패 −3, 강화 반격 = 아라시 확정 · 반격 대박 값
+        RollResult cat = HifumiChinchiroRuntime.BuildResultForVerification(10, 1, 2, 3);
+        bool catValue = cat.ChinchiroCombination == ChinchiroCombination.Hifumi &&
+                        cat.ChinchiroBonus == -3 && cat.FinalPower == 7;
+        RollResult enhNormal = HifumiChinchiroRuntime.RollEnhancedCounter(5, HifumiChinchiroRuntime.NormalCounterJackpot);
+        RollResult enhDuel = HifumiChinchiroRuntime.RollEnhancedCounter(9, HifumiChinchiroRuntime.DuelCounterJackpot);
+        bool enhanced =
+            enhNormal.ChinchiroCombination == ChinchiroCombination.Arashi &&
+            enhNormal.FinalPower == 15 &&
+            enhNormal.DiceValues.Count == 3 &&
+            enhNormal.DiceValues.Distinct().Count() == 1 &&
+            enhDuel.FinalPower == 27;
+
+        // ② 일방 굴림에는 강제 실패를 적용하지 않는다
+        bool oneSided = !((IForcedRollFailureRule)m).AppliesToOneSidedRoll(null);
+
+        // ③ 반격 풀 — 진 교환 순서, 합 대실패 교환은 강화, 일방 · 이긴 교환은 없음
+        Skill small = hifumi.RuntimeSkills?.FirstOrDefault(sk => sk?.Definition?.SkillId == HifumiSkillIds.SmallChange);
+        if (small == null || f.Enemy == null)
+            return GameSystemVerificationProbeResult.Fail("푼돈 걸기 / Enemy missing");
+        BodyPart ownPart = hifumi.BodyParts?.FirstOrDefault(p => p != null && !p.IsBroken && p.Type != PartType.LEGS);
+        BodyPart enemyPart = f.Enemy.BodyParts?.FirstOrDefault(p => p != null && !p.IsBroken);
+        BattleAction mine = new BattleAction { Slot = new ActionSlot {
+            ActionId = 950931, Owner = hifumi, Part = ownPart, Skill = small,
+            TargetCharacter = f.Enemy, TargetPart = enemyPart } };
+        BattleAction other = new BattleAction { Slot = new ActionSlot { ActionId = 950932, Owner = f.Enemy } };
+        var clash = new ClashResultContext { IsClash = true, FirstAction = mine, SecondAction = other };
+        clash.Exchanges.Add(new ClashExchangeResult { ExchangeIndex = 0, FirstAction = mine, SecondAction = other, WinnerAction = other, LoserAction = mine });
+        clash.Exchanges.Add(new ClashExchangeResult { ExchangeIndex = 1, FirstAction = mine, SecondAction = other, WinnerAction = other, LoserAction = mine });
+        clash.Exchanges.Add(new ClashExchangeResult { ExchangeIndex = 2, FirstAction = mine, SecondAction = other, WinnerAction = mine, LoserAction = other });
+        clash.Exchanges.Add(new ClashExchangeResult { ExchangeIndex = 3, FirstAction = mine, IsOneSided = true, WinnerAction = mine });
+        List<bool> pool = m.BuildCounterPoolForVerification(clash, mine, new[] { 1 });
+        bool poolOk = pool.Count == 2 && pool[0] == false && pool[1] == true;
+
+        // ④ 반격 굴림 대실패 → 실패 + 강화 1 맨 뒤 → 연쇄 끝 (속임수 대실패 고정으로 강제)
+        int hpBefore = hifumi.CurrentHP;
+        int boneBefore = m.Bone;
+        var names = new List<string>();
+        var powers = new List<int>();
+        System.Action<BattleReactiveRollEvent> onRoll = e =>
+        {
+            if (e?.Owner == hifumi) { names.Add(e.DisplayName); powers.Add(e.Power); }
+        };
+        f.Context._battleEvent.OnReactiveRollStarted += onRoll;
+        bool chainOk;
+        try
+        {
+            m.ExecuteSkillForVerification(HifumiSkillIds.Trick);
+            m.SetTrickOutcomeForTurn(true);
+            m.ResolveCounterSequenceForVerification(mine, f.Enemy, enemyPart, new List<bool> { false });
+            chainOk =
+                names.Count == 2 &&
+                names[0] == "뼈 반격 · 대실패" &&
+                names[1] == "강화 반격" &&
+                powers[1] == HifumiNormalCounterPower(m) + HifumiChinchiroRuntime.NormalCounterJackpot;
+        }
+        finally
+        {
+            f.Context._battleEvent.OnReactiveRollStarted -= onRoll;
+            m.ClearTrickForVerification();
+            hifumi.RuntimeStatus.currentHP = hpBefore;
+            m.SetBoneForVerification(boneBefore);
+        }
+
+        bool ok = catValue && enhanced && oneSided && poolOk && chainOk;
+        string actual =
+            $"Cat={catValue}(bonus {cat.ChinchiroBonus}, power {cat.FinalPower}), Enhanced={enhanced}(N {enhNormal.FinalPower} / D {enhDuel.FinalPower}), " +
+            $"OneSidedNoFail={oneSided}, Pool={poolOk}({string.Join(",", pool)}), Chain={chainOk}({string.Join(" > ", names)} / {string.Join(",", powers)})";
+        return ok
+            ? GameSystemVerificationProbeResult.Pass(actual)
+            : GameSystemVerificationProbeResult.Fail(actual);
+    }
+
+    private static int HifumiNormalCounterPower(HifumiMechanic m) =>
+        HifumiMechanic.NormalCounterBasePower + HifumiMechanic.HifumiBasePowerBonus;
 
     private static GameSystemVerificationProbeResult VerifyGovernor(
         GameSystemVerificationContext context)
