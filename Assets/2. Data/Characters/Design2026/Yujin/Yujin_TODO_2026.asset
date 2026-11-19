@@ -12,6 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 02f75a7e990b2b34480f808c74726683, type: 3}
   m_Name: Yujin_TODO_2026
   m_EditorClassIdentifier: 
+  AbilityRules: []
   CharacterName: "\uC720\uC9C4"
   CombatantTier: 0
   Portrait: {fileID: 0}
@@ -22,52 +23,91 @@ MonoBehaviour:
   SingleHpMax: 1
   maxPrestige: 50
   maxEnergy: 3
+  TurnStartEnergyPolicy: 0
+  TurnStartEnergyAmount: 1
   ActionSlots:
   - SlotId: HEAD
     DisplayName: "\uBA38\uB9AC"
     Enabled: 1
     HasLinkedPart: 1
     LinkedPartType: 0
+    LinkedPartId: 
     OverrideSpeedRange: 0
     MinSpeed: 3
     MaxSpeed: 8
+    FixedSkill: {fileID: 0}
+    InsufficientEnergyFallbackSkill: {fileID: 0}
+    TargetingPolicy: 0
     AllowedActionTypes: 00000000010000000200000003000000
   - SlotId: LEFT_ARM
     DisplayName: "\uC67C\uD314"
     Enabled: 1
     HasLinkedPart: 1
     LinkedPartType: 1
+    LinkedPartId: 
     OverrideSpeedRange: 0
     MinSpeed: 3
     MaxSpeed: 8
+    FixedSkill: {fileID: 0}
+    InsufficientEnergyFallbackSkill: {fileID: 0}
+    TargetingPolicy: 0
     AllowedActionTypes: 00000000010000000200000003000000
   - SlotId: RIGHT_ARM
     DisplayName: "\uC624\uB978\uD314"
     Enabled: 1
     HasLinkedPart: 1
     LinkedPartType: 2
+    LinkedPartId: 
     OverrideSpeedRange: 0
     MinSpeed: 3
     MaxSpeed: 8
+    FixedSkill: {fileID: 0}
+    InsufficientEnergyFallbackSkill: {fileID: 0}
+    TargetingPolicy: 0
     AllowedActionTypes: 00000000010000000200000003000000
   - SlotId: LEGS
     DisplayName: "\uB2E4\uB9AC"
     Enabled: 1
     HasLinkedPart: 1
     LinkedPartType: 3
+    LinkedPartId: 
     OverrideSpeedRange: 0
     MinSpeed: 3
     MaxSpeed: 8
+    FixedSkill: {fileID: 0}
+    InsufficientEnergyFallbackSkill: {fileID: 0}
+    TargetingPolicy: 0
     AllowedActionTypes: 00000000010000000200000003000000
   CombatLoadout: {fileID: 11400000, guid: 15fff042e85379e4a91a2d84caaf29b8, type: 2}
   BossPhases: []
   PhysicalResistances:
     CutMultiplier: 1
+    BluntMultiplier: 2
+    PierceMultiplier: 0.5
+  StaggerResistances:
+    CutMultiplier: 1
     BluntMultiplier: 1
     PierceMultiplier: 1
   EnableStaggerGauge: 1
+  OverrideMaxStaggerGauge: 0
   MaxStaggerGauge: 100
   StaggerDamageRatio: 1
   minSpeed: 1
   maxSpeed: 6
+  YujinMarkRules:
+    BaekuHitMomentum: 0
+    BaekuHitStagger: 0
+    BaekuIgnitionStagger: 0
+    NakilIgnitionDamage: 0
+    TrapLifetimeTurns: 0
+    ExplosionDamagePerTrap: 0
+    ResonanceWeakness: 0
+    ResonanceNakilExtraDamage: 0
+    ContagionMarkAmount: 0
+    SharpenMarkBonus: 0
+  HifumiCardRules:
+    BoldJudgmentBoneCost: 40
+    BoldJudgmentBindOnFail: 1
+    BoldJudgmentCompleteBlockAdvance: 40
+    MutualDestructionFixedDamage: 10
   InitialResources: []
