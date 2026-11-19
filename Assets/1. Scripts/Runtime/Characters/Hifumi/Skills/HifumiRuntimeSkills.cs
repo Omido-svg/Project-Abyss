@@ -10,9 +10,9 @@ public static class HifumiChinchiroRuntime
 {
     public const int JackpotBonus = 18;
     public const int CatastropheSelfDamage = 60;
-    // §4.4 · §19.3 대실패의 친치로 값. 합 · 반격 굴림에서는 확정 패배 / 실패라 판정에 쓰이지 않고,
-    // 일방 굴림에서만 이 값으로 때린다(피해 최소 1은 피해 처리에서).
-    public const int CatastropheValue = -3;
+    // §4.4 · §19.3 대실패의 친치로 값(대박 +18과 대칭, 11-19). 합 · 일방 · 반격 굴림 모두
+    // 이 값으로 정상 판정 · 타격한다 — 합에서는 웬만하면 지고, 피해는 최소 1(피해 처리에서).
+    public const int CatastropheValue = -18;
     // §19.3 반격 굴림의 아라시 · 시고로 값(합 굴림은 JackpotBonus 18).
     public const int DuelCounterJackpot = 18;
     public const int NormalCounterJackpot = 10;
@@ -220,8 +220,7 @@ public static class HifumiChinchiroRuntime
                  sorted[2] == 3)
         {
             combination = ChinchiroCombination.Hifumi;
-            // 합 · 반격 굴림의 확정 패배 / 실패는 IForcedRollFailureRule · 반격 루프가 담당한다.
-            // 일방 굴림은 실패하지 않고 이 값(−3)으로 때린다(§19.3, 11-19).
+            // §19.3(11-19): 대실패는 어디서든 친치로 값 −18로 정상 판정한다(강제 패배 없음).
             value = CatastropheValue;
         }
         else if (a == b || a == c || b == c)

@@ -413,16 +413,13 @@ public sealed class HifumiMechanic :
             return false;
         }
 
-        // 0922 H 운명을 흔들다는 1·2·3을 공통 대실패로 처리하지 않는다.
-        // 판정값 0의 일반 비교만 수행한다.
-        if (action.Skill?.Definition?.SkillId == HifumiSkillIds.ShakeFate)
-            return false;
-
-        reason = "Hifumi Chinchiro 1·2·3 catastrophe";
-        return true;
+        // §19.3(11-19): 대실패는 더 이상 강제 패배 / 실패가 아니다 — 친치로 값 −18로 정상 판정한다.
+        // 그래서 상대의 승리시 · 히후미의 패배시가 일반 교환과 같은 경로로 돈다.
+        // (0922 H 운명을 흔들다도 원래부터 강제 실패 대상이 아니었다.)
+        return false;
     }
 
-    // §19.3(11-19): 일방 굴림의 대실패는 실패하지 않고 값 −3으로 때린다.
+    // §19.3(11-19): 대실패는 일방 굴림에서도 값 −18로 때린다(강제 실패 없음).
     bool IForcedRollFailureRule.AppliesToOneSidedRoll(BattleAction action) => false;
 
     bool IForcedRollJudgmentRule.TryGetForcedRollJudgment(
@@ -1238,12 +1235,12 @@ public sealed class HifumiMechanic :
         if (owner == null || owner.IsDead)
             return;
 
-        // §19.3(11-19): 일방 굴림의 대실패는 실패하지 않고 값 −3으로 때린다(ClashManager).
-        // 진 교환이 없으므로 강화 반격도 없다 — 자해 D · 뼈 D만.
+        // §19.3(11-19): 일방 굴림의 대실패는 값 −18로 때린다. 합이 아니므로 강화 반격은 없다 — 자해 D · 뼈 D만.
         if (exchange.IsOneSided)
             return;
 
-        // 합의 대실패 — 그 교환의 반격 굴림 하나가 강화 반격이 된다(OnClashResolved에서 풀을 만든다).
+        // 합의 대실패 — 그 교환을 지면 반격 굴림 하나가 강화 반격이 된다(OnClashResolved에서 풀을 만든다).
+        // 강화 반격 트리거 = 대실패 + 합 패배. −18이어도 이긴 교환이면 강화 반격은 없다.
         if (!catastropheCounterBonusByAction.TryGetValue(
                 action.ActionId,
                 out HashSet<int> indices))
@@ -1464,15 +1461,16 @@ public sealed class HifumiMechanic :
                 continue;
             }
 
+            if (exchange.LoserAction != myAction)
+                continue;
+
+            // 강화 반격 = 대실패 + 합 패배(태그 없는 스킬도 1). 태그 스킬은 그 교환의 +1이 강화로 바뀐다.
             if (catastropheExchanges != null &&
                 catastropheExchanges.Contains(exchange.ExchangeIndex))
             {
                 pool.Add(true);
                 continue;
             }
-
-            if (exchange.LoserAction != myAction)
-                continue;
 
             if (normalCounter ||
                 (duelCounter && exchange.IsDuelExchange))
@@ -1559,7 +1557,7 @@ public sealed class HifumiMechanic :
         }
 
         // §19.3(11-19) 반격 풀 — false 일반(친치로) / true 강화(아라시 확정).
-        // 반격 굴림의 대실패는 그 굴림 실패 + 강화 1을 맨 뒤에 붙인다(강화는 대실패가 없어 연쇄 끝).
+        // 반격 굴림은 합이 아니라서 대실패가 나도 −18로 때릴 뿐 강화 반격을 만들지 않는다 → 연쇄 없음.
         var queue = new List<bool>(counterPool);
         int queueIndex = 0;
 
@@ -1656,9 +1654,7 @@ public sealed class HifumiMechanic :
                         PhysicalDamageResolver.Resolve(sourceAction),
                     SequenceIndex = counter.ProcessedRolls,
                     SequenceCount = initialCounterCount,
-                    Power = catastrophe
-                        ? 0
-                        : roll?.FinalPower ?? 0
+                    Power = Mathf.Max(1, roll?.FinalPower ?? 1)
                 };
 
             battleEvent?.RaiseReactiveRollStarted(
@@ -1666,21 +1662,15 @@ public sealed class HifumiMechanic :
 
             if (catastrophe)
             {
-                // §19.3(11-19): 반격 굴림의 대실패 — 그 굴림 실패(피해 없음) + 자해 D · 뼈 D
-                // + 강화 반격 굴림 1을 지금 반격 풀의 맨 뒤에 붙인다.
-                reactiveRoll.Complete(null);
-                battleEvent?.RaiseReactiveRollResolved(
-                    reactiveRoll);
-
+                // §19.3(11-19): 반격 굴림의 대실패 — 자해 D · 뼈 D, 그 굴림은 −18로 그대로 때린다.
                 ApplyCatastropheSelfDamage();
-                if (owner != null && !owner.IsDead)
+                if (owner == null || owner.IsDead)
                 {
-                    queue.Add(true);
-                    counter.PendingRolls++;
+                    reactiveRoll.Complete(null);
+                    battleEvent?.RaiseReactiveRollResolved(reactiveRoll);
+                    counter.ProcessedRolls++;
+                    break;
                 }
-
-                counter.ProcessedRolls++;
-                continue;
             }
 
             int counterPower =

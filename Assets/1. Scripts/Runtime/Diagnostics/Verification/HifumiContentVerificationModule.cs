@@ -61,7 +61,7 @@ public sealed class HifumiContentVerificationModule : IGameSystemVerificationMod
             "H-07",
             "친치로 1·2·3 대실패",
             GameSystemVerificationCategory.Contract,
-            "1·2·3은 강제패배 + 자기피해60 + 반격굴림+1; paired/one-sided 공통 hook",
+            "1·2·3은 친치로 값 −18로 정상 판정(강제 실패 없음) + 자기피해 60 (§4.4 · §19.3, 11-19)",
             VerifyCatastrophe);
 
         yield return Runtime(
@@ -109,7 +109,7 @@ public sealed class HifumiContentVerificationModule : IGameSystemVerificationMod
             "H-07",
             "대실패 세 갈래 · 강화 반격 아라시 · 반격 대박 값",
             GameSystemVerificationCategory.Lifecycle,
-            "일방 = 값 −3(강제 실패 아님) / 합 대실패 교환 = 강화 반격(진 교환 순서) / 반격 굴림 대실패 = 실패 + 강화 1 맨 뒤 → 연쇄 끝 · 강화 = 아라시 확정 · 반격 대박 결투 18 / 평타 10 (§19.3, 11-19)",
+            "대실패 = 어디서든 값 −18 정상 판정 / 강화 반격 = 대실패 + 합 패배만(진 교환 순서) / 반격 굴림 대실패 = −18로 때리고 강화 없음(연쇄 없음) · 강화 = 아라시 확정 · 반격 대박 결투 18 / 평타 10 (§19.3, 11-19)",
             VerifyCatastropheThreeWays);
 
         yield return Runtime(
@@ -325,8 +325,12 @@ public sealed class HifumiContentVerificationModule : IGameSystemVerificationMod
             "IsForcedRollFailure",
             BindingFlags.NonPublic | BindingFlags.Static) != null;
 
+        // 11-19: 대실패는 강제 실패가 아니라 값 −18 정상 판정 → forced는 false여야 한다.
         bool ok = catastrophe.ChinchiroCombination == ChinchiroCombination.Hifumi &&
-                  catastrophe.ChinchiroSelfDamage == 60 && forced && pairedHook && oneSidedHook;
+                  catastrophe.ChinchiroSelfDamage == 60 &&
+                  catastrophe.ChinchiroBonus == HifumiChinchiroRuntime.CatastropheValue &&
+                  catastrophe.FinalPower == 12 + HifumiChinchiroRuntime.CatastropheValue &&
+                  !forced && pairedHook && oneSidedHook;
 
         return ok
             ? GameSystemVerificationProbeResult.Pass("1·2·3 catastrophe=forced failure/self60; Clash paired+one-sided hooks wired")
@@ -730,7 +734,7 @@ public sealed class HifumiContentVerificationModule : IGameSystemVerificationMod
         // ① 값 — 대실패 −3, 강화 반격 = 아라시 확정 · 반격 대박 값
         RollResult cat = HifumiChinchiroRuntime.BuildResultForVerification(10, 1, 2, 3);
         bool catValue = cat.ChinchiroCombination == ChinchiroCombination.Hifumi &&
-                        cat.ChinchiroBonus == -3 && cat.FinalPower == 7;
+                        cat.ChinchiroBonus == -18 && cat.FinalPower == 10 - 18;
         RollResult enhNormal = HifumiChinchiroRuntime.RollEnhancedCounter(5, HifumiChinchiroRuntime.NormalCounterJackpot);
         RollResult enhDuel = HifumiChinchiroRuntime.RollEnhancedCounter(9, HifumiChinchiroRuntime.DuelCounterJackpot);
         bool enhanced =
@@ -740,8 +744,9 @@ public sealed class HifumiContentVerificationModule : IGameSystemVerificationMod
             enhNormal.DiceValues.Distinct().Count() == 1 &&
             enhDuel.FinalPower == 27;
 
-        // ② 일방 굴림에는 강제 실패를 적용하지 않는다
-        bool oneSided = !((IForcedRollFailureRule)m).AppliesToOneSidedRoll(null);
+        // ② 강제 실패 없음 — 합 · 일방 모두 정상 판정
+        bool oneSided = !((IForcedRollFailureRule)m).IsForcedRollFailure(
+            new BattleAction { Slot = new ActionSlot { Owner = hifumi } }, cat, out _);
 
         // ③ 반격 풀 — 진 교환 순서, 합 대실패 교환은 강화, 일방 · 이긴 교환은 없음
         Skill small = hifumi.RuntimeSkills?.FirstOrDefault(sk => sk?.Definition?.SkillId == HifumiSkillIds.SmallChange);
@@ -758,10 +763,11 @@ public sealed class HifumiContentVerificationModule : IGameSystemVerificationMod
         clash.Exchanges.Add(new ClashExchangeResult { ExchangeIndex = 1, FirstAction = mine, SecondAction = other, WinnerAction = other, LoserAction = mine });
         clash.Exchanges.Add(new ClashExchangeResult { ExchangeIndex = 2, FirstAction = mine, SecondAction = other, WinnerAction = mine, LoserAction = other });
         clash.Exchanges.Add(new ClashExchangeResult { ExchangeIndex = 3, FirstAction = mine, IsOneSided = true, WinnerAction = mine });
-        List<bool> pool = m.BuildCounterPoolForVerification(clash, mine, new[] { 1 });
+        // 1 = 대실패로 진 교환(강화) · 2 = 대실패인데 이긴 교환(강화 없음)
+        List<bool> pool = m.BuildCounterPoolForVerification(clash, mine, new[] { 1, 2 });
         bool poolOk = pool.Count == 2 && pool[0] == false && pool[1] == true;
 
-        // ④ 반격 굴림 대실패 → 실패 + 강화 1 맨 뒤 → 연쇄 끝 (속임수 대실패 고정으로 강제)
+        // ④ 반격 굴림 대실패 → −18로 때리고(최소 1) 강화 반격은 없다 (속임수 대실패 고정으로 강제)
         int hpBefore = hifumi.CurrentHP;
         int boneBefore = m.Bone;
         var names = new List<string>();
@@ -778,10 +784,10 @@ public sealed class HifumiContentVerificationModule : IGameSystemVerificationMod
             m.SetTrickOutcomeForTurn(true);
             m.ResolveCounterSequenceForVerification(mine, f.Enemy, enemyPart, new List<bool> { false });
             chainOk =
-                names.Count == 2 &&
+                names.Count == 1 &&
                 names[0] == "뼈 반격 · 대실패" &&
-                names[1] == "강화 반격" &&
-                powers[1] == HifumiNormalCounterPower(m) + HifumiChinchiroRuntime.NormalCounterJackpot;
+                powers[0] == System.Math.Max(1, HifumiNormalCounterPower(m) + HifumiChinchiroRuntime.CatastropheValue) &&
+                m.Bone >= boneBefore + HifumiNativeRules.CatastropheDirectBone;
         }
         finally
         {
