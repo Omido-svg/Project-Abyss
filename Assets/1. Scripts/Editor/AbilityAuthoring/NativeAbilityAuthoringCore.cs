@@ -216,6 +216,15 @@ public static class NativeAbilityAuthoringCore
                 .Any(x=>x.SourceAssetGuid==p.SourceGuid);
         if(ExistingGuidElsewhere())
         {p.Status=Verdict.Blocked;p.Reason="Native GUID already routed elsewhere";return p;}
+        // 11-21: R5 그래프가 없는 카드를 새로 만들려 할 때, 캐릭터 네이티브가 이미
+        // 소유한 카드면 막는다. 디스패처가 캐릭터 네이티브를 먼저 라우팅하므로 남은 옛
+        // Entry는 실전에서 안 돈다(단칼 = 빌야르 폭발 메커닉 · 퇴로 차단 = 명성 네이티브 —
+        // 11-20에 R5 그래프를 일부러 지웠다). 기존 R5 그래프의 판정은 건드리지 않는다.
+        if(ProjectAbyss.Abilities.OlafNativeAbilityRuntimeBinding.IsApprovedSource(source)||
+           ProjectAbyss.Abilities.OlafNativeAbilityRuntimeBinding.IsNativeExplosionSource(source)||
+           ProjectAbyss.Abilities.OlafNativeAbilityRuntimeBinding.IsNativePrestigeSource(source)||
+           ProjectAbyss.Abilities.YujinNativeAbilityRuntimeBinding.IsKnownSource(source))
+        {p.Status=Verdict.Blocked;p.Reason="Owned by character native route (Olaf/Yujin)";return p;}
         p.Destination=StagingFolder(p.Kind)+"/"+file;
         var staged=AssetDatabase.LoadMainAssetAtPath(p.Destination);
         if(staged!=null||File.Exists(p.Destination))

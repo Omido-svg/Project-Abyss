@@ -39,7 +39,7 @@ public static class NativeContentIntegrationVerification
         }
         Check("F01 compiler not currently busy",
             !EditorApplication.isCompiling);
-        Check("F02 actual source census 145 original + 19 new",
+        Check("F02 actual source census "+SkillCorpusVerification.CensusLabel+"",
             SkillCorpusVerification.IsExactLayeredCensus());
         Check("F03 enemy source catalog exact new 19",
             EnemyStageOneSkillCatalog.AuthoredCount==19);
@@ -47,7 +47,8 @@ public static class NativeContentIntegrationVerification
             .Select(AssetDatabase.GUIDToAssetPath)
             .Select(p=>AssetDatabase.LoadAssetAtPath<SkillDefinition>(p))
             .Where(x=>x!=null).ToArray();
-        Check("F04 exactly 164 source skill assets",skills.Length==164);
+        Check("F04 exactly "+SkillCorpusVerification.CensusLabel+" source skill assets",
+            skills.Length==SkillCorpusVerification.ExpectedTotalSkillCount);
         Check("F05 original SkillDefinition assets clean",
             skills.All(x=>!EditorUtility.IsDirty(x)));
 
@@ -82,7 +83,8 @@ public static class NativeContentIntegrationVerification
             "ProjectAbyss/NativeYujin"))
             Add("Yujin",x.StableId,x.SourceAssetGuid,x.SourceAssetName,x.IsValid,x);
 
-        Check("F06 native graph inventory exactly 91",rows.Count==91);
+        Check("F06 native graph inventory exactly "+SkillCorpusVerification.NativeGraphInventoryCount,
+            rows.Count==SkillCorpusVerification.NativeGraphInventoryCount);
         Check("F07 every native graph matches original GUID/SkillId/asset name",
             rows.All(x=>{
                 var path=AssetDatabase.GUIDToAssetPath(x.Guid);
@@ -96,11 +98,12 @@ public static class NativeContentIntegrationVerification
                 return !string.IsNullOrWhiteSpace(path)&&File.Exists(path+".meta");
             }));
         var byGuid=rows.GroupBy(x=>x.Guid).ToArray();
-        Check("F09 75 unique source GUID identities across 91 graphs",
-            byGuid.Length==75);
+        Check("F09 "+SkillCorpusVerification.NativeGraphUniqueGuidCount+" unique source GUID identities across "+
+            SkillCorpusVerification.NativeGraphInventoryCount+" graphs",
+            byGuid.Length==SkillCorpusVerification.NativeGraphUniqueGuidCount);
         var doubled=byGuid.Where(g=>g.Count()>1).ToArray();
         Check("F10 16 historical graph aliases, no unauthorized overlap",
-            doubled.Length==16&&
+            doubled.Length==SkillCorpusVerification.NativeGraphAliasCount&&
             doubled.All(g=>g.Count()==2&&
                 g.Any(x=>x.Fam=="OlafCanon")&&
                 g.Any(x=>x.Fam=="Resource"||x.Fam=="Status"||x.Fam=="Gauge")));
@@ -112,8 +115,9 @@ public static class NativeContentIntegrationVerification
 
         var collisions=skills.GroupBy(x=>x.SkillId,StringComparer.Ordinal)
             .Where(x=>x.Count()>1).ToArray();
-        Check("F12 exactly four legacy duplicate groups eight GUID-owned assets",
-            collisions.Length==4&&collisions.Sum(x=>x.Count())==8&&
+        Check("F12 duplicate-ID groups match census and are GUID-owned",
+            SkillCorpusVerification.IsExpectedDuplicateCensus(collisions.Length,
+                collisions.Sum(x=>x.Count()))&&
             collisions.All(x=>SkillIdentityVerification
                 .IsApprovedGroup(x)));
 

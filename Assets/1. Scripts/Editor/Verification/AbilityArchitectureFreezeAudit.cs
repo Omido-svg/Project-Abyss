@@ -72,13 +72,14 @@ public static class AbilityArchitectureFreezeAudit
             .Select(g=>new {Guid=g,Path=AssetDatabase.GUIDToAssetPath(g)})
             .Select(x=>new {x.Guid,x.Path,Data=AssetDatabase.LoadAssetAtPath<SkillDefinition>(x.Path)})
             .Where(x=>x.Data!=null).ToArray();
-        Check("F04 145 original plus 19 enemy skill corpus",
-            skills.Length==164 && SkillCorpusVerification.IsExactLayeredCensus(),
+        Check("F04 "+SkillCorpusVerification.CensusLabel+" skill corpus",
+            skills.Length==SkillCorpusVerification.ExpectedTotalSkillCount && SkillCorpusVerification.IsExactLayeredCensus(),
             "count="+skills.Length);
         var ids=skills.GroupBy(x=>x.Data.SkillId,StringComparer.Ordinal)
             .Where(g=>g.Count()>1).ToArray();
         Check("F05 Duplicate-ID groups resolved by explicit GUID/save contracts",
-            ids.Length==4 && ids.Sum(g=>g.Count())==8 &&
+            SkillCorpusVerification.IsExpectedDuplicateCensus(ids.Length,
+                ids.Sum(g=>g.Count())) &&
             ids.All(g=>SkillIdentityVerification.IsApprovedGroup(g.Select(x=>x.Data))),
             "groups="+ids.Length+" collisionAssets="+ids.Sum(g=>g.Count()));
         int missingMeta=skills.Count(x=>
@@ -129,8 +130,12 @@ public static class AbilityArchitectureFreezeAudit
             "assetManifest="+(File.Exists(hashes)?File.ReadAllLines(hashes).Length-1:0));
         var saveContract=Path.Combine(root,"ProjectAbyss_R7_2_20261102",
             "R7_2_GUID_IDENTITY_CONTRACT.csv");
+        int registryRows=AssetDatabase.LoadAssetAtPath<SkillIdentityRegistry>(
+                "Assets/2. Data/Resources/ProjectAbyss/R7/R7SkillIdentityRegistry.asset")
+            ?.Entries?.Count(x=>x!=null)??-1;
         Check("F13 GUID-aware save compatibility verification produced evidence",
-            File.Exists(saveContract)&&File.ReadAllLines(saveContract).Length==9,
+            File.Exists(saveContract)&&
+            File.ReadAllLines(saveContract).Length==registryRows+1,
             "registryRows="+(File.Exists(saveContract)?File.ReadAllLines(saveContract).Length-1:0));
         string r8Report=Path.Combine(root,"ProjectAbyss_R8_SkillValidatorDryRun_20261030.md");
         bool r8StructuralGreen=File.Exists(r8Report) &&

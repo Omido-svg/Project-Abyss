@@ -124,11 +124,11 @@ public static class AbilityExecutionRouteVerification
         }
         Check("C01 all SkillDefinition assets inventoried",results.Count==SkillCorpusVerification.ExpectedTotalSkillCount,
             "count="+results.Count);
-        Check("C02 native SO family counts",native.Count==36 &&
-            native.Count(x=>x.Family=="NATIVE_RESOURCE")==15 &&
-            native.Count(x=>x.Family=="NATIVE_STATUS")==9 &&
-            native.Count(x=>x.Family=="NATIVE_MIXED")==7 &&
-            native.Count(x=>x.Family=="NATIVE_UNIQUE_GAUGE")==5,
+        Check("C02 native SO family counts",native.Count==SkillCorpusVerification.NativeSourceGraphCount &&
+            native.Count(x=>x.Family=="NATIVE_RESOURCE")==SkillCorpusVerification.NativeResourceCount &&
+            native.Count(x=>x.Family=="NATIVE_STATUS")==SkillCorpusVerification.NativeStatusCount &&
+            native.Count(x=>x.Family=="NATIVE_MIXED")==SkillCorpusVerification.NativeMixedCount &&
+            native.Count(x=>x.Family=="NATIVE_UNIQUE_GAUGE")==SkillCorpusVerification.NativeUniqueGaugeCount,
             "resource/status/mixed/unique="+native.Count(x=>x.Family=="NATIVE_RESOURCE")+
             "/"+native.Count(x=>x.Family=="NATIVE_STATUS")+
             "/"+native.Count(x=>x.Family=="NATIVE_MIXED")+"/"+
@@ -143,14 +143,14 @@ public static class AbilityExecutionRouteVerification
             nativeByGuid.Values.All(g=>g.Length==1) &&
             nativeCounts.Values.All(c=>c==1),
             "distinct="+nativeCounts.Count);
-        Check("C06 four collision IDs have registered R7-2 GUID contracts",
-            collisions.Count==4 && blocked==8 &&
+        Check("C06 collision IDs have registered R7-2 GUID contracts",
+            SkillCorpusVerification.IsExpectedDuplicateCensus(collisions.Count,blocked) &&
             collisions.All(id=>SkillIdentityVerification.IsApprovedGroup(
                 results.Where(x=>x.Id==id)
                     .Select(x=>AssetDatabase.LoadAssetAtPath<SkillDefinition>(x.Path)))),
             "duplicate IDs="+string.Join("|",collisions.OrderBy(x=>x)));
         Check("C07 all verified natives distinct from blocked IDs",
-            native.All(x=>!collisions.Contains(x.Id))&&nativeMapped==36,
+            native.All(x=>!collisions.Contains(x.Id))&&nativeMapped==SkillCorpusVerification.NativeSourceGraphCount,
             "native verified="+nativeMapped);
         var prepSetup=Resources.Load<NativePreparationSetupDefinition>(
             "ProjectAbyss/NativePreparations/EliteCombatStance_Setup");
@@ -165,13 +165,15 @@ public static class AbilityExecutionRouteVerification
             prepStatuses.SourceAssetGuid==prepSetup.SourceAssetGuid,
             "native status operations=2, native setup=1");
         Check("C09 metadata pilot is not falsely counted as native",
-            pilots==13,"read-only candidates="+pilots);
+            pilots==SkillCorpusVerification.MetadataPilotCandidateCount,"read-only candidates="+pilots);
         Check("C10 production native router catalogs have same cardinality",
-            ResourceAbilityBinding.ApprovedSkillCount==15 &&
-            StatusAbilityBinding.ApprovedSkillCount==9 &&
-            MixedAbilityBinding.ApprovedSkillCount==7 &&
-            UniqueGaugeAbilityBinding.ApprovedSkillCount==5,
-            "router counts=15/9/7/5");
+            ResourceAbilityBinding.ApprovedSkillCount==SkillCorpusVerification.NativeResourceCount &&
+            StatusAbilityBinding.ApprovedSkillCount==SkillCorpusVerification.NativeStatusCount &&
+            MixedAbilityBinding.ApprovedSkillCount==SkillCorpusVerification.NativeMixedCount &&
+            UniqueGaugeAbilityBinding.ApprovedSkillCount==SkillCorpusVerification.NativeUniqueGaugeCount,
+            "router counts="+ResourceAbilityBinding.ApprovedSkillCount+"/"+
+            StatusAbilityBinding.ApprovedSkillCount+"/"+MixedAbilityBinding.ApprovedSkillCount+
+            "/"+UniqueGaugeAbilityBinding.ApprovedSkillCount+" expected "+SkillCorpusVerification.NativeFamilyLabel);
         Check("C11 no SkillDefinition or source SO edited by audit",
             results.All(x=>!EditorUtility.IsDirty(
                 AssetDatabase.LoadAssetAtPath<SkillDefinition>(x.Path))) &&
@@ -223,7 +225,7 @@ public static class AbilityExecutionRouteVerification
         File.WriteAllText(Path.Combine(output,"R7_NATIVE_HANDOVER.md"),
             report.ToString(),new UTF8Encoding(false));
         Debug.Log("[R7-Coverage] RESULT PASS="+(11-errors.Count)+
-            " FAIL="+errors.Count+" native=36/164 partial="+partial+
+            " FAIL="+errors.Count+" native="+SkillCorpusVerification.NativeSourceGraphCount+"/"+SkillCorpusVerification.ExpectedTotalSkillCount+" partial="+partial+
             " pilot="+pilots+" duplicate="+collisions.Count);
         if(errors.Count>0)
             throw new InvalidOperationException(

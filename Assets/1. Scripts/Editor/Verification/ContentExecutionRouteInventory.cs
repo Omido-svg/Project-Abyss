@@ -197,22 +197,23 @@ public static class ContentExecutionRouteInventory
         Write("R7_1_LEGACY_BOUNDARY_CALLS.csv",boundaries);
 
         int pass=0,fail=0;
-        Check("A01 original 145 plus 19 stage1 sources",
-             skills.Length==164&&SkillCorpusVerification.IsExactLayeredCensus(),
+        Check("A01 "+SkillCorpusVerification.CensusLabel+" sources",
+             skills.Length==SkillCorpusVerification.ExpectedTotalSkillCount&&SkillCorpusVerification.IsExactLayeredCensus(),
             skills.Length.ToString(),ref pass,ref fail);
         Check("A02 each source GUID unique",
-            rows.Skip(1).Select(x=>x[0]).Distinct().Count()==164,
+            rows.Skip(1).Select(x=>x[0]).Distinct().Count()==SkillCorpusVerification.ExpectedTotalSkillCount,
             "source GUIDs",ref pass,ref fail);
-        Check("A03 36 exact native skill graphs",
-            countByStatus.GetValueOrDefault("VERIFIED_NATIVE_GRAPH")==36,
-            "36 native",ref pass,ref fail);
+        Check("A03 exact native skill graphs",
+            countByStatus.GetValueOrDefault("VERIFIED_NATIVE_GRAPH")==SkillCorpusVerification.NativeSourceGraphCount,
+            countByStatus.GetValueOrDefault("VERIFIED_NATIVE_GRAPH")+" native",ref pass,ref fail);
         Check("A04 one native Preparation whose 3 effects use native R5",
             countByStatus.GetValueOrDefault("VERIFIED_PREPARATION_NATIVE_GRAPH")==1,
             "source prep graph",ref pass,ref fail);
-        Check("A05 collision 4 IDs / 8 assets",
-            duplicates.Count==4&&
-            countByStatus.GetValueOrDefault("BLOCKED_DUPLICATE_ID")==8,
-            "4 / 8",ref pass,ref fail);
+        Check("A05 duplicate-ID census",
+            SkillCorpusVerification.IsExpectedDuplicateCensus(duplicates.Count,
+                countByStatus.GetValueOrDefault("BLOCKED_DUPLICATE_ID")),
+            duplicates.Count+" / "+countByStatus.GetValueOrDefault("BLOCKED_DUPLICATE_ID"),
+            ref pass,ref fail);
         Check("A06 63 augment definitions",augments.Length==63,
             augments.Length.ToString(),ref pass,ref fail);
         Check("A07 pending augment explicitly tracked",
@@ -228,14 +229,14 @@ public static class ContentExecutionRouteInventory
             candidateRows.Count>1,"candidate scripts="+(candidateRows.Count-1),
             ref pass,ref fail);
         Check("A11 all skill rows assigned exactly one group",
-            countByStatus.Values.Sum()==164,
+            countByStatus.Values.Sum()==SkillCorpusVerification.ExpectedTotalSkillCount,
             string.Join(";",countByStatus.Select(x=>x.Key+":"+x.Value)),
             ref pass,ref fail);
         Check("A12 legacy executable callsites listed",
             boundaries.Count>1,
             "candidate callsites="+(boundaries.Count-1),ref pass,ref fail);
         string summary="# R7-0 migration source ledger\n"+
-             "164 SkillDefinitions (145 original + 19 stage1) inventoried by GUID; "+
+             SkillCorpusVerification.CensusLabel+" SkillDefinitions inventoried by GUID; "+
             "not a claim that every effect is fully migrated.\n\n"+
             string.Join("\n",countByStatus.OrderBy(x=>x.Key)
                 .Select(x=>"- "+x.Key+": "+x.Value))+"\n\n"+

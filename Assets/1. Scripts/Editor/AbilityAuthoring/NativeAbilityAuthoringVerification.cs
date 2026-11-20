@@ -50,13 +50,14 @@ public static class NativeAbilityAuthoringVerification
         var preview=NativeAbilityAuthoringCore.AnalyzeAll();
         var existing=preview.Where(p=>p.Status==
             NativeAbilityAuthoringCore.Verdict.ExistsValid).ToArray();
-        Check(before.SkillCount==164&&before.NativeCount==37&&
-              before.NativeGoodCount==37&&before.NativeCorruptionCount==0,
-            "V01 current 164 (145+19) / 37 authored native schemas",ref pass,ref fail);
-        Check(existing.Length==29&&before.AutoConvertibleCount==0,
-            "V02 15 resource + 9 status + 5 gauge source levels match",ref pass,ref fail);
-        Check(before.DuplicateSourceIdGroups==4&&
-              before.Issues.Count(x=>x.Code=="R7_2_GUID_CONTRACT_RESOLVED")==8,
+        Check(before.SkillCount==SkillCorpusVerification.ExpectedTotalSkillCount&&before.NativeCount==SkillCorpusVerification.AuthoredNativeSchemaCount&&
+              before.NativeGoodCount==SkillCorpusVerification.AuthoredNativeSchemaCount&&before.NativeCorruptionCount==0,
+            "V01 current "+SkillCorpusVerification.CensusLabel+" / "+SkillCorpusVerification.AuthoredNativeSchemaCount+" authored native schemas",ref pass,ref fail);
+        Check(existing.Length==SkillCorpusVerification.NativeSimpleGraphCount&&before.AutoConvertibleCount==0,
+            "V02 "+SkillCorpusVerification.NativeResourceCount+" resource + "+SkillCorpusVerification.NativeStatusCount+" status + "+SkillCorpusVerification.NativeUniqueGaugeCount+" gauge source levels match",ref pass,ref fail);
+        Check(SkillCorpusVerification.IsExpectedDuplicateCensus(
+                before.DuplicateSourceIdGroups,
+                before.Issues.Count(x=>x.Code=="R7_2_GUID_CONTRACT_RESOLVED")),
             "V03 duplicate-ID assets registered under R7-2 GUID contracts",ref pass,ref fail);
         Check(before.PendingAugments==1 && before.TemporaryItems==60 &&
               before.AugmentCount==63 && before.ItemCount==60,
@@ -64,7 +65,7 @@ public static class NativeAbilityAuthoringVerification
         Check(before.Issues.Count(x=>x.Code=="AUGMENT_DESIGN_PENDING")==1 &&
               before.Issues.Count(x=>x.Code=="ITEM_TEMP_IMPLEMENTATION")==60,
             "V05 all R7 blockers are preserved, not falsely PASS",ref pass,ref fail);
-        Check(existing.Select(x=>x.Destination).Distinct().Count()==29,
+        Check(existing.Select(x=>x.Destination).Distinct().Count()==SkillCorpusVerification.NativeSimpleGraphCount,
             "V06 every simple graph has unique resolved destination",ref pass,ref fail);
 
         var root=Directory.GetParent(Application.dataPath).FullName;
@@ -175,9 +176,9 @@ public static class NativeAbilityAuthoringVerification
             UniqueGaugeAbilityBinding.ResetCatalogCache();
         }
         var after=NativeAbilityValidation.Scan();
-        Check(after.SkillCount==164 && after.NativeCount==37 &&
+        Check(after.SkillCount==SkillCorpusVerification.ExpectedTotalSkillCount && after.NativeCount==SkillCorpusVerification.AuthoredNativeSchemaCount &&
               after.NativeCorruptionCount==0,
-            "V15 fixture cleanup restores 164 source + 37 native baseline",
+            "V15 fixture cleanup restores "+SkillCorpusVerification.ExpectedTotalSkillCount+" source + "+SkillCorpusVerification.AuthoredNativeSchemaCount+" native baseline",
             ref pass,ref fail);
         Check(!AssetDatabase.IsValidFolder(Scratch) &&
               targets.All(x=>AssetDatabase.LoadMainAssetAtPath(x)==null),

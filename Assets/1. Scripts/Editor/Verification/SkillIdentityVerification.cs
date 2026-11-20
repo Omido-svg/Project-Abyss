@@ -49,17 +49,23 @@ public static class SkillIdentityVerification
             .Where(x=>x!=null).ToArray();
         var groups=skills.GroupBy(x=>x.SkillId,StringComparer.Ordinal)
             .Where(x=>x.Count()>1).OrderBy(x=>x.Key).ToArray();
-        Check("S01 145 original + 19 R7-8 skills",skills.Length==164&&
+        var groupIds=new HashSet<string>(groups.Select(g=>g.Key),StringComparer.Ordinal);
+        var activeEntries=entries.Where(x=>groupIds.Contains(x.SkillId)).ToArray();
+        Check("S01 "+SkillCorpusVerification.CensusLabel+" skills",
+            skills.Length==SkillCorpusVerification.ExpectedTotalSkillCount&&
             SkillCorpusVerification.IsExactLayeredCensus());
-        Check("S02 4 exact collision groups / 8 assets",
-            groups.Length==4&&groups.Sum(x=>x.Count())==8);
-        Check("S03 8 GUID registry bindings",entries.Length==8);
+        Check("S02 "+SkillCorpusVerification.ExpectedDuplicateIdGroups+
+            " collision groups / "+SkillCorpusVerification.ExpectedDuplicateIdAssets+" assets",
+            SkillCorpusVerification.IsExpectedDuplicateCensus(groups.Length,
+                groups.Sum(x=>x.Count())));
+        Check("S03 one GUID registry binding per collision asset",
+            activeEntries.Length==groups.Sum(x=>x.Count()));
         Check("S04 each two-source group has valid GUID contract",
             groups.All(g=>IsApprovedGroup(g)));
         Check("S05 every collision asset preserved and not dirty",
             groups.SelectMany(x=>x).All(x=>!EditorUtility.IsDirty(x)));
         Check("S06 registry GUIDs unique",
-            entries.Select(x=>x.AssetGuid).Distinct(StringComparer.OrdinalIgnoreCase).Count()==8);
+            entries.Select(x=>x.AssetGuid).Distinct(StringComparer.OrdinalIgnoreCase).Count()==entries.Length);
         Check("S07 all registered source GUID values match actual meta",
             entries.All(x=>x.Definition!=null&&
                 AssetDatabase.AssetPathToGUID(AssetDatabase.GetAssetPath(x.Definition))==x.AssetGuid));
@@ -74,7 +80,7 @@ public static class SkillIdentityVerification
             .Select(AssetDatabase.GUIDToAssetPath)
             .Select(AssetDatabase.LoadAssetAtPath<CharacterCombatLoadout>)
             .FirstOrDefault(x=>x!=null&&x.name=="Yujin_TODO_Loadout");
-        bool activeBindings=olaf!=null&&yujin!=null&&entries
+        bool activeBindings=olaf!=null&&yujin!=null&&activeEntries
             .Where(x=>x.LegacyIdDefault).All(x=>
                 (x.SkillId.StartsWith("olaf.",StringComparison.Ordinal)?olaf:yujin)
                 .EnumerateAllDefinitions().Contains(x.Definition));
@@ -99,8 +105,12 @@ public static class SkillIdentityVerification
         Check("S11 GUID qualified restores exact asset",exactGuid);
         Check("S12 unknown GUID rejects instead of substituting",badGuid);
 
-        var p=entries.FirstOrDefault(x=>x.SkillId=="olaf.duel.standard"&&x.LegacyIdDefault);
-        var alternate=entries.FirstOrDefault(x=>x.SkillId=="olaf.duel.standard"&&!x.LegacyIdDefault);
+        // 11-21: 첫 충돌 그룹으로 저장 계약을 시험한다. 충돌이 없으면(11-20 중복 정리 뒤)
+        // S13~S18은 해당 없음 → 통과로 두고, 대신 S19가 합쳐진 ID의 옛 GUID 저장을 본다.
+        string sampleId=groups.Select(g=>g.Key).FirstOrDefault();
+        var p=activeEntries.FirstOrDefault(x=>x.SkillId==sampleId&&x.LegacyIdDefault);
+        var alternate=activeEntries.FirstOrDefault(x=>x.SkillId==sampleId&&!x.LegacyIdDefault);
+        bool noCollisions=groups.Length==0;
         var tmp=ScriptableObject.CreateInstance<CharacterCombatLoadout>();
         try
         {
@@ -141,14 +151,28 @@ public static class SkillIdentityVerification
                 upgrade=levels.TrySetLevel(p.Definition,2)&&
                     levels.GetLevel(p.Definition)==2 && levels.GetLevel(alternate.Definition)==0;
             }
-            Check("S13 new-save GUID roundtrip",roundtrip);
-            Check("S14 legacy ID-only save restoration",backward);
-            Check("S15 non-default GUID can be restored",alternative);
-            Check("S16 ownership does not cross collision variants",ownership);
-            Check("S17 invalid GUID leaves loadout unchanged",atomic);
-            Check("S18 upgrade levels independent by GUID",upgrade);
+            string na=noCollisions?" (N/A: no collision groups)":"";
+            Check("S13 new-save GUID roundtrip"+na,noCollisions||roundtrip);
+            Check("S14 legacy ID-only save restoration"+na,noCollisions||backward);
+            Check("S15 non-default GUID can be restored"+na,noCollisions||alternative);
+            Check("S16 ownership does not cross collision variants"+na,noCollisions||ownership);
+            Check("S17 invalid GUID leaves loadout unchanged"+na,noCollisions||atomic);
+            Check("S18 upgrade levels independent by GUID"+na,noCollisions||upgrade);
         }
         finally{UnityEngine.Object.DestroyImmediate(tmp);}
+
+        // S19: 중복이 풀린 ID(레지스트리에 남은 옛 항목)의 GUID 붙은 옛 저장은
+        // 남은 유일한 에셋으로 복원돼야 한다.
+        bool mergedRestore=true;
+        foreach(var e in entries.Where(x=>!groupIds.Contains(x.SkillId)))
+        {
+            var sole=skills.Where(x=>x.SkillId==e.SkillId).ToArray();
+            mergedRestore &= sole.Length==1 &&
+                SkillIdentityContract.TryResolve(e.SkillId,e.AssetGuid,skills,
+                    out var restored,out var _) &&
+                ReferenceEquals(restored,sole[0]);
+        }
+        Check("S19 merged-ID GUID saves restore the sole remaining asset",mergedRestore);
 
         var csv=new List<string[]>{new[]{"SkillId","AssetGUID","AssetPath","AssetName","LegacyDefault","NativeMigrated"}};
         foreach(var e in entries.OrderBy(x=>x.SkillId).ThenBy(x=>x.AssetGuid))

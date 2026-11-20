@@ -140,7 +140,7 @@ public static class SkillCompatibilityAudit
             if(yes){pass++;Debug.Log("[R7-Audit] PASS "+label);}
             else{fail++;Debug.LogError("[R7-Audit] FAIL "+label);}
         }
-        Check("A01 enumerated original 145 and 19 stage1",records.Count==164&&
+        Check("A01 enumerated "+SkillCorpusVerification.CensusLabel+"",records.Count==SkillCorpusVerification.ExpectedTotalSkillCount&&
             SkillCorpusVerification.IsExactLayeredCensus());
         Check("A02 written markdown and CSV in project root",
             File.Exists(report)&&File.Exists(csv));

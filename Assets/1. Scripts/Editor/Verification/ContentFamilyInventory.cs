@@ -101,11 +101,12 @@ public static class ContentFamilyInventory
             if(valid){pass++;Debug.Log("[R7-Content] PASS "+id+" "+desc);}
             else{fail++;Debug.LogError("[R7-Content] FAIL "+id+" "+desc);}
         }
-        Check("C01 original 145 plus Stage1 19 skills",
-             skill.Length==164&&SkillCorpusVerification.IsExactLayeredCensus(),"skills="+skill.Length);
-        Check("C02 36 native graph-linked source skills",
-            nativeResource.Length==15 && nativeStatus.Length==9 &&
-            nativeMixed.Length==7 && nativeGauge.Length==5,"15+9+7+5");
+        Check("C01 "+SkillCorpusVerification.CensusLabel+" skills",
+             skill.Length==SkillCorpusVerification.ExpectedTotalSkillCount&&SkillCorpusVerification.IsExactLayeredCensus(),"skills="+skill.Length);
+        Check("C02 native graph-linked source skills",
+            nativeResource.Length==SkillCorpusVerification.NativeResourceCount && nativeStatus.Length==SkillCorpusVerification.NativeStatusCount &&
+            nativeMixed.Length==SkillCorpusVerification.NativeMixedCount && nativeGauge.Length==SkillCorpusVerification.NativeUniqueGaugeCount,
+            nativeResource.Length+"+"+nativeStatus.Length+"+"+nativeMixed.Length+"+"+nativeGauge.Length);
         Check("C03 63 emotion augments",aug.Length==63,"aug="+aug.Length);
         Check("C04 runtime-ready vs pending explicitly separated",
             ready==62 && aug.Length-ready==1,"62 ready, 1 pending");
@@ -114,7 +115,9 @@ public static class ContentFamilyInventory
         Check("C07 temporary item implementation not counted native",
             tempItem==60,"temporary="+tempItem);
         Check("C08 duplicate skill IDs not silently ignored",
-            duplicates.Length==4&&duplicates.Sum(x=>x.Count())==8,"4/8");
+            SkillCorpusVerification.IsExpectedDuplicateCensus(duplicates.Length,
+                duplicates.Sum(x=>x.Count())),
+            duplicates.Length+"/"+duplicates.Sum(x=>x.Count()));
         Check("C09 no authoring SO modified by audit",
             skill.All(x=>!EditorUtility.IsDirty(x))&&
             item.All(x=>!EditorUtility.IsDirty(x))&&
