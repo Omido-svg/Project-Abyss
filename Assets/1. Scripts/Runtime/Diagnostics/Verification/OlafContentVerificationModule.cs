@@ -18,7 +18,7 @@ public sealed class OlafContentVerificationModule : IGameSystemVerificationModul
         yield return Runtime(
             "phased.olaf.o01.madness_core",
             "O-01",
-            "올라프 광기 8 / 4단위 계약",
+            "빌야르 광기 8 / 4단위 계약",
             GameSystemVerificationCategory.Resource,
             "광기 0~8, 4~7=+1, 8=+2 위력·받는피해, 만개=8",
             VerifyMadnessCore);
@@ -26,7 +26,7 @@ public sealed class OlafContentVerificationModule : IGameSystemVerificationModul
         yield return Runtime(
             "phased.olaf.o01.default_residue",
             "O-01",
-            "올라프 평타/결투 기본 잔효과",
+            "빌야르 평타/결투 기본 잔효과",
             GameSystemVerificationCategory.Status,
             "RED 평타 승리=출혈 1/2/3, BLUE 평타 승리=광기+1, Duel×Duel 패배=광기+1",
             VerifyDefaultResidue);
@@ -34,7 +34,7 @@ public sealed class OlafContentVerificationModule : IGameSystemVerificationModul
         yield return Runtime(
             "phased.olaf.o03.explicit_break_authority",
             "O-03",
-            "올라프 파괴형 결투 명시 권한",
+            "빌야르 파괴형 결투 명시 권한",
             GameSystemVerificationCategory.Damage,
             "표준=WeakenedOnly, 끈질기게(Rend legacy asset)=None; 현재 기세와 무관",
             VerifyExplicitBreakAuthority);
@@ -50,7 +50,7 @@ public sealed class OlafContentVerificationModule : IGameSystemVerificationModul
         yield return Static(
             "phased.olaf.o05.rulebreaker_schema",
             "O-05",
-            "올라프 룰브레이커 authoring 문법",
+            "빌야르 룰브레이커 authoring 문법",
             GameSystemVerificationCategory.Contract,
             "동적 비용/조건부 파괴·선행면제/강제교체/modifier 면역/같은 target 포기/기세 조건/무한속도 데이터 필드 존재",
             VerifyRulebreakerSchema);
@@ -58,7 +58,7 @@ public sealed class OlafContentVerificationModule : IGameSystemVerificationModul
         yield return Runtime(
             "phased.olaf.o05.rulebreaker_runtime",
             "O-05",
-            "올라프 룰브레이커 런타임",
+            "빌야르 룰브레이커 런타임",
             GameSystemVerificationCategory.Planning,
             "가변비용 최소1, 출혈 10+ 약화선행 면제, 현재 짓눌림 +6, 결투 매칭 강제교체, 공격슬롯 속도 = 보정 후 최댓값(§17.4 최후의 저항)",
             VerifyRulebreakerRuntime);
@@ -66,7 +66,7 @@ public sealed class OlafContentVerificationModule : IGameSystemVerificationModul
         yield return Runtime(
             "phased.olaf.o05.fear_contract",
             "O-05",
-            "올라프 공포 상태 계약",
+            "빌야르 공포 상태 계약",
             GameSystemVerificationCategory.Status,
             "위력 -1 / 3턴 / 비누적 / 재부여 시 duration refresh",
             VerifyFearContract);

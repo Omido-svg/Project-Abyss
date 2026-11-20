@@ -123,8 +123,8 @@ public sealed class RunFlowTestHarness : MonoBehaviour
         GUILayout.Space(12f);
 
         GUILayout.BeginHorizontal();
-        DrawLargeSelectButton("OLAF", "올라프", () => session.SelectCharacter("Olaf"));
-        DrawLargeSelectButton("YUJIN", "유진", () => session.SelectCharacter("Yujin"));
+        DrawLargeSelectButton("OLAF", "빌야르", () => session.SelectCharacter("Olaf"));
+        DrawLargeSelectButton("YUJIN", "명성", () => session.SelectCharacter("Yujin"));
         DrawLargeSelectButton("HIFUMI", "히후미", () => session.SelectCharacter("Hifumi"));
         GUILayout.EndHorizontal();
     }

@@ -37,8 +37,6 @@ public sealed class OlafAutoPlanAdvisor : ICharacterAutoPlanAdvisor
             score += damagedParts * 550f + (olaf.CurrentHP <= olaf.MaxCombatHP / 3 ? 900f : 0f);
         else if (id == OlafSkillIds.Crouch)
             score += damagedParts > 0 ? 300f : 30f;
-        else if (id == OlafSkillIds.Glare)
-            score += context.Mode == PlayerAutoPlanMode.WinRate ? 360f : 80f;
 
         if (mechanic.IsBlooming)
             score += context.Skill?.ActionType == ActionType.NormalAttack ? 180f : 0f;

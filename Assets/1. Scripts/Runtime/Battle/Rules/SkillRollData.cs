@@ -9,7 +9,7 @@ public sealed class SkillRollData
     public CombatRollType Type = CombatRollType.Attack;
 
     [Header("Physical type — per roll")]
-    [Tooltip("켜면 이 굴림만의 절단/관통/타격 타입을 사용합니다. 끄면 SkillDefinition의 Legacy 타입을 사용합니다. 유진은 무기 타입이 항상 최우선입니다.")]
+    [Tooltip("켜면 이 굴림만의 절단/관통/타격 타입을 사용합니다. 끄면 SkillDefinition의 Legacy 타입을 사용합니다. 명성은 무기 타입이 항상 최우선입니다.")]
     public bool OverridePhysicalType;
     public PhysicalDamageType PhysicalType = PhysicalDamageType.Cut;
 

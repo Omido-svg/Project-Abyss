@@ -56,7 +56,7 @@ public sealed class YujinHwanhyeongFlowPassiveMechanic :
         if (owner is not Yujin)
         {
             throw new System.InvalidOperationException(
-                "환형의 흐름 패시브는 유진에게만 등록할 수 있습니다.");
+                "환형의 흐름 패시브는 명성에게만 등록할 수 있습니다.");
         }
 
         yujinMechanic =

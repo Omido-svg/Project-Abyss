@@ -24,9 +24,9 @@ public sealed class ContentDataVerificationModule : IGameSystemVerificationModul
             "A=3굴림 위력13, B=2굴림 위력14, A/A/B, Energy2, B 평타 fallback, break=false, random target", VerifyC40);
         yield return Static("phasee.c44.roll_texture", "C-44", "위치별 굴림 텍스처 Validator", GameSystemVerificationCategory.Contract,
             "위치별 평균의 평균 = 기본위력+4.5 위반을 audit에서 검출", VerifyC44);
-        yield return Static("phasee.o02.olaf_pool", "O-02", "올라프 전체 스킬 Core Data", GameSystemVerificationCategory.Data,
+        yield return Static("phasee.o02.olaf_pool", "O-02", "빌야르 전체 스킬 Core Data", GameSystemVerificationCategory.Data,
             "최신 0916 풀 + 기본/강화1/강화2 데이터 및 Runtime 연결", VerifyO02);
-        yield return Static("phasee.y06.yujin_pool", "Y-06", "유진 전체 스킬 Core Data", GameSystemVerificationCategory.Data,
+        yield return Static("phasee.y06.yujin_pool", "Y-06", "명성 전체 스킬 Core Data", GameSystemVerificationCategory.Data,
             "최신 0917 평타9/결투16/도사림/위세3 + Runtime 연결", VerifyY06);
         yield return Static("phasee.presentation.canonical", "PRESENTATION", "0916 canonical Timeline presentation closure", GameSystemVerificationCategory.Contract,
             "Olaf/Yujin 모든 canonical SkillDefinition이 complete SkillVisualDefinition을 가져 Hit Event 기반 HP presentation을 재생", VerifyCanonicalPresentation);

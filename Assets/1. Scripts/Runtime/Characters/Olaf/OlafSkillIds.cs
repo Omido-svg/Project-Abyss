@@ -47,7 +47,6 @@ public static class OlafSkillIds
 
     // Preparation 2 common + 7 Olaf
     public const string Crouch = "common.preparation.crouch";
-    public const string Glare = "common.preparation.glare";
     public const string Bloto = "olaf.preparation.bloto";
     public const string BloodOathPreparation = "olaf.preparation.blood_oath";
     public const string BreathBoughtWithBlood = "olaf.preparation.breath_bought_with_blood";
@@ -88,7 +87,7 @@ public static class OlafSkillIds
 
     public static readonly string[] CanonicalPreparation =
     {
-        Crouch, Glare, Bloto, BloodOathPreparation, BreathBoughtWithBlood,
+        Crouch, Bloto, BloodOathPreparation, BreathBoughtWithBlood,
         CalmMadness, EraseWound, DevourStagger, StokePrestige, LastResistance
     };
 

@@ -72,7 +72,6 @@ MonoBehaviour:
   - {fileID: 11400000, guid: dfedb4807e7b5b34da92332c574fe9b1, type: 2}
   CommonPreparationPool:
   - {fileID: 11400000, guid: 89874fcdf7b691748b5601ff040d175b, type: 2}
-  - {fileID: 11400000, guid: 1464d46d5b893494d8513272fbcc463d, type: 2}
   CharacterPreparationPool:
   - {fileID: 11400000, guid: 3b904fc8be62e1d4e9f69e195c2f1c9f, type: 2}
   - {fileID: 11400000, guid: df26a5c142a37e044aaafae9c21bde0b, type: 2}

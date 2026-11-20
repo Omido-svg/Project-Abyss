@@ -150,12 +150,6 @@ public sealed class OlafMadnessMechanic : CombatMechanic, ICharacterUniqueGaugeP
                     () => owner?.RemoveBlock(CrouchBlockGain));
                 break;
 
-            case OlafSkillIds.Glare:
-                owner.AddTurnClashPowerBonus(1);
-                action.Slot?.PlanningUndo?.Record(
-                    () => owner?.AddTurnClashPowerBonus(-1));
-                break;
-
             case OlafSkillIds.Bloto:
                 ExecuteBloto(action);
                 break;

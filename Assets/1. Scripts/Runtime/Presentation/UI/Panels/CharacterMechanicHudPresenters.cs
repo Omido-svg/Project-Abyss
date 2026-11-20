@@ -96,7 +96,7 @@ internal sealed class OlafMechanicHudPresenter :
             olaf.MadnessMechanic;
 
         view?.SetPresentation(
-            "올라프  ·  광기 운용",
+            "빌야르  ·  광기 운용",
             false);
 
         builder.Clear();
@@ -176,7 +176,7 @@ internal sealed class YujinMechanicHudPresenter :
             yujin.YujinMechanic;
 
         view?.SetPresentation(
-            "유진  ·  무기 운용",
+            "명성  ·  무기 운용",
             true);
 
         builder.Clear();

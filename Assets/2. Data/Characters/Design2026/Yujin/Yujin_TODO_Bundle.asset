@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: Yujin_TODO_Bundle
   m_EditorClassIdentifier: 
   kind: 4
-  displayName: "\uC720\uC9C4"
+  displayName: "\uBA85\uC131"
   authoringNotes: 
   characterData: {fileID: 11400000, guid: 126a7beb68f696d46a33afe0fa593b7d, type: 2}
   combatLoadout: {fileID: 11400000, guid: 15fff042e85379e4a91a2d84caaf29b8, type: 2}
@@ -37,6 +37,7 @@ MonoBehaviour:
     CrouchingAttackSlotLimit: 2
     OffensiveAttackSlotLimit: 4
     ExpectedMomentumDriftPerTurn: 15
+  eliteBodyPartDefinitions: []
   includedAssets:
   - {fileID: 11400000, guid: 15fff042e85379e4a91a2d84caaf29b8, type: 2}
   - {fileID: 11400000, guid: 7e2e9f7eb1f565342b8432de76931154, type: 2}

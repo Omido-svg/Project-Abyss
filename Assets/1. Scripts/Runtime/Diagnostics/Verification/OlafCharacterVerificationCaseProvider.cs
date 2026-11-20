@@ -60,7 +60,7 @@ public sealed class OlafCharacterVerificationCaseProvider :
     {
         yield return CharacterVerificationCaseDefinition.Create(
             SkillCoverage,
-            "올라프 스킬 ID 전체 등록",
+            "빌야르 스킬 ID 전체 등록",
             CharacterVerificationCategory.Data,
             CharacterVerificationExecutionMode.DataOnly,
             "0916(3) canonical 전체 풀(N16/D21/P9/R3, 총 49)의 SkillId가 데이터 그래프에 빠짐없이 존재하는지 검사합니다.");
@@ -190,10 +190,10 @@ public sealed class OlafCharacterVerificationCaseProvider :
 
         return missing.Count == 0
             ? context.Pass(
-                "올라프 0916 canonical 스킬 ID 49개 존재",
+                "빌야르 0916 canonical 스킬 ID 49개 존재",
                 $"{RequiredSkillIds.Length}/{RequiredSkillIds.Length} 등록")
             : context.Fail(
-                "올라프 0916 canonical 스킬 ID 49개 존재",
+                "빌야르 0916 canonical 스킬 ID 49개 존재",
                 $"{RequiredSkillIds.Length - missing.Count}/{RequiredSkillIds.Length} 등록",
                 "누락:\n" + string.Join("\n", missing));
     }
@@ -218,7 +218,7 @@ public sealed class OlafCharacterVerificationCaseProvider :
         if (skill == null)
         {
             return context.Fail(
-                "공용 Dice Resolver 검증용 올라프 스킬 존재",
+                "공용 Dice Resolver 검증용 빌야르 스킬 존재",
                 "물어뜯기 RuntimeSkill 없음");
         }
 

@@ -647,7 +647,7 @@ public static class CharacterBehaviorCoverageCatalog
         int beforeSense = mechanic.Sense;
         context.BattleContext._battleEvent.RaiseTurnStart(1);
         if (mechanic.Sense != beforeSense + 1)
-            failures.Add("유진 TurnStart 살수의 감 +1 실패");
+            failures.Add("명성 TurnStart 살수의 감 +1 실패");
 
         YujinWeaponType[] weapons =
         {
@@ -689,7 +689,7 @@ public static class CharacterBehaviorCoverageCatalog
                 duelBack != 15)
             {
                 failures.Add(
-                    $"유진 {weapon} 위력표 불일치: " +
+                    $"명성 {weapon} 위력표 불일치: " +
                     $"I={inspectionFront}/{inspectionBack}, " +
                     $"D={duelFront}/{duelBack}");
             }
@@ -707,7 +707,7 @@ public static class CharacterBehaviorCoverageCatalog
             failures,
             observations);
 
-        observations.Add("유진 0916 무기 프로필 기반 앞/뒷면 위력 및 TurnStart 감 PASS");
+        observations.Add("명성 0916 무기 프로필 기반 앞/뒷면 위력 및 TurnStart 감 PASS");
     }
 
     private static void VerifyYujinMarkIgnitions(
@@ -725,7 +725,7 @@ public static class CharacterBehaviorCoverageCatalog
 
         if (parts.Count < 3)
         {
-            failures.Add("유진 3무기 표식 발화 검증에 대상 부위 3개가 필요합니다.");
+            failures.Add("명성 3무기 표식 발화 검증에 대상 부위 3개가 필요합니다.");
             return;
         }
 
@@ -738,7 +738,7 @@ public static class CharacterBehaviorCoverageCatalog
             definition);
         if (skill == null)
         {
-            failures.Add("유진 표식 발화용 검분 RuntimeSkill이 없습니다.");
+            failures.Add("명성 표식 발화용 검분 RuntimeSkill이 없습니다.");
             return;
         }
 
@@ -820,9 +820,9 @@ public static class CharacterBehaviorCoverageCatalog
             };
 
             if (!valid)
-                failures.Add($"유진 {weapon} 표식 44 발화 효과 실패");
+                failures.Add($"명성 {weapon} 표식 44 발화 효과 실패");
             else
-                observations.Add($"유진 {weapon} 표식 44 발화 PASS");
+                observations.Add($"명성 {weapon} 표식 44 발화 PASS");
         }
     }
 
@@ -844,7 +844,7 @@ public static class CharacterBehaviorCoverageCatalog
 
         if (skill == null)
         {
-            failures.Add("유진 추격 RuntimeSkill이 없습니다.");
+            failures.Add("명성 추격 RuntimeSkill이 없습니다.");
             return;
         }
 
@@ -943,7 +943,7 @@ public static class CharacterBehaviorCoverageCatalog
                 after >= before)
             {
                 failures.Add(
-                    $"유진 추격 {weapon} 상한 불일치: " +
+                    $"명성 추격 {weapon} 상한 불일치: " +
                     $"ExpectedHits={expectedHits}, Hits={hits}, " +
                     $"Sense={senseBefore}->{senseAfter}, " +
                     $"HP={before}->{after}");
@@ -951,7 +951,7 @@ public static class CharacterBehaviorCoverageCatalog
             }
 
             observations.Add(
-                $"유진 추격 {weapon} 상한 {expectedHits}Hit PASS " +
+                $"명성 추격 {weapon} 상한 {expectedHits}Hit PASS " +
                 $"/ Sense {senseBefore}->{senseAfter} " +
                 $"/ HP {before}->{after}");
         }
@@ -991,7 +991,7 @@ public static class CharacterBehaviorCoverageCatalog
 
         if (owner == null || target == null || madness == null)
         {
-            failures.Add("올라프 고유 스킬 검증 Fixture가 없습니다.");
+            failures.Add("빌야르 고유 스킬 검증 Fixture가 없습니다.");
             return;
         }
 
@@ -1004,7 +1004,7 @@ public static class CharacterBehaviorCoverageCatalog
             936001);
         if (crouch == null)
         {
-            failures.Add("올라프 웅크리기 RuntimeSkill이 없습니다.");
+            failures.Add("빌야르 웅크리기 RuntimeSkill이 없습니다.");
         }
         else
         {
@@ -1012,30 +1012,12 @@ public static class CharacterBehaviorCoverageCatalog
             crouch.Skill.Execute(crouch);
 
             if ((owner.RuntimeStatus?.currentBlock ?? 0) != 12)
-                failures.Add("올라프 웅크리기 방어도는 정확히 12여야 합니다.");
+                failures.Add("빌야르 웅크리기 방어도는 정확히 12여야 합니다.");
             else
-                observations.Add("올라프 웅크리기 방어도 12 PASS");
+                observations.Add("빌야르 웅크리기 방어도 12 PASS");
         }
 
-        BattleAction glare = CreateNamedAction(
-            context,
-            OlafSkillIds.Glare,
-            936002);
-        if (glare == null)
-        {
-            failures.Add("올라프 노려보기 RuntimeSkill이 없습니다.");
-        }
-        else
-        {
-            int before = owner.TurnClashPowerBonus;
-            glare.Skill.Execute(glare);
-            int after = owner.TurnClashPowerBonus;
-
-            if (after != before + 1)
-                failures.Add($"올라프 노려보기 합 위력 불일치: {before}->{after}");
-            else
-                observations.Add("올라프 노려보기 이번 턴 합 위력 +1 PASS");
-        }
+        // 11-17 노려보기 삭제(8장) — 공용 도사림은 웅크리기만.
 
         BattleAction bloto = CreateNamedAction(
             context,
@@ -1043,7 +1025,7 @@ public static class CharacterBehaviorCoverageCatalog
             936003);
         if (bloto == null)
         {
-            failures.Add("올라프 블로토 RuntimeSkill이 없습니다.");
+            failures.Add("빌야르 블로토 RuntimeSkill이 없습니다.");
         }
         else
         {
@@ -1057,12 +1039,12 @@ public static class CharacterBehaviorCoverageCatalog
                 afterWeak != beforeWeak + 1)
             {
                 failures.Add(
-                    $"올라프 블로토 불일치: Madness={madness.CurrentMadness}, " +
+                    $"빌야르 블로토 불일치: Madness={madness.CurrentMadness}, " +
                     $"Weakened={beforeWeak}->{afterWeak}");
             }
             else
             {
-                observations.Add("올라프 블로토 자가 부위 약화 1개·광기 +1 PASS");
+                observations.Add("빌야르 블로토 자가 부위 약화 1개·광기 +1 PASS");
             }
         }
 
@@ -1072,7 +1054,7 @@ public static class CharacterBehaviorCoverageCatalog
             936004);
         if (blooming == null || targetPart == null)
         {
-            failures.Add("올라프 만개하는 상처 RuntimeSkill/대상 부위가 없습니다.");
+            failures.Add("빌야르 만개하는 상처 RuntimeSkill/대상 부위가 없습니다.");
         }
         else
         {
@@ -1089,9 +1071,9 @@ public static class CharacterBehaviorCoverageCatalog
                 target.GetPartStatus<Bleeding>(targetPart)?.Stack ?? 0;
 
             if (atZero != 3 || atEight != 5)
-                failures.Add($"올라프 만개하는 상처 출혈 불일치: {atZero}/{atEight}");
+                failures.Add($"빌야르 만개하는 상처 출혈 불일치: {atZero}/{atEight}");
             else
-                observations.Add("올라프 만개하는 상처 광기 0=출혈3, 광기8=출혈5 PASS");
+                observations.Add("빌야르 만개하는 상처 광기 0=출혈3, 광기8=출혈5 PASS");
         }
 
         BattleAction bursting = CreateNamedAction(
@@ -1100,7 +1082,7 @@ public static class CharacterBehaviorCoverageCatalog
             936005);
         if (bursting == null || targetPart == null)
         {
-            failures.Add("올라프 터뜨리는 광기 RuntimeSkill/대상 부위가 없습니다.");
+            failures.Add("빌야르 터뜨리는 광기 RuntimeSkill/대상 부위가 없습니다.");
         }
         else
         {
@@ -1122,12 +1104,12 @@ public static class CharacterBehaviorCoverageCatalog
                 before - after != expectedRaw)
             {
                 failures.Add(
-                    $"올라프 터뜨리는 광기 불일치: Madness={madness.CurrentMadness}, " +
+                    $"빌야르 터뜨리는 광기 불일치: Madness={madness.CurrentMadness}, " +
                     $"Damage={before - after}, Expected={expectedRaw}");
             }
             else
             {
-                observations.Add("올라프 터뜨리는 광기 광기+2·(광기×5+혈상) 피해 PASS");
+                observations.Add("빌야르 터뜨리는 광기 광기+2·(광기×5+혈상) 피해 PASS");
             }
         }
 
@@ -1138,7 +1120,7 @@ public static class CharacterBehaviorCoverageCatalog
         OlafImmortalFuryMechanic immortal = owner.ImmortalFuryMechanic;
         if (backsToWall == null || immortal == null)
         {
-            failures.Add("올라프 배수진 RuntimeSkill/Mechanic이 없습니다.");
+            failures.Add("빌야르 배수진 RuntimeSkill/Mechanic이 없습니다.");
         }
         else
         {
@@ -1146,9 +1128,9 @@ public static class CharacterBehaviorCoverageCatalog
             backsToWall.Skill.Execute(backsToWall);
 
             if (!immortal.IsActive)
-                failures.Add("올라프 배수진 Execute가 불사 상태를 활성화하지 않았습니다.");
+                failures.Add("빌야르 배수진 Execute가 불사 상태를 활성화하지 않았습니다.");
             else
-                observations.Add("올라프 배수진 Execute 활성화 PASS");
+                observations.Add("빌야르 배수진 Execute 활성화 PASS");
 
             context.BattleContext._battleEvent.RaiseTurnEnd(901);
         }
@@ -1170,7 +1152,7 @@ public static class CharacterBehaviorCoverageCatalog
             mechanic == null ||
             targetPart == null)
         {
-            failures.Add("유진 고유 스킬 검증 Fixture가 없습니다.");
+            failures.Add("명성 고유 스킬 검증 Fixture가 없습니다.");
             return;
         }
 
@@ -1183,7 +1165,7 @@ public static class CharacterBehaviorCoverageCatalog
             937001);
         if (capture == null)
         {
-            failures.Add("유진 포착 RuntimeSkill이 없습니다.");
+            failures.Add("명성 포착 RuntimeSkill이 없습니다.");
         }
         else
         {
@@ -1198,11 +1180,11 @@ public static class CharacterBehaviorCoverageCatalog
                 Mathf.Abs(reset - before) > 0.0001f)
             {
                 failures.Add(
-                    $"유진 포착 앞면 확률 불일치: {before:0.00}->{active:0.00}->{reset:0.00}");
+                    $"명성 포착 앞면 확률 불일치: {before:0.00}->{active:0.00}->{reset:0.00}");
             }
             else
             {
-                observations.Add("유진 포착 앞면 확률 +10%·TurnEnd 초기화 PASS");
+                observations.Add("명성 포착 앞면 확률 +10%·TurnEnd 초기화 PASS");
             }
         }
 
@@ -1212,7 +1194,7 @@ public static class CharacterBehaviorCoverageCatalog
             937002);
         if (sentencing == null)
         {
-            failures.Add("유진 양형 RuntimeSkill이 없습니다.");
+            failures.Add("명성 양형 RuntimeSkill이 없습니다.");
         }
         else
         {
@@ -1232,11 +1214,11 @@ public static class CharacterBehaviorCoverageCatalog
             if (active != before + 2 || reset != before)
             {
                 failures.Add(
-                    $"유진 양형 뒷면 위력 불일치: {before}->{active}->{reset}");
+                    $"명성 양형 뒷면 위력 불일치: {before}->{active}->{reset}");
             }
             else
             {
-                observations.Add("유진 양형 뒷면 위력 +2·TurnEnd 초기화 PASS");
+                observations.Add("명성 양형 뒷면 위력 +2·TurnEnd 초기화 PASS");
             }
         }
 
@@ -1286,11 +1268,11 @@ public static class CharacterBehaviorCoverageCatalog
         if (inspection != expectedInspection)
         {
             failures.Add(
-                $"유진 검분 표식 불일치: {inspection}, Expected={expectedInspection}");
+                $"명성 검분 표식 불일치: {inspection}, Expected={expectedInspection}");
         }
         else
         {
-            observations.Add("유진 검분 적중 표식 기본량 PASS");
+            observations.Add("명성 검분 적중 표식 기본량 PASS");
         }
 
         int senseBefore = mechanic.Sense;
@@ -1300,9 +1282,9 @@ public static class CharacterBehaviorCoverageCatalog
             ActionType.NormalAttack,
             938002);
         if (mechanic.Sense != senseBefore + 1)
-            failures.Add("유진 조식 적중 살수의 감 +1 실패");
+            failures.Add("명성 조식 적중 살수의 감 +1 실패");
         else
-            observations.Add("유진 조식 적중 살수의 감 +1 PASS");
+            observations.Add("명성 조식 적중 살수의 감 +1 PASS");
 
         CharacterVerificationScenarioTools.TryClearPrivateCollection(
             mechanic,
@@ -1319,12 +1301,12 @@ public static class CharacterBehaviorCoverageCatalog
         if (inscription != expectedInscription)
         {
             failures.Add(
-                $"유진 각인 결투 승리 표식 불일치: {inscription}, " +
+                $"명성 각인 결투 승리 표식 불일치: {inscription}, " +
                 $"Expected={expectedInscription}");
         }
         else
         {
-            observations.Add("유진 각인 결투 승리 표식 2배 PASS");
+            observations.Add("명성 각인 결투 승리 표식 2배 PASS");
         }
     }
 
@@ -1349,7 +1331,7 @@ public static class CharacterBehaviorCoverageCatalog
             939101);
         if (brand == null || targetPart == null)
         {
-            failures.Add("유진 낙인 RuntimeSkill/대상 부위가 없습니다.");
+            failures.Add("명성 낙인 RuntimeSkill/대상 부위가 없습니다.");
         }
         else
         {
@@ -1372,12 +1354,12 @@ public static class CharacterBehaviorCoverageCatalog
             if (immediate != expected || afterHit != expectedAfterHit)
             {
                 failures.Add(
-                    $"유진 낙인 표식 불일치: Immediate={immediate}, " +
+                    $"명성 낙인 표식 불일치: Immediate={immediate}, " +
                     $"AfterHit={afterHit}, Expected={expected}/{expectedAfterHit}");
             }
             else
             {
-                observations.Add("유진 낙인 즉시 치명 수치 표식·후속 적중 +3 PASS");
+                observations.Add("명성 낙인 즉시 치명 수치 표식·후속 적중 +3 PASS");
             }
 
             context.BattleContext._battleEvent.RaiseTurnEnd(920);
@@ -1389,7 +1371,7 @@ public static class CharacterBehaviorCoverageCatalog
             939201);
         if (joint == null)
         {
-            failures.Add("유진 연대책임 RuntimeSkill이 없습니다.");
+            failures.Add("명성 연대책임 RuntimeSkill이 없습니다.");
         }
         else
         {
@@ -1423,9 +1405,9 @@ public static class CharacterBehaviorCoverageCatalog
                 charges++;
 
             if (charges != 4)
-                failures.Add($"유진 연대책임 강제 앞면 최대치 불일치: {charges}/4");
+                failures.Add($"명성 연대책임 강제 앞면 최대치 불일치: {charges}/4");
             else
-                observations.Add("유진 연대책임 최초1+파괴/처치 연계 최대4 PASS");
+                observations.Add("명성 연대책임 최초1+파괴/처치 연계 최대4 PASS");
 
             context.BattleContext._battleEvent.RaiseTurnEnd(922);
         }
@@ -1442,7 +1424,7 @@ public static class CharacterBehaviorCoverageCatalog
 
         if (retrial == null || duelSkill == null)
         {
-            failures.Add("유진 재심/각인 RuntimeSkill이 없습니다.");
+            failures.Add("명성 재심/각인 RuntimeSkill이 없습니다.");
         }
         else
         {
@@ -1494,12 +1476,12 @@ public static class CharacterBehaviorCoverageCatalog
                 senseAfter != 0 || afterTurn)
             {
                 failures.Add(
-                    $"유진 재심 재굴림 불일치: First={first}, Same={sameExchange}, " +
+                    $"명성 재심 재굴림 불일치: First={first}, Same={sameExchange}, " +
                     $"Next={nextExchange}, Sense={senseAfter}, AfterTurn={afterTurn}");
             }
             else
             {
-                observations.Add("유진 재심 교환당 무료 1회·감 미소모·TurnEnd 해제 PASS");
+                observations.Add("명성 재심 교환당 무료 1회·감 미소모·TurnEnd 해제 PASS");
             }
         }
     }

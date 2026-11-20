@@ -46,7 +46,6 @@ public static class BattleSkillDescriptionFormatter
         ["olaf.preparation.blood_oath"] = "자신에게 출혈 3을 부여하는 대신 재생 4를 3턴 얻습니다.",
         ["olaf.preparation.bloto"] = "체력이 가장 낮은 자신의 부위를 약화시키고 광기 1을 얻습니다.\n적에게 공포를 부여해 위력을 3턴 동안 1 낮춥니다.",
         ["olaf.preparation.crouch"] = "현재 방어도를 12로 설정합니다. 이미 가진 방어도와 합산되지 않습니다.",
-        ["olaf.preparation.glare"] = "이번 턴 자신의 모든 합 판정값이 1 증가합니다.",
         ["olaf.preparation.stoke_prestige"] = "이번 턴 교환에서 이길 때마다 상대 출혈 구간을 이용해 위세를 모으는 도사림입니다.",
         ["olaf.prestige.backs_to_wall"] = "이번 턴 전신·부위 체력이 1 미만으로 떨어지지 않으며 부위가 파괴되지 않습니다.\n결투 교환에서 피해를 받을 때마다 광기 1을 얻습니다.",
         ["olaf.prestige.blooming_wound"] = "조준 부위에 출혈을 3~5 부여합니다.\n광기 5당 출혈 부여량이 1 증가하며 즉시 폭발하지 않습니다.",

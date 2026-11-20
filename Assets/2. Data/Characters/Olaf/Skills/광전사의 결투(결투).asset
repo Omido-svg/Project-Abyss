@@ -22,14 +22,34 @@ MonoBehaviour:
   BasePowerFlatAdjustment: 0
   PhysicalType: 0
   CanBreakPart: 0
+  BreakMode: 0
   GainPrestige: 1
+  Rulebreaker:
+    Enabled: 0
+    EnergyCostReductionPerCommittedUse: 0
+    MinimumEnergyCost: 0
+    MirrorThisSkillToOpponentOnDuelMatch: 0
+    IgnoreOwnerRollModifiers: 0
+    ExplodeBleedingOncePerAction: 0
+    BleedingExplosionMultiplier: 0
+    SuppressFriendlyOneSidedHitsOnSameTargetSlot: 0
+    ConsumeAllOwnerBleedingOnExecute: 0
+    BreakAuthorityBleedingThreshold: 0
+    IgnoreWeakenPrerequisiteBleedingThreshold: 0
+    RequirePreviousTurnLastStand: 0
+    ApplyCurrentLastStandPowerBonus: 0
+    CurrentLastStandPowerBonus: 0
+    ApplyCurrentDisadvantageOrWorsePowerBonus: 0
+    CurrentDisadvantageOrWorsePowerBonus: 0
+    GrantInfiniteAttackSlotSpeedThisTurn: 0
   AttackWeight:
     Weight: 1
+    TargetingModel: 0
     SecondaryPartMode: 0
     SecondaryDamageMultiplier: 1
     AllowBrokenSecondaryParts: 1
   Description: "\uB450 \uBC88 \uBC00\uC5B4\uBD99\uC778 \uB4A4 \uB9C8\uC9C0\uB9C9
-    \uAD74\uB9BC\uC73C\uB85C \uCDA9\uACA9\uC744 \uBC1B\uC544\uB0B4\uB294 \uC62C\uB77C\uD504\uC758
+    \uAD74\uB9BC\uC73C\uB85C \uCDA9\uACA9\uC744 \uBC1B\uC544\uB0B4\uB294 \uBE4C\uC57C\uB974\uC758
     \uACB0\uD22C \uAE30\uC220\uC785\uB2C8\uB2E4."
   Keywords: []
   Rolls:
@@ -123,6 +143,7 @@ MonoBehaviour:
   ResolvePrestigeInCombat: 0
   OverrideCanClash: 0
   CanClashValue: 0
+  PreparationTiming: 0
   PreparationTier: 0
   ResolverType: 1
   DiceMin: 0
@@ -143,6 +164,8 @@ MonoBehaviour:
       Stack: 1
       OverrideDuration: 1
       Duration: 3
+      OverrideInfiniteDuration: 0
+      InfiniteDuration: 0
       OverrideAmount: 0
       Amount: 1
       OverrideMinimum: 0
@@ -159,6 +182,7 @@ MonoBehaviour:
       ForceCharacterStatus: 0
       OverrideGiveToSelectedTarget: 0
       GiveToSelectedTarget: 0
+    UpgradeKey: 
     OverrideTiming: 0
     Timing: 0
     Conditions: []

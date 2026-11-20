@@ -13,8 +13,8 @@ MonoBehaviour:
   m_Name: Olaf Character Bundle
   m_EditorClassIdentifier: 
   kind: 0
-  displayName: "\uC62C\uB77C\uD504"
-  authoringNotes: "SO \uAE30\uBC18 \uC62C\uB77C\uD504 \uC644\uC131\uBCF8. CharacterData,
+  displayName: "\uBE4C\uC57C\uB974"
+  authoringNotes: "SO \uAE30\uBC18 \uBE4C\uC57C\uB974 \uC644\uC131\uBCF8. CharacterData,
     SkillSet, CombatLoadout, VisualProfile\uACFC Animator\uB97C \uBB36\uC2B5\uB2C8\uB2E4."
   characterData: {fileID: 11400000, guid: d1cf9da0e7b9f1645adef9d684f92c62, type: 2}
   combatLoadout: {fileID: 11400000, guid: aa867f91465455d4b9c77fd4450ea019, type: 2}
@@ -37,6 +37,7 @@ MonoBehaviour:
     CrouchingAttackSlotLimit: 2
     OffensiveAttackSlotLimit: 4
     ExpectedMomentumDriftPerTurn: 15
+  eliteBodyPartDefinitions: []
   includedAssets:
   - {fileID: 11400000, guid: e9bc03b760a7e094eb95540f97744572, type: 2}
   - {fileID: 0}

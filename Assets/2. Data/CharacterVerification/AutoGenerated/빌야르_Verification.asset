@@ -10,7 +10,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: e19daa19565c4da4889234089ec44149, type: 3}
-  m_Name: "\uC62C\uB77C\uD504_Verification"
+  m_Name: "\uBE4C\uC57C\uB974_Verification"
   m_EditorClassIdentifier: 
   profileId: character.Olaf.ab112592a9dd8794a99785077bfa9285
   bundle: {fileID: 11400000, guid: ab112592a9dd8794a99785077bfa9285, type: 2}
@@ -298,7 +298,7 @@ MonoBehaviour:
       \uAC8C\uC774\uC9C0 Provider\uC758 \uB77C\uBCA8\xB7\uC815\uADDC\uD654\xB7\uD45C\uC2DC\uAC12\uC744
       \uAC80\uC0AC\uD569\uB2C8\uB2E4."
   - CaseId: olaf.data.skill_coverage
-    DisplayName: "\uC62C\uB77C\uD504 \uC2A4\uD0AC ID \uC804\uCCB4 \uB4F1\uB85D"
+    DisplayName: "\uBE4C\uC57C\uB974 \uC2A4\uD0AC ID \uC804\uCCB4 \uB4F1\uB85D"
     Category: 0
     ExecutionMode: 0
     Enabled: 1

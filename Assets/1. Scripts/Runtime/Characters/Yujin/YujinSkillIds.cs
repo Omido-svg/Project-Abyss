@@ -37,7 +37,6 @@ public static class YujinSkillIds
 
     // Preparation 2 common + 7 Yujin
     public const string Crouch = "common.preparation.crouch";
-    public const string Glare = "common.preparation.glare";
     public const string Read = "yujin.preparation.read";                 // 노림수
     public const string AdvancePay = "yujin.preparation.advance_pay";   // 선금 받기
     public const string HwanhyeongAttack = "yujin.preparation.hwanhyeong.attack";
@@ -82,7 +81,7 @@ public static class YujinSkillIds
 
     public static readonly string[] CanonicalPreparation =
     {
-        Crouch, Glare, Read, AdvancePay, HwanhyeongAttack, HwanhyeongDefense,
+        Crouch, Read, AdvancePay, HwanhyeongAttack, HwanhyeongDefense,
         WaitChance, HoldBreath, Sharpen
     };
 

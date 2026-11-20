@@ -13,7 +13,7 @@ public static class CombatDiagnosticPolicyVerification
         if(Application.isPlaying)throw new InvalidOperationException("EditMode");
         const string expected="Error [1029 DMG-07][CONTENT_ERROR] "+
             "고정 굴림이 항상 동률입니다 (first=10, second=10) "+
-            "/ first=올라프, second=정예 몹, exchange=0, rerolls=1";
+            "/ first=빌야르, second=정예 몹, exchange=0, rerolls=1";
         var pass=0;var fail=0;
         void Check(string name,bool ok)
         {
