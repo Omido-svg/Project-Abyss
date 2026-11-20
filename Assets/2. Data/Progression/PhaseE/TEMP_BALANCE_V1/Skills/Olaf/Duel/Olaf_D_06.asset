@@ -18,7 +18,7 @@ MonoBehaviour:
   ActionType: 1
   Color: 2
   BasePowerRule: 3
-  BasePower: 11
+  BasePower: 13
   BasePowerFlatAdjustment: 0
   PhysicalType: 2
   CanBreakPart: 0
@@ -44,6 +44,7 @@ MonoBehaviour:
     GrantInfiniteAttackSlotSpeedThisTurn: 0
   AttackWeight:
     Weight: 1
+    TargetingModel: 0
     SecondaryPartMode: 0
     SecondaryDamageMultiplier: 1
     AllowBrokenSecondaryParts: 1
@@ -54,32 +55,6 @@ MonoBehaviour:
   Keywords: []
   Rolls:
   - Index: 0
-    Type: 1
-    OverridePhysicalType: 1
-    PhysicalType: 2
-    DiceMode: 0
-    MinPower: 10
-    MaxPower: 17
-    RngSource: 0
-    CoinFrontChance: 0.5
-    CoinBackPower: 4
-    CoinFrontPower: 12
-    CoinFrontIsCritical: 0
-    SlotMinimum: 1
-    SlotMaximum: 9
-    ChinchiroHifumiPower: -4
-    ChinchiroBlankPower: 3
-    ChinchiroMokuPower: 7
-    ChinchiroShigoroPower: 20
-    ChinchiroArashiPower: 24
-    JudgmentModifier: 0
-    ReuseValueAcrossAction: 0
-    EffectEntries: []
-    OnWinEffectEntries: []
-    OnLoseEffectEntries: []
-    OnWinEffects: []
-    OnLoseEffects: []
-  - Index: 1
     Type: 1
     OverridePhysicalType: 1
     PhysicalType: 2
@@ -105,13 +80,39 @@ MonoBehaviour:
     OnLoseEffectEntries: []
     OnWinEffects: []
     OnLoseEffects: []
-  - Index: 2
+  - Index: 1
     Type: 1
     OverridePhysicalType: 1
     PhysicalType: 2
     DiceMode: 0
     MinPower: 14
     MaxPower: 21
+    RngSource: 0
+    CoinFrontChance: 0.5
+    CoinBackPower: 4
+    CoinFrontPower: 12
+    CoinFrontIsCritical: 0
+    SlotMinimum: 1
+    SlotMaximum: 9
+    ChinchiroHifumiPower: -4
+    ChinchiroBlankPower: 3
+    ChinchiroMokuPower: 7
+    ChinchiroShigoroPower: 20
+    ChinchiroArashiPower: 24
+    JudgmentModifier: 0
+    ReuseValueAcrossAction: 0
+    EffectEntries: []
+    OnWinEffectEntries: []
+    OnLoseEffectEntries: []
+    OnWinEffects: []
+    OnLoseEffects: []
+  - Index: 2
+    Type: 1
+    OverridePhysicalType: 1
+    PhysicalType: 2
+    DiceMode: 0
+    MinPower: 16
+    MaxPower: 23
     RngSource: 0
     CoinFrontChance: 0.5
     CoinBackPower: 4
@@ -143,6 +144,7 @@ MonoBehaviour:
   ResolvePrestigeInCombat: 0
   OverrideCanClash: 0
   CanClashValue: 0
+  PreparationTiming: 0
   PreparationTier: 0
   ResolverType: 0
   DiceMin: 1

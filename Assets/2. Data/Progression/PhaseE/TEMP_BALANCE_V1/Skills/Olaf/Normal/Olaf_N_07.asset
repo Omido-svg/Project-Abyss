@@ -62,8 +62,8 @@ MonoBehaviour:
     OverridePhysicalType: 1
     PhysicalType: 0
     DiceMode: 0
-    MinPower: 13
-    MaxPower: 20
+    MinPower: 11
+    MaxPower: 18
     RngSource: 0
     CoinFrontChance: 0.5
     CoinBackPower: 4
@@ -88,8 +88,8 @@ MonoBehaviour:
     OverridePhysicalType: 1
     PhysicalType: 0
     DiceMode: 0
-    MinPower: 11
-    MaxPower: 17
+    MinPower: 9
+    MaxPower: 15
     RngSource: 0
     CoinFrontChance: 0.5
     CoinBackPower: 4
@@ -114,8 +114,8 @@ MonoBehaviour:
     OverridePhysicalType: 1
     PhysicalType: 0
     DiceMode: 0
-    MinPower: 10
-    MaxPower: 15
+    MinPower: 8
+    MaxPower: 13
     RngSource: 0
     CoinFrontChance: 0.5
     CoinBackPower: 4
@@ -140,8 +140,8 @@ MonoBehaviour:
     OverridePhysicalType: 1
     PhysicalType: 1
     DiceMode: 0
-    MinPower: 8
-    MaxPower: 14
+    MinPower: 6
+    MaxPower: 12
     RngSource: 0
     CoinFrontChance: 0.5
     CoinBackPower: 4
@@ -166,8 +166,8 @@ MonoBehaviour:
     OverridePhysicalType: 1
     PhysicalType: 1
     DiceMode: 0
-    MinPower: 6
-    MaxPower: 12
+    MinPower: 4
+    MaxPower: 10
     RngSource: 0
     CoinFrontChance: 0.5
     CoinBackPower: 4

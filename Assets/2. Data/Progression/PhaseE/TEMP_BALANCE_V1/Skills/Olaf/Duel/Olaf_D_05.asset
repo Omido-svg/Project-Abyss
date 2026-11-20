@@ -18,7 +18,7 @@ MonoBehaviour:
   ActionType: 1
   Color: 1
   BasePowerRule: 3
-  BasePower: 12
+  BasePower: 9
   BasePowerFlatAdjustment: 0
   PhysicalType: 0
   CanBreakPart: 0
@@ -64,8 +64,8 @@ MonoBehaviour:
     OverridePhysicalType: 1
     PhysicalType: 2
     DiceMode: 0
-    MinPower: 14
-    MaxPower: 21
+    MinPower: 11
+    MaxPower: 18
     RngSource: 0
     CoinFrontChance: 0.5
     CoinBackPower: 4
@@ -90,8 +90,8 @@ MonoBehaviour:
     OverridePhysicalType: 1
     PhysicalType: 0
     DiceMode: 0
-    MinPower: 10
-    MaxPower: 17
+    MinPower: 7
+    MaxPower: 14
     RngSource: 0
     CoinFrontChance: 0.5
     CoinBackPower: 4
@@ -230,7 +230,7 @@ MonoBehaviour:
     RollNumber: 1
   Effects: []
   OverrideEnergyCost: 1
-  EnergyCost: 1
+  EnergyCost: 0
   UpgradeProfile: {fileID: 11400000, guid: b7fc84a379a3cad4d88af76469fe8c69, type: 2}
   OverrideResourceRules: 0
   RequireFullPrestige: 0

@@ -18,7 +18,7 @@ MonoBehaviour:
   ActionType: 1
   Color: 1
   BasePowerRule: 3
-  BasePower: 20
+  BasePower: 15
   BasePowerFlatAdjustment: 0
   PhysicalType: 1
   CanBreakPart: 1
@@ -65,8 +65,8 @@ MonoBehaviour:
     OverridePhysicalType: 1
     PhysicalType: 0
     DiceMode: 0
-    MinPower: 20
-    MaxPower: 25
+    MinPower: 15
+    MaxPower: 20
     RngSource: 0
     CoinFrontChance: 0.5
     CoinBackPower: 4

@@ -44,6 +44,7 @@ MonoBehaviour:
     GrantInfiniteAttackSlotSpeedThisTurn: 0
   AttackWeight:
     Weight: 1
+    TargetingModel: 0
     SecondaryPartMode: 0
     SecondaryDamageMultiplier: 1
     AllowBrokenSecondaryParts: 1
@@ -65,6 +66,7 @@ MonoBehaviour:
   ResolvePrestigeInCombat: 0
   OverrideCanClash: 0
   CanClashValue: 0
+  PreparationTiming: 0
   PreparationTier: 1
   ResolverType: 0
   DiceMin: 1
@@ -111,7 +113,7 @@ MonoBehaviour:
     RollNumber: 1
   Effects: []
   OverrideEnergyCost: 1
-  EnergyCost: 0
+  EnergyCost: 1
   UpgradeProfile: {fileID: 11400000, guid: 2932867876b69f249befd12249f00b59, type: 2}
   OverrideResourceRules: 0
   RequireFullPrestige: 0
