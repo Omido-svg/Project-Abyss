@@ -1,8 +1,26 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public abstract class Enemy : Character
+public abstract class Enemy : Character, IPhysicalDamageTypeProvider
 {
+    // §12.3 잡몹 공격 유형 — 잡몹(종 지정)이면 그 잡몹의 모든 공격이 종의 유형.
+    // 엘리트 · 보스처럼 잡몹 종이 없으면 false → 스킬 데이터의 유형을 그대로 쓴다.
+    public virtual bool TryResolvePhysicalDamageType(
+        Skill skill,
+        SkillRollData roll,
+        out PhysicalDamageType damageType)
+    {
+        NormalEnemyRoleMechanic role = GetMechanic<NormalEnemyRoleMechanic>();
+        if (role != null)
+        {
+            damageType = EnemySpeciesPolicy.AttackType(role.Species);
+            return true;
+        }
+
+        damageType = PhysicalDamageType.Cut;
+        return false;
+    }
+
     public virtual List<ActionSlot> DecideSlots(
         BattleContext context)
     {

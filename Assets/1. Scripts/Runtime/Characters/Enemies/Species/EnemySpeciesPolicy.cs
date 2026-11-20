@@ -55,6 +55,21 @@ public static class EnemySpeciesPolicy
         new Spec(EnemySpecies.Bind,"구속병",EnemyRole.Debuffer,2,-1,35,65,15,45,40),
         new Spec(EnemySpecies.Corrosion,"침식병",EnemyRole.Debuffer,2,-1,35,65,15,40,45)
     };
+    /// <summary>
+    /// §12.3 공격 유형 — 잡몹 하나 = 유형 하나(그 잡몹의 모든 공격이 같은 유형, 11-17).
+    /// 맞을 때의 체력 내성(6.4)과는 별개다.
+    /// </summary>
+    public static PhysicalDamageType AttackType(EnemySpecies species)=>
+        species switch
+        {
+            EnemySpecies.Charge or EnemySpecies.Gladiator or
+            EnemySpecies.Commander or EnemySpecies.Corrosion=>PhysicalDamageType.Cut,
+            EnemySpecies.Flurry or EnemySpecies.Healer or
+            EnemySpecies.CounterGuard or EnemySpecies.Bind=>PhysicalDamageType.Pierce,
+            EnemySpecies.HeavyHit or EnemySpecies.Pressure or
+            EnemySpecies.Shatter or EnemySpecies.HeavyGuard=>PhysicalDamageType.Blunt,
+            _=>PhysicalDamageType.Cut
+        };
     public static bool TryGet(EnemySpecies species,out Spec spec)
     {
         foreach(var value in All)
