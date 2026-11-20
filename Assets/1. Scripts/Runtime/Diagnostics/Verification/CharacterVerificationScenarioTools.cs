@@ -220,7 +220,39 @@ public static class CharacterVerificationScenarioTools
         StringBuilder builder = new StringBuilder();
         AppendCharacter(builder, "OWNER", owner, customResourceKey);
         AppendCharacter(builder, "TARGET", target, customResourceKey);
+        AppendBattleState(builder, owner, target);
         return builder.ToString();
+    }
+
+    // 11-21: 캐릭터 밖에 저장되는 상태 — 명성 표식(소유자 메커닉의 사전) · 기세 · 턴 시작 예약 큐.
+    private static void AppendBattleState(
+        StringBuilder builder,
+        Character owner,
+        Character target)
+    {
+        BattleContext battle = owner?.BattleContext ?? target?.BattleContext;
+        MomentumManager momentum = battle?.ResolveMomentumManager();
+        if (momentum != null && owner != null)
+            builder.Append(" MOMENTUM=").Append(momentum.GetPerspectiveValue(owner));
+        if (battle?.TurnStartEffects != null)
+            builder.Append(" TURNSTART_Q=").Append(battle.TurnStartEffects.Count);
+
+        foreach (Character holder in new[] { owner, target })
+        {
+            YujinMechanic yujin = holder?.GetMechanic<YujinMechanic>();
+            Character other = holder == owner ? target : owner;
+            if (yujin == null || other == null)
+                continue;
+            builder.Append(" MARK[").Append(other.name).Append("]=")
+                .Append(yujin.GetMark(other))
+                .Append("/D").Append(yujin.GetDesignationTotal(other));
+            if (other.BodyParts != null)
+                foreach (BodyPart part in other.BodyParts)
+                    if (part != null)
+                        builder.Append(',').Append(part.Type).Append(':')
+                            .Append(yujin.GetMark(other, part))
+                            .Append("/D").Append(yujin.GetDesignationTotal(other, part));
+        }
     }
 
     private static void AppendCharacter(
@@ -282,7 +314,7 @@ public static class CharacterVerificationScenarioTools
             if (status == null)
                 continue;
 
-            builder.Append(status.GetType().Name)
+            builder.Append(DescribeStatus(status))
                 .Append(':')
                 .Append(status.Stack)
                 .Append(':')
@@ -328,7 +360,8 @@ public static class CharacterVerificationScenarioTools
                 foreach (FieldInfo field in
                          mechanicType.GetFields(Flags))
                 {
-                    if (!IsSimple(field.FieldType))
+                    if (!IsSimple(field.FieldType) &&
+                        !IsReferenceMarker(field.FieldType))
                         continue;
 
                     try
@@ -336,7 +369,7 @@ public static class CharacterVerificationScenarioTools
                         builder.Append("_")
                             .Append(field.Name)
                             .Append(':')
-                            .Append(field.GetValue(mechanic))
+                            .Append(DescribeValue(field.GetValue(mechanic)))
                             .Append(',');
                     }
                     catch
@@ -356,24 +389,45 @@ public static class CharacterVerificationScenarioTools
         Character character,
         BodyPart part)
     {
-        StatusEffect[] statuses =
-        {
-            character.GetPartStatus<Bleeding>(part),
-            character.GetPartStatus<Burn>(part),
-            character.GetPartStatus<Stun>(part)
-        };
+        // 11-21: 부위 상태 전부를 본다(전에는 출혈 · 화상 · 기절 3종만 — 재생 · 균열 ·
+        // 쇠약 · 다음 턴 예약(Deferred)이 지문에 안 잡혀 「Applied인데 변화 없음」이 났다).
+        IEnumerable<StatusEffect> statuses =
+            part?.StatusEffects ?? (IReadOnlyList<StatusEffect>)Array.Empty<StatusEffect>();
 
         foreach (StatusEffect status in statuses)
         {
             if (status == null)
                 continue;
 
-            builder.Append(status.GetType().Name)
+            builder.Append(DescribeStatus(status))
                 .Append(':')
                 .Append(status.Stack)
                 .Append(':')
                 .Append(status.Duration)
                 .Append(',');
+        }
+    }
+
+    private static string DescribeStatus(StatusEffect status)
+    {
+        string name = status.GetType().Name;
+        if (status is DeferredStatusEffect deferred)
+            name += "<" + deferred.DeferredStatusId + ">";
+        return name;
+    }
+
+    // 11-21: 메커닉의 부위 · 슬롯 참조 필드(엄호 보호 부위 · 다음 턴 최대 속도 슬롯 등)도 본다.
+    private static bool IsReferenceMarker(Type type) =>
+        type == typeof(BodyPart) || type == typeof(ActionSlot);
+
+    private static string DescribeValue(object value)
+    {
+        switch (value)
+        {
+            case null: return "null";
+            case BodyPart part: return "Part(" + part.Type + ")";
+            case ActionSlot slot: return "Slot(" + slot.SlotId + ")";
+            default: return value.ToString();
         }
     }
 
