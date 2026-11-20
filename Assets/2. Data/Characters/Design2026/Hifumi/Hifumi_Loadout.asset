@@ -21,9 +21,9 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 93f76f7ee38b8c44c8e7825fdf0ca0a0, type: 2}
   - {fileID: 11400000, guid: d478d76fe844e2c45af9636e06ebf587, type: 2}
   PreparationSkills:
+  - {fileID: 11400000, guid: 89874fcdf7b691748b5601ff040d175b, type: 2}
   - {fileID: 11400000, guid: b771dcdad9de31d4b9692e2abbe59710, type: 2}
   - {fileID: 11400000, guid: 7607896986f43b44d976e90f11cf8724, type: 2}
-  - {fileID: 11400000, guid: 6f5c081cf2681094fb464cb7cf6af4bb, type: 2}
   PrestigeSkills:
   - {fileID: 11400000, guid: df86e02ab1756f54697dc8b899d334f4, type: 2}
   Catalog: {fileID: 0}

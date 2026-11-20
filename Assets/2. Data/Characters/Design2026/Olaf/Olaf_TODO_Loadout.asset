@@ -15,15 +15,15 @@ MonoBehaviour:
   NormalSkills:
   - {fileID: 11400000, guid: 87b77b20013e7f54f9ed7113454ae450, type: 2}
   - {fileID: 11400000, guid: 81f9a22a9097f324eb6a55014054e5ba, type: 2}
-  - {fileID: 11400000, guid: 01e6b2093e8a8224f96bd89a897e2a08, type: 2}
+  - {fileID: 11400000, guid: 8058cfe6fb011f34294f3e3abd8d203c, type: 2}
   DuelSkills:
-  - {fileID: 11400000, guid: cd90424506385934784ae6ead386e62b, type: 2}
+  - {fileID: 11400000, guid: d685378dcfe71d3418bf9cde7ff0542d, type: 2}
   - {fileID: 11400000, guid: bc09ab10e9afa2945a34d422441e647e, type: 2}
-  - {fileID: 11400000, guid: 8216d9b1279ffca448824112b9ed131f, type: 2}
+  - {fileID: 11400000, guid: a8bb7b1ceb09d084395e7c7ea88b38d2, type: 2}
   PreparationSkills:
   - {fileID: 11400000, guid: 89874fcdf7b691748b5601ff040d175b, type: 2}
-  - {fileID: 11400000, guid: 1464d46d5b893494d8513272fbcc463d, type: 2}
-  - {fileID: 11400000, guid: 3b904fc8be62e1d4e9f69e195c2f1c9f, type: 2}
+  - {fileID: 11400000, guid: 0cd53d9b56e64a24b82911598f800af9, type: 2}
+  - {fileID: 11400000, guid: 3d1ed9490a24613499ef57d2638343d2, type: 2}
   PrestigeSkills:
   - {fileID: 11400000, guid: d944f90c5a346bd46896d80f70a22260, type: 2}
   Catalog: {fileID: 0}

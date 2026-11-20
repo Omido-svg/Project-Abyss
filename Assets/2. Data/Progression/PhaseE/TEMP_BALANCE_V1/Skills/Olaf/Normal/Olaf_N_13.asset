@@ -44,6 +44,7 @@ MonoBehaviour:
     GrantInfiniteAttackSlotSpeedThisTurn: 0
   AttackWeight:
     Weight: 1
+    TargetingModel: 0
     SecondaryPartMode: 0
     SecondaryDamageMultiplier: 1
     AllowBrokenSecondaryParts: 1
@@ -58,7 +59,7 @@ MonoBehaviour:
   - Index: 0
     Type: 0
     OverridePhysicalType: 1
-    PhysicalType: 1
+    PhysicalType: 2
     DiceMode: 0
     MinPower: 10
     MaxPower: 15
@@ -84,7 +85,7 @@ MonoBehaviour:
   - Index: 1
     Type: 0
     OverridePhysicalType: 1
-    PhysicalType: 1
+    PhysicalType: 2
     DiceMode: 0
     MinPower: 16
     MaxPower: 23
@@ -110,7 +111,7 @@ MonoBehaviour:
   - Index: 2
     Type: 0
     OverridePhysicalType: 1
-    PhysicalType: 1
+    PhysicalType: 0
     DiceMode: 0
     MinPower: 11
     MaxPower: 18
@@ -145,6 +146,7 @@ MonoBehaviour:
   ResolvePrestigeInCombat: 0
   OverrideCanClash: 0
   CanClashValue: 0
+  PreparationTiming: 0
   PreparationTier: 0
   ResolverType: 0
   DiceMin: 1
