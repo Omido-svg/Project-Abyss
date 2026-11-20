@@ -39,7 +39,7 @@ public static class BattleSkillDescriptionFormatter
         ["olaf.normal.block_way"] = "사용 시 방어도를 10 얻습니다.",
         ["olaf.normal.choke"] = "공격 교환 승리 시 다음 턴 대상에게 고통을 3턴 부여합니다.",
         ["olaf.normal.enduring_slash"] = "공격·수비·공격 순서로 굴립니다.\n공격 굴림 승리 시 대상 부위에 출혈을 부여합니다.",
-        ["olaf.normal.exploit_gap"] = "1·2굴림이 각각 승리하면 다음 턴 균열 1을 1턴씩 부여합니다.\n마지막 굴림은 흐트러짐에 추가로 영향을 줍니다.",
+        ["olaf.normal.exploit_gap"] = "이 공격이 대상을 새로 약화·파괴·흐트러짐 상태로 만들면 살아 있는 적에게 추가타를 1회 가합니다(합 없는 일방타격, 같은 적도 가능).\n추가타도 조건을 만족하면 연쇄가 이어집니다. 파괴 권한이 있습니다.",
         ["olaf.normal.overhead_smash"] = "최저 위력이 높은 두 번의 공격으로 상대를 압박합니다.\n상대 결투 효과를 제한하면서 피해를 가합니다.",
         ["olaf.normal.slice_thin"] = "2굴림 승리 시 대상 출혈을 2 추가하고 자신에게도 출혈 1을 부여합니다.",
         ["olaf.normal.wild_hack"] = "빛을 소비하지 않고 세 번 공격해 출혈을 쌓습니다.",
