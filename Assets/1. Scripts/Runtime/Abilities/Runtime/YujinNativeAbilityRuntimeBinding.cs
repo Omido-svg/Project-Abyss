@@ -174,7 +174,9 @@ namespace ProjectAbyss.Abilities
                         case YujinWeaponType.Baeku:
                             y.GrantMark(target,part,amount,c.Action);return true;
                         case YujinWeaponType.Jeokseol:
-                            return Defer(c,target,part,StatusEffectId.Fracture,1);
+                            // 18.3 정조준 적설 = 다음 턴 쇠약(11-20, 구 골절).
+                            return Defer(c,target,part,StatusEffectId.Weakness,
+                                1);
                         case YujinWeaponType.Nakil:
                             var request=DamageRequest.Custom(
                                 part==null?DamageType.Direct:DamageType.SkillPart,
@@ -278,9 +280,140 @@ namespace ProjectAbyss.Abilities
                     if(groups<=0||!y.TrySpendSense(groups*bundle))return false;
                     c.Action.RulebreakerFlatPowerBonus+=groups*2;
                     return true;
+                // ── 11-20 명성 9장 규칙서 반영(18.3 · 18.4 · 18.5) ──
+                case YujinNativeOperation.WantedPerRollRider:
+                    return ApplyWanted(op,c,y);
+                case YujinNativeOperation.FamiliarHandWinRider:
+                    if(target==null)return false;
+                    switch(y.CurrentWeapon)
+                    {
+                        case YujinWeaponType.Baeku:
+                            var gauge=target.GetMechanic<StaggerGaugeMechanic>();
+                            return gauge!=null&&amount>0&&gauge.SacrificeGauge(amount)>0;
+                        case YujinWeaponType.Jeokseol:
+                            y.GrantMark(target,part,Math.Max(1,op.AlternativeAmount),c.Action);return true;
+                        default:
+                            var hit=DamageRequest.Custom(
+                                part==null?DamageType.Direct:DamageType.SkillPart,
+                                owner,target,part,Math.Max(1,op.AlternativeAmount),1f,
+                                canBreakPart:false,applyMomentum:false,
+                                applyGuard:true,sourceAction:c.Action);
+                            c.BattleContext?.ResolveDamageManager()?.ApplyDamageContext(hit);
+                            return true;
+                    }
+                case YujinNativeOperation.FinishWeaponSenseEnergy:
+                {
+                    var dealt=c.DamageContext;
+                    bool met=y.CurrentWeapon switch
+                    {
+                        YujinWeaponType.Baeku=>dealt?.WasKilled==true||c.KillContext?.Victim!=null,
+                        YujinWeaponType.Jeokseol=>dealt?.OpenedVulnerabilityWindow==true,
+                        _=>dealt?.WasBroken==true // 낙일 타격은 전부 처형 권한 — 이 굴림이 부위를 파괴 = 처형 성공
+                    };
+                    if(!met)return false;
+                    if(amount>0)y.GrantSense(amount);
+                    if(op.AlternativeAmount>0)
+                        owner.AddEnergy(op.AlternativeAmount,CombatResourceChangeReason.SkillEffect,c.Action,c.Action.Skill);
+                    return true;
+                }
+                case YujinNativeOperation.SpendSenseForMark:
+                    if(target==null||amount<=0||!y.TrySpendSense(Math.Max(1,op.AlternativeAmount)))return false;
+                    y.GrantMark(target,part,amount,c.Action);return true;
+                case YujinNativeOperation.SenseByFervorLevel:
+                {
+                    var fervor=c.BattleContext?.Services?.FervorManager;
+                    int level=fervor==null?0:(ReferenceEquals(owner,c.BattleContext.Player)?fervor.FervorLevel:fervor.GetFervorLevel(owner));
+                    if(level<=0)return false;
+                    y.GrantSense(level);return true;
+                }
+                case YujinNativeOperation.SpendSenseForBlock:
+                    if(amount<=0||!y.TrySpendSense(Math.Max(1,op.AlternativeAmount)))return false;
+                    owner.AddBlock(amount);return true;
+                case YujinNativeOperation.OwnerSwiftNextTurn:
+                    return Defer(c,owner,null,StatusEffectId.Swift,Math.Max(1,amount),Math.Max(1,op.Duration));
+                case YujinNativeOperation.TargetEnergyCapDownNextTurn:
+                {
+                    if(target==null||target.IsDead||amount<=0)return false;
+                    var queue=c.BattleContext?.TurnStartEffects;
+                    if(queue==null)return false;
+                    var resolver=c.Resolver;var action=c.Action;var to=target;
+                    int value=amount,turns=Math.Max(1,op.Duration);
+                    queue.EnqueueLocked(to,null,()=>
+                    {
+                        if(to==null||to.IsDead||resolver==null)return;
+                        resolver.ApplyCharacterStatus(EffectRequest.CharacterStatus(
+                            owner,to,new EnergyCapDownStatus(value,turns),action,0,SkillEffectTiming.OnTurnStart,true));
+                    });
+                    return true;
+                }
+                case YujinNativeOperation.MomentumPush:
+                    if(amount<=0)return false;
+                    c.BattleContext?.ResolveMomentumManager()?.ApplySkillShift(owner,amount);
+                    return true;
                 default:throw new InvalidOperationException(
                     "Unknown R7-6 native Yujin operation.");
             }
+        }
+
+        /// <summary>
+        /// 18.3 현상수배 — 굴림 위치마다 다른 효과, 그 굴림이 이겼을 때만. 모두 「다음 턴」.
+        /// 백우 1 표식 +N(모든 적) · 2 지정 1/1(모든 적) · 3 자신 신속 1/1 / 적설 1 쇠약 · 2 속박(모든 적) / 낙일 1 균열(모든 적).
+        /// 표식 · 지정을 넣을 부위 = 이긴 순간 그 적의 현재 표식이 가장 높은 생존 부위(동률 무작위).
+        /// </summary>
+        private static bool ApplyWanted(YujinNativeEntry op,SkillEffectContext c,YujinMechanic y)
+        {
+            int roll=c.RollNumber;
+            int status=Math.Max(1,op.AlternativeAmount);
+            int turns=Math.Max(1,op.Duration);
+            bool any=false;
+            switch(y.CurrentWeapon)
+            {
+                case YujinWeaponType.Baeku:
+                    if(roll==3)return Defer(c,c.Owner,null,StatusEffectId.Swift,status,turns);
+                    if(roll!=1&&roll!=2)return false;
+                    foreach(var enemy in Enemies(c))
+                    {
+                        var part=HighestMarkPart(y,enemy);
+                        if(roll==1)any|=y.QueueMarkForNextTurn(enemy,part,Math.Max(1,op.Amount),c.Action);
+                        else
+                        {
+                            var queue=c.BattleContext?.TurnStartEffects;
+                            if(queue==null)continue;
+                            var resolver=c.Resolver;var owner=c.Owner;var action=c.Action;var to=enemy;var at=part;
+                            queue.EnqueueLocked(to,at,()=>
+                            {
+                                if(to==null||to.IsDead||resolver==null)return;
+                                var designation=new YujinDesignationStatus(status,turns);
+                                if(at==null||at.IsBroken)
+                                    resolver.ApplyCharacterStatus(EffectRequest.CharacterStatus(owner,to,designation,action,1,SkillEffectTiming.OnTurnStart,true));
+                                else
+                                    resolver.ApplyBodyPartStatus(EffectRequest.BodyPartStatus(owner,to,at,designation,action,1,SkillEffectTiming.OnTurnStart,true));
+                            });
+                            any=true;
+                        }
+                    }
+                    return any;
+                case YujinWeaponType.Jeokseol:
+                    if(roll!=1&&roll!=2)return false;
+                    foreach(var enemy in Enemies(c))
+                        any|=Defer(c,enemy,null,roll==1?StatusEffectId.Weakness:StatusEffectId.Bind,status,turns);
+                    return any;
+                default:
+                    if(roll!=1)return false;
+                    foreach(var enemy in Enemies(c))
+                        any|=Defer(c,enemy,null,StatusEffectId.Rupture,status,turns);
+                    return any;
+            }
+        }
+
+        private static BodyPart HighestMarkPart(YujinMechanic y,Character enemy)
+        {
+            if(enemy==null||enemy.IsSingleHpTarget||enemy.BodyParts==null)return null;
+            var alive=enemy.BodyParts.Where(p=>p!=null&&!p.IsBroken).ToList();
+            if(alive.Count==0)return null;
+            int best=alive.Max(p=>y.GetMark(enemy,p));
+            var top=alive.Where(p=>y.GetMark(enemy,p)==best).ToList();
+            return top[UnityEngine.Random.Range(0,top.Count)];
         }
 
         public void Dispose()

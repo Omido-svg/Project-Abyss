@@ -20,9 +20,18 @@ MonoBehaviour:
   - Operation: 5
     Timing: 0
     Condition: 0
-    RestrictToRoll: 0
+    RestrictToRoll: 1
     RollNumber: 1
     Amount: 1
     AlternativeAmount: 0
-    Duration: 3
+    Duration: 1
+    ProvisionalBalance: 1
+  - Operation: 22
+    Timing: 7
+    Condition: 0
+    RestrictToRoll: 0
+    RollNumber: 1
+    Amount: 10
+    AlternativeAmount: 6
+    Duration: 1
     ProvisionalBalance: 1

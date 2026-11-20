@@ -17,12 +17,12 @@ MonoBehaviour:
   SourceAssetName: Yujin_P_06
   SourceAssetGuid: e805a49e7f6207147931dc36e5d09cc4
   Operations:
-  - Operation: 17
+  - Operation: 26
     Timing: 0
     Condition: 0
     RestrictToRoll: 0
     RollNumber: 1
-    Amount: 10
-    AlternativeAmount: 0
-    Duration: 3
+    Amount: 12
+    AlternativeAmount: 2
+    Duration: 1
     ProvisionalBalance: 1

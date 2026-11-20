@@ -84,6 +84,26 @@ internal static class YujinSkillRollUtility
     }
 }
 
+/// <summary>11-20 명성 카드 사용 조건(18.3 · 18.4) — 자원과 같은 자리에서 막는다.</summary>
+internal static class YujinUseConditions
+{
+    public static bool Allows(Character character, SkillDefinition definition)
+    {
+        switch (definition?.SkillId)
+        {
+            case YujinSkillIds.FamiliarHand:
+                // 18.3 손에 익히다 — 이번 턴에 환형으로 무기를 바꿨을 때만.
+                return character?.GetMechanic<YujinMechanic>()?.WeaponChangedThisTurn == true;
+            case YujinSkillIds.BlockRetreat:
+                // 18.4 퇴로 차단 — 지난 턴 종료 시 내가 짓누름(+70 이상)이었을 때만.
+                return character?.BattleContext?.Services?.MomentumManager?
+                    .GetPreviousTurnFinalState(character) == MomentumState.Overwhelm;
+            default:
+                return true;
+        }
+    }
+}
+
 public sealed class YujinNormalRuntimeSkill :
     DataNormalSkill
 {
@@ -92,6 +112,10 @@ public sealed class YujinNormalRuntimeSkill :
         : base(definition)
     {
     }
+
+    public override bool CanUseByResource(Character character) =>
+        base.CanUseByResource(character) &&
+        YujinUseConditions.Allows(character ?? owner, Definition);
 
     public override int ExchangeRollCount =>
         YujinSkillRollUtility.GetExchangeCount(
@@ -137,7 +161,8 @@ public sealed class YujinDuelRuntimeSkill :
     public override bool CanUseByResource(Character character)
     {
         // Current-turn Sense is checked by the roll's OnUse effect, not planning.
-        return base.CanUseByResource(character);
+        return base.CanUseByResource(character) &&
+            YujinUseConditions.Allows(character ?? owner, Definition);
     }
 
     public override bool TryConsumeResource(Character character, BattleAction sourceAction = null)

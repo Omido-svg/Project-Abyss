@@ -17,21 +17,12 @@ MonoBehaviour:
   SourceAssetName: Yujin_D_14
   SourceAssetGuid: 4096bba85a30e334e913b6a0e6437586
   Operations:
-  - Operation: 16
-    Timing: 7
-    Condition: 3
+  - Operation: 23
+    Timing: 3
+    Condition: 0
     RestrictToRoll: 0
     RollNumber: 1
     Amount: 2
-    AlternativeAmount: 0
-    Duration: 3
-    ProvisionalBalance: 1
-  - Operation: 16
-    Timing: 7
-    Condition: 2
-    RestrictToRoll: 0
-    RollNumber: 1
-    Amount: 2
-    AlternativeAmount: 0
-    Duration: 3
+    AlternativeAmount: 1
+    Duration: 1
     ProvisionalBalance: 1

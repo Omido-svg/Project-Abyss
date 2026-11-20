@@ -13,7 +13,11 @@ namespace ProjectAbyss.Abilities
         CutThroatMark=10, SpreadRumorMark=11, WeaponDebuff=12,
         RegisterExplosionTrap=13, RegisterResonanceTrap=14, DesignateAllEnemies=15,
         PeriodSenseRider=16, ConsumeMarkForBlock=17, ConsumeMarkForSwift=18,
-        ForceMarkIgnition=19, SpendSenseBundlesForPower=20
+        ForceMarkIgnition=19, SpendSenseBundlesForPower=20,
+        // 11-20 명성 9장 규칙서 반영(18.3 · 18.4 · 18.5). append-only.
+        WantedPerRollRider=21, FamiliarHandWinRider=22, FinishWeaponSenseEnergy=23,
+        SpendSenseForMark=24, SenseByFervorLevel=25, SpendSenseForBlock=26,
+        OwnerSwiftNextTurn=27, TargetEnergyCapDownNextTurn=28, MomentumPush=29
     }
 
     public enum YujinCondition
@@ -65,6 +69,7 @@ namespace ProjectAbyss.Abilities
                     if(op.Timing!=SkillEffectTiming.OnExecute&&
                        op.Timing!=SkillEffectTiming.OnExchangeWin&&
                        op.Timing!=SkillEffectTiming.OnExchangeLose&&
+                       op.Timing!=SkillEffectTiming.AfterDamage&& // 11-20 마침표를 찍다 — 각 굴림의 피해 처리 뒤(18.4)
                        op.Timing!=SkillEffectTiming.OnKill&&
                        op.Timing!=SkillEffectTiming.OnPartBroken&&
                        op.Timing!=SkillEffectTiming.OnPreparationActivated)
