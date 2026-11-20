@@ -99,8 +99,8 @@ MonoBehaviour:
     BaekuHitStagger: 0
     BaekuIgnitionStagger: 0
     NakilIgnitionDamage: 0
-    TrapLifetimeTurns: 0
-    ExplosionDamagePerTrap: 0
+    TrapLifetimeTurns: 2
+    ExplosionDamagePerTrap: 2
     ResonanceWeakness: 0
     ResonanceNakilExtraDamage: 0
     ContagionMarkAmount: 0

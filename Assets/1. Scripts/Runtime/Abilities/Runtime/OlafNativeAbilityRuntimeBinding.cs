@@ -216,9 +216,9 @@ namespace ProjectAbyss.Abilities
                     // ClashManager extends the already resolved exchange by
                     // one-sided actions through its normal RNG/damage pipeline.
                     var dealt=context.DamageContext;
+                    // 17.2: 처치는 연쇄 조건이 아니다(11-21 사용자).
                     return dealt!=null&&(dealt.WasWeakened||
-                        dealt.WasBroken||dealt.OpenedVulnerabilityWindow||
-                        dealt.WasKilled);
+                        dealt.WasBroken||dealt.OpenedVulnerabilityWindow);
                 case OlafNativeOperation.ActivateAdjustedMaxSpeedIfLastStand:
                     if(!rule.CanUse(context.SkillDefinition))return false;
                     rule.ActivateCanonicalLastResistance();

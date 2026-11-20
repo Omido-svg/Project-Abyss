@@ -52,7 +52,7 @@ public static class NativeSOStatusParityVerification
         }
         bool enabled=router.Enabled;
         var restore=new List<(SkillDefinition Skill,int Level)>();
-        Check("S01 exactly nine native authored status assets",graphs.Length==9);
+        Check("S01 exactly "+SkillCorpusVerification.NativeStatusCount+" native authored status assets",graphs.Length==SkillCorpusVerification.NativeStatusCount);
         try
         {
             long id=994100;

@@ -93,13 +93,17 @@ public static class NativeAbilityAuthoringVerification
                 "ProjectAbyss/NativeAbilities").First();
             var bleeding=Resources.LoadAll<NativeStatusAbilityDefinition>(
                 "ProjectAbyss/NativeStatuses").First();
-            var gauge=Resources.LoadAll<NativeUniqueGaugeDefinition>(
-                "ProjectAbyss/NativeUniqueGauges")
-                .First(x=>x.Kind==UniqueGaugeKind.OlafMadness);
+            // 11-21: 빌야르 광기 게이지 R5 그래프는 빌야르 네이티브에 가려 안 돌아서 삭제했다.
+            // 변환기 시험 재료는 원본 카드(광기 물기 Olaf_D_04 — 광기 +N 단일 효과)를 직접 쓴다.
+            const string OlafMadnessFixtureSourceGuid="1ecdb0f93b9ad3e4a921d7534ba253c5";
+            string gaugeSourceGuid=Resources.LoadAll<NativeUniqueGaugeDefinition>(
+                    "ProjectAbyss/NativeUniqueGauges")
+                .FirstOrDefault(x=>x.Kind==UniqueGaugeKind.OlafMadness)?.SourceAssetGuid
+                ?? OlafMadnessFixtureSourceGuid;
             var fixtures=new[]{
                 (resource.SourceAssetGuid,"R8_QA_RESOURCE","r8.qa.resource"),
                 (bleeding.SourceAssetGuid,"R8_QA_BLEED","r8.qa.bleed"),
-                (gauge.SourceAssetGuid,"R8_QA_OLAF","olaf.r8.qa_unique")
+                (SourceAssetGuid:gaugeSourceGuid,"R8_QA_OLAF","olaf.r8.qa_unique")
             };
             var sourceHashes=fixtures.Select(x=>{
                 var f=Path.Combine(root,AssetDatabase.GUIDToAssetPath(x.SourceAssetGuid));

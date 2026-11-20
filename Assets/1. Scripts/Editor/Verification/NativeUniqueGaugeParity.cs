@@ -57,7 +57,7 @@ public static class NativeUniqueGaugeParity
             if(yes){pass++;Debug.Log("[R7-GaugeParity] PASS "+id+" "+detail);}
             else{fail++;Debug.LogError("[R7-GaugeParity] FAIL "+id+" "+detail);}
         }
-        Check("G01 exact five native graphs",assets.Length==5);
+        Check("G01 exact "+SkillCorpusVerification.NativeUniqueGaugeCount+" native graphs",assets.Length==SkillCorpusVerification.NativeUniqueGaugeCount);
         try
         {
             long action=777700;

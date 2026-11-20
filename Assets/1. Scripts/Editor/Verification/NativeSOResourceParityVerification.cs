@@ -62,9 +62,9 @@ public static class NativeSOResourceParityVerification
         }
         bool prior=router.Enabled;
         var restore=new List<(SkillDefinition Data,int Level)>();
-        Check("G01 15 native SOs loaded",graphs.Length==15);
+        Check("G01 "+SkillCorpusVerification.NativeResourceCount+" native SOs loaded",graphs.Length==SkillCorpusVerification.NativeResourceCount);
         Check("G02 router source is native SO catalog",
-            ResourceAbilityBinding.ApprovedSkillCount==15);
+            ResourceAbilityBinding.ApprovedSkillCount==SkillCorpusVerification.NativeResourceCount);
         try
         {
             long id=991000;

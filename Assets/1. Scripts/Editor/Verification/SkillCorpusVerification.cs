@@ -28,10 +28,12 @@ public static class SkillCorpusVerification
 
     // 네이티브 그래프 기준선(11-21 에디터 실측). 11-20 노려보기 · 중복 정리로
     // 리소스 2(common_preparation_glare · yujin_duel_block_retreat) · 상태 1(olaf_duel_single_cut) 삭제.
-    public const int NativeResourceCount=13;
-    public const int NativeStatusCount=8;
+    // 11-21 빌야르 네이티브에 가려 실전에서 안 돌던 R5 그래프 19개 삭제(리소스 10 · 상태 5 · 게이지 4)
+    // → 같은 카드에 그래프 두 개(별칭) 0.
+    public const int NativeResourceCount=3;
+    public const int NativeStatusCount=3;
     public const int NativeMixedCount=7;
-    public const int NativeUniqueGaugeCount=5;
+    public const int NativeUniqueGaugeCount=1;
     public const int NativeSourceGraphCount=
         NativeResourceCount+NativeStatusCount+NativeMixedCount+NativeUniqueGaugeCount;
     public const int NativeSimpleGraphCount=
@@ -39,9 +41,9 @@ public static class SkillCorpusVerification
     public const int AuthoredNativeSchemaCount=NativeSourceGraphCount+1; // + 엘리트 전투 태세 준비 그래프
     public const int MetadataPilotCandidateCount=
         OriginalMetadataOnlyCount+NewStage1MetadataOnlyCount;
-    public const int NativeGraphInventoryCount=89;   // 8개 Resources 폴더 전체
-    public const int NativeGraphUniqueGuidCount=73;
-    public const int NativeGraphAliasCount=16;
+    public const int NativeGraphInventoryCount=70;   // 8개 Resources 폴더 전체
+    public const int NativeGraphUniqueGuidCount=70;
+    public const int NativeGraphAliasCount=0;
     public static string NativeFamilyLabel=>
         NativeResourceCount+"/"+NativeStatusCount+"/"+NativeMixedCount+"/"+NativeUniqueGaugeCount;
     public static string CensusLabel=>

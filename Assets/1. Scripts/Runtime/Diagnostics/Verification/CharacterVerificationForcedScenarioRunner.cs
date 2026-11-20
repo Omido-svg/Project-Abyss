@@ -85,8 +85,6 @@ public static class CharacterVerificationForcedScenarioRunner
             ["hifumi.duel.l.provoke"] = "규칙서 수치 (미정) — HifumiSkillIds.HasPendingCanonicalRuntimeNumbers",
             ["hifumi.duel.m.cleanse_all"] = "규칙서 수치 (미정) — HifumiSkillIds.HasPendingCanonicalRuntimeNumbers",
             ["hifumi.duel.k.flip_table"] = "규칙서 수치 (미정) — HifumiSkillIds.HasPendingCanonicalRuntimeNumbers",
-            ["yujin.duel.trap"] = "18장 폭발 덫 스택 (미정) — MarkRules.TrapLifetimeTurns · ExplosionDamagePerTrap = 0이라 덫이 등록되지 않음",
-            ["yujin.duel.deadline"] = "18장 공명 덫 스택 (미정) — MarkRules.TrapLifetimeTurns = 0이라 덫이 등록되지 않음",
         };
 
     // 덫 두 장은 사용은 되지만 (미정) 수치 때문에 효과가 등록되지 않는다 — 그쪽을 막힘으로 본다.

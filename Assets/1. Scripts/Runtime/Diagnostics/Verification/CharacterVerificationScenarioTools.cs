@@ -243,6 +243,11 @@ public static class CharacterVerificationScenarioTools
             Character other = holder == owner ? target : owner;
             if (yujin == null || other == null)
                 continue;
+            // 덫(폭발 · 공명 · 전염)은 명성 메커닉의 지연 트리거 목록에 들어간다.
+            var triggers = typeof(YujinMechanic).GetField("delayedTriggers", Flags)
+                ?.GetValue(yujin) as DelayedEffectTriggerQueue;
+            if (triggers != null)
+                builder.Append(" TRAPS=").Append(triggers.Count);
             builder.Append(" MARK[").Append(other.name).Append("]=")
                 .Append(yujin.GetMark(other))
                 .Append("/D").Append(yujin.GetDesignationTotal(other));
