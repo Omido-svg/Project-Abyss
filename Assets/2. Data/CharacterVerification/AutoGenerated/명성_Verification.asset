@@ -92,16 +92,6 @@ MonoBehaviour:
     Description: "\uC790\uC6D0 \uAC70\uBD80/\uC18C\uBE44, \uBAA8\uB4E0 \uAD74\uB9BC,
       \uD53C\uD574 \uB300\uC0C1, \uBAA8\uB4E0 Effect Entry \uC870\uAC74\uC744 \uACB0\uC815\uB860\uC801\uC73C\uB85C
       \uAC15\uC81C \uC2E4\uD589\uD569\uB2C8\uB2E4."
-  - CaseId: coverage.skill.yujin.normal.step_back
-    DisplayName: "\uC2A4\uD0AC \uC644\uC804 \uC2DC\uB098\uB9AC\uC624: \uD55C \uBC1C
-      \uBB3C\uB7EC\uC11C\uB2E4"
-    Category: 2
-    ExecutionMode: 1
-    Enabled: 1
-    Seed: 1207
-    Description: "\uC790\uC6D0 \uAC70\uBD80/\uC18C\uBE44, \uBAA8\uB4E0 \uAD74\uB9BC,
-      \uD53C\uD574 \uB300\uC0C1, \uBAA8\uB4E0 Effect Entry \uC870\uAC74\uC744 \uACB0\uC815\uB860\uC801\uC73C\uB85C
-      \uAC15\uC81C \uC2E4\uD589\uD569\uB2C8\uB2E4."
   - CaseId: coverage.skill.yujin.normal.wanted
     DisplayName: "\uC2A4\uD0AC \uC644\uC804 \uC2DC\uB098\uB9AC\uC624: \uD604\uC0C1\uC218\uBC30"
     Category: 2
@@ -115,16 +105,6 @@ MonoBehaviour:
     DisplayName: "\uC2A4\uD0AC \uC644\uC804 \uC2DC\uB098\uB9AC\uC624: \uD655\uC778
       \uC0AC\uC0B4"
     Category: 2
-    ExecutionMode: 1
-    Enabled: 1
-    Seed: 1207
-    Description: "\uC790\uC6D0 \uAC70\uBD80/\uC18C\uBE44, \uBAA8\uB4E0 \uAD74\uB9BC,
-      \uD53C\uD574 \uB300\uC0C1, \uBAA8\uB4E0 Effect Entry \uC870\uAC74\uC744 \uACB0\uC815\uB860\uC801\uC73C\uB85C
-      \uAC15\uC81C \uC2E4\uD589\uD569\uB2C8\uB2E4."
-  - CaseId: coverage.skill.yujin.duel.into_shadows
-    DisplayName: "\uC2A4\uD0AC \uC644\uC804 \uC2DC\uB098\uB9AC\uC624: \uADF8\uB9BC\uC790
-      \uC18D\uC73C\uB85C"
-    Category: 3
     ExecutionMode: 1
     Enabled: 1
     Seed: 1207
@@ -171,29 +151,9 @@ MonoBehaviour:
     Description: "\uC790\uC6D0 \uAC70\uBD80/\uC18C\uBE44, \uBAA8\uB4E0 \uAD74\uB9BC,
       \uD53C\uD574 \uB300\uC0C1, \uBAA8\uB4E0 Effect Entry \uC870\uAC74\uC744 \uACB0\uC815\uB860\uC801\uC73C\uB85C
       \uAC15\uC81C \uC2E4\uD589\uD569\uB2C8\uB2E4."
-  - CaseId: coverage.skill.yujin.duel.all_targets
-    DisplayName: "\uC2A4\uD0AC \uC644\uC804 \uC2DC\uB098\uB9AC\uC624: \uBAA8\uB450\uB97C
-      \uB178\uB9AC\uB2E4"
-    Category: 3
-    ExecutionMode: 1
-    Enabled: 1
-    Seed: 1207
-    Description: "\uC790\uC6D0 \uAC70\uBD80/\uC18C\uBE44, \uBAA8\uB4E0 \uAD74\uB9BC,
-      \uD53C\uD574 \uB300\uC0C1, \uBAA8\uB4E0 Effect Entry \uC870\uAC74\uC744 \uACB0\uC815\uB860\uC801\uC73C\uB85C
-      \uAC15\uC81C \uC2E4\uD589\uD569\uB2C8\uB2E4."
   - CaseId: coverage.skill.yujin.duel.designate_target
     DisplayName: "\uC2A4\uD0AC \uC644\uC804 \uC2DC\uB098\uB9AC\uC624: \uBAA9\uD45C
       \uC9C0\uC815"
-    Category: 3
-    ExecutionMode: 1
-    Enabled: 1
-    Seed: 1207
-    Description: "\uC790\uC6D0 \uAC70\uBD80/\uC18C\uBE44, \uBAA8\uB4E0 \uAD74\uB9BC,
-      \uD53C\uD574 \uB300\uC0C1, \uBAA8\uB4E0 Effect Entry \uC870\uAC74\uC744 \uACB0\uC815\uB860\uC801\uC73C\uB85C
-      \uAC15\uC81C \uC2E4\uD589\uD569\uB2C8\uB2E4."
-  - CaseId: coverage.skill.yujin.duel.borrow_weapon
-    DisplayName: "\uC2A4\uD0AC \uC644\uC804 \uC2DC\uB098\uB9AC\uC624: \uBE4C\uB824
-      \uC4F0\uB2E4"
     Category: 3
     ExecutionMode: 1
     Enabled: 1
@@ -231,16 +191,6 @@ MonoBehaviour:
     Description: "\uC790\uC6D0 \uAC70\uBD80/\uC18C\uBE44, \uBAA8\uB4E0 \uAD74\uB9BC,
       \uD53C\uD574 \uB300\uC0C1, \uBAA8\uB4E0 Effect Entry \uC870\uAC74\uC744 \uACB0\uC815\uB860\uC801\uC73C\uB85C
       \uAC15\uC81C \uC2E4\uD589\uD569\uB2C8\uB2E4."
-  - CaseId: coverage.skill.yujin.duel.probe_weakness
-    DisplayName: "\uC2A4\uD0AC \uC644\uC804 \uC2DC\uB098\uB9AC\uC624: \uC57D\uC810\uC744
-      \uCE90\uB0B4\uB2E4"
-    Category: 3
-    ExecutionMode: 1
-    Enabled: 1
-    Seed: 1207
-    Description: "\uC790\uC6D0 \uAC70\uBD80/\uC18C\uBE44, \uBAA8\uB4E0 \uAD74\uB9BC,
-      \uD53C\uD574 \uB300\uC0C1, \uBAA8\uB4E0 Effect Entry \uC870\uAC74\uC744 \uACB0\uC815\uB860\uC801\uC73C\uB85C
-      \uAC15\uC81C \uC2E4\uD589\uD569\uB2C8\uB2E4."
   - CaseId: coverage.skill.yujin.duel.contract_target
     DisplayName: "\uC2A4\uD0AC \uC644\uC804 \uC2DC\uB098\uB9AC\uC624: \uC758\uB8B0
       \uB300\uC0C1"
@@ -264,15 +214,6 @@ MonoBehaviour:
   - CaseId: coverage.skill.yujin.duel.block_retreat
     DisplayName: "\uC2A4\uD0AC \uC644\uC804 \uC2DC\uB098\uB9AC\uC624: \uD1F4\uB85C
       \uCC28\uB2E8"
-    Category: 3
-    ExecutionMode: 1
-    Enabled: 1
-    Seed: 1207
-    Description: "\uC790\uC6D0 \uAC70\uBD80/\uC18C\uBE44, \uBAA8\uB4E0 \uAD74\uB9BC,
-      \uD53C\uD574 \uB300\uC0C1, \uBAA8\uB4E0 Effect Entry \uC870\uAC74\uC744 \uACB0\uC815\uB860\uC801\uC73C\uB85C
-      \uAC15\uC81C \uC2E4\uD589\uD569\uB2C8\uB2E4."
-  - CaseId: coverage.skill.yujin.duel.shake_up
-    DisplayName: "\uC2A4\uD0AC \uC644\uC804 \uC2DC\uB098\uB9AC\uC624: \uD754\uB4E4\uC5B4\uB193\uB2E4"
     Category: 3
     ExecutionMode: 1
     Enabled: 1

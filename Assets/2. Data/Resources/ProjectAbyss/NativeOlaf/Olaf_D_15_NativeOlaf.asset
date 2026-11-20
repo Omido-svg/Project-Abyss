@@ -19,16 +19,16 @@ MonoBehaviour:
   Operations:
   - Operation: 6
     Timing: 0
-    RestrictToRoll: 0
+    RestrictToRoll: 1
     RollNumber: 1
     StatusId: 9
     Amount: 4
     Duration: 1
     MinimumBleeding: 0
   - Operation: 9
-    Timing: 31
+    Timing: 0
     RestrictToRoll: 1
-    RollNumber: 2
+    RollNumber: 1
     StatusId: 9
     Amount: 1
     Duration: 1

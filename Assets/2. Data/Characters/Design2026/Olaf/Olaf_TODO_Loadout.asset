@@ -31,19 +31,14 @@ MonoBehaviour:
   NormalSkillPool:
   - {fileID: 11400000, guid: 87b77b20013e7f54f9ed7113454ae450, type: 2}
   - {fileID: 11400000, guid: 81f9a22a9097f324eb6a55014054e5ba, type: 2}
-  - {fileID: 11400000, guid: 01e6b2093e8a8224f96bd89a897e2a08, type: 2}
   - {fileID: 11400000, guid: 8058cfe6fb011f34294f3e3abd8d203c, type: 2}
   - {fileID: 11400000, guid: 0ccd4e460d9ad4142a73432b46c320c0, type: 2}
-  - {fileID: 11400000, guid: a9f8ecac40d420541a48c599861e758f, type: 2}
   - {fileID: 11400000, guid: c4c19befd70a20d4591d5000990287b2, type: 2}
   - {fileID: 11400000, guid: a49339629c1382f41936cea19629fe41, type: 2}
-  - {fileID: 11400000, guid: f8b7e47d31402ae49b2c05ce019b7c94, type: 2}
   - {fileID: 11400000, guid: 6b081b4a77b26e04a8d89ff2c4daeed9, type: 2}
   - {fileID: 11400000, guid: 318da5529382900449c8dc37169b108f, type: 2}
   - {fileID: 11400000, guid: 78ae264f7be5e81478fc11a8de548904, type: 2}
   - {fileID: 11400000, guid: 25a5e287c9914aa48a25a674b8684384, type: 2}
-  - {fileID: 11400000, guid: 4b7777e1d031bed4d834c47ac2b47cd8, type: 2}
-  - {fileID: 11400000, guid: 148f3f1d401e1714f972f67064272da2, type: 2}
   - {fileID: 11400000, guid: e9563d3d13d91be4bbda1bdadcc71a98, type: 2}
   DuelSkillPool:
   - {fileID: 11400000, guid: d685378dcfe71d3418bf9cde7ff0542d, type: 2}
@@ -56,15 +51,10 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 6cbaebefc3fa7744b8a5e45d09de0c67, type: 2}
   - {fileID: 11400000, guid: 5c77ec6740527e34db09f27c23038502, type: 2}
   - {fileID: 11400000, guid: a8bb7b1ceb09d084395e7c7ea88b38d2, type: 2}
-  - {fileID: 11400000, guid: 0fb4c392cd50a4547adfc852c934c1f5, type: 2}
-  - {fileID: 11400000, guid: a8b375b34a241784aa37578f9daf28cd, type: 2}
-  - {fileID: 11400000, guid: 78d15429a8e99f6489a5c464de0c4d80, type: 2}
   - {fileID: 11400000, guid: 47a2fe6af1581a94ebaa12be5b727898, type: 2}
-  - {fileID: 11400000, guid: b69cc12447cfd154995ce6525ab5fa65, type: 2}
   - {fileID: 11400000, guid: 8d36ea252e9b77048a3f3782221187ce, type: 2}
   - {fileID: 11400000, guid: 3a54688b66db5474a80b2b4e871b407e, type: 2}
   - {fileID: 11400000, guid: 10e00c86a15bc59429d6c376fb80607d, type: 2}
-  - {fileID: 11400000, guid: e0b497706d40345489ed72603f09098c, type: 2}
   - {fileID: 11400000, guid: ec186728b972c2f40a7c7ae15aaa18f9, type: 2}
   PrestigeSkillPool:
   - {fileID: 11400000, guid: d944f90c5a346bd46896d80f70a22260, type: 2}
