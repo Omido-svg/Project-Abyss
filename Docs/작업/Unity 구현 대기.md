@@ -1,6 +1,6 @@
 # Unity 구현 대기 — 규칙서 ↔ 코드 대조
 
-`Battle-Logic` 브랜치(맥 worktree `~/Project/Project-Abyss-Battle`)에서 할 구현 작업 목록. 11-18 첫 대조 기준. **끝난 항목은 지운다** — 남아 있는 항목 = 미결.
+`Battle-Logic` 브랜치(worktree — 맥 `~/Project/Project-Abyss-Battle` · 윈도우 `C:\Users\a0103\Project-Abyss-Battle`)에서 할 구현 작업 목록. 11-18 첫 대조 기준. **끝난 항목은 지운다** — 남아 있는 항목 = 미결.
 
 - 정본은 규칙서. 코드가 규칙서와 다르면 코드를 고친다
 - 확인 도구 — 시스템 검증(`GameSystemVerificationRunner`, Phase A~F)은 Production `BattleRuntimeFactory`로 조립돼 정상. 캐릭터 검증(`CharacterVerificationRunner`)은 6번(검증 도구 개편) 전까지 도사림 결과를 믿지 말 것
@@ -9,11 +9,13 @@
 ## 진행 순서 (1층 플레이테스트 기준)
 
 ### 2. 히후미 남은 규칙
-- **C3 속임수 자동 선택 기준** — 선택 UI · 로직은 11-19 완료. 자동 계획(자동 플랜 · AI)은 지금 **항상 시고로**. 사용자 답 = 「상황별」 — 기준(예: 만개까지 남은 뼈 N 이상 · 체력 X% 이상이면 대실패)은 미정
+- **C3 속임수 자동 선택 기준** — 선택 UI · 로직은 11-19 완료. 자동 계획(자동 플랜 · AI)은 지금 **항상 시고로**. 사용자 답 = 「상황별」 — 기준(예: 만개까지 남은 뼈 N 이상 · 체력 X% 이상이면 대실패)은 미정 — 11-20 사용자: 나중에
 - **위세 발동 UI는 임시**(`BattlePrestigeButtonUI` — 오른쪽 가운데 버튼, 11-19). 코더 UI로 대체 예정. ⚠ **조준이 필요한 위세(빌야르 룬 새기기 · 베르세르크 등)의 대상 선택이 없다** — 지금은 살아 있는 첫 적의 첫 생존 부위로 넘긴다
 
 ### 4. 데이터 점검
-- **빌야르 「틈을 파고들다」 굴림 수** — 규칙서 17.2 · 17.7은 1굴림, 에셋(`Olaf_N_11`)은 3굴림(타입은 관통으로 맞음). 굴림 수를 1로 줄일지 결정 대기
+- ✅ **빌야르 「틈을 파고들다」**(11-20, 사용자 — 규칙서대로) — `Olaf_N_11` 굴림 3 → 1(1굴림 11~16 유지, 강화 2회 13~18 = 범위는 규칙서 (미정)이라 임시값) · 파괴 태그 켬(`CanBreakPart` 0 → 1, 약화된 부위만 끊음) · 옛 균열 Entry 2개 삭제(네이티브 라우팅이라 실전에선 안 돌던 것) · 툴팁을 연쇄 추가타로 교체. Unity에서 열어 컴파일 · 연쇄 플레이 확인 필요
+  - ✅ 처치는 연쇄 조건이 아니다(11-21 사용자 — 규칙서대로) — `ShouldChainOlafHit` · 네이티브 연산 판정에서 `WasKilled` 삭제
+- ✅ **명성 덫 수치**(11-21 사용자) — 설치 1 · 지속 2 · 폭발 덫 스택당 피해 2 → `Yujin_TODO_2026` 반영. 덫을 놓다 · 시한을 정하다 캐릭터 검증 실전 경로 통과(덫 등록 확인). 공명 덫 강화량 · 전염 덫은 (미정)
 
 ### 6. 검증 도구 개편 (캐릭터 검증 `CharacterVerificationRunner`)
 11-20 실측(Play 모드) — 빌야르 37/78 · 명성 33/67 · 히후미 45/51 통과. 시스템 검증(Phase D)은 실제 전투 흐름이라 별개로 계속 통과 중
@@ -28,9 +30,23 @@
   - 「빛 최대치 −N」은 적의 빛 규칙(12장 — 잡몹 빛 누적)과 맞물리는지도 같이 볼 것
 - ✅ 풀 정리(11-20) — 규칙서 밖 카드(빌야르 10 · 명성 6)를 로드아웃 풀에서 뺐다. **에셋 · 네이티브 정의는 더미로 남긴다**(사용자 — 나중에 쓸 수 있다). 다시 쓰려면 풀에 넣기 전에 규칙서에 올리고 효과를 대조할 것
 - **규칙서에 있는데 에셋 없는 카드** — 명성 도사림 「손질하다」(18.5, 수치 (미정))
-- 코더 시절 고정 감사(`SkillIdentityVerification` R7-2 · 스킬 164장 집계 · `AbilityCoreFreezeGuard`)는 데이터를 바꾸면 깨지는 기준선 검사다 — 노려보기 삭제 · 중복 정리로 깨졌다. 갱신하거나 폐기할지 결정 대기
+- 코더 시절 고정 감사(`SkillIdentityVerification` R7-2 · 스킬 164장 집계 · `AbilityCoreFreezeGuard`)는 데이터를 바꾸면 깨지는 기준선 검사다 — 노려보기 삭제 · 중복 정리로 깨졌다.
+  - ✅ **집계 숫자 갱신(11-21, 사용자 — 집계만)** — 기준값을 `SkillCorpusVerification` 상수 한 곳에 모았다(스킬 166 + 19 = 185 · 메타데이터 전용 18 + 4 · 중복 0 · 네이티브 13/8/7/5 = 33 · 작성 스키마 34 · 그래프 89/고유 GUID 73/별칭 16). 감사 7개가 이 상수를 참조한다. **스킬 · 네이티브 에셋을 더하거나 지우면 이 상수만 고친다.** 에디터 실측 통과 — R7-12 집계 10/10 · R7-2 19/19 · R7-0 12/12 · R7 커버리지 11/11 · R7 콘텐츠 9/9 · R7 감사 10/10 · R8 작성 18/18
+    - R7-2 — 중복이 없으면 저장 계약 S13~S18은 「해당 없음」, 대신 S19가 합쳐진 4개 ID의 옛 GUID 저장이 남은 에셋으로 복원되는지 본다
+    - R8 변환기 — 캐릭터 네이티브가 소유한 카드는 새 R5 그래프 후보에서 뺀다(단칼 · 퇴로 차단의 옛 Entry가 「다시 만들 수 있음」으로 잡히던 것). 두 옛 Entry는 실전에서 안 돈다(디스패처가 빌야르 폭발 메커닉 · 명성 네이티브로 먼저 보냄)
+  - **그대로 둔 것** — 코더 PC 결과 폴더를 읽는 검사(G-FINAL F10~F15 · 코어 프리즈 R9 확인 · R7-12 Final F34 이후 `R7_12_OriginalRegressionScripts_20261103`). 이 PC에 폴더가 없어 실패한다. `AbilityCoreFreezeGuard`(코어 소스 해시)도 손대지 않음
+  - ✅ 빌야르 R5 그래프 19개 삭제(11-21 사용자) — 네이티브 기준선 13/8/7/5 → 3/3/7/1 · 그래프 89 → 70 · 별칭 16 → 0. R5 패리티 3종 개수도 상수 참조로(36 · 35 · 12건 통과). Phase D(시스템 검증)는 삭제 뒤 아직 안 돌렸다
+  - 감사 결과 폴더가 프로젝트 루트에 생긴다(`ProjectAbyss_*` · `G0_*` · `R7_*`) — 커밋하지 말 것
 - **③ 옛 기대값** — 스킬 수 11/12(옛 로드아웃 기준) · 「머리 슬롯 위세 허용」(위세는 슬롯을 안 쓴다, 9장) · 명성 환형 로드아웃 · 무기 교체 시점 · 추격 상한 · 표식 44 발화 · 살수의 감 재굴림 / 빌야르 굴림 기준값(Dice 계약 11건 — 「기본위력 + 주사위 1~8」 형식을 기대하는데 규칙서 표는 굴림별 절대 범위다) · 일방 공격 잔효과(`one_sided_unique_effects_disabled`). 규칙서와 대조해서 고친다
-- **① `NotScheduled` 약 45건** — 효과를 하나씩 따로 실행하는데 굴림 위치 · 승패 조건을 만들어 주지 않는다(`CharacterVerificationForcedScenarioRunner.VerifyEffectEntry`). 효과별 상황 구성이 필요 — 크다. 「실제 경로 1회 실행 + 시스템 검증에 맡김」으로 줄일지 결정 대기
+- **① `NotScheduled` 약 45건** — 효과를 하나씩 따로 실행하는데 굴림 위치 · 승패 조건을 만들어 주지 않는다(`CharacterVerificationForcedScenarioRunner.VerifyEffectEntry`). **사용자 = 효과별 상황 구성**(11-20)
+  - ✅ 11-21 완료 — 스킬 커버리지 빌야르 **38/38** · 히후미 **22/22** · 명성 **29/30**(소문을 내다 = 적 2명 필요 → 건너뜀). 전체 — 빌야르 62/68 · 명성 49/61 · 히후미 47/51
+    - 검증기가 옛 Entry(`TryApply`, 실전에선 안 도는 TEMP 프록시)를 불렀다 → **실전 디스패처**(`Skill.ExecuteDefinitionEffects`, 리플렉션)로 바꿈. 네이티브 카드는 카드 단위로 타이밍 12종 × 굴림 × 피해 3갈래(전부/약화만/파괴만)를 훑어 연산마다 「적용 + 상태 변화」를 본다. 교환 타이밍 전에 같은 액션의 사용시를 먼저 돌린다(실전 순서)
+    - 카드별 선행 조건(`PrepareNativePrerequisites`) · 사용 조건 잠금 해제(`PrepareUsageConditions` — 빛 4 · 지난 턴 짓눌림/짓누름 · 환형 교체 턴, 끝나면 되돌림)
+    - (미정) 수치로 막힌 카드 = 「막혀 있어야 정상」 — 히후미 3장 · **덫을 놓다 · 시한을 정하다**(18장 덫 스택 (미정) → `Yujin_TODO_2026` 표식 규칙 `MarkRules`가 전부 0이라 덫이 등록 안 됨)
+    - 지문(②) — 부위 상태를 출혈 · 화상 · 기절 3종만 보던 것을 전부로 · 메커닉의 부위/슬롯 참조 필드 · 명성 표식/지정 · 기세 · 턴 시작 예약 큐 추가
+    - 검증기 버그 — 쓸 때마다 비용이 줄어드는 카드의 기대 빛을 소모 후 비용으로 계산하던 것
+    - 환형 2장 — 무기 교체는 계획 확정(`TryCommitPlannedSlot`)에서 일어나므로 그 경로로 검증(통과 확인)
+  - 남은 것 — 커버리지 밖 실패: `forced_scenarios`(③ 옛 기대값 — Dice 계약 · 표식 44 · 추격 상한) · `core3.data.skill_manifest`(11/12 기대) · `bodypart_skill_access`(머리 위세) · `*.data.skill_coverage`(풀에서 뺀 카드) · 명성 passive 5건
 - **② 「Applied인데 상태 변화 없음」 약 12건** — 지문(`CaptureFingerprint`)이 무기 디버프 · 감 · 지정 등을 안 본다. 진짜 무효과인지 하나씩 확인
 
 ### 7. 판단이 필요한 검증 (B)
@@ -44,12 +60,9 @@
 - 굴림 텍스처 검증(Phase E) — 빌야르 결투 5 · 평타 10장의 위치별 평균이 기준과 0.1~2 어긋남(TEMP_BALANCE 데이터 · 「0917 authority pending」). Phase E 실행은 `PhaseEContentManifest.asset`을 덮어쓰므로 결과를 커밋하지 말 것
 
 ## 윈도우에서 할 것
-- **명세 xlsx 재생성** — `abyss-workspace/tools/spec/spec_build.ps1`(Excel COM). 11-18 `spec_data.ps1` 문구 갱신분(대실패 자해 문턱 · 과감한 판단 완전 차단 · 동귀어진 순서 · 파괴 권한)이 아직 xlsx에 없다
-- **Battle-Logic 작업 환경 세팅**(윈도우에서 구현을 이어갈 때)
-  - Unity **6000.0.56f1** 설치(다른 버전으로 열면 프로젝트가 업그레이드된다)
-  - worktree 생성 — `git worktree add <경로> Battle-Logic`(원 폴더는 Game-Design 유지)
-  - `.git/info/exclude`에 `CLAUDE.md` · `AGENTS.md` · `GameSystemVerification/` 추가(이 브랜치의 .gitignore는 안 막는다)
-  - `.vscode/settings.json` — worktree 폴더 이름으로 솔루션명이 바뀌면 `git update-index --skip-worktree .vscode/settings.json`
+- **Battle-Logic 작업 환경 세팅** — 11-20 윈도우에서 worktree `C:\Users\a0103\Project-Abyss-Battle` 생성(OneDrive 밖) · 지침서 사본 복사 · `.git/info/exclude`에 `CLAUDE.md` · `AGENTS.md` · `GameSystemVerification/` 추가 · Claude 메모리를 새 폴더 경로용으로 복사(이후 두 폴더 메모리는 따로 쌓인다). 남은 것:
+  - Unity **6000.0.56f1** 설치(이 PC 허브에는 6000.0.68f1 · 6000.3.12f1만 있다 — 다른 버전으로 열면 프로젝트가 업그레이드된다)
+  - `.vscode/settings.json` — 처음 열어 솔루션명이 바뀌면 `git update-index --skip-worktree .vscode/settings.json`
   - MCP for Unity 연결 — Unity `Window → MCP for Unity`에서 Transport **Stdio** → Client Claude Code → Configure(uv 필요)
 - **sim_py 측정**이 필요하면 윈도우 쪽이 빠르다(쳇 번들 포함) — 지금 걸린 측정 없음
 
