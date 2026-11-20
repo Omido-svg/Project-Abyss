@@ -21,7 +21,12 @@ public static class CharacterVerificationForcedScenarioRunner
             typeof(OlafBreakOwnPartEffect),
             typeof(OlafWeakenOwnPartEffect),
             typeof(OlafNormalBleedEffect),
-            typeof(OlafPrestigeEffect)
+            typeof(OlafPrestigeEffect),
+            // 11-20 검증 도구 개편 — 일반 효과 파이프라인(Apply)으로 도는 캐릭터 rider들.
+            typeof(TempBalanceSkillProxyEffectDefinition),
+            typeof(OlafMadnessEffectDefinition),
+            typeof(YujinRiderEffectDefinition),
+            typeof(YujinFinisherEffectDefinition)
         };
 
     public static bool IsEffectSupported(

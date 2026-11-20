@@ -46,7 +46,7 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 148f3f1d401e1714f972f67064272da2, type: 2}
   - {fileID: 11400000, guid: e9563d3d13d91be4bbda1bdadcc71a98, type: 2}
   DuelSkillPool:
-  - {fileID: 11400000, guid: cd90424506385934784ae6ead386e62b, type: 2}
+  - {fileID: 11400000, guid: d685378dcfe71d3418bf9cde7ff0542d, type: 2}
   - {fileID: 11400000, guid: bc09ab10e9afa2945a34d422441e647e, type: 2}
   - {fileID: 11400000, guid: 8216d9b1279ffca448824112b9ed131f, type: 2}
   - {fileID: 11400000, guid: 1ecdb0f93b9ad3e4a921d7534ba253c5, type: 2}
@@ -73,7 +73,7 @@ MonoBehaviour:
   CommonPreparationPool:
   - {fileID: 11400000, guid: 89874fcdf7b691748b5601ff040d175b, type: 2}
   CharacterPreparationPool:
-  - {fileID: 11400000, guid: 3b904fc8be62e1d4e9f69e195c2f1c9f, type: 2}
+  - {fileID: 11400000, guid: 0cd53d9b56e64a24b82911598f800af9, type: 2}
   - {fileID: 11400000, guid: df26a5c142a37e044aaafae9c21bde0b, type: 2}
   - {fileID: 11400000, guid: 3d1ed9490a24613499ef57d2638343d2, type: 2}
   - {fileID: 11400000, guid: b5db1d965d47c1f4194171f654a26d50, type: 2}

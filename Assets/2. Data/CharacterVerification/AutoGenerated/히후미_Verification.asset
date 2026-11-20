@@ -45,6 +45,15 @@ MonoBehaviour:
     Description: "\uC790\uC6D0 \uAC70\uBD80/\uC18C\uBE44, \uBAA8\uB4E0 \uAD74\uB9BC,
       \uD53C\uD574 \uB300\uC0C1, \uBAA8\uB4E0 Effect Entry \uC870\uAC74\uC744 \uACB0\uC815\uB860\uC801\uC73C\uB85C
       \uAC15\uC81C \uC2E4\uD589\uD569\uB2C8\uB2E4."
+  - CaseId: coverage.skill.hifumi.normal.mutual_destruction
+    DisplayName: "\uC2A4\uD0AC \uC644\uC804 \uC2DC\uB098\uB9AC\uC624: \uB3D9\uADC0\uC5B4\uC9C4"
+    Category: 2
+    ExecutionMode: 1
+    Enabled: 1
+    Seed: 1207
+    Description: "\uC790\uC6D0 \uAC70\uBD80/\uC18C\uBE44, \uBAA8\uB4E0 \uAD74\uB9BC,
+      \uD53C\uD574 \uB300\uC0C1, \uBAA8\uB4E0 Effect Entry \uC870\uAC74\uC744 \uACB0\uC815\uB860\uC801\uC73C\uB85C
+      \uAC15\uC81C \uC2E4\uD589\uD569\uB2C8\uB2E4."
   - CaseId: coverage.skill.hifumi.normal.small_change
     DisplayName: "\uC2A4\uD0AC \uC644\uC804 \uC2DC\uB098\uB9AC\uC624: \uD47C\uB3C8
       \uAC78\uAE30"
@@ -64,6 +73,45 @@ MonoBehaviour:
     Description: "\uC790\uC6D0 \uAC70\uBD80/\uC18C\uBE44, \uBAA8\uB4E0 \uAD74\uB9BC,
       \uD53C\uD574 \uB300\uC0C1, \uBAA8\uB4E0 Effect Entry \uC870\uAC74\uC744 \uACB0\uC815\uB860\uC801\uC73C\uB85C
       \uAC15\uC81C \uC2E4\uD589\uD569\uB2C8\uB2E4."
+  - CaseId: coverage.skill.hifumi.duel.g.double_or_nothing
+    DisplayName: "\uC2A4\uD0AC \uC644\uC804 \uC2DC\uB098\uB9AC\uC624: \uACF1\uC808\uC744
+      \uB178\uB9AC\uB2E4"
+    Category: 3
+    ExecutionMode: 1
+    Enabled: 1
+    Seed: 1207
+    Description: "\uC790\uC6D0 \uAC70\uBD80/\uC18C\uBE44, \uBAA8\uB4E0 \uAD74\uB9BC,
+      \uD53C\uD574 \uB300\uC0C1, \uBAA8\uB4E0 Effect Entry \uC870\uAC74\uC744 \uACB0\uC815\uB860\uC801\uC73C\uB85C
+      \uAC15\uC81C \uC2E4\uD589\uD569\uB2C8\uB2E4."
+  - CaseId: coverage.skill.hifumi.duel.j.roll_compendium
+    DisplayName: "\uC2A4\uD0AC \uC644\uC804 \uC2DC\uB098\uB9AC\uC624: \uAD74\uB9BC
+      \uB3C4\uAC10"
+    Category: 3
+    ExecutionMode: 1
+    Enabled: 1
+    Seed: 1207
+    Description: "\uC790\uC6D0 \uAC70\uBD80/\uC18C\uBE44, \uBAA8\uB4E0 \uAD74\uB9BC,
+      \uD53C\uD574 \uB300\uC0C1, \uBAA8\uB4E0 Effect Entry \uC870\uAC74\uC744 \uACB0\uC815\uB860\uC801\uC73C\uB85C
+      \uAC15\uC81C \uC2E4\uD589\uD569\uB2C8\uB2E4."
+  - CaseId: coverage.skill.hifumi.duel.l.provoke
+    DisplayName: "\uC2A4\uD0AC \uC644\uC804 \uC2DC\uB098\uB9AC\uC624: \uB3C4\uBC1C\uD615"
+    Category: 3
+    ExecutionMode: 1
+    Enabled: 1
+    Seed: 1207
+    Description: "\uC790\uC6D0 \uAC70\uBD80/\uC18C\uBE44, \uBAA8\uB4E0 \uAD74\uB9BC,
+      \uD53C\uD574 \uB300\uC0C1, \uBAA8\uB4E0 Effect Entry \uC870\uAC74\uC744 \uACB0\uC815\uB860\uC801\uC73C\uB85C
+      \uAC15\uC81C \uC2E4\uD589\uD569\uB2C8\uB2E4."
+  - CaseId: coverage.skill.hifumi.duel.i.engrave_body
+    DisplayName: "\uC2A4\uD0AC \uC644\uC804 \uC2DC\uB098\uB9AC\uC624: \uBAB8\uC5D0
+      \uC0C8\uAE30\uB2E4"
+    Category: 3
+    ExecutionMode: 1
+    Enabled: 1
+    Seed: 1207
+    Description: "\uC790\uC6D0 \uAC70\uBD80/\uC18C\uBE44, \uBAA8\uB4E0 \uAD74\uB9BC,
+      \uD53C\uD574 \uB300\uC0C1, \uBAA8\uB4E0 Effect Entry \uC870\uAC74\uC744 \uACB0\uC815\uB860\uC801\uC73C\uB85C
+      \uAC15\uC81C \uC2E4\uD589\uD569\uB2C8\uB2E4."
   - CaseId: coverage.skill.hifumi.duel.reckless_bet
     DisplayName: "\uC2A4\uD0AC \uC644\uC804 \uC2DC\uB098\uB9AC\uC624: \uBB34\uBAA8\uD55C
       \uBCA0\uD305"
@@ -74,8 +122,48 @@ MonoBehaviour:
     Description: "\uC790\uC6D0 \uAC70\uBD80/\uC18C\uBE44, \uBAA8\uB4E0 \uAD74\uB9BC,
       \uD53C\uD574 \uB300\uC0C1, \uBAA8\uB4E0 Effect Entry \uC870\uAC74\uC744 \uACB0\uC815\uB860\uC801\uC73C\uB85C
       \uAC15\uC81C \uC2E4\uD589\uD569\uB2C8\uB2E4."
+  - CaseId: coverage.skill.hifumi.duel.h.shake_fate
+    DisplayName: "\uC2A4\uD0AC \uC644\uC804 \uC2DC\uB098\uB9AC\uC624: \uC6B4\uBA85\uC744
+      \uD754\uB4E4\uB2E4"
+    Category: 3
+    ExecutionMode: 1
+    Enabled: 1
+    Seed: 1207
+    Description: "\uC790\uC6D0 \uAC70\uBD80/\uC18C\uBE44, \uBAA8\uB4E0 \uAD74\uB9BC,
+      \uD53C\uD574 \uB300\uC0C1, \uBAA8\uB4E0 Effect Entry \uC870\uAC74\uC744 \uACB0\uC815\uB860\uC801\uC73C\uB85C
+      \uAC15\uC81C \uC2E4\uD589\uD569\uB2C8\uB2E4."
   - CaseId: coverage.skill.hifumi.duel.yukcham
     DisplayName: "\uC2A4\uD0AC \uC644\uC804 \uC2DC\uB098\uB9AC\uC624: \uC721\uCC38(\u8089\u65AC)"
+    Category: 3
+    ExecutionMode: 1
+    Enabled: 1
+    Seed: 1207
+    Description: "\uC790\uC6D0 \uAC70\uBD80/\uC18C\uBE44, \uBAA8\uB4E0 \uAD74\uB9BC,
+      \uD53C\uD574 \uB300\uC0C1, \uBAA8\uB4E0 Effect Entry \uC870\uAC74\uC744 \uACB0\uC815\uB860\uC801\uC73C\uB85C
+      \uAC15\uC81C \uC2E4\uD589\uD569\uB2C8\uB2E4."
+  - CaseId: coverage.skill.hifumi.duel.m.cleanse_all
+    DisplayName: "\uC2A4\uD0AC \uC644\uC804 \uC2DC\uB098\uB9AC\uC624: \uC804\uCCB4
+      \uC815\uD654\uD615"
+    Category: 3
+    ExecutionMode: 1
+    Enabled: 1
+    Seed: 1207
+    Description: "\uC790\uC6D0 \uAC70\uBD80/\uC18C\uBE44, \uBAA8\uB4E0 \uAD74\uB9BC,
+      \uD53C\uD574 \uB300\uC0C1, \uBAA8\uB4E0 Effect Entry \uC870\uAC74\uC744 \uACB0\uC815\uB860\uC801\uC73C\uB85C
+      \uAC15\uC81C \uC2E4\uD589\uD569\uB2C8\uB2E4."
+  - CaseId: coverage.skill.hifumi.duel.e.raise_stake
+    DisplayName: "\uC2A4\uD0AC \uC644\uC804 \uC2DC\uB098\uB9AC\uC624: \uD310\uB3C8\uC744
+      \uC62C\uB9AC\uB2E4"
+    Category: 3
+    ExecutionMode: 1
+    Enabled: 1
+    Seed: 1207
+    Description: "\uC790\uC6D0 \uAC70\uBD80/\uC18C\uBE44, \uBAA8\uB4E0 \uAD74\uB9BC,
+      \uD53C\uD574 \uB300\uC0C1, \uBAA8\uB4E0 Effect Entry \uC870\uAC74\uC744 \uACB0\uC815\uB860\uC801\uC73C\uB85C
+      \uAC15\uC81C \uC2E4\uD589\uD569\uB2C8\uB2E4."
+  - CaseId: coverage.skill.hifumi.duel.k.flip_table
+    DisplayName: "\uC2A4\uD0AC \uC644\uC804 \uC2DC\uB098\uB9AC\uC624: \uD310\uC744
+      \uC5CE\uB2E4"
     Category: 3
     ExecutionMode: 1
     Enabled: 1
@@ -96,6 +184,15 @@ MonoBehaviour:
   - CaseId: coverage.skill.hifumi.preparation.give_flesh
     DisplayName: "\uC2A4\uD0AC \uC644\uC804 \uC2DC\uB098\uB9AC\uC624: \uC0B4\uC740
       \uB0B4\uC8FC\uC9C0"
+    Category: 4
+    ExecutionMode: 1
+    Enabled: 1
+    Seed: 1207
+    Description: "\uC790\uC6D0 \uAC70\uBD80/\uC18C\uBE44, \uBAA8\uB4E0 \uAD74\uB9BC,
+      \uD53C\uD574 \uB300\uC0C1, \uBAA8\uB4E0 Effect Entry \uC870\uAC74\uC744 \uACB0\uC815\uB860\uC801\uC73C\uB85C
+      \uAC15\uC81C \uC2E4\uD589\uD569\uB2C8\uB2E4."
+  - CaseId: coverage.skill.common.preparation.crouch
+    DisplayName: "\uC2A4\uD0AC \uC644\uC804 \uC2DC\uB098\uB9AC\uC624: \uC6C5\uD06C\uB9AC\uAE30"
     Category: 4
     ExecutionMode: 1
     Enabled: 1
@@ -310,14 +407,13 @@ MonoBehaviour:
       \uAC8C\uC774\uC9C0 Provider\uC758 \uB77C\uBCA8\xB7\uC815\uADDC\uD654\xB7\uD45C\uC2DC\uAC12\uC744
       \uAC80\uC0AC\uD569\uB2C8\uB2E4."
   - CaseId: hifumi.data.skill_coverage
-    DisplayName: "\uD788\uD6C4\uBBF8 \uC815\uC758 \uC2A4\uD0AC 12\uC885 \uB4F1\uB85D"
+    DisplayName: "\uD788\uD6C4\uBBF8 0922 canonical \uC2A4\uD0AC \uB4F1\uB85D"
     Category: 0
     ExecutionMode: 0
     Enabled: 1
     Seed: 1207
-    Description: "TODO2/PPT\uC5D0\uC11C \uD604\uC7AC \uC815\uC758\uB41C \uC77C\uBC18
-      2\xB7\uACB0\uD22C 3\xB7\uB3C4\uC0AC\uB9BC 4\xB7\uC704\uC138 3 SkillId\uAC00
-      \uB370\uC774\uD130 \uADF8\uB798\uD504\uC5D0 \uBAA8\uB450 \uC874\uC7AC\uD558\uB294\uC9C0
+    Description: "0922 canonical \uC77C\uBC183\xB7\uACB0\uD22C11\xB7\uB3C4\uC0AC\uB9BC4\xB7\uC704\uC1383
+      SkillId\uAC00 \uB370\uC774\uD130 \uADF8\uB798\uD504\uC5D0 \uBAA8\uB450 \uC874\uC7AC\uD558\uB294\uC9C0
       \uAC80\uC0AC\uD569\uB2C8\uB2E4."
   - CaseId: hifumi.data.skill_contracts
     DisplayName: "\uD788\uD6C4\uBBF8 \uC2A4\uD0AC \uC218\uCE58 \uACC4\uC57D"
@@ -342,9 +438,9 @@ MonoBehaviour:
     ExecutionMode: 1
     Enabled: 1
     Seed: 1207
-    Description: "\uC2E4\uD53C\uD574 1:1 \uBF08, \uC9D3\uB20C\uB9BC \uD53C\uD574
-      1/2\xB7\uBF08\xD72, \uD3EC\uCEE4\uD398\uC774\uC2A4 \uAD50\uD658\uB2F9 \uD53C\uD574
-      -1\xB7\uD53C\uACA9\uB2F9 \uBF08+4 \uACC4\uC57D\uC744 \uAC80\uC0AC\uD569\uB2C8\uB2E4."
+    Description: "FinalHpDamage 1:1 \uBF08, \uC9D3\uB20C\uB9BC \uD53C\uD574 \uBC18\uAC10
+      \uC5C6\uC74C, \uD3EC\uCEE4\uD398\uC774\uC2A4 \uD53C\uD574 -4\xB7\uD53C\uACA9\uB2F9
+      \uBF08+4 \uACC4\uC57D\uC744 \uAC80\uC0AC\uD569\uB2C8\uB2E4."
   - CaseId: hifumi.skill.action_costs
     DisplayName: "\uACFC\uAC10\uD55C \uD310\uB2E8\xB7\uBB34\uBAA8\uD55C \uBCA0\uD305
       \uBF08 \uBE44\uC6A9"
@@ -361,8 +457,9 @@ MonoBehaviour:
     ExecutionMode: 1
     Enabled: 1
     Seed: 1207
-    Description: "\uC9C4 \uAD50\uD658\uB2F9 \uBC18\uACA9 1\uAC1C, Base8+\uBF08\uAD6C\uAC04,
-      2\uAD6C\uAC04 30\xB73/4\uAD6C\uAC04 60 \uD68C\uBCF5, 500 \uB9CC\uAC1C 350/\uC57D\uD654\xB7\uD30C\uAD34/\uBC1425/\uC804\uB7C9\uC18C\uBAA8\uB97C
+    Description: "\uD3C9\uD0C0/\uACB0\uD22C \uBC18\uACA9 \uAC8C\uC774\uD2B8 \uBD84\uB9AC,
+      \uACB0\uD22C 8+\uAD6C\uAC04+1\xB7\uD3C9\uD0C04+1, \uC721\uCC38 \uBF08\uBCF4\uC0C1,
+      \uACE8\uB2E8 \uB9CC\uAC1C350/\uC57D\uD654\xB7\uC870\uAC74\uD30C\uAD34/\uBC1425/\uC804\uB7C9\uC18C\uBAA8\uB97C
       \uAC80\uC0AC\uD569\uB2C8\uB2E4."
   - CaseId: hifumi.duel.goldan_power
     DisplayName: "\uACE8\uB2E8 \uBF08 \uAD6C\uAC04 \uC704\uB825"
@@ -370,8 +467,9 @@ MonoBehaviour:
     ExecutionMode: 1
     Enabled: 1
     Seed: 1207
-    Description: "TODO2 \uC6B0\uC120 \uADDC\uCE59\uC778 \uACE8\uB2E8 Base20 + (\uBF08\uAD6C\uAC04\xD74)\uAC00
-      \uC2E4\uC81C ModifyRoll \uACBD\uB85C\uC5D0 \uC801\uC6A9\uB418\uB294\uC9C0 \uAC80\uC0AC\uD569\uB2C8\uB2E4."
+    Description: "0916 \uACE8\uB2E8 \uBCF8\uCCB4 Base20-(\uBF08\uAD6C\uAC04\xD74)\uAC00
+      \uC2E4\uC81C Hifumi runtime power \uACBD\uB85C\uC5D0 \uC801\uC6A9\uB418\uB294\uC9C0
+      \uAC80\uC0AC\uD569\uB2C8\uB2E4."
   - CaseId: hifumi.prestige.contracts
     DisplayName: "\uD788\uD6C4\uBBF8 \uC704\uC138 3\uD615 \uACC4\uC57D"
     Category: 5

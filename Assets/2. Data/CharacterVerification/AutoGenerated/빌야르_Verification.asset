@@ -35,8 +35,8 @@ MonoBehaviour:
     Description: "\uD544\uC218 \uD328\uC2DC\uBE0C\uC640 \uBA54\uCEE4\uB2C9\uC758
       \uC774\uBCA4\uD2B8 \uC870\uAC74\uC744 \uC9C1\uC811 \uBC1C\uC0DD\uC2DC\uCF1C
       \uC815\uD655\uD55C \uC0C1\uD0DC \uBCC0\uD654\uB97C \uAC80\uC0AC\uD569\uB2C8\uB2E4."
-  - CaseId: coverage.skill.olaf.normal.overhead_smash
-    DisplayName: "\uC2A4\uD0AC \uC644\uC804 \uC2DC\uB098\uB9AC\uC624: \uB0B4\uB824\uCC0D\uAE30"
+  - CaseId: coverage.skill.olaf.normal.cover
+    DisplayName: "\uC2A4\uD0AC \uC644\uC804 \uC2DC\uB098\uB9AC\uC624: \uAC10\uC2F8\uAE30"
     Category: 2
     ExecutionMode: 1
     Enabled: 1
@@ -44,8 +44,9 @@ MonoBehaviour:
     Description: "\uC790\uC6D0 \uAC70\uBD80/\uC18C\uBE44, \uBAA8\uB4E0 \uAD74\uB9BC,
       \uD53C\uD574 \uB300\uC0C1, \uBAA8\uB4E0 Effect Entry \uC870\uAC74\uC744 \uACB0\uC815\uB860\uC801\uC73C\uB85C
       \uAC15\uC81C \uC2E4\uD589\uD569\uB2C8\uB2E4."
-  - CaseId: coverage.skill.olaf.normal.wild_hack
-    DisplayName: "\uC2A4\uD0AC \uC644\uC804 \uC2DC\uB098\uB9AC\uC624: \uB9C8\uAD6C\uC7A1\uC774"
+  - CaseId: coverage.skill.olaf.normal.rise_again
+    DisplayName: "\uC2A4\uD0AC \uC644\uC804 \uC2DC\uB098\uB9AC\uC624: \uB2E4\uC2DC
+      \uC77C\uC5B4\uC11C\uB2E4"
     Category: 2
     ExecutionMode: 1
     Enabled: 1
@@ -53,9 +54,8 @@ MonoBehaviour:
     Description: "\uC790\uC6D0 \uAC70\uBD80/\uC18C\uBE44, \uBAA8\uB4E0 \uAD74\uB9BC,
       \uD53C\uD574 \uB300\uC0C1, \uBAA8\uB4E0 Effect Entry \uC870\uAC74\uC744 \uACB0\uC815\uB860\uC801\uC73C\uB85C
       \uAC15\uC81C \uC2E4\uD589\uD569\uB2C8\uB2E4."
-  - CaseId: coverage.skill.olaf.normal.enduring_slash
-    DisplayName: "\uC2A4\uD0AC \uC644\uC804 \uC2DC\uB098\uB9AC\uC624: \uBC84\uD2F0\uBA70
-      \uBCA0\uAE30"
+  - CaseId: coverage.skill.olaf.normal.block_way
+    DisplayName: "\uC2A4\uD0AC \uC644\uC804 \uC2DC\uB098\uB9AC\uC624: \uB9C9\uC544\uC11C\uAE30"
     Category: 2
     ExecutionMode: 1
     Enabled: 1
@@ -63,8 +63,252 @@ MonoBehaviour:
     Description: "\uC790\uC6D0 \uAC70\uBD80/\uC18C\uBE44, \uBAA8\uB4E0 \uAD74\uB9BC,
       \uD53C\uD574 \uB300\uC0C1, \uBAA8\uB4E0 Effect Entry \uC870\uAC74\uC744 \uACB0\uC815\uB860\uC801\uC73C\uB85C
       \uAC15\uC81C \uC2E4\uD589\uD569\uB2C8\uB2E4."
-  - CaseId: coverage.skill.olaf.duel.rend
-    DisplayName: "\uC2A4\uD0AC \uC644\uC804 \uC2DC\uB098\uB9AC\uC624: \uB09C\uB3C4\uC9C8"
+  - CaseId: coverage.skill.olaf.normal.flurry
+    DisplayName: "\uC2A4\uD0AC \uC644\uC804 \uC2DC\uB098\uB9AC\uC624: \uBAB0\uC544\uCE58\uAE30"
+    Category: 2
+    ExecutionMode: 1
+    Enabled: 1
+    Seed: 1207
+    Description: "\uC790\uC6D0 \uAC70\uBD80/\uC18C\uBE44, \uBAA8\uB4E0 \uAD74\uB9BC,
+      \uD53C\uD574 \uB300\uC0C1, \uBAA8\uB4E0 Effect Entry \uC870\uAC74\uC744 \uACB0\uC815\uB860\uC801\uC73C\uB85C
+      \uAC15\uC81C \uC2E4\uD589\uD569\uB2C8\uB2E4."
+  - CaseId: coverage.skill.olaf.normal.bite
+    DisplayName: "\uC2A4\uD0AC \uC644\uC804 \uC2DC\uB098\uB9AC\uC624: \uBB3C\uC5B4\uB72F\uAE30"
+    Category: 2
+    ExecutionMode: 1
+    Enabled: 1
+    Seed: 1207
+    Description: "\uC790\uC6D0 \uAC70\uBD80/\uC18C\uBE44, \uBAA8\uB4E0 \uAD74\uB9BC,
+      \uD53C\uD574 \uB300\uC0C1, \uBAA8\uB4E0 Effect Entry \uC870\uAC74\uC744 \uACB0\uC815\uB860\uC801\uC73C\uB85C
+      \uAC15\uC81C \uC2E4\uD589\uD569\uB2C8\uB2E4."
+  - CaseId: coverage.skill.olaf.normal.parry
+    DisplayName: "\uC2A4\uD0AC \uC644\uC804 \uC2DC\uB098\uB9AC\uC624: \uBC1B\uC544\uB118\uAE30\uAE30"
+    Category: 2
+    ExecutionMode: 1
+    Enabled: 1
+    Seed: 1207
+    Description: "\uC790\uC6D0 \uAC70\uBD80/\uC18C\uBE44, \uBAA8\uB4E0 \uAD74\uB9BC,
+      \uD53C\uD574 \uB300\uC0C1, \uBAA8\uB4E0 Effect Entry \uC870\uAC74\uC744 \uACB0\uC815\uB860\uC801\uC73C\uB85C
+      \uAC15\uC81C \uC2E4\uD589\uD569\uB2C8\uB2E4."
+  - CaseId: coverage.skill.olaf.normal.shield_wall
+    DisplayName: "\uC2A4\uD0AC \uC644\uC804 \uC2DC\uB098\uB9AC\uC624: \uBC29\uD328\uBCBD"
+    Category: 2
+    ExecutionMode: 1
+    Enabled: 1
+    Seed: 1207
+    Description: "\uC790\uC6D0 \uAC70\uBD80/\uC18C\uBE44, \uBAA8\uB4E0 \uAD74\uB9BC,
+      \uD53C\uD574 \uB300\uC0C1, \uBAA8\uB4E0 Effect Entry \uC870\uAC74\uC744 \uACB0\uC815\uB860\uC801\uC73C\uB85C
+      \uAC15\uC81C \uC2E4\uD589\uD569\uB2C8\uB2E4."
+  - CaseId: coverage.skill.olaf.normal.endure
+    DisplayName: "\uC2A4\uD0AC \uC644\uC804 \uC2DC\uB098\uB9AC\uC624: \uBC84\uD168\uB0B4\uAE30"
+    Category: 2
+    ExecutionMode: 1
+    Enabled: 1
+    Seed: 1207
+    Description: "\uC790\uC6D0 \uAC70\uBD80/\uC18C\uBE44, \uBAA8\uB4E0 \uAD74\uB9BC,
+      \uD53C\uD574 \uB300\uC0C1, \uBAA8\uB4E0 Effect Entry \uC870\uAC74\uC744 \uACB0\uC815\uB860\uC801\uC73C\uB85C
+      \uAC15\uC81C \uC2E4\uD589\uD569\uB2C8\uB2E4."
+  - CaseId: coverage.skill.olaf.normal.first_strike
+    DisplayName: "\uC2A4\uD0AC \uC644\uC804 \uC2DC\uB098\uB9AC\uC624: \uC120\uC218\uCE58\uAE30"
+    Category: 2
+    ExecutionMode: 1
+    Enabled: 1
+    Seed: 1207
+    Description: "\uC790\uC6D0 \uAC70\uBD80/\uC18C\uBE44, \uBAA8\uB4E0 \uAD74\uB9BC,
+      \uD53C\uD574 \uB300\uC0C1, \uBAA8\uB4E0 Effect Entry \uC870\uAC74\uC744 \uACB0\uC815\uB860\uC801\uC73C\uB85C
+      \uAC15\uC81C \uC2E4\uD589\uD569\uB2C8\uB2E4."
+  - CaseId: coverage.skill.olaf.normal.choke
+    DisplayName: "\uC2A4\uD0AC \uC644\uC804 \uC2DC\uB098\uB9AC\uC624: \uC228\uD1B5\uC744
+      \uC870\uC774\uB2E4"
+    Category: 2
+    ExecutionMode: 1
+    Enabled: 1
+    Seed: 1207
+    Description: "\uC790\uC6D0 \uAC70\uBD80/\uC18C\uBE44, \uBAA8\uB4E0 \uAD74\uB9BC,
+      \uD53C\uD574 \uB300\uC0C1, \uBAA8\uB4E0 Effect Entry \uC870\uAC74\uC744 \uACB0\uC815\uB860\uC801\uC73C\uB85C
+      \uAC15\uC81C \uC2E4\uD589\uD569\uB2C8\uB2E4."
+  - CaseId: coverage.skill.olaf.normal.aim_weakness
+    DisplayName: "\uC2A4\uD0AC \uC644\uC804 \uC2DC\uB098\uB9AC\uC624: \uC57D\uC810\uC744
+      \uB178\uB9AC\uB2E4"
+    Category: 2
+    ExecutionMode: 1
+    Enabled: 1
+    Seed: 1207
+    Description: "\uC790\uC6D0 \uAC70\uBD80/\uC18C\uBE44, \uBAA8\uB4E0 \uAD74\uB9BC,
+      \uD53C\uD574 \uB300\uC0C1, \uBAA8\uB4E0 Effect Entry \uC870\uAC74\uC744 \uACB0\uC815\uB860\uC801\uC73C\uB85C
+      \uAC15\uC81C \uC2E4\uD589\uD569\uB2C8\uB2E4."
+  - CaseId: coverage.skill.olaf.normal.slice_thin
+    DisplayName: "\uC2A4\uD0AC \uC644\uC804 \uC2DC\uB098\uB9AC\uC624: \uC800\uBA70\uB0B4\uAE30"
+    Category: 2
+    ExecutionMode: 1
+    Enabled: 1
+    Seed: 1207
+    Description: "\uC790\uC6D0 \uAC70\uBD80/\uC18C\uBE44, \uBAA8\uB4E0 \uAD74\uB9BC,
+      \uD53C\uD574 \uB300\uC0C1, \uBAA8\uB4E0 Effect Entry \uC870\uAC74\uC744 \uACB0\uC815\uB860\uC801\uC73C\uB85C
+      \uAC15\uC81C \uC2E4\uD589\uD569\uB2C8\uB2E4."
+  - CaseId: coverage.skill.olaf.normal.split
+    DisplayName: "\uC2A4\uD0AC \uC644\uC804 \uC2DC\uB098\uB9AC\uC624: \uCABC\uAC1C\uAE30"
+    Category: 2
+    ExecutionMode: 1
+    Enabled: 1
+    Seed: 1207
+    Description: "\uC790\uC6D0 \uAC70\uBD80/\uC18C\uBE44, \uBAA8\uB4E0 \uAD74\uB9BC,
+      \uD53C\uD574 \uB300\uC0C1, \uBAA8\uB4E0 Effect Entry \uC870\uAC74\uC744 \uACB0\uC815\uB860\uC801\uC73C\uB85C
+      \uAC15\uC81C \uC2E4\uD589\uD569\uB2C8\uB2E4."
+  - CaseId: coverage.skill.olaf.normal.exploit_gap
+    DisplayName: "\uC2A4\uD0AC \uC644\uC804 \uC2DC\uB098\uB9AC\uC624: \uD2C8\uC744
+      \uD30C\uACE0\uB4E4\uB2E4"
+    Category: 2
+    ExecutionMode: 1
+    Enabled: 1
+    Seed: 1207
+    Description: "\uC790\uC6D0 \uAC70\uBD80/\uC18C\uBE44, \uBAA8\uB4E0 \uAD74\uB9BC,
+      \uD53C\uD574 \uB300\uC0C1, \uBAA8\uB4E0 Effect Entry \uC870\uAC74\uC744 \uACB0\uC815\uB860\uC801\uC73C\uB85C
+      \uAC15\uC81C \uC2E4\uD589\uD569\uB2C8\uB2E4."
+  - CaseId: coverage.skill.olaf.normal.desperate_blow
+    DisplayName: "\uC2A4\uD0AC \uC644\uC804 \uC2DC\uB098\uB9AC\uC624: \uD544\uC0AC\uC758
+      \uC77C\uACA9"
+    Category: 2
+    ExecutionMode: 1
+    Enabled: 1
+    Seed: 1207
+    Description: "\uC790\uC6D0 \uAC70\uBD80/\uC18C\uBE44, \uBAA8\uB4E0 \uAD74\uB9BC,
+      \uD53C\uD574 \uB300\uC0C1, \uBAA8\uB4E0 Effect Entry \uC870\uAC74\uC744 \uACB0\uC815\uB860\uC801\uC73C\uB85C
+      \uAC15\uC81C \uC2E4\uD589\uD569\uB2C8\uB2E4."
+  - CaseId: coverage.skill.olaf.normal.smash
+    DisplayName: "\uC2A4\uD0AC \uC644\uC804 \uC2DC\uB098\uB9AC\uC624: \uD6C4\uB824\uCE58\uAE30"
+    Category: 2
+    ExecutionMode: 1
+    Enabled: 1
+    Seed: 1207
+    Description: "\uC790\uC6D0 \uAC70\uBD80/\uC18C\uBE44, \uBAA8\uB4E0 \uAD74\uB9BC,
+      \uD53C\uD574 \uB300\uC0C1, \uBAA8\uB4E0 Effect Entry \uC870\uAC74\uC744 \uACB0\uC815\uB860\uC801\uC73C\uB85C
+      \uAC15\uC81C \uC2E4\uD589\uD569\uB2C8\uB2E4."
+  - CaseId: coverage.skill.olaf.duel.fortify
+    DisplayName: "\uC2A4\uD0AC \uC644\uC804 \uC2DC\uB098\uB9AC\uC624: \uAD73\uD788\uAE30"
+    Category: 3
+    ExecutionMode: 1
+    Enabled: 1
+    Seed: 1207
+    Description: "\uC790\uC6D0 \uAC70\uBD80/\uC18C\uBE44, \uBAA8\uB4E0 \uAD74\uB9BC,
+      \uD53C\uD574 \uB300\uC0C1, \uBAA8\uB4E0 Effect Entry \uC870\uAC74\uC744 \uACB0\uC815\uB860\uC801\uC73C\uB85C
+      \uAC15\uC81C \uC2E4\uD589\uD569\uB2C8\uB2E4."
+  - CaseId: coverage.skill.olaf.duel.tenacious
+    DisplayName: "\uC2A4\uD0AC \uC644\uC804 \uC2DC\uB098\uB9AC\uC624: \uB048\uC9C8\uAE30\uAC8C"
+    Category: 3
+    ExecutionMode: 1
+    Enabled: 1
+    Seed: 1207
+    Description: "\uC790\uC6D0 \uAC70\uBD80/\uC18C\uBE44, \uBAA8\uB4E0 \uAD74\uB9BC,
+      \uD53C\uD574 \uB300\uC0C1, \uBAA8\uB4E0 Effect Entry \uC870\uAC74\uC744 \uACB0\uC815\uB860\uC801\uC73C\uB85C
+      \uAC15\uC81C \uC2E4\uD589\uD569\uB2C8\uB2E4."
+  - CaseId: coverage.skill.olaf.duel.whatever_comes
+    DisplayName: "\uC2A4\uD0AC \uC644\uC804 \uC2DC\uB098\uB9AC\uC624: \uB2E5\uCE58\uB294
+      \uB300\uB85C"
+    Category: 3
+    ExecutionMode: 1
+    Enabled: 1
+    Seed: 1207
+    Description: "\uC790\uC6D0 \uAC70\uBD80/\uC18C\uBE44, \uBAA8\uB4E0 \uAD74\uB9BC,
+      \uD53C\uD574 \uB300\uC0C1, \uBAA8\uB4E0 Effect Entry \uC870\uAC74\uC744 \uACB0\uC815\uB860\uC801\uC73C\uB85C
+      \uAC15\uC81C \uC2E4\uD589\uD569\uB2C8\uB2E4."
+  - CaseId: coverage.skill.olaf.duel.single_cut
+    DisplayName: "\uC2A4\uD0AC \uC644\uC804 \uC2DC\uB098\uB9AC\uC624: \uB2E8\uCE7C"
+    Category: 3
+    ExecutionMode: 1
+    Enabled: 1
+    Seed: 1207
+    Description: "\uC790\uC6D0 \uAC70\uBD80/\uC18C\uBE44, \uBAA8\uB4E0 \uAD74\uB9BC,
+      \uD53C\uD574 \uB300\uC0C1, \uBAA8\uB4E0 Effect Entry \uC870\uAC74\uC744 \uACB0\uC815\uB860\uC801\uC73C\uB85C
+      \uAC15\uC81C \uC2E4\uD589\uD569\uB2C8\uB2E4."
+  - CaseId: coverage.skill.olaf.duel.honorable_fight
+    DisplayName: "\uC2A4\uD0AC \uC644\uC804 \uC2DC\uB098\uB9AC\uC624: \uBA85\uC608\uB85C\uC6B4
+      \uC804\uD22C"
+    Category: 3
+    ExecutionMode: 1
+    Enabled: 1
+    Seed: 1207
+    Description: "\uC790\uC6D0 \uAC70\uBD80/\uC18C\uBE44, \uBAA8\uB4E0 \uAD74\uB9BC,
+      \uD53C\uD574 \uB300\uC0C1, \uBAA8\uB4E0 Effect Entry \uC870\uAC74\uC744 \uACB0\uC815\uB860\uC801\uC73C\uB85C
+      \uAC15\uC81C \uC2E4\uD589\uD569\uB2C8\uB2E4."
+  - CaseId: coverage.skill.olaf.duel.protect_self
+    DisplayName: "\uC2A4\uD0AC \uC644\uC804 \uC2DC\uB098\uB9AC\uC624: \uBAB8\uC744
+      \uC0AC\uB9AC\uB2E4"
+    Category: 3
+    ExecutionMode: 1
+    Enabled: 1
+    Seed: 1207
+    Description: "\uC790\uC6D0 \uAC70\uBD80/\uC18C\uBE44, \uBAA8\uB4E0 \uAD74\uB9BC,
+      \uD53C\uD574 \uB300\uC0C1, \uBAA8\uB4E0 Effect Entry \uC870\uAC74\uC744 \uACB0\uC815\uB860\uC801\uC73C\uB85C
+      \uAC15\uC81C \uC2E4\uD589\uD569\uB2C8\uB2E4."
+  - CaseId: coverage.skill.olaf.duel.hold_on
+    DisplayName: "\uC2A4\uD0AC \uC644\uC804 \uC2DC\uB098\uB9AC\uC624: \uBB3C\uACE0
+      \uB298\uC5B4\uC9C0\uAE30"
+    Category: 3
+    ExecutionMode: 1
+    Enabled: 1
+    Seed: 1207
+    Description: "\uC790\uC6D0 \uAC70\uBD80/\uC18C\uBE44, \uBAA8\uB4E0 \uAD74\uB9BC,
+      \uD53C\uD574 \uB300\uC0C1, \uBAA8\uB4E0 Effect Entry \uC870\uAC74\uC744 \uACB0\uC815\uB860\uC801\uC73C\uB85C
+      \uAC15\uC81C \uC2E4\uD589\uD569\uB2C8\uB2E4."
+  - CaseId: coverage.skill.olaf.duel.no_retreat
+    DisplayName: "\uC2A4\uD0AC \uC644\uC804 \uC2DC\uB098\uB9AC\uC624: \uBB3C\uB7EC\uC11C\uC9C0\uC54A\uAE30"
+    Category: 3
+    ExecutionMode: 1
+    Enabled: 1
+    Seed: 1207
+    Description: "\uC790\uC6D0 \uAC70\uBD80/\uC18C\uBE44, \uBAA8\uB4E0 \uAD74\uB9BC,
+      \uD53C\uD574 \uB300\uC0C1, \uBAA8\uB4E0 Effect Entry \uC870\uAC74\uC744 \uACB0\uC815\uB860\uC801\uC73C\uB85C
+      \uAC15\uC81C \uC2E4\uD589\uD569\uB2C8\uB2E4."
+  - CaseId: coverage.skill.olaf.duel.mad_bite
+    DisplayName: "\uC2A4\uD0AC \uC644\uC804 \uC2DC\uB098\uB9AC\uC624: \uBBF8\uCCD0\uBB3C\uC5B4\uB72F\uAE30"
+    Category: 3
+    ExecutionMode: 1
+    Enabled: 1
+    Seed: 1207
+    Description: "\uC790\uC6D0 \uAC70\uBD80/\uC18C\uBE44, \uBAA8\uB4E0 \uAD74\uB9BC,
+      \uD53C\uD574 \uB300\uC0C1, \uBAA8\uB4E0 Effect Entry \uC870\uAC74\uC744 \uACB0\uC815\uB860\uC801\uC73C\uB85C
+      \uAC15\uC81C \uC2E4\uD589\uD569\uB2C8\uB2E4."
+  - CaseId: coverage.skill.olaf.duel.single_combat
+    DisplayName: "\uC2A4\uD0AC \uC644\uC804 \uC2DC\uB098\uB9AC\uC624: \uC77C\uAE30\uD1A0"
+    Category: 3
+    ExecutionMode: 1
+    Enabled: 1
+    Seed: 1207
+    Description: "\uC790\uC6D0 \uAC70\uBD80/\uC18C\uBE44, \uBAA8\uB4E0 \uAD74\uB9BC,
+      \uD53C\uD574 \uB300\uC0C1, \uBAA8\uB4E0 Effect Entry \uC870\uAC74\uC744 \uACB0\uC815\uB860\uC801\uC73C\uB85C
+      \uAC15\uC81C \uC2E4\uD589\uD569\uB2C8\uB2E4."
+  - CaseId: coverage.skill.olaf.duel.all_in
+    DisplayName: "\uC2A4\uD0AC \uC644\uC804 \uC2DC\uB098\uB9AC\uC624: \uC804\uBD80
+      \uAC78\uB2E4"
+    Category: 3
+    ExecutionMode: 1
+    Enabled: 1
+    Seed: 1207
+    Description: "\uC790\uC6D0 \uAC70\uBD80/\uC18C\uBE44, \uBAA8\uB4E0 \uAD74\uB9BC,
+      \uD53C\uD574 \uB300\uC0C1, \uBAA8\uB4E0 Effect Entry \uC870\uAC74\uC744 \uACB0\uC815\uB860\uC801\uC73C\uB85C
+      \uAC15\uC81C \uC2E4\uD589\uD569\uB2C8\uB2E4."
+  - CaseId: coverage.skill.olaf.duel.payback_all
+    DisplayName: "\uC2A4\uD0AC \uC644\uC804 \uC2DC\uB098\uB9AC\uC624: \uC804\uBD80
+      \uB418\uAC1A\uB2E4"
+    Category: 3
+    ExecutionMode: 1
+    Enabled: 1
+    Seed: 1207
+    Description: "\uC790\uC6D0 \uAC70\uBD80/\uC18C\uBE44, \uBAA8\uB4E0 \uAD74\uB9BC,
+      \uD53C\uD574 \uB300\uC0C1, \uBAA8\uB4E0 Effect Entry \uC870\uAC74\uC744 \uACB0\uC815\uB860\uC801\uC73C\uB85C
+      \uAC15\uC81C \uC2E4\uD589\uD569\uB2C8\uB2E4."
+  - CaseId: coverage.skill.olaf.duel.head_on
+    DisplayName: "\uC2A4\uD0AC \uC644\uC804 \uC2DC\uB098\uB9AC\uC624: \uC815\uBA74\uC2B9\uBD80"
+    Category: 3
+    ExecutionMode: 1
+    Enabled: 1
+    Seed: 1207
+    Description: "\uC790\uC6D0 \uAC70\uBD80/\uC18C\uBE44, \uBAA8\uB4E0 \uAD74\uB9BC,
+      \uD53C\uD574 \uB300\uC0C1, \uBAA8\uB4E0 Effect Entry \uC870\uAC74\uC744 \uACB0\uC815\uB860\uC801\uC73C\uB85C
+      \uAC15\uC81C \uC2E4\uD589\uD569\uB2C8\uB2E4."
+  - CaseId: coverage.skill.olaf.duel.self_cut
+    DisplayName: "\uC2A4\uD0AC \uC644\uC804 \uC2DC\uB098\uB9AC\uC624: \uC81C\uC0B4\uAE4E\uAE30"
     Category: 3
     ExecutionMode: 1
     Enabled: 1
@@ -81,8 +325,58 @@ MonoBehaviour:
     Description: "\uC790\uC6D0 \uAC70\uBD80/\uC18C\uBE44, \uBAA8\uB4E0 \uAD74\uB9BC,
       \uD53C\uD574 \uB300\uC0C1, \uBAA8\uB4E0 Effect Entry \uC870\uAC74\uC744 \uACB0\uC815\uB860\uC801\uC73C\uB85C
       \uAC15\uC81C \uC2E4\uD589\uD569\uB2C8\uB2E4."
-  - CaseId: coverage.skill.olaf.preparation.show_off
-    DisplayName: "\uC2A4\uD0AC \uC644\uC804 \uC2DC\uB098\uB9AC\uC624: \uAC00\uC624\uC7A1\uAE30"
+  - CaseId: coverage.skill.olaf.duel.absorb_blood
+    DisplayName: "\uC2A4\uD0AC \uC644\uC804 \uC2DC\uB098\uB9AC\uC624: \uD53C\uB97C
+      \uD761\uC218\uD558\uB2E4"
+    Category: 3
+    ExecutionMode: 1
+    Enabled: 1
+    Seed: 1207
+    Description: "\uC790\uC6D0 \uAC70\uBD80/\uC18C\uBE44, \uBAA8\uB4E0 \uAD74\uB9BC,
+      \uD53C\uD574 \uB300\uC0C1, \uBAA8\uB4E0 Effect Entry \uC870\uAC74\uC744 \uACB0\uC815\uB860\uC801\uC73C\uB85C
+      \uAC15\uC81C \uC2E4\uD589\uD569\uB2C8\uB2E4."
+  - CaseId: coverage.skill.olaf.duel.blood_price
+    DisplayName: "\uC2A4\uD0AC \uC644\uC804 \uC2DC\uB098\uB9AC\uC624: \uD53C\uC758
+      \uB300\uAC00"
+    Category: 3
+    ExecutionMode: 1
+    Enabled: 1
+    Seed: 1207
+    Description: "\uC790\uC6D0 \uAC70\uBD80/\uC18C\uBE44, \uBAA8\uB4E0 \uAD74\uB9BC,
+      \uD53C\uD574 \uB300\uC0C1, \uBAA8\uB4E0 Effect Entry \uC870\uAC74\uC744 \uACB0\uC815\uB860\uC801\uC73C\uB85C
+      \uAC15\uC81C \uC2E4\uD589\uD569\uB2C8\uB2E4."
+  - CaseId: coverage.skill.olaf.duel.blood_oath
+    DisplayName: "\uC2A4\uD0AC \uC644\uC804 \uC2DC\uB098\uB9AC\uC624: \uD53C\uC758
+      \uB9F9\uC138"
+    Category: 3
+    ExecutionMode: 1
+    Enabled: 1
+    Seed: 1207
+    Description: "\uC790\uC6D0 \uAC70\uBD80/\uC18C\uBE44, \uBAA8\uB4E0 \uAD74\uB9BC,
+      \uD53C\uD574 \uB300\uC0C1, \uBAA8\uB4E0 Effect Entry \uC870\uAC74\uC744 \uACB0\uC815\uB860\uC801\uC73C\uB85C
+      \uAC15\uC81C \uC2E4\uD589\uD569\uB2C8\uB2E4."
+  - CaseId: coverage.skill.olaf.duel.blood_charge
+    DisplayName: "\uC2A4\uD0AC \uC644\uC804 \uC2DC\uB098\uB9AC\uC624: \uD53C\uC758\uB3CC\uC9C4"
+    Category: 3
+    ExecutionMode: 1
+    Enabled: 1
+    Seed: 1207
+    Description: "\uC790\uC6D0 \uAC70\uBD80/\uC18C\uBE44, \uBAA8\uB4E0 \uAD74\uB9BC,
+      \uD53C\uD574 \uB300\uC0C1, \uBAA8\uB4E0 Effect Entry \uC870\uAC74\uC744 \uACB0\uC815\uB860\uC801\uC73C\uB85C
+      \uAC15\uC81C \uC2E4\uD589\uD569\uB2C8\uB2E4."
+  - CaseId: coverage.skill.olaf.duel.catch_off_guard
+    DisplayName: "\uC2A4\uD0AC \uC644\uC804 \uC2DC\uB098\uB9AC\uC624: \uD5C8\uB97C
+      \uCC0C\uB974\uB2E4"
+    Category: 3
+    ExecutionMode: 1
+    Enabled: 1
+    Seed: 1207
+    Description: "\uC790\uC6D0 \uAC70\uBD80/\uC18C\uBE44, \uBAA8\uB4E0 \uAD74\uB9BC,
+      \uD53C\uD574 \uB300\uC0C1, \uBAA8\uB4E0 Effect Entry \uC870\uAC74\uC744 \uACB0\uC815\uB860\uC801\uC73C\uB85C
+      \uAC15\uC81C \uC2E4\uD589\uD569\uB2C8\uB2E4."
+  - CaseId: coverage.skill.olaf.preparation.calm_madness
+    DisplayName: "\uC2A4\uD0AC \uC644\uC804 \uC2DC\uB098\uB9AC\uC624: \uAD11\uAE30\uB97C
+      \uAC00\uB77C\uC549\uD788\uB2E4"
     Category: 4
     ExecutionMode: 1
     Enabled: 1
@@ -90,8 +384,8 @@ MonoBehaviour:
     Description: "\uC790\uC6D0 \uAC70\uBD80/\uC18C\uBE44, \uBAA8\uB4E0 \uAD74\uB9BC,
       \uD53C\uD574 \uB300\uC0C1, \uBAA8\uB4E0 Effect Entry \uC870\uAC74\uC744 \uACB0\uC815\uB860\uC801\uC73C\uB85C
       \uAC15\uC81C \uC2E4\uD589\uD569\uB2C8\uB2E4."
-  - CaseId: coverage.skill.olaf.preparation.glare
-    DisplayName: "\uC2A4\uD0AC \uC644\uC804 \uC2DC\uB098\uB9AC\uC624: \uB178\uB824\uBCF4\uAE30"
+  - CaseId: coverage.skill.olaf.preparation.bloto
+    DisplayName: "\uC2A4\uD0AC \uC644\uC804 \uC2DC\uB098\uB9AC\uC624: \uBE14\uB85C\uD1A0"
     Category: 4
     ExecutionMode: 1
     Enabled: 1
@@ -99,7 +393,17 @@ MonoBehaviour:
     Description: "\uC790\uC6D0 \uAC70\uBD80/\uC18C\uBE44, \uBAA8\uB4E0 \uAD74\uB9BC,
       \uD53C\uD574 \uB300\uC0C1, \uBAA8\uB4E0 Effect Entry \uC870\uAC74\uC744 \uACB0\uC815\uB860\uC801\uC73C\uB85C
       \uAC15\uC81C \uC2E4\uD589\uD569\uB2C8\uB2E4."
-  - CaseId: coverage.skill.olaf.preparation.crouch
+  - CaseId: coverage.skill.olaf.preparation.erase_wound
+    DisplayName: "\uC2A4\uD0AC \uC644\uC804 \uC2DC\uB098\uB9AC\uC624: \uC0C1\uCC98\uB97C
+      \uC9C0\uC6B0\uB2E4"
+    Category: 4
+    ExecutionMode: 1
+    Enabled: 1
+    Seed: 1207
+    Description: "\uC790\uC6D0 \uAC70\uBD80/\uC18C\uBE44, \uBAA8\uB4E0 \uAD74\uB9BC,
+      \uD53C\uD574 \uB300\uC0C1, \uBAA8\uB4E0 Effect Entry \uC870\uAC74\uC744 \uACB0\uC815\uB860\uC801\uC73C\uB85C
+      \uAC15\uC81C \uC2E4\uD589\uD569\uB2C8\uB2E4."
+  - CaseId: coverage.skill.common.preparation.crouch
     DisplayName: "\uC2A4\uD0AC \uC644\uC804 \uC2DC\uB098\uB9AC\uC624: \uC6C5\uD06C\uB9AC\uAE30"
     Category: 4
     ExecutionMode: 1
@@ -108,9 +412,58 @@ MonoBehaviour:
     Description: "\uC790\uC6D0 \uAC70\uBD80/\uC18C\uBE44, \uBAA8\uB4E0 \uAD74\uB9BC,
       \uD53C\uD574 \uB300\uC0C1, \uBAA8\uB4E0 Effect Entry \uC870\uAC74\uC744 \uACB0\uC815\uB860\uC801\uC73C\uB85C
       \uAC15\uC81C \uC2E4\uD589\uD569\uB2C8\uB2E4."
-  - CaseId: coverage.skill.olaf.prestige.blooming_wound
-    DisplayName: "\uC2A4\uD0AC \uC644\uC804 \uC2DC\uB098\uB9AC\uC624: \uB9CC\uAC1C\uD558\uB294
-      \uC0C1\uCC98"
+  - CaseId: coverage.skill.olaf.preparation.stoke_prestige
+    DisplayName: "\uC2A4\uD0AC \uC644\uC804 \uC2DC\uB098\uB9AC\uC624: \uC704\uC138\uB97C
+      \uC9C0\uD53C\uB2E4"
+    Category: 4
+    ExecutionMode: 1
+    Enabled: 1
+    Seed: 1207
+    Description: "\uC790\uC6D0 \uAC70\uBD80/\uC18C\uBE44, \uBAA8\uB4E0 \uAD74\uB9BC,
+      \uD53C\uD574 \uB300\uC0C1, \uBAA8\uB4E0 Effect Entry \uC870\uAC74\uC744 \uACB0\uC815\uB860\uC801\uC73C\uB85C
+      \uAC15\uC81C \uC2E4\uD589\uD569\uB2C8\uB2E4."
+  - CaseId: coverage.skill.olaf.preparation.last_resistance
+    DisplayName: "\uC2A4\uD0AC \uC644\uC804 \uC2DC\uB098\uB9AC\uC624: \uCD5C\uD6C4\uC758
+      \uC800\uD56D"
+    Category: 4
+    ExecutionMode: 1
+    Enabled: 1
+    Seed: 1207
+    Description: "\uC790\uC6D0 \uAC70\uBD80/\uC18C\uBE44, \uBAA8\uB4E0 \uAD74\uB9BC,
+      \uD53C\uD574 \uB300\uC0C1, \uBAA8\uB4E0 Effect Entry \uC870\uAC74\uC744 \uACB0\uC815\uB860\uC801\uC73C\uB85C
+      \uAC15\uC81C \uC2E4\uD589\uD569\uB2C8\uB2E4."
+  - CaseId: coverage.skill.olaf.preparation.breath_bought_with_blood
+    DisplayName: "\uC2A4\uD0AC \uC644\uC804 \uC2DC\uB098\uB9AC\uC624: \uD53C\uB85C
+      \uC0AC\uB294 \uC228"
+    Category: 4
+    ExecutionMode: 1
+    Enabled: 1
+    Seed: 1207
+    Description: "\uC790\uC6D0 \uAC70\uBD80/\uC18C\uBE44, \uBAA8\uB4E0 \uAD74\uB9BC,
+      \uD53C\uD574 \uB300\uC0C1, \uBAA8\uB4E0 Effect Entry \uC870\uAC74\uC744 \uACB0\uC815\uB860\uC801\uC73C\uB85C
+      \uAC15\uC81C \uC2E4\uD589\uD569\uB2C8\uB2E4."
+  - CaseId: coverage.skill.olaf.preparation.blood_oath
+    DisplayName: "\uC2A4\uD0AC \uC644\uC804 \uC2DC\uB098\uB9AC\uC624: \uD53C\uC758
+      \uC11C\uC57D"
+    Category: 4
+    ExecutionMode: 1
+    Enabled: 1
+    Seed: 1207
+    Description: "\uC790\uC6D0 \uAC70\uBD80/\uC18C\uBE44, \uBAA8\uB4E0 \uAD74\uB9BC,
+      \uD53C\uD574 \uB300\uC0C1, \uBAA8\uB4E0 Effect Entry \uC870\uAC74\uC744 \uACB0\uC815\uB860\uC801\uC73C\uB85C
+      \uAC15\uC81C \uC2E4\uD589\uD569\uB2C8\uB2E4."
+  - CaseId: coverage.skill.olaf.preparation.devour_stagger
+    DisplayName: "\uC2A4\uD0AC \uC644\uC804 \uC2DC\uB098\uB9AC\uC624: \uD750\uD2B8\uB7EC\uC9D0\uC744
+      \uC0BC\uD0A4\uB2E4"
+    Category: 4
+    ExecutionMode: 1
+    Enabled: 1
+    Seed: 1207
+    Description: "\uC790\uC6D0 \uAC70\uBD80/\uC18C\uBE44, \uBAA8\uB4E0 \uAD74\uB9BC,
+      \uD53C\uD574 \uB300\uC0C1, \uBAA8\uB4E0 Effect Entry \uC870\uAC74\uC744 \uACB0\uC815\uB860\uC801\uC73C\uB85C
+      \uAC15\uC81C \uC2E4\uD589\uD569\uB2C8\uB2E4."
+  - CaseId: coverage.skill.olaf.prestige.ragnarok
+    DisplayName: "\uC2A4\uD0AC \uC644\uC804 \uC2DC\uB098\uB9AC\uC624: \uB77C\uADF8\uB098\uB85C\uD06C"
     Category: 5
     ExecutionMode: 1
     Enabled: 1
@@ -118,8 +471,8 @@ MonoBehaviour:
     Description: "\uC790\uC6D0 \uAC70\uBD80/\uC18C\uBE44, \uBAA8\uB4E0 \uAD74\uB9BC,
       \uD53C\uD574 \uB300\uC0C1, \uBAA8\uB4E0 Effect Entry \uC870\uAC74\uC744 \uACB0\uC815\uB860\uC801\uC73C\uB85C
       \uAC15\uC81C \uC2E4\uD589\uD569\uB2C8\uB2E4."
-  - CaseId: coverage.skill.olaf.prestige.backs_to_wall
-    DisplayName: "\uC2A4\uD0AC \uC644\uC804 \uC2DC\uB098\uB9AC\uC624: \uBC30\uC218\uC9C4"
+  - CaseId: coverage.skill.olaf.prestige.rune_carving
+    DisplayName: "\uC2A4\uD0AC \uC644\uC804 \uC2DC\uB098\uB9AC\uC624: \uB8EC \uC0C8\uAE30\uAE30"
     Category: 5
     ExecutionMode: 1
     Enabled: 1
@@ -127,9 +480,8 @@ MonoBehaviour:
     Description: "\uC790\uC6D0 \uAC70\uBD80/\uC18C\uBE44, \uBAA8\uB4E0 \uAD74\uB9BC,
       \uD53C\uD574 \uB300\uC0C1, \uBAA8\uB4E0 Effect Entry \uC870\uAC74\uC744 \uACB0\uC815\uB860\uC801\uC73C\uB85C
       \uAC15\uC81C \uC2E4\uD589\uD569\uB2C8\uB2E4."
-  - CaseId: coverage.skill.olaf.prestige.bursting_madness
-    DisplayName: "\uC2A4\uD0AC \uC644\uC804 \uC2DC\uB098\uB9AC\uC624: \uD130\uB728\uB9AC\uB294
-      \uAD11\uAE30"
+  - CaseId: coverage.skill.olaf.prestige.berserk
+    DisplayName: "\uC2A4\uD0AC \uC644\uC804 \uC2DC\uB098\uB9AC\uC624: \uBCA0\uB974\uC138\uB974\uD06C"
     Category: 5
     ExecutionMode: 1
     Enabled: 1
@@ -303,9 +655,9 @@ MonoBehaviour:
     ExecutionMode: 0
     Enabled: 1
     Seed: 1207
-    Description: "\uC77C\uBC18 3, \uACB0\uD22C 2, \uB3C4\uC0AC\uB9BC 3, \uC704\uC138
-      3\uC758 \uACE0\uC720 SkillId\uAC00 \uB370\uC774\uD130 \uADF8\uB798\uD504\uC5D0
-      \uBAA8\uB450 \uC874\uC7AC\uD558\uB294\uC9C0 \uAC80\uC0AC\uD569\uB2C8\uB2E4."
+    Description: "0916(3) canonical \uC804\uCCB4 \uD480(N16/D21/P9/R3, \uCD1D 49)\uC758
+      SkillId\uAC00 \uB370\uC774\uD130 \uADF8\uB798\uD504\uC5D0 \uBE60\uC9D0\uC5C6\uC774
+      \uC874\uC7AC\uD558\uB294\uC9C0 \uAC80\uC0AC\uD569\uB2C8\uB2E4."
   - CaseId: olaf.data.dice_runtime_resolution
     DisplayName: "\uACF5\uC6A9 BasePlusRoll \uC2E4\uC81C \uAD74\uB9BC"
     Category: 9
@@ -326,20 +678,21 @@ MonoBehaviour:
       \uBA54\uC2DC\uAC00 \uD574\uB2F9 \uBA74\uC218\uB85C \uC0DD\uC131\uB418\uB294\uC9C0
       \uAC80\uC0AC\uD569\uB2C8\uB2E4."
   - CaseId: olaf.passive.mechanic_registration
-    DisplayName: "\uAD11\uAE30\xB7\uBC30\uC218\uC9C4 \uBA54\uCEE4\uB2C9 \uB4F1\uB85D"
+    DisplayName: "\uAD11\uAE30\xB7\uB8F0\uBE0C\uB808\uC774\uCEE4\xB7\uB77C\uADF8\uB098\uB85C\uD06C
+      \uBA54\uCEE4\uB2C9 \uB4F1\uB85D"
     Category: 1
     ExecutionMode: 1
     Enabled: 1
     Seed: 1207
-    Description: "OlafMadnessMechanic\uACFC OlafImmortalFuryMechanic\uC758 \uC0DD\uC131
-      \uBC0F BattleEvent \uAD6C\uB3C5\uC744 \uAC80\uC0AC\uD569\uB2C8\uB2E4."
+    Description: "OlafMadnessMechanic / OlafRulebreakerMechanic / OlafImmortalFuryMechanic(\uB77C\uADF8\uB098\uB85C\uD06C)\uC758
+      \uC0DD\uC131 \uBC0F BattleEvent \uAD6C\uB3C5\uC744 \uAC80\uC0AC\uD569\uB2C8\uB2E4."
   - CaseId: olaf.passive.madness_boundary
     DisplayName: "\uAD11\uAE30 \uACBD\uACC4\uAC12\xB7\uB9CC\uAC1C"
     Category: 9
     ExecutionMode: 1
     Enabled: 1
     Seed: 1207
-    Description: "\uAD11\uAE30 0~10 Clamp\uC640 10\uC5D0\uC11C \uB9CC\uAC1C \uC0C1\uD0DC\uAC00
+    Description: "\uAD11\uAE30 0~8 Clamp\uC640 8\uC5D0\uC11C \uB9CC\uAC1C \uC0C1\uD0DC\uAC00
       \uB418\uB294\uC9C0 \uAC80\uC0AC\uD569\uB2C8\uB2E4."
   - CaseId: olaf.passive.madness_roll_modifier
     DisplayName: "\uAD11\uAE30 \uD310\uC815 \uBCF4\uC815"
@@ -347,27 +700,28 @@ MonoBehaviour:
     ExecutionMode: 1
     Enabled: 1
     Seed: 1207
-    Description: "\uAD11\uAE30 5\uB2F9 \uD310\uC815 +1 \uADDC\uCE59\uC774 \uC2E4\uC81C
+    Description: "\uAD11\uAE30 4\uB2F9 \uD310\uC815 +1 \uADDC\uCE59\uC774 \uC2E4\uC81C
       Character.ModifyRoll \uD30C\uC774\uD504\uB77C\uC778\uC5D0 \uC801\uC6A9\uB418\uB294\uC9C0
       \uAC80\uC0AC\uD569\uB2C8\uB2E4."
   - CaseId: olaf.duel.standard_explosion_once_per_action
-    DisplayName: "\uD45C\uC900 \uD608\uC0C1 \uD3ED\uBC1C \uD589\uB3D9\uB2F9 1\uD68C"
+    DisplayName: "\uD45C\uC900 \uCD9C\uD608 \uD3ED\uBC1C \uBBF8\uC815\uAC12 \uC548\uC804\uC131"
     Category: 3
     ExecutionMode: 1
     Enabled: 1
     Seed: 1207
-    Description: "\uAC19\uC740 \uD45C\uC900 BattleAction\uC5D0\uC11C\uB294 \uD608\uC0C1
-      \uD3ED\uBC1C\uC774 \uD55C \uBC88\uB9CC \uBC1C\uC0DD\uD558\uACE0 ActionEnd \uC774\uD6C4
-      \uB2E4\uC2DC \uD5C8\uC6A9\uB418\uB294\uC9C0 \uAC80\uC0AC\uD569\uB2C8\uB2E4."
+    Description: "\uD45C\uC900\uC740 \uCD9C\uD608 \uD3ED\uBC1C \uD2B9\uC804\uC744
+      \uAC16\uB418 0916\uC758 (\uBBF8\uC815) \uACC4\uC218\uAC00 0/Unset\uC774\uBA74
+      \uC784\uC758 \uD3ED\uBC1C \uD53C\uD574\uB97C \uB9CC\uB4E4\uC9C0 \uC54A\uB294\uC9C0
+      \uAC80\uC0AC\uD569\uB2C8\uB2E4."
   - CaseId: olaf.duel.one_sided_unique_effects_disabled
-    DisplayName: "\uD45C\uC900\xB7\uB09C\uB3C4\uC9C8 \uC77C\uBC29 \uACE0\uC720\uD6A8\uACFC
+    DisplayName: "\uD45C\uC900\xB7\uB048\uC9C8\uAE30\uAC8C \uC77C\uBC29 \uACE0\uC720\uD6A8\uACFC
       \uCC28\uB2E8"
     Category: 3
     ExecutionMode: 1
     Enabled: 1
     Seed: 1207
     Description: "\uC77C\uBC29 \uACF5\uACA9\uC5D0\uC11C\uB294 \uD45C\uC900\uACFC
-      \uB09C\uB3C4\uC9C8\uC758 \uACB0\uD22C \uC804\uC6A9 \uD608\uC0C1\xB7\uAD11\uAE30
+      \uB048\uC9C8\uAE30\uAC8C\uC758 \uACB0\uD22C \uC804\uC6A9 \uCD9C\uD608\xB7\uAD11\uAE30
       \uD6A8\uACFC\uAC00 \uBC1C\uB3D9\uD558\uC9C0 \uC54A\uB294\uC9C0 \uAC80\uC0AC\uD569\uB2C8\uB2E4."
   - CaseId: olaf.prestige.madness_consume
     DisplayName: "\uAD11\uAE30 \uC18C\uBAA8 \uD53C\uD574"
@@ -378,10 +732,10 @@ MonoBehaviour:
     Description: "\uD604\uC7AC \uAD11\uAE30 \xD7 \uD53C\uD574\uB7C9 \uACC4\uC0B0\uACFC
       \uC120\uD0DD\uC801 \uAD11\uAE30 \uC18C\uBAA8\uB97C \uAC80\uC0AC\uD569\uB2C8\uB2E4."
   - CaseId: olaf.prestige.backs_to_wall_lifecycle
-    DisplayName: "\uBC30\uC218\uC9C4 \uC0DD\uC874\xB7\uD134 \uC885\uB8CC"
+    DisplayName: "\uB77C\uADF8\uB098\uB85C\uD06C \uC0DD\uC874\xB7\uD134 \uC885\uB8CC"
     Category: 5
     ExecutionMode: 1
     Enabled: 1
     Seed: 1207
-    Description: "\uBC30\uC218\uC9C4 \uC911 \uC0AC\uB9DD\xB7\uBD80\uC704 \uD30C\uAD34
-      \uCC28\uB2E8\uACFC TurnEnd \uD574\uC81C\uB97C \uAC80\uC0AC\uD569\uB2C8\uB2E4."
+    Description: "\uB77C\uADF8\uB098\uB85C\uD06C \uC911 \uC0AC\uB9DD\xB7\uBD80\uC704
+      \uD30C\uAD34 \uCC28\uB2E8\uACFC TurnEnd \uD574\uC81C\uB97C \uAC80\uC0AC\uD569\uB2C8\uB2E4."

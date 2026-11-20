@@ -159,14 +159,15 @@ MonoBehaviour:
       \uC2A4\uD0AC \uD328\uB110\uC774 \uC120\uD0DD Bundle\uACFC \uC5F0\uACB0\uB418\uC5B4
       \uC788\uB294\uC9C0 \uAC80\uC0AC\uD569\uB2C8\uB2E4."
   - CaseId: enemy.elite.bodypart.contract
-    DisplayName: "\uC815\uC608 \uC801 4\uBD80\uC704 \uC804\uD22C \uBAA8\uB378"
+    DisplayName: "\uC815\uC608 \uC801 5\uBD80\uC704 \uC804\uD22C \uBAA8\uB378"
     Category: 9
     ExecutionMode: 1
     Enabled: 1
     Seed: 1207
-    Description: "EliteEnemy\uAC00 HEAD/LEFT_HAND/RIGHT_HAND/LEGS 4\uBD80\uC704\uB97C
-      \uC815\uD655\uD788 \uAD6C\uC131\uD558\uACE0 Last Stand\uB97C \uC9C0\uC6D0\uD558\uB294\uC9C0
-      \uAC80\uC0AC\uD569\uB2C8\uB2E4."
+    Description: "EliteEnemy\uAC00 \uB370\uC774\uD130 \uC815\uC758 5\uBD80\uC704\uB97C
+      \uAD6C\uC131\uD558\uACE0 \uAC01 \uBD80\uC704\uC758 \uC548\uC815\uC801\uC778
+      PartId/\uC2AC\uB86F \uC5ED\uD560\uC744 \uAC00\uC9C0\uBA70 Last Stand\uB97C
+      \uC9C0\uC6D0\uD558\uB294\uC9C0 \uAC80\uC0AC\uD569\uB2C8\uB2E4."
   - CaseId: enemy.elite.posture_slot.contract
     DisplayName: "\uC815\uC608 \uC801 \uC790\uC138\xB7\uD589\uB3D9 \uC2AC\uB86F \uACC4\uC57D"
     Category: 9

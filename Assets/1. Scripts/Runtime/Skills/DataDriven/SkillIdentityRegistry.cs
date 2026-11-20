@@ -41,12 +41,9 @@ public sealed class SkillIdentityRegistry : ScriptableObject
 public static class SkillIdentityContract
 {
     private static readonly HashSet<string> DuplicatedIds=new HashSet<string>(
-        new[]{
-            "olaf.duel.standard",
-            "olaf.preparation.bloto",
-            "yujin.preparation.hwanhyeong.attack",
-            "yujin.preparation.hwanhyeong.defense"
-        },StringComparer.Ordinal);
+        // 11-20: 중복 4건(표준 · 블로토 · 환형 공격/수비)을 에셋 하나로 합쳤다 — 지금 중복 ID 없음.
+        // 같은 skillId 에셋이 다시 생기면 여기 등록하고 레지스트리에 GUID를 단다.
+        Array.Empty<string>(),StringComparer.Ordinal);
 
     private static SkillIdentityRegistry Registry =>
         Resources.Load<SkillIdentityRegistry>(
@@ -87,8 +84,7 @@ public static class SkillIdentityContract
 
         if(!IsDuplicateId(id))
         {
-            if(!string.IsNullOrEmpty(guid))
-            {reason="Unexpected GUID for non-colliding SkillId: "+id;return false;}
+            // 11-20: 중복이 풀린 ID의 옛 저장은 GUID가 붙어 있을 수 있다 — 유일한 후보면 그대로 쓴다.
             if(matches.Length!=1)
             {reason="Ambiguous unregistered SkillId: "+id;return false;}
             definition=matches[0];return true;
