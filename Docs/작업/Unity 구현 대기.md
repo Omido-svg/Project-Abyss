@@ -15,15 +15,11 @@
 ### 4. 데이터 점검
 - **빌야르 「틈을 파고들다」 굴림 수** — 규칙서 17.2 · 17.7은 1굴림, 에셋(`Olaf_N_11`)은 3굴림(타입은 관통으로 맞음). 굴림 수를 1로 줄일지 결정 대기
 
-### 5. 일괄 정리 (영향 범위 넓음 — 따로 묶는다)
-- **C9 노려보기 삭제(8장 · 11-17)** — 코드 5곳 · 에셋 6개(`common.preparation.glare` · `Olaf_Glare` · TEMP_BALANCE `Common_Glare` 등). 히후미 · 올라프 · 유진 런타임 스킬 목록에 아직 있다
-- **C11 이름** — 올라프 → 빌야르, 유진 → 명성. 코드 · 표시 이름 · 검증 프로필 이름(`올라프_Verification` 등)
-
 ### 6. 검증 도구 개편
 - **캐릭터 검증 강제 실행 커버리지** — 효과를 옛 Entry(`TempBalanceSkillProxyEffectDefinition`)로 하나씩 직접 실행해서, native 라우팅으로 도는 도사림 15건이 「지원하지 않는 Effect 계약」으로 실패(`CharacterVerificationForcedScenarioRunner.cs` `VerifyEffectEntry`). native 라우팅 스킬은 실제 경로(`SkillEffectDispatcher`)로 실행하고 결과(방어도 · 빛 · 상태)를 보는 방식으로
-  - 실패 목록 — 공용 웅크리기 · 노려보기(3캐릭터) / 빌야르 피의 서약 · 피로 사는 숨 · 광기를 가라앉히다 · 흐트러짐을 삼키다 · 상처를 지우다 · 최후의 저항 / 명성 숨을 죽이다 · 칼을 갈다 · 기회를 엿보다
+  - 실패 목록 — 공용 웅크리기(3캐릭터) / 빌야르 피의 서약 · 피로 사는 숨 · 광기를 가라앉히다 · 흐트러짐을 삼키다 · 상처를 지우다 · 최후의 저항 / 명성 숨을 죽이다 · 칼을 갈다 · 기회를 엿보다
   - `coverage.manifest.closed_world`(미등록 Effect)도 같은 원인
-  - 5번 뒤에 두는 이유 — 노려보기 삭제 · 이름 변경이 검증 프로필과 스킬 목록을 건드린다
+  - 5번 뒤에 두는 이유 — 이름 변경이 검증 프로필과 스킬 목록을 건드린다
 - 11-18 — 캐릭터 검증 Fixture를 Production `BattleRuntimeFactory`로 바꿔 실행 오류 17 → 0(통과 → 실패 0건)
 
 ### 7. 판단이 필요한 검증 (B)
@@ -50,6 +46,7 @@
 - sim_py HF-B03 동귀어진 — sim 20 · 빛 0 / Unity 10 · 빛 1(`작업/히후미.md` 수치 대기)
 
 ## 작업 메모
+- **코드 안 이름은 옛 이름이다**(11-20 C11) — 화면 · 툴팁 · 검증 표시 이름만 빌야르 · 명성으로 바꿨다. 클래스 · 파일 · 폴더 · skillId(`Olaf*` · `Yujin*` · `olaf.*` · `yujin.*`) · 코드 주석은 그대로
 - Unity를 플레이하면 TMP 동적 폰트(`Assets/7. Fonts/TheOneLord SDF.asset` · `NotoSansKR-VariableFont_wght SDF.asset`)가 채워진다 — 커밋 전에 되돌린다
 - 테스트 씬 캐릭터 선택 = PlayerPrefs `ProjectAbyss.TestEncounter.Player`(0 빌야르 · 1 명성 · 2 히후미)
 - `Battle Test Scene` 단독 실행은 RunProgression이 없다(런 단위 기능은 `Run Flow Test`에서)
