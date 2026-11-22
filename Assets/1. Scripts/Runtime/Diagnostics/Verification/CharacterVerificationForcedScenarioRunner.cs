@@ -1085,7 +1085,7 @@ public static class CharacterVerificationForcedScenarioRunner
                     owner.RuntimeStatus.currentPrestige = 0;
                 break;
 
-            // ── 명성 ──
+            // ── 천명 ──
             case "yujin.normal.ace_in_the_hole":        // 감 소모
             case "yujin.duel.p.finish_it":
             case "yujin.duel.o.advance_timing":

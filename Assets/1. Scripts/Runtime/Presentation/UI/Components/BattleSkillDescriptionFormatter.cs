@@ -51,7 +51,7 @@ public static class BattleSkillDescriptionFormatter
         ["olaf.prestige.blooming_wound"] = "조준 부위에 출혈을 3~5 부여합니다.\n광기 5당 출혈 부여량이 1 증가하며 즉시 폭발하지 않습니다.",
         ["olaf.prestige.bursting_madness"] = "광기 2를 얻고, 현재 광기×5와 대상 출혈량을 합친 만큼 피해를 줍니다.\n출혈을 소비하지 않으며 부위 파괴는 불가능합니다.",
 
-        // ── 명성 (legacy code name: Yujin) ──
+        // ── 천명 (legacy code name: Yujin) ──
         ["yujin.duel.contract_target"] = "결투 교환 승리로 대상의 표식을 누적합니다. 현재 무기에 따라 표식 부여량이 달라집니다.",
         ["yujin.duel.brutal_finish"] = "결투 교환 승리 후 살수의 감을 소비해 추가 공격을 노립니다. 추가 코인은 앞면이면 공격하고 뒷면이면 종료합니다.",
         ["yujin.normal.background_check"] = "현재 무기에 따라 코인을 굴리고, 공격 교환 승리로 대상의 표식을 쌓습니다.",

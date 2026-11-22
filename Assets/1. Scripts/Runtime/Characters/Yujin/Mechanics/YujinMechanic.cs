@@ -375,7 +375,7 @@ public sealed partial class YujinMechanic : CombatMechanic,
             }
 
             Debug.Log(
-                $"[명성][환형] 예약 취소 {previousPending} / " +
+                $"[천명][환형] 예약 취소 {previousPending} / " +
                 $"빛 +{refund}");
 
             return true;
@@ -385,7 +385,7 @@ public sealed partial class YujinMechanic : CombatMechanic,
         weaponSwitchUsedThisTurn = true;
 
         Debug.Log(
-            $"[명성][환형] 예약 변경 {previousPending} -> {pendingWeapon} / " +
+            $"[천명][환형] 예약 변경 {previousPending} -> {pendingWeapon} / " +
             "추가 빛 0");
 
         return true;
@@ -393,7 +393,7 @@ public sealed partial class YujinMechanic : CombatMechanic,
 
     public string GetHwanhyeongSelectionReason(YujinWeaponType weapon)
     {
-        if (owner == null) return "명성 메커니즘 미연결";
+        if (owner == null) return "천명 메커니즘 미연결";
         if (IsWeaponSwitchLocked) return "전투 해결 중에는 환형 변경 불가";
         return weapon == currentWeapon ? "현재 무기와 동일" : string.Empty;
     }
@@ -1008,7 +1008,7 @@ public sealed partial class YujinMechanic : CombatMechanic,
             if (action.Slot?.PlanningEffectCommitted == true)
                 return;
 
-            Debug.LogWarning("[명성][환형] Planning commit 없이 실행되었습니다. 환형은 계획 단계의 무기 선택 UI를 통해 사용해야 합니다.");
+            Debug.LogWarning("[천명][환형] Planning commit 없이 실행되었습니다. 환형은 계획 단계의 무기 선택 UI를 통해 사용해야 합니다.");
             return;
         }
 
@@ -1097,7 +1097,7 @@ public sealed partial class YujinMechanic : CombatMechanic,
             weaponChangedThisTurn = previous != currentWeapon;
 
             Debug.Log(
-                $"[명성][환형] {previous} -> {currentWeapon} 전환 완료 / " +
+                $"[천명][환형] {previous} -> {currentWeapon} 전환 완료 / " +
                 $"Turn={turn}");
         }
 

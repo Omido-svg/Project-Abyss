@@ -62,7 +62,7 @@ public sealed class YujinCharacterVerificationCaseProvider :
     {
         yield return CharacterVerificationCaseDefinition.Create(
             SkillCoverage,
-            "명성 스킬 ID 전체 등록",
+            "천명 스킬 ID 전체 등록",
             CharacterVerificationCategory.Data,
             CharacterVerificationExecutionMode.DataOnly,
             "0916(3) canonical 전체 풀(N9/D14/P9/R3, 총 35)의 SkillId가 데이터 그래프에 빠짐없이 존재하는지 검사합니다.");
@@ -76,7 +76,7 @@ public sealed class YujinCharacterVerificationCaseProvider :
 
         yield return CharacterVerificationCaseDefinition.Create(
             MechanicRegistration,
-            "명성 통합 메커닉 등록",
+            "천명 통합 메커닉 등록",
             CharacterVerificationCategory.Passive,
             CharacterVerificationExecutionMode.IsolatedRuntime,
             "무기·살수의 감·표식 메커닉 생성과 BattleEvent 구독을 검사합니다.");
@@ -128,7 +128,7 @@ public sealed class YujinCharacterVerificationCaseProvider :
             "낙일 교환 승리 시 상대 잔여 굴림 제거",
             CharacterVerificationCategory.Duel,
             CharacterVerificationExecutionMode.IsolatedRuntime,
-            "낙일 상태의 명성이 실제 교환 하나를 이기면 즉시 상대 행동의 남은 굴림이 0이 되고, 다른 무기·패배 교환에는 적용되지 않는지 검사합니다.");
+            "낙일 상태의 천명이 실제 교환 하나를 이기면 즉시 상대 행동의 남은 굴림이 0이 되고, 다른 무기·패배 교환에는 적용되지 않는지 검사합니다.");
 
         yield return CharacterVerificationCaseDefinition.Create(
             MarkIgnition,
@@ -202,10 +202,10 @@ public sealed class YujinCharacterVerificationCaseProvider :
 
         return missing.Count == 0
             ? context.Pass(
-                "명성 0916 canonical 스킬 ID 35개 존재",
+                "천명 0916 canonical 스킬 ID 35개 존재",
                 $"{RequiredSkillIds.Length}/{RequiredSkillIds.Length} 등록")
             : context.Fail(
-                "명성 0916 canonical 스킬 ID 35개 존재",
+                "천명 0916 canonical 스킬 ID 35개 존재",
                 $"{RequiredSkillIds.Length - missing.Count}/{RequiredSkillIds.Length} 등록",
                 "누락:\n" + string.Join("\n", missing));
     }
@@ -220,7 +220,7 @@ public sealed class YujinCharacterVerificationCaseProvider :
         if (loadout == null)
         {
             return context.Fail(
-                "명성 CombatLoadout 존재",
+                "천명 CombatLoadout 존재",
                 "NULL");
         }
 
@@ -435,7 +435,7 @@ public sealed class YujinCharacterVerificationCaseProvider :
             yujin == null)
         {
             return context.Fail(
-                "명성 환형",
+                "천명 환형",
                 "Mechanic 또는 Character 없음");
         }
 

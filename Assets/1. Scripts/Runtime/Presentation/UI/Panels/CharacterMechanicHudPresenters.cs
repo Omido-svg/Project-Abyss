@@ -176,7 +176,7 @@ internal sealed class YujinMechanicHudPresenter :
             yujin.YujinMechanic;
 
         view?.SetPresentation(
-            "명성  ·  무기 운용",
+            "천명  ·  무기 운용",
             true);
 
         builder.Clear();

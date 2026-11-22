@@ -35,7 +35,7 @@ public class SkillDefinition : ScriptableObject
     public SkillBasePowerRule BasePowerRule = SkillBasePowerRule.CanonicalCurve;
     public int BasePower;
     public int BasePowerFlatAdjustment;
-    [Tooltip("공격 스킬의 물리 속성: 절단 / 둔격 / 관통. 명성은 현재 무기가 이 값을 덮어씁니다.")]
+    [Tooltip("공격 스킬의 물리 속성: 절단 / 둔격 / 관통. 천명은 현재 무기가 이 값을 덮어씁니다.")]
     public PhysicalDamageType PhysicalType = PhysicalDamageType.Cut;
     [Tooltip("Legacy boolean. 신규 authoring은 BreakMode를 사용하고 기존 true는 WeakenedOnly로 해석합니다.")]
     public bool CanBreakPart;

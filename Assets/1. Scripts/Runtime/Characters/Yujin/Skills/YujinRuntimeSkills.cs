@@ -84,7 +84,7 @@ internal static class YujinSkillRollUtility
     }
 }
 
-/// <summary>11-20 명성 카드 사용 조건(18.3 · 18.4) — 자원과 같은 자리에서 막는다.</summary>
+/// <summary>11-20 천명 카드 사용 조건(18.3 · 18.4) — 자원과 같은 자리에서 막는다.</summary>
 internal static class YujinUseConditions
 {
     public static bool Allows(Character character, SkillDefinition definition)

@@ -224,7 +224,7 @@ public static class CharacterVerificationScenarioTools
         return builder.ToString();
     }
 
-    // 11-21: 캐릭터 밖에 저장되는 상태 — 명성 표식(소유자 메커닉의 사전) · 기세 · 턴 시작 예약 큐.
+    // 11-21: 캐릭터 밖에 저장되는 상태 — 천명 표식(소유자 메커닉의 사전) · 기세 · 턴 시작 예약 큐.
     private static void AppendBattleState(
         StringBuilder builder,
         Character owner,
@@ -243,7 +243,7 @@ public static class CharacterVerificationScenarioTools
             Character other = holder == owner ? target : owner;
             if (yujin == null || other == null)
                 continue;
-            // 덫(폭발 · 공명 · 전염)은 명성 메커닉의 지연 트리거 목록에 들어간다.
+            // 덫(폭발 · 공명 · 전염)은 천명 메커닉의 지연 트리거 목록에 들어간다.
             var triggers = typeof(YujinMechanic).GetField("delayedTriggers", Flags)
                 ?.GetValue(yujin) as DelayedEffectTriggerQueue;
             if (triggers != null)

@@ -14,7 +14,7 @@ namespace ProjectAbyss.Abilities
         RegisterExplosionTrap=13, RegisterResonanceTrap=14, DesignateAllEnemies=15,
         PeriodSenseRider=16, ConsumeMarkForBlock=17, ConsumeMarkForSwift=18,
         ForceMarkIgnition=19, SpendSenseBundlesForPower=20,
-        // 11-20 명성 9장 규칙서 반영(18.3 · 18.4 · 18.5). append-only.
+        // 11-20 천명 9장 규칙서 반영(18.3 · 18.4 · 18.5). append-only.
         WantedPerRollRider=21, FamiliarHandWinRider=22, FinishWeaponSenseEnergy=23,
         SpendSenseForMark=24, SenseByFervorLevel=25, SpendSenseForBlock=26,
         OwnerSwiftNextTurn=27, TargetEnergyCapDownNextTurn=28, MomentumPush=29

@@ -10,7 +10,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: e19daa19565c4da4889234089ec44149, type: 3}
-  m_Name: "\uBA85\uC131_Verification"
+  m_Name: "\uCC9C\uBA85_Verification"
   m_EditorClassIdentifier: 
   profileId: character.Yujin.060a5617ffe7f004f979c24bc775dc19
   bundle: {fileID: 11400000, guid: 060a5617ffe7f004f979c24bc775dc19, type: 2}
@@ -488,7 +488,7 @@ MonoBehaviour:
       \uAC8C\uC774\uC9C0 Provider\uC758 \uB77C\uBCA8\xB7\uC815\uADDC\uD654\xB7\uD45C\uC2DC\uAC12\uC744
       \uAC80\uC0AC\uD569\uB2C8\uB2E4."
   - CaseId: yujin.data.skill_coverage
-    DisplayName: "\uBA85\uC131 \uC2A4\uD0AC ID \uC804\uCCB4 \uB4F1\uB85D"
+    DisplayName: "\uCC9C\uBA85 \uC2A4\uD0AC ID \uC804\uCCB4 \uB4F1\uB85D"
     Category: 0
     ExecutionMode: 0
     Enabled: 1
@@ -506,7 +506,7 @@ MonoBehaviour:
       \uC7A5\uCC29\uB418\uACE0 \uB458 \uB2E4 \uD6C4\uBCF4\uC774\uBA70 \uB178\uB9BC\uC218\xB7\uC120\uAE08
       \uBC1B\uAE30\uAC00 \uD568\uAED8 \uC720\uC9C0\uB418\uB294\uC9C0 \uAC80\uC0AC\uD569\uB2C8\uB2E4."
   - CaseId: yujin.passive.mechanic_registration
-    DisplayName: "\uBA85\uC131 \uD1B5\uD569 \uBA54\uCEE4\uB2C9 \uB4F1\uB85D"
+    DisplayName: "\uCC9C\uBA85 \uD1B5\uD569 \uBA54\uCEE4\uB2C9 \uB4F1\uB85D"
     Category: 1
     ExecutionMode: 1
     Enabled: 1
@@ -575,7 +575,7 @@ MonoBehaviour:
     ExecutionMode: 1
     Enabled: 1
     Seed: 1207
-    Description: "\uB099\uC77C \uC0C1\uD0DC\uC758 \uBA85\uC131\uC774 \uC2E4\uC81C
+    Description: "\uB099\uC77C \uC0C1\uD0DC\uC758 \uCC9C\uBA85\uC774 \uC2E4\uC81C
       \uAD50\uD658 \uD558\uB098\uB97C \uC774\uAE30\uBA74 \uC989\uC2DC \uC0C1\uB300
       \uD589\uB3D9\uC758 \uB0A8\uC740 \uAD74\uB9BC\uC774 0\uC774 \uB418\uACE0, \uB2E4\uB978
       \uBB34\uAE30\xB7\uD328\uBC30 \uAD50\uD658\uC5D0\uB294 \uC801\uC6A9\uB418\uC9C0

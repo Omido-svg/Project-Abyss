@@ -118,7 +118,7 @@ public static class ContentCompletionVerification
         T(15, "스킬 강화", E(EvidenceKind.Olaf, EvidenceKind.PhaseE), R("C-36","C-37","C-38")),
         T(16, "아이템 · 런 경제", E(EvidenceKind.Olaf, EvidenceKind.PhaseE), R("C-33","C-39")),
         T(17, "빌야르", E(EvidenceKind.Olaf, EvidenceKind.PhaseE), R("O-01","O-03","O-04","O-05","O-02")),
-        T(18, "명성", E(EvidenceKind.Yujin, EvidenceKind.PhaseE), R("Y-01","Y-02","Y-03","Y-05","Y-07","Y-06","Y-08")),
+        T(18, "천명", E(EvidenceKind.Yujin, EvidenceKind.PhaseE), R("Y-01","Y-02","Y-03","Y-05","Y-07","Y-06","Y-08")),
         T(19, "히후미", E(EvidenceKind.Hifumi, EvidenceKind.PhaseE), R("H-01","H-02","H-03","H-05","H-06","H-07","H-09","H-10","H-11","H-08","C-21"))
     };
 

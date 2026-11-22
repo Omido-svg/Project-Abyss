@@ -731,7 +731,7 @@ public sealed class BattleTestScenarioSwitcher : MonoBehaviour
         if (GUILayout.Button("빌야르"))
             SelectOlaf();
 
-        if (GUILayout.Button("명성"))
+        if (GUILayout.Button("천명"))
             SelectYujin();
 
         if (GUILayout.Button("히후미"))
@@ -788,7 +788,7 @@ public sealed class BattleTestScenarioSwitcher : MonoBehaviour
     {
         return mode switch
         {
-            BattleTestPlayerMode.Yujin => "명성",
+            BattleTestPlayerMode.Yujin => "천명",
             BattleTestPlayerMode.Hifumi => "히후미",
             _ => "빌야르"
         };

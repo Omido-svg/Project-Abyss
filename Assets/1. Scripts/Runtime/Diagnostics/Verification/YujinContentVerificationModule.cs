@@ -19,7 +19,7 @@ public sealed class YujinContentVerificationModule : IGameSystemVerificationModu
         yield return Static(
             "phased.yujin.y01.weapon_profiles",
             "Y-01",
-            "명성 무기 Profile 단일 계약",
+            "천명 무기 Profile 단일 계약",
             GameSystemVerificationCategory.Contract,
             "백우 3/50%/7/Pierce/표식6·12/+20, 적설 2/50%/8/Blunt/12·24, 낙일 1/20%/24/Cut/처형/8·16",
             VerifyWeaponProfiles);
@@ -27,7 +27,7 @@ public sealed class YujinContentVerificationModule : IGameSystemVerificationModu
         yield return Runtime(
             "phased.yujin.y01.runtime_profile_usage",
             "Y-01",
-            "명성 Runtime이 Weapon Profile을 직접 사용",
+            "천명 Runtime이 Weapon Profile을 직접 사용",
             GameSystemVerificationCategory.Damage,
             "물리 타입/낙일 교환승리 continuation이 현재 무기 profile과 일치",
             VerifyRuntimeProfileUsage);
@@ -35,7 +35,7 @@ public sealed class YujinContentVerificationModule : IGameSystemVerificationModu
         yield return Static(
             "phased.yujin.y02.coin_formula",
             "Y-02",
-            "명성 코인 위력 11 고정 공식",
+            "천명 코인 위력 11 고정 공식",
             GameSystemVerificationCategory.Resource,
             "뒷면=13+빛×2, 앞면=곡선(코인수)+크리값+빛×2 → 18/20/44",
             VerifyCoinFormula);

@@ -280,7 +280,7 @@ namespace ProjectAbyss.Abilities
                     if(groups<=0||!y.TrySpendSense(groups*bundle))return false;
                     c.Action.RulebreakerFlatPowerBonus+=groups*2;
                     return true;
-                // ── 11-20 명성 9장 규칙서 반영(18.3 · 18.4 · 18.5) ──
+                // ── 11-20 천명 9장 규칙서 반영(18.3 · 18.4 · 18.5) ──
                 case YujinNativeOperation.WantedPerRollRider:
                     return ApplyWanted(op,c,y);
                 case YujinNativeOperation.FamiliarHandWinRider:

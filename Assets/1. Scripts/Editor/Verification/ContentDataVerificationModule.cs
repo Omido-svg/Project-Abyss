@@ -26,7 +26,7 @@ public sealed class ContentDataVerificationModule : IGameSystemVerificationModul
             "위치별 평균의 평균 = 기본위력+4.5 위반을 audit에서 검출", VerifyC44);
         yield return Static("phasee.o02.olaf_pool", "O-02", "빌야르 전체 스킬 Core Data", GameSystemVerificationCategory.Data,
             "최신 0916 풀 + 기본/강화1/강화2 데이터 및 Runtime 연결", VerifyO02);
-        yield return Static("phasee.y06.yujin_pool", "Y-06", "명성 전체 스킬 Core Data", GameSystemVerificationCategory.Data,
+        yield return Static("phasee.y06.yujin_pool", "Y-06", "천명 전체 스킬 Core Data", GameSystemVerificationCategory.Data,
             "최신 0917 평타9/결투16/도사림/위세3 + Runtime 연결", VerifyY06);
         yield return Static("phasee.presentation.canonical", "PRESENTATION", "0916 canonical Timeline presentation closure", GameSystemVerificationCategory.Contract,
             "Olaf/Yujin 모든 canonical SkillDefinition이 complete SkillVisualDefinition을 가져 Hit Event 기반 HP presentation을 재생", VerifyCanonicalPresentation);
