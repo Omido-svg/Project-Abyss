@@ -64,6 +64,7 @@ MonoBehaviour:
   ResolvePrestigeInCombat: 0
   OverrideCanClash: 0
   CanClashValue: 0
+  PreparationTiming: 0
   PreparationTier: 1
   ResolverType: 0
   DiceMin: 0
@@ -81,7 +82,7 @@ MonoBehaviour:
   Effects: []
   OverrideEnergyCost: 1
   EnergyCost: 1
-  UpgradeProfile: {fileID: 0}
+  UpgradeProfile: {fileID: 11400000, guid: 4571edceadfc2457b8aea88adee96f56, type: 2}
   OverrideResourceRules: 0
   RequireFullPrestige: 0
   PrestigeCost: 0

@@ -17,9 +17,9 @@ MonoBehaviour:
   SkillName: "\uACF1\uC808\uC744 \uB178\uB9AC\uB2E4"
   ActionType: 1
   Color: 0
-  BasePowerRule: 0
+  BasePowerRule: 2
   BasePower: 0
-  BasePowerFlatAdjustment: 0
+  BasePowerFlatAdjustment: -2
   PhysicalType: 0
   CanBreakPart: 0
   BreakMode: 0
@@ -44,6 +44,7 @@ MonoBehaviour:
     GrantInfiniteAttackSlotSpeedThisTurn: 0
   AttackWeight:
     Weight: 1
+    TargetingModel: 0
     SecondaryPartMode: 0
     SecondaryDamageMultiplier: 1
     AllowBrokenSecondaryParts: 1
@@ -143,6 +144,7 @@ MonoBehaviour:
   ResolvePrestigeInCombat: 0
   OverrideCanClash: 0
   CanClashValue: 0
+  PreparationTiming: 0
   PreparationTier: 0
   ResolverType: 3
   DiceMin: 0
@@ -160,7 +162,7 @@ MonoBehaviour:
   Effects: []
   OverrideEnergyCost: 0
   EnergyCost: 0
-  UpgradeProfile: {fileID: 0}
+  UpgradeProfile: {fileID: 11400000, guid: 3b869f793d6754f69b2807c1761f286d, type: 2}
   OverrideResourceRules: 0
   RequireFullPrestige: 0
   PrestigeCost: 0

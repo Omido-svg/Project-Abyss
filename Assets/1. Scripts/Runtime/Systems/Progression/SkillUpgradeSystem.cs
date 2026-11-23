@@ -144,7 +144,7 @@ public static class SkillUpgradeService
     /// <summary>
     /// C-36:
     /// - Level 1: 50/100/125/150 (or BaseCostOverride).
-    /// - Level 2: 정본이 (미정)이므로 Upgrade2.CostOverride가 명시된 경우에만 quote 가능.
+    /// - Level 2: Upgrade2.CostOverride가 있으면 그 값, 없으면 1회차 × SecondUpgradeCostMultiplier(11-24 임시).
     /// </summary>
     public static bool TryGetUpgradeCost(
         SkillDefinition definition,
@@ -169,14 +169,24 @@ public static class SkillUpgradeService
         int explicitSecondCost =
             profile?.Upgrade2?.CostOverride ?? 0;
 
-        if (explicitSecondCost <= 0)
-            return false;
+        if (explicitSecondCost > 0)
+        {
+            cost = explicitSecondCost;
+            return true;
+        }
 
-        cost = explicitSecondCost;
-        return true;
+        // 11-24 임시(사용자) — 15장 2회차 비용 배율은 (미정). 배율이 정해질 때까지 1회차 × SecondUpgradeCostMultiplier.
+        // 규칙서 수치 = 2회 강화 만렙값이라 2회차가 막혀 있으면 어떤 카드도 규칙서 수치에 닿지 못한다.
+        if (!TryGetUpgradeCost(definition, 1, out int firstCost))
+            return false;
+        cost = firstCost * SecondUpgradeCostMultiplier;
+        return cost > 0;
     }
 
-    // Legacy-friendly API. Unset은 0으로 반환하되 자동 배율 계산은 절대 하지 않는다.
+    /// <summary>11-24 임시 2회차 비용 배율(규칙서 15장 (미정)). 정해지면 이 값만 고친다.</summary>
+    public const int SecondUpgradeCostMultiplier = 2;
+
+    // Legacy-friendly API. Unset은 0으로 반환한다.
     public static int GetUpgradeCost(
         SkillDefinition definition,
         int targetLevel) =>

@@ -187,15 +187,19 @@ public sealed class HifumiCharacterVerificationCaseProvider :
                 continue;
             }
 
+            // 11-24 — 규칙서 15장: 위력 칸 = 강화 2회 만렙값(빛 보너스 포함). 실제 기본위력 + 강화 2회 합으로 비교한다
+            int maxLevelBase = PowerFormulaService.ResolveBasePower(definition) +
+                (definition.UpgradeProfile?.Upgrade1?.BasePowerDelta ?? 0) +
+                (definition.UpgradeProfile?.Upgrade2?.BasePowerDelta ?? 0);
             if (definition.ActionType != contract.Type ||
-                definition.BasePower != contract.Base ||
+                maxLevelBase != contract.Base ||
                 definition.ExchangeRollCount != contract.Rolls ||
                 definition.EnergyCost != contract.Energy ||
                 definition.ResolverType != SkillResolverType.Chinchiro)
             {
                 failures.Add(
                     $"{contract.Id}: Type={definition.ActionType}, " +
-                    $"Base={definition.BasePower}, Rolls={definition.ExchangeRollCount}, " +
+                    $"MaxLevelBase={maxLevelBase}(def {definition.BasePower}), Rolls={definition.ExchangeRollCount}, " +
                     $"Light={definition.EnergyCost}, Resolver={definition.ResolverType}");
             }
         }

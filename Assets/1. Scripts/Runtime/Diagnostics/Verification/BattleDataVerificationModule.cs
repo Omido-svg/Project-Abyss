@@ -42,7 +42,7 @@ public sealed class BattleDataVerificationModule : IGameSystemVerificationModule
             "C-36",
             "2회차 강화 비용 Unset",
             GameSystemVerificationCategory.Upgrade,
-            "1회 비용은 50/100/125/150, 2회 비용은 명시 CostOverride 없이는 quote 불가",
+            "1회 비용은 50/100/125/150, 2회 비용은 CostOverride가 없으면 1회 × 임시 배율(11-24)",
             VerifySecondUpgradeUnset);
 
         yield return Static(
@@ -410,12 +410,13 @@ public sealed class BattleDataVerificationModule : IGameSystemVerificationModule
                     1,
                     out int firstCost);
 
+            // 11-24 임시(사용자) — 2회차 비용 (미정) 동안 1회차 × SecondUpgradeCostMultiplier
             bool secondUnset =
-                !SkillUpgradeService.TryGetUpgradeCost(
+                SkillUpgradeService.TryGetUpgradeCost(
                     definition,
                     2,
                     out int secondCost) &&
-                secondCost == 0;
+                secondCost == 125 * SkillUpgradeService.SecondUpgradeCostMultiplier;
 
             profile.Upgrade2.CostOverride = 222;
 

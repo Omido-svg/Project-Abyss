@@ -22,9 +22,29 @@ MonoBehaviour:
   BasePowerFlatAdjustment: 0
   PhysicalType: 0
   CanBreakPart: 0
+  BreakMode: 0
   GainPrestige: 0
+  Rulebreaker:
+    Enabled: 0
+    EnergyCostReductionPerCommittedUse: 0
+    MinimumEnergyCost: 0
+    MirrorThisSkillToOpponentOnDuelMatch: 0
+    IgnoreOwnerRollModifiers: 0
+    ExplodeBleedingOncePerAction: 0
+    BleedingExplosionMultiplier: 0
+    SuppressFriendlyOneSidedHitsOnSameTargetSlot: 0
+    ConsumeAllOwnerBleedingOnExecute: 0
+    BreakAuthorityBleedingThreshold: 0
+    IgnoreWeakenPrerequisiteBleedingThreshold: 0
+    RequirePreviousTurnLastStand: 0
+    ApplyCurrentLastStandPowerBonus: 0
+    CurrentLastStandPowerBonus: 0
+    ApplyCurrentDisadvantageOrWorsePowerBonus: 0
+    CurrentDisadvantageOrWorsePowerBonus: 0
+    GrantInfiniteAttackSlotSpeedThisTurn: 0
   AttackWeight:
     Weight: 1
+    TargetingModel: 0
     SecondaryPartMode: 0
     SecondaryDamageMultiplier: 1
     AllowBrokenSecondaryParts: 1
@@ -43,6 +63,7 @@ MonoBehaviour:
   ResolvePrestigeInCombat: 0
   OverrideCanClash: 0
   CanClashValue: 0
+  PreparationTiming: 0
   PreparationTier: 0
   ResolverType: 0
   DiceMin: 0
@@ -60,7 +81,7 @@ MonoBehaviour:
   Effects: []
   OverrideEnergyCost: 1
   EnergyCost: 0
-  UpgradeProfile: {fileID: 0}
+  UpgradeProfile: {fileID: 11400000, guid: 2db2965778c134a0bbe20bfba0f536bf, type: 2}
   OverrideResourceRules: 0
   RequireFullPrestige: 0
   PrestigeCost: 0

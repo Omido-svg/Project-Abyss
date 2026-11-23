@@ -18,7 +18,7 @@ MonoBehaviour:
   ActionType: 1
   Color: 0
   BasePowerRule: 1
-  BasePower: 0
+  BasePower: -2
   BasePowerFlatAdjustment: 0
   PhysicalType: 0
   CanBreakPart: 0
@@ -44,6 +44,7 @@ MonoBehaviour:
     GrantInfiniteAttackSlotSpeedThisTurn: 0
   AttackWeight:
     Weight: 1
+    TargetingModel: 0
     SecondaryPartMode: 0
     SecondaryDamageMultiplier: 1
     AllowBrokenSecondaryParts: 1
@@ -91,6 +92,7 @@ MonoBehaviour:
   ResolvePrestigeInCombat: 0
   OverrideCanClash: 0
   CanClashValue: 0
+  PreparationTiming: 0
   PreparationTier: 0
   ResolverType: 3
   DiceMin: 0
@@ -108,7 +110,7 @@ MonoBehaviour:
   Effects: []
   OverrideEnergyCost: 1
   EnergyCost: 0
-  UpgradeProfile: {fileID: 0}
+  UpgradeProfile: {fileID: 11400000, guid: c04cd5bf39e5d40a3b033570baaacdef, type: 2}
   OverrideResourceRules: 0
   RequireFullPrestige: 0
   PrestigeCost: 0

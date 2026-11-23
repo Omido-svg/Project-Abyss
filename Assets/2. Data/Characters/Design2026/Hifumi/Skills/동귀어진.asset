@@ -89,7 +89,7 @@ MonoBehaviour:
   Effects: []
   OverrideEnergyCost: 1
   EnergyCost: 1
-  UpgradeProfile: {fileID: 0}
+  UpgradeProfile: {fileID: 11400000, guid: c15281249c6b14bf281cf17a9285498d, type: 2}
   OverrideResourceRules: 0
   RequireFullPrestige: 0
   PrestigeCost: 0

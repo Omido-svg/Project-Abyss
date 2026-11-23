@@ -1,0 +1,37 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 328de06246c382a408e76c933cd8386b, type: 3}
+  m_Name: hifumi_duel_reckless_bet_Upgrade
+  m_EditorClassIdentifier: 
+  BaseCostOverride: 0
+  Upgrade1:
+    DesignNote: 
+    CostOverride: 0
+    BasePowerDelta: 1
+    AllRollMinPowerDelta: 0
+    AllRollMaxPowerDelta: 0
+    PerRollPowerDelta: 
+    EnergyCostDelta: 0
+    PrestigeCostDelta: 0
+    CustomResourceCostDelta: 0
+    EffectPayloads: []
+  Upgrade2:
+    DesignNote: 
+    CostOverride: 0
+    BasePowerDelta: 1
+    AllRollMinPowerDelta: 0
+    AllRollMaxPowerDelta: 0
+    PerRollPowerDelta: 
+    EnergyCostDelta: 0
+    PrestigeCostDelta: 0
+    CustomResourceCostDelta: 0
+    EffectPayloads: []
