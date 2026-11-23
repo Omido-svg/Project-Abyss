@@ -144,7 +144,9 @@ public sealed class NormalEnemyRoleMechanic : CombatMechanic, IAdditionalFinalSt
         coverExpireTurn=now+2; // skill turn + next two turns = 3
         lastCoverAppliedTurn=now;
         pendingCoverTarget=null;
-        EnemyStageOneEffect.ApplyCoverProtection(owner,action);
+        // 12.3 — 엄호 결투의 「자신에게 보호 2 / 3턴」은 중장병만. 반격병 엄호 결투는 엄호만(11-23).
+        if(species==EnemySpecies.HeavyGuard)
+            EnemyStageOneEffect.ApplyCoverProtection(owner,action);
     }
 
     private void OnClashResolved(ClashResultContext result)

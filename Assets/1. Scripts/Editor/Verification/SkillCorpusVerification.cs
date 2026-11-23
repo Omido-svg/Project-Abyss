@@ -19,7 +19,7 @@ using UnityEngine;
 public static class SkillCorpusVerification
 {
     public const int OriginalSkillCount=166;
-    public const int Stage1NewSkillCount=19;
+    public const int Stage1NewSkillCount=33; // 11-23 잡몹 빈 칸 임시 카드 14장 추가(19 → 33)
     public const int ExpectedTotalSkillCount=OriginalSkillCount+Stage1NewSkillCount;
     public const int OriginalMetadataOnlyCount=18;
     public const int NewStage1MetadataOnlyCount=4;
