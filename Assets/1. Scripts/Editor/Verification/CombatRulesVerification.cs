@@ -144,7 +144,8 @@ public static class CombatRulesVerification
             ctx.Services.MomentumManager.BeginTurn();
             Check("M01 일반 몹 짓누름 빛 보상", normal.CurrentEnergy == 1);
             Check("M02 일반 몹 발악 없음", !ctx.Services.MomentumManager.HasLastStandJudgmentBonus(normal));
-            Check("U01 미정 덫 지속 임의 생성 없음", mech.RegisterMarkDeadline(target, target.GetBodyPart(PartType.RIGHT_HAND), 3, 2) == 0);
+            // 11-21 덫 수치 확정(18.4 — 설치 1 · 기본 지속 2) — 이제 공명 덫이 정상 등록된다(구 기대 = 「미정이라 0」).
+            Check("U01 확정 덫 지속으로 공명 덫 등록", mech.RegisterMarkDeadline(target, target.GetBodyPart(PartType.RIGHT_HAND), 3, 2) > 0);
             StageOneEnemyMechanic machineBoss = null, inquisitor = null;
             foreach (StageOneEnemyKind kind in Enum.GetValues(typeof(StageOneEnemyKind)))
             {
@@ -185,11 +186,19 @@ public static class CombatRulesVerification
             var result = service.TryAssign(new ActionPlanAssignmentRequest { Owner = y, OwnerPart = legs,
                 Skill = temp, Target = y, TargetPart = legs, TargetRule = TargetSelectionRule.LivingPartOnly,
                 PlanningChoiceId = coolPart.PartId });
-            Check("B06 냉각 실제 계획 적용 " + result.FailureReason, result.Success && !machineBoss.IsOverclocked(coolPart));
+            // 11-20 C10 — 냉각 = 해결 도사림(12.5): 계획에서는 배치만 하고 해결 단계 시작에 발동한다.
+            Check("B06 냉각 계획 = 해결 도사림 배치 " + result.FailureReason, result.Success &&
+                !result.Slot.PlanningEffectCommitted && !result.Slot.SkipResolution && machineBoss.IsOverclocked(coolPart));
             if (result.Success)
             {
+                // 해결 전 취소 — 효과가 아직 안 났으니 오버클록은 그대로여야 한다
                 var cancel = new PlanningActionCancellationService(ctx.Services.ActionManager);
-                Check("B07 냉각 취소 복구", cancel.Cancel(result.Slot, out _) && machineBoss.IsOverclocked(coolPart));
+                Check("B07 냉각 해결 전 취소 = 오버클록 유지", cancel.Cancel(result.Slot, out _) && machineBoss.IsOverclocked(coolPart));
+                // 해결 단계에서 실제로 풀리는지 — 같은 카드를 해결 시점처럼 실행해 보고 되돌린다
+                var probe = new BattleAction { Slot = result.Slot };
+                result.Slot.Skill.Execute(probe);
+                Check("B06b 냉각 해결 시 오버클록 해제", !machineBoss.IsOverclocked(coolPart));
+                machineBoss.RestoreCooling(coolPart);
             }
             int beforeInvalidChoice = y.CurrentEnergy;
             var invalidChoice = service.TryAssign(new ActionPlanAssignmentRequest { Owner = y, OwnerPart = legs,
