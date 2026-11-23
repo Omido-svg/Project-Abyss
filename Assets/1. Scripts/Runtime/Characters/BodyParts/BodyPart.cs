@@ -298,6 +298,17 @@ public class BodyPart
         Revision++;
     }
 
+    /// <summary>
+    /// 11-23 감정 증강 「몸을 놓는다」 — 전투 동안 부위 최대체력을 정해진 값으로 바꾼다(현재 체력은 새 최대치로 깎는다).
+    /// 증강이 풀릴 때 원래 최대치로 되돌리는 데도 쓴다(그때 현재 체력은 채우지 않는다).
+    /// </summary>
+    public void SetMaxHPForEffect(float value)
+    {
+        MaxPartHP = Mathf.Max(1f, value);
+        PartHP = Mathf.Clamp(PartHP, 0f, MaxPartHP);
+        Owner?.RefreshMaxStaggerGauge();
+    }
+
     public void IncreaseMaxHPPercent(
         float percent,
         bool healByIncreaseAmount = true)

@@ -22,12 +22,14 @@ public enum NativeEmotion33Kind
     FaithFirstClashDamageNullify = 14,
     FaithTurnEndBlockToHeal = 15,
     FaithBlockConversion = 16,
+    FaithBlockRestore = 17, // 11-23 복구 — 방어도가 소모될 때마다 확률(Ratio)로 그 수치만큼 복구
 
     DetachmentPartMaximumHp = 20,
     DetachmentStaggerMaximum = 21,
     DetachmentSingleWeakenedPenaltySuppression = 22,
     DetachmentKillMaximumHpGrowth = 23,
     DetachmentDamageDeferral = 24,
+    DetachmentRelease = 25, // 11-23 몸을 놓는다 — 최대체력 −Ratio · 이번 전투 빛 최대치 +SecondaryAmount · 즉시 빛 최대 회복
 
     AweFirstTurnStrength = 30,
     AweNextTurnSwift = 31,
@@ -44,7 +46,9 @@ public enum NativeEmotion33Kind
     AdmirationPrestigeFromStagger = 45,
 
     LongingNeutralThreshold = 50,
-    LongingNeutralTurnEndEnergy = 51
+    LongingNeutralTurnEndEnergy = 51,
+    LongingDriveCharge = 52,  // 11-23 몰이 — 짓누름 고조 충전 +Amount / 중립 · 우세 −Amount
+    LongingEndureCharge = 53  // 11-23 버팀 — 짓눌림 · 열세 고조 충전 +Amount / 짓누름 −Amount
 }
 public enum NativeEmotionCommonKind
 {
@@ -63,7 +67,8 @@ internal sealed class NativeEmotion33Mechanic : CombatMechanic,
     ICombatClashSpeedOverride,
     ICombatWeakenedPenaltyRule,
     ICombatMomentumBandRule,
-    ICombatPrestigeStockpileRule
+    ICombatPrestigeStockpileRule,
+    IFervorTurnEndGainModifier
 {
     private readonly NativeEmotion33Graph definition;
 
@@ -87,6 +92,7 @@ internal sealed class NativeEmotion33Mechanic : CombatMechanic,
     private int prestigeActivationThreshold;
 
     private int originalEnergyMaximum = -1;
+    private readonly Dictionary<BodyPart, float> releaseOriginalPartMax = new();
 
     public override string MechanicName =>
         $"R7 Native Emotion33 · {definition?.Kind}";
@@ -125,6 +131,13 @@ internal sealed class NativeEmotion33Mechanic : CombatMechanic,
                     () => battleEvent.OnExchangeResolved += OnExchangeResolved,
                     () => battleEvent.OnExchangeResolved -= OnExchangeResolved,
                     "OnExchangeResolved");
+                break;
+
+            case NativeEmotion33Kind.FaithBlockRestore:
+                SubscribeToBattleEvent(
+                    () => battleEvent.OnDamageResolved += OnGuardConsumed,
+                    () => battleEvent.OnDamageResolved -= OnGuardConsumed,
+                    "OnDamageResolved.FaithBlockRestore");
                 break;
 
             case NativeEmotion33Kind.CompassionLifesteal:
@@ -271,11 +284,75 @@ internal sealed class NativeEmotion33Mechanic : CombatMechanic,
             case NativeEmotion33Kind.AdmirationPrestigeStockpile:
                 ConfigurePrestigeStockpile();
                 break;
+
+            case NativeEmotion33Kind.DetachmentRelease:
+                ApplyDetachmentRelease();
+                break;
+        }
+    }
+
+    // 11-23 몸을 놓는다 — 부위 최대체력을 전부 (1 − Ratio)로(전체 최대체력 = 부위 합이라 전체도 같은 비율) ·
+    // 빛 최대치 +SecondaryAmount · 즉시 빛을 최대치까지. 증강이 풀리면(전투 종료) 되돌린다
+    private void ApplyDetachmentRelease()
+    {
+        float keep = Mathf.Clamp01(1f - Mathf.Max(0f, definition.Ratio));
+        if (owner.BodyParts != null)
+            foreach (BodyPart part in owner.BodyParts)
+            {
+                if (part == null || releaseOriginalPartMax.ContainsKey(part)) continue;
+                releaseOriginalPartMax[part] = part.MaxPartHP;
+                part.SetMaxHPForEffect(part.MaxPartHP * keep);
+            }
+        int bonus = Mathf.Max(0, definition.SecondaryAmount);
+        if (bonus > 0)
+        {
+            if (originalEnergyMaximum < 0) originalEnergyMaximum = owner.MaxEnergy;
+            owner.AdjustEnergyMaximum(bonus, false);
+        }
+        int missing = owner.MaxEnergy - owner.CurrentEnergy;
+        if (missing > 0)
+            owner.AddEnergy(missing);
+    }
+
+    // 11-23 복구 — 내가 맞아 방어도가 흡수했으면 확률(Ratio)로 흡수한 만큼 방어도를 되돌린다
+    private void OnGuardConsumed(DamageContext context)
+    {
+        if (context == null || context.Target != owner || owner.IsDead)
+            return;
+        int absorbed = context.GuardAbsorbed;
+        if (absorbed <= 0 || UnityEngine.Random.value >= Mathf.Clamp01(definition.Ratio))
+            return;
+        owner.AddBlock(absorbed);
+    }
+
+    // 11-23 그리움 몰이 · 버팀 — 턴 종료 고조 충전을 그 턴 최종 구간에 따라 ±Amount
+    public int ModifyTurnEndFervorGain(MomentumState finalState, int currentGain)
+    {
+        int n = Mathf.Max(0, definition.Amount);
+        switch (definition.Kind)
+        {
+            case NativeEmotion33Kind.LongingDriveCharge:
+                if (finalState == MomentumState.Overwhelm) return currentGain + n;
+                if (finalState == MomentumState.Balance || finalState == MomentumState.Advantage)
+                    return Mathf.Max(0, currentGain - n);
+                return currentGain;
+            case NativeEmotion33Kind.LongingEndureCharge:
+                if (finalState == MomentumState.LastStand || finalState == MomentumState.Disadvantage)
+                    return currentGain + n;
+                if (finalState == MomentumState.Overwhelm)
+                    return Mathf.Max(0, currentGain - n);
+                return currentGain;
+            default:
+                return currentGain;
         }
     }
 
     private void RestorePersistentCapacityOverrides()
     {
+        foreach (var pair in releaseOriginalPartMax)
+            pair.Key?.SetMaxHPForEffect(pair.Value);
+        releaseOriginalPartMax.Clear();
+
         if (originalEnergyMaximum >= 0 && owner != null)
         {
             int delta = originalEnergyMaximum - owner.MaxEnergy;

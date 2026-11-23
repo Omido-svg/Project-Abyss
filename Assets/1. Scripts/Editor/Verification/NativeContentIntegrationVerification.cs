@@ -41,8 +41,8 @@ public static class NativeContentIntegrationVerification
             !EditorApplication.isCompiling);
         Check("F02 actual source census "+SkillCorpusVerification.CensusLabel+"",
             SkillCorpusVerification.IsExactLayeredCensus());
-        Check("F03 enemy source catalog exact new 19",
-            EnemyStageOneSkillCatalog.AuthoredCount==19);
+        Check("F03 enemy source catalog exact new "+SkillCorpusVerification.Stage1NewSkillCount,
+            EnemyStageOneSkillCatalog.AuthoredCount==SkillCorpusVerification.Stage1NewSkillCount);
         var skills=AssetDatabase.FindAssets("t:SkillDefinition")
             .Select(AssetDatabase.GUIDToAssetPath)
             .Select(p=>AssetDatabase.LoadAssetAtPath<SkillDefinition>(p))
@@ -127,12 +127,12 @@ public static class NativeContentIntegrationVerification
         Check("F13 63 canonical emotion source cards",
             emotionCatalog?.Entries?.Count==63);
         Check("F14 63 native emotion source graphs",emotion.Count==63);
-        Check("F15 exactly 50 executable native emotion cards",
+        Check("F15 exactly 54 executable native emotion cards", // 11-23 +4
             emotion.Values.Count(x=>x.State==
-                NativeEmotionGraphState.NativeReady)==50);
-        Check("F16 remaining 13 emotion effects explicitly pending",
+                NativeEmotionGraphState.NativeReady)==54);
+        Check("F16 remaining 9 emotion effects explicitly pending",
             emotion.Values.Count(x=>x.State==
-                NativeEmotionGraphState.CanonicalValuesPending)==13);
+                NativeEmotionGraphState.CanonicalValuesPending)==9);
         Check("F17 all 63 emotion graph assets retain source identities",
             emotionCatalog.Entries.All(x=>
                 NativeEmotionCatalog.TryResolve(x,out var graph)&&

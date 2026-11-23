@@ -145,7 +145,7 @@ public static class AbilityArchitectureFreezeAudit
             r8StructuralGreen,"unapprovedBlockers="+(r8StructuralGreen?0:-1));
 
         // These are real project/content limitations, NOT fake PASS assertions.
-        Pending("P01 Canonical emotion values", "13/63 EmotionAugment graphs are design-pending; gameplay effects are intentionally inert");
+        Pending("P01 Canonical emotion values", "9/63 EmotionAugment graphs are design-pending; gameplay effects are intentionally inert");
         Pending("P02 Canonical run-item gameplay", "60/60 item identities mapped, 0/60 canonical combat effects approved; tier redistribution still undecided");
         Pending("P03 K keyword and policy approval", "G0 heuristic reports 5 missing keyword candidates and 10 undecided policy entries; runtime equivalence not proven");
         Pending("P04 W authored-content proof", "G0 reports zero authored SlotWeighted card use; full W-01~W-30 design and representative card validation not shown by 69-gate suite");

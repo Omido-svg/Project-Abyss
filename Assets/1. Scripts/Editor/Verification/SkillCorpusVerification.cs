@@ -22,7 +22,7 @@ public static class SkillCorpusVerification
     public const int Stage1NewSkillCount=33; // 11-23 잡몹 빈 칸 임시 카드 14장 추가(19 → 33)
     public const int ExpectedTotalSkillCount=OriginalSkillCount+Stage1NewSkillCount;
     public const int OriginalMetadataOnlyCount=18;
-    public const int NewStage1MetadataOnlyCount=4;
+    public const int NewStage1MetadataOnlyCount=13; // 11-23 잡몹 임시 일반 공격 9장(+4 → 13)
     public const int ExpectedDuplicateIdGroups=0;
     public const int ExpectedDuplicateIdAssets=0;
 

@@ -13,6 +13,13 @@ using UnityEditor;
 /// </summary>
 public static class EmotionContentVerification
 {
+    private static readonly System.Collections.Generic.Dictionary<string,NativeEmotion33Kind> PendingTurnedNative1123=new()
+    {
+        ["emotion.longing.t1.01"]=NativeEmotion33Kind.LongingDriveCharge,
+        ["emotion.longing.t1.02"]=NativeEmotion33Kind.LongingEndureCharge,
+        ["emotion.faith.t3.01"]=NativeEmotion33Kind.FaithBlockRestore,
+        ["emotion.detachment.t3.03"]=NativeEmotion33Kind.DetachmentRelease
+    };
     public static void Run()
     {
         if(EditorApplication.isPlaying||EditorApplication.isCompiling)
@@ -42,22 +49,22 @@ public static class EmotionContentVerification
         NativeEmotionCatalog.ResetCache();
         var native=NativeEmotionCatalog.Registry;
         Check("C07 registry exactly 63",native.Count==63);
-        Check("C08 native ready 50",
+        Check("C08 native ready 54", // 11-23 임시값으로 4장 켬(몰이 · 버팀 · 복구 · 몸을 놓는다)
             native.Values.Count(x=>x.State==
-                NativeEmotionGraphState.NativeReady)==50);
-        Check("C09 explicit value pending 13",
+                NativeEmotionGraphState.NativeReady)==54);
+        Check("C09 explicit value pending 9",
             native.Values.Count(x=>x.State==
-                NativeEmotionGraphState.CanonicalValuesPending)==13);
-        Check("C10 independent native class cohort 33",
-            native.Values.Count(x=>x is NativeEmotion33Graph)==33);
+                NativeEmotionGraphState.CanonicalValuesPending)==9);
+        Check("C10 independent native class cohort 37",
+            native.Values.Count(x=>x is NativeEmotion33Graph)==37);
         Check("C11 native common status/timer cohort 6",
             native.Values.Count(x=>x is NativeEmotionCommonGraph)==6);
         Check("C12 native rulebreaker cohort 10",
             native.Values.Count(x=>x is NativeEmotionRulebreakerGraph)==10);
         Check("C13 native immediate prestige cohort 1",
             native.Values.Count(x=>x is NativeEmotionPrototypeGraph)==1);
-        Check("C14 pending cohort 13",
-            native.Values.Count(x=>x is NativeEmotionPendingGraph)==13);
+        Check("C14 pending cohort 9",
+            native.Values.Count(x=>x is NativeEmotionPendingGraph)==9);
         Check("C15 rulebreaker operations exactly 11",
             native.Values.OfType<NativeEmotionRulebreakerGraph>()
                 .Sum(x=>x.Operations.Count)==11);
@@ -163,6 +170,12 @@ public static class EmotionContentVerification
                     !string.IsNullOrWhiteSpace(pending.PendingReason)&&
                     g.State==
                         NativeEmotionGraphState.CanonicalValuesPending;
+            }
+            else if(g is NativeEmotion33Graph fresh &&
+                    PendingTurnedNative1123.TryGetValue(source.AugmentId,out var kind))
+            {
+                // 11-23 — 규칙서 임시값으로 새로 켠 4장. 원본 효과는 옛 TEMP라 비교 대상이 없다 — 종류 · 상태만 본다
+                equal=fresh.Kind==kind&&fresh.State==NativeEmotionGraphState.NativeReady;
             }
             else
                 equal=false;

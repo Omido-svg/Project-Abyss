@@ -119,13 +119,13 @@ public static class EnemySpeciesCoverageVerification
             "per-action light budget 0/1/2/cover1");
 
         EnemySkillAssetVerification.Verify();
-        Assert(EnemyStageOneSkillCatalog.AuthoredCount==19,
+        Assert(EnemyStageOneSkillCatalog.AuthoredCount==SkillCorpusVerification.Stage1NewSkillCount,
             "18 fixed-roll cards plus 1 retaliation card");
         var newSources=Resources.LoadAll<SkillDefinition>(
             EnemyStageOneSkillCatalog.ResourcePath);
-        Assert(newSources.Length==19,
+        Assert(newSources.Length==SkillCorpusVerification.Stage1NewSkillCount,
             "Resources catalog exactly 19 authored stage1 sources");
-        Assert(newSources.Select(x=>x.SkillId).Distinct().Count()==19,
+        Assert(newSources.Select(x=>x.SkillId).Distinct().Count()==SkillCorpusVerification.Stage1NewSkillCount,
             "new source stable IDs unique");
         foreach(var def in newSources)
         {
@@ -192,7 +192,7 @@ public static class EnemySpeciesCoverageVerification
                role.Contains("UnityEngine.Random.Range(0,tied.Count)"),
             "cover selects lowest absolute HP with random tie");
         Assert(effects.Contains("SelectLowestHpRatio(")&&
-               effects.Contains("target.RestoreCurrentHP(20)"),
+               effects.Contains("target.RestoreCurrentHP(20,"),
             "healer +20 at lowest percent HP, self allowed");
         Assert(effects.Contains("OrderBy(x=>x.CurrentEnergy)")&&
                effects.Contains(".Take(2)")&&
@@ -232,7 +232,7 @@ public static class EnemySpeciesCoverageVerification
             "R6 counter injects unique uncommitted action with exact provenance");
         Assert(target.Contains("EnemyStageOneSkillCatalog.Get(")&&
                target.Contains("new ActionSlot")&&
-               target.Contains("return base.DecideSlots(context);"),
+               target.Contains("base.DecideSlots(context)"),
             "new GUID-backed actual enemy ActionSlot + missing-card fallback");
         Assert(Content("Skill.cs").Contains(
             "EnemyStageOneEffect.OnRollUsing(action,rollIndex)")&&

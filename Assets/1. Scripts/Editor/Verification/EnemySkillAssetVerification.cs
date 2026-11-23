@@ -50,6 +50,27 @@ public static class EnemySkillAssetVerification
         new(EnemySpecies.Corrosion,EnemyActionPattern.StrongDuel,2,"침식병 강한 결투")
     };
 
+    // 11-23 — 규칙서 12.3이 굴림 수를 적지 않은 칸의 임시 카드(사용자 — 3굴림 · 표준 곡선 + 역할 보정).
+    // 기획에서 굴림 수가 정해지면 Confirmed로 옮기고 값을 고친다(작업/잡몹.md).
+    private static readonly Entry[] TemporaryUntilDesign =
+    {
+        new(EnemySpecies.Charge,EnemyActionPattern.Normal,3,"돌격병 일반 공격"),
+        new(EnemySpecies.Charge,EnemyActionPattern.BasicDuel,3,"돌격병 기본 결투"),
+        new(EnemySpecies.HeavyHit,EnemyActionPattern.Normal,3,"강타병 일반 공격"),
+        new(EnemySpecies.HeavyHit,EnemyActionPattern.BasicDuel,3,"강타병 기본 결투"),
+        new(EnemySpecies.Flurry,EnemyActionPattern.Normal,3,"난타병 일반 공격"),
+        new(EnemySpecies.Flurry,EnemyActionPattern.BasicDuel,3,"난타병 기본 결투"),
+        new(EnemySpecies.Gladiator,EnemyActionPattern.Normal,3,"검투병 일반 공격"),
+        new(EnemySpecies.Pressure,EnemyActionPattern.Normal,3,"압박병 일반 공격"),
+        new(EnemySpecies.Pressure,EnemyActionPattern.BasicDuel,3,"압박병 기본 결투"),
+        new(EnemySpecies.Shatter,EnemyActionPattern.Normal,3,"파쇄병 일반 공격"),
+        new(EnemySpecies.Commander,EnemyActionPattern.Normal,3,"지휘관 일반 공격"),
+        new(EnemySpecies.Commander,EnemyActionPattern.BasicDuel,3,"지휘관 기본 결투"),
+        new(EnemySpecies.HeavyGuard,EnemyActionPattern.Normal,3,"중장병 일반 공격"),
+        new(EnemySpecies.CounterGuard,EnemyActionPattern.Normal,3,"반격병 일반 공격")
+    };
+    private static Entry[] All=>Confirmed.Concat(TemporaryUntilDesign).ToArray();
+
     public static int ConfirmedCardCount=>Confirmed.Length;
 
 
@@ -59,9 +80,10 @@ public static class EnemySkillAssetVerification
             EnemyStageOneSkillCatalog.ResourcePath)
             .Where(x=>x!=null&&x.SkillId!=
                 EnemyCounterReaction.CounterSkillId).ToArray();
-        if(available.Length!=Confirmed.Length)
-            throw new InvalidOperationException("Expected 18, found "+available.Length);
-        foreach(var entry in Confirmed)
+        if(available.Length!=All.Length)
+            throw new InvalidOperationException("Expected "+All.Length+" ("+Confirmed.Length+
+                " confirmed + "+TemporaryUntilDesign.Length+" temporary), found "+available.Length);
+        foreach(var entry in All)
         {
             var d=EnemyStageOneSkillCatalog.Get(entry.Species,entry.Action);
             if(d==null||d.SkillId!=EnemyStageOneSkillCatalog.StableId(
@@ -84,7 +106,7 @@ public static class EnemySkillAssetVerification
                EditorUtility.IsDirty(d))
                 throw new InvalidOperationException("Dirty/invalid GUID "+entry.Display);
         }
-        Debug.Log("[R7-8 Stage1 Assets] PASS=18/18 native fixed-roll skills; EditOnly.");
+        Debug.Log("[R7-8 Stage1 Assets] PASS="+All.Length+"/"+All.Length+" native fixed-roll skills ("+TemporaryUntilDesign.Length+" temporary); EditOnly.");
     }
 }
 #endif
