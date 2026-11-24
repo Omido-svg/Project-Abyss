@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 /// <summary>
@@ -155,9 +156,81 @@ public sealed class RunFlowTestHarness : MonoBehaviour
         }
     }
 
+    private bool showDirectEntry;
+    private Vector2 mapScroll;
+
+    private static string MapLabel(RunMapNodeType t) => t switch
+    {
+        RunMapNodeType.NormalBattle => "전투",
+        RunMapNodeType.EliteBattle => "엘리트",
+        RunMapNodeType.TurnLimitBattle => "턴제한",
+        RunMapNodeType.Mystery => "?",
+        RunMapNodeType.GoldShop => "골드상점",
+        RunMapNodeType.HealthShop => "체력상점",
+        RunMapNodeType.BossShop => "보스 전 상점",
+        _ => "보스"
+    };
+
+    // 11-24 — 생성된 스테이지 맵. 위가 보스. 지금 갈 수 있는 노드만 버튼이 눌린다
+    private void DrawGeneratedMap()
+    {
+        RunMap map = session.Map;
+        GUILayout.BeginVertical(GUI.skin.box);
+        if (map == null)
+        {
+            GUILayout.Label("맵 없음", bodyStyle);
+            if (GUILayout.Button("맵 생성", GUILayout.Height(32f))) session.GenerateStageMap();
+            GUILayout.EndVertical();
+            return;
+        }
+        GUILayout.Label($"Stage {map.Stage} 맵 · 시드 {map.Seed} · 보스 {(map.BossVariant == 0 ? "A" : "B")} · 현재 {(session.MapFloor < 0 ? "출발 전" : (session.MapFloor + 1) + "층")}", headerStyle);
+        if (session.AwaitingBossShopChoice)
+        {
+            GUILayout.BeginHorizontal();
+            if (GUILayout.Button("골드 상점", GUILayout.Height(40f))) session.ChooseBossShop(true);
+            if (GUILayout.Button("체력 상점", GUILayout.Height(40f))) session.ChooseBossShop(false);
+            GUILayout.EndHorizontal();
+        }
+        var reachable = session.ReachableMapNodes;
+        mapScroll = GUILayout.BeginScrollView(mapScroll, GUILayout.Height(Mathf.Min(520f, Screen.height * 0.55f)));
+        for (int f = map.Floors.Count - 1; f >= 0; f--)
+        {
+            GUILayout.BeginHorizontal();
+            GUILayout.Label($"{f + 1}층", bodyStyle, GUILayout.Width(44f));
+            foreach (RunMapNode node in map.Floors[f])
+            {
+                bool here = session.MapFloor == f && session.MapIndex == node.Index;
+                bool can = reachable.Contains(node) && !session.AwaitingBossShopChoice;
+                string arrows = node.Next.Count == 0 || f + 1 >= map.Floors.Count ? "" : " ↑" + string.Join(",", node.Next.Select(x => x + 1));
+                GUI.enabled = can;
+                if (GUILayout.Button((here ? "▶ " : "") + MapLabel(node.Type) + arrows, GUILayout.Height(30f), GUILayout.MinWidth(96f)))
+                {
+                    session.EnterMapNode(node);
+                    lastAction = $"Map {f + 1}층 {MapLabel(node.Type)}";
+                }
+                GUI.enabled = true;
+            }
+            GUILayout.EndHorizontal();
+        }
+        GUILayout.EndScrollView();
+        GUILayout.EndVertical();
+    }
+
     private void DrawNodeMap()
     {
-        GUILayout.Label("3. Node Integration Map — 모든 타입 직접 진입", headerStyle);
+        GUILayout.Label("3. Stage Map — 생성 맵 위에서 이동 (11-24)", headerStyle);
+        DrawGeneratedMap();
+        showDirectEntry = GUILayout.Toggle(showDirectEntry, " 디버그: 모든 노드 타입 직접 진입");
+        if (!showDirectEntry)
+        {
+            GUILayout.Space(8f);
+            GUILayout.BeginVertical(GUILayout.ExpandWidth(true));
+            DrawRunStateDebug();
+            DrawInventory();
+            GUILayout.EndVertical();
+            return;
+        }
+        GUILayout.Label("3b. Node Integration Map — 모든 타입 직접 진입", headerStyle);
         GUILayout.Label(
             "랜덤 맵 생성 검증이 아니라 노드 처리 계약 검증용입니다. 0916 정본이 우선이며, 구 XLSM 전용 요소는 Legacy/Test로 표시합니다.",
             bodyStyle);

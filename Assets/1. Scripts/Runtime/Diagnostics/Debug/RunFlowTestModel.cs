@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 public enum RunFlowTestPhase
@@ -308,6 +309,58 @@ public sealed class RunFlowTestSession : IDisposable
     public int MockEliteBonusRewardCount { get; private set; }
     public bool RunCompleted { get; private set; }
 
+    // 11-24 스테이지 맵(RunMapGenerator). 현재 위치 = (MapFloor, MapIndex) · 시작 전 MapFloor = −1
+    public RunMap Map { get; private set; }
+    public int MapFloor { get; private set; } = -1;
+    public int MapIndex { get; private set; }
+    public int RunSeed { get; set; } = Environment.TickCount;
+    public bool AwaitingBossShopChoice { get; private set; }
+    public IReadOnlyList<RunMapNode> ReachableMapNodes =>
+        RunMapGenerator.Reachable(Map, MapFloor, MapIndex);
+
+    public void GenerateStageMap()
+    {
+        Map = RunMapGenerator.Generate(Progression.Stage, RunSeed * 31 + Progression.Stage);
+        MapFloor = -1; MapIndex = 0; AwaitingBossShopChoice = false;
+        var errors = RunMapGenerator.Validate(Map);
+        Log($"Stage {Progression.Stage} 맵 생성: 분기 {Map.BranchFloorCount}층 + 상점 + 보스 · 시드 {Map.Seed}" +
+            (errors.Count > 0 ? " · ⚠ 규칙 위반 " + string.Join(", ", errors) : ""));
+    }
+
+    /// <summary>맵 위에서 갈 수 있는 노드로 이동해 진입한다. 물음표는 들어갈 때 조우 / 골드 50:50(시드).</summary>
+    public bool EnterMapNode(RunMapNode node)
+    {
+        if (Map == null || node == null || !ReachableMapNodes.Contains(node)) return false;
+        MapFloor = node.Floor; MapIndex = node.Index;
+        switch (node.Type)
+        {
+            case RunMapNodeType.NormalBattle: EnterNode(RunFlowTestNodeType.NormalBattle); break;
+            case RunMapNodeType.EliteBattle: EnterNode(RunFlowTestNodeType.EliteBattle); break;
+            case RunMapNodeType.TurnLimitBattle: EnterNode(RunFlowTestNodeType.TurnLimitBattle); break;
+            case RunMapNodeType.GoldShop: EnterNode(RunFlowTestNodeType.GoldShop); break;
+            case RunMapNodeType.HealthShop: EnterNode(RunFlowTestNodeType.HealthShop); break;
+            case RunMapNodeType.Boss: EnterNode(RunFlowTestNodeType.BossBattle); break;
+            case RunMapNodeType.Mystery:
+                var rng = new System.Random(Map.Seed * 997 + node.Floor * 31 + node.Index);
+                bool encounter = rng.Next(2) == 0;
+                Log("물음표 → " + (encounter ? "조우(이벤트 미작성)" : "골드 노드"));
+                EnterNode(encounter ? RunFlowTestNodeType.Encounter : RunFlowTestNodeType.GoldNode);
+                break;
+            case RunMapNodeType.BossShop:
+                AwaitingBossShopChoice = true;   // 보스 직전 고정 상점 — 골드 / 체력 중 플레이어가 고른다
+                Log("보스 직전 고정 상점 — 골드 상점 / 체력 상점 선택");
+                break;
+        }
+        return true;
+    }
+
+    public void ChooseBossShop(bool goldShop)
+    {
+        if (!AwaitingBossShopChoice) return;
+        AwaitingBossShopChoice = false;
+        EnterNode(goldShop ? RunFlowTestNodeType.GoldShop : RunFlowTestNodeType.HealthShop);
+    }
+
     public IReadOnlyList<RunItemDefinition> CurrentShopOffer => currentShopOffer;
     public IReadOnlyList<RunItemDefinition> CurrentBossOffer => currentBossOffer;
     public IReadOnlyList<string> History => history;
@@ -362,6 +415,7 @@ public sealed class RunFlowTestSession : IDisposable
         MockSkillCount = 0;
         MockEliteBonusRewardCount = 0;
         RunCompleted = false;
+        Map = null; MapFloor = -1; MapIndex = 0; AwaitingBossShopChoice = false;
         ActiveNode = null;
         currentShopOffer.Clear();
         currentBossOffer.Clear();
@@ -390,6 +444,7 @@ public sealed class RunFlowTestSession : IDisposable
         SelectedEmotion = emotion;
         Phase = RunFlowTestPhase.NodeMap;
         Log($"감정 선택: {GetEmotionDisplayName(emotion)}");
+        GenerateStageMap();
     }
 
     public void SetStage(int stage)
@@ -623,6 +678,7 @@ public sealed class RunFlowTestSession : IDisposable
         int clearedStage = Progression.Stage;
         Avatar.FullHeal();
         Progression.AdvanceStage();
+        GenerateStageMap();
         currentBossOffer.Clear();
         ActiveNode = null;
         Phase = RunFlowTestPhase.NodeMap;

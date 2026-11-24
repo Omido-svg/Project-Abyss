@@ -591,9 +591,14 @@ public sealed class BattleTestScenarioSwitcher : MonoBehaviour
 
     private Character ResolveCanonicalStageOne(bool boss)
     {
-        var run = RunFlowLiveHandoff.RetainedSession?.Progression;
+        var session = RunFlowLiveHandoff.RetainedSession;
+        var run = session?.Progression;
         if (run != null && run.Stage != 1) return null;
-        int choice = run != null ? new System.Random(run.Seed ^ (boss ? 1112 : 1212)).Next(2) : Random.Range(0, 2);
+        // 11-24 — 보스 = 맵이 정한 종류(스테이지 보스 2종 중 시드) · 엘리트 = 그 엘리트 노드 위치로 판마다(2종 중 1)
+        int choice;
+        if (session?.Map != null && boss) choice = session.Map.BossVariant;
+        else if (session?.Map != null) choice = new System.Random(session.Map.Seed * 131 + session.MapFloor * 17 + session.MapIndex).Next(2);
+        else choice = run != null ? new System.Random(run.Seed ^ (boss ? 1112 : 1212)).Next(2) : Random.Range(0, 2);
         string key = boss ? (choice == 0 ? "Inquisitor" : "MachineBoss") : (choice == 0 ? "Fanatic" : "MachineElite");
         var prefab = Resources.Load<GameObject>(StageOneEnemyMechanic.ResourcePath + "/" + key + "/" + key);
         return prefab?.GetComponent<Character>();
