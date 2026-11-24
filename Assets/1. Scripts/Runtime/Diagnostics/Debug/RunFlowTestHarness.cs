@@ -17,6 +17,7 @@ public sealed class RunFlowTestHarness : MonoBehaviour
 
     private readonly List<string> selfTestResults = new();
     private string lastAction = "Ready";
+    private bool showAugmentShopPage;
     private int maintenancePartIndex;
 
     private GUIStyle titleStyle;
@@ -381,6 +382,28 @@ public sealed class RunFlowTestHarness : MonoBehaviour
 
     private void DrawBattleNode(RunFlowTestNodeType node, bool elite, bool turnLimit)
     {
+        if (turnLimit && session.PendingAugmentOffer.Count > 0)
+        {
+            GUILayout.BeginVertical(GUI.skin.box);
+            GUILayout.Label("턴제한 전투 보상 — 증강 3택 1", headerStyle);
+            for (int i = 0; i < session.PendingAugmentOffer.Count; i++)
+            {
+                RunAugmentDefinition aug = session.PendingAugmentOffer[i];
+                GUILayout.BeginHorizontal(GUI.skin.box);
+                GUILayout.Label($"[{aug.Tier}] {aug.DisplayName}{(aug.IsOneShot ? " (일회성)" : string.Empty)} — {aug.Description}", bodyStyle, GUILayout.ExpandWidth(true));
+                int index = i;
+                bool pick = GUILayout.Button("Pick", GUILayout.Width(90f));
+                GUILayout.EndHorizontal();
+                if (pick)
+                {
+                    session.TryPickAugment(index, out string pickMessage);
+                    lastAction = pickMessage;
+                    break;
+                }
+            }
+            GUILayout.EndVertical();
+            return;
+        }
         int reward = PreviewBattleReward(node);
         GUILayout.BeginVertical(GUI.skin.box);
         GUILayout.Label("Battle Handoff Test", headerStyle);
@@ -404,8 +427,16 @@ public sealed class RunFlowTestHarness : MonoBehaviour
             int gained = session.GrantBattleReward(node);
             if (elite)
                 session.GrantEliteMockItem();
-            session.BackToNodeMap();
-            lastAction = $"Victory: +{gained}G" + (elite ? " + Mock Item" : string.Empty);
+            if (turnLimit)
+            {
+                session.PrepareTurnLimitAugmentOffer();   // 증강 3택 1을 고를 때까지 노드에 머문다
+                lastAction = $"Victory: +{gained}G / 증강 3택 1 대기";
+            }
+            else
+            {
+                session.BackToNodeMap();
+                lastAction = $"Victory: +{gained}G" + (elite ? " + Mock Item" : string.Empty);
+            }
         }
 
         if (turnLimit && GUILayout.Button("Timeout / Retreat", GUILayout.Height(44f)))
@@ -486,8 +517,56 @@ public sealed class RunFlowTestHarness : MonoBehaviour
         GUILayout.EndVertical();
     }
 
+    private void DrawAugmentShopPage()
+    {
+        RunAugmentShop shop = session.AugmentShop;
+        if (shop == null) return;
+        GUILayout.Label("증강 상점 — 6칸 · 상시 증강만 · 균일 랜덤 · 구매하면 그 칸 교체 · 리롤은 6칸 전부 (아이템 상점과 리롤 독립)", bodyStyle);
+        GUILayout.Label($"Next Reroll Cost: {shop.GetNextRerollCost()}G / Count {shop.RerollCount}", bodyStyle);
+        if (GUILayout.Button("Pay & Reroll (증강 6칸)", GUILayout.Height(36f)))
+        {
+            shop.TryReroll(session.Progression, out string message);
+            lastAction = message;
+        }
+        GUILayout.Space(8f);
+        for (int i = 0; i < shop.Slots.Count; i++)
+        {
+            RunAugmentDefinition aug = shop.Slots[i];
+            if (aug == null) continue;
+            GUILayout.BeginHorizontal(GUI.skin.box);
+            GUILayout.Label($"[{aug.Tier}] {aug.DisplayName} — {aug.Description}", bodyStyle, GUILayout.ExpandWidth(true));
+            GUILayout.Label($"{shop.GetPrice(aug, session.Progression)}G", bodyStyle, GUILayout.Width(80f));
+            int index = i;
+            if (GUILayout.Button("Buy", GUILayout.Width(90f)))
+            {
+                shop.TryBuy(index, session.Progression, out string message);
+                lastAction = message;
+                session.Log(message);
+                GUILayout.EndHorizontal();
+                break;
+            }
+            GUILayout.EndHorizontal();
+        }
+        GUILayout.Space(6f);
+        var owned = session.Progression.Augments.Owned;
+        GUILayout.Label($"보유 증강 {owned.Count}개", bodyStyle);
+        for (int i = 0; i < owned.Count; i++)
+            GUILayout.Label($"  · [{owned[i].Tier}] {owned[i].DisplayName} ({owned[i].Description})", bodyStyle);
+    }
+
     private void DrawGoldShopNode()
     {
+        GUILayout.BeginHorizontal();
+        if (GUILayout.Toggle(!showAugmentShopPage, "아이템 상점", GUI.skin.button)) showAugmentShopPage = false;
+        if (GUILayout.Toggle(showAugmentShopPage, "증강 상점", GUI.skin.button)) showAugmentShopPage = true;
+        GUILayout.EndHorizontal();
+        if (showAugmentShopPage)
+        {
+            GUILayout.BeginVertical(GUI.skin.box);
+            DrawAugmentShopPage();
+            GUILayout.EndVertical();
+            return;
+        }
         GUILayout.BeginVertical(GUI.skin.box);
         GUILayout.Label("Gold Shop — transient mock items", headerStyle);
         GUILayout.Label(
@@ -516,7 +595,7 @@ public sealed class RunFlowTestHarness : MonoBehaviour
         {
             RunItemDefinition item = offer[i];
             if (item == null) continue;
-            int price = session.ItemEconomy.GetPrice(item.Tier);
+            int price = Mathf.FloorToInt(session.ItemEconomy.GetPrice(item.Tier) * session.Progression.Augments.ShopPriceMultiplier);
             GUILayout.BeginHorizontal(GUI.skin.box);
             GUILayout.Label($"[{item.Tier}] {item.DisplayName}{NativeItemPendingLabel(item)}", bodyStyle, GUILayout.ExpandWidth(true));
             GUILayout.Label($"{price}G", bodyStyle, GUILayout.Width(80f));

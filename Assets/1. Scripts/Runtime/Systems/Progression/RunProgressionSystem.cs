@@ -229,6 +229,7 @@ public sealed class RunProgressionState
 
     public SkillUpgradeState SkillUpgrades { get; } = new();
     public RunInventory Inventory { get; } = new();
+    public RunAugmentInventory Augments { get; } = new();
     public HifumiEngraveRunProgression HifumiEngrave { get; } = new();
 
     public HifumiEngraveRunSnapshot CaptureHifumiEngrave() =>
@@ -245,6 +246,7 @@ public sealed class RunProgressionState
         MaximumHpBonus = 0;
         SkillUpgrades.Clear();
         Inventory.Clear();
+        Augments.Clear();
         LastYujinWeapon = null;
         AbilityState.ResetAt(ProjectAbyss.Abilities.AbilityLifetimeBoundary.Run);
         HifumiEngrave.Reset();
@@ -354,6 +356,8 @@ public sealed class RunEconomyService
             ? CalculateNodeGold(state.Stage, node, deterministicVariance.Value)
             : RollNodeGold(state.Stage, node);
 
+        // 런 증강 「골드 획득량」 — 퍼센트 합산(곱연산 금지)
+        amount = Mathf.FloorToInt(amount * state.Augments.GoldGainMultiplier);
         state.AddGold(amount);
         return amount;
     }
@@ -418,7 +422,8 @@ public sealed class RunEconomyService
             return false;
 
         ItemEconomySettings economy = itemEconomy ?? new ItemEconomySettings();
-        int price = Mathf.Max(0, economy.GetPrice(item.Tier));
+        // 런 증강 「상점 구매가 할인」
+        int price = Mathf.Max(0, Mathf.FloorToInt(economy.GetPrice(item.Tier) * state.Augments.ShopPriceMultiplier));
 
         if (!state.TrySpendGold(price))
             return false;
@@ -466,7 +471,8 @@ public sealed class RunEconomyService
             Mathf.Max(1f, economy.RerollCostMultiplier),
             Mathf.Max(0, rerollCount));
 
-        int cost = Mathf.Max(0, Mathf.FloorToInt(baseCost * multiplier));
+        // 런 증강 「아이템 리롤 가격 할인」
+        int cost = Mathf.Max(0, Mathf.FloorToInt(baseCost * multiplier * state.Augments.RerollCostMultiplier));
         if (!state.TrySpendGold(cost))
             return false;
 

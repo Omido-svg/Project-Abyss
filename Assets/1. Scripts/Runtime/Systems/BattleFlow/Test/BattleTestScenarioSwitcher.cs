@@ -621,8 +621,9 @@ public sealed class BattleTestScenarioSwitcher : MonoBehaviour
                 break;
 
             case BattleTestEncounterMode.MixedBattle:
+                // 11-24 사용자: 엘리트 노드는 엘리트 단독 출현(잡몹 동행 없음).
+                // 열거값 이름(MixedBattle)은 씬 직렬화 때문에 그대로 둔다.
                 AddIfPresent(result, ResolveCanonicalStageOne(false) ?? eliteEnemyPrefab);
-                AddRepeated(result, normalEnemyPrefab, 2);
                 break;
 
             case BattleTestEncounterMode.BossBattle:

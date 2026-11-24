@@ -213,11 +213,18 @@ public sealed class RunFlowLiveIntegrationOverlay : MonoBehaviour
         switch (result.Node)
         {
             case RunFlowTestNodeType.NormalBattle:
-            case RunFlowTestNodeType.TurnLimitBattle:
             {
                 int gold = session.GrantBattleReward(result.Node);
                 session.BackToNodeMap();
                 lastStatus = $"Returned: VICTORY +{gold}G / {audit}";
+                break;
+            }
+
+            case RunFlowTestNodeType.TurnLimitBattle:
+            {
+                int gold = session.GrantBattleReward(result.Node);
+                session.PrepareTurnLimitAugmentOffer();   // 증강 3택 1 — 고를 때까지 노드에 머문다
+                lastStatus = $"Returned: VICTORY +{gold}G / 증강 3택 1 대기 / {audit}";
                 break;
             }
 

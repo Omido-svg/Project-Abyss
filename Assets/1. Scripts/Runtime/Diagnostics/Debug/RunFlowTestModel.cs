@@ -133,6 +133,29 @@ public sealed class RunFlowTestAvatarState
         }
     }
 
+    /// <summary>
+    /// 일회성 런 증강 「현재 체력 회복」 — 모든 부위가 자기 최대 HP의 N%만큼 회복(최대치를 넘지 않음).
+    /// 전체 HP도 최대의 N% 회복. 파괴 부위는 회복 대상이 아니고(FullHeal과 같은 규칙) 약화 상태는 그대로 둔다.
+    /// 반환 = 전체 HP 회복량.
+    /// </summary>
+    public int HealPercent(int percent)
+    {
+        percent = Mathf.Clamp(percent, 0, 100);
+        int before = CurrentHp;
+        CurrentHp = Mathf.Clamp(CurrentHp + Mathf.FloorToInt(MaximumHp * percent / 100f), 1, MaximumHp);
+
+        for (int i = 0; i < parts.Count; i++)
+        {
+            RunFlowTestPart part = parts[i];
+            if (!part.HasExactHp || part.State == RunFlowTestPartState.Broken)
+                continue;
+
+            part.CurrentHp = Mathf.Min(part.MaximumHp, part.CurrentHp + part.MaximumHp * percent / 100f);
+        }
+
+        return CurrentHp - before;
+    }
+
     public void SetCurrentHpFromBattle(int currentHp)
     {
         CurrentHp = Mathf.Clamp(currentHp, 1, MaximumHp);
@@ -362,6 +385,57 @@ public sealed class RunFlowTestSession : IDisposable
     }
 
     public IReadOnlyList<RunItemDefinition> CurrentShopOffer => currentShopOffer;
+    // 11-24 증강 상점 — 아이템 상점과 별도 페이지 · 리롤 독립
+    public RunAugmentShop AugmentShop { get; private set; }
+
+    // 11-24 턴제한 전투 보상 — 런 증강 3택 1(시트 풀 · 티어 확률 60/30/10 임시 · 일회성 포함)
+    private readonly List<RunAugmentDefinition> pendingAugmentOffer = new();
+    private RunAugmentOfferService augmentOffers;
+    public IReadOnlyList<RunAugmentDefinition> PendingAugmentOffer => pendingAugmentOffer;
+
+    public void PrepareTurnLimitAugmentOffer()
+    {
+        augmentOffers ??= new RunAugmentOfferService(Progression.Seed ^ 0x5A17);
+        pendingAugmentOffer.Clear();
+        pendingAugmentOffer.AddRange(augmentOffers.CreateTurnLimitOffer(3));
+        Log($"턴제한 보상: 증강 3택 1 — {string.Join(" / ", pendingAugmentOffer.ConvertAll(a => $"[{a.Tier}]{a.DisplayName}"))}");
+    }
+
+    public bool TryPickAugment(int index, out string message)
+    {
+        message = string.Empty;
+        if (index < 0 || index >= pendingAugmentOffer.Count) { message = "잘못된 증강 선택입니다."; return false; }
+        RunAugmentDefinition aug = pendingAugmentOffer[index];
+        if (aug.IsOneShot)
+        {
+            switch (aug.Effect)
+            {
+                case RunAugmentEffect.GoldInstant:
+                    Progression.AddGold(aug.Value);
+                    message = $"일회성 증강 [{aug.DisplayName}]: +{aug.Value}G";
+                    break;
+                case RunAugmentEffect.HealPercent:
+                    int heal = Avatar.HealPercent(aug.Value);
+                    message = $"일회성 증강 [{aug.DisplayName}]: 전체 HP +{heal} · 모든 부위 최대 HP의 {aug.Value}% 회복(파괴 부위 제외)";
+                    break;
+                case RunAugmentEffect.RandomPick:
+                    augmentOffers ??= new RunAugmentOfferService(Progression.Seed ^ 0x5A17);
+                    var got = augmentOffers.ResolveRandomPick(aug);
+                    foreach (var g in got) Progression.Augments.Add(g);
+                    message = $"일회성 증강 [{aug.DisplayName}]: " + string.Join(", ", got.ConvertAll(g => $"[{g.Tier}]{g.DisplayName}"));
+                    break;
+            }
+        }
+        else
+        {
+            Progression.Augments.Add(aug);
+            message = $"증강 획득: [{aug.Tier}] {aug.DisplayName} ({aug.Description})";
+        }
+        pendingAugmentOffer.Clear();
+        Log(message);
+        BackToNodeMap();
+        return true;
+    }
     public IReadOnlyList<RunItemDefinition> CurrentBossOffer => currentBossOffer;
     public IReadOnlyList<string> History => history;
     public IReadOnlyList<SkillDefinition> MockUpgradeSkills => mockUpgradeSkills;
@@ -418,6 +492,9 @@ public sealed class RunFlowTestSession : IDisposable
         Map = null; MapFloor = -1; MapIndex = 0; AwaitingBossShopChoice = false;
         ActiveNode = null;
         currentShopOffer.Clear();
+        AugmentShop = null;
+        pendingAugmentOffer.Clear();
+        augmentOffers = null;
         currentBossOffer.Clear();
         history.Clear();
         Phase = RunFlowTestPhase.CharacterSelect;
@@ -460,7 +537,11 @@ public sealed class RunFlowTestSession : IDisposable
         Log($"노드 진입: {GetNodeDisplayName(node)}");
 
         if (node == RunFlowTestNodeType.GoldShop)
+        {
             RefreshGoldShopOffer();
+            if (AugmentShop == null) AugmentShop = new RunAugmentShop(Progression.Seed);
+            else AugmentShop.Open();
+        }
         else if (node == RunFlowTestNodeType.BossBattle)
             currentBossOffer.Clear();
     }
@@ -570,7 +651,7 @@ public sealed class RunFlowTestSession : IDisposable
         }
 
         currentShopOffer.RemoveAt(index);
-        message = $"구매 완료: {item.DisplayName} ({ItemEconomy.GetPrice(item.Tier)}G)";
+        message = $"구매 완료: {item.DisplayName} ({Mathf.FloorToInt(ItemEconomy.GetPrice(item.Tier) * Progression.Augments.ShopPriceMultiplier)}G)";
         Log(message);
         return true;
     }
@@ -622,7 +703,7 @@ public sealed class RunFlowTestSession : IDisposable
     public int GetNextRerollCost()
     {
         float multiplier = Mathf.Pow(ItemEconomy.RerollCostMultiplier, GoldShopRerollCount);
-        return Mathf.Max(0, Mathf.FloorToInt(Mathf.Max(0, TestRerollBaseCost) * multiplier));
+        return Mathf.Max(0, Mathf.FloorToInt(Mathf.Max(0, TestRerollBaseCost) * multiplier * Progression.Augments.RerollCostMultiplier));
     }
 
     public void EnableTestOnlyCurrentHpGoldRate(bool enabled)

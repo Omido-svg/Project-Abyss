@@ -102,7 +102,8 @@ public sealed class RunFlowLiveBattleBridge : MonoBehaviour
         int injected =
             InjectRunInventoryIntoSourcePrefab(
                 sourcePrefab,
-                session.Progression?.Inventory);
+                session.Progression?.Inventory,
+                session.Progression?.Augments);
 
         battleManager.BattlePrepared +=
             HandleBattlePrepared;
@@ -299,7 +300,8 @@ public sealed class RunFlowLiveBattleBridge : MonoBehaviour
 
     private int InjectRunInventoryIntoSourcePrefab(
         Character sourcePrefab,
-        RunInventory inventory)
+        RunInventory inventory,
+        RunAugmentInventory runAugments = null)
     {
         if (sourcePrefab == null)
             return 0;
@@ -365,11 +367,18 @@ public sealed class RunFlowLiveBattleBridge : MonoBehaviour
             }
         }
 
+        // 11-24 런 증강(전투 후 보상 · 스탯형) — 속도 · 위세 획득량 · 최대체력 · 턴 시작 방어도를 전투 빌드에 올린다.
+        // 원본 증강 목록(originalAugments)은 복원용으로 그대로 두고, 합친 목록만 전투에 쓴다.
+        List<CharacterAugment> mergedAugments = new List<CharacterAugment>(originalAugments);
+        RunAugmentApplier runApplier = RunAugmentApplier.Create(runAugments);
+        if (runApplier.HasAnyCombatEffect)
+            mergedAugments.Add(runApplier);
+
         sourcePrefab.ConfigureAuthoringCore(
             sourcePrefab.Data,
             sourcePrefab.CombatLoadoutSource,
             merged,
-            originalAugments);
+            mergedAugments);
 
         sourceRestored = false;
         return injected;
